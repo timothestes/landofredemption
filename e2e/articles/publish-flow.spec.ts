@@ -31,13 +31,13 @@ async function gotoStable(page: Page, url: string) {
   }
 }
 
-// AdminProvider's isAdmin check (components/providers/AdminProvider.tsx) can
-// transiently miss on the very first page load right after sign-in — the
-// same class of local-dev fetch blip utils/supabase/getUserSafe.ts documents
-// and tolerates elsewhere — but unlike getUserSafe it has no retry of its
-// own: it only re-checks on the next auth-state-change event, which never
-// fires again on this page. A reload re-runs the check cleanly. Confirmed by
-// hand: the Admin dropdown is reliably present after at most one reload.
+// AdminProvider's isAdmin check (components/providers/AdminProvider.tsx) used
+// to transiently miss on the very first page load right after sign-in — it
+// only re-checked on mount or the next auth-state-change event, and neither
+// fires after the server-action sign-in's redirect. Fixed by re-deriving on
+// every route change instead (see AdminProvider.tsx); this retry loop is now
+// just a defensive fallback for the same class of local-dev fetch blip
+// utils/supabase/getUserSafe.ts documents and tolerates elsewhere.
 // The caller is expected to have already opened the mobile menu once (for
 // the Articles-link check); a reload always closes it again, so it's
 // reopened only on the retry path, never on the fast (already-open) path.

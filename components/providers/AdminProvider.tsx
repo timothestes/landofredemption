@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { createClient } from "../../utils/supabase/client";
 import { getUserSafe } from "../../utils/supabase/getUserSafe";
 
@@ -25,13 +26,33 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     loading: true,
   });
   const supabase = useRef(createClient()).current;
+  const pathname = usePathname();
+  // Sentinel distinct from any real user id (string) or signed-out (null), so
+  // the very first run always does the full check below.
+  const lastCheckedUserId = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
         const user = await getUserSafe(supabase);
+        const userId = user?.id ?? null;
+
+        // Sign-in/out here run as server actions that redirect (a soft
+        // navigation), which never fires `onAuthStateChange` on this client's
+        // own GoTrueClient instance — that only reacts to auth calls made
+        // through itself. Without this, AdminProvider (mounted once in the
+        // root layout, which persists across the redirect) keeps whatever
+        // isAdmin it computed before the user signed in, and the Admin nav
+        // button never appears until a hard reload remounts the provider.
+        // Re-deriving on every route change catches the post-redirect
+        // navigation; skipping when the identity hasn't changed keeps that
+        // from re-running the full permission RPC batch on every click. The
+        // ref is only updated once a check actually completes below, so a
+        // transient failure here doesn't poison future skips.
+        if (userId === lastCheckedUserId.current) return;
 
         if (!user) {
+          lastCheckedUserId.current = userId;
           setState({ isAdmin: false, isSuperuser: false, permissions: [], isForgeMember: false, loading: false });
           return;
         }
@@ -47,6 +68,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           forgeRole === "superadmin" || forgeRole === "elder" || forgeRole === "playtester";
 
         if (adminError || !isAdminData) {
+          lastCheckedUserId.current = userId;
           setState({ isAdmin: false, isSuperuser: false, permissions: [], isForgeMember, loading: false });
           return;
         }
@@ -56,6 +78,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         // superData undefined → treated as false. Fail-closed.
         const { data: superData } = await supabase.rpc("is_superuser");
 
+        lastCheckedUserId.current = userId;
         setState({
           isAdmin: true,
           isSuperuser: superData === true,
@@ -79,7 +102,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase]);
+    // pathname is intentionally a dependency: it's what re-triggers the check
+    // after a post-sign-in/sign-out redirect (see comment above).
+  }, [supabase, pathname]);
 
   return <AdminContext.Provider value={state}>{children}</AdminContext.Provider>;
 }
