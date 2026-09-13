@@ -68,6 +68,37 @@ describe("ForgeCardPreview stats", () => {
   });
 });
 
+describe("ForgeCardPreview brigade bands", () => {
+  const box = RECTS.leftBox;
+  const bandTops = (html: string) =>
+    [...html.matchAll(/<rect x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="[\d.]+" fill="#[0-9a-f]{6}" clip-path=/g)].map((m) => Number(m[1]));
+  const masks = (html: string) =>
+    [...html.matchAll(/(?<!-webkit-)mask-image:linear-gradient\(to bottom, transparent ([\d.]+)%, #000 ([\d.]+)%\)/g)]
+      .map((m) => [Number(m[1]), Number(m[2])]);
+
+  // Measured on Army of a Million Men and Mercenary Chariots (Crimson / Gold / Gray): three
+  // equal bands, in the listed order. Two brigades keep the 45 / 55 split.
+  it("bands the icon box once per brigade: 45 / 55 for two, even thirds for three", () => {
+    const two = bandTops(render({ cardType: ["Hero"], brigades: ["Blue", "Green"], strength: 5, toughness: 5 }));
+    expect(two).toHaveLength(1);
+    expect(two[0]).toBeCloseTo(box.y + box.h * 0.45, 6);
+    const three = bandTops(render({ cardType: ["EvilCharacter"], brigades: ["Crimson", "EvilGold", "Gray"], strength: 6, toughness: 10 }));
+    expect(three).toHaveLength(2);
+    expect(three[0]).toBeCloseTo(box.y + box.h / 3, 6);
+    expect(three[1]).toBeCloseTo(box.y + (2 * box.h) / 3, 6);
+  });
+
+  it("blends every brigade's wash in, top to bottom; two brigades still fade 40% to 60%", () => {
+    expect(masks(render({ brigades: ["Blue", "Green"] }))).toEqual([[40, 60]]);
+    const html = render({ brigades: ["Crimson", "EvilGold", "Gray"] });
+    expect(html.match(/\/forge\/frames\/washes\//g)).toHaveLength(3);
+    // Three brigades: edges at a third and two thirds, each fade 40% / 3 of the height wide.
+    const [a, b] = masks(html);
+    expect(a[0]).toBeCloseTo(100 / 3 - 20 / 3, 6); expect(a[1]).toBeCloseTo(40, 6);
+    expect(b[0]).toBeCloseTo(60, 6); expect(b[1]).toBeCloseTo(200 / 3 + 20 / 3, 6);
+  });
+});
+
 // A long ability and a verse, neither carrying a character React escapes, so the rendered
 // markup can be matched against the strings textFit wrapped.
 const WORDY: DesignCard = {

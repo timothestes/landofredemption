@@ -3,9 +3,11 @@
 // The kit and app/forge/lib/frameGeometry.ts are generated from the design team's
 // Illustrator template by scripts/forge-extract-template.py — see the kit README.
 //
-// Print rules this follows (checked against printed cards, 2026-09-10):
-//  * One icon box, top-left. A second brigade splits it into a top/bottom band; three or
-//    more brigades use the multi-brigade foil. The wash blends the same way, top to bottom.
+// Print rules this follows (checked against printed cards, 2026-09-10; multi-brigade 2026-09-13):
+//  * One icon box, top-left, banded top to bottom in brigade order: two brigades split it
+//    into a top/bottom band, three or more into equal bands. The wash blends the same
+//    brigades the same way, top to bottom. Only a card of every brigade of one alignment
+//    (printed "Multi") uses the multi-brigade foil.
 //  * Lost Souls have no icon box.
 //  * Covenants and Curses carry the enhancement icon (bible / skull) on the left and the
 //    artifact chalice in a second box on the right; the title centers between them.
@@ -13,7 +15,7 @@
 //    and Curses when a value is entered.
 
 import type { Alignment, Brigade, CardType, DesignCard, StatValue } from "./designCard";
-import { cardApplicability } from "./designCard";
+import { cardApplicability, EVIL_BRIGADES, GOOD_BRIGADES } from "./designCard";
 import { BRIGADE_BOX_HEX, ICON_RECTS } from "./frameGeometry";
 
 const KIT = "/forge/frames";
@@ -51,23 +53,34 @@ export function specialWash(card: DesignCard): SpecialWash | null {
   return null;
 }
 
-/** Wash image URLs, bottom to top: [] (no brigade yet), [one], or [top, bottom] for a
- *  dual-brigade card (the renderer blends the second in from the bottom). A special type
- *  always yields exactly one. */
+// Printed "Multi" cards are every brigade of their alignment. The forge stores that as the
+// full list (no Multi sentinel, spec Decision #2), and the template's foil replaces the bands.
+function multiFoil(brigades: readonly Brigade[]): "multi-good" | "multi-evil" | null {
+  const covers = (all: readonly Brigade[]) => all.every((b) => brigades.includes(b));
+  if (covers(GOOD_BRIGADES)) return "multi-good";
+  if (covers(EVIL_BRIGADES)) return "multi-evil";
+  return null;
+}
+
+/** Wash image URLs, top to bottom: [] (no brigade yet), or one per brigade (the renderer
+ *  blends each in below the one before). A special type, or a card of every brigade (the
+ *  multi-brigade foil), always yields exactly one. */
 export function washPaths(card: DesignCard): string[] {
   const special = specialWash(card);
   if (special) return [`${KIT}/washes/${special}.webp`];
-  const slugs = (card.brigades ?? []).slice(0, 2).map((b) => BRIGADE_SLUG[b]);
-  return slugs.map((s) => `${KIT}/washes/${s}.webp`);
+  const brigades = card.brigades ?? [];
+  const foil = multiFoil(brigades);
+  if (foil) return [`${KIT}/badges/${foil}.webp`];
+  return brigades.map((b) => `${KIT}/washes/${BRIGADE_SLUG[b]}.webp`);
 }
 
 export type IconRect = { readonly x: number; readonly y: number; readonly w: number; readonly h: number };
 
 export type IconBox = {
-  /** Fill of the box — the top band when `fill2` is set. */
+  /** Fill of the box — the top band when there are `bands`. */
   fill: string;
-  /** Bottom band for a second brigade. */
-  fill2: string | null;
+  /** Fills of the bands below the top one, top to bottom: one per further brigade. */
+  bands: string[];
   /** Box-filling composite (artifact chalice, dominant nebula, multi-brigade foil). */
   badge: string | null;
   /** How the badge is cropped to the box (SVG preserveAspectRatio alignment): the template
@@ -108,13 +121,12 @@ export function showsStats(card: DesignCard): boolean {
   return stats === "required" || hasStat(card.strength) || hasStat(card.toughness);
 }
 
-function badgeFor(types: CardType[], alignment: Alignment | undefined, brigadeCount: number): string | null {
+function badgeFor(types: CardType[], alignment: Alignment | undefined, brigades: readonly Brigade[]): string | null {
   const evil = alignment === "Evil";
   if (types.includes("Artifact")) return "artifact";
   if (types.includes("Dominant")) return evil ? "reaper" : "lamb";
   if (types.includes("Fortress")) return evil ? "evil-dom" : "good-dom";
-  if (brigadeCount >= 3) return evil ? "multi-evil" : "multi-good";
-  return null;
+  return multiFoil(brigades);
 }
 
 function luminance(hex: string): number {
@@ -131,20 +143,20 @@ export function iconBox(card: DesignCard, side: "left" | "right"): IconBox | nul
   if (side === "right") {
     if (!types.some((t) => ARTIFACT_LIKE.includes(t))) return null;
     return {
-      fill: NEUTRAL_BOX, fill2: null, badge: `${KIT}/badges/artifact.webp`, badgeAlign: BADGE_ALIGN.artifact,
+      fill: NEUTRAL_BOX, bands: [], badge: `${KIT}/badges/artifact.webp`, badgeAlign: BADGE_ALIGN.artifact,
       icon: null, iconRect: null, withStats: false, darkText: false,
     };
   }
   const brigades = card.brigades ?? [];
-  const badge = badgeFor(types, card.alignment, brigades.length);
+  const badge = badgeFor(types, card.alignment, brigades);
   const fill = brigades[0] ? BRIGADE_HEX[brigades[0]] : NEUTRAL_BOX;
-  const fill2 = !badge && brigades.length === 2 ? BRIGADE_HEX[brigades[1]] : null;
+  const bands = badge ? [] : brigades.slice(1).map((b) => BRIGADE_HEX[b]);
   const withStats = showsStats(card);
   const base = ICON_BY_TYPE[types[0]];
   const slot = (base && withStats && STATS_SLOT.has(base) ? `${base}Stats` : base) as keyof typeof ICON_RECTS | null;
   return {
     fill,
-    fill2,
+    bands,
     badge: badge ? `${KIT}/badges/${badge}.webp` : null,
     badgeAlign: (badge && BADGE_ALIGN[badge]) || "xMidYMid",
     icon: base ? `${KIT}/icons/${base}.png` : null,
@@ -171,7 +183,8 @@ export function classIcons(card: DesignCard): ClassIcon[] {
 }
 
 export function isPreviewApproximate(card: DesignCard): boolean {
-  if ((card.brigades ?? []).length >= 3) return true;
+  // The template has no multi-brigade wash; the box foil stands in for one.
+  if (multiFoil(card.brigades ?? [])) return true;
   if (card.legality === "Classic") return true;
   if ((card.brigades ?? []).some((b) => SYNTHESIZED_WASHES.has(BRIGADE_SLUG[b]))) return true;
   return false;
