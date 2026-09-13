@@ -365,7 +365,7 @@ const TopNav: React.FC = () => {
                   }`}
               >
                 <FaTrophy className="w-4 h-4" />
-                Tournaments
+                Events
                 <svg
                   className={`w-4 h-4 transition-transform ${isTournamentsOpen ? 'rotate-180' : ''}`}
                   fill="none"
@@ -743,7 +743,7 @@ const TopNav: React.FC = () => {
               >
                 <div className="flex items-center gap-3">
                   <FaTrophy className="w-5 h-5" />
-                  Tournaments
+                  Events
                 </div>
                 <svg
                   className={`w-4 h-4 transition-transform ${isTournamentsOpen ? 'rotate-180' : ''}`}
