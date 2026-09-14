@@ -47,7 +47,11 @@ type Face = { file: string; family: string };
 
 let bodyCache: Promise<Face[]> | null = null;
 const oflCache = new Map<PrivateFace, Promise<Face>>();
-const licensedCache = new Map<PrivateFace, Face>(); // successes only: a failed read is retried
+// In-flight AND resolved-success calls share one promise per face, so concurrent cold-start
+// renders make one Blob read / temp write / probe pair, not one each. A degraded or failed
+// outcome is evicted once settled, so it is retried on the next render (only a successful
+// licensed load is worth remembering).
+const licensedCache = new Map<PrivateFace, Promise<{ face: Face; degraded: boolean }>>();
 const assetCache = new Map<string, Promise<string>>();
 
 /** Test hook: forget every per-instance cache. */
@@ -121,23 +125,32 @@ async function familyMatches(family: string, fontFiles: string[], defaultFamily:
   return !named.asPng().equals(missing.asPng());
 }
 
-async function licensedFace(face: PrivateFace, io: RenderIO, body: Face[]): Promise<{ face: Face; degraded: boolean }> {
-  const known = licensedCache.get(face);
-  if (known) return { face: known, degraded: false };
-  const bytes = await io.readPrivateFont(face).catch(() => null);
-  const family = bytes ? fontFamilyName(bytes) : null;
-  if (bytes && family) {
-    const dir = path.join(os.tmpdir(), "forge-render-fonts");
-    await mkdir(dir, { recursive: true });
-    const file = path.join(dir, `${face}-${createHash("sha256").update(bytes).digest("hex").slice(0, 16)}.ttf`);
-    await writeFile(file, bytes);
-    if (await familyMatches(family, [...body.map((b) => b.file), file], body[0].family)) {
-      const found = { file, family };
-      licensedCache.set(face, found);
-      return { face: found, degraded: false };
-    }
+function licensedFace(face: PrivateFace, io: RenderIO, body: Face[]): Promise<{ face: Face; degraded: boolean }> {
+  let p = licensedCache.get(face);
+  if (!p) {
+    p = (async () => {
+      const bytes = await io.readPrivateFont(face).catch(() => null);
+      const family = bytes ? fontFamilyName(bytes) : null;
+      if (bytes && family) {
+        const dir = path.join(os.tmpdir(), "forge-render-fonts");
+        await mkdir(dir, { recursive: true });
+        const file = path.join(dir, `${face}-${createHash("sha256").update(bytes).digest("hex").slice(0, 16)}.ttf`);
+        await writeFile(file, bytes);
+        if (await familyMatches(family, [...body.map((b) => b.file), file], body[0].family)) {
+          return { face: { file, family }, degraded: false };
+        }
+      }
+      return { face: await oflFace(face), degraded: true };
+    })();
+    // A single two-branch reaction (not a separate .then + .catch) so the discarded derived
+    // promise always fulfills instead of risking an unhandled rejection.
+    p.then(
+      (result) => { if (result.degraded) licensedCache.delete(face); },
+      () => licensedCache.delete(face),
+    );
+    licensedCache.set(face, p);
   }
-  return { face: await oflFace(face), degraded: true };
+  return p;
 }
 
 function assetDataUri(publicPath: string): Promise<string> {

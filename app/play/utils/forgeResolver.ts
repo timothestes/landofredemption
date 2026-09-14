@@ -94,7 +94,7 @@ export function mergeForgeDeckData(cards: GameCardData[], resolver?: ForgeResolv
       ...c,
       cardName: e.name,
       specialAbility: e.rawText,
-      cardImgFile: forgeProxyUrl(e) || c.cardImgFile,
+      cardImgFile: forgeProxyUrl(e),
       alignment: e.alignment,
       brigade: e.brigade,
       strength: e.strength,

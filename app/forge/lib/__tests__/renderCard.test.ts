@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
@@ -53,6 +53,25 @@ describe("renderCardImage", () => {
     _resetRenderCardCaches();
     const garbage: RenderIO = { readPrivateFont: async () => Buffer.from("not a font"), readArt: async () => null };
     expect((await render(HERO, garbage)).degraded).toBe(true);
+  }, 30000);
+
+  it("shares one private-font read across concurrent cold-start calls, one per face", async () => {
+    const spy = vi.fn(async (face) => (face === "title" ? fontFile("Mukta-ExtraBold.ttf") : fontFile("PTSerif-Bold.ttf")));
+    const io: RenderIO = { readPrivateFont: spy, readArt: async () => null };
+    const [a, b] = await Promise.all([render(HERO, io), render(HERO, io)]);
+    expect(a.degraded).toBe(false);
+    expect(b.degraded).toBe(false);
+    // Two concurrent renders, one title read + one stat read shared between them, not four.
+    expect(spy).toHaveBeenCalledTimes(2);
+  }, 30000);
+
+  it("does not remember a degraded private-font read, so the next render retries it", async () => {
+    const spy = vi.fn(async () => null);
+    const io: RenderIO = { readPrivateFont: spy, readArt: async () => null };
+    expect((await render(HERO, io)).degraded).toBe(true);
+    expect(spy).toHaveBeenCalledTimes(2); // title + stat
+    expect((await render(HERO, io)).degraded).toBe(true);
+    expect(spy).toHaveBeenCalledTimes(4); // retried on the next render, not cached
   }, 30000);
 
   it("draws the title in the licensed face it was given", async () => {

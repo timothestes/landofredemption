@@ -243,10 +243,15 @@ describe("GET /forge/api/art/[cardId]?kind=rendered", () => {
   });
 
   it("prefers the approved version over the published one", async () => {
-    mockSupabase({ card: { approved: { id: "approved-v" }, published: { id: "published-v" } } });
+    const client = mockSupabase({ card: { approved: { id: "approved-v" }, published: { id: "published-v" } } });
     (readForgeArt as Mock).mockResolvedValue(jpegBlob());
     await get(`v=approved&kind=rendered&t=approved-v.r${RENDER_VERSION}`);
     expect(readForgeArt).toHaveBeenCalledWith(`forge-rendered/r${RENDER_VERSION}/approved-v.jpg`);
+    const cardsFrom = (client.from as Mock).mock.results.find((_, i) => (client.from as Mock).mock.calls[i][0] === "forge_cards");
+    const select = cardsFrom?.value.select as Mock;
+    const selectArg = select.mock.calls[0][0] as string;
+    expect(selectArg).toContain("fk_approved");
+    expect(selectArg).toContain("fk_published");
   });
 
   it("404s on a Blob outage without rendering", async () => {
