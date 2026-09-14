@@ -18,7 +18,9 @@ const nextConfig = {
   // fs/path and have no react-server export condition, so webpack bundling them
   // into the RSC server bundle throws at load. Externalize so Next require()s the
   // package at runtime (which works) instead of bundling it.
-  serverExternalPackages: ['@vercel/blob'],
+  // @resvg/resvg-js (the Forge rendered-play-card renderer) is a native addon that loads a
+  // per-platform .node binary at runtime; bundling it breaks that lookup.
+  serverExternalPackages: ['@vercel/blob', '@resvg/resvg-js'],
   experimental: {
     // Server Actions cap request bodies at 1MB by default; Forge card art is
     // validated up to 15MB (validateArtFile / MAX_ART_BYTES), so raise the limit
@@ -64,6 +66,14 @@ const nextConfig = {
     '/threshingfloor/episodes/[episode]': ['./app/threshingfloor/outline.html'],
     '/api/v1/generate-decklist': ['./assets/decksheets/**'],
     '/api/v1/generate-decklist-image': ['./assets/decksheets/fonts/**'],
+    // The art route's kind=rendered branch reads the frame kit and the committed fonts from
+    // disk (app/forge/lib/renderCard.ts). frameAssetsTrace.test.ts checks this list.
+    '/forge/api/art/[cardId]': [
+      './public/forge/frames/washes/**',
+      './public/forge/frames/icons/**',
+      './public/forge/frames/badges/**',
+      './public/forge/fonts/*.ttf',
+    ],
   },
   async redirects() {
     return [

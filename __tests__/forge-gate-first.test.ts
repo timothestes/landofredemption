@@ -27,11 +27,13 @@ const ALLOW_NO_GATE = new Set([
   "app/forge/ideas/[cardId]/page.tsx",
   "app/forge/play/games/page.tsx", // bare redirect to /forge/play (lobby moved)
 ]);
-// Routes whose gate lives elsewhere still must match their specific gate call.
-const ALT_GATE: Record<string, RegExp> = {
-  // Member role check + RLS run inside the forge_art_key RPC (migration 066);
-  // a null key 404s. Collapsed from requireForge to save per-image round trips.
-  "app/forge/api/art/[cardId]/route.ts": /rpc\(\s*["']forge_art_key["']/,
+// Routes whose gate lives elsewhere must match EVERY one of their gate calls.
+const ALT_GATE: Record<string, RegExp[]> = {
+  // Member role check + RLS run inside the forge_art_key RPC (migration 066); a null key 404s.
+  // The kind=rendered branch runs the same role check itself (my_forge_role), because RLS alone
+  // lets a removed member's live session through. This is only a substring check; the real
+  // guard is route.test.ts "404s a signed-in non-member even when RLS returns the card".
+  "app/forge/api/art/[cardId]/route.ts": [/rpc[(] *["']forge_art_key["']/, /rpc[(] *["']my_forge_role["']/],
 };
 
 describe("forge gate-first guardrail", () => {
@@ -44,8 +46,10 @@ describe("forge gate-first guardrail", () => {
   for (const f of files) {
     it(`${f} calls a Forge gate`, () => {
       const src = readFileSync(join(process.cwd(), f), "utf8");
-      const gate = ALT_GATE[f] ?? GATE;
-      expect(gate.test(src), `${f} must call its Forge gate (${gate})`).toBe(true);
+      const gates = ALT_GATE[f] ?? [GATE];
+      for (const gate of gates) {
+        expect(gate.test(src), `${f} must call its Forge gate (${gate})`).toBe(true);
+      }
     });
   }
 });

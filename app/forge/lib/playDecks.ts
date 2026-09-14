@@ -44,7 +44,7 @@ export async function loadForgeDeckForGame(deckId: string): Promise<ForgePlayDec
 // class (see app/goldfish/utils/equipClass.ts).
 export type ForgePlayResolverEntry = {
   cardId: string; name: string; rawText: string;
-  hasFinished: boolean; hasArt: boolean; versionId: string; typeDisplay: string;
+  hasFinished: boolean; versionId: string; typeDisplay: string;
   alignment: string; brigade: string; strength: string; toughness: string;
   identifier: string; reference: string; cardClass: string;
 };
@@ -57,7 +57,6 @@ function toResolverEntry(g: GrantedForgeCard): ForgePlayResolverEntry {
     name: g.data.name || "Playtest card",
     rawText: cardRawText(g.data),
     hasFinished: g.hasApprovedFinished,
-    hasArt: g.hasApprovedArt,
     versionId: g.versionId,
     typeDisplay,
     cardClass: (g.data.class ?? []).join("/"),
