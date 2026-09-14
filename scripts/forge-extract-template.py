@@ -105,18 +105,19 @@ RASTERS = {
 }
 # Where each icon sits in the top-left box (frameGeometry.ICON_RECTS key -> base name).
 # The "Stats" variants are the same pixels placed lower, under the strength/toughness.
+# Every icon prints at the template's placed size, the cross included: twelve Heroes across
+# Roots, IR, Roots 2, II and T2C measure the printed stem at 75-77 canvas px, the full slot
+# (an earlier check had it at 75% of the slot, which drew it 56 px tall).
 PLACEMENTS = {
     "cross": "Cross", "dragon": "Dragon", "skull": "Skull_no_Stats",
     "skullStats": "Skull_w_x2F_Stats", "bible": "Bible_no_Stats",
     "bibleStats": "Bible_w_x2F_Stats", "fortress": "Fortress_Icon", "site": "icon_x5F_site",
     "shield": "Warrior_small", "territory": "Territory_small",
 }
-# Printed cards (Roots through Times to Come) run the cross at ~75% of the template's slot,
-# centered on the same point; every other icon prints at the template's size.
-PRINT_SCALE = {"cross": 0.75}
 # Rasters converted with black-point compensation. Without it SWOP's rich black lands at sRGB
 # ~36, and the chalice's black stripes came out grey next to printed artifacts (RR2 / T2C / II
-# scans: 5th-percentile lightness 44 against the prints' 17; compensated gives 12).
+# scans: 5th-percentile lightness 44 against the prints' 17; compensated gives 12). The brigade
+# box fills are compensated too (see brigade_fill); the other icons are not, it makes them worse.
 BLACK_POINT_COMPENSATED = {"Artifact"}
 BRIGADE_BOX_NAMES = ["Pale_Green", "Orange", "Gray", "Crimson", "Brown", "Black", "White",
                      "Silver", "Purple", "Green", "Gold", "Clay", "Blue"]
@@ -232,8 +233,11 @@ class Doc:
             yield Raster(name, m.group(1).decode(), w, h, bits, data, abs(sx), abs(sy), tx, ty)
 
     def hex_from_cmyk(self, c: float, m: float, y: float, k: float) -> str:
+        """Box-fill hex, black-point compensated: the printed boxes measure as the compensated
+        colours (Black 3/7/8 where the plain conversion gives 41/41/41; Blue, Brown, Crimson,
+        Purple, Green and Gold within dE 2.4 of RR2 / II / T2C scans instead of 5-8)."""
         im = Image.new("CMYK", (1, 1), tuple(round(v * 255) for v in (c, m, y, k)))
-        r, g, b = ImageCms.applyTransform(im, self.cmyk2rgb).getpixel((0, 0))
+        r, g, b = ImageCms.applyTransform(im, self.cmyk2rgb_bpc).getpixel((0, 0))
         return f"#{r:02x}{g:02x}{b:02x}"
 
     def brigade_fill(self, color: str) -> str:
@@ -379,12 +383,11 @@ def corner_copy(copies: list[Raster]) -> Raster:
     return min(boxed, key=lambda r: r.tx) if boxed else copies[0]
 
 
-def canvas_rect(r: Raster, scale: float = 1.0) -> dict[str, float]:
-    """Canvas-px rect of a placed raster, optionally shrunk about its center."""
+def canvas_rect(r: Raster) -> dict[str, float]:
+    """Canvas-px rect of a placed raster."""
     sx, sy = CANVAS[0] / (TRIM[2] - TRIM[0]), CANVAS[1] / (TRIM[3] - TRIM[1])
     w, h = r.sx * r.w * sx, r.sy * r.h * sy
     x, y = (r.tx - TRIM[0]) * sx, (TRIM[3] - r.ty) * sy
-    x, y, w, h = x + w * (1 - scale) / 2, y + h * (1 - scale) / 2, w * scale, h * scale
     return {"x": round(x, 1), "y": round(y, 1), "w": round(w, 1), "h": round(h, 1)}
 
 
@@ -430,15 +433,15 @@ def write_geometry(path: Path, brigade_hex: dict[str, str], synthesized: dict[st
               "// the class shield and territory plate below it. Rects are the rasters' own aspect.",
               "export const ICON_RECTS = {"]
     for k, r in icon_rects.items():
-        note = f" // {PRINT_SCALE[k]:.0%} of the template slot, as printed" if k in PRINT_SCALE else ""
-        lines.append(f"  {k}: {json.dumps(r).replace(chr(34), '')},{note}")
+        lines.append(f"  {k}: {json.dumps(r).replace(chr(34), '')},")
     lines += ["} as const;", "",
               "// Ability box gradient: light until `light`% of the box, black from `dark`%.",
               "export const GRADIENT_ROWS = {"]
     for rows, (a, b) in GRADIENT_ROWS.items():
         lines.append(f"  {rows}: {{ light: {a}, dark: {b} }},")
     lines += ["} as const;", "",
-              "// Icon-box fills, CMYK from the template converted through its SWOP profile.",
+              "// Icon-box fills, CMYK from the template converted through its SWOP profile with",
+              "// black-point compensation, which is what the printed boxes measure as.",
               "// red / teal are not in the template: hue-shifted from crimson / blue.",
               "export const BRIGADE_BOX_HEX = {"]
     for k, v in brigade_hex.items():
@@ -540,7 +543,7 @@ def main():
     warrior.save(out / "icons" / "warrior.png", optimize=True)
     weapon.save(out / "icons" / "weapon.png", optimize=True)
     print(f"  shields warrior + weapon: {warrior.size[0]}x{warrior.size[1]}")
-    icon_rects = {k: canvas_rect(chosen[name], PRINT_SCALE.get(k, 1.0)) for k, name in PLACEMENTS.items()}
+    icon_rects = {k: canvas_rect(chosen[name]) for k, name in PLACEMENTS.items()}
 
     # --- brigade colors + geometry
     hexes = {c.lower().replace("_", "-"): doc.brigade_fill(c) for c in BRIGADE_BOX_NAMES}

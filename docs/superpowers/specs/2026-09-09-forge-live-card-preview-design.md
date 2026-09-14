@@ -381,7 +381,49 @@ a list. Importing `Multi` on a Good or Evil row yields the full set; a Neutral o
 warns, because the catalog's Neutral Multi (8 Sites and Philosophy) doesn't say which set it
 means. The shared rule is `multiBrigadeSide` in `designCard.ts`.
 
+## Icon audit (2026-09-13, 61 printed scans)
+
+After the chalice fix Tim asked for every other icon discrepancy. Sixty-one IR / Roots / Roots 2
+/ II / T2C scans, one or more per type, brigade, class icon and badge, were registered to the
+canvas by their four border lines and compared with the preview of the same card. Three
+corrections, each contradicting an earlier note above:
+
+- **The cross prints at the template's full slot, not 75%.** Twelve Heroes across all five sets
+  measure the printed stem at 75-77 canvas px and the arm half-span at 33; the 75% preview drew
+  56-58 and 24.5. Every other type icon (dragon, bible, skull) was within 1-2 px, so the
+  registration is not the cause. `PRINT_SCALE` is gone; the cross rect is the placed raster's.
+- **Box fills are black-point compensated.** With the plain SWOP conversion the Black box was
+  41/41/41 against a printed 3/7/8 (dE 15) and Blue, Brown, Crimson, Purple, Green and Gold
+  were dE 5-8 off; compensated, every brigade but Gray is within dE 2.4. Gray is inconclusive:
+  II's The Protecting King prints it neutral (166/170/173, dE 6.5 from the template's
+  green-tinted #a8b5af) while IR's Begging to go Back prints the template colour, so it stays.
+  Compensating the icon rasters themselves makes them worse (cross error 8.5 → 13.4); only the
+  chalice and the fills want it.
+- **Two-brigade boxes split 50 / 50.** Eleven cleanly registered prints (Roots through T2C)
+  all break at 50% of the box height; the 45 / 55 above was never measured. Three-brigade
+  thirds were right.
+
+Checked and matching: dragon, bible, skull, shield size and position, three-brigade bands,
+lamb, both fortress badges, the right (chalice) box. The light rim outside printed boxes is
+scan sharpening (the text-box outline shows the same overshoot), not a highlight.
+
+Seen and not changed here:
+
+- **Dual-alignment cards print two boxes** (GE/EE, Hero/Evil Character, 6 of 6): good brigade,
+  stats and icon on the left, evil on the right, class icons under both. The preview bands both
+  brigades into one box and writes "12 (6)/6 (12)", which overflows. Separate change.
+- **The printed territory plate is a different rendition** from the template's: 88 px wide
+  against 106, a thick rounded outline, the drawing 1.35x larger filling the interior, no map
+  texture. Matching it means replacing the design team's asset, which is their call.
+- **The Evil Dominant reaper** prints as a translucent grey (about 50/52/54) with the nebula
+  showing through; the extracted badge is near-black (about 21/17/17). Under investigation.
+- Shield and plate highlights print about 10% darker than the template's (195/190/173 against
+  220/212/191). No principled source for a correction.
+- Rulers over Earth (Fortress / Evil Character) prints no stats and no shield although the
+  catalog lists 4/3 Warrior; the preview shows what is entered.
+
 ## Follow-ups (not in this change)
 
 - Inline ability icons, set symbol, card number, watermark.
 - Other surfaces (grid, reveal, deck view) adopting the composite.
+- Dual-alignment two-box layout (see the icon audit).
