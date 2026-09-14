@@ -1,8 +1,9 @@
 "use client";
 
+import { Fragment } from "react";
 import {
-  CARD_TYPES, ALIGNMENTS, BRIGADES, CLASSES, ICONS, RARITIES,
-  deriveAlignmentFromTypes,
+  CARD_TYPES, ALIGNMENTS, CLASSES, ICONS, RARITIES, MULTI_BRIGADES,
+  deriveAlignmentFromTypes, toggleMultiBrigade, brigadeLabels,
   type DesignCard, type CardType, type Brigade,
 } from "@/app/forge/lib/designCard";
 import StatInput from "./StatInput";
@@ -12,6 +13,9 @@ import { deriveTestamentAndGospel, formatTestament } from "@/app/decklist/card-s
 
 // Light-colored brigades need dark text for legible chip labels.
 const LIGHT_BRIGADES = new Set<Brigade>(["White", "Silver", "GoodGold", "EvilGold", "PaleGreen"]);
+// A Multi button wears the template's multi-brigade foil once its whole set is selected. The
+// good foil is pastel (dark text), the evil one dark (white text).
+const MULTI_FOIL = { Good: "/forge/frames/badges/multi-good.webp", Evil: "/forge/frames/badges/multi-evil.webp" } as const;
 
 type ClassName = (typeof CLASSES)[number];
 type IconName = (typeof ICONS)[number];
@@ -55,7 +59,7 @@ export default function CardDetailsFields({
   // the card stays readable at a glance without opening it.
   const preview = [
     ...types,
-    ...(snapshot.brigades ?? []),
+    ...brigadeLabels(snapshot.brigades ?? []),
     snapshot.strength || snapshot.toughness
       ? `${snapshot.strength ?? "—"}/${snapshot.toughness ?? "—"}`
       : null,
@@ -117,19 +121,33 @@ export default function CardDetailsFields({
         </select>
       </label>
 
-      {/* Brigade */}
+      {/* Brigade. Each alignment's Multi button selects (or clears) that whole set, which is
+          how a printed "Multi" card is stored. */}
       <div>
         <span className="mb-1 block text-sm font-medium">Brigade</span>
         <div className="flex flex-wrap gap-2">
-          {BRIGADES.map((b) => {
-            const selected = (snapshot.brigades ?? []).includes(b);
+          {(["Good", "Evil"] as const).map((side) => {
+            const multi = MULTI_BRIGADES[side].every((b) => (snapshot.brigades ?? []).includes(b));
             return (
-              <button key={b} type="button"
-                onClick={() => update({ brigades: toggle<Brigade>(snapshot.brigades, b) })}
-                style={selected ? { backgroundColor: BRIGADE_HEX[b] } : undefined}
-                className={`rounded-full border px-3 py-1 text-xs ${selected ? `border-transparent ${LIGHT_BRIGADES.has(b) ? "text-gray-900" : "text-white"}` : "text-foreground"}`}>
-                {b}
-              </button>
+              <Fragment key={side}>
+                <button type="button" aria-pressed={multi}
+                  onClick={() => update({ brigades: toggleMultiBrigade(snapshot.brigades, side) })}
+                  style={multi ? { backgroundImage: `url(${MULTI_FOIL[side]})`, backgroundSize: "cover" } : undefined}
+                  className={`rounded-full border px-3 py-1 text-xs ${multi ? `border-transparent font-medium ${side === "Good" ? "text-gray-900" : "text-white"}` : "text-foreground"}`}>
+                  {`${side} Multi`}
+                </button>
+                {MULTI_BRIGADES[side].map((b) => {
+                  const selected = (snapshot.brigades ?? []).includes(b);
+                  return (
+                    <button key={b} type="button"
+                      onClick={() => update({ brigades: toggle<Brigade>(snapshot.brigades, b) })}
+                      style={selected ? { backgroundColor: BRIGADE_HEX[b] } : undefined}
+                      className={`rounded-full border px-3 py-1 text-xs ${selected ? `border-transparent ${LIGHT_BRIGADES.has(b) ? "text-gray-900" : "text-white"}` : "text-foreground"}`}>
+                      {b}
+                    </button>
+                  );
+                })}
+              </Fragment>
             );
           })}
         </div>

@@ -91,6 +91,14 @@ describe("designCardToCatalogRow", () => {
   it("renders Good_Evil alignment as the public Good/Evil form", () => {
     expect(designCardToCatalogRow({ alignment: "Good_Evil" }, ctx).alignment).toBe("Good/Evil");
   });
+
+  it('promotes a card of every evil brigade as the catalog\'s own "Multi"', () => {
+    const row = designCardToCatalogRow({
+      cardType: ["EE"], alignment: "Evil",
+      brigades: ["Black", "Brown", "Crimson", "EvilGold", "Gray", "Orange", "PaleGreen"],
+    }, ctx);
+    expect(row.brigade).toBe("Multi");
+  });
 });
 
 describe("parseImageTransform", () => {

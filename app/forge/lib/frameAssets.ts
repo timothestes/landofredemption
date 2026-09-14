@@ -15,7 +15,7 @@
 //    and Curses when a value is entered.
 
 import type { Alignment, Brigade, CardType, DesignCard, StatValue } from "./designCard";
-import { cardApplicability, EVIL_BRIGADES, GOOD_BRIGADES } from "./designCard";
+import { cardApplicability, multiBrigadeSide } from "./designCard";
 import { BRIGADE_BOX_HEX, ICON_RECTS } from "./frameGeometry";
 
 const KIT = "/forge/frames";
@@ -53,13 +53,11 @@ export function specialWash(card: DesignCard): SpecialWash | null {
   return null;
 }
 
-// Printed "Multi" cards are every brigade of their alignment. The forge stores that as the
-// full list (no Multi sentinel, spec Decision #2), and the template's foil replaces the bands.
+// Printed "Multi" cards are every brigade of their alignment (see multiBrigadeSide); the
+// template's foil replaces the bands.
 function multiFoil(brigades: readonly Brigade[]): "multi-good" | "multi-evil" | null {
-  const covers = (all: readonly Brigade[]) => all.every((b) => brigades.includes(b));
-  if (covers(GOOD_BRIGADES)) return "multi-good";
-  if (covers(EVIL_BRIGADES)) return "multi-evil";
-  return null;
+  const side = multiBrigadeSide(brigades);
+  return side === "Good" ? "multi-good" : side === "Evil" ? "multi-evil" : null;
 }
 
 /** Wash image URLs, top to bottom: [] (no brigade yet), or one per brigade (the renderer

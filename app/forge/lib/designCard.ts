@@ -39,6 +39,36 @@ export const EVIL_BRIGADES = ["Black", "Brown", "Crimson", "EvilGold", "Gray", "
 export const BRIGADES = [...GOOD_BRIGADES, ...EVIL_BRIGADES] as const;
 export type Brigade = (typeof BRIGADES)[number];
 
+// A printed "Multi" card is every brigade of its alignment. The forge stores it as that
+// full list rather than a sentinel, so everything that reads brigades already handles it;
+// the Lackey export and promotion spell it "Multi", as the catalog does.
+export type MultiSide = "Good" | "Evil";
+export const MULTI_BRIGADES: Record<MultiSide, readonly Brigade[]> = { Good: GOOD_BRIGADES, Evil: EVIL_BRIGADES };
+
+/** The alignment whose every brigade is selected ("Good" if both are), else null. Pure. */
+export function multiBrigadeSide(brigades: readonly Brigade[]): MultiSide | null {
+  for (const side of ["Good", "Evil"] as const) {
+    if (MULTI_BRIGADES[side].every((b) => brigades.includes(b))) return side;
+  }
+  return null;
+}
+
+/** The picker's Multi button: adds that alignment's missing brigades, or clears them all
+ *  when every one is already selected. Other brigades are kept. Pure. */
+export function toggleMultiBrigade(brigades: Brigade[] | undefined, side: MultiSide): Brigade[] {
+  const current = brigades ?? [];
+  const all = MULTI_BRIGADES[side];
+  if (all.every((b) => current.includes(b))) return current.filter((b) => !all.includes(b));
+  return [...current, ...all.filter((b) => !current.includes(b))];
+}
+
+/** Brigades for display: a full set collapses to one "Good Multi" / "Evil Multi" entry. Pure. */
+export function brigadeLabels(brigades: readonly Brigade[]): string[] {
+  const side = multiBrigadeSide(brigades);
+  if (!side) return [...brigades];
+  return [`${side} Multi`, ...brigades.filter((b) => !MULTI_BRIGADES[side].includes(b))];
+}
+
 export const CLASSES = ["Warrior", "Weapon"] as const;
 export const ICONS = ["Territory", "Star", "Cloud"] as const;
 export const LEGALITIES = ["Rotation", "Classic", "Scrolls", "Paragon", "Banned"] as const;
