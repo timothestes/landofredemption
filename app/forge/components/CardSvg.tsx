@@ -168,8 +168,14 @@ function RasterLayers({ card, idPrefix, assetHref, art }: {
         ))}
       </g>
       <g clipPath={`url(#${idPrefix}wa)`}>
-        <rect x={A.x} y={A.y} width={A.w} height={A.h} fill="#fff" />
-        {art && <image href={art} x={A.x} y={A.y} width={A.w} height={A.h} preserveAspectRatio="xMidYMid slice" />}
+        {art ? (
+          <>
+            <rect x={A.x} y={A.y} width={A.w} height={A.h} fill="#fff" />
+            <image href={art} x={A.x} y={A.y} width={A.w} height={A.h} preserveAspectRatio="xMidYMid slice" />
+          </>
+        ) : (
+          <rect x={A.x} y={A.y} width={A.w} height={A.h} fill="rgba(35,31,32,.42)" />
+        )}
       </g>
     </>
   );

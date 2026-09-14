@@ -49,9 +49,11 @@ describe("CardSvg as a standalone document (server)", () => {
     const withArt = render(props({ cardType: ["Artifact"] }));
     expect(withArt).toContain('<image href="data:art"');
     expect(withArt).not.toContain("NO ART");
+    expect(withArt).not.toContain('fill="rgba(35,31,32,.42)"');
     const without = render(props({ cardType: ["Artifact"] }, { noArt: true, rasters: { art: null } }));
     expect(without).not.toContain('href="data:art"');
     expect(without).toContain("NO ART");
+    expect(without).toContain('fill="rgba(35,31,32,.42)"');
   });
 
   it("routes every badge, icon and class icon through the asset resolver", () => {
@@ -103,6 +105,6 @@ describe("RENDER_VERSION guard", () => {
       .map((card, i) => render(props(card, { noArt: i % 2 === 1, rasters: { art: i % 2 === 1 ? null : "data:art" } })))
       .join("");
     const hash = createHash("sha256").update(markup).digest("hex");
-    expect({ RENDER_VERSION, hash }).toEqual({ RENDER_VERSION: 1, hash: "9739a840eecada6e42e3a68d6adb302ae1d1f91fb7e09b96e4b08117a7fc9cd7" });
+    expect({ RENDER_VERSION, hash }).toEqual({ RENDER_VERSION: 2, hash: "edc52504efa4d53ad5317d2c9194d61d0e52f5cf5e292b50f8d50a631e3ccfa8" });
   });
 });

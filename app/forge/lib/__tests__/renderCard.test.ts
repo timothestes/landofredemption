@@ -106,8 +106,11 @@ describe("renderCardImage", () => {
     const art = await region((await render(HERO, withArt, "forge-art/k")).jpeg, centre);
     expect(mean(art, 0)).toBeGreaterThan(180);
     expect(mean(art, 1)).toBeLessThan(70);
+    // No white slot: the frame's wash shows through a dark scrim, so the window stays dim
+    // (and clearly not the saturated red the art-filled window painted above).
     const empty = await region((await render(HERO, oflAsPrivate, null)).jpeg, centre);
-    expect(mean(empty, 1)).toBeGreaterThan(200);
+    expect(mean(empty, 1)).toBeLessThan(180);
+    expect(mean(empty, 1)).toBeGreaterThan(mean(art, 1) + 20);
   }, 30000);
 
   it("throws RenderInputError when the art blob is missing or unreadable", async () => {

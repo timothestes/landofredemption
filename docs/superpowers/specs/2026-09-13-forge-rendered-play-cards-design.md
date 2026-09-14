@@ -441,3 +441,6 @@ return `/forge/api/art/${e.cardId}?v=approved&kind=rendered&t=${renderedToken(e.
   Minors fixed in revision 3: Blob error classification, the embedded version-id read, the
   font fallback check, escaping in the spec, JPEG washes, id sanitizing, `washBands`, and a
   wrong statement about opponents.
+- **Post-review merge (2026-09-13):** main's #431 dimmed the empty art window and recolored
+  the NO ART label; both ported into CardSvg (browser overlay and server raster layers) and
+  RENDER_VERSION bumped to 2.
