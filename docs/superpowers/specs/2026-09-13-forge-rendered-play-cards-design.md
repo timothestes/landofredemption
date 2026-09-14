@@ -177,11 +177,15 @@ the route's other branches never load resvg or `react-dom/server`.
   title and stat faces come from the private Blob (`readForgeFont`). If that read fails,
   it uses the OFL files (Mukta ExtraBold, PT Serif Bold) as the browser does, and marks
   the result `degraded`.
-- **Fonts: caching.** Font buffers are cached per instance only after a successful load.
-  A failed private-font read isn't remembered.
+- **Fonts: file paths only.** resvg-js 2.6.2's Node build ignores `fontBuffers` (probe,
+  2026-09-13: in-memory buffers produced 270 px of ink, not Mukta's 242 px), so fonts load
+  from paths. Committed faces load from `public/forge/fonts`. Each licensed face read from
+  Blob is written once per instance to `os.tmpdir()/forge-render-fonts/<face>-<sha>.ttf`.
+- **Fonts: caching.** Font files and names are cached per instance only after a successful
+  load. A failed private-font read isn't remembered.
 - **Fonts: family names.** `fontFamilyName(buffer)` is a small pure `name`-table parser
   that prefers name ID 16, then ID 1. Its results go in `fonts`. The render is called with
-  `font: { loadSystemFonts: false, fontBuffers, defaultFontFamily: <Arimo's name> }`.
+  `font: { loadSystemFonts: false, fontFiles, defaultFontFamily: <Arimo's name> }`.
 - **Fonts: fallback check.** Once per instance, for each private face, render a short
   sample under its parsed name and under a family that doesn't exist. If the two come out
   byte-identical, the name didn't match. Treat that face as failed: use the OFL fallback
