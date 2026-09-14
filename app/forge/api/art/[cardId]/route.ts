@@ -93,7 +93,10 @@ async function renderedCard(supabase: Supabase, cardId: string, url: URL): Promi
   if (userError || !userData?.user) return notFoundResponse();
   if (typeof role !== "string" || !MEMBER_ROLES.has(role)) return notFoundResponse();
   // The embedded version rows only come back when RLS lets the caller see them.
-  const refs = card as { approved?: { id: string } | null; published?: { id: string } | null } | null;
+  // supabase-js infers these composite-FK embeds (card_versions!fk_approved / !fk_published) as
+  // to-many (arrays), but PostgREST's live response is an object or null, never an array (probed
+  // 2026-09-13 against a real card) — hence the `unknown` hop instead of a direct cast.
+  const refs = card as unknown as { approved?: { id: string } | null; published?: { id: string } | null } | null;
   const versionId = refs?.approved?.id ?? refs?.published?.id;
   if (!versionId) return notFoundResponse();
 
