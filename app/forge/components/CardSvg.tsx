@@ -301,7 +301,7 @@ export default function CardSvg({
         {noArt && (
           <text
             x={A.x + A.w / 2} y={baselineIn(A.y + (A.h - 26 * 1.4) / 2, 26 * 1.4, 26)} textAnchor="middle"
-            fontSize={26} letterSpacing={26 * 0.14} fill="#a9adc9"
+            fontSize={26} letterSpacing={26 * 0.14} fill="rgba(255,255,255,.62)"
           >
             NO ART
           </text>

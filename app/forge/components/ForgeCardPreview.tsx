@@ -70,9 +70,10 @@ export default function ForgeCardPreview({
         );
       })}
 
-      {/* 2. art window: uploaded art clipped to the window, or the template's empty white slot
+      {/* 2. art window: uploaded art clipped to the window, or, with no art yet, the frame's
+            wash dimmed under a dark scrim — a white slot punched a hole in every draft grid
             (the "NO ART" label is drawn with the rest of the text, in the canvas below) */}
-      <div style={{ ...place(A), borderRadius: radius(A), overflow: "hidden", background: "#fff" }}>
+      <div style={{ ...place(A), borderRadius: radius(A), overflow: "hidden", background: artUrl ? "#fff" : "rgba(35,31,32,.42)" }}>
         {artUrl && <Img src={artUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
       </div>
 

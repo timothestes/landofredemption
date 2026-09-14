@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ForgeCardPreview from "@/app/forge/components/ForgeCardPreview";
-import { RECTS } from "@/app/forge/lib/frameGeometry";
+import { CANVAS, RECTS } from "@/app/forge/lib/frameGeometry";
 import { textFit, TEXT_METRICS } from "@/app/forge/lib/textFit";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 
@@ -164,5 +164,35 @@ describe("ForgeCardPreview art window", () => {
     const withArt = renderToStaticMarkup(React.createElement(ForgeCardPreview, { card, artUrl: "/forge/api/art/x" }));
     expect(withArt).not.toContain("NO ART");
     expect(withArt).toContain('src="/forge/api/art/x"');
+  });
+});
+
+describe("ForgeCardPreview empty art window", () => {
+  // The art window's own div is the one element placed at RECTS.art.
+  const artWindow = (html: string) => {
+    const at = `position:absolute;left:${(RECTS.art.x / CANVAS.w) * 100}%;top:${(RECTS.art.y / CANVAS.h) * 100}%;`;
+    const i = html.indexOf(at);
+    if (i < 0) throw new Error("no art window");
+    return html.slice(i, html.indexOf('"', i));
+  };
+  const noArtLabel = (html: string) => html.match(/<text([^>]*)>NO ART<\/text>/)?.[1];
+  const MOSES: DesignCard = { name: "Redeemer Moses", cardType: ["Hero"], brigades: ["Green"], strength: 8, toughness: 8 };
+
+  // A flat white slot punched a hole in every draft grid. Without art the window lets the
+  // frame's wash through under a dark scrim, so the card keeps its brigade color.
+  it("dims the frame's wash through an empty window instead of painting it white", () => {
+    const html = render(MOSES);
+    const win = artWindow(html);
+    expect(win).not.toMatch(/background:#fff/);
+    const alpha = Number(win.match(/background:rgba\(35,31,32,([\d.]+)\)/)![1]);
+    expect(alpha).toBeGreaterThan(0);
+    expect(alpha).toBeLessThan(1);
+    expect(noArtLabel(html)).toMatch(/fill="rgba\(255,255,255,/);
+  });
+
+  it("keeps the white ground under uploaded art, and drops the label", () => {
+    const html = renderToStaticMarkup(React.createElement(ForgeCardPreview, { card: MOSES, artUrl: "/forge/api/art/x" }));
+    expect(artWindow(html)).toMatch(/background:#fff/);
+    expect(noArtLabel(html)).toBeUndefined();
   });
 });

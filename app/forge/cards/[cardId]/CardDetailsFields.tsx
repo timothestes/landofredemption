@@ -1,6 +1,5 @@
 "use client";
 
-import { Fragment } from "react";
 import {
   CARD_TYPES, ALIGNMENTS, CLASSES, ICONS, RARITIES, MULTI_BRIGADES,
   deriveAlignmentFromTypes, toggleMultiBrigade, brigadeLabels,
@@ -8,14 +7,11 @@ import {
 } from "@/app/forge/lib/designCard";
 import StatInput from "./StatInput";
 import IdentifiersInput from "./IdentifiersInput";
-import { BRIGADE_HEX } from "@/app/forge/lib/frameAssets";
+import {
+  typeIconSrc, brigadeIconSrc, multiBrigadeIconSrc, glyphIconSrc,
+  typeLabel, brigadeLabel,
+} from "@/app/forge/lib/filterIcons";
 import { deriveTestamentAndGospel, formatTestament } from "@/app/decklist/card-search/data/testament";
-
-// Light-colored brigades need dark text for legible chip labels.
-const LIGHT_BRIGADES = new Set<Brigade>(["White", "Silver", "GoodGold", "EvilGold", "PaleGreen"]);
-// A Multi button wears the template's multi-brigade foil once its whole set is selected. The
-// good foil is pastel (dark text), the evil one dark (white text).
-const MULTI_FOIL = { Good: "/forge/frames/badges/multi-good.webp", Evil: "/forge/frames/badges/multi-evil.webp" } as const;
 
 type ClassName = (typeof CLASSES)[number];
 type IconName = (typeof ICONS)[number];
@@ -23,6 +19,32 @@ type IconName = (typeof ICONS)[number];
 function toggle<T>(arr: T[] | undefined, v: T): T[] {
   const a = arr ?? [];
   return a.includes(v) ? a.filter((x) => x !== v) : [...a, v];
+}
+
+// One picker option, built like the deckbuilder's filter tiles: the art does the
+// fast visual work and the label keeps it unambiguous. The label always shows —
+// brigade color on its own isn't a safe signal — and `title` carries the value as
+// it's stored. The art is lazy so the ~35 images don't fetch while the block is
+// still collapsed.
+function Tile({ src, label, title, ariaLabel, selected, onClick }: {
+  src: string; label: string; title: string; ariaLabel?: string;
+  selected: boolean; onClick: () => void;
+}) {
+  return (
+    <button type="button" onClick={onClick} aria-pressed={selected} title={title} aria-label={ariaLabel}
+      className={`flex min-w-[56px] flex-col items-center justify-end gap-1 rounded border px-2 py-1 transition-colors ${
+        selected
+          ? "border-primary/40 bg-primary/15"
+          : "border-transparent bg-muted/40 hover:border-border hover:bg-muted"
+      }`}>
+      <img src={src} alt="" aria-hidden="true" loading="lazy" className="h-7 w-auto" />
+      <span className={`whitespace-nowrap text-[10px] font-medium leading-none ${
+        selected ? "text-primary" : "text-muted-foreground"
+      }`}>
+        {label}
+      </span>
+    </button>
+  );
 }
 
 // Structured, deck-relevant fields. The freeform text box stays the primary way to
@@ -80,16 +102,17 @@ export default function CardDetailsFields({
         Used for deck building — the builder reads these to categorize and validate the card.
       </p>
 
-      {/* Type */}
+      {/* Type. Dominants and Fortresses show their good or evil art, following the
+          alignment below. */}
       <div>
         <span className="mb-1 block text-sm font-medium">Type</span>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {CARD_TYPES.map((t) => (
-            <button key={t} type="button"
-              onClick={() => onToggleType(t)}
-              className={`rounded-full border px-3 py-1 text-xs ${types.includes(t) ? "border-transparent bg-emerald-600 text-white" : "text-foreground"}`}>
-              {t}
-            </button>
+            <Tile key={t}
+              src={typeIconSrc(t, snapshot.alignment)}
+              label={typeLabel(t)} title={t}
+              selected={types.includes(t)}
+              onClick={() => onToggleType(t)} />
           ))}
         </div>
       </div>
@@ -121,33 +144,34 @@ export default function CardDetailsFields({
         </select>
       </label>
 
-      {/* Brigade. Each alignment's Multi button selects (or clears) that whole set, which is
-          how a printed "Multi" card is stored. */}
+      {/* Brigade, split by alignment so the two sets don't read as one 16-wide wrap.
+          Each row's Multi tile selects (or clears) that whole set, which is how a
+          printed "Multi" card is stored. */}
       <div>
         <span className="mb-1 block text-sm font-medium">Brigade</span>
-        <div className="flex flex-wrap gap-2">
+        <div className="space-y-2">
           {(["Good", "Evil"] as const).map((side) => {
             const multi = MULTI_BRIGADES[side].every((b) => (snapshot.brigades ?? []).includes(b));
             return (
-              <Fragment key={side}>
-                <button type="button" aria-pressed={multi}
-                  onClick={() => update({ brigades: toggleMultiBrigade(snapshot.brigades, side) })}
-                  style={multi ? { backgroundImage: `url(${MULTI_FOIL[side]})`, backgroundSize: "cover" } : undefined}
-                  className={`rounded-full border px-3 py-1 text-xs ${multi ? `border-transparent font-medium ${side === "Good" ? "text-gray-900" : "text-white"}` : "text-foreground"}`}>
-                  {`${side} Multi`}
-                </button>
-                {MULTI_BRIGADES[side].map((b) => {
-                  const selected = (snapshot.brigades ?? []).includes(b);
-                  return (
-                    <button key={b} type="button"
-                      onClick={() => update({ brigades: toggle<Brigade>(snapshot.brigades, b) })}
-                      style={selected ? { backgroundColor: BRIGADE_HEX[b] } : undefined}
-                      className={`rounded-full border px-3 py-1 text-xs ${selected ? `border-transparent ${LIGHT_BRIGADES.has(b) ? "text-gray-900" : "text-white"}` : "text-foreground"}`}>
-                      {b}
-                    </button>
-                  );
-                })}
-              </Fragment>
+              <div key={side}>
+                <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {side}
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  <Tile
+                    src={multiBrigadeIconSrc(side)}
+                    label="Multi" title={`${side} Multi`} ariaLabel={`${side} Multi`}
+                    selected={multi}
+                    onClick={() => update({ brigades: toggleMultiBrigade(snapshot.brigades, side) })} />
+                  {MULTI_BRIGADES[side].map((b) => (
+                    <Tile key={b}
+                      src={brigadeIconSrc(b)}
+                      label={brigadeLabel(b)} title={b}
+                      selected={(snapshot.brigades ?? []).includes(b)}
+                      onClick={() => update({ brigades: toggle<Brigade>(snapshot.brigades, b) })} />
+                  ))}
+                </div>
+              </div>
             );
           })}
         </div>
@@ -175,34 +199,26 @@ export default function CardDetailsFields({
       {/* Class */}
       <div>
         <span className="mb-1 block text-sm font-medium">Class</span>
-        <div className="flex flex-wrap gap-2">
-          {CLASSES.map((c) => {
-            const selected = (snapshot.class ?? []).includes(c);
-            return (
-              <button key={c} type="button"
-                onClick={() => update({ class: toggle<ClassName>(snapshot.class, c) })}
-                className={`rounded-full border px-3 py-1 text-xs ${selected ? "border-transparent bg-emerald-600 text-white" : "text-foreground"}`}>
-                {c}
-              </button>
-            );
-          })}
+        <div className="flex flex-wrap gap-1.5">
+          {CLASSES.map((c) => (
+            <Tile key={c}
+              src={glyphIconSrc(c)} label={c} title={c}
+              selected={(snapshot.class ?? []).includes(c)}
+              onClick={() => update({ class: toggle<ClassName>(snapshot.class, c) })} />
+          ))}
         </div>
       </div>
 
       {/* Icons — Territory / Star / Cloud */}
       <div>
         <span className="mb-1 block text-sm font-medium">Icons</span>
-        <div className="flex flex-wrap gap-2">
-          {ICONS.map((ic) => {
-            const selected = (snapshot.icons ?? []).includes(ic);
-            return (
-              <button key={ic} type="button"
-                onClick={() => update({ icons: toggle<IconName>(snapshot.icons, ic) })}
-                className={`rounded-full border px-3 py-1 text-xs ${selected ? "border-transparent bg-emerald-600 text-white" : "text-foreground"}`}>
-                {ic}
-              </button>
-            );
-          })}
+        <div className="flex flex-wrap gap-1.5">
+          {ICONS.map((ic) => (
+            <Tile key={ic}
+              src={glyphIconSrc(ic)} label={ic} title={ic}
+              selected={(snapshot.icons ?? []).includes(ic)}
+              onClick={() => update({ icons: toggle<IconName>(snapshot.icons, ic) })} />
+          ))}
         </div>
       </div>
 
