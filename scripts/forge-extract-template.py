@@ -4,8 +4,7 @@
 The source .ai is CONFIDENTIAL and gitignored (tmp/). Only derived rasters and numbers
 leave this script. See docs/superpowers/specs/2026-09-09-forge-live-card-preview-design.md.
 
-Requires: Python 3.11+, Pillow (with LittleCMS), the `zstd` CLI and poppler (`pdftoppm`,
-`pdftocairo`).
+Requires: Python 3.11+, Pillow (with LittleCMS), the `zstd` CLI and poppler (`pdftoppm`).
 
     python3.11 scripts/forge-extract-template.py --ai tmp/Card_Template-SHUFFLED_3.7.ai
 
@@ -18,7 +17,10 @@ How the .ai is laid out (Illustrator 30.x, "PDF compatible" save):
     previous XMLUID and X's XMLUID.
   * Washes and badges are placed PDFs stored as ASCII85 blocks (line-prefixed with `%`,
     and `%` is also a valid ASCII85 digit, so strip only the line-leading one). Two washes
-    (Gray, Black) are full-artboard DeviceGray rasters instead.
+    (Gray, Black) are full-artboard DeviceGray rasters instead. Each placed PDF is one
+    uncompressed DeviceCMYK image with a DeviceGray /SMask and NO profile: poppler's built-in
+    CMYK conversion crushes SWOP's rich black (K=250 -> ~17 where the profile gives ~43), so
+    the badges are decoded here and converted through the document profile like the rasters.
   * Icons are raw rasters: `[a 0 0 d tx ty] W H 0 Xh ... %%BeginData: N\\rXI\\n<N-3 bytes>`,
     CMYK or Gray, no alpha in the pixel data (Illustrator keeps it in a cache the file does
     not carry). Alpha is rebuilt here: the flat background is whatever touches the raster's
@@ -266,17 +268,47 @@ class Doc:
 
 
 # ----------------------------------------------------------------------------- rasterizing
-def render_pdf(pdf: bytes, dpi: int, transparent: bool) -> Image.Image:
+def render_pdf(pdf: bytes, dpi: int) -> Image.Image:
     with tempfile.TemporaryDirectory() as d:
         p = Path(d) / "x.pdf"
         p.write_bytes(pdf)
         out = str(Path(d) / "out")
-        if transparent:
-            cmd = ["pdftocairo", "-png", "-transp", "-r", str(dpi), "-singlefile", str(p), out]
-        else:
-            cmd = ["pdftoppm", "-png", "-r", str(dpi), "-singlefile", str(p), out]
+        cmd = ["pdftoppm", "-png", "-r", str(dpi), "-singlefile", str(p), out]
         subprocess.run(cmd, check=True)
         return Image.open(out + ".png").convert("RGBA")
+
+
+def pdf_image_rgba(doc: Doc, pdf: bytes) -> Image.Image:
+    """A placed badge PDF's one image XObject through the document profile, its /SMask as
+    alpha. The badge PDFs carry no profile, so a renderer's built-in DeviceCMYK conversion
+    crushes SWOP's rich black: the reaper's K=250 body came out ~17 where the profile gives
+    ~43, the translucent grey the printed Evil Dominants show."""
+    objs: dict[int, tuple[bytes, bytes | None]] = {}
+    for m in re.finditer(rb"(?:^|[\r\n])(\d+) 0 obj\s*(<<.*?>>)\s*(stream\r?\n)?", pdf, re.S):
+        d, data = m.group(2), None
+        if m.group(3):
+            n = re.search(rb"/Length\s+(\d+)(?!\s+0 R)", d)
+            if not n:
+                sys.exit("badge PDF stream with an indirect /Length")
+            data = pdf[m.end():m.end() + int(n.group(1))]
+            if b"/Filter" in d:
+                if b"FlateDecode" not in d:
+                    sys.exit(f"badge PDF stream filter not supported: {d[:120]!r}")
+                data = zlib.decompress(data)
+        objs[int(m.group(1))] = (d, data)
+    images = [(d, s) for d, s in objs.values()
+              if re.search(rb"/Subtype\s*/Image", d) and b"/SMask" in d]
+    if len(images) != 1:
+        sys.exit(f"badge PDF holds {len(images)} masked images, expected 1")
+    d, data = images[0]
+    if not re.search(rb"/ColorSpace\s*/DeviceCMYK", d):
+        sys.exit("badge PDF image is not DeviceCMYK")
+    w, h = (int(re.search(rb"/%s\s+(\d+)" % k, d).group(1)) for k in (b"Width", b"Height"))
+    cmyk = Image.frombytes("CMYK", (w, h), data[: w * h * 4])
+    im = ImageCms.applyTransform(cmyk, doc.cmyk2rgb).convert("RGBA")
+    mask = objs[int(re.search(rb"/SMask\s+(\d+) 0 R", d).group(1))][1]
+    im.putalpha(Image.frombytes("L", (w, h), mask[: w * h]))
+    return im
 
 
 def crop_wash(page: Image.Image, placed: tuple[float, float, float, float]) -> Image.Image:
@@ -459,7 +491,7 @@ def main():
     ap.add_argument("--geometry", default="app/forge/lib/frameGeometry.ts")
     ap.add_argument("--dpi", type=int, default=300)
     args = ap.parse_args()
-    for tool in ("zstd", "pdftoppm", "pdftocairo"):
+    for tool in ("zstd", "pdftoppm"):
         if not shutil.which(tool):
             sys.exit(f"missing tool: {tool}")
 
@@ -483,7 +515,7 @@ def main():
             continue
         pdf = doc.a85_block_before(s)
         if pdf and pdf.startswith(b"%PDF"):
-            page = render_pdf(pdf, args.dpi, transparent=False)
+            page = render_pdf(pdf, args.dpi)
         elif b in gray_washes:
             w, h, data = gray_washes[b]
             page = Image.frombytes("L", (w, h), data[: w * h]).convert("RGBA")
@@ -504,7 +536,7 @@ def main():
         hue_shift_image(im, degrees).save(out / "washes" / f"{slug}.webp", quality=88, method=6)
         print(f"  wash {slug}: synthesized from {src} ({degrees:+}deg)")
 
-    # --- badge PDFs (transparent renders)
+    # --- badge PDFs: the image decoded through the document profile, at its own resolution
     seen = set()
     for s, _, n in doc.names:
         b = base_name(n)
@@ -513,7 +545,7 @@ def main():
         pdf = doc.a85_block_before(s)
         if not pdf or not pdf.startswith(b"%PDF"):
             continue
-        im = render_pdf(pdf, args.dpi, transparent=True)
+        im = pdf_image_rgba(doc, pdf)
         im.save(out / "badges" / f"{BADGE_PDFS[b]}.webp", quality=90, method=6)
         seen.add(b)
         print(f"  badge {BADGE_PDFS[b]}: {im.size[0]}x{im.size[1]}")

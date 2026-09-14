@@ -402,6 +402,20 @@ corrections, each contradicting an earlier note above:
 - **Two-brigade boxes split 50 / 50.** Eleven cleanly registered prints (Roots through T2C)
   all break at 50% of the box height; the 45 / 55 above was never measured. Three-brigade
   thirds were right.
+- **Badges are decoded through the document profile.** The four badge PDFs (lamb, reaper,
+  good and evil nebula) are each one uncompressed DeviceCMYK image with a DeviceGray soft
+  mask and no embedded profile; `pdftocairo` converted them with its built-in CMYK, which
+  crushes SWOP rich black. The reaper's body (CMYK 106/90/82/250 — the nebula was composited
+  under a translucent silhouette before the PDF was flattened) came out 22/17/17 where the
+  printed Forces Arise and Perplexing Vision show 51/53/54; through the SWOP profile it is
+  42/41/43 (dE 17 → 5). Black-point compensation takes it to 7/8/9, so the badges use the
+  plain transform. The nebulae move toward the prints too: a registration-free comparison of
+  the whole nebula (sorted pixels, icon masked out) goes from dE 4.9 to 1.9 on the good one
+  and 5.9 to 4.7 on the evil one; tiny patches on the evil nebula read worse, but that is the
+  texture sliding a pixel, not the colour. The soft masks are all 255, so the badges stay
+  opaque.
+  (Found by decoding the PDFs by hand; the template's raw "Reaper" raster is the text-legend
+  copy and the wrong asset.)
 
 Checked and matching: dragon, bible, skull, shield size and position, three-brigade bands,
 lamb, both fortress badges, the right (chalice) box. The light rim outside printed boxes is
@@ -415,8 +429,6 @@ Seen and not changed here:
 - **The printed territory plate is a different rendition** from the template's: 88 px wide
   against 106, a thick rounded outline, the drawing 1.35x larger filling the interior, no map
   texture. Matching it means replacing the design team's asset, which is their call.
-- **The Evil Dominant reaper** prints as a translucent grey (about 50/52/54) with the nebula
-  showing through; the extracted badge is near-black (about 21/17/17). Under investigation.
 - Shield and plate highlights print about 10% darker than the template's (195/190/173 against
   220/212/191). No principled source for a correction.
 - Rulers over Earth (Fortress / Evil Character) prints no stats and no shield although the
@@ -427,3 +439,6 @@ Seen and not changed here:
 - Inline ability icons, set symbol, card number, watermark.
 - Other surfaces (grid, reveal, deck view) adopting the composite.
 - Dual-alignment two-box layout (see the icon audit).
+- The border washes are the same profile-less DeviceCMYK PDFs and still render through
+  `pdftoppm`; decoding them through the profile the way the badges now are would need its own
+  check against prints.
