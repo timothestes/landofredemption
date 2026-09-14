@@ -179,6 +179,14 @@ was checked by overlaying the template's numbers on printed Roots / RR2 / II / T
   over the box copy (170x158). The extractor now picks the copy placed in the top-left box
   (`corner_copy`), and badges carry the template's crop anchor (chalice bottom-aligned,
   good foil top-aligned).
+- **Chalice colour (2026-09-13):** Tim found the chalice dull next to printed artifacts. Through
+  the SWOP profile at relative colorimetric, rich black lands at sRGB ~36, so the badge's black
+  stripes came out grey and the gold flat. The extractor now converts that one raster with
+  black-point compensation (`BLACK_POINT_COMPENSATED`). On registered crops of RR2 / T2C / II
+  scans the 5th / 50th / 95th-percentile lightness is 12 / 58 / 180 against the prints'
+  17 / 62 / 184 (was 44 / 73 / 183), and mean error drops from ~16 to ~11; a per-channel
+  gain/offset fit gets it no lower, so what is left is scan blur. Every other raster and the
+  brigade fills keep the plain conversion.
 - **Box shape.** Printed boxes have four rounded corners (~22 px on the canvas) and sit over
   the border, overhanging it by a hair, with the outer corner following the card corner. The
   preview now draws the box after the border stroke, unclipped, with that path.

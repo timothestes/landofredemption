@@ -114,6 +114,10 @@ PLACEMENTS = {
 # Printed cards (Roots through Times to Come) run the cross at ~75% of the template's slot,
 # centered on the same point; every other icon prints at the template's size.
 PRINT_SCALE = {"cross": 0.75}
+# Rasters converted with black-point compensation. Without it SWOP's rich black lands at sRGB
+# ~36, and the chalice's black stripes came out grey next to printed artifacts (RR2 / T2C / II
+# scans: 5th-percentile lightness 44 against the prints' 17; compensated gives 12).
+BLACK_POINT_COMPENSATED = {"Artifact"}
 BRIGADE_BOX_NAMES = ["Pale_Green", "Orange", "Gray", "Crimson", "Brown", "Black", "White",
                      "Silver", "Purple", "Green", "Gold", "Clay", "Blue"]
 
@@ -189,6 +193,9 @@ class Doc:
         prof = ImageCms.getOpenProfile(io.BytesIO(icc))
         self.cmyk2rgb = ImageCms.buildTransform(
             prof, srgb, "CMYK", "RGB", renderingIntent=ImageCms.Intent.RELATIVE_COLORIMETRIC)
+        self.cmyk2rgb_bpc = ImageCms.buildTransform(
+            prof, srgb, "CMYK", "RGB", renderingIntent=ImageCms.Intent.RELATIVE_COLORIMETRIC,
+            flags=ImageCms.Flags.BLACKPOINTCOMPENSATION)
 
     def prev_boundary(self, pos: int) -> int:
         prev = 0
@@ -360,7 +367,8 @@ def plate(im: Image.Image) -> Image.Image:
 def raster_to_image(doc: Doc, r: Raster) -> Image.Image:
     if r.cs == "DeviceCMYK":
         im = Image.frombytes("CMYK", (r.w, r.h), r.data[: r.w * r.h * 4])
-        return ImageCms.applyTransform(im, doc.cmyk2rgb).convert("RGB")
+        bpc = r.name is not None and base_name(r.name) in BLACK_POINT_COMPENSATED
+        return ImageCms.applyTransform(im, doc.cmyk2rgb_bpc if bpc else doc.cmyk2rgb).convert("RGB")
     return Image.frombytes("L", (r.w, r.h), r.data[: r.w * r.h]).convert("RGB")
 
 
