@@ -156,3 +156,13 @@ describe("ForgeCardPreview zoom safety", () => {
     expect(boxBottom - last).toBeLessThan(TEXT_METRICS.verse.pitch);
   });
 });
+
+describe("ForgeCardPreview art window", () => {
+  it("labels the empty art window NO ART only when there is no art", () => {
+    const card: DesignCard = { name: "Holy Writ", cardType: ["Artifact"] };
+    expect(renderToStaticMarkup(React.createElement(ForgeCardPreview, { card }))).toContain("NO ART");
+    const withArt = renderToStaticMarkup(React.createElement(ForgeCardPreview, { card, artUrl: "/forge/api/art/x" }));
+    expect(withArt).not.toContain("NO ART");
+    expect(withArt).toContain('src="/forge/api/art/x"');
+  });
+});
