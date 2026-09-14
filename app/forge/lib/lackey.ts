@@ -2,7 +2,7 @@
 // CLIENT-SAFE: no server-only imports. Column conventions mirror scripts/parse-carddata.js.
 
 import {
-  cardApplicability, cardRawText, deriveAlignmentFromTypes, parseStatInput,
+  cardApplicability, cardRawText, deriveAlignmentFromTypes, MULTI_BRIGADES, multiBrigadeSide, parseStatInput,
   type Alignment, type Brigade, type CardType, type DesignCard,
 } from "./designCard";
 
@@ -180,10 +180,14 @@ function resolveBrigades(row: LackeyRow, types: CardType[], alignment: Alignment
     if (exact) { brigades.push(exact); continue; }
     const pair = AMBIGUOUS_BRIGADE_MAP[key];
     if (pair && (side === "Good" || side === "Evil")) { brigades.push(pair[side]); continue; }
-    // "Multi" has no Brigade value (spec Decision #2) — warn so the designer lists the real ones.
+    // "Multi" is every brigade of the card's alignment (stored as that list, no sentinel).
+    // A Neutral or dual card doesn't say which set it means, so it is never guessed.
+    if (key === "multi" && (side === "Good" || side === "Evil")) { brigades.push(...MULTI_BRIGADES[side]); continue; }
     warnings.push(pair
       ? `ambiguous brigade "${token}" — use Good Gold or Evil Gold`
-      : `unrecognized brigade "${token}"`);
+      : key === "multi"
+        ? `brigade "${token}" needs a Good or Evil alignment — list the brigades instead`
+        : `unrecognized brigade "${token}"`);
   }
   return { brigades: [...new Set(brigades)], warnings };
 }
@@ -319,7 +323,13 @@ export interface LackeyRowContext { name: string; set: string; officialSet: stri
 /** DesignCard → a carddata.txt row (cells aligned to CARDDATA_HEADER). Pure. */
 export function designCardToLackeyRow(card: DesignCard, ctx: LackeyRowContext): string[] {
   const type = (card.cardType ?? []).map((t) => TYPE_TO_LACKEY[t]).filter(Boolean).join("/");
-  const brigade = (card.brigades ?? []).map((b) => BRIGADE_TO_LACKEY[b]).filter(Boolean).join("/");
+  // Exactly every brigade of the card's own alignment is the catalog's "Multi" (the deck
+  // builder expands it back to that set); any other combination is spelled out.
+  const brigades = card.brigades ?? [];
+  const side = multiBrigadeSide(brigades);
+  const brigade = side && side === card.alignment && brigades.length === MULTI_BRIGADES[side].length
+    ? "Multi"
+    : brigades.map((b) => BRIGADE_TO_LACKEY[b]).filter(Boolean).join("/");
   // The importer folds both Class (Warrior/Weapon) and icons (Territory/Star/Cloud)
   // out of the single Class column, so recombine them here.
   const classCell = [...(card.class ?? []), ...(card.icons ?? [])].join("/");

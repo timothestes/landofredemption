@@ -361,6 +361,18 @@ the right border:
   choices, and the preview does not guess at them.
 - Three or more brigades are no longer flagged approximate.
 
+**Making a Multi card (2026-09-13, follow-up).** Designers had no way to say "Multi" short of
+clicking every brigade chip, and promotion then wrote a nine-name list the catalog never uses.
+The brigade picker now has **Good Multi** and **Evil Multi** buttons that select (or clear)
+that alignment's whole set, and the details summary shows "Good Multi" instead of nine names.
+Storage is unchanged: still the explicit list, no sentinel. A `GoodMulti` value would break the
+three `Record<Brigade, …>` maps, sort after every single brigade and miss every brigade filter.
+The Lackey export, and therefore promotion, writes exactly that set on a card of the matching
+alignment as `Multi`, which the deck builder already expands back. Any other combination stays
+a list. Importing `Multi` on a Good or Evil row yields the full set; a Neutral or dual row still
+warns, because the catalog's Neutral Multi (8 Sites and Philosophy) doesn't say which set it
+means. The shared rule is `multiBrigadeSide` in `designCard.ts`.
+
 ## Follow-ups (not in this change)
 
 - Inline ability icons, set symbol, card number, watermark.

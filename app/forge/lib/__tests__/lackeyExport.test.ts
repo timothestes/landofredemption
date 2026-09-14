@@ -94,6 +94,47 @@ describe("designCardToLackeyRow → serialize → parseCarddata round-trip", () 
   });
 });
 
+describe("Multi brigade export", () => {
+  const brigadeCell = (card: DesignCard) =>
+    designCardToLackeyRow(card, { name: "M", set: "TST", officialSet: "Test Set", imageFile: "M" })[
+      CARDDATA_HEADER.indexOf("Brigade")
+    ];
+
+  // The catalog spells these "Multi" (112 printed cards), and the deck builder expands it
+  // back to every brigade of the card's alignment.
+  it('writes every good brigade on a Good card as "Multi" and reads it back as the full set', () => {
+    const card: DesignCard = {
+      cardType: ["GE"], alignment: "Good",
+      brigades: ["White", "Teal", "Silver", "Red", "Purple", "Green", "GoodGold", "Clay", "Blue"],
+    };
+    expect(brigadeCell(card)).toBe("Multi");
+    expect(roundTrip(card, "Faith").brigades).toEqual(
+      ["Blue", "Clay", "GoodGold", "Green", "Purple", "Red", "Silver", "Teal", "White"],
+    );
+  });
+
+  it('writes every evil brigade on an Evil card as "Multi" and reads it back as the full set', () => {
+    const card: DesignCard = {
+      cardType: ["EvilCharacter"], alignment: "Evil",
+      brigades: ["Black", "Brown", "Crimson", "EvilGold", "Gray", "Orange", "PaleGreen"],
+    };
+    expect(brigadeCell(card)).toBe("Multi");
+    expect(roundTrip(card, "Pagan Sailors").brigades).toEqual(
+      ["Black", "Brown", "Crimson", "EvilGold", "Gray", "Orange", "PaleGreen"],
+    );
+  });
+
+  // "Multi" means the card's own alignment; without a matching one the list is the only
+  // unambiguous spelling.
+  it("keeps the explicit list when the alignment does not match the full set", () => {
+    const good = ["Blue", "Clay", "GoodGold", "Green", "Purple", "Red", "Silver", "Teal", "White"] as const;
+    expect(brigadeCell({ cardType: ["GE"], brigades: [...good] }))
+      .toBe("Blue/Clay/Good Gold/Green/Purple/Red/Silver/Teal/White");
+    expect(brigadeCell({ cardType: ["GE"], alignment: "Evil", brigades: [...good] }))
+      .toBe("Blue/Clay/Good Gold/Green/Purple/Red/Silver/Teal/White");
+  });
+});
+
 describe("tsv safety", () => {
   it("strips tabs and newlines from ability text so the TSV can't break", () => {
     const row = designCardToLackeyRow(

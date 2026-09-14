@@ -469,11 +469,23 @@ describe("tableToCards", () => {
     expect(cards[0].warnings).toEqual([]);
   });
 
-  it('warns instead of mapping "Multi" as a brigade', () => {
+  it('maps "Multi" to every brigade of the row\'s alignment', () => {
     const header = ["Name", "Type", "Brigade", "Alignment"];
     const { mapping } = detectColumns(header);
     const { cards } = tableToCards(
       [header, ["Legion", "Evil Character", "Multi", "Evil"]], mapping,
+    );
+    expect(cards[0].snapshot.brigades).toEqual(
+      ["Black", "Brown", "Crimson", "EvilGold", "Gray", "Orange", "PaleGreen"],
+    );
+    expect(cards[0].warnings).toEqual([]);
+  });
+
+  it('still warns on "Multi" when the row is neither Good nor Evil', () => {
+    const header = ["Name", "Type", "Brigade", "Alignment"];
+    const { mapping } = detectColumns(header);
+    const { cards } = tableToCards(
+      [header, ["The Ends of the Earth", "Site", "Multi", "Neutral"]], mapping,
     );
     expect(cards[0].snapshot.brigades).toBeUndefined();
     expect(cards[0].warnings.join(" | ")).toMatch(/Multi/);
