@@ -10,7 +10,6 @@ const resolverEntry = (overrides: Partial<ForgePlayResolverEntry> = {}): ForgePl
   name: "Playtest Hero",
   rawText: "Some raw ability text.",
   hasFinished: false,
-  hasArt: true,
   versionId: "v1",
   typeDisplay: "",
   alignment: "",
@@ -165,19 +164,17 @@ describe("buildForgeGoldfishCards", () => {
     const entries: ForgeDeckEntry[] = [
       { source: "forge", cardId: FORGE_ID, qty: 1, zone: "main" },
     ];
-    // hasFinished + hasArt both true → finished proxy URL
-    const finished = buildForgeGoldfishCards(entries, () => resolverEntry({ hasFinished: true, hasArt: true }))[0];
+    // A finished image wins → the finished proxy URL
+    const finished = buildForgeGoldfishCards(entries, () => resolverEntry({ hasFinished: true }))[0];
     expect(finished.card_img_file.startsWith("/forge/api/art/")).toBe(true);
+    expect(finished.card_img_file).toContain("kind=finished");
     expect(finished.card_img_file).not.toContain("forge:");
 
-    // hasArt only → approved (non-finished) proxy URL
-    const artOnly = buildForgeGoldfishCards(entries, () => resolverEntry({ hasFinished: false, hasArt: true }))[0];
-    expect(artOnly.card_img_file.startsWith("/forge/api/art/")).toBe(true);
-    expect(artOnly.card_img_file).not.toContain("forge:");
-
-    // Neither approved → empty string, never a bare forge: uri
-    const none = buildForgeGoldfishCards(entries, () => resolverEntry({ hasFinished: false, hasArt: false }))[0];
-    expect(none.card_img_file).toBe("");
+    // No finished image → the server-rendered card: never '' and never a bare forge: uri
+    const rendered = buildForgeGoldfishCards(entries, () => resolverEntry({ hasFinished: false }))[0];
+    expect(rendered.card_img_file.startsWith("/forge/api/art/")).toBe(true);
+    expect(rendered.card_img_file).toContain("kind=rendered");
+    expect(rendered.card_img_file).not.toContain("forge:");
   });
 
   it("skips maybeboard entries and marks reserve-zone entries", () => {

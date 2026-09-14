@@ -69,7 +69,7 @@ export function buildForgeGoldfishCards(
       cards.push({
         card_name: r.name,
         card_set: "Forge",
-        card_img_file: forgeProxyUrl(r), // '' when no image; leading-/ proxy URL otherwise
+        card_img_file: forgeProxyUrl(r), // finished image or server-rendered card proxy URL, never ''
         card_type: r.typeDisplay,
         card_brigade: r.brigade, card_strength: r.strength, card_toughness: r.toughness,
         card_special_ability: r.rawText,

@@ -1,11 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { forgeCardIdFromImgFile, forgeProxyUrl, resolveCardImageUrl, mergeForgeDeckData, resolveBattleRowFields, resolveForgeCardName } from "../forgeResolver";
+import { forgeCardIdFromImgFile, forgeProxyUrl, resolveCardImageUrl, mergeForgeDeckData, resolveBattleRowFields, resolveForgeCardName, forgeRenderWarmUrls } from "../forgeResolver";
 import { getEffectiveAbilities } from "@/lib/cards/cardAbilities";
 import { getCardImageUrl, getCardImageUrlOrNull } from "@/app/shared/utils/cardImageUrl";
+import { RENDER_VERSION } from "@/app/forge/lib/renderVersion";
 
 const ID = "11111111-2222-3333-4444-555555555555";
 const entry = {
-  cardId: ID, name: "Test Hero", rawText: "Does things.", hasFinished: true, hasArt: true, versionId: "v-1",
+  cardId: ID, name: "Test Hero", rawText: "Does things.", hasFinished: true, versionId: "v-1",
   typeDisplay: "Hero", alignment: "Good", brigade: "Blue", strength: "5", toughness: "4",
   identifier: "Judah", reference: "Genesis 1:1", cardClass: "Warrior",
 };
@@ -23,10 +24,19 @@ describe("forge image seams", () => {
     expect(forgeCardIdFromImgFile(`forge:${ID}`)).toBe(ID);
     expect(forgeCardIdFromImgFile("SomeCard.jpg")).toBeNull();
   });
-  it("prefers finished scan, falls back to artwork, else ''", () => {
+  it("prefers the finished scan, else the rendered card of the released version", () => {
     expect(forgeProxyUrl(entry)).toBe(`/forge/api/art/${ID}?v=approved&kind=finished&t=v-1`);
-    expect(forgeProxyUrl({ ...entry, hasFinished: false })).toBe(`/forge/api/art/${ID}?v=approved&t=v-1`);
-    expect(forgeProxyUrl({ ...entry, hasFinished: false, hasArt: false })).toBe("");
+    expect(forgeProxyUrl({ ...entry, hasFinished: false })).toBe(`/forge/api/art/${ID}?v=approved&kind=rendered&t=v-1.r${RENDER_VERSION}`);
+  });
+  it("forgeRenderWarmUrls lists each granted card without a finished image once", () => {
+    const OTHER = "99999999-2222-3333-4444-555555555555";
+    const map = new Map([[ID, { ...entry, hasFinished: false }], [OTHER, { ...entry, cardId: OTHER, hasFinished: true }]]);
+    const cards = [
+      { cardImgFile: `forge:${ID}` }, { cardImgFile: `forge:${ID}` }, { cardImgFile: `forge:${OTHER}` },
+      { cardImgFile: "Public.jpg" }, { cardImgFile: "forge:not-granted" },
+    ];
+    expect(forgeRenderWarmUrls(cards, map as any)).toEqual([`/forge/api/art/${ID}?v=approved&kind=rendered&t=v-1.r${RENDER_VERSION}`]);
+    expect(forgeRenderWarmUrls(cards, null)).toEqual([]);
   });
   it("resolveCardImageUrl: resolved -> proxy URL; unresolved -> ''", () => {
     expect(resolveCardImageUrl(`forge:${ID}`, resolver)).toContain("/forge/api/art/");
@@ -50,7 +60,7 @@ describe("forge image seams", () => {
     // so the owner's client must re-hydrate them — otherwise the in-game Search
     // Deck modal can't match forge cards by alignment/brigade/identifier/reference.
     const evil = {
-      cardId: ID, name: "Wormwood", rawText: "Bad things.", hasFinished: false, hasArt: false, versionId: "v-2",
+      cardId: ID, name: "Wormwood", rawText: "Bad things.", hasFinished: false, versionId: "v-2",
       typeDisplay: "Evil Character", alignment: "Evil", brigade: "Gray", strength: "7", toughness: "6",
       identifier: "Demon", reference: "Revelation 8:11",
     };
