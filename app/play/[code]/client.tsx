@@ -46,7 +46,8 @@ import { useChatScale } from '@/app/shared/hooks/useChatScale';
 import { normalizeDeckFormat } from '@/lib/deck-format';
 import { finishedGameToReuseOnCreate } from '@/app/play/lib/gameEntryDecision';
 import { loadForgeDeckForGame, getForgePlayResolver, authorizeForgeSeat } from '@/app/forge/lib/playDecks';
-import { mergeForgeDeckData, resolveCardImageUrl, type ForgeResolverMap } from '@/app/play/utils/forgeResolver';
+import { mergeForgeDeckData, resolveCardImageUrl, forgeRenderWarmUrls, type ForgeResolverMap } from '@/app/play/utils/forgeResolver';
+import { warmForgeRenders } from '@/app/play/utils/warmForgeRenders';
 
 // Konva requires browser APIs — lazy-load to avoid SSR issues
 const MultiplayerCanvas = dynamic(
@@ -443,6 +444,18 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     return () => { cancelled = true; };
   }, [isForge, forgeResolver]);
 
+  // Warm the server's rendered-card cache for this player's own Forge deck once the deck and the
+  // resolver are both loaded. The initial load and pregame swaps both land in deckData. The image
+  // preloader gives up on a URL after two retries; this way it finds the cards already rendered.
+  useEffect(() => {
+    if (!isForge || !forgeResolver || !deckData) return;
+    try {
+      warmForgeRenders(forgeRenderWarmUrls(JSON.parse(deckData), forgeResolver));
+    } catch {
+      // deckData that does not parse has nothing to warm
+    }
+  }, [isForge, forgeResolver, deckData]);
+
   // Forge switch-deck selection handlers. Both go through loadForgeDeckForGame
   // so the deckData that reaches a reducer is always the sanitized server-action
   // output (leak spine) — never client-assembled. The already-fetched
@@ -453,11 +466,12 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     try {
       const r = await loadForgeDeckForGame(deckId);
       if (r.ok === false) { setForgeSwapError(r.error); return; }
+      warmForgeRenders(forgeRenderWarmUrls(r.deckData, forgeResolver));
       setReloadDeckConfirm({ deckId: r.deck.id, deckName: r.deck.name, deckData: JSON.stringify(r.deckData), paragon: r.deck.paragon });
     } catch {
       setForgeSwapError('Failed to load deck.');
     }
-  }, []);
+  }, [forgeResolver]);
 
   const handleForgePracticeSelect = useCallback(async (deckId: string) => {
     setShowPracticeDeckPicker(false);
@@ -465,6 +479,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     try {
       const r = await loadForgeDeckForGame(deckId);
       if (r.ok === false) { setForgeSwapError(r.error); return; }
+      warmForgeRenders(forgeRenderWarmUrls(r.deckData, forgeResolver));
       setPracticeDeckConfirm({
         deckId: r.deck.id,
         deckName: r.deck.name,
@@ -475,7 +490,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     } catch {
       setForgeSwapError('Failed to load deck.');
     }
-  }, [gameParams]);
+  }, [gameParams, forgeResolver]);
 
   // ---- Image preload — hoisted from MultiplayerCanvas so the cache survives
   // the canvas remounts that happen at every lifecycle transition.

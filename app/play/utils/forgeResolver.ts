@@ -5,6 +5,7 @@
 import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import type { ForgePlayResolverEntry } from '@/app/forge/lib/playDecks';
 import type { GameCardData } from '@/app/play/actions';
+import { renderedToken } from '@/app/forge/lib/renderVersion';
 
 export type ForgeResolverMap = Map<string, ForgePlayResolverEntry>;
 
@@ -12,10 +13,26 @@ export function forgeCardIdFromImgFile(imgFile: string): string | null {
   return imgFile.startsWith('forge:') ? imgFile.slice('forge:'.length) : null;
 }
 
+// A granted card's face in play: the uploaded finished image when the released version has one,
+// otherwise the card the server renders from that version (art proxy kind=rendered, spec
+// docs/superpowers/specs/2026-09-13-forge-rendered-play-cards-design.md). Never '' for a granted
+// card; ungranted cards have no resolver entry and stay opaque in resolveCardImageUrl.
 export function forgeProxyUrl(e: ForgePlayResolverEntry): string {
   if (e.hasFinished) return `/forge/api/art/${e.cardId}?v=approved&kind=finished&t=${e.versionId}`;
-  if (e.hasArt) return `/forge/api/art/${e.cardId}?v=approved&t=${e.versionId}`;
-  return '';
+  return `/forge/api/art/${e.cardId}?v=approved&kind=rendered&t=${renderedToken(e.versionId)}`;
+}
+
+// The rendered-card URLs worth warming for a deck: each granted forge card without a finished
+// image, once. See warmForgeRenders.
+export function forgeRenderWarmUrls(cards: { cardImgFile: string }[], resolver?: ForgeResolverMap | null): string[] {
+  if (!resolver) return [];
+  const urls = new Set<string>();
+  for (const c of cards) {
+    const id = forgeCardIdFromImgFile(c.cardImgFile);
+    const e = id ? resolver.get(id) : undefined;
+    if (e && !e.hasFinished) urls.add(forgeProxyUrl(e));
+  }
+  return [...urls];
 }
 
 export function resolveCardImageUrl(imgFile: string, resolver?: ForgeResolverMap | null): string {
@@ -77,7 +94,7 @@ export function mergeForgeDeckData(cards: GameCardData[], resolver?: ForgeResolv
       ...c,
       cardName: e.name,
       specialAbility: e.rawText,
-      cardImgFile: forgeProxyUrl(e) || c.cardImgFile,
+      cardImgFile: forgeProxyUrl(e),
       alignment: e.alignment,
       brigade: e.brigade,
       strength: e.strength,

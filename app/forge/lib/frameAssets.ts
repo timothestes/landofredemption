@@ -186,3 +186,28 @@ export function isPreviewApproximate(card: DesignCard): boolean {
   if ((card.brigades ?? []).some((b) => SYNTHESIZED_WASHES.has(BRIGADE_SLUG[b]))) return true;
   return false;
 }
+
+/** Where each wash blends in, as percentages of the border rect's height: nothing for the top
+ *  wash, then a fade from `from` to `to` for each further one. Edges sit at i/n of the height
+ *  and each fade is 40% / n wide, so two brigades fade 40% to 60%. The browser preview's CSS
+ *  masks and the server renderer's SVG masks both come from here. */
+export function washBands(n: number): ({ from: number; to: number } | null)[] {
+  return Array.from({ length: n }, (_, i) => {
+    if (i === 0) return null;
+    const edge = (100 * i) / n, half = 20 / n;
+    return { from: edge - half, to: edge + half };
+  });
+}
+
+/** Every frame-kit image a card's render draws (washes, icon-box badges and icons, class
+ *  icons), deduplicated, as public paths. The server renderer inlines exactly these. */
+export function framePaths(card: DesignCard): string[] {
+  const out = new Set<string>(washPaths(card));
+  for (const side of ["left", "right"] as const) {
+    const box = iconBox(card, side);
+    if (box?.badge) out.add(box.badge);
+    if (box?.icon) out.add(box.icon);
+  }
+  for (const c of classIcons(card)) out.add(c.src);
+  return [...out];
+}

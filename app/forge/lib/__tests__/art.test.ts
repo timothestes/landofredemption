@@ -7,7 +7,7 @@ import { put, get } from "@vercel/blob";
 import { normalizeCardImage } from "@/app/forge/lib/imageNormalize";
 import {
   validateArtFile, MAX_ART_BYTES, uploadForgeArt, uploadForgeFinished, uploadForgeArtRaw,
-  readForgeUpload,
+  readForgeUpload, uploadForgeRendered,
 } from "../art";
 
 describe("validateArtFile", () => {
@@ -134,5 +134,25 @@ describe("readForgeUpload", () => {
   it("returns null on a non-200 status", async () => {
     (get as ReturnType<typeof vi.fn>).mockResolvedValue({ statusCode: 404 });
     expect(await readForgeUpload("forge-art-raw/gone")).toBeNull();
+  });
+});
+
+describe("uploadForgeRendered", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("stores the JPEG privately under its exact key, overwriting an identical concurrent render", async () => {
+    const jpeg = Buffer.from([0xff, 0xd8, 0xff]);
+    await uploadForgeRendered("forge-rendered/r1/v1.jpg", jpeg);
+    expect(put).toHaveBeenCalledWith("forge-rendered/r1/v1.jpg", jpeg, expect.objectContaining({
+      access: "private", addRandomSuffix: false, allowOverwrite: true, contentType: "image/jpeg",
+    }));
+    // forgeAuth must ride along, or the SDK falls back to the PUBLIC store's default token.
+    const opts = (put as ReturnType<typeof vi.fn>).mock.calls[0][2];
+    expect("token" in opts || "storeId" in opts).toBe(true);
+  });
+
+  it("refuses any key outside forge-rendered/", async () => {
+    await expect(uploadForgeRendered("forge-art/x", Buffer.from([1]))).rejects.toThrow();
+    expect(put).not.toHaveBeenCalled();
   });
 });

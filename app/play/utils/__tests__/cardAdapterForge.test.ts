@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { cardInstanceToGameCard } from "../cardAdapter";
+import { RENDER_VERSION } from "@/app/forge/lib/renderVersion";
 
 const ID = "11111111-2222-3333-4444-555555555555";
 const entry = {
-  cardId: ID, name: "Test Hero", rawText: "Does things.", hasFinished: false, hasArt: true, versionId: "v-9",
+  cardId: ID, name: "Test Hero", rawText: "Does things.", hasFinished: false, versionId: "v-9",
   typeDisplay: "Hero", alignment: "Good", brigade: "Blue", strength: "5", toughness: "4",
   identifier: "Judah", reference: "Genesis 1:1", cardClass: "Warrior",
 };
@@ -25,7 +26,7 @@ describe("cardInstanceToGameCard forge resolution", () => {
     const gc = cardInstanceToGameCard(stubInstance(), [], "player1", new Map([[ID, entry]]));
     expect(gc.cardName).toBe("Test Hero");
     expect(gc.specialAbility).toBe("Does things.");
-    expect(gc.cardImgFile).toBe(`/forge/api/art/${ID}?v=approved&t=v-9`);
+    expect(gc.cardImgFile).toBe(`/forge/api/art/${ID}?v=approved&kind=rendered&t=v-9.r${RENDER_VERSION}`);
   });
   it("leaves the opaque URI when unresolved (fail-closed placeholder)", () => {
     const gc = cardInstanceToGameCard(stubInstance(), [], "player1", new Map());

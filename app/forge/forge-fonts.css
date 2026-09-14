@@ -4,6 +4,8 @@
 /* Title and stats: the printed faces (Symphony Black, Grail Light) stream from the private Blob
    store through the member-only /forge/api/fonts route — licensed, never in the repo. When that
    src fails (no session, blob missing) the browser activates the OFL substitute listed next.
-   Bump ?v= after re-uploading with scripts/forge-upload-fonts.ts; the route caches per member. */
+   Bump ?v= after re-uploading with scripts/forge-upload-fonts.ts; the route caches per member.
+   Re-uploading a face changes rendered play cards too: bump RENDER_VERSION in
+   app/forge/lib/renderVersion.ts. */
 @font-face { font-family: "ForgeTitle"; src: url("/forge/api/fonts/title?v=1") format("truetype"), url("/forge/fonts/Mukta-ExtraBold.ttf") format("truetype"); font-weight: 800; font-style: normal; font-display: swap; }
 @font-face { font-family: "ForgeStat"; src: url("/forge/api/fonts/stat?v=1") format("truetype"), url("/forge/fonts/PTSerif-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: swap; }
