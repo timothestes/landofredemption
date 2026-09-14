@@ -77,11 +77,12 @@ describe("ForgeCardPreview brigade bands", () => {
       .map((m) => [Number(m[1]), Number(m[2])]);
 
   // Measured on Army of a Million Men and Mercenary Chariots (Crimson / Gold / Gray): three
-  // equal bands, in the listed order. Two brigades keep the 45 / 55 split.
-  it("bands the icon box once per brigade: 45 / 55 for two, even thirds for three", () => {
+  // equal bands, in the listed order. Two brigades split evenly too (eleven prints, Roots
+  // through T2C, all break at 50%).
+  it("bands the icon box once per brigade: equal halves for two, thirds for three", () => {
     const two = bandTops(render({ cardType: ["Hero"], brigades: ["Blue", "Green"], strength: 5, toughness: 5 }));
     expect(two).toHaveLength(1);
-    expect(two[0]).toBeCloseTo(box.y + box.h * 0.45, 6);
+    expect(two[0]).toBeCloseTo(box.y + box.h / 2, 6);
     const three = bandTops(render({ cardType: ["EvilCharacter"], brigades: ["Crimson", "EvilGold", "Gray"], strength: 6, toughness: 10 }));
     expect(three).toHaveLength(2);
     expect(three[0]).toBeCloseTo(box.y + box.h / 3, 6);

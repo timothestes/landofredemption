@@ -96,11 +96,11 @@ function IconBoxG({ id, box, rect, side, stat, statFont, assetHref }: {
 }) {
   const { x, y, w, h } = rect;
   const d = tabPath(rect, side);
-  // Each band below the first runs to the bottom over the one before. Two brigades split the
-  // box 45 / 55 (the top band holds the stats); three or more split it evenly, as printed.
+  // Each band below the first runs to the bottom over the one before, in equal heights: two
+  // brigades split the box 50 / 50 on every Roots, IR, Roots 2, II and T2C card checked, three
+  // into thirds.
   const n = box.bands.length + 1;
-  const first = n === 2 ? 0.45 : 1 / n;
-  const bandTop = (i: number) => y + h * (first + (i * (1 - first)) / (n - 1));
+  const bandTop = (i: number) => y + (h * (i + 1)) / n;
   // Printed stats: one size whether "9/6" or "10/11" (digits ~27 px tall, tops 6 px below the
   // box top, centred), no outline; only an unusually long value gives ground.
   const statSize = stat && stat.length > 6 ? 30 : 41;

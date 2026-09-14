@@ -23,7 +23,7 @@ export const RECTS = {
 // icons inside the top-left box (`…Stats` = the lower slot under strength/toughness),
 // the class shield and territory plate below it. Rects are the rasters' own aspect.
 export const ICON_RECTS = {
-  cross: {x: 92.4, y: 83.0, w: 53.6, h: 61.0}, // 75% of the template slot, as printed
+  cross: {x: 83.4, y: 72.8, w: 71.5, h: 81.4},
   dragon: {x: 59.4, y: 67.2, w: 122.4, h: 96.6},
   skull: {x: 85.9, y: 51.2, w: 63.3, h: 88.8},
   skullStats: {x: 85.9, y: 72.0, w: 63.3, h: 88.8},
@@ -43,22 +43,23 @@ export const GRADIENT_ROWS = {
   5: { light: 47, dark: 60 },
 } as const;
 
-// Icon-box fills, CMYK from the template converted through its SWOP profile.
+// Icon-box fills, CMYK from the template converted through its SWOP profile with
+// black-point compensation, which is what the printed boxes measure as.
 // red / teal are not in the template: hue-shifted from crimson / blue.
 export const BRIGADE_BOX_HEX = {
-  "pale-green": "#d1e5a9",
-  "orange": "#fab066",
-  "gray": "#a8b5af",
-  "crimson": "#ed3d7a",
-  "brown": "#a16d3a",
-  "black": "#292929",
+  "pale-green": "#d0e4a6",
+  "orange": "#faae5e",
+  "gray": "#a5b3ad",
+  "crimson": "#ed2a74",
+  "brown": "#9e6627",
+  "black": "#030404",
   "white": "#ffffff",
-  "silver": "#aaacae",
-  "purple": "#a74f9c",
-  "green": "#29ac57",
-  "gold": "#fed655",
-  "clay": "#dba8a8",
-  "blue": "#364d95",
-  "red": "#ed493d", // synthesized
-  "teal": "#36958e", // synthesized
+  "silver": "#a8a9ab",
+  "purple": "#a44399",
+  "green": "#11aa4d",
+  "gold": "#fed54b",
+  "clay": "#daa6a6",
+  "blue": "#214291",
+  "red": "#ed312a", // synthesized
+  "teal": "#219183", // synthesized
 } as const;

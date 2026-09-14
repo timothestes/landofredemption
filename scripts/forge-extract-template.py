@@ -4,8 +4,7 @@
 The source .ai is CONFIDENTIAL and gitignored (tmp/). Only derived rasters and numbers
 leave this script. See docs/superpowers/specs/2026-09-09-forge-live-card-preview-design.md.
 
-Requires: Python 3.11+, Pillow (with LittleCMS), the `zstd` CLI and poppler (`pdftoppm`,
-`pdftocairo`).
+Requires: Python 3.11+, Pillow (with LittleCMS), the `zstd` CLI and poppler (`pdftoppm`).
 
     python3.11 scripts/forge-extract-template.py --ai tmp/Card_Template-SHUFFLED_3.7.ai
 
@@ -18,7 +17,10 @@ How the .ai is laid out (Illustrator 30.x, "PDF compatible" save):
     previous XMLUID and X's XMLUID.
   * Washes and badges are placed PDFs stored as ASCII85 blocks (line-prefixed with `%`,
     and `%` is also a valid ASCII85 digit, so strip only the line-leading one). Two washes
-    (Gray, Black) are full-artboard DeviceGray rasters instead.
+    (Gray, Black) are full-artboard DeviceGray rasters instead. Each placed PDF is one
+    uncompressed DeviceCMYK image with a DeviceGray /SMask and NO profile: poppler's built-in
+    CMYK conversion crushes SWOP's rich black (K=250 -> ~17 where the profile gives ~43), so
+    the badges are decoded here and converted through the document profile like the rasters.
   * Icons are raw rasters: `[a 0 0 d tx ty] W H 0 Xh ... %%BeginData: N\\rXI\\n<N-3 bytes>`,
     CMYK or Gray, no alpha in the pixel data (Illustrator keeps it in a cache the file does
     not carry). Alpha is rebuilt here: the flat background is whatever touches the raster's
@@ -105,18 +107,19 @@ RASTERS = {
 }
 # Where each icon sits in the top-left box (frameGeometry.ICON_RECTS key -> base name).
 # The "Stats" variants are the same pixels placed lower, under the strength/toughness.
+# Every icon prints at the template's placed size, the cross included: twelve Heroes across
+# Roots, IR, Roots 2, II and T2C measure the printed stem at 75-77 canvas px, the full slot
+# (an earlier check had it at 75% of the slot, which drew it 56 px tall).
 PLACEMENTS = {
     "cross": "Cross", "dragon": "Dragon", "skull": "Skull_no_Stats",
     "skullStats": "Skull_w_x2F_Stats", "bible": "Bible_no_Stats",
     "bibleStats": "Bible_w_x2F_Stats", "fortress": "Fortress_Icon", "site": "icon_x5F_site",
     "shield": "Warrior_small", "territory": "Territory_small",
 }
-# Printed cards (Roots through Times to Come) run the cross at ~75% of the template's slot,
-# centered on the same point; every other icon prints at the template's size.
-PRINT_SCALE = {"cross": 0.75}
 # Rasters converted with black-point compensation. Without it SWOP's rich black lands at sRGB
 # ~36, and the chalice's black stripes came out grey next to printed artifacts (RR2 / T2C / II
-# scans: 5th-percentile lightness 44 against the prints' 17; compensated gives 12).
+# scans: 5th-percentile lightness 44 against the prints' 17; compensated gives 12). The brigade
+# box fills are compensated too (see brigade_fill); the other icons are not, it makes them worse.
 BLACK_POINT_COMPENSATED = {"Artifact"}
 BRIGADE_BOX_NAMES = ["Pale_Green", "Orange", "Gray", "Crimson", "Brown", "Black", "White",
                      "Silver", "Purple", "Green", "Gold", "Clay", "Blue"]
@@ -232,8 +235,11 @@ class Doc:
             yield Raster(name, m.group(1).decode(), w, h, bits, data, abs(sx), abs(sy), tx, ty)
 
     def hex_from_cmyk(self, c: float, m: float, y: float, k: float) -> str:
+        """Box-fill hex, black-point compensated: the printed boxes measure as the compensated
+        colours (Black 3/7/8 where the plain conversion gives 41/41/41; Blue, Brown, Crimson,
+        Purple, Green and Gold within dE 2.4 of RR2 / II / T2C scans instead of 5-8)."""
         im = Image.new("CMYK", (1, 1), tuple(round(v * 255) for v in (c, m, y, k)))
-        r, g, b = ImageCms.applyTransform(im, self.cmyk2rgb).getpixel((0, 0))
+        r, g, b = ImageCms.applyTransform(im, self.cmyk2rgb_bpc).getpixel((0, 0))
         return f"#{r:02x}{g:02x}{b:02x}"
 
     def brigade_fill(self, color: str) -> str:
@@ -262,17 +268,47 @@ class Doc:
 
 
 # ----------------------------------------------------------------------------- rasterizing
-def render_pdf(pdf: bytes, dpi: int, transparent: bool) -> Image.Image:
+def render_pdf(pdf: bytes, dpi: int) -> Image.Image:
     with tempfile.TemporaryDirectory() as d:
         p = Path(d) / "x.pdf"
         p.write_bytes(pdf)
         out = str(Path(d) / "out")
-        if transparent:
-            cmd = ["pdftocairo", "-png", "-transp", "-r", str(dpi), "-singlefile", str(p), out]
-        else:
-            cmd = ["pdftoppm", "-png", "-r", str(dpi), "-singlefile", str(p), out]
+        cmd = ["pdftoppm", "-png", "-r", str(dpi), "-singlefile", str(p), out]
         subprocess.run(cmd, check=True)
         return Image.open(out + ".png").convert("RGBA")
+
+
+def pdf_image_rgba(doc: Doc, pdf: bytes) -> Image.Image:
+    """A placed badge PDF's one image XObject through the document profile, its /SMask as
+    alpha. The badge PDFs carry no profile, so a renderer's built-in DeviceCMYK conversion
+    crushes SWOP's rich black: the reaper's K=250 body came out ~17 where the profile gives
+    ~43, the translucent grey the printed Evil Dominants show."""
+    objs: dict[int, tuple[bytes, bytes | None]] = {}
+    for m in re.finditer(rb"(?:^|[\r\n])(\d+) 0 obj\s*(<<.*?>>)\s*(stream\r?\n)?", pdf, re.S):
+        d, data = m.group(2), None
+        if m.group(3):
+            n = re.search(rb"/Length\s+(\d+)(?!\s+0 R)", d)
+            if not n:
+                sys.exit("badge PDF stream with an indirect /Length")
+            data = pdf[m.end():m.end() + int(n.group(1))]
+            if b"/Filter" in d:
+                if b"FlateDecode" not in d:
+                    sys.exit(f"badge PDF stream filter not supported: {d[:120]!r}")
+                data = zlib.decompress(data)
+        objs[int(m.group(1))] = (d, data)
+    images = [(d, s) for d, s in objs.values()
+              if re.search(rb"/Subtype\s*/Image", d) and b"/SMask" in d]
+    if len(images) != 1:
+        sys.exit(f"badge PDF holds {len(images)} masked images, expected 1")
+    d, data = images[0]
+    if not re.search(rb"/ColorSpace\s*/DeviceCMYK", d):
+        sys.exit("badge PDF image is not DeviceCMYK")
+    w, h = (int(re.search(rb"/%s\s+(\d+)" % k, d).group(1)) for k in (b"Width", b"Height"))
+    cmyk = Image.frombytes("CMYK", (w, h), data[: w * h * 4])
+    im = ImageCms.applyTransform(cmyk, doc.cmyk2rgb).convert("RGBA")
+    mask = objs[int(re.search(rb"/SMask\s+(\d+) 0 R", d).group(1))][1]
+    im.putalpha(Image.frombytes("L", (w, h), mask[: w * h]))
+    return im
 
 
 def crop_wash(page: Image.Image, placed: tuple[float, float, float, float]) -> Image.Image:
@@ -379,12 +415,11 @@ def corner_copy(copies: list[Raster]) -> Raster:
     return min(boxed, key=lambda r: r.tx) if boxed else copies[0]
 
 
-def canvas_rect(r: Raster, scale: float = 1.0) -> dict[str, float]:
-    """Canvas-px rect of a placed raster, optionally shrunk about its center."""
+def canvas_rect(r: Raster) -> dict[str, float]:
+    """Canvas-px rect of a placed raster."""
     sx, sy = CANVAS[0] / (TRIM[2] - TRIM[0]), CANVAS[1] / (TRIM[3] - TRIM[1])
     w, h = r.sx * r.w * sx, r.sy * r.h * sy
     x, y = (r.tx - TRIM[0]) * sx, (TRIM[3] - r.ty) * sy
-    x, y, w, h = x + w * (1 - scale) / 2, y + h * (1 - scale) / 2, w * scale, h * scale
     return {"x": round(x, 1), "y": round(y, 1), "w": round(w, 1), "h": round(h, 1)}
 
 
@@ -430,15 +465,15 @@ def write_geometry(path: Path, brigade_hex: dict[str, str], synthesized: dict[st
               "// the class shield and territory plate below it. Rects are the rasters' own aspect.",
               "export const ICON_RECTS = {"]
     for k, r in icon_rects.items():
-        note = f" // {PRINT_SCALE[k]:.0%} of the template slot, as printed" if k in PRINT_SCALE else ""
-        lines.append(f"  {k}: {json.dumps(r).replace(chr(34), '')},{note}")
+        lines.append(f"  {k}: {json.dumps(r).replace(chr(34), '')},")
     lines += ["} as const;", "",
               "// Ability box gradient: light until `light`% of the box, black from `dark`%.",
               "export const GRADIENT_ROWS = {"]
     for rows, (a, b) in GRADIENT_ROWS.items():
         lines.append(f"  {rows}: {{ light: {a}, dark: {b} }},")
     lines += ["} as const;", "",
-              "// Icon-box fills, CMYK from the template converted through its SWOP profile.",
+              "// Icon-box fills, CMYK from the template converted through its SWOP profile with",
+              "// black-point compensation, which is what the printed boxes measure as.",
               "// red / teal are not in the template: hue-shifted from crimson / blue.",
               "export const BRIGADE_BOX_HEX = {"]
     for k, v in brigade_hex.items():
@@ -456,7 +491,7 @@ def main():
     ap.add_argument("--geometry", default="app/forge/lib/frameGeometry.ts")
     ap.add_argument("--dpi", type=int, default=300)
     args = ap.parse_args()
-    for tool in ("zstd", "pdftoppm", "pdftocairo"):
+    for tool in ("zstd", "pdftoppm"):
         if not shutil.which(tool):
             sys.exit(f"missing tool: {tool}")
 
@@ -480,7 +515,7 @@ def main():
             continue
         pdf = doc.a85_block_before(s)
         if pdf and pdf.startswith(b"%PDF"):
-            page = render_pdf(pdf, args.dpi, transparent=False)
+            page = render_pdf(pdf, args.dpi)
         elif b in gray_washes:
             w, h, data = gray_washes[b]
             page = Image.frombytes("L", (w, h), data[: w * h]).convert("RGBA")
@@ -501,7 +536,7 @@ def main():
         hue_shift_image(im, degrees).save(out / "washes" / f"{slug}.webp", quality=88, method=6)
         print(f"  wash {slug}: synthesized from {src} ({degrees:+}deg)")
 
-    # --- badge PDFs (transparent renders)
+    # --- badge PDFs: the image decoded through the document profile, at its own resolution
     seen = set()
     for s, _, n in doc.names:
         b = base_name(n)
@@ -510,7 +545,7 @@ def main():
         pdf = doc.a85_block_before(s)
         if not pdf or not pdf.startswith(b"%PDF"):
             continue
-        im = render_pdf(pdf, args.dpi, transparent=True)
+        im = pdf_image_rgba(doc, pdf)
         im.save(out / "badges" / f"{BADGE_PDFS[b]}.webp", quality=90, method=6)
         seen.add(b)
         print(f"  badge {BADGE_PDFS[b]}: {im.size[0]}x{im.size[1]}")
@@ -540,7 +575,7 @@ def main():
     warrior.save(out / "icons" / "warrior.png", optimize=True)
     weapon.save(out / "icons" / "weapon.png", optimize=True)
     print(f"  shields warrior + weapon: {warrior.size[0]}x{warrior.size[1]}")
-    icon_rects = {k: canvas_rect(chosen[name], PRINT_SCALE.get(k, 1.0)) for k, name in PLACEMENTS.items()}
+    icon_rects = {k: canvas_rect(chosen[name]) for k, name in PLACEMENTS.items()}
 
     # --- brigade colors + geometry
     hexes = {c.lower().replace("_", "-"): doc.brigade_fill(c) for c in BRIGADE_BOX_NAMES}

@@ -4,10 +4,9 @@
 // Illustrator template by scripts/forge-extract-template.py — see the kit README.
 //
 // Print rules this follows (checked against printed cards, 2026-09-10; multi-brigade 2026-09-13):
-//  * One icon box, top-left, banded top to bottom in brigade order: two brigades split it
-//    into a top/bottom band, three or more into equal bands. The wash blends the same
-//    brigades the same way, top to bottom. Only a card of every brigade of one alignment
-//    (printed "Multi") uses the multi-brigade foil.
+//  * One icon box, top-left, banded top to bottom in brigade order in equal heights. The
+//    wash blends the same brigades the same way, top to bottom. Only a card of every brigade
+//    of one alignment (printed "Multi") uses the multi-brigade foil.
 //  * Lost Souls have no icon box.
 //  * Covenants and Curses carry the enhancement icon (bible / skull) on the left and the
 //    artifact chalice in a second box on the right; the title centers between them.
