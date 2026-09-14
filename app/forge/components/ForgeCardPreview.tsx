@@ -74,8 +74,8 @@ function clampText(text: string, size: number, width: number): string {
 
 // Icon box: a rounded tab in the frame corner, drawn over the border the way printed boxes
 // are (they overhang it by a hair). The outer corner follows the card corner; the other
-// three are tighter. Fill is the brigade color (split into a top/bottom band for two
-// brigades) or a badge; stats sit in the top band, the type icon at the template's slot.
+// three are tighter. Fill is the brigade color (banded top to bottom, one band per brigade)
+// or a badge; stats sit in the top band, the type icon at the template's slot.
 const BOX_R = 22, BOX_OUTER_R = 42;
 function tabPath({ x, y, w, h }: Rect, side: "left" | "right"): string {
   const [tl, tr] = side === "left" ? [BOX_OUTER_R, BOX_R] : [BOX_R, BOX_OUTER_R];
@@ -89,7 +89,11 @@ function IconBoxG({ id, box, rect, side, stat }: {
 }) {
   const { x, y, w, h } = rect;
   const d = tabPath(rect, side);
-  const split = y + h * 0.45;
+  // Each band below the first runs to the bottom over the one before. Two brigades split the
+  // box 45 / 55 (the top band holds the stats); three or more split it evenly, as printed.
+  const n = box.bands.length + 1;
+  const first = n === 2 ? 0.45 : 1 / n;
+  const bandTop = (i: number) => y + h * (first + (i * (1 - first)) / (n - 1));
   // Printed stats: one size whether "9/6" or "10/11" (digits ~27 px tall, tops 6 px below the
   // box top, centred), no outline; only an unusually long value gives ground.
   const statSize = stat && stat.length > 6 ? 30 : 41;
@@ -97,7 +101,9 @@ function IconBoxG({ id, box, rect, side, stat }: {
     <g>
       <clipPath id={id}><path d={d} /></clipPath>
       <path d={d} fill={box.fill} />
-      {box.fill2 && <rect x={x} y={split} width={w} height={y + h - split} fill={box.fill2} clipPath={`url(#${id})`} />}
+      {box.bands.map((fill, i) => (
+        <rect key={i} x={x} y={bandTop(i)} width={w} height={y + h - bandTop(i)} fill={fill} clipPath={`url(#${id})`} />
+      ))}
       {box.badge && (
         <image href={box.badge} x={x} y={y} width={w} height={h} preserveAspectRatio={`${box.badgeAlign} slice`} clipPath={`url(#${id})`} />
       )}
@@ -209,15 +215,20 @@ export default function ForgeCardPreview({
         fontFamily: BODY_FONT, userSelect: "none",
       }}
     >
-      {/* 1. wash(es) inside the border rect; a second brigade blends in from the bottom,
-            matching the split of the icon box */}
+      {/* 1. wash(es) inside the border rect: each further brigade blends in below the one
+            before, in equal bands, in the order of the icon box's bands. Each fade spans
+            40% / N of the height, so two brigades fade 40% to 60%. */}
       {washes.length === 0 && <div style={{ ...place(B), borderRadius: radius(B), background: "#b9b3aa" }} />}
-      {washes.map((src, i) => (
-        <Img key={src} src={src} style={{
-          ...place(B), borderRadius: radius(B), objectFit: "cover",
-          ...(i === 1 ? { WebkitMaskImage: "linear-gradient(to bottom, transparent 40%, #000 60%)", maskImage: "linear-gradient(to bottom, transparent 40%, #000 60%)" } : {}),
-        }} />
-      ))}
+      {washes.map((src, i) => {
+        const edge = (100 * i) / washes.length, half = 20 / washes.length;
+        const mask = i ? `linear-gradient(to bottom, transparent ${edge - half}%, #000 ${edge + half}%)` : null;
+        return (
+          <Img key={i} src={src} style={{
+            ...place(B), borderRadius: radius(B), objectFit: "cover",
+            ...(mask ? { WebkitMaskImage: mask, maskImage: mask } : {}),
+          }} />
+        );
+      })}
 
       {/* 2. art window: uploaded art clipped to the window, or the template's empty white slot
             (the "NO ART" label is drawn with the rest of the text, in the canvas below) */}

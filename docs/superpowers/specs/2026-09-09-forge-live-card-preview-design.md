@@ -336,6 +336,31 @@ assert the markup carries no container units, that each wrapped ability line is 
 `<text>` exactly one printed pitch below the previous, and that the verse justifies every
 line but the last.
 
+## Multi-brigade frames (2026-09-13, from printed cards)
+
+Tim flagged a Crimson / Evil Gold / Gray Evil Enhancement whose border blended only the first
+two washes and whose box was the multi foil. Eighteen printed 3-brigade, 4-brigade and "Multi"
+cards (PoC, LoC, RoJ, IR, RR, RR2) were pulled from the catalog and sampled down the box and
+the right border:
+
+- **The box bands every brigade.** Army of a Million Men and Mercenary Chariots, which have the
+  reported card's brigades, print three equal bands (20 / 23 / 21 px of a 64 px box), top to
+  bottom in the listed order. Self, Triumphal Entry and Covenant with Moses break at the same
+  third. The two-brigade 45 / 55 split is unchanged.
+- **The foil is only for "Multi".** Faith and Fountain of Living Water (good), and Pagan
+  Sailors, Foolish Shepherd and Mourn and Weep (evil), are cards whose brigade is literally
+  Multi, and they carry the foil. No card with listed brigades does. The forge stores Multi as
+  the full list (Decision #2), so the foil now shows only when every brigade of one alignment
+  is selected. It is also that card's wash, flagged approximate because the template has no
+  multi wash.
+- **The wash blends every brigade, top to bottom.** Self (Black / Crimson / Orange) runs all
+  three, and so do A New Beginning and Potential in the Land. Where the bands meet varies by
+  card (about 21% / 66% on Self, 17% / 82% on the other two), so the preview uses equal bands,
+  each fading in over 40% / N of the height; two brigades still fade 40% to 60%. Some prints
+  use one wash (Army of a Million Men is all crimson) or custom art. Those are designer
+  choices, and the preview does not guess at them.
+- Three or more brigades are no longer flagged approximate.
+
 ## Follow-ups (not in this change)
 
 - Inline ability icons, set symbol, card number, watermark.

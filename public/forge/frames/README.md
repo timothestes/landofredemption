@@ -29,6 +29,8 @@ template's placement matrices; the cross is scaled to 75% of its slot, the size 
 
 ## `badges/` — box-filling composites (WebP)
 `artifact` (chalice), `lamb` / `reaper` (Good / Evil Dominant), `good-dom` / `evil-dom` (the
-nebulae, also under Fortress boxes), `multi-good` / `multi-evil` (3+ brigade foil).
+nebulae, also under Fortress boxes), `multi-good` / `multi-evil` (the printed "Multi" foil: a
+card of every brigade of one alignment, in the box and as its wash; cards with listed brigades
+print banded boxes instead).
 
 Fonts (libre substitutes for the template's Symphony Black / Arial) live in `../fonts/`.

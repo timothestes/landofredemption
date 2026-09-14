@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { BRIGADES, CARD_TYPES, type DesignCard } from "../designCard";
+import { BRIGADES, CARD_TYPES, EVIL_BRIGADES, GOOD_BRIGADES, type DesignCard } from "../designCard";
 import {
   BRIGADE_HEX, BRIGADE_SLUG, SYNTHESIZED_WASHES, washPaths, iconBox, classIcons,
   isPreviewApproximate, specialWash, showsStats,
@@ -22,6 +22,7 @@ describe("kit completeness", () => {
       { cardType: ["LostSoul"] }, { cardType: ["Artifact"] },
       { cardType: ["Dominant"], alignment: "Good" }, { cardType: ["Dominant"], alignment: "Evil" },
       { cardType: ["Fortress"], alignment: "Good" }, { cardType: ["Fortress"], alignment: "Evil" },
+      { brigades: [...GOOD_BRIGADES] }, { brigades: [...EVIL_BRIGADES] },
     ];
     for (const c of cases) expect(existsSync(kit(washPaths(c)[0]))).toBe(true);
   });
@@ -58,11 +59,16 @@ describe("washPaths", () => {
     expect(washPaths({})).toEqual([]);
     expect(washPaths({ cardType: ["Hero"] })).toEqual([]);
   });
-  it("uses one wash per brigade, up to two (top, bottom)", () => {
+  it("uses one wash per brigade, every brigade, top to bottom", () => {
     expect(washPaths({ brigades: ["Red"] })).toEqual(["/forge/frames/washes/red.webp"]);
     expect(washPaths({ brigades: ["GoodGold", "Red", "Blue"] })).toEqual([
-      "/forge/frames/washes/gold.webp", "/forge/frames/washes/red.webp",
+      "/forge/frames/washes/gold.webp", "/forge/frames/washes/red.webp", "/forge/frames/washes/blue.webp",
     ]);
+  });
+  it("a card of every brigade of one alignment (printed Multi) takes that alignment's foil", () => {
+    expect(washPaths({ brigades: [...GOOD_BRIGADES] })).toEqual(["/forge/frames/badges/multi-good.webp"]);
+    expect(washPaths({ brigades: [...EVIL_BRIGADES] })).toEqual(["/forge/frames/badges/multi-evil.webp"]);
+    expect(washPaths({ brigades: EVIL_BRIGADES.slice(1) })).toHaveLength(EVIL_BRIGADES.length - 1);
   });
   it("special types override brigades and follow alignment", () => {
     expect(specialWash({ cardType: ["Hero", "Dominant"], alignment: "Evil" })).toBe("evil-dom");
@@ -106,7 +112,7 @@ describe("iconBox", () => {
     expect(blue.withStats).toBe(true);
     expect(blue.badge).toBeNull();
     expect(blue.fill).toBe(BRIGADE_HEX.Blue);
-    expect(blue.fill2).toBeNull();
+    expect(blue.bands).toEqual([]);
     expect(blue.darkText).toBe(false);
     const white = iconBox({ cardType: ["Hero"], brigades: ["White"] }, "left")!;
     expect(white.fill).toBe("#ffffff");
@@ -115,14 +121,23 @@ describe("iconBox", () => {
   it("two brigades split the one box top/bottom; there is no second box for them", () => {
     const box = iconBox({ cardType: ["Hero"], brigades: ["Blue", "Green"] }, "left")!;
     expect(box.fill).toBe(BRIGADE_HEX.Blue);
-    expect(box.fill2).toBe(BRIGADE_HEX.Green);
+    expect(box.bands).toEqual([BRIGADE_HEX.Green]);
     expect(box.icon).toBe("/forge/frames/icons/cross.png");
     expect(iconBox({ cardType: ["Hero"], brigades: ["Blue", "Green"] }, "right")).toBeNull();
   });
-  it("three or more brigades use the multi foil instead of a split", () => {
-    const multi = iconBox({ cardType: ["Hero"], brigades: ["Blue", "Red", "GoodGold"], alignment: "Good" }, "left")!;
-    expect(multi.badge).toBe("/forge/frames/badges/multi-good.webp");
-    expect(multi.fill2).toBeNull();
+  it("three or more brigades band the box in order, as printed (Army of a Million Men)", () => {
+    const box = iconBox({ cardType: ["EvilCharacter"], brigades: ["Crimson", "EvilGold", "Gray"], alignment: "Evil" }, "left")!;
+    expect(box.badge).toBeNull();
+    expect(box.fill).toBe(BRIGADE_HEX.Crimson);
+    expect(box.bands).toEqual([BRIGADE_HEX.EvilGold, BRIGADE_HEX.Gray]);
+  });
+  it("only a card of every brigade of one alignment uses the multi foil", () => {
+    const good = iconBox({ cardType: ["GE"], brigades: [...GOOD_BRIGADES], alignment: "Good" }, "left")!;
+    expect(good.badge).toBe("/forge/frames/badges/multi-good.webp");
+    expect(good.bands).toEqual([]);
+    const evil = iconBox({ cardType: ["EE"], brigades: [...EVIL_BRIGADES], alignment: "Evil" }, "left")!;
+    expect(evil.badge).toBe("/forge/frames/badges/multi-evil.webp");
+    expect(evil.icon).toBe("/forge/frames/icons/skull.png");
   });
   it("Evil Character is the dragon, Evil Enhancement the skull (as printed)", () => {
     expect(iconBox({ cardType: ["EvilCharacter"], brigades: ["Crimson"] }, "left")!.icon).toBe("/forge/frames/icons/dragon.png");
@@ -161,14 +176,14 @@ describe("iconBox", () => {
   it("badges anchor the way the template crops them", () => {
     expect(iconBox({ cardType: ["Artifact"] }, "left")!.badgeAlign).toBe("xMidYMax");
     expect(iconBox({ cardType: ["Curse"] }, "right")!.badgeAlign).toBe("xMidYMax");
-    expect(iconBox({ cardType: ["Hero"], brigades: ["Blue", "Red", "Green"], alignment: "Good" }, "left")!.badgeAlign).toBe("xMidYMin");
+    expect(iconBox({ cardType: ["Hero"], brigades: [...GOOD_BRIGADES], alignment: "Good" }, "left")!.badgeAlign).toBe("xMidYMin");
     expect(iconBox({ cardType: ["Dominant"], alignment: "Evil" }, "left")!.badgeAlign).toBe("xMidYMid");
   });
   it("Covenants and Curses: enhancement icon left, artifact chalice right", () => {
     const cov = iconBox({ cardType: ["Covenant"], brigades: ["Green", "Purple"], strength: 5, toughness: 2 }, "left")!;
     expect(cov.icon).toBe("/forge/frames/icons/bible.png");
     expect(cov.fill).toBe(BRIGADE_HEX.Green);
-    expect(cov.fill2).toBe(BRIGADE_HEX.Purple);
+    expect(cov.bands).toEqual([BRIGADE_HEX.Purple]);
     expect(cov.withStats).toBe(true);
     const right = iconBox({ cardType: ["Covenant"], brigades: ["Green", "Purple"] }, "right")!;
     expect(right.badge).toBe("/forge/frames/badges/artifact.webp");
@@ -204,9 +219,10 @@ describe("classIcons / approximate", () => {
     expect(alone[0].rect.y).toBe(ICON_RECTS.territory.y);
     expect(classIcons({})).toEqual([]);
   });
-  it("flags three brigades, Classic legality and synthesized washes", () => {
+  it("flags the multi foil wash, Classic legality and synthesized washes", () => {
     expect(isPreviewApproximate({ brigades: ["Blue"] })).toBe(false);
-    expect(isPreviewApproximate({ brigades: ["Blue", "Red", "Green"] })).toBe(true);
+    expect(isPreviewApproximate({ brigades: ["Blue", "Green", "Purple"] })).toBe(false);
+    expect(isPreviewApproximate({ brigades: [...EVIL_BRIGADES] })).toBe(true);
     expect(isPreviewApproximate({ legality: "Classic" })).toBe(true);
     expect(isPreviewApproximate({ brigades: ["Teal"] })).toBe(true);
   });
