@@ -25,6 +25,7 @@ const forgeAuth: { token: string } | { storeId: string } =
 
 const ART_PREFIX = "forge-art/";
 const FINISHED_PREFIX = "forge-finished/";
+const RENDERED_PREFIX = "forge-rendered/";
 export const ALLOWED_ART_TYPES = ["image/jpeg", "image/png", "image/webp", "image/tiff", "image/tif"] as const;
 export const MAX_ART_BYTES = 50 * 1024 * 1024; // 50MB — was 15MB; raised because uploads now go
 // straight to Blob from the browser, bypassing Vercel's 4.5MB Function body cap that made the
@@ -97,6 +98,19 @@ export async function uploadForgeArtRaw(data: Buffer, contentType: string): Prom
     contentType,
   });
   return blob.pathname;
+}
+
+/** Store a rendered play card (renderedCard.ts) under its deterministic cache key. Overwrites
+ *  on purpose: two instances can render the same version at once, and both renders are equal. */
+export async function uploadForgeRendered(key: string, jpeg: Buffer): Promise<void> {
+  if (!key.startsWith(RENDERED_PREFIX)) throw new Error(`not a rendered-card key: ${key}`);
+  await put(key, jpeg, {
+    access: "private",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    ...forgeAuth,
+    contentType: "image/jpeg",
+  });
 }
 
 /** Server-side read of a private art blob by its stored key. */
