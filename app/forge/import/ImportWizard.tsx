@@ -1,11 +1,12 @@
 "use client";
 
-// Set import wizard with two sources: a LackeyCCG plugin zip, or a zip of card
-// images + a .csv/.xlsx spreadsheet. Source files NEVER go to the server (they can
-// exceed 200MB — far past Vercel's ~4.5MB request cap): everything is unpacked and
-// parsed in the browser, and only the selected cards are sent — batched multipart
-// POSTs to /forge/api/import (see useImportRunner). Source panels emit a common
-// SourceSelection; preview, destination, and the run pipeline are shared here.
+// Set import wizard with two sources: a LackeyCCG plugin zip (or a bare carddata.txt
+// for a text-only import), or a .csv/.xlsx spreadsheet with an optional zip of card
+// images. Source files NEVER go to the server (they can exceed 200MB — far past
+// Vercel's ~4.5MB request cap): everything is unpacked and parsed in the browser, and
+// only the selected cards are sent — batched multipart POSTs to /forge/api/import (see
+// useImportRunner). Source panels emit a common SourceSelection; preview, destination,
+// and the run pipeline are shared here.
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -35,14 +36,21 @@ const PREVIEW_CHUNK = 60;
 
 type Source = "lackey" | "spreadsheet";
 
-export default function ImportWizard({ sets }: { sets: ForgeSetSummary[] }) {
+export default function ImportWizard({
+  sets,
+  initialSetId,
+}: {
+  sets: ForgeSetSummary[];
+  initialSetId?: string; // from ?set=<id> — lands on "add to this set"
+}) {
   const [source, setSource] = useState<Source>("lackey");
   const [selection, setSelection] = useState<SourceSelection | null>(null);
 
-  const [mode, setMode] = useState<"new" | "existing">("new");
+  const preselected = sets.find((s) => s.id === initialSetId)?.id;
+  const [mode, setMode] = useState<"new" | "existing">(preselected ? "existing" : "new");
   const [newSetName, setNewSetName] = useState("");
   const [newSetPrivate, setNewSetPrivate] = useState(false);
-  const [existingSetId, setExistingSetId] = useState(sets[0]?.id ?? "");
+  const [existingSetId, setExistingSetId] = useState(preselected ?? sets[0]?.id ?? "");
   const [overwrite, setOverwrite] = useState(false);
   const [newSetDialogOpen, setNewSetDialogOpen] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
@@ -172,9 +180,9 @@ export default function ImportWizard({ sets }: { sets: ForgeSetSummary[] }) {
         <Link href="/forge/sets" className="text-sm text-muted-foreground hover:underline">← Sets</Link>
       </div>
       <p className="mb-4 text-sm text-muted-foreground">
-        Import from a Lackey plugin zip, or from a zip of card images plus a spreadsheet.
-        Files are unpacked in your browser — only the cards you select are uploaded,
-        privately, to the Forge.
+        Import from a Lackey plugin zip or carddata.txt, or from a .csv/.xlsx spreadsheet —
+        with or without card images. Files are unpacked in your browser — only the cards
+        you select are uploaded, privately, to the Forge.
       </p>
 
       {/* 1 — source */}
@@ -185,9 +193,10 @@ export default function ImportWizard({ sets }: { sets: ForgeSetSummary[] }) {
             <input type="radio" name="source" className="mt-0.5" disabled={running}
               checked={source === "lackey"} onChange={() => switchSource("lackey")} />
             <span>
-              Lackey plugin zip
+              Lackey plugin zip or carddata.txt
               <span className="block text-xs text-muted-foreground">
-                One export containing sets/carddata.txt and the set images.
+                A full plugin export (sets/carddata.txt plus set images), or just
+                carddata.txt for a text-only import.
               </span>
             </span>
           </label>
@@ -195,9 +204,9 @@ export default function ImportWizard({ sets }: { sets: ForgeSetSummary[] }) {
             <input type="radio" name="source" className="mt-0.5" disabled={running}
               checked={source === "spreadsheet"} onChange={() => switchSource("spreadsheet")} />
             <span>
-              Card images + spreadsheet
+              Spreadsheet (.csv or .xlsx)
               <span className="block text-xs text-muted-foreground">
-                A zip of finished card images plus a .csv or .xlsx of the card text.
+                Card text in a spreadsheet, plus an optional zip of finished card images.
               </span>
             </span>
           </label>

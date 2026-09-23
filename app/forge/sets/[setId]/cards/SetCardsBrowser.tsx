@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import ForgeCardGrid from "@/app/forge/components/ForgeCardGrid";
@@ -154,6 +155,11 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
                 Clear
               </button>
             </div>
+          )}
+          {!selecting && canCreate && (
+            <Button asChild size="sm" variant="outline" className="h-8">
+              <Link href={`/forge/import?set=${setId}`}>Import cards</Link>
+            </Button>
           )}
           {!selecting && draftIds.length > 0 && (
             <Button size="sm" className="h-8" disabled={busy !== null} onClick={() => setConfirming("releaseAll")}>
