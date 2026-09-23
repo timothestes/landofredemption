@@ -12,6 +12,7 @@ export interface PostPatch {
   body_md: string;
   cover_image_url: string | null;
   tags: string[];
+  published_at: string | null;
 }
 
 /** Trim, collapse whitespace, drop empties/overlong, dedupe case-insensitively (first spelling wins), cap at MAX_TAGS. */
@@ -40,6 +41,7 @@ export function validatePatch(p: PostPatch): string | null {
   if (p.excerpt !== null && p.excerpt.length > MAX_EXCERPT) return `Excerpt must be ${MAX_EXCERPT} characters or fewer`;
   if (p.tags.length > MAX_TAGS) return `At most ${MAX_TAGS} tags`;
   if (p.cover_image_url !== null && !/^https:\/\//.test(p.cover_image_url)) return "Cover image must be an https URL";
+  if (p.published_at !== null && Number.isNaN(Date.parse(p.published_at))) return "Publish date is invalid";
   return null;
 }
 

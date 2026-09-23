@@ -9,7 +9,7 @@ export const metadata = { title: "Edit post" };
 export const dynamic = "force-dynamic";
 
 const ROW =
-  "id, slug, title, excerpt, body_md, cover_image_url, tags, status, author_id, published_at, created_at, updated_at";
+  "id, slug, title, excerpt, body_md, cover_image_url, tags, status, author_id, published_at, scheduled_at, created_at, updated_at";
 
 export default async function EditPostPage({ params }: { params: Promise<{ id: string }> }) {
   const ctx = await getPosterContext();
