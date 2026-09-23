@@ -78,24 +78,35 @@ export default function ProgressDashboard({
               <tr>
                 <th className="sticky left-0 bg-background p-1 text-left">Type \ Brigade</th>
                 {model.brigades.map((b) => <th key={b} className="p-1 font-normal">{b}</th>)}
+                <th className="border-l p-1 font-normal">Total</th>
               </tr>
             </thead>
             <tbody>
-              {model.types.map((t) => (
-                <tr key={t}>
-                  <th className="sticky left-0 bg-background p-1 text-left font-normal">{t}</th>
-                  {model.brigades.map((b) => {
-                    const cell = model.cells.find((c) => c.type === t && c.brigade === b)!;
-                    return (
-                      <td key={b} className={`p-1 text-center ${cellTone(cell.actual, cell.target)}`}>
-                        <Link href={`/forge/sets/${setId}/cards`} className="block tabular-nums">
-                          {cell.actual}{cell.target ? `/${cell.target}` : ""}
-                        </Link>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+              {model.types.map((t) => {
+                const rowCells = model.cells.filter((c) => c.type === t);
+                const rowActual = rowCells.reduce((sum, c) => sum + c.actual, 0);
+                const rowTarget = rowCells.reduce((sum, c) => sum + c.target, 0);
+                return (
+                  <tr key={t}>
+                    <th className="sticky left-0 bg-background p-1 text-left font-normal">{t}</th>
+                    {model.brigades.map((b) => {
+                      const cell = model.cells.find((c) => c.type === t && c.brigade === b)!;
+                      return (
+                        <td key={b} className={`p-1 text-center ${cellTone(cell.actual, cell.target)}`}>
+                          <Link href={`/forge/sets/${setId}/cards`} className="block tabular-nums">
+                            {cell.actual}{cell.target ? `/${cell.target}` : ""}
+                          </Link>
+                        </td>
+                      );
+                    })}
+                    <td className={`border-l p-1 text-center font-medium ${cellTone(rowActual, rowTarget)}`}>
+                      <Link href={`/forge/sets/${setId}/cards`} className="block tabular-nums">
+                        {rowActual}{rowTarget ? `/${rowTarget}` : ""}
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
