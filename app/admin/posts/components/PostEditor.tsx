@@ -65,6 +65,10 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   // updatePostAction revalidates the public page, so they keep explicit Update.
   const [autosave, setAutosave] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [confirmLeave, setConfirmLeave] = useState(false);
+  // Target of a leave-confirmation triggered by the generic nav-intercept
+  // below (any internal link, not just "← Posts"); defaults to the posts
+  // list since that's what the dialog always navigated to before.
+  const pendingHrefRef = useRef("/admin/posts");
   // In-flight uploads. A counter, not a boolean: paste/drop bypass the locked
   // toolbar, so two uploads can overlap and must not clear each other's flag.
   const [uploadCount, setUploadCount] = useState(0);
@@ -456,8 +460,11 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [body, title, slug, excerpt, tags, cover, dirty, status, busy, uploading, autosave]);
 
-  // A top-nav link inside the debounce window unmounts the editor before the
-  // timer fires; flush the pending draft edit so it isn't silently dropped.
+  // Last-resort fallback for unmounts this component never sees a click for
+  // (e.g. browser back/forward). Not relied on for the common case below: a
+  // fetch kicked off from an unmount cleanup routinely loses the race against
+  // the navigation that triggered it and comes back net::ERR_ABORTED, so this
+  // alone silently drops the edit far more often than it saves it.
   useEffect(
     () => () => {
       const l = latest.current;
@@ -465,6 +472,47 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     },
     [],
   );
+
+  // The real fix for "a nav-bar link unmounts the editor mid-debounce and the
+  // edit vanishes": save BEFORE the navigation happens, not after, the same
+  // way onLeave already does for "← Posts" (skipped here via
+  // data-post-editor-back). Published posts keep the explicit-Update model —
+  // leaving one with unsaved edits always asks instead of silently saving.
+  //
+  // Reads latest.current rather than calling save() directly: save() is
+  // recreated every render and closes over that render's title/body/tags,
+  // but this effect's own closure is fixed at mount (deps: [router]) —
+  // calling the mount-time save() would ship a stale patch. It also waits
+  // out any autosave already in flight (savingRef) before sending its own
+  // update, so a slow earlier request can't land after this one and stomp
+  // the just-added tag back out with what it captured a moment earlier.
+  useEffect(() => {
+    const onClickCapture = (e: MouseEvent) => {
+      if (!latest.current.dirty) return;
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const anchor = (e.target as HTMLElement).closest("a[href]") as HTMLAnchorElement | null;
+      if (!anchor || anchor.dataset.postEditorBack !== undefined) return;
+      if (anchor.target === "_blank" || anchor.origin !== window.location.origin) return;
+      e.preventDefault();
+      const href = anchor.getAttribute("href")!;
+      pendingHrefRef.current = href;
+      if (latest.current.status === "draft" && idRef.current) {
+        void (async () => {
+          while (savingRef.current) await new Promise((res) => setTimeout(res, 50));
+          const id = idRef.current;
+          if (!id) return setConfirmLeave(true);
+          const r = await updatePostAction(id, latest.current.patch).catch(() => null);
+          if (r && r.success !== false) router.push(href);
+          else setConfirmLeave(true);
+        })();
+      } else {
+        setConfirmLeave(true);
+      }
+    };
+    document.addEventListener("click", onClickCapture, true);
+    return () => document.removeEventListener("click", onClickCapture, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
 
   const onSave = async () => {
     if (await save()) setToast({ message: status === "published" ? "Updated" : "Draft saved", type: "success" });
@@ -525,6 +573,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
       router.push("/admin/posts");
       return;
     }
+    pendingHrefRef.current = "/admin/posts";
     setConfirmLeave(true);
   };
 
@@ -549,6 +598,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
           <Link
             href="/admin/posts"
             onClick={onLeave}
+            data-post-editor-back
             className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground"
           >
             ← Posts
@@ -872,7 +922,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
         onConfirm={() => {
           setDirty(false);
           latest.current.dirty = false;
-          router.push("/admin/posts");
+          router.push(pendingHrefRef.current);
         }}
       />
       <ToastNotification
