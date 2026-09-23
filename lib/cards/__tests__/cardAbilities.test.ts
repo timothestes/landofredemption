@@ -15,6 +15,7 @@ import {
   simplifyLostSoulName,
   isNewTestamentLostSoul,
   isCharacterCard,
+  isLostSoulCard,
   isHeroCard,
   isDanielCard,
   hasReferenceBook,
@@ -190,6 +191,36 @@ describe('isCharacterCard', () => {
     expect(isCharacterCard({ type: 'Evil Enhancement' })).toBe(false);
     expect(isCharacterCard({ type: '' })).toBe(false);
     expect(isCharacterCard({})).toBe(false);
+  });
+});
+
+describe('isLostSoulCard', () => {
+  it('recognizes Lost Souls via type or cardType', () => {
+    expect(isLostSoulCard({ type: 'Lost Soul' })).toBe(true);
+    expect(isLostSoulCard({ cardType: 'LS' })).toBe(true);
+    expect(isLostSoulCard({ cardType: 'Lost Soul' })).toBe(true);
+  });
+
+  it('rejects Dominants that legitimately play to the Land of Redemption', () => {
+    // Guardian of Your Souls says "Place this card in your Land of
+    // Redemption" but is a Dominant, not a Lost Soul — it must not count
+    // toward the redeemed-soul total shown by the LoR badges/HUD.
+    for (const name of [
+      'Guardian Of Your Souls',
+      'Guardian of Your Souls (RoJ)',
+      'Guardian of Your Souls [2024 - 1st Place]',
+      'Guardian of Your Souls [2024 - National]',
+    ]) {
+      const card = findCard(name);
+      expect(card?.type).toBe('Dominant');
+      expect(isLostSoulCard({ type: card?.type })).toBe(false);
+    }
+  });
+
+  it('rejects other non-Lost-Soul input', () => {
+    expect(isLostSoulCard({ type: 'Dominant' })).toBe(false);
+    expect(isLostSoulCard({ type: '' })).toBe(false);
+    expect(isLostSoulCard({})).toBe(false);
   });
 });
 

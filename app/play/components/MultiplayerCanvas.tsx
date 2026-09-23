@@ -8747,9 +8747,11 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             const cards = myCards[zoneKey] ?? [];
             const count = cards.length;
             // The LoR badge shows redeemed-soul VALUE, not card count — the
-            // Two/Three Liner souls count as two Lost Souls each.
+            // Two/Three Liner souls count as two Lost Souls each, and cards
+            // that aren't Lost Souls at all (e.g. Guardian of Your Souls,
+            // which legitimately plays to the Land of Redemption) count zero.
             const badgeCount = zoneKey === 'land-of-redemption'
-              ? cards.reduce((n, c) => n + lostSoulValue(c.cardName), 0)
+              ? cards.filter(isLostSoulCard).reduce((n, c) => n + lostSoulValue(c.cardName), 0)
               : count;
             // Cell header metrics. The badge grows with the floored font —
             // fixed at 26x18 it clipped "53" to "5" whenever fs() grew (Konva
@@ -9077,9 +9079,11 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             const cards = opponentCards[zoneKey] ?? [];
             const count = cards.length;
             // The LoR badge shows redeemed-soul VALUE, not card count — the
-            // Two/Three Liner souls count as two Lost Souls each.
+            // Two/Three Liner souls count as two Lost Souls each, and cards
+            // that aren't Lost Souls at all (e.g. Guardian of Your Souls,
+            // which legitimately plays to the Land of Redemption) count zero.
             const badgeCount = zoneKey === 'land-of-redemption'
-              ? cards.reduce((n, c) => n + lostSoulValue(c.cardName), 0)
+              ? cards.filter(isLostSoulCard).reduce((n, c) => n + lostSoulValue(c.cardName), 0)
               : count;
             // Cell header metrics. The badge grows with the floored font —
             // fixed at 26x18 it clipped "53" to "5" whenever fs() grew (Konva

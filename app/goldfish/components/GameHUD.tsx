@@ -1,10 +1,16 @@
 'use client';
 
 import { useGame } from '../state/GameContext';
+import { isLostSoulCard, lostSoulValue } from '@/lib/cards/cardAbilities';
 
 export function GameHUD() {
   const { state } = useGame();
-  const soulsRescued = state.zones['land-of-redemption'].length;
+  // Two/Three Liner souls count as two Lost Souls each; non-Lost-Soul cards
+  // that legitimately sit in the Land of Redemption (e.g. Guardian of Your
+  // Souls) must not add to the count.
+  const soulsRescued = state.zones['land-of-redemption']
+    .filter(isLostSoulCard)
+    .reduce((n, c) => n + lostSoulValue(c.cardName), 0);
 
   if (!state.options.showTurnCounter) return null;
 
