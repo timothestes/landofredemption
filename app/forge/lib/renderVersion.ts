@@ -5,7 +5,7 @@
 //  * the frame kit images under public/forge/frames
 //  * a re-upload of the private title/stat fonts (bump forge-fonts.css ?v= at the same time)
 //  * a re-run of scripts/forge-normalize-images.ts (it rewrites card_versions.art_key in place)
-export const RENDER_VERSION = 3;
+export const RENDER_VERSION = 4;
 
 /** The `t` cache-buster a rendered-card URL carries. */
 export const renderedToken = (versionId: string): string => `${versionId}.r${RENDER_VERSION}`;

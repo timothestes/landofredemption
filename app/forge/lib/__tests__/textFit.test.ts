@@ -99,10 +99,11 @@ describe("textFit", () => {
     expect(f.abilityLines).toBe(3);
     expect(f.verseLines).toHaveLength(4);
     expect(f.over).toBe(0);
-    // fully dark just above the first verse line, the transition in the span above that
+    // fully dark `above` px before the first verse line's box (negative: just inside it, at
+    // its cap top, as the finished cards measure), the transition in the span above that
     expect(f.gradient.dark).toBeCloseTo(f.verseTop - TEXT_METRICS.gradient.above, 5);
     expect(f.gradient.light).toBeCloseTo(f.gradient.dark - TEXT_METRICS.gradient.span, 5);
-    expect(f.gradient.dark).toBeLessThan(f.verseTop);
+    expect(f.gradient.dark).toBeLessThan(f.verseTop + 10);
     expect(f.abilityBottom).toBeCloseTo(A.top + 3 * A.pitch, 5);
     expect(f.verseTop).toBeCloseTo(V.bottom - 4 * V.pitch, 5);
   });
@@ -110,7 +111,9 @@ describe("textFit", () => {
     const long = `${goat.rawText} Protect this card from capture. Cannot be negated by a Greek.`;
     const f = textFit({ ...goat, rawText: long });
     expect(f.abilityLines).toBe(5);
-    expect(f.over).toBe(1);
+    // five lines end 177.6 px down the box; the four-line verse now starts at 159.5 (the
+    // finished cards' verse block sits 6 px higher than Roots printed it), so two collide
+    expect(f.over).toBe(2);
     expect(textFit({ ...goat, rawText: long, scripture: "So she said, “The glory has departed from Israel, because the ark of God has been taken.”" }).over).toBe(0);
   });
   it("the tightest printed card (I Am Patience: 4 ability lines in 2 paragraphs, 3 verse lines) still fits", () => {

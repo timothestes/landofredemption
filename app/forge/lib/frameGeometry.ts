@@ -3,7 +3,7 @@
 // Canvas is the 2.5 x 3.5 in trim box at 300 dpi. Rects: {x, y, w, h, r} in canvas px.
 
 export const CANVAS = { w: 750, h: 1050 } as const;
-export const BORDER_STROKE = 6.25;
+export const BORDER_STROKE = 4.17;
 
 export const RECTS = {
   border: {x: 37.5, y: 37.5, w: 675.0, h: 975.0, r: 39.6},

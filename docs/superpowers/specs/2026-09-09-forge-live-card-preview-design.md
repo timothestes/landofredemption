@@ -434,6 +434,49 @@ Seen and not changed here:
 - Rulers over Earth (Fortress / Evil Character) prints no stats and no shield although the
   catalog lists 4/3 Warrior; the preview shows what is entered.
 
+## Print parity A/B (2026-09-22, the design team's finished End of Times cards)
+
+The design team compared the Forge composite with their Illustrator output and called the
+title "definitely not the right size font … Symphony Black regular, 9 pt, right-justified to
+the side of the art box" and "showing smaller, so more room than there actually is". Two Forge
+sets made it measurable: the EoT set whose 147 cards carry the team's **finished images**, and
+an import of the same 147 cards as Forge data. `scripts/forge-print-parity/` (README there)
+downloads the pairs, renders the Forge side through `renderCard.ts` with the real fonts,
+registers both on the frame's border lines and measures every element in canvas px, fitting
+font sizes by rendering the same string with the real face. Findings, medians over the set
+(real − Forge before the fix), and what changed:
+
+| Element | Finished cards | Forge before | Fix |
+|---|---|---|---|
+| Title size | 37.5 px (9 pt) on every card, never condensed; the longest name (457 px of ink) set as is | 36 px, shrunk to 25 px for long names (`TITLE_EM` 0.57 overestimated widths by ~15%) | fixed 37.5 px; widths from Symphony Black's own advances (`TITLE_ADVANCES`, `make forge-font-metrics --title`) with a 4.5 % kerning allowance; squeeze only past that |
+| Title anchor | ink right edge 672, baseline 89.4 | 676 / 93.9 | anchor 671 (`TITLE_INSET` 4), baseline `title.y + 37.5` |
+| Title contour | outer edge 4 px past the face, ink ratio 1.1 | same geometry, ratio 0.9 | unchanged |
+| Printed name | bracket suffix dropped ("Blood of the Lamb [EoT]" → "Blood of the Lamb"); Lost Souls titled "Lost Soul", centred on the card | full catalog name, right-aligned | `printedName()` in designCard.ts |
+| Stats | 10 pt (41.7 px), digits 36–65 | 41 px, digits 39–67 | 41.7 px, baseline `box.y + 32` |
+| Ability | 30.9 px, 31.6 pitch, first baseline 716, every line break identical on all 147 cards, widths ±1 % | same | none |
+| Verse | 23 px italic, 23 px pitch, left 90, last baseline 915–918, 26 px above the reference | same size and pitch, block ~6 px low (checked with a verse typed in) | `verse.bottom` 257.5 → 251.5 |
+| Box gradient | fully dark at about the first verse line's x-height line, ramp ~39 px above; floor pure black | dark 6 px higher, ramp 28, floor #231f20 (lum 32) | `gradient: { above: -8, span: 39 }`; ink #000 |
+| Reference | 5 pt (20.8 px), right 662, baseline 941 | 19 px, same anchor | 20.8 px, `reference.top` 252 keeps the baseline |
+| Credits | Illus. 5 pt / © 4 pt, baselines 979 / 999.5, ink right edge 671 | 15 / 13 px, 985 / 1002, 676 | 20.8 / 16.7 px on those baselines, anchor 671 |
+| Identifier pill | opaque gray (99,100,102) with a 2 px black outline, text 18 px, 2 px above the middle, ~8 px narrower | rgba(0,0,0,.75), 1.5 px, 19 px | matched |
+| Border stroke | 4 px (1 pt) | 6.25 px (1.5 pt) | `BORDER_STROKE_PT` 1.0 in the extractor |
+| Text box stroke | ~4 px | 2.5 px | 4 px |
+| Ink | strokes, box floor and text all pure black | #231f20 (SWOP K) | `INK` #000 |
+| Art / text box / icon box geometry | within 1 px | | none |
+| Type icons (cross, dragon, bible, skull) | within 1 px in size and place | | none |
+
+After the fix the same run reads: title size 37.1 vs 37.1, right edge 672 vs 672, baseline
+89.3 vs 89.1; stats width-fit 42.4 vs 42.4, digit bottom 65 vs 65; reference 21.0 vs 20.8;
+border 4 vs 4; pill fill 99.9 vs 99.1; no title on the set is squeezed.
+
+Not changed, for the record: the **card number and set symbol** (Symphony Black ~5 pt at
+x 84, baseline 993, rarity letter under it on rares; the EoT symbol at x 139–179, y 966–1000)
+need a card-number field and the symbol art; **dual-alignment cards** (Armageddon: two boxes,
+a left-to-right wash blend, the title centred) are the icon audit's open item; **red-letter
+verses** (23 cards quote Christ in red) stay out of the composite by Tim's call; the finished
+text box's bottom edge sits ~2 px higher than the template's rect; the real title's contour
+carries ~20 % more dark ink than ours (JPEG-soft, left alone).
+
 ## Follow-ups (not in this change)
 
 - Inline ability icons, set symbol, card number, watermark.

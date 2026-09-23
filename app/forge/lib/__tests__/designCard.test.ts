@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   cardApplicability, isStatBearing, validate, BRIGADES, cardRawText, deriveAlignmentFromTypes,
-  multiBrigadeSide, toggleMultiBrigade, brigadeLabels,
+  multiBrigadeSide, toggleMultiBrigade, brigadeLabels, printedName,
 } from "../designCard";
 
 const ALL_GOOD = ["Blue", "Clay", "GoodGold", "Green", "Purple", "Red", "Silver", "Teal", "White"] as const;
@@ -83,6 +83,25 @@ describe("BRIGADES enum", () => {
   it("excludes the ambiguous Multi sentinels", () => {
     expect(BRIGADES).not.toContain("GoodMulti");
     expect(BRIGADES).not.toContain("EvilMulti");
+  });
+});
+
+describe("printedName", () => {
+  it("drops the catalog's bracketed disambiguator and nothing else", () => {
+    expect(printedName({ name: "Blood of the Lamb [EoT]" })).toBe("Blood of the Lamb");
+    expect(printedName({ name: "The Depraved [Pale Green - EoT]" })).toBe("The Depraved");
+    expect(printedName({ name: "Vultures [3 Birds]" })).toBe("Vultures");
+    expect(printedName({ name: "Antipas, the Witness" })).toBe("Antipas, the Witness");
+    expect(printedName({ name: "  Hades " })).toBe("Hades");
+    expect(printedName({})).toBe("");
+  });
+  it("titles a Lost Soul just \"Lost Soul\"; its quoted word belongs to the identifier bubble", () => {
+    expect(printedName({ name: 'Lost Soul "Again" [Revelation 10:11]', cardType: ["LostSoul"] })).toBe("Lost Soul");
+    expect(printedName({ name: "Lost Soul", cardType: ["LostSoul"] })).toBe("Lost Soul");
+    // a Lost Soul a designer named something else keeps that name
+    expect(printedName({ name: "Wandering Sheep [EoT]", cardType: ["LostSoul"] })).toBe("Wandering Sheep");
+    // and a non-Lost-Soul called that keeps its whole name
+    expect(printedName({ name: 'Lost Soul "Again"', cardType: ["Hero"] })).toBe('Lost Soul "Again"');
   });
 });
 
