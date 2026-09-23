@@ -63,12 +63,12 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
   const currentUser = { userId: ctx.user.id, displayName: meRow?.display_name ?? null };
 
   // "Created by" line in the studio header. Same member-readable name lookup as History.
-  const { data: ownerRow } = await ctx.supabase
+  const { data: creatorRow } = await ctx.supabase
     .from("playtest_members")
     .select("display_name")
-    .eq("user_id", card.ownerId)
+    .eq("user_id", card.creatorId)
     .maybeSingle();
-  const creator = { name: ownerRow?.display_name ?? "Forge member", at: card.createdAt };
+  const creator = { name: creatorRow?.display_name ?? "Forge member", at: card.createdAt };
 
   // ReviewPanel is passed INTO the studio rather than rendered after it: a sticky element
   // can only travel inside its own containing block, so while the review sat outside the

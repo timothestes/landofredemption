@@ -17,6 +17,7 @@ const forgeCard = (title: string, snapshot: DesignCard, setId: string = END_OF_T
   publishedVersionId: null,
   approvedVersionId: null,
   ownerId: "owner",
+  creatorId: "owner",
   createdAt: "",
 });
 

@@ -63,14 +63,18 @@ describe("getCard / listForgeCards", () => {
     const got = await getCard("c1");
     expect(got).toMatchObject({ id: "c1", title: "Goliath", snapshot: { name: "Goliath" }, hasArt: true, status: "private_idea", setId: null });
   });
-  it("exposes who created the card and when (owner_id / created_at)", async () => {
-    const row = { id: "c1", title: "Goliath", working_snapshot: {}, status: "draft", updated_at: "t", set_id: "s1", owner_id: "u9", created_at: "2026-07-01T00:00:00Z" };
+  it("exposes current owner, original creator, and when (owner_id / creator_id / created_at)", async () => {
+    const row = { id: "c1", title: "Goliath", working_snapshot: {}, status: "draft", updated_at: "t", set_id: "s1", owner_id: "u9", creator_id: "u1", created_at: "2026-07-01T00:00:00Z" };
     const c = ctx(undefined, [row]);
     (requireForge as any).mockResolvedValue(c);
     const got = await getCard("c1");
-    expect(got).toMatchObject({ ownerId: "u9", createdAt: "2026-07-01T00:00:00Z" });
+    // owner_id and creator_id diverge once a card is pulled into someone else's
+    // Ideas (forge_send_card_to_private reassigns owner_id, never creator_id) —
+    // regression check for the set-import "wrong idea land" bug.
+    expect(got).toMatchObject({ ownerId: "u9", creatorId: "u1", createdAt: "2026-07-01T00:00:00Z" });
     const cols = (c.supabase.from as any).mock.results[0].value.select.mock.calls[0][0] as string;
     expect(cols).toContain("owner_id");
+    expect(cols).toContain("creator_id");
     expect(cols).toContain("created_at");
   });
   it("listForgeCards selects only private ideas (set_id IS NULL)", async () => {

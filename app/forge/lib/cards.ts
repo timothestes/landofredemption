@@ -128,8 +128,13 @@ export type ForgeCardFull = {
   setId: string | null;
   publishedVersionId: string | null;
   approvedVersionId: string | null;
-  // Who pressed "New card" (or ran the import) and when. Never reassigned.
+  // Current controller: whose Ideas library this card lives in while private,
+  // and (for a private card) who may edit it. Reassigned when the card is sent
+  // to someone else's Ideas — see forge_send_card_to_private.
   ownerId: string;
+  // Who pressed "New card" (or ran the import). Set once at creation, never
+  // reassigned — this is what the "Created by" line reads.
+  creatorId: string;
   createdAt: string;
 };
 
@@ -147,11 +152,12 @@ function toFull(row: any): ForgeCardFull {
     publishedVersionId: row.published_version_id ?? null,
     approvedVersionId: row.approved_version_id ?? null,
     ownerId: row.owner_id,
+    creatorId: row.creator_id,
     createdAt: row.created_at,
   };
 }
 
-const CARD_COLS = "id, title, working_snapshot, working_art_key, working_art_is_placeholder, working_finished_key, status, updated_at, set_id, published_version_id, approved_version_id, owner_id, created_at";
+const CARD_COLS = "id, title, working_snapshot, working_art_key, working_art_is_placeholder, working_finished_key, status, updated_at, set_id, published_version_id, approved_version_id, owner_id, creator_id, created_at";
 
 export async function saveCard(
   cardId: string,

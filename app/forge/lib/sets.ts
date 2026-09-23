@@ -118,7 +118,7 @@ export async function removeSetElder(setId: string, userId: string): Promise<Res
   return { ok: true };
 }
 
-const CARD_COLS = "id, title, working_snapshot, working_art_key, working_art_is_placeholder, working_finished_key, status, updated_at, set_id, published_version_id, approved_version_id, owner_id, created_at";
+const CARD_COLS = "id, title, working_snapshot, working_art_key, working_art_is_placeholder, working_finished_key, status, updated_at, set_id, published_version_id, approved_version_id, owner_id, creator_id, created_at";
 
 export async function listSetCards(setId: string): Promise<ForgeCardFull[]> {
   const ctx = await requireForge();
@@ -134,7 +134,7 @@ export async function listSetCards(setId: string): Promise<ForgeCardFull[]> {
     status: row.status, updatedAt: row.updated_at,
     setId: row.set_id ?? null, publishedVersionId: row.published_version_id ?? null,
     approvedVersionId: row.approved_version_id ?? null,
-    ownerId: row.owner_id, createdAt: row.created_at,
+    ownerId: row.owner_id, creatorId: row.creator_id, createdAt: row.created_at,
   }));
 }
 
