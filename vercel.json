@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/sync-rulings",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/publish-scheduled",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

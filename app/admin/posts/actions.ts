@@ -1,8 +1,7 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from "next/cache";
 import { del, list } from "@vercel/blob";
-import { ARTICLES_TAG } from "@/app/articles/lib/queries";
+import { revalidateArticles } from "@/app/articles/lib/revalidate";
 import { slugify, MAX_SLUG } from "@/app/articles/lib/markdown";
 import { requirePoster, type PosterContext } from "./lib/auth";
 import { normalizeTags, validatePatch, validateForPublish, canEditPost, type PostPatch } from "./lib/validate";
@@ -21,6 +20,7 @@ export interface PostRow {
   status: "draft" | "published";
   author_id: string;
   published_at: string | null;
+  scheduled_at: string | null;
   created_at: string;
   updated_at: string;
   author?: { username: string | null } | null;
@@ -29,21 +29,13 @@ export interface PostRow {
 export type ActionResult<T = object> = ({ success: true } & T) | { success: false; error: string };
 
 const ROW =
-  "id, slug, title, excerpt, body_md, cover_image_url, tags, status, author_id, published_at, created_at, updated_at";
+  "id, slug, title, excerpt, body_md, cover_image_url, tags, status, author_id, published_at, scheduled_at, created_at, updated_at";
 
 function fail(e: unknown): { success: false; error: string } {
   const msg = e instanceof Error ? e.message : "";
   if (msg.startsWith("Unauthorized")) return { success: false, error: "Unauthorized" };
   console.error("posts action failed:", e);
   return { success: false, error: "An unexpected error occurred" };
-}
-
-/** Bust the cached public reads and the ISR pages that show this post. */
-function revalidateArticles(slugs: Array<string | null | undefined>) {
-  revalidateTag(ARTICLES_TAG);
-  revalidatePath("/articles");
-  revalidatePath("/articles/feed.xml");
-  for (const s of slugs) if (s) revalidatePath(`/articles/${s}`);
 }
 
 // RLS hides other posters' drafts from this query, so a collision with an
@@ -106,11 +98,15 @@ export async function updatePostAction(id: string, patch: PostPatch): Promise<Ac
       body_md: patch.body_md,
       cover_image_url: patch.cover_image_url && patch.cover_image_url.trim() ? patch.cover_image_url.trim() : null,
       tags: normalizeTags(patch.tags),
+      published_at: patch.published_at,
     };
     const problem = validatePatch(clean);
     if (problem) return { success: false, error: problem };
     if (current.status === "published" && clean.slug !== current.slug) {
       return { success: false, error: "The slug is locked once a post is published" };
+    }
+    if (current.status === "published" && clean.published_at === null) {
+      return { success: false, error: "A published post needs a publish date" };
     }
 
     const { data, error } = await ctx.supabase
@@ -145,8 +141,11 @@ export async function publishPostAction(id: string): Promise<ActionResult<{ post
     const now = new Date().toISOString();
     const { data, error } = await ctx.supabase
       .from("posts")
-      // published_at is set on the FIRST publish only; re-publishing keeps the date.
-      .update({ status: "published", published_at: current.published_at ?? now, updated_at: now })
+      // The caller's save() (onPublish awaits it first) already wrote any
+      // backdated published_at the poster typed; default to now only when
+      // they left the field empty. Clear scheduled_at in case this post had
+      // a pending schedule and the poster published it early by hand.
+      .update({ status: "published", published_at: current.published_at ?? now, scheduled_at: null, updated_at: now })
       .eq("id", id)
       .select(ROW)
       .single();
@@ -155,6 +154,63 @@ export async function publishPostAction(id: string): Promise<ActionResult<{ post
       return { success: false, error: "Could not publish the post" };
     }
     revalidateArticles([current.slug]);
+    return { success: true, post: data as PostRow };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Keeps the post a draft but marks it due to auto-publish at `scheduledAtIso`. */
+export async function schedulePostAction(id: string, scheduledAtIso: string): Promise<ActionResult<{ post: PostRow }>> {
+  try {
+    const ctx = await requirePoster();
+    const current = await loadVisiblePost(ctx, id);
+    if (!current) return { success: false, error: "Post not found" };
+    if (!canEditPost({ userId: ctx.user.id, isSuperuser: ctx.isSuperuser }, current)) {
+      return { success: false, error: "You can only edit your own posts" };
+    }
+    if (current.status === "published") return { success: false, error: "This post is already published" };
+    const when = new Date(scheduledAtIso);
+    if (Number.isNaN(when.getTime())) return { success: false, error: "Schedule date is invalid" };
+    if (when.getTime() <= Date.now()) return { success: false, error: "Schedule a time in the future" };
+    const problem = validateForPublish(current);
+    if (problem) return { success: false, error: problem };
+
+    const { data, error } = await ctx.supabase
+      .from("posts")
+      .update({ scheduled_at: when.toISOString(), updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select(ROW)
+      .single();
+    if (error || !data) {
+      console.error("schedulePost:", error);
+      return { success: false, error: "Could not schedule the post" };
+    }
+    return { success: true, post: data as PostRow };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Clears a pending schedule; the post stays a draft you can publish or reschedule normally. */
+export async function cancelScheduleAction(id: string): Promise<ActionResult<{ post: PostRow }>> {
+  try {
+    const ctx = await requirePoster();
+    const current = await loadVisiblePost(ctx, id);
+    if (!current) return { success: false, error: "Post not found" };
+    if (!canEditPost({ userId: ctx.user.id, isSuperuser: ctx.isSuperuser }, current)) {
+      return { success: false, error: "You can only edit your own posts" };
+    }
+    const { data, error } = await ctx.supabase
+      .from("posts")
+      .update({ scheduled_at: null, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select(ROW)
+      .single();
+    if (error || !data) {
+      console.error("cancelSchedule:", error);
+      return { success: false, error: "Could not cancel the schedule" };
+    }
     return { success: true, post: data as PostRow };
   } catch (e) {
     return fail(e);

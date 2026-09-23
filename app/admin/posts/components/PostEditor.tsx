@@ -15,6 +15,8 @@ import {
   updatePostAction,
   publishPostAction,
   unpublishPostAction,
+  schedulePostAction,
+  cancelScheduleAction,
   deletePostAction,
   listTagsAction,
   resolveArticleRefsAction,
@@ -23,6 +25,7 @@ import {
 } from "../actions";
 import { ACCEPT, type UploadKind } from "../lib/media";
 import { uploadPostMedia } from "../lib/uploadMedia";
+import { toDatetimeLocalValue, fromDatetimeLocalValue, isFutureIso } from "../lib/schedule";
 import {
   continueList,
   insertBlock,
@@ -39,9 +42,19 @@ import CardPicker from "@/components/ui/CardPicker";
 import DeckPicker from "./DeckPicker";
 
 type Toast = { message: string; type: "success" | "error" } | null;
-type Busy = null | "save" | "publish" | "unpublish" | "delete";
+type Busy = null | "save" | "publish" | "schedule" | "unpublish" | "delete";
 
 const LABEL = "block text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground";
+
+function formatScheduled(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 // One editor for /admin/posts/new (initial = null) and /admin/posts/[id].
 // The draft row is created lazily by ensureId() on the first save or upload;
@@ -58,6 +71,15 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   const [excerpt, setExcerpt] = useState(initial?.excerpt ?? "");
   const [cover, setCover] = useState<string | null>(initial?.cover_image_url ?? null);
   const [body, setBody] = useState(initial?.body_md ?? "");
+  // datetime-local string for the "Publish date" field. Pre-fills from a
+  // pending schedule first (so reopening a scheduled draft shows the target
+  // time), else the actual published_at.
+  const [publishAt, setPublishAt] = useState(toDatetimeLocalValue(initial?.scheduled_at ?? initial?.published_at ?? null));
+  // The server-persisted schedule, separate from `publishAt`: it only
+  // changes via an explicit Schedule/Cancel action, never by editing the
+  // field or by autosave, so a half-typed future date can't silently
+  // schedule a post out from under the poster.
+  const [scheduledAt, setScheduledAt] = useState<string | null>(initial?.scheduled_at ?? null);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState<Busy>(null);
   // Drafts autosave silently (no busy, so the toolbar stays enabled); this is
@@ -116,7 +138,15 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   // Numbers upload placeholders so two concurrent replaceOnce calls can't cross-resolve.
   const uploadSeq = useRef(0);
   // Render-assigned snapshot for the flush-on-unmount effect below save().
-  const patch = { title, slug, excerpt: excerpt || null, body_md: body, cover_image_url: cover, tags };
+  const patch = {
+    title,
+    slug,
+    excerpt: excerpt || null,
+    body_md: body,
+    cover_image_url: cover,
+    tags,
+    published_at: fromDatetimeLocalValue(publishAt),
+  };
   const latest = useRef({ dirty, status, patch });
   latest.current = { dirty, status, patch };
 
@@ -203,6 +233,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
           if (r.post.slug !== slugRef.current) setSlugTouched(true);
         }
         window.history.replaceState(null, "", `/admin/posts/${r.post.id}`);
+        router.refresh();
         return { id: r.post.id, slug: r.post.slug };
       } finally {
         creatingRef.current = null;
@@ -394,6 +425,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
         body_md: body,
         cover_image_url: cover,
         tags,
+        published_at: fromDatetimeLocalValue(publishAt),
       });
       if (r.success === false) {
         if (opts.silent) setAutosave("error");
@@ -438,7 +470,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     return () => window.clearTimeout(t);
     // `save` is intentionally omitted: it is recreated every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [body, title, slug, excerpt, tags, cover, dirty, status, busy, uploading, autosave]);
+  }, [body, title, slug, excerpt, tags, cover, publishAt, dirty, status, busy, uploading, autosave]);
 
   // A top-nav link inside the debounce window unmounts the editor before the
   // timer fires; flush the pending draft edit so it isn't silently dropped.
@@ -455,13 +487,47 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   };
 
   const onPublish = async () => {
+    // save() first: it writes the field's published_at (if the poster
+    // backdated it) before publishPostAction reads `current.published_at`.
     if (!(await save())) return;
     setBusy("publish");
     try {
       const r = await publishPostAction(idRef.current!);
       if (r.success === false) return fail(r.error);
       setStatus("published");
+      setScheduledAt(null);
       setToast({ message: "Published", type: "success" });
+    } catch {
+      fail("Something went wrong. Check your connection and try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onSchedule = async () => {
+    const iso = fromDatetimeLocalValue(publishAt);
+    if (!iso) return;
+    if (!(await save())) return;
+    setBusy("schedule");
+    try {
+      const r = await schedulePostAction(idRef.current!, iso);
+      if (r.success === false) return fail(r.error);
+      setScheduledAt(iso);
+      setToast({ message: `Scheduled for ${formatScheduled(iso)}`, type: "success" });
+    } catch {
+      fail("Something went wrong. Check your connection and try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onCancelSchedule = async () => {
+    setBusy("schedule");
+    try {
+      const r = await cancelScheduleAction(idRef.current!);
+      if (r.success === false) return fail(r.error);
+      setScheduledAt(null);
+      setToast({ message: "Schedule canceled", type: "success" });
     } catch {
       fail("Something went wrong. Check your connection and try again.");
     } finally {
@@ -499,6 +565,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   };
 
   const locked = busy !== null || uploading;
+  const willSchedule = status === "draft" && isFutureIso(fromDatetimeLocalValue(publishAt));
 
   // "← Posts" is a client-side navigation, which beforeunload never sees.
   // Save a draft and go; anything else (published edits, a failed save) asks.
@@ -539,10 +606,14 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
           </Link>
           <span
             className={`hidden rounded-full px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider sm:inline-flex ${
-              status === "published" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+              status === "published"
+                ? "bg-primary/15 text-primary"
+                : scheduledAt
+                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                  : "bg-muted text-muted-foreground"
             }`}
           >
-            {status}
+            {status === "published" ? "published" : scheduledAt ? "scheduled" : "draft"}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -560,8 +631,14 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
             {busy === "save" ? "Saving\u2026" : status === "published" ? "Update" : "Save draft"}
           </Button>
           {status === "draft" ? (
-            <Button className="min-h-11 px-3 sm:px-4" onClick={onPublish} disabled={locked}>
-              {busy === "publish" ? "Publishing\u2026" : "Publish"}
+            <Button className="min-h-11 px-3 sm:px-4" onClick={willSchedule ? onSchedule : onPublish} disabled={locked}>
+              {busy === "publish"
+                ? "Publishing\u2026"
+                : busy === "schedule"
+                  ? "Scheduling\u2026"
+                  : willSchedule
+                    ? "Schedule"
+                    : "Publish"}
             </Button>
           ) : (
             <Button variant="outline" className="min-h-11 px-3 sm:px-4" onClick={onUnpublish} disabled={locked}>
@@ -712,6 +789,38 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
             {status === "published" && <span className="mt-1 block normal-case tracking-normal">Locked after publishing</span>}
           </label>
 
+          <label className={LABEL}>
+            Publish date
+            <Input
+              type="datetime-local"
+              value={publishAt}
+              onChange={(e) => {
+                setPublishAt(e.target.value);
+                editVersion.current += 1;
+                setDirty(true);
+              }}
+              disabled={locked}
+              className="mt-1 h-12 text-sm normal-case tracking-normal"
+            />
+            <span className="mt-1 block normal-case tracking-normal">
+              {willSchedule
+                ? "A future date — publishes automatically at this time."
+                : status === "published"
+                  ? "Shown as this post's publish date."
+                  : "Leave blank to use today. A past date backdates the post."}
+            </span>
+            {scheduledAt && (
+              <button
+                type="button"
+                onClick={onCancelSchedule}
+                disabled={locked}
+                className="mt-1 text-xs normal-case tracking-normal text-muted-foreground underline hover:text-foreground"
+              >
+                Cancel schedule
+              </button>
+            )}
+          </label>
+
           <div>
             <span className={LABEL}>Tags</span>
             <div className="mt-1">
@@ -730,29 +839,58 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
 
           <div>
             <span className={LABEL}>Cover image</span>
-            {cover ? (
-              <div className="mt-1 space-y-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={cover} alt="" className="w-full rounded-md object-cover" style={{ aspectRatio: "16 / 9" }} />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="min-h-11"
-                  onClick={() => {
-                    setCover(null);
-                    editVersion.current += 1;
-                    setDirty(true);
-                  }}
-                  disabled={locked}
-                >
-                  Remove cover
+            {/* Focusable so a click-then-paste can replace or set the cover
+                without opening the file picker; drop works the same as the
+                body textarea's image drop. */}
+            <div
+              tabIndex={0}
+              aria-label="Cover image drop zone. Click, then paste or drop an image."
+              onPaste={(e) => {
+                const f = e.clipboardData.files;
+                if (f.length) {
+                  e.preventDefault();
+                  void onPickCover(f);
+                }
+              }}
+              onDragOver={(e) => {
+                if (e.dataTransfer.types.includes("Files")) e.preventDefault();
+              }}
+              onDrop={(e) => {
+                const f = e.dataTransfer.files;
+                if (f.length) {
+                  e.preventDefault();
+                  void onPickCover(f);
+                }
+              }}
+              className="mt-1 rounded-md outline-none"
+            >
+              {cover ? (
+                <div className="space-y-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={cover} alt="" className="w-full rounded-md object-cover" style={{ aspectRatio: "16 / 9" }} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="min-h-11"
+                    onClick={() => {
+                      setCover(null);
+                      editVersion.current += 1;
+                      setDirty(true);
+                    }}
+                    disabled={locked}
+                  >
+                    Remove cover
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="outline" className="min-h-11" onClick={() => coverInput.current?.click()} disabled={locked}>
+                  Upload cover
                 </Button>
-              </div>
-            ) : (
-              <Button variant="outline" className="mt-1 min-h-11" onClick={() => coverInput.current?.click()} disabled={locked}>
-                Upload cover
-              </Button>
-            )}
+              )}
+              <p className="mt-1 normal-case tracking-normal text-[11px] text-muted-foreground">
+                Click here, then paste (⌘V) or drop an image
+              </p>
+            </div>
           </div>
 
           <label className={LABEL}>

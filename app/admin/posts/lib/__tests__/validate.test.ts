@@ -8,6 +8,7 @@ const ok: PostPatch = {
   body_md: "Body",
   cover_image_url: null,
   tags: ["Strategy"],
+  published_at: null,
 };
 
 describe("normalizeTags", () => {
@@ -29,6 +30,9 @@ describe("validatePatch", () => {
   );
   it("rejects a long excerpt", () => expect(validatePatch({ ...ok, excerpt: "e".repeat(501) })).toMatch(/500/));
   it("rejects a non-https cover", () => expect(validatePatch({ ...ok, cover_image_url: "http://x/y.png" })).toMatch(/https/));
+  it("accepts a valid published_at", () =>
+    expect(validatePatch({ ...ok, published_at: "2026-01-01T00:00:00.000Z" })).toBeNull());
+  it("rejects an invalid published_at", () => expect(validatePatch({ ...ok, published_at: "not a date" })).toMatch(/date/i));
 });
 
 describe("validateForPublish", () => {

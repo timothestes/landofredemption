@@ -13,7 +13,27 @@ function fmt(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function Section({ heading, posts, showAuthor }: { heading: string; posts: PostRow[]; showAuthor: boolean }) {
+function fmtScheduled(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function Section({
+  heading,
+  posts,
+  showAuthor,
+  dateLabel = (p) => fmt(p.published_at ?? p.updated_at),
+}: {
+  heading: string;
+  posts: PostRow[];
+  showAuthor: boolean;
+  dateLabel?: (p: PostRow) => string;
+}) {
   return (
     <section className="mb-8">
       <h2 className="mb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
@@ -32,7 +52,7 @@ function Section({ heading, posts, showAuthor }: { heading: string; posts: PostR
                 <span className="truncate font-medium">{p.title}</span>
                 <span className="shrink-0 text-xs text-muted-foreground">
                   {showAuthor && p.author?.username ? `${p.author.username} · ` : ""}
-                  {fmt(p.published_at ?? p.updated_at)}
+                  {dateLabel(p)}
                 </span>
               </Link>
             </li>
@@ -69,7 +89,13 @@ export default async function PostsAdminPage() {
           initialBio={profile?.bio ?? null}
         />
         {r.success === false && <p className="mb-4 text-sm text-destructive">{r.error}</p>}
-        <Section heading="Drafts" posts={posts.filter((p) => p.status === "draft")} showAuthor={ctx.isSuperuser} />
+        <Section
+          heading="Scheduled"
+          posts={posts.filter((p) => p.status === "draft" && p.scheduled_at !== null)}
+          showAuthor={ctx.isSuperuser}
+          dateLabel={(p) => `Scheduled for ${fmtScheduled(p.scheduled_at!)}`}
+        />
+        <Section heading="Drafts" posts={posts.filter((p) => p.status === "draft" && p.scheduled_at === null)} showAuthor={ctx.isSuperuser} />
         <Section heading="Published" posts={posts.filter((p) => p.status === "published")} showAuthor={ctx.isSuperuser} />
       </div>
     </div>
