@@ -37,7 +37,7 @@ export default async function ForgeHomePage() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Link href="/forge/import" className="rounded-lg border p-3 hover:bg-muted/50 [.jayden_&]:bg-card/80 [.jayden_&]:backdrop-blur-sm [.jayden_&]:border-primary/20 [.jayden_&]:hover:border-primary/60">
                 <div className="text-sm font-medium">Import a set</div>
-                <div className="text-xs text-muted-foreground">Bring in a LackeyCCG plugin zip.</div>
+                <div className="text-xs text-muted-foreground">Bring in a Lackey zip, carddata.txt, or spreadsheet.</div>
               </Link>
               <Link href="/forge/sets" className="rounded-lg border p-3 hover:bg-muted/50 [.jayden_&]:bg-card/80 [.jayden_&]:backdrop-blur-sm [.jayden_&]:border-primary/20 [.jayden_&]:hover:border-primary/60">
                 <div className="text-sm font-medium">New set</div>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireForge } from "@/app/forge/lib/auth";
 import { listSetCards, canDesignSet } from "@/app/forge/lib/sets";
@@ -23,7 +24,11 @@ export default async function SetCardsPage({ params }: { params: Promise<{ setId
             <div className="mx-auto mb-3 w-40 text-left">
               <AddCardTile setId={setId} />
             </div>
-            <p className="text-sm text-muted-foreground">No cards yet. Create one here, or share an idea from your ideas library.</p>
+            <p className="text-sm text-muted-foreground">
+              No cards yet. Create one here, share an idea from your ideas library, or{" "}
+              <Link href={`/forge/import?set=${setId}`} className="text-primary hover:underline">import cards</Link>
+              {" "}from a Lackey file or spreadsheet.
+            </p>
           </>
         ) : (
           <>

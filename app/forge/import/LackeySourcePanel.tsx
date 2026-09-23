@@ -1,16 +1,17 @@
 "use client";
 
-// Source panel: LackeyCCG plugin zip. Unpacks in the browser (fflate), parses
-// sets/carddata.txt, and lets the elder pick a set by code or /regex/. Emits the
-// matched cards to the shared wizard.
+// Source panel: a LackeyCCG plugin zip, or a bare carddata.txt for a text-only
+// import. Reads in the browser (see readLackeySource), parses carddata.txt, and
+// lets the elder pick a set by code or /regex/ — prefilled when the file holds a
+// single set. Emits the matched cards to the shared wizard.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { unzipSync } from "fflate";
 import {
-  parseCarddata, matchesFilter, distinctSets, findImageEntry,
+  matchesFilter, distinctSets, findImageEntry,
   lackeyRowToDesignCard, auditLackeyRow, type LackeyRow,
 } from "@/app/forge/lib/lackey";
 import FilePicker from "@/app/forge/components/FilePicker";
+import { readLackeySource, soleSetCode } from "./lackeySource";
 import type { SourceSelection } from "./selection";
 
 export default function LackeySourcePanel({
@@ -22,38 +23,27 @@ export default function LackeySourcePanel({
 }) {
   const zipBytes = useRef<Uint8Array | null>(null);
   const sizesRef = useRef<Record<string, number>>({});
-  const [zipName, setZipName] = useState<string | null>(null);
-  const [zipError, setZipError] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [rows, setRows] = useState<LackeyRow[] | null>(null);
   const [entryNames, setEntryNames] = useState<string[]>([]);
+  const [textOnly, setTextOnly] = useState(false);
   const [filter, setFilter] = useState("");
 
-  async function onPickZip(file: File) {
-    setZipError(null); setRows(null); setFilter("");
-    setZipName(file.name);
+  async function onPickFile(file: File) {
+    setFileError(null); setRows(null); setFilter("");
+    setFileName(file.name);
     try {
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      zipBytes.current = bytes;
-      // Single pass: collect every entry name + size, decompress ONLY carddata.txt.
-      const names: string[] = [];
-      const sizes: Record<string, number> = {};
-      const unzipped = unzipSync(bytes, {
-        filter: (f) => {
-          if (!f.name.endsWith("/")) { names.push(f.name); sizes[f.name] = f.originalSize; }
-          return f.name.toLowerCase().endsWith("sets/carddata.txt");
-        },
-      });
-      const carddataEntry = Object.keys(unzipped)[0];
-      if (!carddataEntry) {
-        setZipError("No sets/carddata.txt found in this zip — is it a Lackey plugin export?");
-        return;
-      }
-      const text = new TextDecoder("utf-8").decode(unzipped[carddataEntry]);
-      setRows(parseCarddata(text));
-      setEntryNames(names);
-      sizesRef.current = sizes;
+      const src = await readLackeySource(file);
+      zipBytes.current = src.zipBytes;
+      sizesRef.current = src.sizes;
+      setEntryNames(src.entryNames);
+      setTextOnly(src.zipBytes === null);
+      setRows(src.rows);
+      // A one-set file (typically a bare carddata.txt) needs no typing to match.
+      setFilter(soleSetCode(src.rows) ?? "");
     } catch (e) {
-      setZipError(e instanceof Error ? e.message : "Could not read this zip file.");
+      setFileError(e instanceof Error ? e.message : "Could not read this file.");
     }
   }
 
@@ -61,7 +51,7 @@ export default function LackeySourcePanel({
     () => (rows ?? []).filter((r) => matchesFilter(r, filter)),
     [rows, filter],
   );
-  const zipSets = useMemo(() => distinctSets(rows ?? []), [rows]);
+  const fileSets = useMemo(() => distinctSets(rows ?? []), [rows]);
   const invalidRegex = useMemo(() => {
     const m = filter.trim().match(/^\/(.*)\/$/);
     if (!m) return false;
@@ -80,25 +70,29 @@ export default function LackeySourcePanel({
       zipBytes: zipBytes.current,
       sizes: sizesRef.current,
       defaultSetName: filter && !filter.startsWith("/") ? filter.trim() : "",
-      key: `lackey|${zipName}|${filter}`,
+      key: `lackey|${fileName}|${filter}`,
     };
-  }, [matched, entryNames, zipName, filter]);
+  }, [matched, entryNames, fileName, filter]);
   useEffect(() => { onSelection(selection); }, [selection, onSelection]);
 
   const noImage = selection ? selection.cards.filter((c) => !c.entryName).length : 0;
 
   return (
     <>
-      {/* 2 — zip */}
+      {/* 2 — file */}
       <fieldset className="mt-4 rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">2 · Lackey zip</legend>
-        <FilePicker label="Choose zip…" accept=".zip,application/zip" disabled={disabled} onFile={onPickZip} />
-        {zipName && !zipError && rows && (
+        <legend className="px-1 text-sm font-medium">2 · Lackey file</legend>
+        <FilePicker label="Choose zip or carddata.txt…"
+          accept=".zip,application/zip,.txt,.tsv,text/plain,text/tab-separated-values"
+          disabled={disabled} onFile={onPickFile}
+          hint="A plugin zip with set images, or just carddata.txt for a text-only import." />
+        {fileName && !fileError && rows && (
           <p className="mt-2 text-xs text-muted-foreground">
-            {zipName} — {rows.length} cards across {zipSets.length} sets.
+            {fileName} — {rows.length} cards across {fileSets.length} {fileSets.length === 1 ? "set" : "sets"}.
+            {textOnly && " No images — cards import as text only."}
           </p>
         )}
-        {zipError && <p className="mt-2 text-xs text-destructive">{zipError}</p>}
+        {fileError && <p className="mt-2 text-xs text-destructive">{fileError}</p>}
       </fieldset>
 
       {/* 3 — filter */}
@@ -111,7 +105,7 @@ export default function LackeySourcePanel({
           {invalidRegex && <p className="mt-1 text-xs text-destructive">Invalid regular expression.</p>}
           <p className="mt-2 text-sm">
             {matched.length === 1 ? "1 card matches" : `${matched.length} cards match`}
-            {matched.length > 0 && (
+            {matched.length > 0 && !textOnly && (
               <span className="text-muted-foreground"> · {noImage} without an image</span>
             )}
           </p>
