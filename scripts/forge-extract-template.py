@@ -72,7 +72,11 @@ RECTS_PT = {
 # Ability-box gradient: light until `light`% of box height, black from `dark`% (top-down),
 # by number of scripture rows. Measured from "Unnamed gradient 13/5/6/8" ramp points.
 GRADIENT_ROWS = {2: (73, 86), 3: (64, 77), 4: (54, 68), 5: (47, 60)}
-BORDER_STROKE_PT = 1.5
+# The design team's finished cards (End of Times, 147 cards registered on their border lines)
+# measure the outer border at ~4 canvas px, i.e. 1 pt — not the 1.5 pt the template path's
+# stroke suggests. See docs/superpowers/specs/2026-09-09-forge-live-card-preview-design.md,
+# "Print parity A/B".
+BORDER_STROKE_PT = 1.0
 
 # ----------------------------------------------------------------------------- names
 # Illustrator object name (prefix, before the numeric suffix) -> wash slug

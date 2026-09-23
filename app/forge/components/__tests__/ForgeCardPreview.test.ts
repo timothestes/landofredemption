@@ -23,7 +23,7 @@ describe("ForgeCardPreview title", () => {
     const texts = titleTexts(html, "Michael, Dragon Slayer");
     expect(texts).toHaveLength(2);
     const [shadow, face] = texts;
-    expect(shadow).toMatch(/fill="#231f20"/);
+    expect(shadow).toMatch(/fill="#000"/);
     expect(shadow).toMatch(/transform="translate\(3 3\)"/);
     expect(face).toMatch(/fill="#fff"/);
     expect(face).not.toMatch(/transform=/);
@@ -34,36 +34,91 @@ describe("ForgeCardPreview title", () => {
   it("gives the white face a black contour, painted under the fill so the letters keep their weight", () => {
     const html = render({ name: "Michael, Dragon Slayer", cardType: ["Hero"], brigades: ["Silver"], strength: 12, toughness: 8 });
     const [, face] = titleTexts(html, "Michael, Dragon Slayer");
-    expect(face).toMatch(/stroke="#231f20"/);
+    expect(face).toMatch(/stroke="#000"/);
     expect(face).toMatch(/paint-order="stroke"/);
     expect(Number(face.match(/stroke-width="([\d.]+)"/)![1])).toBeGreaterThanOrEqual(3);
   });
 
   // The contour and the offset shadow both sit outside the glyphs, so the clip that keeps the
-  // title off the icon box has to stand off the text or the last letter comes out shaved.
+  // title off the icon box has to stand off the text's anchor or the last letter comes out
+  // shaved: half the contour plus the 3 px shadow offset past the right anchor.
   it("leaves room for the contour and the shadow inside the title clip", () => {
     const html = render({ name: "Michael, Dragon Slayer", cardType: ["Hero"], brigades: ["Silver"], strength: 12, toughness: 8 });
     const clip = html.match(/<clipPath[^>]*><rect x="([-\d.]+)"[^>]*width="([\d.]+)"/)!;
     const [x, w] = [Number(clip[1]), Number(clip[2])];
-    const stroke = Number(titleTexts(html, "Michael, Dragon Slayer")[1].match(/stroke-width="([\d.]+)"/)![1]);
+    const face = titleTexts(html, "Michael, Dragon Slayer")[1];
+    const stroke = Number(face.match(/stroke-width="([\d.]+)"/)![1]);
+    const anchor = Number(face.match(/ x="([\d.]+)"/)![1]);
     expect(RECTS.title.x - x).toBeGreaterThanOrEqual(stroke / 2);
-    expect(x + w - (RECTS.title.x + RECTS.title.w)).toBeGreaterThanOrEqual(stroke / 2);
+    expect(x + w - anchor).toBeGreaterThanOrEqual(stroke / 2 + 3);
+  });
+});
+
+// Measured on the design team's finished End of Times cards, registered on their border lines
+// (scripts/forge-print-parity): every name is Symphony Black at 9 pt, right-aligned so its ink
+// stops 4 px inside the art window's edge, baseline 37.5 px below the title frame's top; the
+// longest name (457 px) is neither shrunk nor condensed. Lost Souls print "Lost Soul" centred.
+describe("ForgeCardPreview title size and anchor", () => {
+  const face = (html: string, name: string) =>
+    [...html.matchAll(new RegExp(`<text([^>]*)>${name}</text>`, "g"))].map((m) => m[1])[1];
+
+  it("sets every name at 9 pt (37.5 px), the longest printed name included, and never shrinks it", () => {
+    for (const name of ["Hades", "Retribution for Rebellion", "Conquer, the White Rider"]) {
+      const t = face(render({ name, cardType: ["Hero"], brigades: ["White"], strength: 1, toughness: 1 }), name);
+      expect(t).toMatch(/font-size="37.5"/);
+      expect(t).not.toMatch(/textLength/);
+    }
+  });
+  it("squeezes, rather than shrinks, a name whose real width overruns the frame", () => {
+    const name = "The Extraordinarily Long-Winded Prophet of Doom";
+    const t = face(render({ name, cardType: ["Hero"], brigades: ["White"], strength: 1, toughness: 1 }), name);
+    expect(t).toMatch(/font-size="37.5"/);
+    expect(t).toMatch(/textLength=/);
+  });
+  it("anchors the ink 4 px inside the art window's right edge, on the printed baseline", () => {
+    const t = face(render({ name: "Hades", cardType: ["EvilCharacter"], brigades: ["Black"], strength: 1, toughness: 1 }), "Hades");
+    expect(t).toMatch(new RegExp(`x="${RECTS.title.x + RECTS.title.w - 4}"`));
+    expect(t).toMatch(new RegExp(`y="${RECTS.title.y + 37.5}"`));
+    expect(t).toMatch(/text-anchor="end"/);
+  });
+  it("prints the catalog's bracketed disambiguator nowhere, and titles a Lost Soul \"Lost Soul\" centred on the card", () => {
+    const html = render({ name: "Blood of the Lamb [EoT]", cardType: ["GE"], brigades: ["White"] });
+    expect(html).toContain(">Blood of the Lamb</text>");
+    expect(html).not.toContain("[EoT]</text>");
+    const soul = render({ name: 'Lost Soul "Again" [Revelation 10:11]', cardType: ["LostSoul"], identifiers: ['"Again"'] });
+    const t = face(soul, "Lost Soul");
+    expect(t).toMatch(new RegExp(`x="${CANVAS.w / 2}"`));
+    expect(t).toMatch(/text-anchor="middle"/);
+    expect(soul).not.toMatch(/Lost Soul "Again"/);
+  });
+});
+
+describe("ForgeCardPreview credits", () => {
+  it("sets the illustrator line at 5 pt and the copyright at 4 pt, right-aligned 4 px inside the art edge", () => {
+    const html = render({ name: "Hades", cardType: ["Hero"], brigades: ["White"], artistCredit: "Jusepe de Ribera" });
+    const illus = html.match(/<text([^>]*)>Illus\. Jusepe de Ribera<\/text>/)![1];
+    const copy = html.match(/<text([^>]*)>© \d{4} Cactus Game Design, Inc\.<\/text>/)![1];
+    expect(illus).toMatch(/font-size="20.8"/);
+    expect(copy).toMatch(/font-size="16.7"/);
+    for (const t of [illus, copy]) expect(t).toMatch(new RegExp(`x="${RECTS.credits.x + RECTS.credits.w - 4}"`));
+    expect(Number(illus.match(/ y="([\d.]+)"/)![1])).toBeCloseTo(RECTS.credits.y + 22.7, 5);
+    expect(Number(copy.match(/ y="([\d.]+)"/)![1])).toBeCloseTo(RECTS.credits.y + 43.2, 5);
   });
 });
 
 describe("ForgeCardPreview stats", () => {
-  it("prints stats without an outline, at one size, with digit tops just under the box top", () => {
+  it("prints stats without an outline, at one size (10 pt), with digit tops just under the box top", () => {
     const hero = statText(render({ cardType: ["Hero"], brigades: ["Blue"], strength: 11, toughness: 9 }), "11/9");
     expect(hero).not.toMatch(/stroke/);
-    expect(hero).toMatch(/font-size="41"/);
-    expect(hero).toMatch(new RegExp(`y="${RECTS.leftBox.y + 34}"`));
+    expect(hero).toMatch(/font-size="41.7"/);
+    expect(hero).toMatch(new RegExp(`y="${RECTS.leftBox.y + 32}"`));
     expect(hero).toMatch(/fill="#fff"/);
     // "10/11" prints at the same size as "9/6" — the box has room.
-    expect(statText(render({ cardType: ["Hero"], brigades: ["Blue"], strength: 10, toughness: 11 }), "10/11")).toMatch(/font-size="41"/);
+    expect(statText(render({ cardType: ["Hero"], brigades: ["Blue"], strength: 10, toughness: 11 }), "10/11")).toMatch(/font-size="41.7"/);
   });
   it("uses dark digits on a light box, still without an outline", () => {
     const white = statText(render({ cardType: ["Hero"], brigades: ["White"], strength: 5, toughness: 2 }), "5/2");
-    expect(white).toMatch(/fill="#231f20"/);
+    expect(white).toMatch(/fill="#000"/);
     expect(white).not.toMatch(/stroke/);
   });
 });

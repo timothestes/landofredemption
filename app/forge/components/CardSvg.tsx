@@ -16,7 +16,7 @@
 // sized in container units (cqw): WebKit multiplies those by the page-zoom factor a second time,
 // so a Safari reader with a remembered per-site zoom saw the ability run off the text box.
 
-import type { DesignCard, StatValue } from "@/app/forge/lib/designCard";
+import { printedName, type DesignCard, type StatValue } from "@/app/forge/lib/designCard";
 import {
   washPaths, washBands, iconBox, classIcons, isPreviewApproximate, type IconBox,
 } from "@/app/forge/lib/frameAssets";
@@ -24,19 +24,30 @@ import { textFit, textWidth, TEXT_WIDTH, TEXT_METRICS as TM } from "@/app/forge/
 import { CANVAS, RECTS, BORDER_STROKE } from "@/app/forge/lib/frameGeometry";
 
 const { w: CW, h: CH } = CANVAS;
-export const INK = "#231f20"; // the template's 100% K through its SWOP profile
-// ForgeTitle (Symphony Black from the private font route, cap height 0.73em) averages ~0.53em
-// per character; TITLE_EM adds a hair for the stroke and is used to size and squeeze titles.
-// Sizes are cap heights measured off printed cards (title ~26 px, stats ~22 px on the canvas).
-const TITLE_EM = 0.57;
-const TITLE_MAX = 36, TITLE_MIN = 25;
+// Strokes, the text box's dark floor and the text ink all measure pure black on the design
+// team's finished cards (their export of the template's 100% K), not the #231f20 the SWOP
+// profile gives it.
+export const INK = "#000";
+// Title: Symphony Black at 9 pt (37.5 px at 300 dpi), never smaller. The finished End of Times
+// cards set every name at that size, the longest (457 px of ink) running from the icon box to
+// the art window's edge; a name that would overrun the frame is squeezed (textLength), which
+// the face's real advance widths decide. The ink stops TITLE_INSET px inside the art window's
+// right edge and the baseline sits TITLE_BASELINE below the frame's top (finished cards: ink
+// right edge 672, baseline 89.4).
+const TITLE_SIZE = 37.5;
+const TITLE_BASELINE = 37.5;
+const TITLE_INSET = 4;
+// The advance widths do not know the face's kerning, which the renderers apply: on the 147
+// finished cards the drawn name is 0-4.5% narrower than its advances add up to (comma-heavy
+// names kern the most), so only a name wider than that allowance is really over the frame.
+const TITLE_KERN = 0.955;
 // Printed titles: a black contour all the way around the letter, plus a hard shadow offset to
 // the lower right (canvas px). The contour is a fixed width in the print template, not a share
 // of the type size, so it reads heavier on the smaller type a long name shrinks to — which is
 // what the printed cards show. TITLE_PAD keeps the contour and the shadow out of the clip.
 const TITLE_SHADOW = { dx: 3, dy: 3, spread: 1.0 };
 const TITLE_EDGE = 3;
-const TITLE_PAD = 4;
+const TITLE_PAD = 6;
 // Arimo's ascent and descent (hhea, per em). A CSS line box puts its baseline half-leading
 // plus ascent below its top; the printed text metrics were measured against line boxes laid
 // out that way, so the SVG lines use the same arithmetic to land where they always have.
@@ -101,9 +112,10 @@ function IconBoxG({ id, box, rect, side, stat, statFont, assetHref }: {
   // into thirds.
   const n = box.bands.length + 1;
   const bandTop = (i: number) => y + (h * (i + 1)) / n;
-  // Printed stats: one size whether "9/6" or "10/11" (digits ~27 px tall, tops 6 px below the
-  // box top, centred), no outline; only an unusually long value gives ground.
-  const statSize = stat && stat.length > 6 ? 30 : 41;
+  // Printed stats: Grail Light at 10 pt, one size whether "9/6" or "10/11" (digits ~29 px
+  // tall, tops 3 px below the box top, bottoms at 65, centred), no outline; only an unusually
+  // long value gives ground.
+  const statSize = stat && stat.length > 6 ? 30 : 41.7;
   return (
     <g>
       <clipPath id={id}><path d={d} /></clipPath>
@@ -120,7 +132,7 @@ function IconBoxG({ id, box, rect, side, stat, statFont, assetHref }: {
       <path d={d} fill="none" stroke={INK} strokeWidth={4} />
       {stat && (
         <text
-          x={x + w / 2 + (side === "left" ? -2 : 2)} y={y + 34} textAnchor="middle"
+          x={x + w / 2 + (side === "left" ? -2 : 2)} y={y + 32} textAnchor="middle"
           fontFamily={statFont} fontSize={statSize}
           fill={box.darkText ? INK : "#fff"}
         >
@@ -192,16 +204,18 @@ export default function CardSvg({
   const approximate = isPreviewApproximate(card);
 
   const A = RECTS.art, B = RECTS.border, T = RECTS.textBox, I = RECTS.textInset;
-  const name = card.name?.trim() || "Card Name";
-  // Title: right-aligned, or centered between the boxes when there is a right box (as
-  // printed Covenants / Curses are). Shrinks for long names, then squeezes the glyphs the
-  // way printed cards condense long titles.
+  const name = printedName(card) || "Card Name";
+  // Title: right-aligned into the art window's edge; centered between the boxes when there is
+  // a right box (Covenants / Curses); a Lost Soul, which has no box, centers "Lost Soul" on the
+  // card. Fixed at 9 pt, squeezed only when its real width overruns the frame.
+  const lostSoul = (card.cardType ?? []).includes("LostSoul");
   const titleLeft = RECTS.title.x;
-  const titleRight = right ? RECTS.rightBox.x - 12 : titleLeft + RECTS.title.w;
+  const titleRight = right ? RECTS.rightBox.x - 12 : titleLeft + RECTS.title.w - TITLE_INSET;
   const titleAvail = titleRight - titleLeft;
-  const titleWidth = (size: number) => name.length * size * TITLE_EM;
-  const titleSize = titleWidth(TITLE_MAX) > titleAvail ? Math.max(TITLE_MIN, (TITLE_MAX * titleAvail) / titleWidth(TITLE_MAX)) : TITLE_MAX;
-  const titleSqueeze = titleWidth(titleSize) > titleAvail;
+  const titleSize = TITLE_SIZE;
+  const titleSqueeze = textWidth(name, "title", titleSize) * TITLE_KERN > titleAvail;
+  const titleX = lostSoul ? CW / 2 : right ? (titleLeft + titleRight) / 2 : titleRight;
+  const titleAnchor = lostSoul || right ? "middle" : "end";
   const ids = card.identifiers ?? [];
   const stat = left?.withStats ? statText(card.strength, card.toughness) : null;
 
@@ -232,26 +246,21 @@ export default function CardSvg({
     };
   });
 
-  // Credits: two right-aligned lines resting on the bottom of their slot.
+  // Credits: two right-aligned lines, the illustrator at 5 pt and the copyright at 4 pt, on
+  // the finished cards' baselines (979 and 999.5), their ink stopping TITLE_INSET inside the
+  // art window's edge like the title.
   const C = RECTS.credits;
-  const credits = [
-    { text: `Illus. ${card.artistCredit?.trim() || "Artist Unknown"}`, size: 15 },
-    { text: `© ${year} Cactus Game Design, Inc.`, size: 13 },
-  ];
-  let creditBottom = C.y + C.h;
-  const creditRows = credits
-    .slice()
-    .reverse()
-    .map(({ text, size }) => {
-      const lineHeight = size * 1.3;
-      creditBottom -= lineHeight;
-      return { text: clampText(text, size, C.w), size, y: baselineIn(creditBottom, lineHeight, size) };
-    })
-    .reverse();
+  const creditRight = C.x + C.w - TITLE_INSET;
+  const creditRows = [
+    { text: `Illus. ${card.artistCredit?.trim() || "Artist Unknown"}`, size: 20.8, y: C.y + 22.7 },
+    { text: `© ${year} Cactus Game Design, Inc.`, size: 16.7, y: C.y + 43.2 },
+  ].map((row) => ({ ...row, text: clampText(row.text, row.size, C.w) }));
 
-  // Identifier bubble — a pill straddling the art window and the text box.
+  // Identifier bubble — a pill straddling the art window and the text box: an opaque mid
+  // gray with a 2 px black outline on the finished cards, its bold text 18 px, 2 px above
+  // the middle.
   const ID = RECTS.idBubble;
-  const idSize = 19, idPadX = 16;
+  const idSize = 18, idPadX = 15;
   const idText = ids.length ? clampText(ids.join(", "), idSize, ID.w - 2 * idPadX) : "";
   const idW = idText ? Math.min(ID.w, textWidth(idText, "bold", idSize) + 2 * idPadX) : 0;
 
@@ -279,7 +288,7 @@ export default function CardSvg({
           <feDropShadow dx="0" dy="2" stdDeviation="1" floodColor="#000" floodOpacity="0.8" />
         </filter>
       </defs>
-      <rect x={T.x} y={T.y} width={T.w} height={T.h} rx={T.r} fill={`url(#${uid}g)`} stroke={INK} strokeWidth={2.5} />
+      <rect x={T.x} y={T.y} width={T.w} height={T.h} rx={T.r} fill={`url(#${uid}g)`} stroke={INK} strokeWidth={4} />
       <rect x={A.x} y={A.y} width={A.w} height={A.h} rx={A.r} fill="none" stroke={INK} strokeWidth={4} />
       <rect x={B.x} y={B.y} width={B.w} height={B.h} rx={B.r} fill="none" stroke={INK} strokeWidth={BORDER_STROKE} />
       {left && <IconBoxG id={`${uid}l`} box={left} rect={RECTS.leftBox} side="left" stat={stat} statFont={fonts.stat} assetHref={assetHref} />}
@@ -293,7 +302,7 @@ export default function CardSvg({
       {[TITLE_SHADOW, null].map((shadow, i) => (
         <text
           key={i}
-          x={right ? (titleLeft + titleRight) / 2 : titleRight} y={RECTS.title.y + 42} textAnchor={right ? "middle" : "end"}
+          x={titleX} y={RECTS.title.y + TITLE_BASELINE} textAnchor={titleAnchor}
           clipPath={`url(#${uid}t)`} fontFamily={fonts.title} fontSize={titleSize}
           fill={shadow ? INK : "#fff"} stroke={INK} strokeWidth={shadow ? TITLE_SHADOW.spread : TITLE_EDGE} paintOrder="stroke" style={{ paintOrder: "stroke" }}
           transform={shadow ? `translate(${shadow.dx} ${shadow.dy})` : undefined}
@@ -318,10 +327,10 @@ export default function CardSvg({
           <g>
             <rect
               x={ID.x + (ID.w - idW) / 2} y={ID.y} width={idW} height={ID.h} rx={ID.h / 2}
-              fill="rgba(0,0,0,0.75)" stroke={INK} strokeWidth={1.5}
+              fill="#646466" stroke={INK} strokeWidth={2}
             />
             <text
-              x={ID.x + ID.w / 2} y={baselineIn(ID.y + (ID.h - idSize) / 2, idSize, idSize)} textAnchor="middle"
+              x={ID.x + ID.w / 2} y={baselineIn(ID.y + (ID.h - idSize) / 2, idSize, idSize) - 2} textAnchor="middle"
               fontSize={idSize} fontWeight={700} fill="#fff"
             >
               {idText}
@@ -357,7 +366,7 @@ export default function CardSvg({
         {/* credits */}
         <g filter={`url(#${uid}s)`} fill="#fff" fontWeight={700}>
           {creditRows.map((row, i) => (
-            <text key={i} x={C.x + C.w} y={row.y} textAnchor="end" fontSize={row.size}>{row.text}</text>
+            <text key={i} x={creditRight} y={row.y} textAnchor="end" fontSize={row.size}>{row.text}</text>
           ))}
         </g>
 

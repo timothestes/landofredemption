@@ -174,6 +174,15 @@ export function validate(card: DesignCard): ValidationHint[] {
  * The descoped raw-text body. Falls back to the legacy napkin `specialAbility`
  * so cards saved before the 2026-07-03 descope don't read blank. Pure.
  */
+/** The name as the card prints it: the catalog's bracketed disambiguator ("Blood of the Lamb
+ *  [EoT]", "The Depraved [Gray - EoT]") is dropped, and a Lost Soul is titled just "Lost Soul"
+ *  — its quoted word prints in the identifier bubble, not the title. Pure. */
+export function printedName(card: DesignCard): string {
+  const name = (card.name ?? "").trim();
+  if ((card.cardType ?? []).includes("LostSoul") && /^lost soul\b/i.test(name)) return "Lost Soul";
+  return name.replace(/\s*\[[^\]]*\]\s*$/, "").trim();
+}
+
 export function cardRawText(card: DesignCard): string {
   return card.rawText ?? card.specialAbility ?? "";
 }

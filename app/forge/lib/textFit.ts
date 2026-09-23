@@ -4,7 +4,7 @@
 // set-wide pass as well as by the preview. Metrics were measured off printed Roots /
 // Roots 2 / Israel's Inheritance / Times to Come cards; see the design spec's "Text fit"
 // section for the numbers behind each constant.
-import { BOLD_ADVANCES, ITALIC_ADVANCES, FONT_UPEM } from "@/app/forge/lib/fontMetrics";
+import { BOLD_ADVANCES, ITALIC_ADVANCES, TITLE_ADVANCES, FONT_UPEM } from "@/app/forge/lib/fontMetrics";
 import { RECTS } from "@/app/forge/lib/frameGeometry";
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
 
@@ -14,26 +14,31 @@ export const TEXT_METRICS = {
   // 31.6 px pitch, and printed cards never shrink it to make room. 30.9 px is the one size
   // that reproduces every line break on six printed cards (30.8 < size <= 30.99).
   ability: { size: 30.9, pitch: 31.6, top: 19.6, paragraphGap: 10 },
-  // Italic, justified, stacked upward so its last line box ends 257.5 px below the box top.
+  // Italic, justified, stacked upward so its last line box ends 251.5 px below the box top
+  // (the finished End of Times cards put the last baseline ~26 px above the reference's).
   // 22.9 px reproduces the breaks on seven of eight printed verses (the print kerns the
   // italic, which this table cannot see); its 23 px pitch is tighter than the face's height.
-  verse: { size: 22.9, pitch: 23, bottom: 257.5 },
-  // Bold, right-aligned, fixed: cap tops 256 px below the box top (12 px above its bottom).
-  reference: { size: 19, top: 253.5, pitch: 19 },
-  // The light-to-dark gradient sits BETWEEN the ability and the verse: recent sets (Roots 2
-  // onward) are fully dark by the first verse line, with the transition in the ~28 px above
-  // it — not across the first row as Roots / IR printed. `minGap` is the room the ability
+  verse: { size: 22.9, pitch: 23, bottom: 251.5 },
+  // Bold, right-aligned, fixed, 5 pt: the design team's finished cards put its baseline
+  // 937.6 px down the canvas, 26 px under the verse's last baseline.
+  reference: { size: 20.8, top: 252, pitch: 20.8 },
+  // The light-to-dark gradient sits BETWEEN the ability and the verse. Measured on the design
+  // team's finished End of Times cards (147, registered on their border lines): the box is
+  // fully dark 8 px INTO the first verse line's box (about its x-height line; the caps rise
+  // into the last of the ramp) and the ramp runs ~39 px above that, so a negative `above` —
+  // Roots / IR printed the transition across the first row. `minGap` is the room the ability
   // must leave above the verse (the tightest printed card leaves 22 px).
-  gradient: { above: 2, span: 28 },
+  gradient: { above: -8, span: 39 },
   minGap: 18,
 } as const;
 export const TEXT_WIDTH = RECTS.textInset.w;
 
-export type Face = "bold" | "italic";
+export type Face = "bold" | "italic" | "title";
+const TABLES: Record<Face, ReadonlyMap<string, number>> = { bold: BOLD_ADVANCES, italic: ITALIC_ADVANCES, title: TITLE_ADVANCES };
 const FALLBACK_ADVANCE = 556;
 
 export function textWidth(text: string, face: Face, size: number): number {
-  const table = face === "bold" ? BOLD_ADVANCES : ITALIC_ADVANCES;
+  const table = TABLES[face];
   let units = 0;
   for (const ch of text) units += table.get(ch) ?? FALLBACK_ADVANCE;
   return (units * size) / FONT_UPEM;

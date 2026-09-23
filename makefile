@@ -38,7 +38,7 @@ help:
 	@echo "  make pull-forge-releases - Sync forge-released sets into the catalog overlay"
 	@echo "  make forge-frames    - Regenerate the Forge frame kit from the card template (.ai)"
 	@echo "  make forge-fonts     - Upload the printed card faces (tmp/) to the private Forge Blob store"
-	@echo "  make forge-font-metrics - Regenerate the body-face advance widths for the preview's text-fit check"
+	@echo "  make forge-font-metrics - Regenerate the body + title advance widths for the preview's text fit (needs tmp/SYMPHOBL.TTF)"
 	@echo "  make pull-card-overrides - Sync catalog admin edits into the overlay"
 	@echo ""
 
@@ -138,6 +138,6 @@ forge-fonts:
 
 # Regenerate app/forge/lib/fontMetrics.ts (Arimo Bold / Italic advance widths) from public/forge/fonts.
 forge-font-metrics:
-	@python3.11 scripts/forge-font-metrics.py
+	@python3.11 scripts/forge-font-metrics.py --title "$(FORGE_FONTS_DIR)/SYMPHOBL.TTF"
 
 .PHONY: all install run dev dev-windows build start stop setup clean fresh update-paragons paragons update-cards cards pull-forge-releases pull-card-overrides forge-frames forge-fonts forge-font-metrics
