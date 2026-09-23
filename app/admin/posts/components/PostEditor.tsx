@@ -110,6 +110,16 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   // whenever it re-derives the slug locally so it can never go stale.
   const serverSlugRef = useRef<string | null>(null);
   const savingRef = useRef(false);
+  // Queues save() calls so their requests reach the server in the same order
+  // they were made. Without this, a manual Save/Leave/Publish click while a
+  // silent autosave is still in flight (the toolbar stays enabled during
+  // autosave — see `uploading`/`locked` below) fires a second updatePostAction
+  // concurrently; if that earlier autosave's request happens to reach
+  // Postgres AFTER the later one (slow function instance, cold start), it
+  // overwrites newer content/an uploaded image with what it captured a moment
+  // earlier. Chaining onto the prior save's promise guarantees each call only
+  // starts once the previous one's write has already landed.
+  const savePromiseRef = useRef<Promise<boolean>>(Promise.resolve(true));
   // The editVersion a failed save was built from. Autosave doesn't retry
   // until an edit moves past it, so a persistent error can't loop every 1.5s.
   const failedVersion = useRef<number | null>(null);
@@ -365,7 +375,13 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
 
   // `silent` is the autosave path: it reports through `autosave` instead of
   // busy/toast, so the toolbar never locks and errors don't spam toasts.
-  const save = async (opts: { silent?: boolean } = {}): Promise<boolean> => {
+  const save = (opts: { silent?: boolean } = {}): Promise<boolean> => {
+    const run = savePromiseRef.current.then(() => runSave(opts));
+    savePromiseRef.current = run;
+    return run;
+  };
+
+  const runSave = async (opts: { silent?: boolean } = {}): Promise<boolean> => {
     savingRef.current = true;
     if (opts.silent) setAutosave("saving");
     else setBusy("save");
