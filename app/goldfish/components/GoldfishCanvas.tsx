@@ -1798,9 +1798,11 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
             const rect = zoneLayout[zoneId];
             if (!rect) return null;
             // The LoR badge shows redeemed-soul VALUE, not card count — the
-            // Two/Three Liner souls count as two Lost Souls each.
+            // Two/Three Liner souls count as two Lost Souls each, and cards
+            // that aren't Lost Souls at all (e.g. Guardian of Your Souls,
+            // which legitimately plays to the Land of Redemption) count zero.
             const cardCount = zoneId === 'land-of-redemption'
-              ? (state.zones[zoneId] ?? []).reduce((n, c) => n + lostSoulValue(c.cardName), 0)
+              ? (state.zones[zoneId] ?? []).filter(isLostSoulCard).reduce((n, c) => n + lostSoulValue(c.cardName), 0)
               : state.zones[zoneId]?.length || 0;
 
             return (
