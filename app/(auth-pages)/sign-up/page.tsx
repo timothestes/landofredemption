@@ -4,10 +4,11 @@ import { OAuthSignInButtons } from "../../../components/oauth-sign-in-buttons";
 import { SubmitButton } from "../../../components/submit-button";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
+import { safeRedirectPath } from "../../../utils/auth/safeRedirectPath";
 import Link from "next/link";
 
 export default async function Signup(props: {
-  searchParams: Promise<Message>;
+  searchParams: Promise<Message & { redirectTo?: string }>;
 }) {
   const searchParams = await props.searchParams;
   if ("message" in searchParams) {
@@ -32,7 +33,7 @@ export default async function Signup(props: {
         </Link>
       </p>
 
-      <OAuthSignInButtons />
+      <OAuthSignInButtons redirectTo={safeRedirectPath(searchParams.redirectTo, "") || undefined} />
 
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">

@@ -2,6 +2,7 @@
 
 import { encodedRedirect } from "../utils/utils";
 import { createClient } from "../utils/supabase/server";
+import { safeRedirectPath } from "../utils/auth/safeRedirectPath";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -70,7 +71,7 @@ export const signInAction = async (formData: FormData) => {
     return redirect(`/sign-in?${searchParams.toString()}`);
   }
 
-  return redirect(redirectTo || "/");
+  return redirect(safeRedirectPath(redirectTo));
 };
 
 export const forgotPasswordAction = async (formData: FormData) => {
@@ -96,8 +97,9 @@ export const forgotPasswordAction = async (formData: FormData) => {
     );
   }
 
-  if (callbackUrl) {
-    return redirect(callbackUrl);
+  const safeCallbackUrl = safeRedirectPath(callbackUrl, "");
+  if (safeCallbackUrl) {
+    return redirect(safeCallbackUrl);
   }
 
   return encodedRedirect(
