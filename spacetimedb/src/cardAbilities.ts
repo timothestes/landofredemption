@@ -862,23 +862,19 @@ export function lostSoulValue(cardName: string): number {
 }
 
 /**
- * REG "Redeemed Soul": how much a card sitting in a Land of Redemption counts
- * toward the rescue goal. Lost Souls (including token souls) count their
- * lostSoulValue; a rescued captured character (Hero / Evil Character) counts
- * 1; anything else that legitimately sits there — Guardian of Your Souls is a
- * Dominant — counts 0. The soul check mirrors the server's isLostSoulRow idiom
- * (type OR name) so a soul whose enrichment failed still counts.
+ * How much a card sitting in a Land of Redemption counts toward the rescue
+ * goal. Everything a player puts there counts — Lost Souls, token souls,
+ * rescued captured characters — at its lostSoulValue (Two/Three Liner = 2,
+ * anything else 1). The one exception is Guardian of Your Souls (any
+ * printing): the Dominant places itself in the Land of Redemption but is not
+ * a Redeemed Soul, so it counts 0.
  *
  * Every Land of Redemption count — goldfish HUD/badge, multiplayer badges,
  * the players' and spectators' score headers, and the server-side win check —
  * goes through this so they can never disagree. Duplicate of
  * lib/cards/cardAbilities.ts; parity test enforces equality.
  */
-export function redeemedSoulValue(card: { type?: string; cardType?: string; cardName: string }): number {
-  const t = (card.type ?? card.cardType ?? '').toLowerCase();
-  const isSoul = t === 'ls' || t === 'token_ls' || t.includes('lost soul')
-    || card.cardName.toLowerCase().includes('lost soul');
-  if (isSoul) return lostSoulValue(card.cardName);
-  if (isCharacterCard(card)) return 1;
-  return 0;
+export function redeemedSoulValue(card: { cardName: string }): number {
+  if (card.cardName.toLowerCase().startsWith('guardian of your souls')) return 0;
+  return lostSoulValue(card.cardName);
 }
