@@ -3,7 +3,12 @@ import SponsorFooter from "../../components/sponsor-footer";
 import { loadPublicSpoilersAction } from "./actions";
 import SpoilersClient from "./spoilers-client";
 
-export const metadata = { alternates: { canonical: "/spoilers" } };
+export const metadata = {
+  title: "Card Spoilers",
+  description:
+    "Preview cards from upcoming Redemption CCG sets as they are revealed.",
+  alternates: { canonical: "/spoilers" },
+};
 
 export default async function SpoilersPage() {
   const { spoilers } = await loadPublicSpoilersAction();

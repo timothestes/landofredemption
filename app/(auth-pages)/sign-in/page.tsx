@@ -6,6 +6,11 @@ import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import Link from "next/link";
 
+export const metadata = {
+  title: "Sign In",
+  description: "Sign in to your Land of Redemption account.",
+};
+
 type SearchParams = {
   email?: string;
   error?: string;
@@ -50,12 +55,15 @@ export default async function Login({
         <div className="space-y-6 mb-8">
           <div className="space-y-3">
             <Label htmlFor="email" className="text-foreground font-medium text-base">Email</Label>
-            <Input 
-              name="email" 
+            <Input
+              type="email"
+              name="email"
               id="email"
-              placeholder="you@example.com" 
-              required 
-              defaultValue={emailValue} 
+              placeholder="you@example.com"
+              autoComplete="email"
+              inputMode="email"
+              required
+              defaultValue={emailValue}
               className="h-11"
             />
           </div>
@@ -75,6 +83,7 @@ export default async function Login({
               name="password"
               id="password"
               placeholder="Your password"
+              autoComplete="current-password"
               required
               className="h-11"
             />

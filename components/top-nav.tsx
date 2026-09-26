@@ -157,6 +157,14 @@ const TopNav: React.FC = () => {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background shadow-sm">
+      {/* First Tab stop on every page. Visually hidden until focused; jumps
+          past the nav to the #main-content target at the end of it. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-md focus:outline-2 focus:outline-ring focus:outline-offset-2"
+      >
+        Skip to content
+      </a>
       <div className="max-w-full mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -570,6 +578,8 @@ const TopNav: React.FC = () => {
           {/* Mobile menu button */}
           <button
             onClick={toggleMobileMenu}
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileMenuOpen}
             className="lg:hidden min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
           >
             {isMobileMenuOpen ? <IoClose size={24} /> : <HiMenu size={24} />}
@@ -911,6 +921,9 @@ const TopNav: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Skip-link target. Last thing inside the nav, so the next Tab lands on
+          whatever page content follows it. */}
+      <span id="main-content" tabIndex={-1} className="sr-only" />
     </nav>
   );
 };

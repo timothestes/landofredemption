@@ -19,7 +19,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "Results Not Found" };
   }
 
-  return { title: `${result.name} - Results` };
+  const players = result.standings.length;
+  const details = [
+    formatEndedAt(result.endedAt),
+    result.deckFormat,
+    players > 0 ? `${players} player${players === 1 ? "" : "s"}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return {
+    title: `${result.name} - Results`,
+    description: `Final standings for ${result.name}${details ? ` — ${details}` : ""}.`,
+  };
 }
 
 function ordinal(n: number): string {

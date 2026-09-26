@@ -1,7 +1,7 @@
 import { ProjectorBoard } from "./ProjectorBoard";
 
 export const metadata = {
-  title: "Projector Board | Land of Redemption",
+  title: "Projector Board",
   description: "Live round timers for your active tournaments.",
 };
 
