@@ -5,6 +5,8 @@ import Background from "../components/ui/background"; // Using the improved back
 import { AdminProvider } from "../components/providers/AdminProvider";
 import ChunkErrorReloader from "../components/ChunkErrorReloader";
 import { InputModeReflector } from '@/app/shared/components/InputModeReflector';
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const cinzel = Cinzel({ subsets: ["latin"], variable: "--font-cinzel" });
@@ -54,6 +56,8 @@ export default function RootLayout({
             </Background>
           </AdminProvider>
         </ThemeProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
