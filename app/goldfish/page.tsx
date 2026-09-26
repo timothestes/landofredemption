@@ -1,11 +1,18 @@
 import Link from 'next/link';
+import { hasStarterDecks } from '@/app/config/starterDecks';
+import { loadStarterDecksAction } from '@/app/play/actions';
+import { getFormatDef } from '@/lib/formats';
 
 export const metadata = {
   title: 'Practice Mode | Land of Redemption',
   description: 'Practice your Redemption deck in goldfish mode',
 };
 
-export default function GoldfishEntryPage() {
+export default async function GoldfishEntryPage() {
+  // Starter decks are public, so this works signed out. Skipped entirely while
+  // the config is empty, which keeps the page static in that case.
+  const starterDecks = hasStarterDecks() ? await loadStarterDecksAction() : [];
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0d0905] px-4">
       <div
@@ -27,6 +34,50 @@ export default function GoldfishEntryPage() {
         </p>
 
         <div className="flex flex-col gap-4">
+          {starterDecks.length > 0 && (
+            <section className="flex flex-col gap-2">
+              <h2
+                className="text-xs font-semibold uppercase tracking-wider"
+                style={{ color: 'var(--gf-text-dim)' }}
+              >
+                Starter decks
+              </h2>
+              <ul
+                className="divide-y rounded border overflow-hidden"
+                style={{ borderColor: 'var(--gf-border-dim)' }}
+              >
+                {starterDecks.map((deck) => (
+                  <li
+                    key={deck.id}
+                    className="flex items-center gap-3 px-3 py-2.5"
+                    style={{ borderColor: 'var(--gf-border-dim)' }}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-medium" style={{ color: 'var(--gf-text-bright)' }}>
+                        {deck.name}
+                      </div>
+                      <div className="truncate text-xs" style={{ color: 'var(--gf-text-dim)' }}>
+                        {getFormatDef(deck.format).id}
+                        {deck.card_count != null && ` · ${deck.card_count} cards`}
+                        {deck.blurb && ` · ${deck.blurb}`}
+                      </div>
+                    </div>
+                    <Link
+                      href={`/goldfish/${deck.id}`}
+                      className="shrink-0 rounded px-3.5 py-2.5 text-sm font-medium transition-colors"
+                      style={{
+                        background: 'var(--gf-accent, #c4955a)',
+                        color: '#1a1206',
+                      }}
+                    >
+                      Practice
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           {/* Your own decks were unreachable from here: the only button led to
               the community list, which never contains your private decks. */}
           <Link

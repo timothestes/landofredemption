@@ -6,6 +6,7 @@ import { requireForge } from '@/app/forge/lib/auth';
 import { stdbHttpBase } from '@/app/forge/lib/stdbHttp';
 import { deckFormatFilterFor } from '@/lib/api/cache';
 import type { DeckOption } from './components/DeckPickerCard';
+import { STARTER_DECKS, hasStarterDecks, orderStarterDecks, type StarterDeck } from '@/app/config/starterDecks';
 
 export interface GameCardData {
   cardName: string;
@@ -278,4 +279,60 @@ export async function loadUserDecksPaged(
 
   const { data, count } = await query;
   return { decks: data ?? [], totalCount: count ?? 0 };
+}
+
+// ─── Starter decks ──────────────────────────────────────────────────
+
+// Warn once per server process about configured ids that did not load, so a
+// stale config surfaces in the logs without spamming every picker open.
+let warnedMissingStarterDecks = false;
+
+/**
+ * The owner-curated starter decks (app/config/starterDecks.ts), loaded in config
+ * order in the shape the picker's Community tab renders. Public-only: ids that
+ * are missing or no longer public are skipped. Works signed out — the same RLS
+ * path the community list and /goldfish/[deckId] already rely on.
+ */
+export async function loadStarterDecksAction(): Promise<StarterDeck[]> {
+  if (!hasStarterDecks()) return [];
+  const supabase = await createClient();
+  const ids = STARTER_DECKS.map((d) => d.deckId);
+
+  const { data: decks, error } = await supabase
+    .from('decks')
+    .select('id, name, format, card_count, preview_card_1, preview_card_2, paragon, user_id')
+    .in('id', ids)
+    .eq('visibility', 'public');
+  if (error) {
+    console.error('Error loading starter decks:', error);
+    return [];
+  }
+
+  const userIds = [...new Set((decks ?? []).map((d) => d.user_id).filter(Boolean))];
+  let usernameMap = new Map<string, string>();
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username')
+      .in('id', userIds);
+    usernameMap = new Map((profiles ?? []).map((p) => [p.id, p.username]));
+  }
+
+  const ordered = orderStarterDecks(
+    (decks ?? []).map(({ user_id, ...d }) => ({
+      ...d,
+      username: usernameMap.get(user_id) ?? null,
+    })),
+  );
+
+  if (ordered.length < ids.length && !warnedMissingStarterDecks) {
+    warnedMissingStarterDecks = true;
+    const loaded = new Set(ordered.map((d) => d.id));
+    console.warn(
+      'Starter decks missing or not public (check app/config/starterDecks.ts):',
+      ids.filter((id) => !loaded.has(id)),
+    );
+  }
+
+  return ordered;
 }
