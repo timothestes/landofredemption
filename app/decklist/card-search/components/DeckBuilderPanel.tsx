@@ -25,6 +25,7 @@ import FullDeckView from "./FullDeckView";
 import DragGhost from "./DragGhost";
 import { Switch } from "@headlessui/react";
 import { Card, normalizeBrigadeField } from "../utils";
+import { filterDeckCards } from "../utils/deckFilter";
 import { DOCS } from "@/lib/resources";
 import { compareCardsByType, compareCardsDefault, compareTypeGroups } from "@/lib/cards/defaultSort";
 import { FormatId, FORMAT_IDS, FORMATS, normalizeFormat } from "@/lib/formats";
@@ -570,6 +571,8 @@ export default function DeckBuilderPanel({
 
   // View options
   const [viewLayout, setViewLayout] = useState<'grid' | 'list'>('grid');
+  // Text filter over the deck's own cards (the box under the zone tabs). Session-only.
+  const [deckFilter, setDeckFilter] = useState("");
   // Shared app-wide preference (synced with the collection page)
   const [showPrices, setShowPrices] = useShowPrices();
 
@@ -677,6 +680,11 @@ export default function DeckBuilderPanel({
   const mainDeckCards = deck.cards.filter((dc) => dc.zone === 'main');
   const reserveCards = deck.cards.filter((dc) => dc.zone === 'reserve');
   const maybeboardCards = deck.cards.filter((dc) => dc.zone === 'maybeboard');
+  // What each zone tab actually lists. Tab counts stay unfiltered so the
+  // deck totals never look wrong while a filter is typed.
+  const visibleMainCards = filterDeckCards(mainDeckCards, deckFilter);
+  const visibleReserveCards = filterDeckCards(reserveCards, deckFilter);
+  const visibleMaybeboardCards = filterDeckCards(maybeboardCards, deckFilter);
   const mainDeckCount = mainDeckCards.reduce((sum, dc) => sum + dc.quantity, 0);
   const reserveCount = reserveCards.reduce((sum, dc) => sum + dc.quantity, 0);
   // Maybe tab badge shows unique-card count (matches the existing Main/Reserve
@@ -924,6 +932,23 @@ export default function DeckBuilderPanel({
     }
     return null;
   };
+
+  // Shown when the deck filter narrows a zone to nothing. The zone itself has
+  // cards, so the "No cards yet" empty state would be misleading here.
+  const noFilterMatches = (
+    <div className="text-center py-12">
+      <p className="text-muted-foreground text-sm">
+        No cards match &ldquo;{deckFilter.trim()}&rdquo;
+      </p>
+      <button
+        type="button"
+        onClick={() => setDeckFilter("")}
+        className="mt-3 text-xs font-medium text-foreground underline underline-offset-2 hover:text-primary"
+      >
+        Clear filter
+      </button>
+    </div>
+  );
 
   return (
     <DndContext
@@ -2101,6 +2126,46 @@ export default function DeckBuilderPanel({
       </div>
       )}
 
+      {/* Deck filter — narrows the active zone's list to cards whose text
+          matches (name, type, brigade, ability, …). Hidden on the Stats and
+          Details tabs, and in the expanded full deck view. */}
+      {!isExpanded && (activeTab === "main" || activeTab === "reserve" || activeTab === "maybe") && (
+      <div className="flex-shrink-0 px-4 pt-3">
+        <div className="relative">
+          <svg className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={deckFilter}
+            onChange={(e) => setDeckFilter(e.target.value)}
+            onKeyDown={(e) => {
+              // Esc: first press clears, second press blurs — same as the catalog search.
+              if (e.key !== "Escape") return;
+              e.preventDefault();
+              if (deckFilter) setDeckFilter("");
+              else e.currentTarget.blur();
+            }}
+            placeholder="Filter deck…"
+            aria-label="Filter cards in this deck"
+            className="w-full h-11 md:h-9 pl-9 pr-11 md:pr-9 rounded border border-border bg-card text-base md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring"
+          />
+          {deckFilter && (
+            <button
+              type="button"
+              onClick={() => setDeckFilter("")}
+              aria-label="Clear deck filter"
+              className="absolute right-0 top-0 h-11 w-11 md:h-9 md:w-9 rounded-r flex items-center justify-center text-muted-foreground hover:text-foreground"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+      )}
+
       {/* View dropdown trigger lives in the deck-panel header's right action
           group (Practice / View / ⋯). The popover is rendered outside the
           (collapsed-only) tab bar so it also works in the expanded full deck
@@ -2573,8 +2638,8 @@ export default function DeckBuilderPanel({
               }`
             }
           >
-            {mainDeckCards.length > 0 ? (
-              groupCards(mainDeckCards).map(({ type, cards, count }) => {
+            {visibleMainCards.length > 0 ? (
+              groupCards(visibleMainCards).map(({ type, cards, count }) => {
                 const typeIcon = groupBy === 'type' ? getTypeIcon(type) : null;
                 const dualIconConfig = groupBy === 'type' ? getDualIconConfig(type) : null;
                 return (
@@ -2630,6 +2695,8 @@ export default function DeckBuilderPanel({
                 </div>
               );
               })
+            ) : mainDeckCards.length > 0 ? (
+              noFilterMatches
             ) : (
               <div className="text-center py-12">
                 <svg className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
@@ -2678,8 +2745,8 @@ export default function DeckBuilderPanel({
               }`
             }
           >
-            {reserveCards.length > 0 ? (
-              groupCards(reserveCards).map(({ type, cards, count }) => {
+            {visibleReserveCards.length > 0 ? (
+              groupCards(visibleReserveCards).map(({ type, cards, count }) => {
                 const typeIcon = groupBy === 'type' ? getTypeIcon(type) : null;
                 const dualIconConfig = groupBy === 'type' ? getDualIconConfig(type) : null;
                 return (
@@ -2735,6 +2802,8 @@ export default function DeckBuilderPanel({
                 </div>
               );
               })
+            ) : reserveCards.length > 0 ? (
+              noFilterMatches
             ) : (
               <div className="text-center py-12">
                 <p className="text-muted-foreground text-sm">
@@ -2759,8 +2828,8 @@ export default function DeckBuilderPanel({
               }`
             }
           >
-            {maybeboardCards.length > 0 ? (
-              groupCards(maybeboardCards).map(({ type, cards, count }) => {
+            {visibleMaybeboardCards.length > 0 ? (
+              groupCards(visibleMaybeboardCards).map(({ type, cards, count }) => {
                 const typeIcon = groupBy === 'type' ? getTypeIcon(type) : null;
                 const dualIconConfig = groupBy === 'type' ? getDualIconConfig(type) : null;
                 return (
@@ -2815,6 +2884,8 @@ export default function DeckBuilderPanel({
                 </div>
               );
               })
+            ) : maybeboardCards.length > 0 ? (
+              noFilterMatches
             ) : (
               <div className="text-center py-12">
                 <p className="text-muted-foreground text-sm">
