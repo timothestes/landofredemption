@@ -18,7 +18,7 @@ import {
   isHeroCard,
   hasReferenceBook,
   simplifyLostSoulName,
-  lostSoulValue,
+  redeemedSoulValue,
   type CardAbility,
 } from './cardAbilities';
 import {
@@ -3445,11 +3445,13 @@ function isLostSoulRow(c: any): boolean {
   return c.cardType === 'LS' || c.cardType === 'TOKEN_LS' || c.cardName.toLowerCase().includes('lost soul');
 }
 
-// Rescue-win detection. A player wins by rescuing their Nth Lost Soul into
-// land-of-redemption (5 for T1/Paragon, 7 for T2). Called after any movement
-// of a soul into LoR (the moveLostSoulToLor primitive + the move_card /
-// move_cards_batch drag paths). Idempotent: fires only while the game is still
-// playing, and re-reads the Game row because callers may hold a stale snapshot.
+// Rescue-win detection. A player wins by rescuing their Nth Redeemed Soul into
+// land-of-redemption (5 for T1/Paragon, 7 for T2). Rescued captured characters
+// count 1 alongside Lost Souls (redeemedSoulValue — the same rule every client
+// badge/score uses). Called after any movement of a soul into LoR (the
+// moveLostSoulToLor primitive + the move_card / move_cards_batch drag paths).
+// Idempotent: fires only while the game is still playing, and re-reads the
+// Game row because callers may hold a stale snapshot.
 function checkAndApplyWin(ctx: any, gameId: bigint) {
   const game = ctx.db.Game.id.find(gameId);
   if (!game || game.status !== 'playing') return;
@@ -3458,7 +3460,7 @@ function checkAndApplyWin(ctx: any, gameId: bigint) {
   for (const player of ctx.db.Player.player_game_id.filter(gameId)) {
     let count = 0;
     for (const c of rows) {
-      if (c.ownerId === player.id && c.zone === 'land-of-redemption' && isLostSoulRow(c)) count += lostSoulValue(c.cardName);
+      if (c.ownerId === player.id && c.zone === 'land-of-redemption') count += redeemedSoulValue(c);
     }
     if (count >= goal) {
       ctx.db.Game.id.update({ ...game, status: 'finished' });

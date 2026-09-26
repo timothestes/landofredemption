@@ -664,3 +664,67 @@ describe('isDanielCard', () => {
     expect(isDanielCard('')).toBe(false);
   });
 });
+
+describe('redeemedSoulValue / countRedeemedSouls (Land of Redemption count)', () => {
+  // Everything a player puts in the Land of Redemption counts at its
+  // lostSoulValue — Lost Souls, token souls, rescued captured characters —
+  // except Guardian of Your Souls, which places itself there without being
+  // a Redeemed Soul.
+  it('counts every card at its lostSoulValue: Liners 2, anything else 1', async () => {
+    const { redeemedSoulValue } = await import('../cardAbilities');
+    expect(redeemedSoulValue({ cardName: 'Lost Soul "Harvest" [John 4:35]' })).toBe(1);
+    expect(redeemedSoulValue({ cardName: 'Lost Souls (Two Liner)' })).toBe(2);
+    expect(redeemedSoulValue({ cardName: 'Lost Souls (Three Liner)' })).toBe(2);
+    expect(redeemedSoulValue({ cardName: 'Harvest Soul Token' })).toBe(1);
+    // A rescued captured character is a Redeemed Soul too.
+    expect(redeemedSoulValue({ cardName: 'Moses' })).toBe(1);
+    expect(redeemedSoulValue({ cardName: 'Goliath' })).toBe(1);
+  });
+
+  it('counts Guardian of Your Souls (every printing) as zero', async () => {
+    const { redeemedSoulValue } = await import('../cardAbilities');
+    const printings = CARDS.filter(c => c.name.toLowerCase().startsWith('guardian of your souls'));
+    expect(printings.length).toBeGreaterThanOrEqual(4);
+    for (const card of printings) {
+      expect(card.type).toBe('Dominant');
+      expect(redeemedSoulValue({ cardName: card.name }), card.name).toBe(0);
+    }
+    // No other card shares the prefix, so the name test excludes only GoYS.
+    for (const name of ['Guardian Angel', 'Angel of Your Souls', 'Your Souls']) {
+      expect(redeemedSoulValue({ cardName: name }), name).toBe(1);
+    }
+  });
+
+  it('countRedeemedSouls sums a mixed Land of Redemption', async () => {
+    const { countRedeemedSouls } = await import('../cardAbilities');
+    expect(countRedeemedSouls([])).toBe(0);
+    expect(countRedeemedSouls([
+      { cardName: 'Lost Souls (Two Liner)' },          // 2
+      { cardName: 'Lost Soul "Harvest" [John 4:35]' }, // 1
+      { cardName: 'Moses' },                           // 1 (rescued captive)
+      { cardName: 'Guardian Of Your Souls' },          // 0
+      { cardName: 'Harvest Soul Token' },              // 1
+    ])).toBe(5);
+  });
+
+  it('SpacetimeDB duplicate behaves identically (checkAndApplyWin uses it)', async () => {
+    const lib = await import('../cardAbilities');
+    const server = await import('@/spacetimedb/src/cardAbilities');
+    const samples = [
+      'Lost Souls (Two Liner)',
+      'Lost Souls (Three Liner)',
+      'Lost Soul "Harvest" [John 4:35]',
+      'Harvest Soul Token',
+      'Moses',
+      'Goliath',
+      'Guardian Of Your Souls',
+      'Guardian of Your Souls (RoJ)',
+      'Guardian of Your Souls [2024 - 1st Place]',
+      'Guardian of Your Souls [2024 - National]',
+      'Ark of the Covenant',
+    ];
+    for (const cardName of samples) {
+      expect(server.redeemedSoulValue({ cardName }), `parity for ${cardName}`).toBe(lib.redeemedSoulValue({ cardName }));
+    }
+  });
+});

@@ -21,6 +21,7 @@ import type { GameCard } from '@/app/goldfish/types';
 import { useStableAdaptedCards } from '../utils/cardAdapter';
 import type { ForgeResolverMap } from '../utils/forgeResolver';
 import { showGameToast } from '@/app/shared/components/GameToast';
+import { countRedeemedSouls } from '@/lib/cards/cardAbilities';
 
 // ---------------------------------------------------------------------------
 // Row types inferred from the generated type objects
@@ -459,13 +460,14 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
     [allSpectators, gameId],
   );
 
-  // Souls rescued — count cards in "land-of-redemption" zone per player
+  // Souls rescued — the same Redeemed Soul rule as the canvas badges and the
+  // server win check (Liners count 2, rescued captives 1, Guardian of Your
+  // Souls 0), so the header can never disagree with the board.
   const soulsRescued = useMemo(() => {
-    const isLS = (c: any) =>
-      c.cardType === 'LS' || c.cardType === 'TOKEN_LS' || (c.cardName ?? '').toLowerCase().includes('lost soul');
-    const myLor = (myCards['land-of-redemption'] ?? []).filter(isLS);
-    const oppLor = (opponentCards['land-of-redemption'] ?? []).filter(isLS);
-    return { me: myLor.length, opponent: oppLor.length };
+    return {
+      me: countRedeemedSouls(myCards['land-of-redemption'] ?? []),
+      opponent: countRedeemedSouls(opponentCards['land-of-redemption'] ?? []),
+    };
   }, [myCards, opponentCards]);
 
   const zoneSearchRequests = useMemo(
@@ -1407,11 +1409,10 @@ export function useSpectatorGameState(gameId: bigint | null, forgeResolver?: For
   );
 
   const soulsRescued = useMemo(() => {
-    const isLS = (c: any) =>
-      c.cardType === 'LS' || c.cardType === 'TOKEN_LS' || (c.cardName ?? '').toLowerCase().includes('lost soul');
-    const myLor = (myCards['land-of-redemption'] ?? []).filter(isLS);
-    const oppLor = (opponentCards['land-of-redemption'] ?? []).filter(isLS);
-    return { me: myLor.length, opponent: oppLor.length };
+    return {
+      me: countRedeemedSouls(myCards['land-of-redemption'] ?? []),
+      opponent: countRedeemedSouls(opponentCards['land-of-redemption'] ?? []),
+    };
   }, [myCards, opponentCards]);
 
   const zoneSearchRequests = useMemo(

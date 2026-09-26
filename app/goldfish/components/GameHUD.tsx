@@ -1,16 +1,13 @@
 'use client';
 
 import { useGame } from '../state/GameContext';
-import { isLostSoulCard, lostSoulValue } from '@/lib/cards/cardAbilities';
+import { countRedeemedSouls } from '@/lib/cards/cardAbilities';
 
 export function GameHUD() {
   const { state } = useGame();
-  // Two/Three Liner souls count as two Lost Souls each; non-Lost-Soul cards
-  // that legitimately sit in the Land of Redemption (e.g. Guardian of Your
-  // Souls) must not add to the count.
-  const soulsRescued = state.zones['land-of-redemption']
-    .filter(isLostSoulCard)
-    .reduce((n, c) => n + lostSoulValue(c.cardName), 0);
+  // Same Redeemed Soul rule as every other Land of Redemption count: Liners
+  // count 2, a rescued captured character 1, Guardian of Your Souls 0.
+  const soulsRescued = countRedeemedSouls(state.zones['land-of-redemption']);
 
   if (!state.options.showTurnCounter) return null;
 

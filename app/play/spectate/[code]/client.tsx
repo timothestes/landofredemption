@@ -455,8 +455,11 @@ function SpectatorInner({ code, isConnected, displayName }: SpectatorInnerProps)
     : pregamePhase === 'souls' ? 'souls'
     : undefined;
 
-  const myScore = gameState.myCards['land-of-redemption']?.length ?? 0;
-  const opponentScore = gameState.opponentCards['land-of-redemption']?.length ?? 0;
+  // Same Redeemed Soul rule as the players' own header and the canvas badges
+  // — a raw zone length counted Guardian of Your Souls and dropped the Liner
+  // double value, so watchers saw a different score than the players.
+  const myScore = gameState.soulsRescued.me;
+  const opponentScore = gameState.soulsRescued.opponent;
 
   // Game ended after real play (host-abandoned lobbies redirect above instead).
   // Players each get their own Victory/Defeat overlay; without this the

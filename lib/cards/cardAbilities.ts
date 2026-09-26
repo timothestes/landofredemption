@@ -940,3 +940,26 @@ export const DOUBLE_VALUE_LOST_SOULS: ReadonlyArray<string> = [
 export function lostSoulValue(cardName: string): number {
   return DOUBLE_VALUE_LOST_SOULS.includes(cardName) ? 2 : 1;
 }
+
+/**
+ * How much a card sitting in a Land of Redemption counts toward the rescue
+ * goal. Everything a player puts there counts — Lost Souls, token souls,
+ * rescued captured characters — at its lostSoulValue (Two/Three Liner = 2,
+ * anything else 1). The one exception is Guardian of Your Souls (any
+ * printing): the Dominant places itself in the Land of Redemption but is not
+ * a Redeemed Soul, so it counts 0.
+ *
+ * Every Land of Redemption count — goldfish HUD/badge, multiplayer badges,
+ * the players' and spectators' score headers, and the server-side win check —
+ * goes through this so they can never disagree. Duplicated in
+ * spacetimedb/src/cardAbilities.ts; parity test enforces equality.
+ */
+export function redeemedSoulValue(card: { cardName: string }): number {
+  if (card.cardName.toLowerCase().startsWith('guardian of your souls')) return 0;
+  return lostSoulValue(card.cardName);
+}
+
+/** Sum of redeemedSoulValue over a Land of Redemption's cards. */
+export function countRedeemedSouls(cards: ReadonlyArray<{ cardName: string }>): number {
+  return cards.reduce((n, c) => n + redeemedSoulValue(c), 0);
+}
