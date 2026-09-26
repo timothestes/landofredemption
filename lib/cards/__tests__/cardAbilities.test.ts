@@ -664,3 +664,80 @@ describe('isDanielCard', () => {
     expect(isDanielCard('')).toBe(false);
   });
 });
+
+describe('redeemedSoulValue / countRedeemedSouls (Land of Redemption count)', () => {
+  // REG "Redeemed Soul": Lost Souls and rescued captured characters in a
+  // Land of Redemption count toward the rescue goal. Anything else that
+  // legitimately sits there (Guardian of Your Souls, a Dominant) does not.
+  it('counts Lost Souls by lostSoulValue, whichever type spelling the surface uses', async () => {
+    const { redeemedSoulValue } = await import('../cardAbilities');
+    expect(redeemedSoulValue({ cardType: 'LS', cardName: 'Lost Soul "Harvest" [John 4:35]' })).toBe(1);
+    expect(redeemedSoulValue({ type: 'Lost Soul', cardName: 'Lost Soul "Harvest" [John 4:35]' })).toBe(1);
+    expect(redeemedSoulValue({ cardType: 'TOKEN_LS', cardName: 'Harvest Soul Token' })).toBe(1);
+    expect(redeemedSoulValue({ cardType: 'LS', cardName: 'Lost Souls (Two Liner)' })).toBe(2);
+    expect(redeemedSoulValue({ cardType: 'LS', cardName: 'Lost Souls (Three Liner)' })).toBe(2);
+    // Server idiom: a soul whose enrichment failed still reads as a soul by name.
+    expect(redeemedSoulValue({ cardType: '', cardName: 'Lost Soul "Hopper" [Mark 8:36]' })).toBe(1);
+  });
+
+  it('counts a rescued captured character as one redeemed soul', async () => {
+    const { redeemedSoulValue } = await import('../cardAbilities');
+    expect(redeemedSoulValue({ cardType: 'Hero', cardName: 'Moses' })).toBe(1);
+    expect(redeemedSoulValue({ type: 'Hero', cardName: 'Moses' })).toBe(1);
+    expect(redeemedSoulValue({ cardType: 'Evil Character', cardName: 'Goliath' })).toBe(1);
+    expect(redeemedSoulValue({ cardType: 'Hero/Evil Character', cardName: 'Balaam' })).toBe(1);
+    expect(redeemedSoulValue({ cardType: 'TOKEN_HERO', cardName: 'Angel Token' })).toBe(1);
+  });
+
+  it('counts Guardian of Your Souls and other non-soul, non-character cards as zero', async () => {
+    const { redeemedSoulValue } = await import('../cardAbilities');
+    for (const name of [
+      'Guardian Of Your Souls',
+      'Guardian of Your Souls (RoJ)',
+      'Guardian of Your Souls [2024 - 1st Place]',
+      'Guardian of Your Souls [2024 - National]',
+    ]) {
+      const card = findCard(name);
+      expect(card?.type).toBe('Dominant');
+      expect(redeemedSoulValue({ cardType: card!.type, cardName: name })).toBe(0);
+      expect(redeemedSoulValue({ type: card!.type, cardName: name })).toBe(0);
+    }
+    expect(redeemedSoulValue({ cardType: 'Fortress', cardName: 'Ark of the Covenant' })).toBe(0);
+    expect(redeemedSoulValue({ cardType: 'GE', cardName: 'Faith of Abraham' })).toBe(0);
+    expect(redeemedSoulValue({ cardName: 'Unknown' })).toBe(0);
+  });
+
+  it('countRedeemedSouls sums a mixed Land of Redemption', async () => {
+    const { countRedeemedSouls } = await import('../cardAbilities');
+    expect(countRedeemedSouls([])).toBe(0);
+    expect(countRedeemedSouls([
+      { cardType: 'LS', cardName: 'Lost Souls (Two Liner)' },          // 2
+      { cardType: 'LS', cardName: 'Lost Soul "Harvest" [John 4:35]' }, // 1
+      { cardType: 'Hero', cardName: 'Moses' },                         // 1 (rescued captive)
+      { cardType: 'Dominant', cardName: 'Guardian Of Your Souls' },    // 0
+      { cardType: 'TOKEN_LS', cardName: 'Harvest Soul Token' },        // 1
+    ])).toBe(5);
+  });
+
+  it('SpacetimeDB duplicate behaves identically (checkAndApplyWin uses it)', async () => {
+    const lib = await import('../cardAbilities');
+    const server = await import('@/spacetimedb/src/cardAbilities');
+    const samples = [
+      { cardType: 'LS', cardName: 'Lost Souls (Two Liner)' },
+      { cardType: 'LS', cardName: 'Lost Soul "Harvest" [John 4:35]' },
+      { cardType: 'Lost Soul', cardName: 'Lost Soul (Isaiah 53:6)' },
+      { cardType: 'TOKEN_LS', cardName: 'Harvest Soul Token' },
+      { cardType: '', cardName: 'Lost Soul "Hopper" [Mark 8:36]' },
+      { cardType: 'Hero', cardName: 'Moses' },
+      { cardType: 'Evil Character', cardName: 'Goliath' },
+      { cardType: 'Hero/Evil Character', cardName: 'Balaam' },
+      { cardType: 'Dominant', cardName: 'Guardian Of Your Souls' },
+      { cardType: 'Dominant', cardName: 'Guardian of Your Souls (RoJ)' },
+      { cardType: 'Fortress', cardName: 'Ark of the Covenant' },
+      { cardType: '', cardName: 'Unknown' },
+    ];
+    for (const c of samples) {
+      expect(server.redeemedSoulValue(c), `parity for ${c.cardName}`).toBe(lib.redeemedSoulValue(c));
+    }
+  });
+});

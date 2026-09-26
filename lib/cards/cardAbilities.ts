@@ -940,3 +940,30 @@ export const DOUBLE_VALUE_LOST_SOULS: ReadonlyArray<string> = [
 export function lostSoulValue(cardName: string): number {
   return DOUBLE_VALUE_LOST_SOULS.includes(cardName) ? 2 : 1;
 }
+
+/**
+ * REG "Redeemed Soul": how much a card sitting in a Land of Redemption counts
+ * toward the rescue goal. Lost Souls (including token souls) count their
+ * lostSoulValue; a rescued captured character (Hero / Evil Character) counts
+ * 1; anything else that legitimately sits there — Guardian of Your Souls is a
+ * Dominant — counts 0. The soul check mirrors the server's isLostSoulRow idiom
+ * (type OR name) so a soul whose enrichment failed still counts.
+ *
+ * Every Land of Redemption count — goldfish HUD/badge, multiplayer badges,
+ * the players' and spectators' score headers, and the server-side win check —
+ * goes through this so they can never disagree. Duplicated in
+ * spacetimedb/src/cardAbilities.ts; parity test enforces equality.
+ */
+export function redeemedSoulValue(card: { type?: string; cardType?: string; cardName: string }): number {
+  const t = (card.type ?? card.cardType ?? '').toLowerCase();
+  const isSoul = t === 'ls' || t === 'token_ls' || t.includes('lost soul')
+    || card.cardName.toLowerCase().includes('lost soul');
+  if (isSoul) return lostSoulValue(card.cardName);
+  if (isCharacterCard(card)) return 1;
+  return 0;
+}
+
+/** Sum of redeemedSoulValue over a Land of Redemption's cards. */
+export function countRedeemedSouls(cards: ReadonlyArray<{ type?: string; cardType?: string; cardName: string }>): number {
+  return cards.reduce((n, c) => n + redeemedSoulValue(c), 0);
+}

@@ -55,7 +55,7 @@ import { computeEquipOffset, hitTestWarrior, MAX_EQUIPPED_WEAPONS_PER_WARRIOR } 
 import { gameCardIsWarrior, gameCardIsWeapon } from '../utils/equipClass';
 import { findCard } from '@/lib/cards/lookup';
 import { compareCardsDefault } from '@/lib/cards/defaultSort';
-import { getEffectiveAbilities, isDanielCard, isLostSoulCard, isHeroCard, lostSoulValue, simplifyLostSoulName } from '@/lib/cards/cardAbilities';
+import { countRedeemedSouls, getEffectiveAbilities, isDanielCard, isLostSoulCard, isHeroCard, simplifyLostSoulName } from '@/lib/cards/cardAbilities';
 import { ResurrectHeroesModal } from '@/app/shared/components/ResurrectHeroesModal';
 import { KeepOneModal } from '@/app/shared/components/KeepOneModal';
 import { Link2Off } from 'lucide-react';
@@ -1797,12 +1797,11 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
           {nonHandZones.map(zoneId => {
             const rect = zoneLayout[zoneId];
             if (!rect) return null;
-            // The LoR badge shows redeemed-soul VALUE, not card count — the
-            // Two/Three Liner souls count as two Lost Souls each, and cards
-            // that aren't Lost Souls at all (e.g. Guardian of Your Souls,
-            // which legitimately plays to the Land of Redemption) count zero.
+            // The LoR badge shows redeemed-soul VALUE, not card count — Liners
+            // count 2, a rescued captured character 1, Guardian of Your Souls 0
+            // (same rule as the HUD and the multiplayer badges/score).
             const cardCount = zoneId === 'land-of-redemption'
-              ? (state.zones[zoneId] ?? []).filter(isLostSoulCard).reduce((n, c) => n + lostSoulValue(c.cardName), 0)
+              ? countRedeemedSouls(state.zones[zoneId] ?? [])
               : state.zones[zoneId]?.length || 0;
 
             return (

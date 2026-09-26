@@ -56,7 +56,7 @@ import { isHeroCard, hasReferenceBook } from '@/lib/cards/cardAbilities';
 import { ModalGameProvider, type ModalGameContextValue } from '@/app/shared/contexts/ModalGameContext';
 import { DeckSearchModal } from '@/app/shared/components/DeckSearchModal';
 import { DeckPeekModal } from '@/app/shared/components/DeckPeekModal';
-import { getEffectiveAbilities, isCharacterCard, isDanielCard, isLostSoulCard, lostSoulValue, simplifyLostSoulName } from '@/lib/cards/cardAbilities';
+import { countRedeemedSouls, getEffectiveAbilities, isCharacterCard, isDanielCard, isLostSoulCard, simplifyLostSoulName } from '@/lib/cards/cardAbilities';
 import { DeckExchangeModal } from '@/app/shared/components/DeckExchangeModal';
 import { ZoneBrowseModal } from '@/app/shared/components/ZoneBrowseModal';
 import { useModalCardDrag } from '@/app/shared/hooks/useModalCardDrag';
@@ -8746,12 +8746,11 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             if (!zone) return null;
             const cards = myCards[zoneKey] ?? [];
             const count = cards.length;
-            // The LoR badge shows redeemed-soul VALUE, not card count — the
-            // Two/Three Liner souls count as two Lost Souls each, and cards
-            // that aren't Lost Souls at all (e.g. Guardian of Your Souls,
-            // which legitimately plays to the Land of Redemption) count zero.
+            // The LoR badge shows redeemed-soul VALUE, not card count — Liners
+            // count 2, a rescued captured character 1, Guardian of Your Souls 0
+            // (same rule as the score header and the server win check).
             const badgeCount = zoneKey === 'land-of-redemption'
-              ? cards.filter(isLostSoulCard).reduce((n, c) => n + lostSoulValue(c.cardName), 0)
+              ? countRedeemedSouls(cards)
               : count;
             // Cell header metrics. The badge grows with the floored font —
             // fixed at 26x18 it clipped "53" to "5" whenever fs() grew (Konva
@@ -9078,12 +9077,11 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             if (!zone) return null;
             const cards = opponentCards[zoneKey] ?? [];
             const count = cards.length;
-            // The LoR badge shows redeemed-soul VALUE, not card count — the
-            // Two/Three Liner souls count as two Lost Souls each, and cards
-            // that aren't Lost Souls at all (e.g. Guardian of Your Souls,
-            // which legitimately plays to the Land of Redemption) count zero.
+            // The LoR badge shows redeemed-soul VALUE, not card count — Liners
+            // count 2, a rescued captured character 1, Guardian of Your Souls 0
+            // (same rule as the score header and the server win check).
             const badgeCount = zoneKey === 'land-of-redemption'
-              ? cards.filter(isLostSoulCard).reduce((n, c) => n + lostSoulValue(c.cardName), 0)
+              ? countRedeemedSouls(cards)
               : count;
             // Cell header metrics. The badge grows with the floored font —
             // fixed at 26x18 it clipped "53" to "5" whenever fs() grew (Konva
