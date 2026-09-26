@@ -12,6 +12,7 @@ import EditTournamentNameModal from "../../../../components/ui/EditTournamentNam
 import TournamentStartModal from "../../../../components/ui/TournamentStartModal";
 import TournamentTabs from "../../../../components/ui/TournamentTabs";
 import QRJoinDialog from "../../../../components/ui/QRJoinDialog";
+import LiveRoundDialog from "../../../../components/ui/LiveRoundDialog";
 import Breadcrumb from "../../../../components/ui/breadcrumb";
 import ToastNotification from "../../../../components/ui/toast-notification";
 import { createClient } from "../../../../utils/supabase/client";
@@ -94,6 +95,7 @@ export default function TournamentPage({
   const [usernames, setUsernames] = useState<Map<string, string>>(new Map());
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [qrJoinDialogOpen, setQrJoinDialogOpen] = useState(false);
+  const [liveRoundDialogOpen, setLiveRoundDialogOpen] = useState(false);
 
   // Confirmation dialogs
   const [endTournamentConfirmOpen, setEndTournamentConfirmOpen] = useState(false);
@@ -1108,6 +1110,7 @@ export default function TournamentPage({
             onDecklistsChange={fetchDecklists}
             usernames={usernames}
             onOpenQrJoin={() => setQrJoinDialogOpen(true)}
+            onOpenLiveRound={() => setLiveRoundDialogOpen(true)}
             onTournamentUpdated={fetchTournamentDetails}
             decklistSummary={decklistSummary}
             onRepairCompleted={() => {
@@ -1276,6 +1279,14 @@ export default function TournamentPage({
             tournament={tournament}
             isOpen={qrJoinDialogOpen}
             onClose={() => setQrJoinDialogOpen(false)}
+            onTournamentUpdated={fetchTournamentDetails}
+          />
+        )}
+        {tournament && (
+          <LiveRoundDialog
+            tournament={tournament}
+            isOpen={liveRoundDialogOpen}
+            onClose={() => setLiveRoundDialogOpen(false)}
             onTournamentUpdated={fetchTournamentDetails}
           />
         )}
