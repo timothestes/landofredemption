@@ -1064,15 +1064,6 @@ export async function loadPublicDeckAction(deckId: string) {
       .map((row: any) => row.global_tags)
       .filter(Boolean);
 
-    // Increment view count (fire-and-forget, only for non-owners)
-    if (!isOwner) {
-      supabase
-        .from("decks")
-        .update({ view_count: (deck.view_count || 0) + 1 })
-        .eq("id", deckId)
-        .then(() => {});
-    }
-
     // Stamp last_played_at for owner's decks (fire-and-forget)
     if (isOwner) {
       supabase
@@ -1122,6 +1113,37 @@ export async function loadPublicDeckAction(deckId: string) {
       error: "An unexpected error occurred",
       deck: null,
     };
+  }
+}
+
+/**
+ * Record one view of a shared deck. Kept out of loadPublicDeckAction so the
+ * read path has no side effects: generateMetadata loads the deck for every
+ * link unfurl, and a bot's fetch is not a view. The deck page fires this once
+ * per tab session. The write goes through a definer RPC (migration 108) because
+ * the viewer's own RLS client has no UPDATE right on someone else's deck.
+ */
+export async function recordDeckViewAction(deckId: string) {
+  try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    // Owners don't count as viewers of their own deck.
+    if (user) {
+      const { data: deck } = await supabase
+        .from("decks")
+        .select("user_id")
+        .eq("id", deckId)
+        .single();
+      if (deck?.user_id === user.id) return;
+    }
+
+    await supabase.rpc("increment_deck_view_count", { p_deck_id: deckId });
+  } catch (error) {
+    console.error("Error in recordDeckViewAction:", error);
   }
 }
 
