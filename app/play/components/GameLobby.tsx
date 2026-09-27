@@ -11,7 +11,8 @@ import { getCardImageUrl } from '@/lib/card-images';
 import { getCardImageUrl as getBlobCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { useSpacetimeConnection } from '../hooks/useSpacetimeConnection';
 import { SpacetimeProvider } from '../lib/spacetimedb-provider';
-import { DeckPickerModal } from './DeckPickerModal';
+import { DeckPickerModal, type PickerTab } from './DeckPickerModal';
+import { hasStarterDecks } from '@/app/config/starterDecks';
 import { LobbyList } from './LobbyList';
 import UsernameModal from '@/app/decklist/my-decks/UsernameModal';
 import { loadDeckForGame, getInviteGameInfo } from '../actions';
@@ -42,6 +43,11 @@ export function GameLobby({ decks, userId, displayName: initialDisplayName, hasU
     decks.length > 0 ? decks[0] : null
   );
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerTab, setPickerTab] = useState<PickerTab>('my');
+  function openPicker(tab: PickerTab) {
+    setPickerTab(tab);
+    setPickerOpen(true);
+  }
 
   // Warm the browser HTTP cache with the selected deck's card images as soon
   // as the user commits to a deck. By the time they click Host/Join and
@@ -358,7 +364,7 @@ export function GameLobby({ decks, userId, displayName: initialDisplayName, hasU
                   variant="outline"
                   size="sm"
                   className="gap-1.5"
-                  onClick={() => setPickerOpen(true)}
+                  onClick={() => openPicker('my')}
                 >
                   <ArrowLeftRight className="h-4 w-4" />
                   Change deck
@@ -368,19 +374,38 @@ export function GameLobby({ decks, userId, displayName: initialDisplayName, hasU
           </>
         ) : (
           <div className="flex flex-col items-center gap-3 py-6 px-5">
-            <p className="text-sm text-muted-foreground">
-              No saved decks.{' '}
-              <a href="/decklist/card-search" className="underline text-primary">
-                Build one
-              </a>{' '}
-              or pick from the community.
+            <p className="text-sm text-muted-foreground text-center">
+              {hasStarterDecks() ? (
+                <>
+                  No saved decks yet. Try a starter deck,{' '}
+                  <a href="/decklist/card-search" className="underline text-primary">
+                    build one
+                  </a>
+                  , or pick from the community.
+                </>
+              ) : (
+                <>
+                  No saved decks.{' '}
+                  <a href="/decklist/card-search" className="underline text-primary">
+                    Build one
+                  </a>{' '}
+                  or pick from the community.
+                </>
+              )}
             </p>
-            <Button
-              variant="outline"
-              onClick={() => setPickerOpen(true)}
-            >
-              Browse Decks
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              {hasStarterDecks() && (
+                <Button onClick={() => openPicker('starter')}>
+                  Try a starter deck
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                onClick={() => openPicker('my')}
+              >
+                Browse Decks
+              </Button>
+            </div>
           </div>
         )}
       </section>
@@ -393,6 +418,7 @@ export function GameLobby({ decks, userId, displayName: initialDisplayName, hasU
           onOpenChange={setPickerOpen}
           onSelect={handleSelectDeck}
           selectedDeckId={selectedDeck?.id}
+          initialTab={pickerTab}
         />
       )}
 

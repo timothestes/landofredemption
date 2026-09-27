@@ -15,7 +15,8 @@ import { MobileDrawer } from "@/components/ui/mobile-drawer";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useInputMode } from "@/app/shared/hooks/useInputMode";
 import { loadPublicDecksAction, type LoadPublicDecksParams } from "@/app/decklist/actions";
-import { loadUserDecksPaged, type LoadUserDecksPagedParams } from "../actions";
+import { loadUserDecksPaged, loadStarterDecksAction, type LoadUserDecksPagedParams } from "../actions";
+import { STARTER_DECKS, hasStarterDecks } from "@/app/config/starterDecks";
 import { DeckPickerCard } from "./DeckPickerCard";
 import type { DeckOption } from "./DeckPickerCard";
 
@@ -26,11 +27,15 @@ const MY_DECKS_PAGE_SIZE = 12;
 
 // ─── Props ──────────────────────────────────────────────────────────
 
+export type PickerTab = "starter" | "my" | "community";
+
 interface DeckPickerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (deck: DeckOption) => void;
   selectedDeckId?: string | null;
+  /** Tab to open on. "starter" falls back to "my" when no starter decks are configured. */
+  initialTab?: PickerTab;
 }
 
 // ─── Skeleton card for loading state ────────────────────────────────
@@ -56,11 +61,16 @@ function SkeletonCard({ withAuthor }: { withAuthor?: boolean }) {
 function DeckPickerContent({
   selectedDeckId,
   onSelect,
+  initialTab = "my",
 }: {
   selectedDeckId?: string | null;
   onSelect: (deck: DeckOption) => void;
+  initialTab?: PickerTab;
 }) {
-  const [activeTab, setActiveTab] = useState<"my" | "community">("my");
+  const showStarter = hasStarterDecks();
+  const [activeTab, setActiveTab] = useState<PickerTab>(
+    initialTab === "starter" && !showStarter ? "my" : initialTab
+  );
   const searchInputRef = useRef<HTMLInputElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -85,6 +95,19 @@ function DeckPickerContent({
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Starter state — a short fixed list, loaded once on first visit ──
+  const [starterResults, setStarterResults] = useState<DeckOption[]>([]);
+  const [starterLoaded, setStarterLoaded] = useState(false);
+  useEffect(() => {
+    if (activeTab !== "starter" || starterLoaded) return;
+    let cancelled = false;
+    loadStarterDecksAction()
+      .then((decks) => { if (!cancelled) setStarterResults(decks); })
+      .catch(() => { if (!cancelled) setStarterResults([]); })
+      .finally(() => { if (!cancelled) setStarterLoaded(true); });
+    return () => { cancelled = true; };
+  }, [activeTab, starterLoaded]);
 
   // Auto-focus search on mount — not on touch, where the keyboard covers the
   // deck grid the player came to browse.
@@ -206,6 +229,7 @@ function DeckPickerContent({
       const tag = target?.tagName;
       if (tag === "TEXTAREA" || tag === "SELECT" || target?.isContentEditable) return;
       if (tag === "INPUT" && (target as HTMLInputElement).value !== "") return;
+      if (activeTab === "starter") return; // one page, nothing to paginate
       if (activeTab === "my") {
         if (myTotalPages <= 1) return;
         if (e.key === "ArrowLeft") setMyPage((p) => Math.max(1, p - 1));
@@ -224,6 +248,12 @@ function DeckPickerContent({
 
   const searchValue = activeTab === "my" ? mySearch : communitySearch;
   const setSearchValue = activeTab === "my" ? setMySearch : setCommunitySearch;
+  const tabClass = (tab: PickerTab) =>
+    `px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+      activeTab === tab
+        ? "bg-primary text-primary-foreground"
+        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+    }`;
 
   return (
     // data-deck-picker: globals.css grows the tabs / search / filter selects
@@ -231,31 +261,21 @@ function DeckPickerContent({
     <div data-deck-picker className="flex flex-col gap-2 flex-1 overflow-hidden">
       {/* Tabs */}
       <div className="flex gap-1 shrink-0">
-        <button
-          type="button"
-          onClick={() => setActiveTab("my")}
-          className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-            activeTab === "my"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted"
-          }`}
-        >
+        {showStarter && (
+          <button type="button" onClick={() => setActiveTab("starter")} className={tabClass("starter")}>
+            Starter
+          </button>
+        )}
+        <button type="button" onClick={() => setActiveTab("my")} className={tabClass("my")}>
           My Decks
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("community")}
-          className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-            activeTab === "community"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted"
-          }`}
-        >
+        <button type="button" onClick={() => setActiveTab("community")} className={tabClass("community")}>
           Community
         </button>
       </div>
 
-      {/* Search + filters row */}
+      {/* Search + filters row — not on Starter, a handful of decks needs no search */}
+      {activeTab !== "starter" && (
       <div className="flex gap-2 shrink-0">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -321,10 +341,34 @@ function DeckPickerContent({
           </>
         )}
       </div>
+      )}
 
       {/* Scrollable grid area — fixed flex so modal doesn't jump between pages */}
       <div ref={gridRef} className="flex-1 overflow-y-auto min-h-0" style={{ minHeight: 0 }}>
-        {activeTab === "my" ? (
+        {activeTab === "starter" ? (
+          !starterLoaded ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {Array.from({ length: STARTER_DECKS.length }).map((_, i) => (
+                <SkeletonCard key={i} withAuthor />
+              ))}
+            </div>
+          ) : starterResults.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No starter decks are available right now.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {starterResults.map((deck) => (
+                <DeckPickerCard
+                  key={deck.id}
+                  deck={deck}
+                  onClick={() => onSelect(deck)}
+                  selected={selectedDeckId === deck.id}
+                />
+              ))}
+            </div>
+          )
+        ) : activeTab === "my" ? (
           myLoading && !myHasLoaded ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {Array.from({ length: MY_DECKS_PAGE_SIZE }).map((_, i) => (
@@ -332,11 +376,24 @@ function DeckPickerContent({
               ))}
             </div>
           ) : myResults.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              {mySearch.trim().length > 0
-                ? `No decks matching '${mySearch}'`
-                : "No saved decks yet. Build a deck or try the Community tab."}
-            </p>
+            mySearch.trim().length > 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                {`No decks matching '${mySearch}'`}
+              </p>
+            ) : showStarter ? (
+              <div className="flex flex-col items-center gap-3 py-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  No saved decks yet. Try a starter deck, build one, or pick from the community.
+                </p>
+                <Button variant="outline" size="sm" onClick={() => setActiveTab("starter")}>
+                  Try a starter deck
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No saved decks yet. Build a deck or try the Community tab.
+              </p>
+            )
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {myResults.map((deck) => (
@@ -439,6 +496,7 @@ export function DeckPickerModal({
   onOpenChange,
   onSelect,
   selectedDeckId,
+  initialTab,
 }: DeckPickerModalProps) {
   // Height-aware: a landscape phone (852x393) satisfies min-width alone and
   // got the desktop Dialog — which has no close button, leaving backdrop-tap
@@ -457,6 +515,7 @@ export function DeckPickerModal({
     <DeckPickerContent
       selectedDeckId={selectedDeckId}
       onSelect={handleSelect}
+      initialTab={initialTab}
     />
   );
 
