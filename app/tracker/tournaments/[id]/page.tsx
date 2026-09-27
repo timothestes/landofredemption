@@ -22,6 +22,12 @@ import { buildStateFromSupabase } from "../../../../utils/tournament/stateAdapte
 import { isNameFrozen } from "../../../../utils/tournament/naming";
 import { recomputeTotalsFromHistory } from "../../../../lib/tournament/results";
 import {
+  forfeitMatchWrite,
+  forfeitSideForDrops,
+  matchOutcomeColumns,
+} from "../../../../lib/tournament/dropForfeit";
+import { PublishResultsDialog } from "../../../../components/ui/PublishResultsDialog";
+import {
   loadTournamentDecklistsAction,
   setResultsPublishedAction,
   publishTournamentDecklistsAction,
@@ -99,6 +105,9 @@ export default function TournamentPage({
 
   // Confirmation dialogs
   const [endTournamentConfirmOpen, setEndTournamentConfirmOpen] = useState(false);
+  // Asked once when the final round's End Round completes the tournament.
+  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [togglingStatus, setTogglingStatus] = useState(false);
   const [tournamentNotFound, setTournamentNotFound] = useState(false);
   // Header overflow-menu controls the Re-pair dialog
@@ -308,10 +317,10 @@ export default function TournamentPage({
   //    runs after, so hooking it once here is sufficient — no double-fire).
   //  - Auto end on the final round (TournamentRounds' "End Round" button —
   //    the common case; most tournaments end this way, not via the admin
-  //    menu) — wired unconditionally with publish=true via the
-  //    onTournamentAutoPublish callback threaded through TournamentTabs,
-  //    since that path has no publish-choice dialog; the host's opt-out
-  //    there is unpublishing afterward from the Publish section.
+  //    menu) — the onTournamentAutoPublish callback threaded through
+  //    TournamentTabs opens PublishResultsDialog, and only its Publish
+  //    button reaches here. "Not yet" leaves the Publish section as the
+  //    manual path.
   // "No decklists to publish" is NORMAL for events without submissions —
   // treated as success for the toast, not a failure.
   const publishOnEnd = async (publish: boolean) => {
@@ -341,7 +350,7 @@ export default function TournamentPage({
       const { data, error } = await client
         .from("matches")
         .select(
-          "id, player1_match_points, player2_match_points, differential, differential2,  player1_id:participants!matches_player1_id_fkey(name,id), player2_id:participants!matches_player2_id_fkey(name,id), player2_id, player1_score, player2_score"
+          "id, player1_match_points, player2_match_points, differential, differential2,  player1_id:participants!matches_player1_id_fkey(name,id), player2_id:participants!matches_player2_id_fkey(name,id), player2_id, player1_score, player2_score, player1_forfeit, player2_forfeit"
         )
         .eq("tournament_id", tournament.id)
         .eq("round", latestRound.round_number)
@@ -360,7 +369,15 @@ export default function TournamentPage({
 
       if (byeError) throw byeError;
 
-      await handleEndRound(data, setMatchErrorIndex, byeData, latestRound.round_number);
+      // The round must actually finalize (every match scored, totals
+      // recomputed) before the tournament can end. handleEndRound already
+      // toasted the reason when it refuses; don't mark has_ended on top of an
+      // incomplete final round.
+      const ended = await handleEndRound(data, setMatchErrorIndex, byeData, latestRound.round_number);
+      if (!ended) {
+        setTogglingStatus(false);
+        return;
+      }
     }
     try {
       const { data, error } = await supabase
@@ -386,35 +403,30 @@ export default function TournamentPage({
     }
   };
 
-  const handleEndRound = useCallback(async (matches: any[], setMatchErrorIndex: any, byes: any[], round: number) => {
+  /** Finalize a round. Resolves false when the round could NOT be ended (a
+   * match is still unscored, or a write failed) so callers — performEndTournament
+   * in particular — don't end the tournament on top of an incomplete round. */
+  const handleEndRound = useCallback(async (matches: any[], setMatchErrorIndex: any, byes: any[], round: number): Promise<boolean> => {
     const client = createClient();
 
     let matchErrorIndexArr = [];
 
     const now = new Date().toISOString();
 
-    // Auto-handle matches where a player has dropped mid-round
+    // A player who dropped mid-round forfeits their unscored match. Scored
+    // per algorithm.md via the shared helper (forfeiter 0 MP / −5, opponent
+    // 3 MP / 0) — the same write TournamentRounds' End Round makes.
     for (const match of matches) {
       if (match.player1_score !== null && match.player2_score !== null) continue;
       const [{ data: p1Status }, { data: p2Status }] = await Promise.all([
         client.from("participants").select("dropped_out").eq("id", match.player1_id.id).single(),
         client.from("participants").select("dropped_out").eq("id", match.player2_id.id).single(),
       ]);
-      if (p1Status?.dropped_out || p2Status?.dropped_out) {
-        if (p1Status?.dropped_out && p2Status?.dropped_out) {
-          match.player1_score = 0;
-          match.player2_score = 0;
-        } else if (p1Status?.dropped_out) {
-          match.player1_score = 0;
-          match.player2_score = tournament.max_score;
-        } else {
-          match.player1_score = tournament.max_score;
-          match.player2_score = 0;
-        }
-        await client.from("matches").update({
-          player1_score: match.player1_score,
-          player2_score: match.player2_score,
-        }).eq("id", match.id);
+      const side = forfeitSideForDrops(!!p1Status?.dropped_out, !!p2Status?.dropped_out);
+      if (side) {
+        const write = forfeitMatchWrite(side, match.player1_id.id, match.player2_id.id);
+        Object.assign(match, write);
+        await client.from("matches").update(write).eq("id", match.id);
       }
     }
 
@@ -428,30 +440,22 @@ export default function TournamentPage({
 
     if (matchErrorIndexArr.length > 0) {
       showToast("Please add scores to all matches.", "warning");
-      return;
+      return false;
     }
 
     try {
       const now = new Date().toISOString();
 
       // Persist is_tie + winner_id on each match row so buildStateFromSupabase
-      // can derive per-player outcomes. (player1_score / player2_score and the
+      // can derive per-player outcomes. Forfeit-aware: a forfeit's 0–0 souls
+      // must not be written as a tie. (player1_score / player2_score and the
       // per-row match_points + differential snapshots are already written by
       // the score-input UI in components/ui/match-edit.tsx — we don't touch
       // those denormalized snapshots here.)
       for (const match of matches) {
-        let isTie = false;
-        let winnerId: string | null = null;
-        if (match.player1_score === match.player2_score) {
-          isTie = true;
-        } else if (match.player1_score > match.player2_score) {
-          winnerId = match.player1_id.id;
-        } else {
-          winnerId = match.player2_id.id;
-        }
         const { error: matchUpdateError } = await client
           .from("matches")
-          .update({ is_tie: isTie, winner_id: winnerId })
+          .update(matchOutcomeColumns(match, match.player1_id.id, match.player2_id.id))
           .eq("id", match.id);
         if (matchUpdateError) throw matchUpdateError;
       }
@@ -544,8 +548,10 @@ export default function TournamentPage({
       // Update local state after successful database updates
       setIsRoundActive(false);
       setLatestRound((prev) => ({ ...prev, round_number: round, ended_at: now }));
+      return true;
     } catch (error) {
       console.error("Error ending round:", error);
+      return false;
     }
   }, [tournament]);
 
@@ -718,7 +724,7 @@ export default function TournamentPage({
       const client = createClient();
       const { data } = await client
         .from("matches")
-        .select("id, round, player1_score, player2_score, player1_id:participants!matches_player1_id_fkey(id, name), player2_id:participants!matches_player2_id_fkey(id, name)")
+        .select("id, round, player1_score, player2_score, player1_forfeit, player2_forfeit, player1_id:participants!matches_player1_id_fkey(id, name), player2_id:participants!matches_player2_id_fkey(id, name)")
         .eq("id", pickerRepairMatchId)
         .single();
       setPickerRepairMatch(data ?? null);
@@ -1092,10 +1098,10 @@ export default function TournamentPage({
               await Promise.all([fetchTournamentDetails(), fetchParticipants()]);
             }}
             // Fires only when the FINAL round's End Round button completes the
-            // tournament — the common way tournaments end (no confirm dialog
-            // exists on this path, unlike the admin-menu End Tournament flow),
-            // so it always publishes.
-            onTournamentAutoPublish={() => publishOnEnd(true)}
+            // tournament — the common way tournaments end. Ask before
+            // publishing; "Not yet" leaves the Publish section as the manual
+            // path.
+            onTournamentAutoPublish={() => setPublishConfirmOpen(true)}
             onRoundActiveChange={(isActive, roundStartTime) => {
               setIsRoundActive(isActive);
               fetchTournamentDetails();
@@ -1142,7 +1148,9 @@ export default function TournamentPage({
               setPairingsRefreshNonce((n) => n + 1);
             }}
             adminMenu={
-              isHost && tournament?.has_started && !tournament?.has_ended ? (
+              isHost &&
+              tournament?.has_started &&
+              (!tournament?.has_ended || completedRoundNumbers.length > 0) ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -1158,30 +1166,37 @@ export default function TournamentPage({
                         plays whom this round; "Results" actions correct a
                         recorded score. Grouped + relabeled so "re-pair" (the
                         pairing verb) no longer collides with fixing a result. */}
-                    <DropdownMenuLabel className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Pairings
-                    </DropdownMenuLabel>
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem
-                        onSelect={() => setRepairDialogOpen(true)}
-                        disabled={
-                          (latestRound?.is_completed ?? false) ||
-                          scoredCurrentRoundMatches.length > 0
-                        }
-                      >
-                        <RefreshCw className="w-4 h-4 mr-2" aria-hidden="true" />
-                        Regenerate pairings
-                      </DropdownMenuItem>
-                      {scoredCurrentRoundMatches.length > 0 && (
-                        <DropdownMenuItem onSelect={() => setUnlockDialogOpen(true)}>
-                          <Unlock className="w-4 h-4 mr-2" aria-hidden="true" />
-                          Unlock &amp; regenerate…
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuGroup>
+                    {/* Pairings only make sense while the event is running.
+                        Results stay editable after the end — a repair then
+                        re-saves the final placings (refreshFinalPlacesAction). */}
+                    {!tournament?.has_ended && (
+                      <>
+                        <DropdownMenuLabel className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          Pairings
+                        </DropdownMenuLabel>
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem
+                            onSelect={() => setRepairDialogOpen(true)}
+                            disabled={
+                              (latestRound?.is_completed ?? false) ||
+                              scoredCurrentRoundMatches.length > 0
+                            }
+                          >
+                            <RefreshCw className="w-4 h-4 mr-2" aria-hidden="true" />
+                            Regenerate pairings
+                          </DropdownMenuItem>
+                          {scoredCurrentRoundMatches.length > 0 && (
+                            <DropdownMenuItem onSelect={() => setUnlockDialogOpen(true)}>
+                              <Unlock className="w-4 h-4 mr-2" aria-hidden="true" />
+                              Unlock &amp; regenerate…
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuGroup>
+                      </>
+                    )}
                     {completedRoundNumbers.length > 0 && (
                       <>
-                        <DropdownMenuSeparator />
+                        {!tournament?.has_ended && <DropdownMenuSeparator />}
                         <DropdownMenuLabel className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                           Results
                         </DropdownMenuLabel>
@@ -1193,7 +1208,7 @@ export default function TournamentPage({
                     )}
                     {/* End tournament is only exposed on the final round —
                         no always-present "master end" control. */}
-                    {(tournament?.current_round ?? 0) >= (tournament?.n_rounds ?? 0) && (
+                    {!tournament?.has_ended && (tournament?.current_round ?? 0) >= (tournament?.n_rounds ?? 0) && (
                       <>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -1282,6 +1297,23 @@ export default function TournamentPage({
             onTournamentUpdated={fetchTournamentDetails}
           />
         )}
+        <PublishResultsDialog
+          open={publishConfirmOpen}
+          onOpenChange={setPublishConfirmOpen}
+          isPublishing={publishing}
+          onPublish={async () => {
+            setPublishing(true);
+            try {
+              await publishOnEnd(true);
+            } finally {
+              setPublishing(false);
+              setPublishConfirmOpen(false);
+            }
+          }}
+          onNotYet={() =>
+            showToast("Tournament ended. Publish when ready from the Publish section.", "success")
+          }
+        />
         {tournament && (
           <LiveRoundDialog
             tournament={tournament}

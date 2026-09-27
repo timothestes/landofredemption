@@ -4,7 +4,8 @@ import { Button } from "./button";
 import { Pencil } from "lucide-react";
 import { Dispatch, FormEvent, SetStateAction, useEffect, useRef, useState } from "react";
 import { createClient } from "../../utils/supabase/client";
-import { saveMatchScore, validateScorePair } from "../../utils/tournament/saveMatchScore";
+import { saveMatchForfeit, saveMatchScore, validateScorePair } from "../../utils/tournament/saveMatchScore";
+import { forfeitScores, type ForfeitSide } from "../../lib/tournament/dropForfeit";
 import { Dialog, DialogContent } from "./dialog";
 
 export default function MatchEditModal({
@@ -55,8 +56,18 @@ export default function MatchEditModal({
   const [player2Score, setPlayer2Score] = useState<number | null>(
     match.player2_score ?? null,
   );
+  // Forfeit / no-show per side (migration 110). Scored per algorithm.md:
+  // forfeiter 0 MP / −5, opponent 3 MP / 0 — see lib/tournament/dropForfeit.
+  const [player1Forfeit, setPlayer1Forfeit] = useState<boolean>(!!match.player1_forfeit);
+  const [player2Forfeit, setPlayer2Forfeit] = useState<boolean>(!!match.player2_forfeit);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const forfeitSide: ForfeitSide | null =
+    player1Forfeit && player2Forfeit ? "both"
+    : player1Forfeit ? "player1"
+    : player2Forfeit ? "player2"
+    : null;
 
   // Unsaved-edit guard: prevent backdrop click from silently discarding
   // score changes. ESC and the explicit Cancel button are still valid exits
@@ -64,7 +75,9 @@ export default function MatchEditModal({
   // setOpen(false) directly, bypassing the guard).
   const hasUnsavedChanges =
     player1Score !== (match.player1_score ?? null) ||
-    player2Score !== (match.player2_score ?? null);
+    player2Score !== (match.player2_score ?? null) ||
+    player1Forfeit !== !!match.player1_forfeit ||
+    player2Forfeit !== !!match.player2_forfeit;
 
   // Suppress the next onOpenChange(false) call when ESC fires, so the
   // primitive's ESC handler can close the dialog even while the unsaved
@@ -88,6 +101,8 @@ export default function MatchEditModal({
     if (isRoundActive || mode === "repair") {
       setPlayer1Score(match.player1_score ?? null);
       setPlayer2Score(match.player2_score ?? null);
+      setPlayer1Forfeit(!!match.player1_forfeit);
+      setPlayer2Forfeit(!!match.player2_forfeit);
       setReason("");
       setError(null);
       setOpen(true);
@@ -107,6 +122,45 @@ export default function MatchEditModal({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // A forfeit needs no soul counts: it is written as 0–0 plus the flag, and
+    // scored from the rule table rather than from the souls.
+    if (forfeitSide) {
+      if (mode === "repair") {
+        const { repairMatchScoreAction } = await import("@/app/tracker/tournaments/repair-actions");
+        const result = await repairMatchScoreAction({
+          matchId: match.id,
+          newP1Score: 0,
+          newP2Score: 0,
+          p1Forfeit: player1Forfeit,
+          p2Forfeit: player2Forfeit,
+          reason: reason || undefined,
+          tournamentId: tournament.id,
+        });
+        if (!result.ok) {
+          setError(`Edit failed: ${result.error}`);
+          return;
+        }
+        await fetchCurrentRoundData?.();
+        onRepairSuccess?.();
+        setOpen(false);
+        return;
+      }
+      const result = await saveMatchForfeit(createClient(), {
+        matchId: match.id,
+        player1Id: match.player1_id.id,
+        player2Id: match.player2_id.id,
+        side: forfeitSide,
+      });
+      setMatchErrorIndex((prev) => prev.filter((i) => i !== index));
+      if (result.ok === false) {
+        setError(result.error);
+        return;
+      }
+      setOpen(false);
+      fetchCurrentRoundData?.();
+      return;
+    }
 
     // Covers the null sentinel ("no choice yet" — never conflate with 0), the
     // 0..max_score range, and the unreachable max–max pair.
@@ -167,36 +221,67 @@ export default function MatchEditModal({
   const ScoreSelector = ({
     player,
     selectedScore,
-    setScore
+    setScore,
+    forfeit,
+    setForfeit,
   }: {
     player: string,
     selectedScore: number | null,
-    setScore: (score: number) => void
+    setScore: (score: number) => void,
+    forfeit: boolean,
+    setForfeit: (v: boolean) => void,
   }) => {
     return (
       <div className="mb-4">
         <h3 className="text-lg text-muted-foreground font-normal mb-2">
           <span className="text-foreground font-medium">{player}</span> Lost Souls (score):
         </h3>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {scoreOptions.map((score) => (
             <button
               key={score}
               type="button"
               onClick={() => setScore(score)}
+              disabled={forfeit}
               className={`w-10 h-10 rounded-md flex items-center justify-center transition-colors border ${
-                selectedScore === score
+                !forfeit && selectedScore === score
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-muted text-foreground hover:bg-muted border-border"
-              }`}
+              } ${forfeit ? "opacity-40" : ""}`}
             >
               {score}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setForfeit(!forfeit)}
+            aria-pressed={forfeit}
+            title="Forfeit or no-show: 0 match points and −5 differential; the opponent receives 3 and 0"
+            className={`h-10 px-3 rounded-md flex items-center justify-center transition-colors border text-sm ${
+              forfeit
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-muted text-foreground hover:bg-muted border-border"
+            }`}
+          >
+            Forfeit
+          </button>
         </div>
       </div>
     );
   };
+
+  const forfeitSummary = (() => {
+    if (!forfeitSide) return null;
+    const p1 = match.player1_id?.name ?? "Player 1";
+    const p2 = match.player2_id?.name ?? "Player 2";
+    const s = forfeitScores(forfeitSide);
+    if (forfeitSide === "both") {
+      return `Double forfeit: both players receive ${s.p1.gameScore} match points and ${s.p1.lostSoulScore} differential.`;
+    }
+    const [forfeiter, opponent, fs, os] =
+      forfeitSide === "player1" ? [p1, p2, s.p1, s.p2] : [p2, p1, s.p2, s.p1];
+    return `${forfeiter} forfeits: ${fs.gameScore} match points and ${fs.lostSoulScore} differential. ${opponent} receives ${os.gameScore} and ${os.lostSoulScore}.`;
+  })();
 
   const p1Name = match.player1_id?.name ?? "Player 1";
   const p2Name = match.player2_id?.name ?? "Player 2";
@@ -245,13 +330,20 @@ export default function MatchEditModal({
                 player={match.player1_id.name}
                 selectedScore={player1Score}
                 setScore={setPlayer1Score}
+                forfeit={player1Forfeit}
+                setForfeit={setPlayer1Forfeit}
               />
               <ScoreSelector
                 player={match.player2_id.name}
                 selectedScore={player2Score}
                 setScore={setPlayer2Score}
+                forfeit={player2Forfeit}
+                setForfeit={setPlayer2Forfeit}
               />
-              {player1Score === tournament.max_score && player2Score === tournament.max_score && (
+              {forfeitSummary && (
+                <p className="text-sm text-muted-foreground">{forfeitSummary}</p>
+              )}
+              {!forfeitSide && player1Score === tournament.max_score && player2Score === tournament.max_score && (
                 <p className="text-red-500 text-sm">
                   Score cannot be {tournament.max_score}-{tournament.max_score}.
                 </p>

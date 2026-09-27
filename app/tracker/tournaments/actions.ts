@@ -19,6 +19,18 @@ function ordinal(n: number): string {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
+/** "Name - 2nd Place - Tournament" (no place segment when unplaced). The one
+ * naming rule for a published deck copy, used at publish time and again when
+ * a post-event repair moves the placings. */
+function publishedDeckName(
+  participantName: string,
+  place: number | undefined,
+  tournamentName: string,
+): string {
+  const placeStr = place ? `${ordinal(place)} Place - ` : "";
+  return `${participantName} - ${placeStr}${tournamentName}`;
+}
+
 
 // Reads on the default-deny tables (tournament_deck_submissions,
 // tournament_join_blocks) go through the admin client, which bypasses RLS
@@ -506,6 +518,61 @@ async function persistFinalPlaces(tournamentId: string): Promise<Map<string, num
   return placementMap;
 }
 
+/**
+ * Re-run the final-placement save after a result is corrected on an ENDED
+ * tournament, so participants.place and any already-published decklist
+ * names ("Name - 2nd Place - …") follow the corrected standings. Uses the
+ * same persistFinalPlaces + naming rule as publishing — never a second
+ * implementation. No-op while the tournament is still running (placings
+ * are only meaningful once it has ended).
+ */
+export async function refreshFinalPlacesAction(
+  tournamentId: string
+): Promise<{ success: boolean; renamed: number; error?: string }> {
+  const supabase = await createClient();
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select("name, has_ended")
+    .eq("id", tournamentId)
+    .maybeSingle();
+  if (!tournament?.has_ended) return { success: true, renamed: 0 };
+
+  const placementMap = await persistFinalPlaces(tournamentId);
+
+  // Published copies carry the place in their name; rename any that exist.
+  const { data: rows, error } = await supabase
+    .from("tournament_decklists")
+    .select("participant_id, published_deck_id, participants!inner ( name )")
+    .eq("tournament_id", tournamentId)
+    .not("published_deck_id", "is", null);
+  if (error) return { success: false, renamed: 0, error: error.message };
+
+  const published = (rows ?? []) as any[];
+  if (published.length === 0) return { success: true, renamed: 0 };
+
+  // Copies are owned by the system user, so the rename goes through the
+  // admin client — prove host authority first (same gate as publishing).
+  const host = await requireHost(tournamentId);
+  if (!host) return { success: false, renamed: 0, error: "Not the tournament host" };
+  const admin = getSupabaseAdmin();
+
+  let renamed = 0;
+  for (const row of published) {
+    const name = publishedDeckName(
+      row.participants?.name || "Unknown",
+      placementMap.get(row.participant_id),
+      tournament.name
+    );
+    const { error: renameError } = await admin
+      .from("decks")
+      .update({ name })
+      .eq("id", row.published_deck_id)
+      .eq("user_id", REDEMPTIONCCG_USER_ID);
+    if (!renameError) renamed += 1;
+  }
+  return { success: true, renamed };
+}
+
 // ─── Join stats ───────────────────────────────────────────────────────
 
 export async function getJoinStatsAction(
@@ -920,9 +987,11 @@ export async function publishTournamentDecklistsAction(
     }
 
     // Create copy owned by RedemptionCCG.app
-    const place = placementMap.get(dl.participant_id);
-    const placeStr = place ? `${ordinal(place)} Place - ` : "";
-    const deckName = `${participantName} - ${placeStr}${tournament.name}`;
+    const deckName = publishedDeckName(
+      participantName,
+      placementMap.get(dl.participant_id),
+      tournament.name
+    );
     const { data: newDeck, error: createError } = await admin
       .from("decks")
       .insert({

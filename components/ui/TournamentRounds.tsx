@@ -5,6 +5,12 @@ import { Dispatch, Fragment, ReactNode, SetStateAction, useCallback, useEffect, 
 import { createClient } from "../../utils/supabase/client";
 import { recomputeTotalsFromHistory } from "../../lib/tournament/results";
 import { gameScoreForMatch, differentialForMatch } from "../../lib/tournament/standingsScoring";
+import {
+  forfeitMatchWrite,
+  forfeitSideForDrops,
+  forfeitSideOf,
+  matchOutcomeColumns,
+} from "../../lib/tournament/dropForfeit";
 import { buildStateFromSupabase } from "../../utils/tournament/stateAdapter";
 import { reassignRoundTables } from "../../utils/tournament/reassignTables";
 import MatchEditModal from "./match-edit";
@@ -58,6 +64,8 @@ const perRoundScores = (match: any, maxScore: number) => {
     player2_id: match.player2_id.id,
     player1_score: match.player1_score,
     player2_score: match.player2_score,
+    player1_forfeit: match.player1_forfeit,
+    player2_forfeit: match.player2_forfeit,
   };
   return {
     p1Mp: gameScoreForMatch(sc.player1_id, sc, maxScore),
@@ -65,6 +73,14 @@ const perRoundScores = (match: any, maxScore: number) => {
     p1Diff: differentialForMatch(sc.player1_id, sc),
     p2Diff: differentialForMatch(sc.player2_id, sc),
   };
+};
+
+/** Result-column label for a forfeited match (its stored souls are 0–0). */
+const forfeitLabel = (match: any): string | null => {
+  const side = forfeitSideOf(match);
+  if (!side) return null;
+  if (side === "both") return "Double forfeit";
+  return `Forfeit · ${side === "player1" ? match.player1_id.name : match.player2_id.name}`;
 };
 
 interface TournamentRoundsProps {
@@ -425,7 +441,7 @@ export default function TournamentRounds({
     const { data, error } = await client
       .from("matches")
       .select(
-        "id, match_order, table_number, player1_pin_overridden, player2_pin_overridden, player1_match_points, player2_match_points, differential, differential2, player1_id:participants!matches_player1_id_fkey(name,id,assigned_seat), player2_id:participants!matches_player2_id_fkey(name,id,assigned_seat), player1_score, player2_score"
+        "id, match_order, table_number, player1_pin_overridden, player2_pin_overridden, player1_match_points, player2_match_points, differential, differential2, player1_id:participants!matches_player1_id_fkey(name,id,assigned_seat), player2_id:participants!matches_player2_id_fkey(name,id,assigned_seat), player1_score, player2_score, player1_forfeit, player2_forfeit"
       )
       .eq("tournament_id", tournamentId)
       .eq("round", currentPage)
@@ -468,28 +484,20 @@ export default function TournamentRounds({
 
     let matchErrorIndexArr = [];
 
-    // Auto-handle matches where a player has dropped mid-round
+    // A player who dropped mid-round forfeits their unscored match. Scored
+    // per algorithm.md via the shared helper (forfeiter 0 MP / −5, opponent
+    // 3 MP / 0) — the same write the score modal's Forfeit button makes.
     for (const match of matches) {
       if (match.player1_score !== null && match.player2_score !== null) continue;
       const [{ data: p1Status }, { data: p2Status }] = await Promise.all([
         client.from("participants").select("dropped_out").eq("id", match.player1_id.id).single(),
         client.from("participants").select("dropped_out").eq("id", match.player2_id.id).single(),
       ]);
-      if (p1Status?.dropped_out || p2Status?.dropped_out) {
-        if (p1Status?.dropped_out && p2Status?.dropped_out) {
-          match.player1_score = 0;
-          match.player2_score = 0;
-        } else if (p1Status?.dropped_out) {
-          match.player1_score = 0;
-          match.player2_score = tournamentInfo.max_score;
-        } else {
-          match.player1_score = tournamentInfo.max_score;
-          match.player2_score = 0;
-        }
-        await client.from("matches").update({
-          player1_score: match.player1_score,
-          player2_score: match.player2_score,
-        }).eq("id", match.id);
+      const side = forfeitSideForDrops(!!p1Status?.dropped_out, !!p2Status?.dropped_out);
+      if (side) {
+        const write = forfeitMatchWrite(side, match.player1_id.id, match.player2_id.id);
+        Object.assign(match, write);
+        await client.from("matches").update(write).eq("id", match.id);
       }
     }
 
@@ -516,18 +524,10 @@ export default function TournamentRounds({
       // the score-input UI in components/ui/match-edit.tsx — we don't touch
       // those denormalized snapshots here.)
       for (const match of matches) {
-        let isTie = false;
-        let winnerId: string | null = null;
-        if (match.player1_score === match.player2_score) {
-          isTie = true;
-        } else if (match.player1_score > match.player2_score) {
-          winnerId = match.player1_id.id;
-        } else {
-          winnerId = match.player2_id.id;
-        }
+        // Forfeit-aware: a forfeit's 0–0 souls must not be written as a tie.
         const { error: matchUpdateError } = await client
           .from("matches")
-          .update({ is_tie: isTie, winner_id: winnerId })
+          .update(matchOutcomeColumns(match, match.player1_id.id, match.player2_id.id))
           .eq("id", match.id);
         if (matchUpdateError) throw matchUpdateError;
       }
@@ -1324,7 +1324,7 @@ export default function TournamentRounds({
                                   </span>
                                 </td>
                                 <td className={`px-4 py-2 text-center border-r tabular-nums ${matchErrorIndex.includes(index) ? "border-red-400" : "border-border"}`}>
-                                  {gridEnabled ? (
+                                  {gridEnabled && !forfeitSideOf(match) ? (
                                     <div className="flex items-center justify-center gap-1.5">
                                       {([0, 1] as const).map((col) => (
                                         <ScoreCell
@@ -1357,7 +1357,9 @@ export default function TournamentRounds({
                                     </div>
                                   ) : hasResult ? (
                                     <span className="font-medium text-foreground">
-                                      {match.player1_score}&ndash;{match.player2_score}
+                                      {forfeitLabel(match) ?? (
+                                        <>{match.player1_score}&ndash;{match.player2_score}</>
+                                      )}
                                     </span>
                                   ) : (
                                     <span className="text-muted-foreground">&mdash;</span>
@@ -1408,7 +1410,7 @@ export default function TournamentRounds({
                                         edit pencil to avoid two redundant icons. */}
                                     {!(isHost && isRoundCompleted) && (
                                       <MatchEditModal
-                                        key={match.player1_score + match.player2_score}
+                                        key={`${match.player1_score}-${match.player2_score}-${match.player1_forfeit}-${match.player2_forfeit}`}
                                         match={match}
                                         fetchCurrentRoundData={refreshMatchesAndNotify}
                                         setMatchErrorIndex={setMatchErrorIndex}
@@ -1578,7 +1580,7 @@ export default function TournamentRounds({
                                 {!(isHost && isRoundCompleted) && (
                                   <div className="w-10 h-10">
                                     <MatchEditModal
-                                      key={match.player1_score + match.player2_score}
+                                      key={`${match.player1_score}-${match.player2_score}-${match.player1_forfeit}-${match.player2_forfeit}`}
                                       match={match}
                                       fetchCurrentRoundData={refreshMatchesAndNotify}
                                       setMatchErrorIndex={setMatchErrorIndex}
@@ -1631,6 +1633,7 @@ export default function TournamentRounds({
                                   </p>
                                   <p className="text-xs text-muted-foreground tabular-nums">
                                     Match Pts {perRound ? perRound.p1Mp : "N/A"} · Diff {perRound ? perRound.p1Diff : "N/A"}
+                                    {match.player1_forfeit ? " · Forfeit" : ""}
                                   </p>
                                 </div>
                                 <button
@@ -1665,6 +1668,7 @@ export default function TournamentRounds({
                                   </p>
                                   <p className="text-xs text-muted-foreground tabular-nums">
                                     Match Pts {perRound ? perRound.p2Mp : "N/A"} · Diff {perRound ? perRound.p2Diff : "N/A"}
+                                    {match.player2_forfeit ? " · Forfeit" : ""}
                                   </p>
                                 </div>
                                 <button

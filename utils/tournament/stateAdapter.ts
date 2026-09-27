@@ -4,6 +4,7 @@
 import type {
   TournamentState, Participant, Match, MatchResult, Bye, MatchOutcome,
 } from "../../lib/tournament/types";
+import { forfeitOutcomes, forfeitSideOf } from "../../lib/tournament/dropForfeit";
 
 /** Loose Supabase client type — accepts both the browser and server clients. */
 type AnyClient = {
@@ -16,15 +17,22 @@ type AnyClient = {
  * The DB stores raw scores plus is_tie + winner_id; partial-vs-full is
  * derived by comparing the winner's score against soulCap (max_score).
  *
+ * A forfeit (migration 110) is stored as souls 0–0 plus a per-side flag; the
+ * flags are checked first so the 0–0 never reads as a tie.
+ *
  * Fallback for legacy data: tournaments scored before is_tie/winner_id were
  * persisted by match-edit.tsx have those columns null. If both scores are
  * present we derive the result from them — equal scores → tie, otherwise
  * the higher score wins.
+ *
+ * Exported for unit tests only.
  */
-function toMatchResult(m: any, soulCap: number): MatchResult | undefined {
+export function toMatchResult(m: any, soulCap: number): MatchResult | undefined {
   if (m.player1_score === null || m.player2_score === null) return undefined;
   const p1Souls = Number(m.player1_score);
   const p2Souls = Number(m.player2_score);
+  const forfeit = forfeitSideOf(m);
+  if (forfeit) return { p1Souls, p2Souls, ...forfeitOutcomes(forfeit) };
   if (m.is_tie || (m.winner_id == null && p1Souls === p2Souls)) {
     return { p1Souls, p2Souls, p1Outcome: "tie", p2Outcome: "tie" };
   }
@@ -70,7 +78,7 @@ export async function buildStateFromSupabase(
 
   const { data: matchRows } = await client
     .from("matches")
-    .select("id, round, player1_id, player2_id, match_order, player1_score, player2_score, is_tie, winner_id")
+    .select("id, round, player1_id, player2_id, match_order, player1_score, player2_score, is_tie, winner_id, player1_forfeit, player2_forfeit")
     .eq("tournament_id", tournamentId);
   const matches: Match[] = (matchRows || []).map((m: any) => ({
     id: m.id,

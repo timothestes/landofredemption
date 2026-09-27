@@ -49,6 +49,7 @@ import {
   recheckAllSubmissionsAction,
   setResultsPublishedAction,
   publishTournamentDecklistsAction,
+  refreshFinalPlacesAction,
 } from "../actions";
 
 const REDEMPTIONCCG_USER_ID = "a0a8e980-f372-4ebd-be25-d2f26507e98f";
@@ -63,6 +64,7 @@ function makeNode() {
   const self = () => node;
   node.select = vi.fn(self);
   node.eq = vi.fn(self);
+  node.not = vi.fn(self);
   node.in = vi.fn(self);
   node.order = vi.fn(self);
   node.limit = vi.fn(self);
@@ -737,5 +739,88 @@ describe("publishTournamentDecklistsAction — snapshot-first", () => {
 
     expect(r).toEqual({ success: true });
     expect(decks.insert).not.toHaveBeenCalled();
+  });
+});
+
+// ─── refreshFinalPlacesAction (repair after the end) ────────────────────
+
+describe("refreshFinalPlacesAction", () => {
+  it("is a no-op while the tournament is still running", async () => {
+    const tournaments = makeNode();
+    tournaments.maybeSingle.mockResolvedValue({ data: { name: "Spring Open", has_ended: false }, error: null });
+    const participants = makeNode();
+    userClientImpl = makeClient({ tournaments, participants });
+
+    const r = await refreshFinalPlacesAction("t1");
+
+    expect(r).toEqual({ success: true, renamed: 0 });
+    expect(mockBuildStateFromSupabase).not.toHaveBeenCalled();
+    expect(participants.update).not.toHaveBeenCalled();
+  });
+
+  it("ended tournament: re-persists places through persistFinalPlaces and renames published copies", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "host1" } } });
+
+    const tournaments = makeNode();
+    // First read: the has_ended probe; second: requireHost's ownership probe.
+    tournaments.maybeSingle
+      .mockResolvedValueOnce({ data: { name: "Spring Open", has_ended: true }, error: null })
+      .mockResolvedValueOnce({ data: { id: "t1" }, error: null });
+    const participants = makeNode();
+    participants._resp = { data: null, error: null };
+    const tournamentDecklists = makeNode();
+    tournamentDecklists._resp = {
+      data: [
+        { participant_id: "p1", published_deck_id: "pub-1", participants: { name: "Timmy" } },
+        { participant_id: "p2", published_deck_id: "pub-2", participants: { name: "Sally" } },
+      ],
+      error: null,
+    };
+    userClientImpl = makeClient({ tournaments, participants, tournament_decklists: tournamentDecklists });
+
+    const decks = makeNode();
+    decks._resp = { data: null, error: null };
+    adminImpl = makeClient({ decks });
+
+    mockBuildStateFromSupabase.mockResolvedValue({ fake: "state" });
+    // The corrected standings: Sally now 1st, Timmy 2nd.
+    mockComputeFinalStandings.mockReturnValue([
+      { participantId: "p2", place: 1 },
+      { participantId: "p1", place: 2 },
+    ]);
+
+    const r = await refreshFinalPlacesAction("t1");
+
+    expect(r).toEqual({ success: true, renamed: 2 });
+    // Same placement-save path as publishing.
+    expect(mockBuildStateFromSupabase).toHaveBeenCalledWith(userClientImpl, "t1");
+    expect(participants.update).toHaveBeenCalledWith({ place: 1 });
+    expect(participants.update).toHaveBeenCalledWith({ place: 2 });
+    expect(participants.update).toHaveBeenCalledWith({ place: null });
+    // Published copies renamed with the same "Name - Nth Place - Event" rule.
+    expect(decks.update).toHaveBeenCalledWith({ name: "Sally - 1st Place - Spring Open" });
+    expect(decks.update).toHaveBeenCalledWith({ name: "Timmy - 2nd Place - Spring Open" });
+    expect(decks.eq).toHaveBeenCalledWith("id", "pub-1");
+    expect(decks.eq).toHaveBeenCalledWith("id", "pub-2");
+    expect(decks.eq).toHaveBeenCalledWith("user_id", REDEMPTIONCCG_USER_ID);
+  });
+
+  it("ended but nothing published: saves places, renames nothing, never touches the admin client", async () => {
+    const tournaments = makeNode();
+    tournaments.maybeSingle.mockResolvedValue({ data: { name: "Spring Open", has_ended: true }, error: null });
+    const participants = makeNode();
+    participants._resp = { data: null, error: null };
+    const tournamentDecklists = makeNode();
+    tournamentDecklists._resp = { data: [], error: null };
+    userClientImpl = makeClient({ tournaments, participants, tournament_decklists: tournamentDecklists });
+
+    mockBuildStateFromSupabase.mockResolvedValue({ fake: "state" });
+    mockComputeFinalStandings.mockReturnValue([{ participantId: "p1", place: 1 }]);
+
+    const r = await refreshFinalPlacesAction("t1");
+
+    expect(r).toEqual({ success: true, renamed: 0 });
+    expect(participants.update).toHaveBeenCalledWith({ place: 1 });
+    expect(adminImpl).toBeNull();
   });
 });

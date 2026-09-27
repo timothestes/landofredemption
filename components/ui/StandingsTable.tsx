@@ -9,6 +9,7 @@ import {
   differentialForMatch,
 } from "../../lib/tournament/standingsScoring";
 import { orderByTiebreakers } from "../../lib/tournament/standings";
+import { forfeitSideOf } from "../../lib/tournament/dropForfeit";
 import type { Tiebreak } from "../../lib/tournament/types";
 import { printFinalStandings } from "../../utils/printUtils";
 
@@ -29,6 +30,9 @@ interface MatchRow {
   player2_score: number | null;
   winner_id: string | null;
   is_tie: boolean | null;
+  /** Forfeit flags (migration 110). Optional so older test rows still fit. */
+  player1_forfeit?: boolean | null;
+  player2_forfeit?: boolean | null;
 }
 
 interface ByeRow {
@@ -76,9 +80,9 @@ const DEFAULT_MAX_SCORE = 5;
 /**
  * Per-player W/L/T computed strictly from match + bye history.
  * - Byes count as wins (the algorithm awards 3 MP, same as a full win).
- * - Forfeit/no-show edge cases are conservatively treated as wins/losses
- *   based on stored winner_id + is_tie. We rely on the same denormalized
- *   columns the tracker writes when scoring a match.
+ * - A forfeit is a loss for the forfeiter and a win for their opponent; a
+ *   double forfeit is a loss for both (nobody is awarded the win).
+ * - Otherwise we rely on the stored winner_id + is_tie the tracker writes.
  */
 function computeRecord(
   participantId: string,
@@ -92,6 +96,14 @@ function computeRecord(
   for (const m of matches) {
     if (m.player1_id !== participantId && m.player2_id !== participantId) continue;
     if (m.player1_score === null || m.player2_score === null) continue;
+    const forfeit = forfeitSideOf(m);
+    if (forfeit) {
+      const isP1 = m.player1_id === participantId;
+      const forfeited = forfeit === "both" || forfeit === (isP1 ? "player1" : "player2");
+      if (forfeited) losses++;
+      else wins++;
+      continue;
+    }
     if (m.is_tie) {
       ties++;
       continue;
@@ -241,7 +253,7 @@ async function fetchStandingsInputs(tournamentId: string): Promise<{
     client
       .from("matches")
       .select(
-        "id, round, player1_id, player2_id, player1_score, player2_score, winner_id, is_tie",
+        "id, round, player1_id, player2_id, player1_score, player2_score, winner_id, is_tie, player1_forfeit, player2_forfeit",
       )
       .eq("tournament_id", tournamentId),
     client
