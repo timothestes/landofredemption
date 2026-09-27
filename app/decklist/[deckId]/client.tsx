@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { copyPublicDeckAction, updateDeckPreviewCardsAction, renameDeckAction, updateDeckDescriptionAction, updateDeckTagsAction, loadGlobalTagsAction, GlobalTag, DeckCardData } from "../actions";
+import { copyPublicDeckAction, updateDeckPreviewCardsAction, renameDeckAction, updateDeckDescriptionAction, updateDeckTagsAction, loadGlobalTagsAction, recordDeckViewAction, GlobalTag, DeckCardData } from "../actions";
 import { createGlobalTagAction } from "../../admin/tags/actions";
 import { HexColorPicker } from "react-colorful";
 import { useIsAdmin } from "../../../hooks/useIsAdmin";
@@ -176,6 +176,21 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
   // Tournament provenance. Present only on published tournament copies, where
   // it — not the deck row — carries the identity of this decklist.
   const tournament = deck.tournament ?? null;
+
+  // Count this visit once per tab session. Owners never count, and the write
+  // lives here rather than in the server load so link-unfurl bots, which only
+  // reach generateMetadata, do not inflate it.
+  useEffect(() => {
+    if (isOwner) return;
+    const key = `viewed-deck:${deck.id}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      // Blocked storage: still record the view, just without the dedupe.
+    }
+    recordDeckViewAction(deck.id).catch(() => {});
+  }, [deck.id, isOwner]);
 
   // Inline name editing (owner only)
   const [deckName, setDeckName] = useState(deck.name);

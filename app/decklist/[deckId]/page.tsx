@@ -12,9 +12,8 @@ interface PageProps {
 }
 
 // generateMetadata and the page body both need the deck. Without this memo the
-// whole query cascade — and the fire-and-forget view_count write inside it —
-// ran twice for every request. cache() is request-scoped, so the two callers
-// share one load.
+// whole query cascade ran twice for every request. cache() is request-scoped,
+// so the two callers share one load.
 const loadDeck = cache((deckId: string) => loadPublicDeckAction(deckId));
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
