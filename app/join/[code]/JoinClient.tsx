@@ -215,6 +215,12 @@ export default function JoinClient({
           title="This event has already started"
           message="Joining is closed. Check with the host if you think this is a mistake."
         />
+        <Link
+          href={`/t/${code}`}
+          className="mt-4 block text-center text-sm text-primary hover:underline"
+        >
+          View live pairings &amp; standings
+        </Link>
       </Shell>
     );
   }
@@ -288,20 +294,32 @@ export default function JoinClient({
           )}
         </div>
 
-        {/* Players don't otherwise know whether this page is meant to stay open
-            — it looks like a live event screen. Say so explicitly, but only
-            once there's nothing left for them to do here: on a decklist event
-            with nothing submitted, "you can close this" would be wrong. */}
-        {(!info.requiresDecklist || joined.submission !== null) && (
-          <div className="mt-3 rounded-lg border border-border/60 bg-muted/30 p-3">
-            <p className="text-sm text-foreground">
-              You're all set — you can close this page.
-            </p>
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Coming soon:</span> check your round
-              pairings and report scores from here. For now your host handles both at the event.
-            </p>
-          </div>
+        {/* Once the event is under way, the thing a checked-in player wants is
+            their table — send them to the live page. Before that, players
+            don't otherwise know whether this page is meant to stay open (it
+            looks like a live event screen), so say so, but only once there's
+            nothing left to do here: on a decklist event with nothing
+            submitted, "you can close this" would be wrong. */}
+        {info.hasStarted ? (
+          <Button asChild className="mt-3 w-full">
+            <Link href={`/t/${code}`}>Live pairings &amp; standings</Link>
+          </Button>
+        ) : (
+          (!info.requiresDecklist || joined.submission !== null) && (
+            <div className="mt-3 rounded-lg border border-border/60 bg-muted/30 p-3">
+              <p className="text-sm text-foreground">
+                You're all set — you can close this page.
+              </p>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Once the host starts round 1, your table, the round timer and the standings will
+                be live at{" "}
+                <Link href={`/t/${code}`} className="font-medium text-primary hover:underline">
+                  this page
+                </Link>
+                .
+              </p>
+            </div>
+          )
         )}
 
         {result && result.res.success === false && (

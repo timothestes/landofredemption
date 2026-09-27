@@ -4,7 +4,7 @@ import { Tabs } from "flowbite-react";
 import PodGenerationModal from "./PodGenerationModal";
 import { Dispatch, ReactNode, SetStateAction, useEffect, useRef, useState } from "react";
 import { HiUserGroup } from "react-icons/hi";
-import { FaGear, FaClipboardList, FaQrcode } from "react-icons/fa6";
+import { FaGear, FaClipboardList, FaQrcode, FaTowerBroadcast } from "react-icons/fa6";
 import { MdPeople } from "react-icons/md";
 import TournamentSettings from "./TournamentSettings";
 import TournamentRounds from "./TournamentRounds";
@@ -60,6 +60,8 @@ interface TournamentTabsProps {
   usernames?: Map<string, string>;
   /** Opens the QR Join dialog (mounted at the page level). */
   onOpenQrJoin?: () => void;
+  /** Opens the player-facing live pairings & standings link dialog (page level). */
+  onOpenLiveRound?: () => void;
   /** Fired after Tournament Settings persists a change, so the page header
    * picks up a rename from the Event Type section. */
   onTournamentUpdated?: () => void;
@@ -108,6 +110,7 @@ export default function TournamentTabs({
   isHost = false,
   usernames,
   onOpenQrJoin,
+  onOpenLiveRound,
   onTournamentUpdated,
   decklistSummary,
   numberingMode,
@@ -208,6 +211,22 @@ export default function TournamentTabs({
               >
                 <FaQrcode className="w-4 h-4" />
                 <span className="hidden sm:inline">QR Join</span>
+              </Button>
+            )}
+            {/* Live view — the players' /t/[code] page. Useful in every
+                phase: before Start it says "hasn't started yet", after the
+                end it shows final standings. */}
+            {onOpenLiveRound && (
+              <Button
+                type="button"
+                onClick={onOpenLiveRound}
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                title="Live pairings & standings for players"
+              >
+                <FaTowerBroadcast className="w-4 h-4" />
+                <span className="hidden sm:inline">Live view</span>
               </Button>
             )}
             {!tournamentEnded && (
