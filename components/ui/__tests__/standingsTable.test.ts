@@ -345,3 +345,80 @@ describe("explainTiebreak", () => {
     expect(text).toContain("Bob, Carl, Dave and 3 others");
   });
 });
+
+// ─── Forfeits (migration 110) ─────────────────────────────────────────
+
+describe("buildStandings — forfeits", () => {
+  const forfeitRow = (
+    round: number,
+    p1: string,
+    p2: string,
+    side: "player1" | "player2" | "both",
+  ) => ({
+    id: `${round}-${p1}-${p2}-ff`,
+    round,
+    player1_id: p1,
+    player2_id: p2,
+    player1_score: 0,
+    player2_score: 0,
+    winner_id: side === "player1" ? p2 : side === "player2" ? p1 : null,
+    is_tie: false,
+    player1_forfeit: side !== "player2",
+    player2_forfeit: side !== "player1",
+  });
+
+  it("forfeiter gets 0 MP / −5 and a loss; opponent gets 3 MP / 0 and a win", () => {
+    const rows = buildStandings(
+      [p("A"), p("B")],
+      [forfeitRow(1, "A", "B", "player1")],
+      [],
+      null,
+      [1],
+      MAX,
+    );
+    const a = rows.find((r) => r.participant.id === "A")!;
+    const b = rows.find((r) => r.participant.id === "B")!;
+    expect(b.mp).toBe(3);
+    expect(b.diff).toBe(0);
+    expect(b.wins).toBe(1);
+    expect(b.losses).toBe(0);
+    expect(a.mp).toBe(0);
+    expect(a.diff).toBe(-5);
+    expect(a.losses).toBe(1);
+    expect(a.wins).toBe(0);
+    expect(a.ties).toBe(0);
+    expect(b.place).toBe(1);
+    expect(a.place).toBe(2);
+  });
+
+  it("0–0 souls with a forfeit flag is never counted as a tie", () => {
+    const rows = buildStandings(
+      [p("A"), p("B")],
+      [forfeitRow(1, "A", "B", "player2")],
+      [],
+      null,
+      [1],
+      MAX,
+    );
+    for (const r of rows) expect(r.ties).toBe(0);
+    expect(rows.find((r) => r.participant.id === "A")!.mp).toBe(3);
+    expect(rows.find((r) => r.participant.id === "B")!.diff).toBe(-5);
+  });
+
+  it("double forfeit: both lose, 0 MP / −5 each, nobody awarded the win", () => {
+    const rows = buildStandings(
+      [p("A"), p("B")],
+      [forfeitRow(1, "A", "B", "both")],
+      [],
+      null,
+      [1],
+      MAX,
+    );
+    for (const r of rows) {
+      expect(r.mp).toBe(0);
+      expect(r.diff).toBe(-5);
+      expect(r.losses).toBe(1);
+      expect(r.wins).toBe(0);
+    }
+  });
+});

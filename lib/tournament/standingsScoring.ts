@@ -10,8 +10,12 @@
 // differential. Per migration 039 the stored differential is the UNCAPPED
 // `player1_score - player2_score`. Keep these two formulas distinct on purpose.
 
-/** Minimal match shape needed for scoring: just participant ids + raw scores. */
-export interface ScorableMatch {
+import { forfeitScores, forfeitSideOf, type ForfeitFlags } from "./dropForfeit";
+
+/** Minimal match shape needed for scoring: participant ids, raw scores, and
+ * the forfeit flags (migration 110). The flags are optional so hand-built
+ * rows in older tests still type-check; absent means "played normally". */
+export interface ScorableMatch extends ForfeitFlags {
   player1_id: string;
   player2_id: string;
   player1_score: number | null;
@@ -35,6 +39,9 @@ export function gameScoreForMatch(
   const isP1 = m.player1_id === participantId;
   const isP2 = m.player2_id === participantId;
   if (!isP1 && !isP2) return 0;
+  // Forfeits first: the stored 0–0 souls would otherwise read as a tie.
+  const forfeit = forfeitSideOf(m);
+  if (forfeit) return forfeitScores(forfeit)[isP1 ? "p1" : "p2"].gameScore;
   if (m.player1_score === m.player2_score) return 1.5;
   if (isP1 && m.player1_score === maxScore) return 3;
   if (isP2 && m.player2_score === maxScore) return 3;
@@ -57,6 +64,12 @@ export function differentialForMatch(
   m: ScorableMatch,
 ): number {
   if (m.player1_score === null || m.player2_score === null) return 0;
+  const forfeit = forfeitSideOf(m);
+  if (forfeit) {
+    if (m.player1_id === participantId) return forfeitScores(forfeit).p1.lostSoulScore;
+    if (m.player2_id === participantId) return forfeitScores(forfeit).p2.lostSoulScore;
+    return 0;
+  }
   if (m.player1_id === participantId) return m.player1_score - m.player2_score;
   if (m.player2_id === participantId) return m.player2_score - m.player1_score;
   return 0;

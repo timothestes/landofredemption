@@ -6,6 +6,7 @@ import { buildStateFromSupabase } from "@/utils/tournament/stateAdapter";
 import { pairFirstRound, pairLaterRound } from "@/lib/tournament/pairing";
 import { mulberry32 } from "@/lib/tournament/rng";
 import { assignTables } from "@/lib/tournament/tableAssignment";
+import { refreshFinalPlacesAction } from "./actions";
 
 export interface RepairResult {
   ok: boolean;
@@ -15,7 +16,7 @@ export interface RepairResult {
     tournament_id: string;
     round: number;
     old: { p1: number; p2: number };
-    new: { p1: number; p2: number };
+    new: { p1: number; p2: number; p1_forfeit?: boolean; p2_forfeit?: boolean };
   };
 }
 
@@ -23,6 +24,9 @@ export async function repairMatchScoreAction(input: {
   matchId: string;
   newP1Score: number;
   newP2Score: number;
+  /** Forfeit flags (migration 110). A forfeit is sent as 0–0 plus the flag. */
+  p1Forfeit?: boolean;
+  p2Forfeit?: boolean;
   reason?: string;
   tournamentId: string;
 }): Promise<RepairResult> {
@@ -32,11 +36,18 @@ export async function repairMatchScoreAction(input: {
     p_new_p1_score: input.newP1Score,
     p_new_p2_score: input.newP2Score,
     p_reason: input.reason ?? null,
+    p_p1_forfeit: input.p1Forfeit ?? false,
+    p_p2_forfeit: input.p2Forfeit ?? false,
   });
 
   if (error) {
     return { ok: false, error: error.message };
   }
+
+  // The RPC recomputed totals; on an ended tournament the final placings
+  // (and any published decklist names carrying them) must follow. No-op
+  // while the event is still running.
+  await refreshFinalPlacesAction(input.tournamentId);
 
   revalidatePath(`/tracker/tournaments/${input.tournamentId}`);
   return { ok: true, data: data as RepairResult["data"] };

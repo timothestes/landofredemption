@@ -15,6 +15,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getUserSafe } from "../supabase/getUserSafe";
+import { forfeitMatchWrite, type ForfeitSide } from "../../lib/tournament/dropForfeit";
 
 export type SaveScoreResult =
   | { ok: true }
@@ -129,6 +130,9 @@ export async function saveMatchScore(
       player2_match_points: (player2.data.match_points || 0) + pts.p2,
       is_tie: pts.isTie,
       winner_id: winnerId,
+      // A real score replaces any forfeit recorded earlier on this row.
+      player1_forfeit: false,
+      player2_forfeit: false,
       updated_at: new Date(),
     })
     .eq("id", matchId);
@@ -142,5 +146,38 @@ export async function saveMatchScore(
     };
   }
 
+  return { ok: true };
+}
+
+/**
+ * Record a forfeit on a live-round match. The row is written exactly as the
+ * End Round drop auto-score writes it (lib/tournament/dropForfeit.ts), so a
+ * host-entered forfeit and a mid-round drop score identically.
+ */
+export async function saveMatchForfeit(
+  client: SupabaseClient,
+  args: {
+    matchId: string;
+    player1Id: string;
+    player2Id: string;
+    side: ForfeitSide;
+  },
+): Promise<SaveScoreResult> {
+  const { error } = await client
+    .from("matches")
+    .update({
+      ...forfeitMatchWrite(args.side, args.player1Id, args.player2Id),
+      updated_at: new Date(),
+    })
+    .eq("id", args.matchId);
+
+  if (error) {
+    return {
+      ok: false,
+      error: (await getUserSafe(client))
+        ? "Failed to save the forfeit. Please try again."
+        : SESSION_EXPIRED_MESSAGE,
+    };
+  }
   return { ok: true };
 }
