@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { config } from "dotenv";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 // Load local env (Next convention); CI provides these as secrets.
 config({ path: ".env.local" });
@@ -118,8 +118,11 @@ describe.runIf(ENABLED)("Forge anon-leak guardrail", () => {
   // join (and can stack-overflow its reconnect timer), so callers must hand us a
   // client created with a short `realtime.timeout`, and we tear the socket down
   // hard (disconnect) on the first terminal status to stop the reconnect storm.
+  // `SupabaseClient` (Database = any), not ReturnType<typeof createClient>: ReturnType
+  // instantiates the generics with their constraints (unknown/never) and rejects the
+  // clients built above.
   function joinStatus(
-    client: ReturnType<typeof createClient>,
+    client: SupabaseClient,
     topic: string,
     internalTimeoutMs = 4000
   ): Promise<string> {

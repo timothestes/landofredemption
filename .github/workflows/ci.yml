@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer push to the same branch/PR supersedes the run in flight.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Typecheck and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          # No .nvmrc / engines field in the repo; matches Vercel's default runtime.
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      # The live-Supabase leak suites (npm run test:security) are describe.runIf-gated
+      # behind FORGE_LEAK_TEST=1, so the default run is hermetic: no secrets needed here.
+      - name: Unit tests
+        run: npx vitest run
