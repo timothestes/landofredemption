@@ -7,6 +7,9 @@ import { buildReplacedHalf, type ReplaceAlignment } from "../utils/replaceHalf";
 import type { DeckBuilderPersistence } from "../builderConfig";
 
 const STORAGE_KEY = "redemption-deck-builder-current-deck";
+// The last cloud-synced snapshot, kept beside the draft so a later mount that
+// restores the draft can tell whether it is dirty (see isDisplacedDraft).
+const SAVED_SNAPSHOT_KEY = "redemption-deck-builder-saved-snapshot";
 
 // Public default persistence: the `decks` table. Module-level so it's a stable
 // reference (no re-creation per render) when no override is injected.
@@ -17,7 +20,7 @@ const DEFAULT_PERSISTENCE: DeckBuilderPersistence = {
 
 // Stable serialization of the persisted parts of a deck for change detection.
 // Drives the "Unsaved Changes" indicator and skips no-op saves.
-function snapshotDeck(d: Deck): string {
+export function snapshotDeck(d: Deck): string {
   const sortedCards = d.cards
     .map((c) => `${c.card.name}|${c.card.set}|${c.quantity}|${c.zone}`)
     .sort()
@@ -34,6 +37,36 @@ function snapshotDeck(d: Deck): string {
     previewCard2: d.previewCard2 ?? null,
     cards: sortedCards,
   });
+}
+
+/**
+ * Whether the persist effect may write the in-memory deck to localStorage yet.
+ * The initial read from storage is deferred a tick (so searchParams settle), but
+ * the persist effect fires on the very first render with the SSR default deck —
+ * writing that would clobber the draft the read is about to restore. That was
+ * the "add a card, reload, deck is empty" bug.
+ */
+export function canPersistDeckToStorage(state: {
+  hasLoadedFromStorage: boolean;
+  localStoragePersist: boolean;
+}): boolean {
+  return state.localStoragePersist && state.hasLoadedFromStorage;
+}
+
+/**
+ * Whether loading `incomingDeckId` would silently destroy a draft restored from
+ * localStorage: it is a different deck, it has cards, and it does not match the
+ * last cloud-synced snapshot (never saved, or edited since). A clean cloud deck
+ * left in storage is not displaced work — switching decks must not nag.
+ */
+export function isDisplacedDraft(
+  draft: Deck,
+  savedSnapshot: string | null,
+  incomingDeckId: string
+): boolean {
+  if (draft.id === incomingDeckId) return false;
+  if (!draft.cards.some((c) => c.quantity > 0)) return false;
+  return snapshotDeck(draft) !== savedSnapshot;
 }
 
 /**
@@ -80,6 +113,15 @@ export function useDeckState(
   const lastSavedSnapshotRef = useRef<string | null>(null);
   // Serializes saves so two saves can't race
   const savePromiseRef = useRef<Promise<unknown> | null>(null);
+  // A `?deckId=` open that was held back because it would replace an unsaved
+  // draft on this device. The host shows the draft and confirms before loading.
+  const [deferredDeckId, setDeferredDeckId] = useState<string | null>(null);
+
+  // Record the cloud-synced state in memory and on this device.
+  const commitSavedSnapshot = (snapshot: string) => {
+    lastSavedSnapshotRef.current = snapshot;
+    if (localStoragePersistRef.current) saveSavedSnapshotToStorage(snapshot);
+  };
 
   useEffect(() => {
     deckRef.current = deck;
@@ -109,6 +151,9 @@ export function useDeckState(
           const storedDeck = loadDeckFromStorage();
           // Only update if there's actually a deck in storage (not just the default)
           if (storedDeck.cards.length > 0 || storedDeck.name !== "Untitled Deck" || storedDeck.id) {
+            // Restore the sync baseline too, so a clean cloud deck reopened from
+            // the bare URL is not flagged as unsaved.
+            lastSavedSnapshotRef.current = loadSavedSnapshotFromStorage();
             setDeck(storedDeck);
           }
         }
@@ -124,9 +169,17 @@ export function useDeckState(
     return () => clearTimeout(timer);
   }, [initialDeckId, isNewDeck]);
 
-  // Persist deck to localStorage whenever it changes
+  // Persist deck to localStorage whenever it changes — but not before the
+  // deferred initial read below has run, or the SSR default overwrites the draft.
   useEffect(() => {
-    if (localStoragePersistRef.current) saveDeckToStorage(deck);
+    if (
+      canPersistDeckToStorage({
+        hasLoadedFromStorage: hasLoadedFromStorage.current,
+        localStoragePersist: localStoragePersistRef.current,
+      })
+    ) {
+      saveDeckToStorage(deck);
+    }
 
     // Derive the dirty flag from the saved-snapshot ref so it reflects reality
     // after both edits and successful saves (rather than always flipping to true).
@@ -138,8 +191,20 @@ export function useDeckState(
   // Load deck from cloud on mount if deckId provided, or create new deck with folderId if provided
   useEffect(() => {
     if (initialDeckId && isInitialMount.current) {
-      // Load existing deck from cloud
-      loadDeckFromCloud(initialDeckId);
+      // Loading the cloud deck also persists it over whatever draft is in
+      // localStorage. If that draft is unsaved work (an anonymous deck, or
+      // edits never synced), show it instead and let the host confirm.
+      const draft = localStoragePersistRef.current ? loadDeckFromStorage() : null;
+      const savedSnapshot = draft ? loadSavedSnapshotFromStorage() : null;
+      if (draft && isDisplacedDraft(draft, savedSnapshot, initialDeckId)) {
+        lastSavedSnapshotRef.current = savedSnapshot;
+        setDeck(draft);
+        setIsInitializing(false);
+        setDeferredDeckId(initialDeckId);
+      } else {
+        // Load existing deck from cloud
+        loadDeckFromCloud(initialDeckId);
+      }
     } else if (isNewDeck && isInitialMount.current) {
       // Create a fresh blank deck (with optional folderId)
       console.log('[useDeckState] Creating new deck with folderId:', initialFolderId);
@@ -191,7 +256,7 @@ export function useDeckState(
         };
 
         // Set the saved-snapshot baseline so the dirty flag starts clean
-        lastSavedSnapshotRef.current = snapshotDeck(loadedDeck);
+        commitSavedSnapshot(snapshotDeck(loadedDeck));
         setDeck(loadedDeck);
         setHasUnsavedChanges(false);
         setIsInitializing(false);
@@ -287,7 +352,7 @@ export function useDeckState(
           const savedId = result.deckId ?? targetDeck.id;
           // Snapshot the saved state (with its potentially-new id) so subsequent
           // saves dedup and the dirty flag goes clean.
-          lastSavedSnapshotRef.current = snapshotDeck({ ...targetDeck, id: savedId });
+          commitSavedSnapshot(snapshotDeck({ ...targetDeck, id: savedId }));
 
           // Update deck with the ID if it was newly created
           if (!targetDeck.id && result.deckId) {
@@ -700,6 +765,7 @@ export function useDeckState(
     syncStatus,
     hasUnsavedChanges,
     isInitializing,
+    deferredDeckId,
     addCard,
     removeCard,
     updateQuantity,
@@ -829,6 +895,24 @@ function getDefaultDeck(): Deck {
     createdAt: new Date(),
     updatedAt: new Date(),
   };
+}
+
+function loadSavedSnapshotFromStorage(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(SAVED_SNAPSHOT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function saveSavedSnapshotToStorage(snapshot: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(SAVED_SNAPSHOT_KEY, snapshot);
+  } catch (error) {
+    console.error("Error saving deck snapshot to storage:", error);
+  }
 }
 
 /**

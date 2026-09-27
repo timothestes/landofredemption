@@ -277,25 +277,30 @@ export default function CardSearchClient({
   const [importFilename, setImportFilename] = useState<string | null>(null);
   const [exportNotification, setExportNotification] = useState(false);
 
-  // Unsaved changes modal state
+  // Unsaved changes modal state — shown before an action that would replace a
+  // deck holding unsaved work (loading another deck). The action runs after
+  // Save or Discard; Cancel drops it.
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
+  const [pendingDeckAction, setPendingDeckAction] = useState<(() => void) | null>(null);
   
   // New deck confirmation modal state
   const [showNewDeckModal, setShowNewDeckModal] = useState(false);
   const [pendingNewDeckFolderId, setPendingNewDeckFolderId] = useState<string | null | undefined>(undefined);
 
-  // ESC key handler for new deck modal
+  // ESC key handler for the new deck / unsaved changes modals
   useEffect(() => {
     function handleEscKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && showNewDeckModal) {
-        setShowNewDeckModal(false);
+      if (e.key !== 'Escape') return;
+      if (showNewDeckModal) setShowNewDeckModal(false);
+      if (showUnsavedChangesModal) {
+        setShowUnsavedChangesModal(false);
+        setPendingDeckAction(null);
       }
     }
     
     document.addEventListener('keydown', handleEscKey);
     return () => document.removeEventListener('keydown', handleEscKey);
-  }, [showNewDeckModal]);
+  }, [showNewDeckModal, showUnsavedChangesModal]);
 
   // Panel visibility state
   const [showDeckBuilder, setShowDeckBuilder] = useState(true);
@@ -472,8 +477,11 @@ export default function CardSearchClient({
     };
   }, [openSearchMenuCard]);
 
-  // User authentication state
+  // User authentication state. `authChecked` flips once the first lookup
+  // resolves, so anonymous-only UI (the sign-in hint) never flashes for
+  // signed-in users while `user` is still null.
   const [user, setUser] = useState<User | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   // Deck builder state
   const {
@@ -481,6 +489,7 @@ export default function CardSearchClient({
     syncStatus,
     hasUnsavedChanges,
     isInitializing,
+    deferredDeckId,
     addCard,
     removeCard,
     updateQuantity,
@@ -689,12 +698,14 @@ export default function CardSearchClient({
     const getUser = async () => {
       const currentUser = await getUserSafe(supabase);
       setUser(currentUser);
+      setAuthChecked(true);
     };
 
     getUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      setAuthChecked(true);
     });
 
     return () => subscription.unsubscribe();
@@ -853,9 +864,28 @@ export default function CardSearchClient({
     postexilicOnly, postexilicNot, updateURL, mode
   ]);
 
-  // Note: We don't warn on page unload because the deck is always saved to localStorage
-  // automatically. "Unsaved changes" only refers to cloud sync, not local storage.
-  // Users can safely close the tab or navigate away - their deck is preserved locally.
+  // Warn before a reload/close only for a cloud-backed deck with unsaved edits:
+  // remounting with ?deckId= in the URL reloads the cloud copy over them. A
+  // draft without an id does survive a reload via localStorage, so it gets no
+  // prompt. In-app deck switches are covered by the unsaved-changes modal.
+  useEffect(() => {
+    if (!hasUnsavedChanges || !deck.id) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsavedChanges, deck.id]);
+
+  // A ?deckId= open that would replace an unsaved draft on this device is held
+  // by useDeckState; ask before loading it over the draft. Waits for the auth
+  // check so the modal opens in its signed-in or anonymous form, not both.
+  useEffect(() => {
+    if (!deferredDeckId || !authChecked) return;
+    setPendingDeckAction(() => () => openDeckById(deferredDeckId));
+    setShowUnsavedChangesModal(true);
+  }, [deferredDeckId, authChecked]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -1549,11 +1579,25 @@ export default function CardSearchClient({
     downloadDeckAsFileBySet(deck);
   }
 
-  // Load a deck picked from the Load Deck modal; on success let the active
-  // config sync external state (the Forge rewrites /forge/play/decks/<id>).
-  async function handleLoadDeckById(deckId: string) {
+  // Load a deck by id; on success let the active config sync external state
+  // (the Forge rewrites /forge/play/decks/<id>).
+  async function openDeckById(deckId: string) {
     const ok = await loadDeckFromCloud(deckId);
     if (ok) config.onDeckLoaded?.(deckId);
+  }
+
+  // Load a deck picked from the Load Deck modal (or a fresh duplicate). Loading
+  // replaces the working deck in memory and in localStorage, so ask first when
+  // it holds unsaved cards. Same "has cards" gate as handleNewDeck: a blank
+  // deck reads as unsaved right after New Deck and must not nag.
+  function handleLoadDeckById(deckId: string) {
+    const stats = getDeckStats();
+    if (hasUnsavedChanges && stats.mainDeckCount + stats.reserveCount > 0) {
+      setPendingDeckAction(() => () => openDeckById(deckId));
+      setShowUnsavedChangesModal(true);
+      return;
+    }
+    void openDeckById(deckId);
   }
 
   // Import deck from text
@@ -1616,34 +1660,71 @@ export default function CardSearchClient({
     newDeck(name, folderId);
   }
   
+  // Save on behalf of a confirmation modal. Resolves to null on success, or the
+  // message to show. saveDeckToCloud reports failure as { success: false }
+  // rather than throwing, so a try/catch alone would report success.
+  async function trySaveForModal(newName?: string): Promise<string | null> {
+    try {
+      const result = await saveDeckToCloud(newName);
+      if (result.success === false) return result.error || 'Failed to save deck';
+      if (result.success && result.deckCheckResult) setDeckCheckResult(result.deckCheckResult);
+      return null;
+    } catch {
+      return 'Failed to save deck';
+    }
+  }
+
   // Proceed with new deck creation after confirmation
   async function proceedWithNewDeck(shouldSave: boolean, newName?: string) {
     if (shouldSave && user) {
-      try {
-        // Update name if provided, and pass it directly to save
-        let saveResult;
-        if (newName && newName !== deck.name) {
-          setDeckName(newName);
-          // Pass the new name directly to saveDeckToCloud to avoid closure issues
-          saveResult = await saveDeckToCloud(newName);
-        } else {
-          saveResult = await saveDeckToCloud();
-        }
-        if (saveResult?.deckCheckResult) {
-          setDeckCheckResult(saveResult.deckCheckResult);
-        }
-        setNotification({ message: 'Deck saved successfully!', type: 'success' });
+      // Pass a new name straight to save (state would be stale in this closure)
+      const rename = newName && newName !== deck.name ? newName : undefined;
+      if (rename) setDeckName(rename);
+      const error = await trySaveForModal(rename);
+      if (error) {
+        // Keep the deck so the user can retry — replacing it now would lose it.
+        setNotification({ message: error, type: 'error' });
         setTimeout(() => setNotification(null), 3000);
-      } catch (error) {
-        setNotification({ message: 'Failed to save deck', type: 'error' });
-        setTimeout(() => setNotification(null), 3000);
+        setShowNewDeckModal(false);
+        setPendingNewDeckFolderId(undefined);
+        return;
       }
+      setNotification({ message: 'Deck saved successfully!', type: 'success' });
+      setTimeout(() => setNotification(null), 3000);
     }
     
     // Create new deck
     newDeck("Untitled Deck", pendingNewDeckFolderId);
     setShowNewDeckModal(false);
     setPendingNewDeckFolderId(undefined);
+  }
+
+  function closeUnsavedChangesModal() {
+    setShowUnsavedChangesModal(false);
+    setPendingDeckAction(null);
+  }
+
+  // "Save & continue": a failed save keeps the deck and never falls through to
+  // the pending action, which would replace the deck the save failed to keep.
+  async function saveThenRunPendingAction() {
+    const action = pendingDeckAction;
+    const error = await trySaveForModal();
+    closeUnsavedChangesModal();
+    if (error) {
+      setNotification({ message: error, type: 'error' });
+      setTimeout(() => setNotification(null), 3000);
+      return;
+    }
+    setNotification({ message: 'Deck saved successfully!', type: 'success' });
+    setTimeout(() => setNotification(null), 3000);
+    action?.();
+  }
+
+  function discardThenRunPendingAction() {
+    const action = pendingDeckAction;
+    clearUnsavedChanges();
+    closeUnsavedChangesModal();
+    action?.();
   }
 
   // Delete deck
@@ -2840,6 +2921,7 @@ export default function CardSearchClient({
             syncStatus={syncStatus}
             hasUnsavedChanges={hasUnsavedChanges}
             isAuthenticated={!!user}
+            authChecked={authChecked}
             isExpanded={!showSearch}
             hoverPreviewEnabled={hoverPreviewEnabled}
             onHoverPreviewEnabledChange={setHoverPreviewEnabled}
@@ -2947,6 +3029,7 @@ export default function CardSearchClient({
               syncStatus={syncStatus}
               hasUnsavedChanges={hasUnsavedChanges}
               isAuthenticated={!!user}
+              authChecked={authChecked}
               isExpanded={false}
               forceDisableHoverPreview
               hoverPreviewEnabled={hoverPreviewEnabled}
@@ -3108,143 +3191,66 @@ export default function CardSearchClient({
         </div>
       )}
 
-      {/* Unsaved Changes Modal */}
+      {/* Unsaved Changes Modal — before loading another deck over unsaved work */}
       {showUnsavedChangesModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
-          onClick={() => setShowUnsavedChangesModal(false)}
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-150"
+          onClick={closeUnsavedChangesModal}
         >
-          <div 
-            className="bg-card rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200"
+          <div
+            className="bg-card text-card-foreground rounded-xl w-full max-w-md animate-in zoom-in-95 duration-200"
+            style={{ boxShadow: '0 16px 40px rgba(0, 20, 80, 0.15)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header - Less vibrant, more subtle */}
-            <div className="bg-gradient-to-r from-slate-600 to-slate-700 dark:from-slate-700 dark:to-slate-800 px-6 py-5">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                  <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-1">Save to Cloud?</h3>
-                  <p className="text-sm text-slate-200">Your deck is saved locally on this device</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Content */}
-            <div className="px-6 py-6">
-              <p className="text-muted-foreground mb-5 leading-relaxed">
-                Your deck is saved locally. {user ? 'Would you like to save it to the cloud before continuing?' : 'Sign in to save it to the cloud and access it from any device.'}
-              </p>
-              
-              {/* Deck info card */}
-              <div className="bg-muted/30 rounded-xl p-4 border border-border shadow-sm">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-green-600/10 dark:bg-green-600/20 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="font-semibold text-foreground text-base">
-                      {deck.name || "Untitled Deck"}
-                    </div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-2">
-                      <span>{getDeckStats().mainDeckCount + getDeckStats().reserveCount} cards</span>
-                      <span className="text-muted-foreground/50">•</span>
-                      <span>{deck.format || "Type 1"}</span>
-                    </div>
-                  </div>
-                </div>
-                {!user && (
-                  <div className="mt-3 pt-3 border-t border-border">
-                    <p className="text-xs text-amber-600 dark:text-amber-400 flex items-start gap-2">
-                      <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>Sign in to save your deck to the cloud</span>
-                    </p>
-                  </div>
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-foreground mb-3">Unsaved changes</h3>
+
+              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                {user ? (
+                  <>Loading another deck will replace <strong className="text-foreground">{deck.name}</strong>. Save your changes first?</>
+                ) : (
+                  <><strong className="text-foreground">{deck.name}</strong> is only saved on this device, and loading another deck will replace it. Sign in to keep it in your account.</>
                 )}
+              </p>
+
+              <div className="bg-muted/60 rounded-lg p-3.5">
+                <div className="font-medium text-foreground text-sm">{deck.name}</div>
+                <div className="text-xs text-muted-foreground">
+                  {(() => { const n = getDeckStats().mainDeckCount + getDeckStats().reserveCount; return `${n} ${n === 1 ? 'card' : 'cards'}`; })()}
+                </div>
               </div>
-            </div>
-            
-            {/* Actions - Using tournament modal style */}
-            <div className="px-6 py-5 bg-muted/50 border-t border-border">
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={async () => {
-                    if (user) {
-                      try {
-                        const saveResult = await saveDeckToCloud();
-                        if (saveResult?.deckCheckResult) {
-                          setDeckCheckResult(saveResult.deckCheckResult);
-                        }
-                        setNotification({ message: 'Deck saved successfully!', type: 'success' });
-                        setTimeout(() => setNotification(null), 3000);
 
-                        // Wait a bit for save to complete, then navigate
-                        setTimeout(() => {
-                          if (pendingNavigation) {
-                            pendingNavigation();
-                          }
-                        }, 500);
-                      } catch (error) {
-                        setNotification({ message: 'Failed to save deck', type: 'error' });
-                        setTimeout(() => setNotification(null), 3000);
-                      }
-                    }
-                    setShowUnsavedChangesModal(false);
-                    setPendingNavigation(null);
-                  }}
-                  disabled={!user}
-                  className="w-full px-6 py-3 bg-card rounded-lg transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border-2 hover:bg-green-50 dark:hover:bg-green-950/20"
-                  style={{
-                    borderImage: 'linear-gradient(to right, rgb(34 197 94), rgb(59 130 246)) 1',
-                  }}
+              <div className="mt-5 flex flex-col gap-2.5">
+                {user ? (
+                  <button
+                    onClick={saveThenRunPendingAction}
+                    disabled={syncStatus?.isSaving}
+                    className="w-full px-5 py-2.5 bg-primary/85 text-primary-foreground rounded-lg transition-all font-semibold text-sm hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {syncStatus?.isSaving ? 'Saving\u2026' : 'Save & continue'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      closeUnsavedChangesModal();
+                      router.push('/sign-in?redirectTo=/decklist/card-search');
+                    }}
+                    className="w-full px-5 py-2.5 bg-primary/85 text-primary-foreground rounded-lg transition-all font-semibold text-sm hover:bg-primary"
+                  >
+                    Sign in to save
+                  </button>
+                )}
+
+                <button
+                  onClick={discardThenRunPendingAction}
+                  className="w-full px-5 py-2.5 rounded-lg transition-all text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
-                  <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                  </svg>
-                  <span className="text-foreground">
-                    Save & Continue
-                  </span>
+                  {user ? 'Discard changes' : 'Discard & continue'}
                 </button>
 
-                {/* Leave without saving - Destructive action */}
                 <button
-                  onClick={() => {
-                    // Clear unsaved changes flag to prevent browser warning
-                    clearUnsavedChanges();
-                    
-                    // Close modal first
-                    setShowUnsavedChangesModal(false);
-                    setPendingNavigation(null);
-                    
-                    // Navigate after a brief delay to ensure state updates
-                    setTimeout(() => {
-                      if (pendingNavigation) {
-                        pendingNavigation();
-                      }
-                    }, 0);
-                  }}
-                  className="w-full px-6 py-3 bg-card text-muted-foreground rounded-lg transition-all font-semibold flex items-center justify-center gap-2 border-2 border-border hover:bg-muted"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                  Leave without saving
-                </button>
-
-                {/* Cancel - Close modal */}
-                <button
-                  onClick={() => {
-                    setShowUnsavedChangesModal(false);
-                    setPendingNavigation(null);
-                  }}
-                  className="w-full px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={closeUnsavedChangesModal}
+                  className="w-full px-4 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Cancel
                 </button>
