@@ -7,6 +7,12 @@ import { Label } from "../../../components/ui/label";
 import { safeRedirectPath } from "../../../utils/auth/safeRedirectPath";
 import Link from "next/link";
 
+export const metadata = {
+  title: "Sign Up",
+  description:
+    "Create a Land of Redemption account to save decks, register for tournaments, and play online.",
+};
+
 export default async function Signup(props: {
   searchParams: Promise<Message & { redirectTo?: string }>;
 }) {
@@ -49,9 +55,12 @@ export default async function Signup(props: {
           <div className="space-y-3">
             <Label htmlFor="email" className="text-foreground font-medium text-base">Email</Label>
             <Input
+              type="email"
               name="email"
               id="email"
               placeholder="you@example.com"
+              autoComplete="email"
+              inputMode="email"
               required
               className="h-11"
             />
@@ -64,6 +73,7 @@ export default async function Signup(props: {
               name="password"
               id="password"
               placeholder="Your password"
+              autoComplete="new-password"
               minLength={6}
               required
               className="h-11"

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { Cinzel } from "next/font/google";
 import { ThemeProvider } from "next-themes";
@@ -5,30 +6,37 @@ import Background from "../components/ui/background"; // Using the improved back
 import { AdminProvider } from "../components/providers/AdminProvider";
 import ChunkErrorReloader from "../components/ChunkErrorReloader";
 import { InputModeReflector } from '@/app/shared/components/InputModeReflector';
+import { getSiteUrl } from "@/lib/siteUrl";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const cinzel = Cinzel({ subsets: ["latin"], variable: "--font-cinzel" });
 
-const defaultUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : "http://localhost:3000";
-
+// No maximumScale: it blocked pinch-zoom on phones.
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
 };
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || defaultUrl;
-
-export const metadata = {
-  metadataBase: new URL(siteUrl),
+export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: {
     default: "Land of Redemption – Redemption CCG Strategy, Deck Building, and Tournaments",
     template: "%s | Land of Redemption",
   },
   description:
     "Deck builder, tournament software, online play, articles, and rulings for the Redemption collectible card game.",
+  // Inherited by every page that does not define its own openGraph/twitter
+  // block; og:title and og:description fall back to the page's own.
+  openGraph: {
+    siteName: "Land of Redemption",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({
@@ -54,6 +62,8 @@ export default function RootLayout({
             </Background>
           </AdminProvider>
         </ThemeProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

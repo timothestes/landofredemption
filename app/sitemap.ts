@@ -1,13 +1,10 @@
 import type { MetadataRoute } from "next";
 import { createAnonClient } from "@/utils/supabase/anon";
+import { fetchAllRows } from "@/utils/supabase/fetchAllRows";
+import { getSupabaseAdmin } from "@/lib/pricing/supabase-admin";
+import { getSiteUrl } from "@/lib/siteUrl";
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
-  ? process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "")
-  : process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000";
+const baseUrl = getSiteUrl();
 
 // Cookie-free (createAnonClient), so this can be prerendered and revalidated
 // instead of re-querying every post and deck on each crawler fetch.
@@ -16,7 +13,8 @@ export const revalidate = 3600;
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createAnonClient();
 
-  // Static public routes
+  // Static public routes. The deck builder (/decklist/card-search) is an app,
+  // not content, and robots.txt disallows it, so it is deliberately absent.
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
@@ -26,11 +24,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     {
       url: `${baseUrl}/decklist`,
       changeFrequency: "daily",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/decklist/card-search`,
-      changeFrequency: "weekly",
       priority: 0.9,
     },
     {
@@ -69,9 +62,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
+      url: `${baseUrl}/tournaments/results`,
+      changeFrequency: "daily",
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/tournaments/metagame`,
+      changeFrequency: "weekly",
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/tournaments/history`,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/tournaments/rnrs-points`,
+      changeFrequency: "weekly",
+      priority: 0.6,
+    },
+    {
       url: `${baseUrl}/register`,
       changeFrequency: "weekly",
       priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/play`,
+      changeFrequency: "weekly",
+      priority: 0.6,
     },
     {
       url: `${baseUrl}/goldfish`,
@@ -100,37 +118,65 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  // Dynamic routes: spoiler sets
-  const { data: spoilerSets } = await supabase
-    .from("spoiler_sets")
-    .select("id, updated_at")
-    .order("updated_at", { ascending: false });
-
-  const spoilerRoutes: MetadataRoute.Sitemap = (spoilerSets ?? []).map(
-    (set) => ({
-      url: `${baseUrl}/spoilers/${set.id}`,
-      lastModified: set.updated_at,
-      changeFrequency: "daily" as const,
-      priority: 0.6,
-    }),
+  // Dynamic routes: public spoiler cards. /spoilers/[id] is keyed by
+  // spoilers.id (the old spoiler_sets.id entries all 404ed). Anon RLS already
+  // limits this to visible cards whose spoil_date has passed.
+  const spoilers = await fetchAllRows<{ id: string; spoil_date: string }>(
+    (from, to) =>
+      supabase
+        .from("spoilers")
+        .select("id, spoil_date")
+        .order("spoil_date", { ascending: false })
+        .order("id")
+        .range(from, to),
   );
 
+  const spoilerRoutes: MetadataRoute.Sitemap = spoilers.map((spoiler) => ({
+    url: `${baseUrl}/spoilers/${spoiler.id}`,
+    lastModified: spoiler.spoil_date,
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+
+  // Dynamic routes: published tournament results. `tournaments` has no
+  // anon-readable policy (hosts only), so like loadPublicResultsIndexAction
+  // this uses the service-role client, filtered to results_published = true,
+  // and reads nothing beyond ids and timestamps.
+  const admin = getSupabaseAdmin();
+  const tournaments = await fetchAllRows<{
+    id: string;
+    updated_at: string | null;
+    ended_at: string | null;
+  }>((from, to) =>
+    admin
+      .from("tournaments")
+      .select("id, updated_at, ended_at")
+      .eq("results_published", true)
+      .order("ended_at", { ascending: false, nullsFirst: false })
+      .order("id")
+      .range(from, to),
+  );
+
+  const resultRoutes: MetadataRoute.Sitemap = tournaments.map((t) => ({
+    url: `${baseUrl}/tournaments/results/${t.id}`,
+    lastModified: t.updated_at ?? t.ended_at ?? undefined,
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+
   // Dynamic routes: published articles (the imported WordPress archive + new posts)
-  // PostgREST caps every select at 1000 rows regardless of an explicit .limit(),
-  // so paginate with .range() until a page comes back short.
-  const posts: { slug: string; published_at: string | null; updated_at: string | null }[] = [];
-  for (let from = 0; ; from += 1000) {
-    const { data: page } = await supabase
+  const posts = await fetchAllRows<{
+    slug: string;
+    published_at: string | null;
+    updated_at: string | null;
+  }>((from, to) =>
+    supabase
       .from("posts")
       .select("slug, published_at, updated_at")
       .eq("status", "published")
       .order("published_at", { ascending: false })
-      .range(from, from + 999);
-
-    if (!page || page.length === 0) break;
-    posts.push(...page);
-    if (page.length < 1000) break;
-  }
+      .range(from, to),
+  );
 
   const articleRoutes: MetadataRoute.Sitemap = posts.map((post) => ({
     url: `${baseUrl}/articles/${post.slug}`,
@@ -139,5 +185,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticRoutes, ...deckRoutes, ...spoilerRoutes, ...articleRoutes];
+  return [
+    ...staticRoutes,
+    ...deckRoutes,
+    ...spoilerRoutes,
+    ...resultRoutes,
+    ...articleRoutes,
+  ];
 }

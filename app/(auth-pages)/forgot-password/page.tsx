@@ -5,6 +5,11 @@ import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import Link from "next/link";
 
+export const metadata = {
+  title: "Reset Password",
+  description: "Request a link to reset your Land of Redemption password.",
+};
+
 export default async function ForgotPassword(props: {
   searchParams: Promise<Message>;
 }) {

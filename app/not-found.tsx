@@ -1,6 +1,11 @@
 import Link from "next/link";
 import TopNav from "../components/top-nav";
 
+export const metadata = {
+  title: "Page Not Found",
+  description: "The page you requested does not exist or has moved.",
+};
+
 export default function NotFound() {
   return (
     <div className="flex min-h-screen flex-col bg-background">

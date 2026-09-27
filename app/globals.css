@@ -154,15 +154,27 @@
   background: var(--jayden-gradient);
 }
 
-/* Suppress focus rings globally — placed outside @layer so it overrides utilities */
+/* Focus rings — placed outside @layer so it overrides utilities.
+   Mouse/touch focus (:focus) stays ring-free everywhere: no focus:ring-2 halos
+   on clicked controls. Keyboard focus (:focus-visible) gets a quiet 2px
+   outline on buttons and selects so Tab users can see where they are.
+   Text fields are left out of the outline on purpose: browsers treat every
+   focused text field as :focus-visible, even on click, and they already show
+   focus through their border colour. */
 input:focus, input:focus-visible,
 textarea:focus, textarea:focus-visible,
-select:focus, select:focus-visible,
-button:focus, button:focus-visible,
-[role="button"]:focus, [role="button"]:focus-visible {
+select:focus,
+button:focus,
+[role="button"]:focus {
   outline: none !important;
   --tw-ring-shadow: 0 0 #0000 !important;
   --tw-ring-offset-shadow: 0 0 #0000 !important;
+}
+select:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid hsl(var(--ring)) !important;
+  outline-offset: 2px;
 }
 
 /* Deck builder animations */
