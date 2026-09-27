@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import {
   DndContext,
@@ -126,6 +127,8 @@ interface DeckBuilderPanelProps {
   hasUnsavedChanges?: boolean;
   /** Whether the user is authenticated */
   isAuthenticated?: boolean;
+  /** Whether the auth check has resolved — gates the sign-in hint so it never flashes for signed-in users */
+  authChecked?: boolean;
   /** Whether the panel is expanded to full width */
   isExpanded?: boolean;
   /** Callback to toggle expanded/fullscreen mode */
@@ -216,6 +219,7 @@ export default function DeckBuilderPanel({
   syncStatus,
   hasUnsavedChanges = false,
   isAuthenticated = false,
+  authChecked = false,
   isExpanded = false,
   onToggleExpand,
   onDeckNameChange,
@@ -1905,6 +1909,19 @@ export default function DeckBuilderPanel({
           </div>
           </div>
         </div>
+
+        {/* Save is hidden for anonymous builders, so this is the one place they learn it exists */}
+        {authChecked && !isAuthenticated && onSaveDeck && (
+          <p className="mt-2 text-xs text-muted-foreground" data-testid="sign-in-to-save-hint">
+            <Link
+              href="/sign-in?redirectTo=/decklist/card-search"
+              className="font-medium text-foreground underline underline-offset-2 hover:text-primary transition-colors"
+            >
+              Sign in
+            </Link>{' '}
+            to save this deck to your account.
+          </p>
+        )}
       </div>
 
       {/* ...existing code... */}
