@@ -1,4 +1,5 @@
 import { createClient } from "../../../utils/supabase/server";
+import { safeRedirectPath } from "../../../utils/auth/safeRedirectPath";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
   }
 
   if (redirectTo) {
-    return NextResponse.redirect(`${origin}${redirectTo}`);
+    return NextResponse.redirect(`${origin}${safeRedirectPath(redirectTo)}`);
   }
 
   // URL to redirect to after sign up process completes
