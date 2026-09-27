@@ -15,7 +15,18 @@ export interface StarterDeckConfig {
 
 /** Public deck IDs the site owner designates as starter decks, in display order.
  *  Each must be a deck with visibility 'public'. The Starter tab/section is hidden while this list is empty. */
-export const STARTER_DECKS: ReadonlyArray<StarterDeckConfig> = [];
+export const STARTER_DECKS: ReadonlyArray<StarterDeckConfig> = [
+  {
+    // Copy of Starter Deck (K), owned by RedemptionCCG.app
+    deckId: "6f77c1de-13c8-4a79-8a3a-9d563482dc2b",
+    blurb: "Green, Purple & Pale Green brigades.",
+  },
+  {
+    // Copy of Starter Deck (L), owned by RedemptionCCG.app
+    deckId: "ce690da9-b824-412c-994c-b89cbfbdf17a",
+    blurb: "Clay, White & Black brigades.",
+  },
+];
 
 export function hasStarterDecks(): boolean {
   return STARTER_DECKS.length > 0;
