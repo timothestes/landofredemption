@@ -40,7 +40,7 @@ export function ResourcesMenu({
     const Icon = resource.icon;
     const content = (
       <>
-        {Icon && <Icon className="w-4 h-4 shrink-0" />}
+        {isMobile && Icon && <Icon className="w-4 h-4 shrink-0" />}
         {resource.label}
       </>
     );
@@ -73,7 +73,7 @@ export function ResourcesMenu({
         onClick={onNavigate}
         className={`${row} font-medium text-foreground hover:bg-muted`}
       >
-        <HiDocumentText className="w-4 h-4" />
+        {isMobile && <HiDocumentText className="w-4 h-4" />}
         All Resources
       </Link>
 
@@ -124,7 +124,7 @@ export function ResourcesMenu({
           onClick={onNavigate}
           className={`${row} text-muted-foreground hover:bg-muted hover:text-foreground`}
         >
-          <HiHeart className="w-4 h-4" />
+          {isMobile && <HiHeart className="w-4 h-4" />}
           Sponsors
         </Link>
         <Link
@@ -132,7 +132,7 @@ export function ResourcesMenu({
           onClick={onNavigate}
           className={`${row} text-muted-foreground hover:bg-muted hover:text-foreground`}
         >
-          <Coffee className="w-4 h-4" />
+          {isMobile && <Coffee className="w-4 h-4" />}
           Buy me a coffee
         </Link>
         <Link
@@ -140,7 +140,7 @@ export function ResourcesMenu({
           onClick={onNavigate}
           className={`${row} text-muted-foreground hover:bg-muted hover:text-foreground`}
         >
-          <HiArrowSmRight className="w-4 h-4" />
+          {isMobile && <HiArrowSmRight className="w-4 h-4" />}
           Report a Bug
         </Link>
       </div>

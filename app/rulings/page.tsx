@@ -35,6 +35,18 @@ function formatDate(dateStr: string) {
   });
 }
 
+// ruling_date is a DATE column ("2026-09-04"): build it as a local date so the
+// day never shifts with the viewer's timezone. Anything else is shown as-is.
+function formatRulingDate(dateStr: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+  if (!m) return dateStr;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function highlightMatch(text: string, query: string) {
   if (!query || query.trim().length < 2) return text;
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -151,19 +163,19 @@ function DiscordMessageCard({
   };
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
+    <div className="py-3">
       {/* Collapsed: single message */}
       {!expanded && (
-        <div className="px-4 py-3">
+        <div>
           <div className="flex items-center gap-2 mb-1">
             {msg.author_name && (
               <span className="text-xs font-medium text-foreground">{msg.author_name}</span>
             )}
-            <span className="text-xs text-muted-foreground font-mono">
+            <span className="text-xs text-muted-foreground tabular-nums">
               {formatDate(msg.message_date)}
             </span>
           </div>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{highlightMatch(msg.content, search)}</p>
+          <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">{highlightMatch(msg.content, search)}</p>
         </div>
       )}
 
@@ -173,7 +185,7 @@ function DiscordMessageCard({
           {/* Sticky collapse header */}
           <button
             onClick={() => setExpanded(false)}
-            className="sticky top-0 z-10 w-full px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/80 backdrop-blur-sm border-b border-border transition-colors flex items-center justify-between"
+            className="sticky top-0 z-10 flex min-h-11 w-full items-center justify-between border-b border-border/60 bg-background text-xs font-medium text-muted-foreground hover:text-foreground transition-colors sm:min-h-9"
           >
             <span className="flex items-center gap-1.5">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -194,7 +206,7 @@ function DiscordMessageCard({
             <button
               onClick={() => loadMore('older')}
               disabled={loadingDir === 'older'}
-              className="w-full px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors flex items-center justify-center gap-1"
+              className="flex min-h-11 w-full items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors sm:min-h-9"
             >
               {loadingDir === 'older' ? (
                 <><div className="animate-spin rounded-full h-3 w-3 border-b border-current" /> Loading...</>
@@ -209,13 +221,13 @@ function DiscordMessageCard({
             </button>
           )}
 
-          <div className="divide-y divide-border/50">
+          <div className="divide-y divide-border/60">
             {context.map((ctxMsg) => {
               const isTarget = ctxMsg.id === (targetId || msg.id);
               return (
                 <div
                   key={ctxMsg.id}
-                  className={`px-4 py-2.5 ${isTarget ? 'border-l-2 border-foreground bg-muted/30' : 'border-l-2 border-transparent'}`}
+                  className={`border-l-2 py-2.5 pl-3 ${isTarget ? 'border-primary' : 'border-transparent'}`}
                 >
                   <div className="flex items-center gap-2 mb-0.5">
                     {ctxMsg.author_name && (
@@ -223,11 +235,11 @@ function DiscordMessageCard({
                         {ctxMsg.author_name}
                       </span>
                     )}
-                    <span className="text-xs text-muted-foreground/60 font-mono">
+                    <span className="text-xs text-muted-foreground/60 tabular-nums">
                       {formatDate(ctxMsg.message_date)}
                     </span>
                   </div>
-                  <p className={`text-sm whitespace-pre-wrap ${isTarget ? 'text-foreground' : 'text-muted-foreground/70'}`}>
+                  <p className={`text-sm leading-relaxed whitespace-pre-wrap ${isTarget ? 'text-foreground' : 'text-muted-foreground/70'}`}>
                     {isTarget ? highlightMatch(ctxMsg.content, search) : ctxMsg.content}
                   </p>
                 </div>
@@ -240,7 +252,7 @@ function DiscordMessageCard({
             <button
               onClick={() => loadMore('newer')}
               disabled={loadingDir === 'newer'}
-              className="w-full px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors flex items-center justify-center gap-1"
+              className="flex min-h-11 w-full items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors sm:min-h-9"
             >
               {loadingDir === 'newer' ? (
                 <><div className="animate-spin rounded-full h-3 w-3 border-b border-current" /> Loading...</>
@@ -261,7 +273,7 @@ function DiscordMessageCard({
       <button
         onClick={toggleContext}
         disabled={contextLoading}
-        className="w-full px-4 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 border-t border-border transition-colors flex items-center justify-center gap-1.5"
+        className="mt-1 flex min-h-11 items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors sm:min-h-8"
       >
         {contextLoading ? (
           <>
@@ -446,21 +458,21 @@ function RulingsPageContent() {
   return (
     <>
       <TopNav />
-      <div className="max-w-3xl mx-auto px-4 py-6 jayden-gradient-bg">
+      <div className="max-w-3xl mx-auto px-4 py-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-1">Card Rulings</h1>
+          <h1 className="font-cinzel text-3xl font-bold tracking-tight sm:text-4xl mb-2">Card Rulings</h1>
           <p className="text-sm text-muted-foreground">
             Search for official rulings and FAQs for Redemption cards.
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-4 border-b border-border">
+        <div className="flex gap-6 mb-4 border-b border-border/60">
           <button
             onClick={() => switchTab("rulings")}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            className={`-mb-px min-h-11 text-sm font-medium border-b-2 transition-colors ${
               tab === "rulings"
-                ? "border-foreground text-foreground"
+                ? "border-primary text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -468,9 +480,9 @@ function RulingsPageContent() {
           </button>
           <button
             onClick={() => switchTab("discord")}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            className={`-mb-px min-h-11 text-sm font-medium border-b-2 transition-colors ${
               tab === "discord"
-                ? "border-foreground text-foreground"
+                ? "border-primary text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -486,7 +498,7 @@ function RulingsPageContent() {
               ? "Search by card name, question, or keyword..."
               : "Search by card name, mechanic, or rules term..."
             }
-            className="w-full text-base"
+            className="h-11 w-full text-base"
             autoFocus
           />
         </div>
@@ -501,7 +513,7 @@ function RulingsPageContent() {
               <>
                 {/* Section label */}
                 {rulings.length > 0 && (
-                  <p className="text-xs text-muted-foreground mb-3">
+                  <p className="border-b border-border/60 pb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground tabular-nums">
                     {isSearching
                       ? `${rulings.length} result${rulings.length !== 1 ? "s" : ""}`
                       : `${total} rulings total`
@@ -521,66 +533,71 @@ function RulingsPageContent() {
 
                 {/* Rulings list */}
                 {rulings.length > 0 && (
-                  <div className="space-y-3">
-                    {Object.entries(groupedRulings).map(([cardName, cardRulings]) => (
-                      <div key={cardName} className="border border-border rounded-lg overflow-hidden">
-                        <div className="px-4 py-2.5 bg-muted/50 border-b border-border flex items-center justify-between">
-                          <h2 className="font-semibold text-sm">{highlightMatch(cardName, search)}</h2>
-                          <Link
-                            href={`/decklist/card-search?q=${encodeURIComponent(cardName)}&field=name`}
-                            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                          >
-                            View Card
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                            </svg>
-                          </Link>
-                        </div>
-                        <div className="divide-y divide-border">
-                          {cardRulings.map((ruling) => (
-                            <div key={ruling.id} className="px-4 py-3">
-                              <p className="text-sm text-foreground">
-                                <span className="font-semibold text-muted-foreground">Q:</span>{" "}
-                                {highlightMatch(ruling.question, search)}
-                              </p>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                <span className="font-semibold">A:</span> {highlightMatch(ruling.answer, search)}
-                              </p>
-                              {ruling.ruling_date && (
-                                <p className="text-[10px] text-muted-foreground/60 mt-1 font-mono">
-                                  {ruling.ruling_date}
+                  <div>
+                    <div className="divide-y divide-border/60">
+                      {Object.entries(groupedRulings).map(([cardName, cardRulings]) => (
+                        <div key={cardName} className="py-4">
+                          <div className="flex items-baseline justify-between gap-3">
+                            <h2 className="font-semibold text-foreground">{highlightMatch(cardName, search)}</h2>
+                            <Link
+                              href={`/decklist/card-search?q=${encodeURIComponent(cardName)}&field=name`}
+                              className="-my-3 flex min-h-11 shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors sm:my-0 sm:min-h-0"
+                            >
+                              View Card
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                              </svg>
+                            </Link>
+                          </div>
+                          <div className="mt-2 space-y-3">
+                            {cardRulings.map((ruling) => (
+                              <div key={ruling.id}>
+                                <p className="text-sm leading-relaxed text-foreground">
+                                  <span className="mr-2 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">Q</span>
+                                  {highlightMatch(ruling.question, search)}
                                 </p>
-                              )}
-                            </div>
-                          ))}
+                                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                                  <span className="mr-2 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">A</span>
+                                  {highlightMatch(ruling.answer, search)}
+                                </p>
+                                {ruling.ruling_date && (
+                                  <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                                    {formatRulingDate(ruling.ruling_date)}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
 
                     {/* Search limit notice */}
                     {isSearching && rulings.length >= SEARCH_LIMIT && (
-                      <p className="text-xs text-muted-foreground text-center">
+                      <p className="border-t border-border/60 pt-4 text-xs text-muted-foreground text-center">
                         Showing first {SEARCH_LIMIT} results. Try a more specific search to narrow down.
                       </p>
                     )}
 
                     {/* Pagination for recent (non-search) mode */}
                     {!isSearching && totalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2 pt-4">
+                      <div className="flex items-center justify-center gap-2 border-t border-border/60 pt-4">
                         <Button
                           variant="outline"
                           size="sm"
+                          className="min-h-11 sm:min-h-0"
                           onClick={() => goToPage(page - 1)}
                           disabled={page <= 1}
                         >
                           Previous
                         </Button>
-                        <span className="text-sm text-muted-foreground px-2">
+                        <span className="text-sm text-muted-foreground px-2 tabular-nums">
                           Page {page} of {totalPages}
                         </span>
                         <Button
                           variant="outline"
                           size="sm"
+                          className="min-h-11 sm:min-h-0"
                           onClick={() => goToPage(page + 1)}
                           disabled={page >= totalPages}
                         >
@@ -621,15 +638,15 @@ function RulingsPageContent() {
 
                 {/* Discord results */}
                 {discordMessages.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-muted-foreground">
+                  <div>
+                    <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-2">
+                      <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground tabular-nums">
                         {discordTotal} result{discordTotal !== 1 ? "s" : ""}
                         {" from the rulings Discord channel"}
                       </p>
                       <button
                         onClick={toggleDiscordSort}
-                        className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                        className="-my-3 flex min-h-11 shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors sm:my-0 sm:min-h-0"
                       >
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
@@ -637,27 +654,31 @@ function RulingsPageContent() {
                         {discordSort === "newest" ? "Newest first" : "Oldest first"}
                       </button>
                     </div>
-                    {discordMessages.map((msg) => (
-                      <DiscordMessageCard key={msg.id} msg={msg} search={search} />
-                    ))}
+                    <div className="divide-y divide-border/60">
+                      {discordMessages.map((msg) => (
+                        <DiscordMessageCard key={msg.id} msg={msg} search={search} />
+                      ))}
+                    </div>
 
                     {/* Discord pagination */}
                     {discordTotalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2 pt-4">
+                      <div className="flex items-center justify-center gap-2 border-t border-border/60 pt-4">
                         <Button
                           variant="outline"
                           size="sm"
+                          className="min-h-11 sm:min-h-0"
                           onClick={() => goToDiscordPage(discordPage - 1)}
                           disabled={discordPage <= 1}
                         >
                           Previous
                         </Button>
-                        <span className="text-sm text-muted-foreground px-2">
+                        <span className="text-sm text-muted-foreground px-2 tabular-nums">
                           Page {discordPage} of {discordTotalPages}
                         </span>
                         <Button
                           variant="outline"
                           size="sm"
+                          className="min-h-11 sm:min-h-0"
                           onClick={() => goToDiscordPage(discordPage + 1)}
                           disabled={discordPage >= discordTotalPages}
                         >

@@ -100,7 +100,7 @@ export default function CardFrequencyTable({
     <section className="space-y-4">
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 className="font-cinzel text-lg font-bold text-foreground">Card frequency</h2>
+          <h2 className="text-lg font-semibold text-foreground">Card frequency</h2>
           <p className="text-xs text-muted-foreground tabular-nums">
             {rows.length.toLocaleString()} of {cards.length.toLocaleString()} cards
           </p>

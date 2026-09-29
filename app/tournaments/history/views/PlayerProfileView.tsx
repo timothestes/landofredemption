@@ -125,7 +125,7 @@ export function PlayerProfileView({
   // Check if opponent is a known player (for linking)
   const playerNames = new Set(seed.players.map((p) => p.name));
 
-  const statValueClass = "text-2xl font-cinzel font-bold leading-none";
+  const statValueClass = "text-2xl font-bold leading-none tabular-nums";
   const statLabelClass = "text-xs text-muted-foreground mt-1 uppercase tracking-wide";
 
   return (
@@ -144,11 +144,11 @@ export function PlayerProfileView({
 
         {/* Avatar + identity */}
         <div className="flex items-center gap-4 mb-5">
-          <div className="flex-shrink-0 w-14 h-14 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center text-xl font-cinzel font-bold text-primary">
+          <div className="flex-shrink-0 w-14 h-14 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center text-xl font-bold text-primary">
             {initials}
           </div>
           <div>
-            <div className="text-xl font-cinzel font-bold text-foreground leading-tight">
+            <div className="text-xl font-bold tracking-tight text-foreground leading-tight">
               {name}
             </div>
             {(handle || region) && (

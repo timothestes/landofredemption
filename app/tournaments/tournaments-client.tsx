@@ -2,12 +2,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { FaTrophy } from "react-icons/fa6";
 import {
   HiCalendar,
-  HiLocationMarker,
-  HiClock,
-  HiUser,
   HiViewList,
   HiChevronLeft,
   HiChevronRight,
@@ -32,9 +28,9 @@ function formatDateRange(start: string, end: string | null): string {
   const s = new Date(start + "T12:00:00");
   const e = new Date(end + "T12:00:00");
   if (s.getMonth() === e.getMonth()) {
-    return `${s.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}\u2013${e.getDate()}`;
+    return `${s.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}–${e.getDate()}`;
   }
-  return `${formatDate(start)} \u2013 ${formatDate(end)}`;
+  return `${formatDate(start)} – ${formatDate(end)}`;
 }
 
 function getMonthKey(dateStr: string): string {
@@ -55,13 +51,8 @@ function toDateKey(dateStr: string): string {
   return dateStr; // already YYYY-MM-DD
 }
 
-// Seasonal replaced Local and District in the 2026 Host Guide, but listings
-// sanctioned under the old levels are still on the calendar — they share the
-// Seasonal color rather than keeping a retired one of their own.
-function isSeasonal(t: string): boolean {
-  return t.includes("seasonal") || t.includes("district") || t.includes("local");
-}
-
+// Seasonal (and the retired Local/District levels it replaced in the 2026
+// Host Guide) share the muted fallback with unknown types.
 function getTypeBadgeClasses(type: string | null): string {
   const t = (type || "").toLowerCase();
   if (t.includes("regional") || t.includes("national")) {
@@ -69,9 +60,6 @@ function getTypeBadgeClasses(type: string | null): string {
   }
   if (t.includes("state")) {
     return "bg-primary/10 text-primary";
-  }
-  if (isSeasonal(t)) {
-    return "bg-blue-500/15 text-blue-700 dark:text-blue-400";
   }
   return "bg-muted text-muted-foreground";
 }
@@ -84,10 +72,34 @@ function getTypeDotColor(type: string | null): string {
   if (t.includes("state")) {
     return "bg-primary";
   }
-  if (isSeasonal(t)) {
-    return "bg-blue-500";
-  }
   return "bg-muted-foreground/50";
+}
+
+// ─── House styles ────────────────────────────────────────────
+
+const KICKER =
+  "text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground";
+
+const CHIP =
+  "inline-flex min-h-11 items-center whitespace-nowrap rounded-full border px-3 text-sm transition-colors";
+const CHIP_IDLE =
+  "border-border bg-foreground/[0.03] text-muted-foreground hover:border-foreground/40 hover:text-foreground";
+const CHIP_ACTIVE = "border-foreground bg-foreground text-background";
+
+function TypeBadge({
+  type,
+  className = "",
+}: {
+  type: string;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${getTypeBadgeClasses(type)} ${className}`}
+    >
+      {type}
+    </span>
+  );
 }
 
 // ─── Grouping helpers ────────────────────────────────────────
@@ -147,9 +159,9 @@ function dateToKey(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-// ─── Listing Card (shared between views) ─────────────────────
+// ─── Listing Row (shared between views) ──────────────────────
 
-function ListingCard({
+function ListingRow({
   listing,
   isExpanded,
   onToggle,
@@ -177,83 +189,92 @@ function ListingCard({
   };
 
   return (
-    <div
-      className={`group border rounded-lg transition-colors
-        ${isImminent ? "border-primary/30 bg-card/90 backdrop-blur-sm" : "border-border bg-card/80 backdrop-blur-sm hover:bg-card/90"}`}
-    >
+    <div>
+      {/* Phones: date + chevron on line one, place + type under it.
+          sm and up: date | place + type | tier | chevron on one line. */}
       <button
         onClick={onToggle}
-        className="w-full text-left px-4 py-3 flex items-start gap-3"
+        aria-expanded={isExpanded}
+        className="-mx-2 flex w-[calc(100%+1rem)] flex-wrap items-center gap-x-3 gap-y-1 px-2 py-2.5 text-left transition-colors hover:bg-muted/40 sm:flex-nowrap sm:gap-x-4"
       >
-        <div className="flex-shrink-0 w-20 pt-0.5">
-          <div className="text-sm font-semibold text-foreground leading-tight">
+        <div className="order-1 flex flex-1 items-baseline gap-2 sm:block sm:w-28 sm:flex-none">
+          <span className="text-sm font-medium tabular-nums text-foreground">
             {formatDateRange(listing.start_date, listing.end_date)}
-          </div>
+          </span>
           {isImminent && daysUntil >= 0 && (
-            <div className="text-[10px] font-medium text-primary mt-0.5">
+            <span className="text-xs font-medium text-primary sm:block">
               {daysUntil === 0
                 ? "Today"
                 : daysUntil === 1
                   ? "Tomorrow"
                   : `In ${daysUntil} days`}
-            </div>
+            </span>
           )}
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium text-foreground truncate">
-              {listing.city}, {listing.state}
-            </span>
-            {listing.tournament_type && (
-              <span
-                className={`inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded uppercase tracking-wide ${getTypeBadgeClasses(listing.tournament_type)}`}
-              >
-                {listing.tournament_type}
-              </span>
-            )}
+        <div className="order-3 w-full min-w-0 sm:order-2 sm:w-auto sm:flex-1">
+          <div className="truncate font-medium text-foreground">
+            {listing.city}, {listing.state}
           </div>
-          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             {listing.formats.length > 0 && (
-              <span>
+              <span className="truncate">
                 {listing.formats
                   .map((f) => f.format.split(" - ")[0])
                   .filter((v, i, a) => a.indexOf(v) === i)
                   .join(", ")}
               </span>
             )}
+            {listing.tournament_type && (
+              <TypeBadge
+                type={listing.tournament_type}
+                className="inline-flex shrink-0 sm:hidden"
+              />
+            )}
           </div>
         </div>
 
-        <svg
-          className={`w-4 h-4 text-muted-foreground/50 flex-shrink-0 mt-1 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
+        {listing.tournament_type && (
+          <TypeBadge
+            type={listing.tournament_type}
+            className="order-3 hidden shrink-0 sm:inline-flex"
           />
-        </svg>
+        )}
+
+        <span
+          aria-hidden="true"
+          className="order-2 -my-2.5 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center text-muted-foreground/60 sm:order-4"
+        >
+          <svg
+            className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </span>
       </button>
 
       {isExpanded && (
-        <div className="px-4 pb-4 pt-1 border-t border-border/50">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+        <div className="pb-5 pt-1 sm:pl-32">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
             {(listing.venue_name || listing.venue_address) && (
               <div className="flex items-start gap-2">
-                <HiLocationMarker className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
+                  <div className={KICKER}>Venue</div>
                   {listing.venue_name && (
-                    <div className="font-medium text-foreground">
+                    <div className="mt-0.5 font-medium text-foreground">
                       {listing.venue_name}
                     </div>
                   )}
                   {listing.venue_address && (
-                    <div className="text-muted-foreground text-xs">
+                    <div className="text-muted-foreground">
                       {listing.venue_address}
                     </div>
                   )}
@@ -262,60 +283,56 @@ function ListingCard({
                   onClick={handleCopyAddress}
                   title={copied ? "Copied!" : "Copy address"}
                   aria-label={copied ? "Address copied" : "Copy address"}
-                  className="flex-shrink-0 p-1 -m-1 text-muted-foreground/70 hover:text-foreground transition-colors"
+                  className="-my-1.5 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center text-muted-foreground/70 transition-colors hover:text-foreground"
                 >
                   {copied ? (
-                    <HiCheck className="w-4 h-4 text-primary" />
+                    <HiCheck className="h-4 w-4 text-primary" />
                   ) : (
-                    <HiClipboardCopy className="w-4 h-4" />
+                    <HiClipboardCopy className="h-4 w-4" />
                   )}
                 </button>
               </div>
             )}
 
             {listing.start_time && (
-              <div className="flex items-center gap-2">
-                <HiClock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <span className="text-muted-foreground">
+              <div>
+                <div className={KICKER}>Time</div>
+                <div className="mt-0.5 text-foreground">
                   {listing.start_time}
-                </span>
+                </div>
               </div>
             )}
 
             {listing.host_name && (
-              <div className="flex items-center gap-2">
-                <HiUser className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <span className="text-muted-foreground">
+              <div>
+                <div className={KICKER}>Host</div>
+                <div className="mt-0.5 text-foreground">
                   {listing.host_name}
-                </span>
+                </div>
               </div>
             )}
 
             {listing.door_fee && (
-              <div className="flex items-center gap-2">
-                <FaTrophy className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <span className="text-muted-foreground">
-                  Door fee: {listing.door_fee}
-                </span>
+              <div>
+                <div className={KICKER}>Door fee</div>
+                <div className="mt-0.5 text-foreground">{listing.door_fee}</div>
               </div>
             )}
           </div>
 
           {listing.formats.length > 0 && (
-            <div className="mt-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            <div className="mt-4">
+              <h4 className={`${KICKER} border-b border-border/60 pb-1`}>
                 Formats
               </h4>
-              <div className="space-y-1">
+              <div className="divide-y divide-border/60">
                 {listing.formats.map((f, i) => (
                   <div
                     key={i}
-                    className="flex items-center justify-between text-sm py-1 px-2 rounded bg-muted/50"
+                    className="flex items-center justify-between gap-4 py-1.5 text-sm"
                   >
                     <span className="text-foreground">{f.format}</span>
-                    <span
-                      className={`text-xs font-medium ${f.entry_fee === "free" || !f.entry_fee ? "text-primary" : "text-muted-foreground"}`}
-                    >
+                    <span className="shrink-0 tabular-nums text-muted-foreground">
                       {f.entry_fee || "Free"}
                     </span>
                   </div>
@@ -325,21 +342,20 @@ function ListingCard({
           )}
 
           {listing.description && (
-            <p className="mt-3 text-xs text-muted-foreground">
+            <p className="mt-4 text-sm text-muted-foreground">
               {listing.description}
             </p>
           )}
 
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <Link
               href={`/tracker/tournaments?from_listing=${listing.id}&city=${encodeURIComponent(listing.city)}&state=${encodeURIComponent(listing.state)}${listing.formats.length > 0 ? `&formats=${encodeURIComponent(listing.formats.map((f) => f.format).join("|"))}` : ""}${listing.tournament_type ? `&type=${encodeURIComponent(listing.tournament_type)}` : ""}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="inline-flex min-h-11 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
-              <FaTrophy className="w-3 h-3" />
               Host This Event
             </Link>
             {listing.linked_tournament_id && (
-              <span className="text-xs text-primary font-medium">
+              <span className="text-sm text-muted-foreground">
                 Already linked to a tournament
               </span>
             )}
@@ -430,44 +446,41 @@ function CalendarView({
   return (
     <div>
       {/* Month navigation */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-3 flex items-center justify-between">
         <button
           onClick={goPrev}
           disabled={!canGoPrev}
-          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
         >
-          <HiChevronLeft className="w-5 h-5" />
+          <HiChevronLeft className="h-5 w-5" />
         </button>
         <h2 className="text-sm font-semibold text-foreground">{monthLabel}</h2>
         <button
           onClick={goNext}
           disabled={!canGoNext}
-          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
         >
-          <HiChevronRight className="w-5 h-5" />
+          <HiChevronRight className="h-5 w-5" />
         </button>
       </div>
 
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 mb-1">
+      <div className="mb-1 grid grid-cols-7">
         {WEEKDAYS.map((d) => (
-          <div
-            key={d}
-            className="text-center text-[10px] font-medium text-muted-foreground uppercase tracking-wider py-1"
-          >
+          <div key={d} className={`${KICKER} py-1 text-center`}>
             {d}
           </div>
         ))}
       </div>
 
       {/* Day grid */}
-      <div className="grid grid-cols-7 border-t border-l border-border">
+      <div className="grid grid-cols-7 border-l border-t border-border/60">
         {days.map((day, i) => {
           if (day === null) {
             return (
               <div
                 key={`empty-${i}`}
-                className="border-r border-b border-border bg-muted/20"
+                className="border-b border-r border-border/60 bg-muted/20"
               />
             );
           }
@@ -492,12 +505,12 @@ function CalendarView({
               }}
               disabled={!hasEvents}
               className={`
-                relative border-r border-b border-border
+                relative border-b border-r border-border/60
                 min-h-[3rem] sm:min-h-[3.5rem] p-1
                 flex flex-col items-center justify-start
                 transition-colors
                 ${hasEvents ? "cursor-pointer" : "cursor-default"}
-                ${isSelected ? "bg-primary/10" : hasEvents ? "hover:bg-muted/50" : ""}
+                ${isSelected ? "bg-primary/10" : hasEvents ? "hover:bg-muted/40" : ""}
                 ${isPast && !hasEvents ? "opacity-40" : ""}
               `}
             >
@@ -532,37 +545,39 @@ function CalendarView({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 mt-3 text-[10px] text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+      <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
           Seasonal
         </div>
-        <div className="flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+        <div className="flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
           State
         </div>
-        <div className="flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+        <div className="flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
           Regional
         </div>
       </div>
 
       {/* Selected day listings */}
       {selectedDate && selectedListings.length > 0 && (
-        <div className="mt-4 space-y-2">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="mt-6">
+          <h3 className={`${KICKER} border-b border-border/60 py-2`}>
             {formatDate(selectedDate)}
           </h3>
-          {selectedListings.map((listing) => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-              isExpanded={expandedId === listing.id}
-              onToggle={() =>
-                setExpandedId(expandedId === listing.id ? null : listing.id)
-              }
-            />
-          ))}
+          <div className="divide-y divide-border/60 border-b border-border/60">
+            {selectedListings.map((listing) => (
+              <ListingRow
+                key={listing.id}
+                listing={listing}
+                isExpanded={expandedId === listing.id}
+                onToggle={() =>
+                  setExpandedId(expandedId === listing.id ? null : listing.id)
+                }
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -598,57 +613,58 @@ export default function TournamentsClient({
   return (
     <main className="max-w-3xl mx-auto px-4 pt-8 pb-16">
       {/* Header */}
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Upcoming Tournaments
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+      <div className="mb-6">
+        <h1 className="font-cinzel text-3xl font-bold tracking-tight sm:text-4xl">
+          Upcoming Tournaments
+        </h1>
+        <div className="mt-2 flex items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground">
             {filtered.length} event{filtered.length !== 1 ? "s" : ""} scheduled
             {stateFilter !== "all" ? ` in ${stateFilter}` : ""}
           </p>
-          <Link
-            href="/tournaments/results"
-            className="mt-1 inline-block text-xs text-muted-foreground hover:text-primary hover:underline transition-colors"
-          >
-            Recent results
-          </Link>
-        </div>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/tournaments/results"
+              className="whitespace-nowrap text-sm text-foreground hover:underline"
+            >
+              Recent results<span aria-hidden="true"> →</span>
+            </Link>
 
-        {/* View toggle */}
-        <div className="flex items-center bg-muted rounded-md p-0.5">
-          <button
-            onClick={() => setView("list")}
-            className={`p-1.5 rounded transition-colors ${
-              view === "list"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            aria-label="List view"
-          >
-            <HiViewList className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setView("calendar")}
-            className={`p-1.5 rounded transition-colors ${
-              view === "calendar"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            aria-label="Calendar view"
-          >
-            <HiCalendar className="w-4 h-4" />
-          </button>
+            {/* View toggle */}
+            <div className="flex items-center rounded-md border border-border">
+              <button
+                onClick={() => setView("list")}
+                className={`flex h-11 w-11 items-center justify-center rounded-[5px] transition-colors ${
+                  view === "list"
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                aria-label="List view"
+              >
+                <HiViewList className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setView("calendar")}
+                className={`flex h-11 w-11 items-center justify-center rounded-[5px] transition-colors ${
+                  view === "calendar"
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                aria-label="Calendar view"
+              >
+                <HiCalendar className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* State filter */}
       {states.length > 1 && (
-        <div className="mb-6 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+        <div className="no-scrollbar mb-6 flex items-center gap-2 overflow-x-auto pb-1">
           <button
             onClick={() => setStateFilter("all")}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors
-              ${stateFilter === "all" ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+            className={`${CHIP} ${stateFilter === "all" ? CHIP_ACTIVE : CHIP_IDLE}`}
           >
             All states
           </button>
@@ -656,8 +672,7 @@ export default function TournamentsClient({
             <button
               key={s}
               onClick={() => setStateFilter(s === stateFilter ? "all" : s)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors
-                ${stateFilter === s ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+              className={`${CHIP} ${stateFilter === s ? CHIP_ACTIVE : CHIP_IDLE}`}
             >
               {s}
             </button>
@@ -679,7 +694,6 @@ export default function TournamentsClient({
         <>
           {grouped.length === 0 ? (
             <div className="py-16 text-center">
-              <HiCalendar className="w-8 h-8 mx-auto text-muted-foreground/40 mb-3" />
               <p className="text-sm text-muted-foreground">
                 No upcoming tournaments
                 {stateFilter !== "all" ? ` in ${stateFilter}` : ""}.
@@ -687,7 +701,7 @@ export default function TournamentsClient({
               {stateFilter !== "all" && (
                 <button
                   onClick={() => setStateFilter("all")}
-                  className="mt-2 text-sm text-primary hover:underline"
+                  className="mt-2 min-h-11 text-sm text-foreground underline underline-offset-2 hover:text-primary"
                 >
                   Show all states
                 </button>
@@ -697,12 +711,14 @@ export default function TournamentsClient({
             <div className="space-y-8">
               {grouped.map(({ month, listings: monthListings }) => (
                 <section key={month}>
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 sticky top-16 bg-card/90 backdrop-blur-sm py-2 z-10 border-b border-border">
+                  <h2
+                    className={`${KICKER} sticky top-16 z-10 border-b border-border/60 bg-background py-2`}
+                  >
                     {month}
                   </h2>
-                  <div className="space-y-2">
+                  <div className="divide-y divide-border/60 border-b border-border/60">
                     {monthListings.map((listing) => (
-                      <ListingCard
+                      <ListingRow
                         key={listing.id}
                         listing={listing}
                         isExpanded={expandedId === listing.id}
@@ -722,14 +738,14 @@ export default function TournamentsClient({
       )}
 
       {/* Source attribution */}
-      <div className="mt-12 pt-6 border-t border-border text-center">
+      <div className="mt-12 border-t border-border/60 pt-6 text-center">
         <p className="text-xs text-muted-foreground">
           Tournament data sourced from{" "}
           <a
             href="https://www.cactusgamedesign.com/redemption/tournaments/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:underline"
+            className="text-foreground underline underline-offset-2 hover:text-primary"
           >
             Cactus Game Design
           </a>

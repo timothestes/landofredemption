@@ -315,7 +315,7 @@ export function TournamentDetailView({
               </button>
             )}
           </div>
-          <h2 className="font-cinzel text-2xl font-bold text-foreground text-center">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground text-center">
             {tournament.year} Redemption Nationals
           </h2>
           <div>

@@ -1,5 +1,5 @@
 import TopNav from "@/components/top-nav";
-import SponsorFooter from "@/components/sponsor-footer";
+import SiteFooter from "@/components/site-footer";
 import { loadUpcomingListings } from "./actions";
 import TournamentsClient from "./tournaments-client";
 
@@ -19,7 +19,7 @@ export default async function TournamentsPage() {
       <div className="flex-1">
         <TournamentsClient listings={listings} />
       </div>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

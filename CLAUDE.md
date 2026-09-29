@@ -72,7 +72,7 @@ Competitive and casual Redemption CCG players who need to build decks, register 
 **Clean, serious, professional.** This is a tool for players who take their game seriously. No whimsy, no clutter — every element earns its place. The interface should feel like a sharp, well-built instrument.
 
 ### Aesthetic Direction
-- **Visual tone:** Data-dense and functional, inspired by Moxfield/Archidekt. Information-forward with clear hierarchy. Neutral palette (current grayscale HSL tokens) with purposeful accent color for actions and states.
+- **Visual tone:** Data-dense and functional, inspired by Moxfield/Archidekt. Information-forward with clear hierarchy. Neutral slate-tinted palette (tokens in `app/globals.css`) with green as the single accent for actions and states; rules in `prompt_context/design_system.md`.
 - **Typography:** Geist Sans for UI, Cinzel for display/headers where biblical gravitas is needed. Prioritize legibility at small sizes on mobile.
 - **Theme:** Light and dark mode (system default). Light mode is near-white with subtle background imagery; dark mode is rich and immersive.
 - **Anti-references:** Avoid overly flashy game UIs (Hearthstone-style heavy textures), generic Bootstrap looks, or cluttered dashboards. No gratuitous animation or decoration.

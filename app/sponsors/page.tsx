@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import TopNav from "@/components/top-nav";
+import SiteFooter from "@/components/site-footer";
 import { SPONSORS } from "@/lib/sponsors";
 
 export const metadata = {
@@ -66,7 +67,7 @@ export default function SponsorsPage() {
                 />
               </div>
               <div className="min-w-0">
-                <h2 className="font-cinzel text-xl font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors">
+                <h2 className="text-xl font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors">
                   {sponsor.name}
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{sponsor.blurb}</p>
@@ -90,6 +91,7 @@ export default function SponsorsPage() {
           .
         </p>
       </main>
+      <SiteFooter />
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { submitRegistration } from "./actions";
 import TopNav from "../../components/top-nav";
-import SponsorFooter from "../../components/sponsor-footer";
+import SiteFooter from "../../components/site-footer";
 import { createClient } from "../../utils/supabase/client";
 import { getUserSafe } from "../../utils/supabase/getUserSafe";
 import { NATIONALS_CONFIG } from "../config/nationals";
@@ -211,7 +211,7 @@ export default function RegistrationPage() {
       
       <div className="flex-1 w-full overflow-auto px-5">
         <div className="max-w-3xl mx-auto py-8">
-          <h1 className="text-3xl font-bold mb-2">
+          <h1 className="font-cinzel text-3xl font-bold tracking-tight mb-2">
             Tournament Registration
           </h1>
           <p className="text-muted-foreground mb-6">
@@ -620,7 +620,7 @@ export default function RegistrationPage() {
                           role="checkbox"
                           aria-checked={checked}
                           onClick={() => setFormData({ ...formData, [fieldKey]: !checked, ...(isSaturday && checked ? { lunchSaturdayNoPickles: false } : {}) })}
-                          className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${checked ? 'bg-slate-600 border-slate-700 dark:bg-slate-500 dark:border-slate-600' : 'border-border'}`}
+                          className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${checked ? 'bg-primary border-primary' : 'border-border'}`}
                         >
                           {checked && (
                             <svg className="w-4 h-4 text-white pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -652,9 +652,9 @@ export default function RegistrationPage() {
                                   role="radio"
                                   aria-checked={selected}
                                   onClick={() => setFormData({ ...formData, lunchSaturdayNoPickles: opt.value })}
-                                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${selected ? 'border-slate-600 dark:border-slate-400' : 'border-border'}`}
+                                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${selected ? 'border-primary' : 'border-border'}`}
                                 >
-                                  {selected && <span className="w-2 h-2 rounded-full bg-slate-600 dark:bg-slate-400" />}
+                                  {selected && <span className="w-2 h-2 rounded-full bg-primary" />}
                                 </button>
                                 <span className="text-sm font-normal text-foreground">{opt.label}</span>
                               </label>
@@ -685,7 +685,7 @@ export default function RegistrationPage() {
                     role="checkbox"
                     aria-checked={formData.firstNationals}
                     onClick={() => setFormData({...formData, firstNationals: !formData.firstNationals})}
-                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${formData.firstNationals ? 'bg-slate-600 border-slate-700 dark:bg-slate-500 dark:border-slate-600' : 'border-border'}`}
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${formData.firstNationals ? 'bg-primary border-primary' : 'border-border'}`}
                   >
                     {formData.firstNationals && (
                       <svg className="w-4 h-4 text-white pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -704,7 +704,7 @@ export default function RegistrationPage() {
                     role="checkbox"
                     aria-checked={formData.ironManInterest}
                     onClick={() => setFormData({...formData, ironManInterest: !formData.ironManInterest})}
-                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${formData.ironManInterest ? 'bg-slate-600 border-slate-700 dark:bg-slate-500 dark:border-slate-600' : 'border-border'}`}
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${formData.ironManInterest ? 'bg-primary border-primary' : 'border-border'}`}
                   >
                     {formData.ironManInterest && (
                       <svg className="w-4 h-4 text-white pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -723,7 +723,7 @@ export default function RegistrationPage() {
                     role="checkbox"
                     aria-checked={formData.fantasyDraftOptIn}
                     onClick={() => setFormData({...formData, fantasyDraftOptIn: !formData.fantasyDraftOptIn})}
-                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 mt-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${formData.fantasyDraftOptIn ? 'bg-slate-600 border-slate-700 dark:bg-slate-500 dark:border-slate-600' : 'border-border'}`}
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 mt-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${formData.fantasyDraftOptIn ? 'bg-primary border-primary' : 'border-border'}`}
                   >
                     {formData.fantasyDraftOptIn && (
                       <svg className="w-4 h-4 text-white pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -749,7 +749,7 @@ export default function RegistrationPage() {
                     role="checkbox"
                     aria-checked={formData.needsAirportTransportation}
                     onClick={() => setFormData({...formData, needsAirportTransportation: !formData.needsAirportTransportation})}
-                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 mt-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${formData.needsAirportTransportation ? 'bg-slate-600 border-slate-700 dark:bg-slate-500 dark:border-slate-600' : 'border-border'}`}
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 mt-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${formData.needsAirportTransportation ? 'bg-primary border-primary' : 'border-border'}`}
                   >
                     {formData.needsAirportTransportation && (
                       <svg className="w-4 h-4 text-white pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -783,7 +783,7 @@ export default function RegistrationPage() {
                     role="checkbox"
                     aria-checked={formData.needsHotelTransportation}
                     onClick={() => setFormData({...formData, needsHotelTransportation: !formData.needsHotelTransportation})}
-                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 mt-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${formData.needsHotelTransportation ? 'bg-slate-600 border-slate-700 dark:bg-slate-500 dark:border-slate-600' : 'border-border'}`}
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 mt-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${formData.needsHotelTransportation ? 'bg-primary border-primary' : 'border-border'}`}
                   >
                     {formData.needsHotelTransportation && (
                       <svg className="w-4 h-4 text-white pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -816,7 +816,7 @@ export default function RegistrationPage() {
                         overnightStayNights: newStayingOvernight ? formData.overnightStayNights : []
                       });
                     }}
-                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 mt-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${formData.stayingOvernight ? 'bg-slate-600 border-slate-700 dark:bg-slate-500 dark:border-slate-600' : 'border-border'}`}
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 mt-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${formData.stayingOvernight ? 'bg-primary border-primary' : 'border-border'}`}
                   >
                     {formData.stayingOvernight && (
                       <svg className="w-4 h-4 text-white pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -925,7 +925,7 @@ export default function RegistrationPage() {
           )}
         </div>
       </div>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

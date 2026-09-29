@@ -657,11 +657,11 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
                   if (e.key === "Enter") handleNameSubmit();
                   if (e.key === "Escape") { setNameInput(deckName); setEditingName(false); }
                 }}
-                className="text-3xl font-bold bg-transparent border-b-2 border-blue-500 outline-none w-full min-w-0 mb-2"
+                className="font-cinzel text-3xl font-bold bg-transparent border-b-2 border-blue-500 outline-none w-full min-w-0 mb-2"
               />
             ) : (
               <h1
-                className={`text-3xl font-bold mb-2 ${isOwner ? "cursor-pointer hover:text-blue-500 dark:hover:text-blue-400 transition-colors" : ""}`}
+                className={`font-cinzel text-3xl font-bold mb-2 ${isOwner ? "cursor-pointer hover:text-blue-500 dark:hover:text-blue-400 transition-colors" : ""}`}
                 onClick={isOwner ? () => { setNameInput(deckName); setEditingName(true); } : undefined}
                 title={isOwner ? "Click to rename" : undefined}
               >

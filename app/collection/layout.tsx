@@ -1,6 +1,6 @@
 import HeaderServer from "../../components/header-server";
 import TopNav from "../../components/top-nav";
-import SponsorFooter from "../../components/sponsor-footer";
+import SiteFooter from "../../components/site-footer";
 import { Suspense } from "react";
 
 export default function CollectionLayout({ children }: { children: React.ReactNode }) {
@@ -13,7 +13,7 @@ export default function CollectionLayout({ children }: { children: React.ReactNo
         </Suspense>
         <main className="flex-1 flex flex-col min-h-0">{children}</main>
       </div>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

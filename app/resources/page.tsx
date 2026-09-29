@@ -1,6 +1,6 @@
 import Link from "next/link";
 import TopNav from "@/components/top-nav";
-import SponsorFooter from "@/components/sponsor-footer";
+import SiteFooter from "@/components/site-footer";
 import { RESOURCE_SECTIONS, RESOURCE_APP_TOOLS, type ResourceLink } from "@/lib/resources";
 
 export const metadata = {
@@ -156,7 +156,7 @@ export default function ResourcesPage() {
           .
         </p>
       </main>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { loadSpoilerByIdAction } from "../actions";
 import TopNav from "../../../components/top-nav";
-import SponsorFooter from "../../../components/sponsor-footer";
+import SiteFooter from "../../../components/site-footer";
 import ShareButton from "./share-button";
 
 interface PageProps {
@@ -181,7 +181,7 @@ export default async function SpoilerCardPage({ params }: PageProps) {
           </div>
         )}
       </div>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

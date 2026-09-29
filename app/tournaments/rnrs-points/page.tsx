@@ -1,6 +1,6 @@
 import Image from "next/image";
 import TopNav from "@/components/top-nav";
-import SponsorFooter from "@/components/sponsor-footer";
+import SiteFooter from "@/components/site-footer";
 import { fetchAllRnrsData } from "@/lib/rnrs/fetch";
 import RnrsClient from "./RnrsClient";
 
@@ -51,7 +51,7 @@ export default async function RnrsPointsPage() {
           </div>
         </div>
       </div>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

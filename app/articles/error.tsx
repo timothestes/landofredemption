@@ -18,7 +18,7 @@ export default function ArticlesError({
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="rounded-lg border border-border bg-card p-8 text-center max-w-sm mx-4">
-        <p className="text-lg font-semibold font-cinzel mb-2">Something went wrong</p>
+        <p className="text-lg font-semibold mb-2">Something went wrong</p>
         <p className="text-sm text-muted-foreground">Loading this page failed. Please try again.</p>
         <div className="mt-6 flex flex-col items-center gap-3">
           <Button onClick={() => reset()}>Try again</Button>

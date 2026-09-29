@@ -21,7 +21,7 @@ export default function AcceptPosterForm({ token }: { token: string }) {
 
   return (
     <main className="mx-auto max-w-md p-6">
-      <h1 className="text-2xl" style={{ fontFamily: "Cinzel, serif" }}>
+      <h1 className="font-cinzel text-2xl font-bold tracking-tight">
         You&apos;re invited to post
       </h1>
       <p className="mt-4 text-sm text-muted-foreground">

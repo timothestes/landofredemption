@@ -140,7 +140,7 @@ export function ChampionsView({ setView }: ChampionsViewProps) {
               <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary" />
 
               {/* Win count — amber/gold accent */}
-              <div className="text-3xl font-cinzel font-bold leading-none mb-1 text-amber-600 dark:text-amber-400 [.jayden_&]:text-amber-300">
+              <div className="text-3xl font-bold tabular-nums leading-none mb-1 text-amber-600 dark:text-amber-400 [.jayden_&]:text-amber-300">
                 {c.wins}×
               </div>
 

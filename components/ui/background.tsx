@@ -5,8 +5,13 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import Image from "next/image";
 
-// Routes where the background image is fully covered and doesn't need to render
-const SKIP_BACKGROUND_PREFIXES = ["/decklist/", "/collection", "/tracker/", "/admin/", "/play", "/board"];
+// The splash plate used to sit, blurred and at low opacity, behind every
+// content page. That read as wallpaper, and it was inconsistent (home and
+// articles painted over it). It now appears only where a full-bleed backdrop
+// is the design: the Forge and the sign-in pages (the asset is literally
+// "lor-login-splash"), plus the Jayden theme, whose whole look is the tinted
+// plate. Everywhere else the page is the plain `bg-background` surface.
+const SPLASH_PREFIXES = ["/forge", "/sign-in", "/sign-up", "/forgot-password"];
 
 const Background: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
@@ -23,7 +28,7 @@ const Background: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const isLightTheme = currentTheme === 'light';
   const isJaydenTheme = currentTheme === 'jayden';
 
-  const skipBackground = SKIP_BACKGROUND_PREFIXES.some(prefix => pathname.startsWith(prefix));
+  const showSplash = isJaydenTheme || SPLASH_PREFIXES.some(prefix => pathname.startsWith(prefix));
 
   // Most pages render the app nav in the top 56px, so the hero starts at
   // top-14 to sit below it. The public /join pages have no nav, so that
@@ -31,7 +36,7 @@ const Background: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   // there instead.
   const heroTop = pathname.startsWith("/join") ? "top-0" : "top-14";
 
-  if (skipBackground) {
+  if (!showSplash) {
     return (
       <div className="min-h-screen w-full bg-background">
         {children}

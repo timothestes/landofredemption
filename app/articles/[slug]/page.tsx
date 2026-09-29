@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import TopNav from "@/components/top-nav";
-import SponsorFooter from "@/components/sponsor-footer";
+import SiteFooter from "@/components/site-footer";
 import ArticleBody from "../components/ArticleBody";
 import AuthorBio from "../components/AuthorBio";
 import { resolveArticleRefs } from "../lib/refs";
@@ -126,18 +126,16 @@ export default async function ArticlePage({ params }: PageProps) {
           </div>
         </header>
         {post.cover_image_url && (
-          // A fixed 16:9 frame reserves the space before the bitmap arrives (no
-          // layout shift); object-contain keeps tall card art uncropped inside it.
-          <div className="relative mb-6 aspect-[16/9] w-full overflow-hidden rounded-lg bg-foreground/[0.05]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={post.cover_image_url}
-              alt=""
-              fetchPriority="high"
-              decoding="async"
-              className="absolute inset-0 h-full w-full object-contain"
-            />
-          </div>
+          // Natural aspect ratio, no plate: a wide cover is never letterboxed.
+          // Only a very tall cover is capped, and object-contain keeps it whole.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.cover_image_url}
+            alt=""
+            fetchPriority="high"
+            decoding="async"
+            className="mb-6 h-auto max-h-[60vh] w-full rounded-sm object-contain"
+          />
         )}
         <ArticleBody markdown={post.body_md} refs={refs} />
         <AuthorBio post={post} />
@@ -162,7 +160,7 @@ export default async function ArticlePage({ params }: PageProps) {
           </section>
         )}
       </article>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

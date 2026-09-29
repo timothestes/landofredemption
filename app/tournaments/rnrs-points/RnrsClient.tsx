@@ -169,7 +169,7 @@ export default function RnrsClient({ data }: { data: NormalizedData }) {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="font-cinzel text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             RNRS Points
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">

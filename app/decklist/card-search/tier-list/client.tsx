@@ -512,7 +512,7 @@ export default function TierListClient() {
   return (
     <div className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-6 sm:py-6">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Tier List Maker</h1>
+        <h1 className="font-cinzel text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Tier List Maker</h1>
         <div className="ml-auto flex flex-wrap gap-2">
           <button
             type="button"
