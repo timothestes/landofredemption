@@ -84,36 +84,39 @@ export default async function TournamentResultsIndexPage() {
           <ResultsSectionTabs active="events" />
         </div>
 
-        <div className="space-y-2">
+        <div className="divide-y divide-border/60 border-y border-border/60">
           {events.map((e) => {
             const dateLabel = formatEndedAt(e.endedAt);
             return (
-              <Link
-                key={e.id}
-                href={`/tournaments/results/${e.id}`}
-                className="block rounded-lg bg-card/80 backdrop-blur-sm hover:bg-card transition-colors px-4 py-3"
-              >
-                <span className="text-sm font-medium text-foreground">{e.name}</span>
-                {/* Name alone is not unique — the date, category and format are
-                    what tell two same-day events apart. */}
-                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                  <span>{dateLabel ?? "Date not recorded"}</span>
-                  <span aria-hidden>·</span>
-                  <span>
-                    {e.playerCount} player{e.playerCount !== 1 ? "s" : ""}
-                  </span>
-                  {e.category && (
-                    <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-semibold tracking-wide">
-                      {e.category}
+              // divide-y draws on the direct child; keep that at container width
+              // and let only the hover fill bleed (same shape as the agenda rows).
+              <div key={e.id}>
+                <Link
+                  href={`/tournaments/results/${e.id}`}
+                  className="-mx-2 block px-2 py-3 transition-colors hover:bg-muted/40"
+                >
+                  <span className="text-sm font-medium text-foreground">{e.name}</span>
+                  {/* Name alone is not unique — the date, category and format are
+                      what tell two same-day events apart. */}
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                    <span className="tabular-nums">{dateLabel ?? "Date not recorded"}</span>
+                    <span aria-hidden>·</span>
+                    <span>
+                      {e.playerCount} player{e.playerCount !== 1 ? "s" : ""}
                     </span>
-                  )}
-                  {e.deckFormat && (
-                    <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-semibold tracking-wide">
-                      {e.deckFormat}
-                    </span>
-                  )}
-                </div>
-              </Link>
+                    {e.category && (
+                      <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-semibold tracking-wide">
+                        {e.category}
+                      </span>
+                    )}
+                    {e.deckFormat && (
+                      <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-semibold tracking-wide">
+                        {e.deckFormat}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              </div>
             );
           })}
         </div>

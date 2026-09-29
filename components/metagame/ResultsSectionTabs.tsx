@@ -4,9 +4,9 @@ import Link from "next/link";
  * Top-level tab strip across the two public results surfaces.
  *
  * Real routes rather than client state, matching the per-event tabs: each view
- * is linkable and server-rendered. The active tab is marked by a tonal surface
- * and a weight shift — the design system forbids 1px sectioning rules, and
- * green is reserved for hover and CTAs rather than resting state.
+ * is linkable and server-rendered. Rendered as the site's chip strip (rounded-full,
+ * 44px tall); the active chip is filled with the foreground colour, and green
+ * stays reserved for hover and CTAs rather than resting state.
  */
 export default function ResultsSectionTabs({
   active,
@@ -19,7 +19,7 @@ export default function ResultsSectionTabs({
   ];
 
   return (
-    <div className="mb-6 flex w-full gap-1 rounded-lg bg-muted/50 p-1 sm:inline-flex sm:w-auto">
+    <div className="mb-6 flex flex-wrap gap-2">
       {tabs.map((tab) => {
         const isActive = tab.key === active;
         return (
@@ -27,10 +27,10 @@ export default function ResultsSectionTabs({
             key={tab.key}
             href={tab.href}
             aria-current={isActive ? "page" : undefined}
-            className={`flex-1 rounded-md px-4 py-2 text-center text-sm transition-colors sm:flex-none ${
+            className={`inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border px-3 text-sm transition-colors ${
               isActive
-                ? "bg-card font-semibold text-foreground shadow-sm"
-                : "font-medium text-muted-foreground hover:text-foreground"
+                ? "border-foreground bg-foreground text-background"
+                : "border-border bg-foreground/[0.03] text-muted-foreground hover:border-foreground/40 hover:text-foreground"
             }`}
           >
             {tab.label}

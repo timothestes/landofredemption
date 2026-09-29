@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import TopNav from "@/components/top-nav";
 import SiteFooter from "@/components/site-footer";
-import { TrophyIcon } from "@/components/trophy-icon";
 import { loadPublicResultsAction } from "../../actions";
 import ResultsTabs from "./ResultsTabs";
 
@@ -48,21 +47,6 @@ function formatEndedAt(endedAt: string | null): string | null {
     day: "numeric",
     year: "numeric",
   });
-}
-
-// Podium tints mirror the placement badge in app/decklist/community/client.tsx.
-// Background shifts only — the design system forbids 1px sectioning lines.
-function podiumSurface(place: number | null): string {
-  if (place === 1) return "bg-yellow-50 dark:bg-yellow-900/20";
-  if (place === 2) return "bg-muted/60 dark:bg-muted/30";
-  if (place === 3) return "bg-orange-50 dark:bg-orange-900/15";
-  return "";
-}
-
-function podiumText(place: number | null): string {
-  if (place === 1) return "text-yellow-700 dark:text-yellow-300";
-  if (place === 3) return "text-orange-700 dark:text-orange-300";
-  return "text-foreground";
 }
 
 export default async function TournamentResultsPage({ params }: PageProps) {
@@ -115,30 +99,26 @@ export default async function TournamentResultsPage({ params }: PageProps) {
           <p className="text-sm text-muted-foreground">No standings recorded.</p>
         ) : (
           <>
-            {/* Phone: stacked cards. The table's five padded columns overflow
+            {/* Phone: stacked hairline rows. The table's five padded columns overflow
                 below sm, which hid the decklist link off-screen entirely. */}
-            <ul className="space-y-2 sm:hidden">
+            <ul className="divide-y divide-border/60 border-y border-border/60 sm:hidden">
               {result.standings.map((row, i) => (
-                <li key={i} className={`rounded-lg overflow-hidden bg-card ${podiumSurface(row.place)}`}>
-                  <div className="flex items-center gap-2 px-4 pt-3">
-                    {row.place !== null && row.place <= 3 && (
-                      <TrophyIcon place={row.place} className="w-4 h-4 flex-shrink-0" />
-                    )}
-                    <span className={`text-sm font-semibold ${podiumText(row.place)}`}>
+                <li key={i} className="py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold tabular-nums text-foreground">
                       {row.place !== null ? ordinal(row.place) : "—"}
                     </span>
                     <span className="text-sm text-foreground truncate">{row.name ?? "—"}</span>
                   </div>
-                  <div className="px-4 pb-3 pt-1 text-xs text-muted-foreground">
+                  <div className="pt-1 text-xs tabular-nums text-muted-foreground">
                     {row.matchPoints ?? "—"} pts · {row.differential ?? "—"} diff
                     {showDecklists && !row.publishedDeckId && " · no decklist"}
                   </div>
-                  {/* Full-width tap target. The tonal step (rather than a divider)
-                      keeps it legible over any podium tint, in either theme. */}
+                  {/* Full-width 44px tap target so the decklist link is easy to hit on a phone. */}
                   {showDecklists && row.publishedDeckId && (
                     <Link
                       href={`/decklist/${row.publishedDeckId}`}
-                      className="flex min-h-[44px] items-center justify-between gap-2 bg-foreground/[0.06] px-4 text-sm font-medium text-foreground active:bg-foreground/[0.12] transition-colors"
+                      className="-mb-3 flex min-h-11 items-center justify-between text-sm font-medium text-foreground transition-colors hover:text-primary active:text-primary"
                     >
                       View decklist
                       <span aria-hidden className="text-muted-foreground">›</span>
@@ -148,45 +128,42 @@ export default async function TournamentResultsPage({ params }: PageProps) {
               ))}
             </ul>
 
-            <div className="hidden sm:block rounded-lg bg-card overflow-hidden">
+            <div className="hidden sm:block">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-muted/50">
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  <tr className="border-b border-border/60">
+                    <th className="text-left px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
                       Place
                     </th>
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    <th className="text-left px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
                       Player
                     </th>
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    <th className="text-left px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
                       Points
                     </th>
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    <th className="text-left px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
                       Diff
                     </th>
                     {showDecklists && (
-                      <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      <th className="text-left px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
                         Decklist
                       </th>
                     )}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-border/60 border-b border-border/60">
                   {result.standings.map((row, i) => (
-                    <tr key={i} className={podiumSurface(row.place)}>
+                    <tr key={i}>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1.5 font-semibold ${podiumText(row.place)}`}>
-                          {row.place !== null && row.place <= 3 && (
-                            <TrophyIcon place={row.place} className="w-4 h-4 flex-shrink-0" />
-                          )}
+                        <span className="font-semibold tabular-nums text-foreground">
                           {row.place !== null ? ordinal(row.place) : "—"}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-foreground">{row.name ?? "—"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className="px-4 py-3 tabular-nums text-muted-foreground">
                         {row.matchPoints ?? "—"}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className="px-4 py-3 tabular-nums text-muted-foreground">
                         {row.differential ?? "—"}
                       </td>
                       {showDecklists && (

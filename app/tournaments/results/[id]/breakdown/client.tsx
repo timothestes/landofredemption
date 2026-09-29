@@ -49,7 +49,7 @@ export default function BreakdownClient({
         <div
           role="tablist"
           aria-label="Breakdown views"
-          className="flex w-full gap-1 rounded-lg bg-muted/50 p-1"
+          className="flex flex-wrap gap-2"
         >
           {VIEWS.map((entry) => {
             const isActive = entry.key === view;
@@ -60,10 +60,10 @@ export default function BreakdownClient({
                 type="button"
                 aria-selected={isActive}
                 onClick={() => setView(entry.key)}
-                className={`flex-1 rounded-md px-3 py-2 text-sm transition-colors ${
+                className={`flex-1 sm:flex-none inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border px-3 text-sm transition-colors ${
                   isActive
-                    ? "bg-card font-semibold text-foreground shadow-sm"
-                    : "font-medium text-muted-foreground hover:text-foreground"
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-foreground/[0.03] text-muted-foreground hover:border-foreground/40 hover:text-foreground"
                 }`}
               >
                 {entry.label}
