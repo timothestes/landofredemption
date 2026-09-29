@@ -55,20 +55,7 @@ function formatDeckType(format?: string): string {
   return getFormatDef(format).id;
 }
 
-function getDeckTypeBadgeClasses(format?: string): string {
-  const deckType = formatDeckType(format);
-  const base = "px-2 py-0.5 rounded text-xs font-semibold [.jayden_&]:border [.jayden_&]:tracking-wide";
-  if (deckType === "T2") {
-    return `${base} bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 [.jayden_&]:bg-[hsl(270,70%,50%)]/20 [.jayden_&]:text-[hsl(280,70%,88%)] [.jayden_&]:border-[hsl(270,70%,55%)]/45`;
-  }
-  if (deckType === "Paragon") {
-    return `${base} bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 [.jayden_&]:bg-[hsl(330,90%,55%)]/20 [.jayden_&]:text-[hsl(330,90%,88%)] [.jayden_&]:border-[hsl(330,90%,55%)]/45`;
-  }
-  if (deckType === "Limited") {
-    return `${base} bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 [.jayden_&]:bg-[hsl(30,90%,55%)]/20 [.jayden_&]:text-[hsl(30,90%,88%)] [.jayden_&]:border-[hsl(30,90%,55%)]/45`;
-  }
-  return `${base} bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 [.jayden_&]:bg-[hsl(230,90%,55%)]/20 [.jayden_&]:text-[hsl(220,90%,88%)] [.jayden_&]:border-[hsl(230,90%,55%)]/45`;
-}
+const FORMAT_CHIP = "inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground";
 
 function timeAgo(dateString: string): string {
   const now = new Date();
@@ -786,7 +773,7 @@ function DeckCard({ deck, currentUserId, onUsernameClick }: { deck: PublicDeck; 
   }
 
   return (
-    <div className="flex flex-col bg-card rounded-lg border border-border hover:shadow-lg transition-shadow overflow-hidden jayden-gradient-bg">
+    <div className="flex flex-col bg-card rounded-lg border border-border/60 overflow-hidden jayden-gradient-bg">
       {/* Clickable preview area */}
       <Link href={`/decklist/${deck.id}`} className="flex-1 block group">
         {/* Card preview */}
@@ -796,16 +783,9 @@ function DeckCard({ deck, currentUserId, onUsernameClick }: { deck: PublicDeck; 
           </div>
         ) : hasPreview ? (
           <div className="relative h-36 overflow-hidden">
-            <img
-              src={(img1 || img2)!}
-              alt=""
-              aria-hidden
-              className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-25 dark:opacity-45 [.jayden_&]:opacity-45 group-hover:opacity-40 dark:group-hover:opacity-60 [.jayden_&]:group-hover:opacity-60 transition-opacity"
-            />
-            <div className="absolute inset-0 bg-background/70 dark:bg-background/50 [.jayden_&]:bg-background/50" />
             <div className="relative h-full flex items-center justify-center gap-1 px-2 py-2">
-              {img1 && <img src={img1} alt="" className="h-full object-contain rounded shadow-md group-hover:brightness-90 transition-[filter]" />}
-              {img2 && <img src={img2} alt="" className="h-full object-contain rounded shadow-md group-hover:brightness-90 transition-[filter]" />}
+              {img1 && <img src={img1} alt="" className="h-full object-contain rounded-sm group-hover:brightness-90 transition-[filter]" />}
+              {img2 && <img src={img2} alt="" className="h-full object-contain rounded-sm group-hover:brightness-90 transition-[filter]" />}
             </div>
           </div>
         ) : (
@@ -877,7 +857,7 @@ function DeckCard({ deck, currentUserId, onUsernameClick }: { deck: PublicDeck; 
           </div>
 
           <div className="flex items-center gap-3 text-sm mb-3">
-            <span className={getDeckTypeBadgeClasses(deck.format)}>{formatDeckType(deck.format)}</span>
+            <span className={FORMAT_CHIP}>{formatDeckType(deck.format)}</span>
             <span className="text-muted-foreground">{deck.card_count || 0} cards</span>
             {deck.is_legal === false && (
               <span className="text-[10px] font-medium text-red-600 dark:text-red-400">Not Legal</span>

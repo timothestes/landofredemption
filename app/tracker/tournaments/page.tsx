@@ -14,6 +14,8 @@ import { categoryDefaults, requireDecklistsDefault } from "../../../utils/tourna
 import { normalizeTier } from "../../../utils/tournament/tiers";
 import { getFormatDef } from "@/lib/formats";
 
+const FORMAT_CHIP = "inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground";
+
 const supabase = createClient();
 
 function TournamentsPageInner() {
@@ -253,29 +255,6 @@ function TournamentsPageInner() {
     return getFormatDef(format).label; // "T1"/"T2"/"Paragon" -> Limited/T2/Paragon
   };
 
-  // Subtle, scannable tint per category — mirrors the listing badges and keeps
-  // the primary green reserved for actions.
-  const typePillClasses = (type: string) => {
-    const t = type.toLowerCase();
-    const base =
-      "inline-flex items-center flex-shrink-0 whitespace-nowrap rounded px-2 py-0.5 text-xs font-medium ";
-    if (t.includes("teams"))
-      return base + "bg-purple-500/15 text-purple-700 dark:text-purple-400";
-    if (t.includes("type 2") || t === "t2")
-      return base + "bg-amber-500/15 text-amber-700 dark:text-amber-400";
-    if (t.includes("draft"))
-      return base + "bg-cyan-500/15 text-cyan-700 dark:text-cyan-400";
-    if (t.includes("sealed"))
-      return base + "bg-teal-500/15 text-teal-700 dark:text-teal-400";
-    if (t.includes("paragon"))
-      return base + "bg-rose-500/15 text-rose-700 dark:text-rose-400";
-    if (t === "limited")
-      return base + "bg-orange-500/15 text-orange-700 dark:text-orange-400";
-    if (t.includes("type 1") || t.includes("type a") || t === "t1" || t === "unlimited")
-      return base + "bg-blue-500/15 text-blue-700 dark:text-blue-400";
-    return base + "bg-muted text-muted-foreground";
-  };
-
   // showName=false is used inside an event group, where the event name is in the
   // header and the category pill is the row's identity.
   const renderRow = (tournament: any, showName: boolean) => {
@@ -296,7 +275,7 @@ function TournamentsPageInner() {
               </p>
             )}
             {type && (
-              <span className={typePillClasses(type)}>{type}</span>
+              <span className={`${FORMAT_CHIP} shrink-0 whitespace-nowrap`}>{type}</span>
             )}
           </div>
           <p className="text-xs sm:text-sm text-muted-foreground truncate">

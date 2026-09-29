@@ -47,7 +47,7 @@ export default async function MyDecksPage() {
           </Link>
         </div>
         <p className="mt-8 text-sm text-muted-foreground">
-          You can still <Link href="/decklist/card-search?new=true" className="text-blue-600 dark:text-blue-400 underline">build a deck</Link> without an account — signing in lets you save it to the cloud.
+          You can still <Link href="/decklist/card-search?new=true" className="text-foreground underline underline-offset-4 transition-colors hover:text-primary">build a deck</Link> without an account — signing in lets you save it to the cloud.
         </p>
       </div>
     );

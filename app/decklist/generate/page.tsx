@@ -263,7 +263,7 @@ export default function GenerateDeckList() {
           <div className="bg-card rounded-lg border border-border p-6">
             <div className="flex items-center gap-2 mb-4">
               <h3 className="text-xl font-semibold">Generate Tournament PDF</h3>
-              <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">
+              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground">
                 Official Format
               </span>
             </div>
@@ -282,7 +282,7 @@ export default function GenerateDeckList() {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full p-3 border rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
+                    className="w-full p-3 border rounded-lg bg-background focus:outline-none focus:border-ring"
                     placeholder="Enter your name"
                     maxLength={50}
                   />
@@ -296,7 +296,7 @@ export default function GenerateDeckList() {
                     type="text"
                     value={event}
                     onChange={(e) => setEvent(e.target.value)}
-                    className="w-full p-3 border rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
+                    className="w-full p-3 border rounded-lg bg-background focus:outline-none focus:border-ring"
                     placeholder="Tournament or event name"
                     maxLength={100}
                   />
@@ -312,7 +312,7 @@ export default function GenerateDeckList() {
                   <select
                     value={deckType}
                     onChange={(e) => setDeckType(e.target.value)}
-                    className="w-full p-3 border rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-transparent"
+                    className="w-full p-3 border rounded-lg bg-background focus:outline-none focus:border-ring"
                   >
                     <option value="type_1">Type 1</option>
                     <option value="type_2">Type 2</option>
@@ -349,7 +349,7 @@ export default function GenerateDeckList() {
                 onDeckSelected={handleDeckSelected}
                 loadedDeckName={loadedDeckName}
                 onClearLoaded={() => setLoadedDeckName(null)}
-                textareaClassName="focus:ring-2 focus:ring-ring focus:border-transparent"
+                textareaClassName="focus:outline-none focus:border-ring"
               />
 
               <Button
@@ -378,7 +378,7 @@ export default function GenerateDeckList() {
           <div className="bg-card rounded-lg border border-border p-6">
             <div className="flex items-center gap-2 mb-4">
               <h3 className="text-xl font-semibold">Generate Visual Screenshot</h3>
-              <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded-full">
+              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground">
                 Visual Format
               </span>
             </div>
@@ -397,7 +397,7 @@ export default function GenerateDeckList() {
                     <select
                       value={deckType}
                       onChange={(e) => setDeckType(e.target.value)}
-                      className="w-full p-3 border rounded-lg bg-background focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full p-3 border rounded-lg bg-background focus:outline-none focus:border-ring"
                     >
                       <option value="type_1">Type 1</option>
                       <option value="type_2">Type 2</option>
@@ -411,7 +411,7 @@ export default function GenerateDeckList() {
                     <select
                       value={nCardColumns}
                       onChange={(e) => setNCardColumns(parseInt(e.target.value))}
-                      className="w-full p-3 border rounded-lg bg-background focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full p-3 border rounded-lg bg-background focus:outline-none focus:border-ring"
                     >
                       <option value={6}>6 columns</option>
                       <option value={8}>8 columns</option>
@@ -447,7 +447,7 @@ export default function GenerateDeckList() {
                 onDeckSelected={handleDeckSelected}
                 loadedDeckName={loadedDeckName}
                 onClearLoaded={() => setLoadedDeckName(null)}
-                textareaClassName="focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                textareaClassName="focus:outline-none focus:border-ring"
               />
 
               <Button
@@ -520,18 +520,18 @@ export default function GenerateDeckList() {
 
         {screenshotSuccess && (
           <div className="mt-6" ref={screenshotSuccessRef}>
-            <div className="p-6 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-900 rounded-lg">
+            <div className="rounded-md bg-primary/10 p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-400">
+                  <h3 className="text-lg font-semibold text-foreground">
                     Screenshot Generated Successfully!
                   </h3>
-                  <p className="text-sm text-blue-600 dark:text-blue-300">
+                  <p className="text-sm text-muted-foreground">
                     Your deck screenshot is ready to view
                   </p>
                 </div>

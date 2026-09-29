@@ -60,20 +60,7 @@ function formatDeckType(format?: string): FormatId {
   return getFormatDef(format).id;
 }
 
-// Helper function to get badge colors based on deck type
-function getDeckTypeBadgeClasses(format?: string): string {
-  const deckType = formatDeckType(format);
-  if (deckType === "T2") {
-    return "px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded text-xs font-semibold";
-  }
-  if (deckType === "Paragon") {
-    return "px-2 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 rounded text-xs font-semibold";
-  }
-  if (deckType === "Limited") {
-    return "px-2 py-0.5 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded text-xs font-semibold";
-  }
-  return "px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs font-semibold";
-}
+const FORMAT_CHIP = "inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground";
 
 function getContrastColor(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -1536,7 +1523,7 @@ function DeckCard({
 
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-3">
-            <span className={getDeckTypeBadgeClasses(deck.format)}>
+            <span className={FORMAT_CHIP}>
               {formatDeckType(deck.format)}
             </span>
             <span className="text-muted-foreground">
@@ -1652,7 +1639,7 @@ function DeckListItem({
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 md:gap-3">
-            <span className={getDeckTypeBadgeClasses(deck.format)}>
+            <span className={FORMAT_CHIP}>
               {formatDeckType(deck.format)}
             </span>
             <h3 className="font-semibold truncate text-sm md:text-base">{deck.name}</h3>
