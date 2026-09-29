@@ -114,6 +114,9 @@ const nextConfig = {
       { source: '/resources-old/', destination: '/resources', permanent: true },
       { source: '/home-2', destination: '/', permanent: true },
       { source: '/home-2/', destination: '/', permanent: true },
+      // WordPress author archives (/author/<name>/) are still crawled and linked;
+      // they were falling through app/[wpSlug] into a DB lookup and a 404.
+      { source: '/author/:path*', destination: '/articles', permanent: true },
       // WordPress feed + sitemap surfaces (spec §1).
       { source: '/comments/feed', destination: '/articles/feed.xml', permanent: true },
       { source: '/comments/feed/', destination: '/articles/feed.xml', permanent: true },
