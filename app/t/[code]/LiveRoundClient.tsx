@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { TrophyIcon } from "@/components/trophy-icon";
 import { useRoundCountdown } from "@/components/ui/useRoundCountdown";
 import { normalizeTournamentFormat } from "@/lib/formats";
 import {
@@ -36,15 +35,6 @@ function signed(n: number): string {
   return n > 0 ? `+${n}` : `${n}`;
 }
 
-// Podium tints mirror the public results page (app/tournaments/results/[id]).
-// Only applied once the event has ended — a mid-event podium is a guess.
-function podiumSurface(place: number): string {
-  if (place === 1) return "bg-yellow-50 dark:bg-yellow-900/20";
-  if (place === 2) return "bg-muted/60 dark:bg-muted/30";
-  if (place === 3) return "bg-orange-50 dark:bg-orange-900/15";
-  return "";
-}
-
 function Chip({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground">
@@ -69,6 +59,7 @@ function PlayerLine({
   return (
     <div className="flex items-baseline justify-between gap-3">
       <span
+        title={player?.name ?? undefined}
         className={`truncate text-sm ${
           won ? "font-semibold text-foreground" : lost ? "text-muted-foreground" : "text-foreground"
         } ${highlight ? "underline decoration-primary/60 underline-offset-4" : ""}`}
@@ -232,13 +223,13 @@ export default function LiveRoundClient({
   if (!view || !tournament || !phase) {
     return (
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-16 pt-8">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
           Live pairings &amp; standings
         </p>
         {pendingName && (
           <h1 className="mt-1 font-cinzel text-2xl font-bold text-foreground">{pendingName}</h1>
         )}
-        <div className="mt-6 rounded-lg bg-card p-5">
+        <div className="mt-6 border-y border-border/60 py-5">
           <p className="font-medium text-foreground">This event hasn&apos;t started yet</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Pairings, the round timer and standings will appear here as soon as the host starts
@@ -280,8 +271,8 @@ export default function LiveRoundClient({
       {/* ─── Header ─── */}
       <header>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Live
+          <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+            {ended ? "Final" : "Live"}
           </p>
           <p className="text-xs tabular-nums text-muted-foreground" suppressHydrationWarning>
             {agoLabel}
@@ -297,23 +288,27 @@ export default function LiveRoundClient({
           </div>
         )}
 
-        <div className="mt-4 flex items-center justify-between gap-4 rounded-lg bg-card px-4 py-3">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {roundLabel}
-            </p>
-            <p className="mt-0.5 text-sm text-foreground">{statusText}</p>
+        {!ended && (
+          <div className="mt-4 flex items-center justify-between gap-4 border-y border-border/60 py-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                {roundLabel}
+              </p>
+              <p className="mt-0.5 text-sm text-foreground">{statusText}</p>
+            </div>
+            {showCountdown && (
+              <p
+                className={`shrink-0 text-3xl font-semibold tabular-nums ${countdownClass}`}
+                aria-live="off"
+                suppressHydrationWarning
+              >
+                {countdown.isExpired ? "0:00" : countdown.timeString}
+              </p>
+            )}
           </div>
-          {showCountdown && (
-            <p
-              className={`shrink-0 text-3xl font-semibold tabular-nums ${countdownClass}`}
-              aria-live="off"
-              suppressHydrationWarning
-            >
-              {countdown.isExpired ? "0:00" : countdown.timeString}
-            </p>
-          )}
-        </div>
+        )}
+
+        {ended && <p className="mt-4 text-sm text-muted-foreground">{statusText}</p>}
 
         {ended && tournament.results_published && (
           <Button asChild variant="success" className="mt-3 w-full sm:w-auto">
@@ -323,7 +318,7 @@ export default function LiveRoundClient({
       </header>
 
       {/* ─── Find your name (sticky under the top nav) ─── */}
-      <div className="sticky top-16 z-20 -mx-4 mt-5 bg-background/95 px-4 py-2 backdrop-blur sm:mx-0 sm:px-0">
+      <div className="sticky top-16 z-20 -mx-4 mt-5 border-b border-border/60 bg-background px-4 py-2 sm:mx-0 sm:px-0">
         <div className="relative">
           <input
             value={query}
@@ -333,14 +328,14 @@ export default function LiveRoundClient({
             autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
-            className="w-full rounded-md bg-muted/70 px-3 py-2.5 pr-10 text-base text-foreground placeholder:text-muted-foreground focus:bg-muted focus:outline-none"
+            className="w-full rounded-md bg-muted/70 px-3 py-2.5 pr-12 text-base text-foreground placeholder:text-muted-foreground focus:bg-muted focus:outline-none"
           />
           {query && (
             <button
               type="button"
               onClick={() => updateQuery("")}
               aria-label="Clear"
-              className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded text-lg leading-none text-muted-foreground hover:text-foreground"
+              className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded text-lg leading-none text-muted-foreground hover:text-foreground"
             >
               ×
             </button>
@@ -354,13 +349,13 @@ export default function LiveRoundClient({
           aria-label="Your pairing"
           className="mt-2 rounded-lg bg-primary/10 p-4 dark:bg-primary/15"
         >
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">You</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">You</p>
           <p className="truncate font-medium text-foreground">{me.name}</p>
 
           {myPairing.kind === "match" && (
             <div className="mt-3 flex items-end justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-2xl font-semibold tabular-nums text-foreground">
+                <p className="text-3xl font-semibold leading-none tabular-nums text-foreground">
                   {tableLabel(myPairing.tableNumber, seatsMode)}
                 </p>
                 <p className="truncate text-sm text-muted-foreground">
@@ -375,7 +370,7 @@ export default function LiveRoundClient({
                     <p className="text-xl font-semibold tabular-nums text-foreground">
                       {myPairing.myScore}–{myPairing.theirScore}
                     </p>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
                       {myPairing.result === "won" ? "Won" : myPairing.result === "lost" ? "Lost" : "Tie"}
                     </p>
                   </>
@@ -419,7 +414,7 @@ export default function LiveRoundClient({
       <div
         role="tablist"
         aria-label="View"
-        className="mb-4 mt-5 flex w-full gap-1 rounded-lg bg-muted/50 p-1 sm:inline-flex sm:w-auto"
+        className="mb-4 mt-5 flex flex-wrap gap-2"
       >
         {(
           [
@@ -435,10 +430,10 @@ export default function LiveRoundClient({
               role="tab"
               aria-selected={active}
               onClick={() => setTab(key)}
-              className={`min-h-[40px] flex-1 rounded-md px-4 py-2 text-center text-sm transition-colors sm:flex-none ${
+              className={`flex-1 sm:flex-none inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border px-3 text-sm transition-colors ${
                 active
-                  ? "bg-card font-semibold text-foreground shadow-sm"
-                  : "font-medium text-muted-foreground hover:text-foreground"
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border bg-foreground/[0.03] text-muted-foreground hover:border-foreground/40 hover:text-foreground"
               }`}
             >
               {label}
@@ -453,23 +448,23 @@ export default function LiveRoundClient({
           {pairings.matches.length === 0 && pairings.byes.length === 0 ? (
             <p className="text-sm text-muted-foreground">No pairings posted for this round yet.</p>
           ) : (
-            <div className="overflow-hidden rounded-lg bg-card">
-              <div className="grid grid-cols-[3.5rem_1fr] gap-x-3 bg-muted/50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="border-b border-border/60">
+              <div className="grid grid-cols-[3.5rem_1fr] gap-x-3 border-b border-border/60 px-3 py-2 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
                 <span>{seatsMode ? "Seats" : "Table"}</span>
                 <span className="flex justify-between">
                   <span>Players</span>
                   <span>Souls</span>
                 </span>
               </div>
-              <ul>
-                {pairings.matches.map((match, i) => {
+              <ul className="divide-y divide-border/60">
+                {pairings.matches.map((match) => {
                   const mine = !!me && (match.p1?.id === me.id || match.p2?.id === me.id);
                   const decided = match.outcome !== "pending" && match.outcome !== "tie";
                   return (
                     <li
                       key={match.id}
                       className={`grid grid-cols-[3.5rem_1fr] gap-x-3 px-3 py-2.5 ${
-                        mine ? "bg-primary/10 dark:bg-primary/15" : i % 2 ? "bg-muted/20" : ""
+                        mine ? "bg-primary/10 dark:bg-primary/15" : ""
                       }`}
                     >
                       <div className="self-center text-base font-semibold tabular-nums text-foreground">
@@ -502,10 +497,10 @@ export default function LiveRoundClient({
                     <li
                       key={bye.id}
                       className={`grid grid-cols-[3.5rem_1fr] gap-x-3 px-3 py-2.5 ${
-                        mine ? "bg-primary/10 dark:bg-primary/15" : "bg-muted/30"
+                        mine ? "bg-primary/10 dark:bg-primary/15" : ""
                       }`}
                     >
-                      <div className="self-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      <div className="self-center text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
                         Bye
                       </div>
                       <div className="truncate text-sm text-foreground">
@@ -528,24 +523,21 @@ export default function LiveRoundClient({
           ) : (
             <>
               {/* Phone: stacked rows. Same columns as the host's Standings tab. */}
-              <ul className="space-y-1.5 sm:hidden">
+              <ul className="divide-y divide-border/60 border-y border-border/60 sm:hidden">
                 {standings.map((row) => {
                   const mine = me?.id === row.participant.id;
                   return (
                     <li
                       key={row.participant.id}
-                      className={`rounded-lg px-3 py-2.5 ${
-                        mine ? "bg-primary/10 dark:bg-primary/15" : `bg-card ${ended ? podiumSurface(row.place) : ""}`
+                      className={`px-3 py-2.5 ${
+                        mine ? "bg-primary/10 dark:bg-primary/15" : ""
                       }`}
                     >
                       <div className="flex items-center gap-2">
                         <span className="w-7 shrink-0 text-sm font-semibold tabular-nums text-foreground">
                           {row.place}
                         </span>
-                        {ended && row.place <= 3 && (
-                          <TrophyIcon place={row.place} className="h-4 w-4 shrink-0" />
-                        )}
-                        <span className="truncate text-sm text-foreground">{row.participant.name}</span>
+                        <span className="truncate text-sm text-foreground" title={row.participant.name ?? undefined}>{row.participant.name}</span>
                         <span className="ml-auto shrink-0 text-sm font-semibold tabular-nums text-foreground">
                           {row.mp} <span className="font-normal text-muted-foreground">MP</span>
                         </span>
@@ -559,35 +551,28 @@ export default function LiveRoundClient({
                 })}
               </ul>
 
-              <div className="hidden overflow-hidden rounded-lg bg-card sm:block">
+              <div className="hidden border-b border-border/60 sm:block">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-muted/50 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      <th className="px-4 py-2.5 text-left">Rank</th>
-                      <th className="px-4 py-2.5 text-left">Player</th>
-                      <th className="px-4 py-2.5 text-center">W-L-T</th>
-                      <th className="px-4 py-2.5 text-center">MP</th>
-                      <th className="px-4 py-2.5 text-center">Diff</th>
-                      <th className="px-4 py-2.5 text-center">Byes</th>
+                    <tr className="border-b border-border/60">
+                      <th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">Rank</th>
+                      <th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">Player</th>
+                      <th className="px-4 py-2.5 text-center text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">W-L-T</th>
+                      <th className="px-4 py-2.5 text-center text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">MP</th>
+                      <th className="px-4 py-2.5 text-center text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">Diff</th>
+                      <th className="px-4 py-2.5 text-center text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">Byes</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-border/60">
                     {standings.map((row) => {
                       const mine = me?.id === row.participant.id;
                       return (
                         <tr
                           key={row.participant.id}
-                          className={
-                            mine ? "bg-primary/10 dark:bg-primary/15" : ended ? podiumSurface(row.place) : ""
-                          }
+                          className={mine ? "bg-primary/10 dark:bg-primary/15" : ""}
                         >
                           <td className="px-4 py-2.5 font-semibold tabular-nums text-foreground">
-                            <span className="inline-flex items-center gap-1.5">
-                              {ended && row.place <= 3 && (
-                                <TrophyIcon place={row.place} className="h-4 w-4 shrink-0" />
-                              )}
-                              {row.place}
-                            </span>
+                            {row.place}
                           </td>
                           <td className="px-4 py-2.5 text-foreground">{row.participant.name}</td>
                           <td className="px-4 py-2.5 text-center tabular-nums text-muted-foreground">
