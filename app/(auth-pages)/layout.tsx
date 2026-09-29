@@ -10,11 +10,9 @@ export default async function Layout({
     <div className="w-full min-h-screen flex flex-col">
       <Background>
         <Header />
-        <div className="flex-1 w-full flex flex-col items-center justify-center relative py-10">          
+        <div className="flex-1 w-full flex flex-col items-center justify-center relative px-4 py-10">          
           {/* Content container with improved background and styling for better readability */}
-          <div className="z-10 bg-card p-10 rounded-lg shadow-lg max-w-md w-full
-                          border border-border
-                          dark:shadow-black/20 [.jayden_&]:shadow-black/20 shadow-gray-300/50">
+          <div className="z-10 bg-card p-6 sm:p-10 rounded-lg shadow-lg max-w-md w-full border border-border">
             {children}
           </div>
         </div>

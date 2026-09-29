@@ -31,7 +31,7 @@ export default async function Login({
   
   return (
     <div className="w-full">
-      <h1 className="text-2xl font-semibold mb-3 text-foreground">Sign in</h1>
+      <h1 className="font-cinzel text-2xl font-bold tracking-tight sm:text-3xl mb-3 text-foreground">Sign in</h1>
       <p className="text-sm text-muted-foreground mb-6">
         Don't have an account?{" "}
         <Link
@@ -49,7 +49,7 @@ export default async function Login({
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background [.jayden_&]:bg-card px-2 text-muted-foreground">or</span>
+          <span className="bg-card px-2 text-muted-foreground">or</span>
         </div>
       </div>
 
@@ -95,7 +95,7 @@ export default async function Login({
         
         <SubmitButton 
           pendingText="Signing In..."
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 font-medium rounded-md transition-all duration-200 shadow-sm mt-4 text-base"
+          className="mt-4 h-11 w-full"
           // @ts-ignore
           formAction={signInAction}
         >

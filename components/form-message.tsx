@@ -14,12 +14,12 @@ export function FormMessage({ message }: { message?: Message }) {
         </div>
       )}
       {"error" in message && (
-        <div className="text-destructive border-l-2 border-destructive px-4 py-3 bg-destructive/10 rounded-r">
+        <div role="alert" className="text-destructive border-l-2 border-destructive px-4 py-3 bg-destructive/10 rounded-r">
           {message.error}
         </div>
       )}
       {"message" in message && (
-        <div className="text-accent border-l-2 border-accent px-4 py-3 bg-accent/10 rounded-r">
+        <div className="text-foreground border-l-2 border-muted-foreground px-4 py-3 bg-muted rounded-r">
           {message.message}
         </div>
       )}
