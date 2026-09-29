@@ -33,8 +33,8 @@ const styles = {
     border: "border-amber-500/20 dark:border-amber-500/30",
   },
   info: {
-    icon: "bg-blue-500/15 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
-    border: "border-blue-500/20 dark:border-blue-500/30",
+    icon: "bg-foreground/10 text-foreground",
+    border: "border-border",
   },
 };
 

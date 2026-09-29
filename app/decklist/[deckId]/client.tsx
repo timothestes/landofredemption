@@ -119,19 +119,7 @@ function formatDeckType(format?: string): string {
   return getFormatDef(format).id;
 }
 
-function getDeckTypeBadgeClasses(format?: string): string {
-  const deckType = formatDeckType(format);
-  if (deckType === "T2") {
-    return "px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-sm font-semibold";
-  }
-  if (deckType === "Paragon") {
-    return "px-3 py-1 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 rounded-full text-sm font-semibold";
-  }
-  if (deckType === "Limited") {
-    return "px-3 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-full text-sm font-semibold";
-  }
-  return "px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-semibold";
-}
+const FORMAT_CHIP = "inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground";
 
 export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
   const router = useRouter();
@@ -657,11 +645,11 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
                   if (e.key === "Enter") handleNameSubmit();
                   if (e.key === "Escape") { setNameInput(deckName); setEditingName(false); }
                 }}
-                className="font-cinzel text-3xl font-bold bg-transparent border-b-2 border-blue-500 outline-none w-full min-w-0 mb-2"
+                className="font-cinzel text-3xl font-bold bg-transparent border-b-2 border-ring outline-none w-full min-w-0 mb-2"
               />
             ) : (
               <h1
-                className={`font-cinzel text-3xl font-bold mb-2 ${isOwner ? "cursor-pointer hover:text-blue-500 dark:hover:text-blue-400 transition-colors" : ""}`}
+                className={`font-cinzel text-3xl font-bold mb-2 ${isOwner ? "cursor-pointer hover:text-primary transition-colors" : ""}`}
                 onClick={isOwner ? () => { setNameInput(deckName); setEditingName(true); } : undefined}
                 title={isOwner ? "Click to rename" : undefined}
               >
@@ -669,7 +657,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
               </h1>
             ))}
             <div className="flex items-center gap-3 flex-wrap">
-              <span className={getDeckTypeBadgeClasses(deck.format)}>
+              <span className={FORMAT_CHIP}>
                 {formatDeckType(deck.format)}
               </span>
               {deck.paragon && formatDeckType(deck.format) === "Paragon" && (
@@ -803,7 +791,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
                                 value={createName}
                                 onChange={(e) => setCreateName(e.target.value)}
                                 maxLength={50}
-                                className="flex-1 px-2.5 py-1.5 text-sm rounded-lg border border-border bg-card focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="flex-1 px-2.5 py-1.5 text-sm rounded-lg border border-border bg-card focus:outline-none focus:border-ring"
                               />
                             </div>
 
@@ -836,7 +824,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
                               <button
                                 type="submit"
                                 disabled={creating || !createName.trim()}
-                                className="flex-1 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                                className="flex-1 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
                               >
                                 {creating ? "Creating…" : "Create tag"}
                               </button>
@@ -865,7 +853,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
                                     toggleTag(filteredGlobalTags[0]);
                                   }
                                 }}
-                                className="w-full px-2.5 py-1.5 text-sm rounded-lg border border-border bg-card focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full px-2.5 py-1.5 text-sm rounded-lg border border-border bg-card focus:outline-none focus:border-ring"
                               />
                             </div>
 
@@ -1140,7 +1128,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
                           onClick={() => setCoverPickerSlot(slot)}
                           className={`relative rounded-xl overflow-hidden border-2 transition-all ${
                             isActive
-                              ? "border-blue-500 ring-4 ring-blue-200 dark:ring-blue-800 scale-105"
+                              ? "border-primary scale-105"
                               : "border-border hover:border-green-600 hover:scale-102"
                           } bg-muted w-20 sm:w-[130px]`}
                           style={{ aspectRatio: "2.5/3.5" }}
@@ -1200,7 +1188,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
                     placeholder="Search cards..."
                     value={coverPickerSearch}
                     onChange={(e) => setCoverPickerSearch(e.target.value)}
-                    className="w-full pl-8 pr-8 py-1.5 text-sm border border-border rounded-lg bg-card focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full pl-8 pr-8 py-1.5 text-sm border border-border rounded-lg bg-card focus:outline-none focus:border-ring"
                   />
                   {coverPickerSearch && (
                     <button onClick={() => setCoverPickerSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -1239,7 +1227,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
                       disabled={!coverPickerSlot}
                       className={`relative rounded-lg overflow-hidden border transition-all ${
                         coverPickerSlot
-                          ? "border-border hover:border-blue-500 hover:scale-105 cursor-pointer"
+                          ? "border-border hover:border-primary hover:scale-105 cursor-pointer"
                           : "border-border opacity-50 cursor-default"
                       }`}
                       style={{ aspectRatio: "2.5/3.5" }}
@@ -1321,7 +1309,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
           onClick={() => setShowPreview((v) => !v)}
           className={`hidden lg:flex items-center gap-2 px-3 py-1.5 border rounded-lg text-sm transition-colors ${
             showPreview
-              ? 'border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+              ? 'border-foreground bg-foreground text-background'
               : 'border-border text-muted-foreground hover:bg-muted'
           }`}
           title={showPreview ? 'Hide card preview' : 'Show card preview'}
@@ -1341,7 +1329,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
           onClick={() => setShowStats((v) => !v)}
           className={`flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 border rounded-lg text-xs md:text-sm transition-colors ${
             showStats
-              ? 'border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+              ? 'border-foreground bg-foreground text-background'
               : 'border-border text-muted-foreground hover:bg-muted'
           }`}
         >
@@ -1369,10 +1357,10 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
                   });
 
                   const alignmentConfig = [
-                    { name: 'Good', color: 'bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-200' },
-                    { name: 'Evil', color: 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-800 dark:text-red-200' },
-                    { name: 'Neutral', color: 'bg-muted border-border text-muted-foreground' },
-                    { name: 'Dual', color: 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-700 text-purple-800 dark:text-purple-200' },
+                    { name: 'Good', color: 'bg-card border-border text-foreground' },
+                    { name: 'Evil', color: 'bg-card border-border text-foreground' },
+                    { name: 'Neutral', color: 'bg-card border-border text-foreground' },
+                    { name: 'Dual', color: 'bg-card border-border text-foreground' },
                   ];
 
                   return alignmentConfig.map(({ name, color }) => {
@@ -1565,7 +1553,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
                           <StackedTile
                             key={`${card.card_name}-${card.card_set}-${colIndex}-${i}`}
                             card={card}
-                            ringClass="hover:ring-blue-500"
+                            ringClass="hover:ring-primary"
                             onClick={() => card.fullCard && setModalCard(card.fullCard)}
                             onHover={setHoveredCard}
                           />
@@ -1591,7 +1579,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
                         <StackedTile
                           key={`reserve-${card.card_name}-${card.card_set}-${colIndex}-${i}`}
                           card={card}
-                          ringClass="hover:ring-blue-500"
+                          ringClass="hover:ring-primary"
                           onClick={() => card.fullCard && setModalCard(card.fullCard)}
                           onHover={setHoveredCard}
                         />
@@ -1724,7 +1712,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
                 }}
                 rows={3}
                 placeholder="Write a description for your deck... (Markdown supported)"
-                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
+                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground text-sm focus:outline-none focus:border-ring resize-none overflow-hidden"
               />
               <div className="flex items-center gap-2 mt-2">
                 <button
