@@ -16,7 +16,7 @@ export default async function ForgotPassword(props: {
   const searchParams = await props.searchParams;
   return (
     <div className="w-full">
-      <h1 className="text-2xl font-semibold mb-3 text-foreground">Reset Password</h1>
+      <h1 className="font-cinzel text-2xl font-bold tracking-tight sm:text-3xl mb-3 text-foreground">Reset Password</h1>
       <p className="text-sm text-muted-foreground mb-6">
         Already have an account?{" "}
         <Link className="text-primary hover:text-primary/80 font-medium underline" href="/sign-in">
@@ -39,7 +39,7 @@ export default async function ForgotPassword(props: {
         </div>
 
         <SubmitButton
-          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 font-medium rounded-md transition-all duration-200 shadow-sm mt-4 text-base"
+          className="mt-4 h-11 w-full"
           // @ts-ignore
           formAction={forgotPasswordAction}>
           Reset Password
