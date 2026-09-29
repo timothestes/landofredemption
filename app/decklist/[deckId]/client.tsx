@@ -4,34 +4,44 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { copyPublicDeckAction, updateDeckPreviewCardsAction, renameDeckAction, updateDeckDescriptionAction, updateDeckTagsAction, loadGlobalTagsAction, recordDeckViewAction, GlobalTag, DeckCardData } from "../actions";
+import { copyPublicDeckAction, updateDeckPreviewCardsAction, renameDeckAction, updateDeckDescriptionAction, updateDeckTagsAction, loadGlobalTagsAction, recordDeckViewAction, GlobalTag } from "../actions";
 import { createGlobalTagAction } from "../../admin/tags/actions";
 import { HexColorPicker } from "react-colorful";
 import { useIsAdmin } from "../../../hooks/useIsAdmin";
-import { Card } from "../card-search/utils";
-import { CARD_BY_FULL_KEY } from "../card-search/data/cardIndex";
-import ModalWithClose from "../card-search/ModalWithClose";
+import type { Card } from "../card-search/utils";
 import { GoldfishButton } from "../../goldfish/components/GoldfishButton";
 import { sanitizeImgFile, getCardImageUrl as getImageUrl } from '../../shared/utils/cardImageUrl';
 import { useCardPrices } from "../card-search/hooks/useCardPrices";
 import { useCollectionState } from "../../collection/hooks/useCollectionState";
-import BuyDeckModal, { type BuyDeckCard } from "../card-search/components/BuyDeckModal";
-import CollectionCheckModal from "../card-search/components/CollectionCheckModal";
+import type { BuyDeckCard } from "../card-search/components/BuyDeckModal";
 import { aggregateOwnedByName } from "../card-search/utils/collectionCheck";
 import { statCards, countBy, sumQuantity } from "../card-search/utils/deckStats";
-import GeneratePDFModal from "../card-search/components/GeneratePDFModal";
-import GenerateDeckImageModal from "../card-search/components/GenerateDeckImageModal";
-import AodCountCard from "../card-search/components/AodCountCard";
 import { Deck as DeckType } from "../card-search/types/deck";
 import { generateDeckText } from "../card-search/utils/deckImportExport";
 import CardTile from "@/components/ui/CardTile";
-import CardMentionTextarea from "@/components/ui/CardMentionTextarea";
 import DeckDescription from "../components/DeckDescription";
 import { compareCardsByType, compareCardsDefault, compareTypeGroups, type SortableCard } from "@/lib/cards/defaultSort";
 import { prettifyTypeName, getGroupKey, getGroupDisplayName } from "@/lib/decks/typeGroups";
 import { getFormatDef } from "@/lib/formats";
 import { TrophyIcon, getPlacementLabel } from "@/components/trophy-icon";
 import type { DeckTournamentContext } from "../deckTournamentContext";
+import type { EnrichedCard } from "./enrichDeckCards";
+import type { ArticleRefs } from "@/app/articles/lib/refTypes";
+import dynamic from "next/dynamic";
+
+// Opened from explicit buttons (or the collapsed stats panel), so none of these
+// belong in the JS that gates first paint; each loads on first use.
+const BuyDeckModal = dynamic(() => import("../card-search/components/BuyDeckModal"), { ssr: false });
+const CollectionCheckModal = dynamic(() => import("../card-search/components/CollectionCheckModal"), { ssr: false });
+const GeneratePDFModal = dynamic(() => import("../card-search/components/GeneratePDFModal"), { ssr: false });
+const GenerateDeckImageModal = dynamic(() => import("../card-search/components/GenerateDeckImageModal"), { ssr: false });
+const AodCountCard = dynamic(() => import("../card-search/components/AodCountCard"), { ssr: false });
+// The card modal reaches the whole catalog through CardThumb -> builderConfig
+// (ALL_CARDS), and the mention editor through lib/cards/search. Both load on
+// demand so that ~360 KB stays off first paint; the modal is warmed after
+// `load` (see the effect in the component) so the first tap does not wait.
+const ModalWithClose = dynamic(() => import("../card-search/ModalWithClose"), { ssr: false });
+const CardMentionTextarea = dynamic(() => import("@/components/ui/CardMentionTextarea"), { ssr: false });
 
 interface PublicDeckData {
   id: string;
@@ -48,7 +58,7 @@ interface PublicDeckData {
   username?: string | null;
   created_at: string;
   updated_at: string;
-  cards: DeckCardData[];
+  cards: EnrichedCard[];
   tags?: GlobalTag[];
   total_price?: number | null;
   budget_price?: number | null;
@@ -90,17 +100,15 @@ function getContrastColor(hex: string): string {
 
 interface Props {
   deck: PublicDeckData;
+  /** `[[mentions]]` in the description, resolved on the server (page.tsx). */
+  descriptionRefs: ArticleRefs;
   isOwner: boolean;
   isLoggedIn: boolean;
 }
 
-// Enriched card with full Card data from the card database
-interface EnrichedCard extends DeckCardData {
-  type: string;
-  alignment: string;
-  brigade: string;
-  fullCard: Card | null;
-}
+// Tiles marked eager so the first row can be the LCP image: one full row on
+// the widest grid (xl:grid-cols-7), two-plus rows on a phone.
+const EAGER_TILES = 7;
 
 // Adapt an enriched deck card for the canonical default comparator.
 // Strength/reference only live on the full card record when we resolved one.
@@ -133,14 +141,13 @@ function getDeckTypeBadgeClasses(format?: string): string {
   return "px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm font-semibold";
 }
 
-export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
+export default function PublicDeckClient({ deck, descriptionRefs, isOwner, isLoggedIn }: Props) {
   const router = useRouter();
   const { isAdmin, permissions } = useIsAdmin();
   const canManageTags = isAdmin && permissions.includes('manage_tags');
   const [linkCopied, setLinkCopied] = useState(false);
   const [copying, setCopying] = useState(false);
   const [copyResult, setCopyResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [cardDatabase, setCardDatabase] = useState<Map<string, Card> | null>(null);
   const [modalCard, setModalCard] = useState<Card | null>(null);
   // Logged-in users can manage their collection from the card modal here too
   const {
@@ -229,6 +236,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
     const result = await updateDeckDescriptionAction(deck.id, descriptionInput);
     setSavingDescription(false);
     if (!result.success) setDescription(description); // revert on failure
+    else router.refresh(); // mentions resolve on the server: fetch refs for the new text
   }
 
   // Tags
@@ -352,28 +360,18 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [coverEditorOpen]);
 
-  // Populate from the module-scope index (built once per bundle load)
+  // Warm the card modal chunk once the page (and its LCP image) has loaded, so
+  // the first tap on a card opens instantly without competing with paint.
   useEffect(() => {
-    setCardDatabase(CARD_BY_FULL_KEY as Map<string, Card>);
+    const warm = () => { void import("../card-search/ModalWithClose"); };
+    if (document.readyState === "complete") { warm(); return; }
+    window.addEventListener("load", warm, { once: true });
+    return () => window.removeEventListener("load", warm);
   }, []);
 
-  // Enrich cards with full card data
-  const enrichedCards = useMemo<EnrichedCard[]>(() => {
-    return deck.cards.map((card) => {
-      if (!cardDatabase) {
-        return { ...card, type: "", alignment: "", brigade: "", fullCard: null };
-      }
-      const key = `${card.card_name}|${card.card_set}|${sanitizeImgFile(card.card_img_file || "")}`;
-      const fullCard = cardDatabase.get(key) || null;
-      return {
-        ...card,
-        type: fullCard?.type || "",
-        alignment: fullCard?.alignment || "",
-        brigade: fullCard?.brigade || "",
-        fullCard,
-      };
-    });
-  }, [deck.cards, cardDatabase]);
+  // Rows arrive already joined to the catalog (enrichDeckCards, on the server),
+  // so the grid is in the HTML instead of waiting on a client-side card index.
+  const enrichedCards = deck.cards;
 
   // Build Deck object for PDF/Image modals
   const deckForModal: DeckType = useMemo(() => ({
@@ -1353,7 +1351,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
       </div>
 
       {/* Stats Panel — collapsible */}
-      {showStats && cardDatabase && (
+      {showStats && (
         <div className="mb-6 rounded-lg border border-border bg-muted p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Alignment Breakdown */}
@@ -1488,18 +1486,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
         </div>
       )}
 
-      {/* Loading state while card database fetches */}
-      {!cardDatabase && deck.cards.length > 0 && (
-        <div className="flex items-center justify-center py-16">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-muted-foreground mx-auto"></div>
-            <p className="mt-4 text-muted-foreground text-sm">Loading deck...</p>
-          </div>
-        </div>
-      )}
-
-      {/* Deck cards — only render after card database is loaded */}
-      {cardDatabase && <div className="lg:flex lg:gap-6">
+      <div className="lg:flex lg:gap-6">
       <div className="flex-1 min-w-0">
       {/* Deck / Considering tabs. The maybeboard is a scratchpad, so it lives
           behind its own tab rather than trailing the real deck. */}
@@ -1604,8 +1591,10 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
           ) : (
             /* Normal view: compact grid with type group headers */
             <div className="space-y-3">
-              {Object.entries(groupedMainCards).map(([groupName, cards]) => {
+              {Object.entries(groupedMainCards).map(([groupName, cards], groupIndex, groups) => {
                 const groupCount = cards.reduce((sum, c) => sum + c.quantity, 0);
+                // Tiles rendered before this group, so eagerness follows page order.
+                const tilesBefore = groups.slice(0, groupIndex).reduce((n, [, g]) => n + g.length, 0);
                 return (
                   <div key={groupName}>
                     {groupBy !== "none" && (
@@ -1622,6 +1611,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
                           onClick={() => card.fullCard && setModalCard(card.fullCard)}
                           onHover={setHoveredCard}
                           compact
+                          priority={tilesBefore + index < EAGER_TILES}
                         />
                       ))}
                     </div>
@@ -1755,7 +1745,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
               title={isOwner ? "Click to edit description" : undefined}
             >
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Description</h3>
-              <DeckDescription markdown={description} />
+              <DeckDescription markdown={description} refs={descriptionRefs} />
             </div>
           ) : isOwner ? (
             <button
@@ -1802,7 +1792,7 @@ export default function PublicDeckClient({ deck, isOwner, isLoggedIn }: Props) {
           </div>
         </div>
       )}
-      </div>}
+      </div>
 
       {/* Buy Deck Modal */}
       {showBuyDeckModal && (

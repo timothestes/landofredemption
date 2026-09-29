@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import { loadPublicDeckAction } from "../actions";
 import { createClient } from "../../../utils/supabase/server";
 import PublicDeckClient from "./client";
+import { enrichDeckCards } from "./enrichDeckCards";
+import { resolveDeckDescriptionRefs } from "../lib/descriptionRefs";
+import { CARD_BY_FULL_KEY } from "../card-search/data/cardIndex";
 import { getCardImageUrlOrNull } from "../../shared/utils/cardImageUrl";
 import { flattenCardMentions } from "@/app/articles/lib/markdown";
 
@@ -93,7 +96,10 @@ export default async function PublicDeckPage({ params }: PageProps) {
 
   return (
     <PublicDeckClient
-      deck={result.deck}
+      // Join rows to the catalog here so the card grid is in the HTML (see enrichDeckCards).
+      deck={{ ...result.deck, cards: enrichDeckCards(result.deck.cards, CARD_BY_FULL_KEY) }}
+      // Mentions resolve here too, for the same reason.
+      descriptionRefs={resolveDeckDescriptionRefs(result.deck.description || "")}
       isOwner={result.isOwner ?? false}
       isLoggedIn={!!user}
     />

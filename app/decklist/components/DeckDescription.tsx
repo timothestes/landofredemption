@@ -1,35 +1,26 @@
 "use client";
 
-import { useMemo } from "react";
 import ArticleBody from "@/app/articles/components/ArticleBody";
-import { resolveCardRefs } from "@/app/articles/lib/cardRefs";
-import { resolveGlossaryTerms } from "@/lib/glossary/terms";
-import { extractCardMentions } from "@/app/articles/lib/markdown";
 import type { ArticleRefs } from "@/app/articles/lib/refTypes";
 
 // A deck description, rendered by the same markdown renderer articles use, so
 // `[[Card Name]]` gets the hover preview and tap-to-enlarge treatment here too.
 //
-// Articles resolve mentions on the server because the card index must stay off
-// the client. Deck pages already ship that index for the deck itself, so the
-// resolution happens right here: no server action, no round-trip, and the
-// builder's preview updates as the author types.
-//
-// `decks` stays empty: a deck link inside a deck description remains an
-// ordinary link rather than embedding a whole second decklist.
+// Mentions arrive already resolved. The public deck page resolves them on the
+// server (resolveDeckDescriptionRefs in page.tsx) because the card catalog has
+// to stay out of that page's client bundle (clientBundleNoCatalog.test.ts);
+// the builder's live preview resolves them in the browser (LiveDeckDescription).
 export default function DeckDescription({
   markdown,
+  refs,
   draft = false,
   className = "prose prose-sm dark:prose-invert max-w-none text-foreground",
 }: {
   markdown: string;
+  refs: ArticleRefs;
   /** Editor preview: flag mentions that resolved to nothing. */
   draft?: boolean;
   className?: string;
 }) {
-  const refs: ArticleRefs = useMemo(() => {
-    const mentions = extractCardMentions(markdown || "");
-    return { cards: resolveCardRefs(mentions), decks: {}, terms: resolveGlossaryTerms(mentions) };
-  }, [markdown]);
   return <ArticleBody markdown={markdown} refs={refs} draft={draft} className={className} />;
 }

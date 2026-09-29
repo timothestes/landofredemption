@@ -51,7 +51,7 @@ import { useCardImageUrl } from "../hooks/useCardImageUrl";
 import { useBuilderConfig } from "../builderConfig";
 import { CardThumb } from "./CardThumb";
 import CardMentionTextarea from "@/components/ui/CardMentionTextarea";
-import DeckDescription from "../../components/DeckDescription";
+import LiveDeckDescription from "../../components/LiveDeckDescription";
 import BuyDeckModal, { BuyDeckCard } from "./BuyDeckModal";
 import CollectionCheckModal from "./CollectionCheckModal";
 import { aggregateOwnedByName } from "../utils/collectionCheck";
@@ -3243,7 +3243,7 @@ export default function DeckBuilderPanel({
                 <div className="w-full min-h-[16rem] p-3 text-sm border border-border rounded-lg bg-card text-card-foreground overflow-auto">
                   {deck.description ? (
                     /* draft: an author mid-edit should see which mentions found no card. */
-                    <DeckDescription markdown={deck.description} draft />
+                    <LiveDeckDescription markdown={deck.description} draft />
                   ) : (
                     <p className="text-muted-foreground italic">No description yet</p>
                   )}

@@ -26,11 +26,14 @@ export default function CardTile({
   onClick,
   onHover,
   compact,
+  priority = false,
 }: {
   card: CardTileCard;
   onClick?: () => void;
   onHover?: (card: { name: string; imgFile: string; set?: string; type?: string } | null) => void;
   compact?: boolean;
+  /** Above-the-fold tile: eager + high fetch priority so it can be the LCP image. */
+  priority?: boolean;
 }) {
   const [imgError, setImgError] = useState(false);
   const src = getCardImageUrl(card.card_img_file || "");
@@ -77,7 +80,9 @@ export default function CardTile({
                 ? "(max-width: 640px) 33vw, (max-width: 1024px) 17vw, 12vw"
                 : "(max-width: 640px) 33vw, (max-width: 768px) 25vw, 16vw"
             }
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            priority={priority}
+            fetchPriority={priority ? "high" : undefined}
             onError={() => setImgError(true)}
           />
         )}
