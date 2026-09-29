@@ -53,7 +53,7 @@ export function TournamentsView({ setView }: TournamentsViewProps) {
               {/* top accent bar */}
               <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary" />
 
-              <div className="text-3xl font-cinzel font-bold text-foreground leading-none mb-1">
+              <div className="text-3xl font-bold tabular-nums text-foreground leading-none mb-1">
                 {t.year}
               </div>
               <div className="text-sm font-medium text-foreground mb-1">

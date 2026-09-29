@@ -1,6 +1,6 @@
 import HeaderServer from "../../components/header-server";
 import TopNav from "../../components/top-nav";
-import SponsorFooter from "../../components/sponsor-footer";
+import SiteFooter from "../../components/site-footer";
 import { Suspense } from "react";
 
 export default function DecklistLayout({ children }) {
@@ -16,7 +16,7 @@ export default function DecklistLayout({ children }) {
           {children}
         </main>
       </div>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

@@ -276,7 +276,7 @@ export default function CollectionClient() {
     <div className="w-full max-w-screen-2xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
       {/* Header */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
-        <h1 className="text-2xl font-bold">My Collection</h1>
+        <h1 className="font-cinzel text-2xl font-bold tracking-tight sm:text-3xl">My Collection</h1>
         <span className="text-sm text-muted-foreground">
           {stats.uniqueOwned.toLocaleString()} unique ·{" "}
           {stats.totalCopies.toLocaleString()} total cards

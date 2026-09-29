@@ -158,7 +158,7 @@ function Panel({
 }) {
   return (
     <section>
-      <h3 className="font-cinzel text-lg font-bold text-foreground">{title}</h3>
+      <h3 className="text-lg font-semibold text-foreground">{title}</h3>
       <p className="mb-4 mt-1 max-w-prose text-sm text-muted-foreground">{blurb}</p>
       <div className="rounded-xl bg-card px-4 py-4">{children}</div>
     </section>

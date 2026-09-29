@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Coffee } from "lucide-react";
 import TopNav from "@/components/top-nav";
-import SponsorFooter from "@/components/sponsor-footer";
+import SiteFooter from "@/components/site-footer";
 import { BUY_ME_A_COFFEE_URL } from "@/lib/sponsors";
 
 export const metadata = {
@@ -125,7 +125,7 @@ export default function CoffeePage() {
           who help cover these bills.
         </p>
       </main>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

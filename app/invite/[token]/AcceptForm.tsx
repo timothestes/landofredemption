@@ -23,7 +23,7 @@ export default function AcceptForm({ token }: { token: string }) {
 
   return (
     <main className="mx-auto max-w-md p-6">
-      <h1 className="text-2xl" style={{ fontFamily: "Cinzel, serif" }}>
+      <h1 className="font-cinzel text-2xl font-bold tracking-tight">
         Accept your Forge invite
       </h1>
       <div className="mt-4 rounded-md border bg-muted/40 p-4 text-sm text-muted-foreground">

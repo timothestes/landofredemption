@@ -309,7 +309,7 @@ export default function CommunityClient({ initialDecks, initialCount, currentUse
     <div className="w-full max-w-7xl mx-auto px-3 md:px-4 py-4 md:py-8 overflow-x-hidden">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Community Decks</h1>
+        <h1 className="font-cinzel text-3xl font-bold tracking-tight mb-2">Community Decks</h1>
         <p className="text-muted-foreground">
           Browse public decks shared by the community.
         </p>

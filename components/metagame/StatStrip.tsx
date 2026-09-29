@@ -55,7 +55,7 @@ export default function StatStrip({
     <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-muted/40 sm:grid-cols-3 lg:grid-cols-5">
       {tiles.map((tile) => (
         <div key={tile.label} className="bg-card px-4 py-4">
-          <div className="font-cinzel text-2xl font-bold leading-none text-foreground tabular-nums">
+          <div className="text-2xl font-bold leading-none text-foreground tabular-nums">
             {tile.value}
           </div>
           <div className="mt-2 text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">

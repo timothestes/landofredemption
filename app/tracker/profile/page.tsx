@@ -26,7 +26,7 @@ export default function ProfilePage() {
 
   return (
     <div className="px-6 mx-auto">
-      <h1 className="text-2xl font-bold">Profile</h1>
+      <h1 className="font-cinzel text-2xl font-bold tracking-tight sm:text-3xl">Profile</h1>
       {user ? (
         <div className="mt-4">
           <p>Email: {user.email}</p>

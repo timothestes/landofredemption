@@ -1,5 +1,5 @@
 import TopNav from "../../components/top-nav";
-import SponsorFooter from "../../components/sponsor-footer";
+import SiteFooter from "../../components/site-footer";
 import { loadPublicSpoilersAction } from "./actions";
 import SpoilersClient from "./spoilers-client";
 
@@ -19,7 +19,7 @@ export default async function SpoilersPage() {
       <div className="flex-1">
         <SpoilersClient initialSpoilers={spoilers} />
       </div>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

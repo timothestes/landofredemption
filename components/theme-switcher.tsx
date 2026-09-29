@@ -35,7 +35,7 @@ const ThemeSwitcher = () => {
           aria-label="Change theme"
           variant="outline"
           size={"sm"}
-          className="bg-white border border-gray-300 shadow-sm rounded-full h-8 w-8 p-0 flex items-center justify-center dark:bg-zinc-800 dark:border-zinc-700 [.jayden_&]:bg-zinc-800 [.jayden_&]:border-primary/30"
+          className="bg-card border border-border shadow-sm rounded-full h-8 w-8 p-0 flex items-center justify-center [.jayden_&]:bg-zinc-800 [.jayden_&]:border-primary/30"
         >
           {theme === "light" ? (
             <Sun

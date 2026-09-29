@@ -742,7 +742,7 @@ export default function MyDecksClient() {
           {/* Header */}
           <div className="flex items-center justify-between mb-4 md:mb-8 gap-2">
             <div className="min-w-0">
-              <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2 truncate">{selectedFolderName}</h1>
+              <h1 className="font-cinzel text-2xl md:text-3xl font-bold tracking-tight mb-1 md:mb-2 truncate">{selectedFolderName}</h1>
               <p className="text-sm md:text-base text-muted-foreground">
                 {typeFilteredDecks.length} {typeFilteredDecks.length === 1 ? "deck" : "decks"}
                 {deckTypeFilter !== "all" && ` · ${deckTypeFilter}`}

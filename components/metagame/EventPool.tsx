@@ -30,7 +30,7 @@ export default function EventPool({ breakdown }: { breakdown: TournamentBreakdow
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="font-cinzel text-lg font-bold text-foreground">
+        <h2 className="text-lg font-semibold text-foreground">
           {events.length === 1 ? "From one event" : `From ${events.length} events`}
         </h2>
         <p className="text-xs text-muted-foreground tabular-nums">

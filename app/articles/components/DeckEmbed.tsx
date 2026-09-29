@@ -65,7 +65,7 @@ function ResolvedDeck({ deck, href }: { deck: DeckEmbedData; href: string }) {
       <figcaption className="mb-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
         <div className="min-w-0">
           <p className={KICKER}>{meta}</p>
-          <a href={href} className="font-cinzel text-lg font-bold leading-tight text-foreground hover:text-primary">
+          <a href={href} className="text-lg font-semibold leading-tight text-foreground hover:text-primary">
             {deck.name}
           </a>
         </div>

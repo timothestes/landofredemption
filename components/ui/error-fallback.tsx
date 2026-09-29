@@ -24,7 +24,7 @@ export default function ErrorFallback({ error, reset, label }: Props) {
   return (
     <div className="flex flex-1 min-h-[60vh] items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-8 text-center">
-        <p className="text-lg font-semibold font-cinzel mb-2">Something went wrong</p>
+        <p className="text-lg font-semibold mb-2">Something went wrong</p>
         <p className="text-sm text-muted-foreground">Loading this page failed. Please try again.</p>
         <div className="mt-6 flex flex-col items-center gap-3">
           <Button onClick={() => reset()}>Try again</Button>

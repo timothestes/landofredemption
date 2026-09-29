@@ -594,7 +594,7 @@ export default function ModalWithClose({
   }, [modalCard]);
 
   // Lock body scroll when modal is open — compensate for scrollbar width
-  // to prevent layout shift in the sidebar panel (the SponsorFooter in the
+  // to prevent layout shift in the sidebar panel (the SiteFooter in the
   // layout makes the page taller than 100vh, so a scrollbar is present)
   React.useEffect(() => {
     if (!modalCard) return;

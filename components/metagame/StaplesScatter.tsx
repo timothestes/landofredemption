@@ -116,7 +116,7 @@ export default function StaplesScatter({
   return (
     <section className="scatter-root space-y-4">
       <header className="space-y-2">
-        <h2 className="font-cinzel text-lg font-bold text-foreground">Staples &amp; tech</h2>
+        <h2 className="text-lg font-semibold text-foreground">Staples &amp; tech</h2>
         <p className="max-w-prose text-sm text-muted-foreground">
           Every card, placed by how much of the whole field played it against how
           much of the top cut did. Cards above the line were played more by the

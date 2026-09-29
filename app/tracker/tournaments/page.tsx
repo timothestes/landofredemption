@@ -337,7 +337,7 @@ function TournamentsPageInner() {
           items={[{ label: "Tournaments", href: "/tracker/tournaments" }]}
         />
         <div className="flex items-center justify-between gap-3 flex-wrap mb-6">
-          <h1 className="text-2xl font-bold mt-2">Your Tournaments</h1>
+          <h1 className="font-cinzel text-2xl font-bold tracking-tight mt-2 sm:text-3xl">Your Tournaments</h1>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             <Button variant="outline" className="flex items-center gap-2" asChild>
               <a href="/board" target="_blank" rel="noopener noreferrer">

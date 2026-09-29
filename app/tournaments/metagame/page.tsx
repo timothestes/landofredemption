@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import TopNav from "@/components/top-nav";
-import SponsorFooter from "@/components/sponsor-footer";
+import SiteFooter from "@/components/site-footer";
 import { loadMetagameAction } from "../actions";
 import {
   METAGAME_FORMAT_LABELS,
@@ -38,7 +38,7 @@ export default async function MetagamePage({ searchParams }: PageProps) {
     <div className="flex min-h-screen flex-col">
       <TopNav />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-8">
-        <h1 className="font-cinzel text-2xl font-bold tracking-tight text-foreground">Metagame</h1>
+        <h1 className="font-cinzel text-3xl font-bold tracking-tight text-foreground">Metagame</h1>
         <p className="mt-1 max-w-prose text-sm text-muted-foreground">
           Every published decklist in one pool, so you can see what a format is
           actually made of rather than what one event looked like.
@@ -69,7 +69,7 @@ export default async function MetagamePage({ searchParams }: PageProps) {
           </div>
         )}
       </main>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

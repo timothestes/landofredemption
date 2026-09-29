@@ -1,6 +1,6 @@
 import Link from "next/link";
 import TopNav from "@/components/top-nav";
-import SponsorFooter from "@/components/sponsor-footer";
+import SiteFooter from "@/components/site-footer";
 import { loadPublicResultsIndexAction } from "../actions";
 import ResultsSectionTabs from "@/components/metagame/ResultsSectionTabs";
 
@@ -9,7 +9,7 @@ export const metadata = {
   description: "Browse published standings and decklists from past Redemption CCG tournaments.",
 };
 
-// Nothing on this page reads cookies or headers — TopNav/SponsorFooter are
+// Nothing on this page reads cookies or headers — TopNav/SiteFooter are
 // client components and the index query uses the service-role client — so Next
 // prerenders it at build time and never regenerates. That froze the list to
 // whatever was published at the last deploy; newly published events only showed
@@ -64,7 +64,7 @@ export default async function TournamentResultsIndexPage() {
             </Link>
           </div>
         </main>
-        <SponsorFooter />
+        <SiteFooter />
       </div>
     );
   }
@@ -73,7 +73,7 @@ export default async function TournamentResultsIndexPage() {
     <div className="flex flex-col min-h-screen">
       <TopNav />
       <main className="flex-1 max-w-3xl mx-auto px-4 pt-8 pb-16 w-full">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="font-cinzel text-3xl font-bold tracking-tight text-foreground">
           Tournament Results
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -118,7 +118,7 @@ export default async function TournamentResultsIndexPage() {
           })}
         </div>
       </main>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

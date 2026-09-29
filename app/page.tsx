@@ -5,7 +5,7 @@ import { createAnonClient } from "@/utils/supabase/anon";
 import { resolveLegacyWpParams } from "@/lib/wp/legacyParams";
 import { cn } from "@/lib/utils";
 import TopNav from "@/components/top-nav";
-import SponsorFooter from "@/components/sponsor-footer";
+import SiteFooter from "@/components/site-footer";
 import { loadPublishedPosts } from "@/app/articles/lib/queries";
 import PostCard from "@/app/articles/components/PostCard";
 
@@ -61,63 +61,55 @@ export default async function Index(props: {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <TopNav />
+      {/* Masthead. The one place the archived splash art appears, sharp and at
+          full contrast. The band is the plate's own navy in BOTH themes: the art
+          is a near-black render made for a dark header, and fading or multiplying
+          it onto a light page only ever made a grey smear (see #447). A fixed dark
+          nameplate over a light page is the classic editorial move, and it means
+          one asset, no theme swap, no hydration flash. Art is hidden below `lg`,
+          where the text needs the full width. */}
+      <section className="relative overflow-hidden border-b border-white/10 bg-[hsl(228,22%,12%)] text-[hsl(210,20%,96%)]">
+        <img
+          src="/brand/hero-splash.webp"
+          alt=""
+          aria-hidden
+          width={900}
+          height={650}
+          className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[min(56%,46rem)] object-cover object-[50%_18%] [mask-image:linear-gradient(to_right,transparent_0%,black_45%)] lg:block"
+        />
+        <div className="relative mx-auto w-full max-w-5xl px-4 py-10 sm:py-14 lg:py-20">
+          <h1 className="sr-only">
+            Land of Redemption – Redemption CCG Strategy, Deck Building, and Tournaments
+          </h1>
+          <img
+            src="/brand/lor-wordmark.webp"
+            alt=""
+            aria-hidden
+            width={450}
+            height={122}
+            className="h-auto w-full max-w-sm sm:max-w-md"
+          />
+          <p className="mt-5 max-w-lg text-[hsl(215,16%,72%)] sm:text-lg">
+            Strategy, deck building, and tournaments for Redemption — the collectible card
+            game of biblical battles.
+          </p>
+          <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <Link
+              href="/decklist/card-search?new=true"
+              className="inline-flex min-h-11 items-center rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Build a deck
+            </Link>
+            <Link
+              href="/tournaments"
+              className="inline-flex min-h-11 items-center text-sm font-medium text-[hsl(215,16%,80%)] transition-colors hover:text-white"
+            >
+              Upcoming tournaments →
+            </Link>
+          </div>
+        </div>
+      </section>
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-10 px-4 py-8">
-        <section className="flex gap-8 border-b border-border/60 pb-8 sm:pb-10">
-          <div className="min-w-0 flex-1">
-            <h1 className="sr-only">
-              Land of Redemption – Redemption CCG Strategy, Deck Building, and Tournaments
-            </h1>
-            {/* Both wordmarks ship; `dark:` matches .dark AND .jayden (tailwind.config.ts),
-                so the swap is pure CSS — no theme hook, no hydration flash. */}
-            <img
-              src="/brand/lor-wordmark-dark.webp"
-              alt=""
-              aria-hidden
-              width={450}
-              height={122}
-              className="h-auto w-full max-w-md dark:hidden"
-            />
-            <img
-              src="/brand/lor-wordmark.webp"
-              alt=""
-              aria-hidden
-              width={450}
-              height={122}
-              className="hidden h-auto w-full max-w-md dark:block"
-            />
-            <p className="mt-6 max-w-2xl text-muted-foreground sm:text-lg">
-              Strategy, deck building, and tournaments for Redemption — the collectible card
-              game of biblical battles. Build and share decks, register for events, read
-              player articles, and play online.
-            </p>
-          </div>
-          {/* Archived splash art from the old landofredemption.com WordPress header. The
-              original plate is a near-black render made for a dark header, so it ships as-is
-              for dark themes; `-light` is the same drawing with its levels restored to ink on
-              transparent, since multiplying the dark plate onto white only made a grey smear.
-              Same two-file swap as the wordmark above (`dark:` covers .dark and .jayden). A
-              radial mask dissolves both on all four sides so the art reads as texture, not a
-              pasted box. Hidden below `lg` — no free column to put it in. */}
-          <div className="relative hidden w-64 shrink-0 lg:block xl:w-80">
-            <img
-              src="/brand/hero-splash-light.webp"
-              alt=""
-              aria-hidden
-              width={640}
-              height={462}
-              className="absolute inset-0 h-full w-full object-cover opacity-80 mix-blend-multiply [mask-image:radial-gradient(65%_65%_at_50%_45%,black_20%,transparent_100%)] dark:hidden"
-            />
-            <img
-              src="/brand/hero-splash.webp"
-              alt=""
-              aria-hidden
-              width={900}
-              height={650}
-              className="absolute inset-0 hidden h-full w-full object-cover opacity-70 [mask-image:radial-gradient(65%_65%_at_50%_45%,black_20%,transparent_100%)] dark:block"
-            />
-          </div>
-        </section>
-
         {/* Section index, newspaper-style: hairlines instead of five identical boxes. */}
         <nav
           aria-label="Site sections"
@@ -158,7 +150,7 @@ export default async function Index(props: {
           )}
         </section>
       </div>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

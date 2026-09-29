@@ -229,7 +229,7 @@ export default function GenerateDeckList() {
   return (
     <div className="flex-1 w-full flex flex-col gap-6 max-w-4xl mx-auto p-4">
       <div className="w-full">
-        <h2 className="text-3xl font-bold mb-2">Decklist Generator</h2>
+        <h1 className="font-cinzel text-3xl font-bold tracking-tight mb-2">Decklist Generator</h1>
         <p className="text-muted-foreground mb-6">
           Generate a formatted PDF for tournament play or create a visual screenshot of your deck
         </p>

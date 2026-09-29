@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { Suspense } from "react";
 import TopNav from "@/components/top-nav";
-import SponsorFooter from "@/components/sponsor-footer";
+import SiteFooter from "@/components/site-footer";
 import HistoryClient from "./HistoryClient";
 import { loadLeaderboard } from "./actions";
 
@@ -49,7 +49,7 @@ export default async function Page() {
           </div>
         </div>
       </div>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

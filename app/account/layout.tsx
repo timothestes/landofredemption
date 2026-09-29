@@ -1,6 +1,6 @@
 import HeaderServer from "../../components/header-server";
 import TopNav from "../../components/top-nav";
-import SponsorFooter from "../../components/sponsor-footer";
+import SiteFooter from "../../components/site-footer";
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,7 +12,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
           {children}
         </main>
       </div>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import TopNav from "@/components/top-nav";
-import SponsorFooter from "@/components/sponsor-footer";
+import SiteFooter from "@/components/site-footer";
 import { TrophyIcon } from "@/components/trophy-icon";
 import { loadPublicResultsAction } from "../../actions";
 import ResultsTabs from "./ResultsTabs";
@@ -217,7 +217,7 @@ export default async function TournamentResultsPage({ params }: PageProps) {
           </>
         )}
       </main>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }

@@ -41,7 +41,7 @@ export default function DeckDna({ breakdown }: { breakdown: TournamentBreakdown 
   return (
     <section className="space-y-4">
       <header className="space-y-2">
-        <h2 className="font-cinzel text-lg font-bold text-foreground">Deck DNA</h2>
+        <h2 className="text-lg font-semibold text-foreground">Deck DNA</h2>
         <p className="max-w-prose text-sm text-muted-foreground">
           Every published list, with the cards nobody else played and the three
           lists it most resembles. High overlap between two decks usually means

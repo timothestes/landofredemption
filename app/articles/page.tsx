@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import TopNav from "@/components/top-nav";
-import SponsorFooter from "@/components/sponsor-footer";
+import SiteFooter from "@/components/site-footer";
 import { loadPublishedPosts, listPublishedTags, PAGE_SIZE } from "./lib/queries";
 import PostCard from "./components/PostCard";
 
@@ -51,6 +51,13 @@ export default async function ArticlesPage({ searchParams }: PageProps) {
   const others = tags.filter((t) => t !== tag);
   const rail = others.slice(0, RAIL);
   const more = others.slice(RAIL);
+
+  // Page 1 without a tag filter opens with the newest post as the lead, the
+  // next few beside it as headlines, and the remainder below as rows. Every
+  // other page (or a tag filter) is the plain row list.
+  const [lead, ...after] = page === 1 && !tag ? posts : [];
+  const beside = after.slice(0, 4);
+  const rest = after.slice(4);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -121,10 +128,32 @@ export default async function ArticlesPage({ searchParams }: PageProps) {
               "No articles yet."
             )}
           </p>
+        ) : lead ? (
+          <>
+            <div className="grid gap-8 md:grid-cols-12 md:gap-x-10">
+              <div className="md:col-span-7">
+                <PostCard post={lead} priority />
+              </div>
+              {beside.length > 0 && (
+                <div className="flex flex-col divide-y divide-border/60 border-t border-border/60 pt-6 md:col-span-5 md:border-t-0 md:pt-0">
+                  {beside.map((p) => (
+                    <PostCard key={p.id} post={p} variant="compact" />
+                  ))}
+                </div>
+              )}
+            </div>
+            {rest.length > 0 && (
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 md:gap-x-10">
+                {rest.map((p) => (
+                  <PostCard key={p.id} post={p} variant="row" />
+                ))}
+              </div>
+            )}
+          </>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-10">
             {posts.map((p) => (
-              <PostCard key={p.id} post={p} />
+              <PostCard key={p.id} post={p} variant="row" />
             ))}
           </div>
         )}
@@ -151,7 +180,7 @@ export default async function ArticlesPage({ searchParams }: PageProps) {
           </nav>
         )}
       </div>
-      <SponsorFooter />
+      <SiteFooter />
     </div>
   );
 }
