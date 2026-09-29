@@ -11,6 +11,7 @@ import {
   HiCheck,
 } from "react-icons/hi";
 import { TournamentListing } from "./actions";
+import { getDaysUntil, hasBeenPlayed } from "./listingDates";
 
 // ─── Date helpers ────────────────────────────────────────────
 
@@ -36,15 +37,6 @@ function formatDateRange(start: string, end: string | null): string {
 function getMonthKey(dateStr: string): string {
   const date = new Date(dateStr + "T12:00:00");
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-}
-
-function getDaysUntil(dateStr: string): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(dateStr + "T12:00:00");
-  return Math.ceil(
-    (target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-  );
 }
 
 function toDateKey(dateStr: string): string {
@@ -172,6 +164,7 @@ function ListingRow({
 }) {
   const daysUntil = getDaysUntil(listing.start_date);
   const isImminent = daysUntil >= 0 && daysUntil <= 3;
+  const played = hasBeenPlayed(listing);
   const [copied, setCopied] = useState(false);
 
   const handleCopyAddress = async (e: React.MouseEvent) => {
@@ -198,9 +191,16 @@ function ListingRow({
         className="-mx-2 flex w-[calc(100%+1rem)] flex-wrap items-center gap-x-3 gap-y-1 px-2 py-2.5 text-left transition-colors hover:bg-muted/40 sm:flex-nowrap sm:gap-x-4"
       >
         <div className="order-1 flex flex-1 items-baseline gap-2 sm:block sm:w-28 sm:flex-none">
-          <span className="text-sm font-medium tabular-nums text-foreground">
+          <span
+            className={`text-sm font-medium tabular-nums ${played ? "text-muted-foreground" : "text-foreground"}`}
+          >
             {formatDateRange(listing.start_date, listing.end_date)}
           </span>
+          {played && (
+            <span className="text-xs font-medium text-muted-foreground sm:block">
+              Recently played
+            </span>
+          )}
           {isImminent && daysUntil >= 0 && (
             <span className="text-xs font-medium text-primary sm:block">
               {daysUntil === 0
@@ -213,7 +213,9 @@ function ListingRow({
         </div>
 
         <div className="order-3 w-full min-w-0 sm:order-2 sm:w-auto sm:flex-1">
-          <div className="truncate font-medium text-foreground">
+          <div
+            className={`truncate font-medium ${played ? "text-muted-foreground" : "text-foreground"}`}
+          >
             {listing.city}, {listing.state}
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -609,6 +611,7 @@ export default function TournamentsClient({
       : listings.filter((l) => l.state === stateFilter);
 
   const grouped = groupByMonth(filtered);
+  const upcomingCount = filtered.filter((l) => !hasBeenPlayed(l)).length;
 
   return (
     <main className="max-w-3xl mx-auto px-4 pt-8 pb-16">
@@ -619,7 +622,7 @@ export default function TournamentsClient({
         </h1>
         <div className="mt-2 flex items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            {filtered.length} event{filtered.length !== 1 ? "s" : ""} scheduled
+            {upcomingCount} event{upcomingCount !== 1 ? "s" : ""} scheduled
             {stateFilter !== "all" ? ` in ${stateFilter}` : ""}
           </p>
           <div className="flex items-center gap-3">
