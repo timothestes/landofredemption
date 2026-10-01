@@ -4,9 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Group, Image as KonvaImage, Rect } from 'react-konva';
 import type Konva from 'konva';
 import KonvaLib from 'konva';
-import type { DealFlight } from '../utils/lostSoulDeal';
-
-const FLIGHT_DURATION_MS = 380;
+import { FLIGHT_DURATION_MS, type DealFlight } from '../utils/lostSoulDeal';
 
 export interface SoulDeal {
   id: string;

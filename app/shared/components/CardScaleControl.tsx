@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Settings, RotateCcw, RefreshCw, Clock, EyeOff } from 'lucide-react';
+import { Settings, RotateCcw, RefreshCw, Clock, EyeOff, Link, Unlink } from 'lucide-react';
 import { useInputMode } from '@/app/shared/hooks/useInputMode';
 
 interface CardScaleControlProps {
@@ -24,6 +24,10 @@ interface CardScaleControlProps {
   isTimerVisible?: boolean;
   /** Toggle timer visibility. */
   onToggleTimer?: () => void;
+  /** Whether the Lost Soul cinematic plays when souls are dealt (gear-menu toggle). */
+  isSoulCinematicEnabled?: boolean;
+  /** Toggle the Lost Soul cinematic setting. */
+  onToggleSoulCinematic?: () => void;
 }
 
 export function CardScaleControl({
@@ -42,6 +46,8 @@ export function CardScaleControl({
   onLoadDeck,
   isTimerVisible,
   onToggleTimer,
+  isSoulCinematicEnabled,
+  onToggleSoulCinematic,
 }: CardScaleControlProps) {
   const [open, setOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -388,6 +394,48 @@ export function CardScaleControl({
               >
                 {isTimerVisible ? <EyeOff size={14} /> : <Clock size={14} />}
                 {isTimerVisible ? 'Hide Timer' : 'Show Timer'}
+              </button>
+            </>
+          )}
+
+          {/* Lost Soul cinematic toggle */}
+          {onToggleSoulCinematic && (
+            <>
+              <div style={{
+                height: 1,
+                background: 'var(--gf-border, #3d2e1f)',
+                margin: '4px 0',
+              }} />
+              <button
+                onClick={onToggleSoulCinematic}
+                aria-pressed={!!isSoulCinematicEnabled}
+                title="Full-screen chain cinematic when a Lost Soul is dealt"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  width: '100%',
+                  padding: '6px 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  color: 'var(--gf-text, #e8d5a3)',
+                  fontFamily: 'var(--font-cinzel), Georgia, serif',
+                  fontSize: 11,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--gf-hover, #2a1f12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                {isSoulCinematicEnabled ? <Link size={14} /> : <Unlink size={14} />}
+                {isSoulCinematicEnabled ? 'Soul Cinematic On' : 'Soul Cinematic Off'}
               </button>
             </>
           )}

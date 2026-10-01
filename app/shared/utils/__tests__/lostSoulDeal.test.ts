@@ -4,6 +4,9 @@ import {
   computeDealFlight,
   STAGGER_MS,
   START_SCALE,
+  FLIGHT_DURATION_MS,
+  CINEMATIC_LEAD_MS,
+  soulCinematicDelayMs,
 } from '../lostSoulDeal';
 
 describe('diffDealtSouls', () => {
@@ -74,5 +77,21 @@ describe('computeDealFlight', () => {
     });
     expect(f.delayMs).toBe(150);
     expect(f.startScale).toBe(0.5);
+  });
+});
+
+describe('soulCinematicDelayMs', () => {
+  it('waits for a single flyer to land plus the lead before the cinematic starts', () => {
+    expect(soulCinematicDelayMs(1)).toBe(FLIGHT_DURATION_MS + CINEMATIC_LEAD_MS);
+  });
+
+  it('waits for the LAST staggered flyer of a chain to land', () => {
+    // seq 0,1,2 start at 0/100/200ms; the last lands at 200 + flight.
+    expect(soulCinematicDelayMs(3)).toBe(2 * STAGGER_MS + FLIGHT_DURATION_MS + CINEMATIC_LEAD_MS);
+  });
+
+  it('treats a zero or negative count like a single soul', () => {
+    expect(soulCinematicDelayMs(0)).toBe(soulCinematicDelayMs(1));
+    expect(soulCinematicDelayMs(-4)).toBe(soulCinematicDelayMs(1));
   });
 });
