@@ -83,18 +83,3 @@ export function computeDealFlight(params: {
 
 /** How long one flyer takes to travel deck → LOB slot. */
 export const FLIGHT_DURATION_MS = 380;
-/**
- * Pause after the last flyer lands before the Lost Soul cinematic takes the
- * screen, so the landing glow registers before the board dims.
- */
-export const CINEMATIC_LEAD_MS = 80;
-
-/**
- * Delay from an arrival batch being detected to the cinematic starting: the
- * last of `count` staggered flyers lands at `(count-1) * STAGGER_MS +
- * FLIGHT_DURATION_MS`. Counts below one are treated as a single soul.
- */
-export function soulCinematicDelayMs(count: number): number {
-  const n = Math.max(1, count);
-  return (n - 1) * STAGGER_MS + FLIGHT_DURATION_MS + CINEMATIC_LEAD_MS;
-}
