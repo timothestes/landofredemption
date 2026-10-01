@@ -131,6 +131,25 @@ describe('resolveDestinationOwnerId', () => {
       ).toBe(ME);
     });
 
+    // The reported bug: the opponent dragged their warrior (weapon attached,
+    // both theirs) into MY Land of Bondage to hand over a captured hero. The
+    // batch reducer redirects the riding weapon to Discard, but routed its
+    // owner against the LoB drop — so the explicit-drop rule gave the weapon
+    // to me. Once the reducer routes against the weapon's real landing zone
+    // (Discard), the graveyard rule sends it home to its owner's pile.
+    it("sends a captured hero's weapon to its owner's discard, not the captor's", () => {
+      expect(
+        resolveDestinationOwnerId({
+          ownerId: OPP,
+          originalOwnerId: UNSET,
+          fromZone: 'territory',
+          toZone: 'discard',
+          actorId: OPP,
+          targetOwnerId: ME,
+        }),
+      ).toBe(OPP);
+    });
+
     it('keeps the current owner when moving within shared table zones', () => {
       expect(
         resolveDestinationOwnerId({
