@@ -100,7 +100,10 @@ import { CardScaleControl } from '@/app/shared/components/CardScaleControl';
 import { useLobArrivalEffect } from '@/app/shared/hooks/useLobArrivalEffect';
 import { useLostSoulDeals } from '@/app/shared/hooks/useLostSoulDeals';
 import { LostSoulDealLayer, type SoulDeal } from '@/app/shared/components/LostSoulDealLayer';
-import { computeDealFlight } from '@/app/shared/utils/lostSoulDeal';
+import { computeDealFlight, soulCinematicDelayMs } from '@/app/shared/utils/lostSoulDeal';
+import { useLostSoulCinematic } from '@/app/shared/hooks/useLostSoulCinematic';
+import { useLostSoulCinematicSetting } from '@/app/shared/hooks/useLostSoulCinematicSetting';
+import { LostSoulCinematic } from '@/app/shared/components/LostSoulCinematic';
 import { useCardEnterPlayPrompt } from '@/app/shared/hooks/useCardEnterPlayPrompt';
 import { cardInstanceToGameCard } from '../utils/cardAdapter';
 import { resolveCardImageUrl, resolveBattleRowFields, resolveForgeCardName, type ForgeResolverMap } from '../utils/forgeResolver';
@@ -904,6 +907,10 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
 
   // Card scale preference
   const { cardScale, zoomIn, zoomOut, resetScale, MIN_SCALE, MAX_SCALE, STEP, setCardScale } = useCardScale();
+  // Lost Soul cinematic — gear-menu setting (persisted) + the batch queue it gates.
+  const { enabled: soulCinematicEnabled, toggle: toggleSoulCinematic } = useLostSoulCinematicSetting();
+  const { activeBatch: soulCinematic, enqueue: enqueueSoulCinematic } =
+    useLostSoulCinematic(soulCinematicEnabled);
 
   // Four-tier card dimensions (scaled)
   const rawMain = mpLayout?.mainCard ?? { cardWidth: 0, cardHeight: 0 };
@@ -1039,22 +1046,36 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     () => (opponentCards['land-of-bondage'] ?? []).filter(isLostSoulCard).map(c => String(c.id)),
     [opponentCards],
   );
-  // id → display name, for the summarizing toast.
-  const lobSoulNameById = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const c of (myCards['land-of-bondage'] ?? [])) m.set(String(c.id), c.cardName);
-    for (const c of (opponentCards['land-of-bondage'] ?? [])) m.set(String(c.id), c.cardName);
+  // id → card, for the summarizing toast and the cinematic. My, opponent, and
+  // the Paragon shared LOB all route through the same arrival callback.
+  const lobSoulById = useMemo(() => {
+    const m = new Map<string, { cardName: string; cardImgFile: string }>();
+    for (const c of (myCards['land-of-bondage'] ?? [])) m.set(String(c.id), c);
+    for (const c of (opponentCards['land-of-bondage'] ?? [])) m.set(String(c.id), c);
+    for (const c of (sharedCards['land-of-bondage'] ?? [])) m.set(String(c.id), c);
     return m;
-  }, [myCards, opponentCards]);
+  }, [myCards, opponentCards, sharedCards]);
 
-  const fireSoulToast = useCallback((newIds: string[]) => {
+  const onSoulsDealt = useCallback((newIds: string[]) => {
     if (newIds.length === 1) {
-      const name = simplifyLostSoulName(lobSoulNameById.get(newIds[0]) ?? 'Lost Soul');
+      const name = simplifyLostSoulName(lobSoulById.get(newIds[0])?.cardName ?? 'Lost Soul');
       showGameToast(`Lost Soul dealt: ${name}`);
     } else if (newIds.length > 1) {
       showGameToast(`${newIds.length} Lost Souls dealt`);
     }
-  }, [lobSoulNameById]);
+    // The cinematic is delayed until the last flyer lands so the deal reads
+    // first, then the chains. Resolve through the Forge-aware resolver so
+    // `forge:<uuid>` refs become the cookie-authed proxy URL — getCardImageUrl
+    // alone returns '' for them (blank card in the overlay).
+    enqueueSoulCinematic(
+      newIds.flatMap((id) => {
+        const c = lobSoulById.get(id);
+        if (!c) return [];
+        return [{ instanceId: id, cardName: c.cardName, imageUrl: resolveCardImageUrl(c.cardImgFile, forgeResolver) }];
+      }),
+      soulCinematicDelayMs(newIds.length),
+    );
+  }, [lobSoulById, enqueueSoulCinematic, forgeResolver]);
 
   // Deck-source ids gate the deal: a soul only flies from the deck if it was in
   // the deck last frame (a draw/route), not dragged in from hand/reserve/etc.
@@ -1067,9 +1088,9 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     [opponentCards],
   );
   const { inFlight: myDeals, onLand: onMyLand } =
-    useLostSoulDeals(myLobSoulIds, myDeckIds, soulsHydrated, fireSoulToast);
+    useLostSoulDeals(myLobSoulIds, myDeckIds, soulsHydrated, onSoulsDealt);
   const { inFlight: oppDeals, onLand: onOppLand } =
-    useLostSoulDeals(oppLobSoulIds, oppDeckIds, soulsHydrated, fireSoulToast);
+    useLostSoulDeals(oppLobSoulIds, oppDeckIds, soulsHydrated, onSoulsDealt);
 
   // Route the glow to *visible* ids: a soul in flight is excluded until it lands,
   // so the amber glow fires on landing rather than on server placement.
@@ -1085,9 +1106,8 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
   const { getGlowIntensity: getOppLobGlow } = useLobArrivalEffect(oppVisibleLobIds);
 
   // Paragon: souls live in the shared LOB and fly from the shared Soul Deck.
-  // (The old cinematic never fired here, so this is new arrival feedback; the
-  // shared LOB has no glow today and we keep it that way — deal + toast is the
-  // signal.)
+  // The shared LOB has no glow today and we keep it that way — deal + toast +
+  // cinematic are the signal.
   const sharedLobSoulIds = useMemo(
     () => (sharedCards['land-of-bondage'] ?? []).filter(isLostSoulCard).map(c => String(c.id)),
     [sharedCards],
@@ -1097,14 +1117,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     [sharedCards],
   );
   const { inFlight: sharedDeals, onLand: onSharedLand } =
-    useLostSoulDeals(sharedLobSoulIds, sharedDeckIds, soulsHydrated, (newIds) => {
-      if (newIds.length === 1) {
-        const c = (sharedCards['land-of-bondage'] ?? []).find(x => String(x.id) === newIds[0]);
-        showGameToast(`Lost Soul dealt: ${simplifyLostSoulName(c?.cardName ?? 'Lost Soul')}`);
-      } else if (newIds.length > 1) {
-        showGameToast(`${newIds.length} Lost Souls dealt`);
-      }
-    });
+    useLostSoulDeals(sharedLobSoulIds, sharedDeckIds, soulsHydrated, onSoulsDealt);
 
   // ---- Hand → play prompt for cards with `set_card_outline` abilities ----
   // Three Woes is the v1 target. The choice routes through the same
@@ -9905,6 +9918,8 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         onLoadDeck={onLoadDeck}
         isTimerVisible={isTimerVisible}
         onToggleTimer={onToggleTimer}
+        isSoulCinematicEnabled={soulCinematicEnabled}
+        onToggleSoulCinematic={toggleSoulCinematic}
       />
 
       {/* ================================================================
@@ -11557,6 +11572,9 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
           onCancel={tapMoveReset}
           onSideChange={(s) => tapMoveDispatch({ type: 'setSide', side: s })}
         />
+      )}
+      {soulCinematic && (
+        <LostSoulCinematic key={soulCinematic.id} souls={soulCinematic.souls} />
       )}
     </div>
   );

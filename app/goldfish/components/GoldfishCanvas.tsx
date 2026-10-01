@@ -44,7 +44,10 @@ import { useCardPreview } from '../state/CardPreviewContext';
 import { useLobArrivalEffect } from '@/app/shared/hooks/useLobArrivalEffect';
 import { useLostSoulDeals } from '@/app/shared/hooks/useLostSoulDeals';
 import { LostSoulDealLayer, type SoulDeal } from '@/app/shared/components/LostSoulDealLayer';
-import { computeDealFlight } from '@/app/shared/utils/lostSoulDeal';
+import { computeDealFlight, soulCinematicDelayMs } from '@/app/shared/utils/lostSoulDeal';
+import { useLostSoulCinematic } from '@/app/shared/hooks/useLostSoulCinematic';
+import { useLostSoulCinematicSetting } from '@/app/shared/hooks/useLostSoulCinematicSetting';
+import { LostSoulCinematic } from '@/app/shared/components/LostSoulCinematic';
 import { useDealAnimation } from '@/app/shared/hooks/useDealAnimation';
 import { useHandLayoutTween } from '@/app/shared/hooks/useHandLayoutTween';
 import { DealLayer, type DealSpriteSpec } from '@/app/shared/components/DealLayer';
@@ -84,6 +87,11 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
   // ---- Card sound effects (joke easter-egg, once per game) ----
   useCardSounds(state.zones['territory'] ?? [], state.sessionId);
 
+  // ---- Lost Soul cinematic — gear-menu setting (persisted) + its batch queue ----
+  const { enabled: soulCinematicEnabled, toggle: toggleSoulCinematic } = useLostSoulCinematicSetting();
+  const { activeBatch: soulCinematic, enqueue: enqueueSoulCinematic } =
+    useLostSoulCinematic(soulCinematicEnabled);
+
   // ---- LOB arrival glow + Lost Soul "deal" animation ----
   const lobCardIds = useMemo(
     () => (state.zones['land-of-bondage'] ?? []).map(c => c.instanceId),
@@ -109,12 +117,22 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
     deckSourceIds,
     true,
     (newIds) => {
+      const lob = state.zones['land-of-bondage'] ?? [];
       if (newIds.length === 1) {
-        const c = (state.zones['land-of-bondage'] ?? []).find(x => x.instanceId === newIds[0]);
+        const c = lob.find(x => x.instanceId === newIds[0]);
         showGameToast(`Lost Soul dealt: ${simplifyLostSoulName(c?.cardName ?? 'Lost Soul')}`);
       } else if (newIds.length > 1) {
         showGameToast(`${newIds.length} Lost Souls dealt`);
       }
+      // Delayed until the last flyer lands so the deal reads first, then the chains.
+      enqueueSoulCinematic(
+        newIds.flatMap((id) => {
+          const c = lob.find(x => x.instanceId === id);
+          if (!c) return [];
+          return [{ instanceId: id, cardName: c.cardName, imageUrl: getCardImageUrl(c.cardImgFile) }];
+        }),
+        soulCinematicDelayMs(newIds.length),
+      );
     },
   );
   // Route the glow to *visible* ids so it fires on landing, not server placement.
@@ -2817,6 +2835,8 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
         maxScale={MAX_SCALE}
         step={STEP}
         onLoadDeck={onLoadDeck}
+        isSoulCinematicEnabled={soulCinematicEnabled}
+        onToggleSoulCinematic={toggleSoulCinematic}
       />
 
       {contextMenu && (
@@ -3408,6 +3428,10 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
       <GameToastContainer />
       <CardChoicePromptContainer />
       <DiceRollOverlay />
+
+      {soulCinematic && (
+        <LostSoulCinematic key={soulCinematic.id} souls={soulCinematic.souls} />
+      )}
 
       {targeting && (
         <TargetCardOverlay
