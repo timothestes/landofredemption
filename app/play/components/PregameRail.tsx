@@ -79,6 +79,24 @@ const BODY: React.CSSProperties = {
 const AUTO_SUBMIT_MIN_MS = 6000;
 const AUTO_SUBMIT_MAX_MS = 15000;
 
+/**
+ * Whether my open star window has held a star card at any point. The latch
+ * feeding the empty-hand timer: a hand that HAD a star and now reads empty is a
+ * player mid-action — they dragged it to the board or used an ability — not an
+ * empty hand. Reading the hand live instead, the timer armed the moment the
+ * last star left the hand, answered "no stars" for them, and skipped the seat
+ * straight on to the Lost Souls step. Resets whenever the window is closed.
+ * Exported for tests.
+ */
+export function hadStarsThisWindow(
+  prev: boolean,
+  windowOpen: boolean,
+  handStarCount: number,
+): boolean {
+  if (!windowOpen) return false;
+  return prev || handStarCount > 0;
+}
+
 const CHIP = (selected: boolean): React.CSSProperties => ({
   pointerEvents: 'auto',
   cursor: 'pointer',
@@ -142,10 +160,17 @@ export default function PregameRail({
   const { hover, onCardMouseEnter, onCardMouseLeave } =
     useModalCardHover(200, { setPreviewCard, isLoupeVisible, keepPreviewOnLeave: true });
 
-  // Only an empty hand auto-submits. A player holding stars is mid-decision, and
-  // a timer firing under them would throw away picks they'd already made.
-  const autoSubmits =
-    isMyWindow && step === 'stars' && !hasSubmitted && handStars.length === 0;
+  // Only a hand that never held a star auto-submits. A player holding stars is
+  // mid-decision, and a timer firing under them would throw away picks they'd
+  // already made; a player whose stars have LEFT the hand this window is
+  // mid-action, and a timer firing there would skip them ahead — see
+  // `hadStarsThisWindow`.
+  const windowOpen = isMyWindow && step === 'stars' && !hasSubmitted;
+  const [hadStars, setHadStars] = useState(false);
+  useEffect(() => {
+    setHadStars((prev) => hadStarsThisWindow(prev, windowOpen, handStars.length));
+  }, [windowOpen, handStars.length]);
+  const autoSubmits = windowOpen && handStars.length === 0 && !hadStars;
 
   // One submit per window, whichever gets there first. `hasSubmitted` doesn't
   // flip until the server answers, so without this the button and the timer can
