@@ -4291,11 +4291,18 @@ export const move_cards_batch = spacetimedb.reducer(
       }
 
       // Destination ownership — shared with move_card, see cardOwnership.ts.
+      // Route against the zone this card actually lands in, not the batch
+      // target: an accessory riding along with its host from Territory into
+      // a Land of Bondage was redirected to Discard by the pre-pass above, and
+      // a Discard always belongs to the card's true owner. Routing it against
+      // the LoB target let the explicit-drop rule hand a captured hero's
+      // weapon to the captor's discard pile.
+      const cardFinalZone = finalZoneById.get(idStr) ?? toZone;
       const ownerRouting: OwnerRouting = {
         ownerId: card.ownerId,
         originalOwnerId: card.originalOwnerId,
         fromZone: card.zone,
-        toZone,
+        toZone: cardFinalZone,
         actorId: player.id,
         targetOwnerId: newOwnerId,
       };
@@ -4378,7 +4385,6 @@ export const move_cards_batch = spacetimedb.reducer(
       const pos = { posX: String(rawPos.posX ?? ''), posY: String(rawPos.posY ?? '') };
       // Same routing rule as the single move_card reducer.
       const cardOwnerId: bigint = resolveDestinationOwnerId(ownerRouting);
-      const cardFinalZone = finalZoneById.get(idStr) ?? toZone;
       // Paragon: rescuing a shared soul transfers ownership. Default to the
       // acting seat, but honor an explicit targetOwnerId when the caller
       // dragged the soul into a specific player's zone.
