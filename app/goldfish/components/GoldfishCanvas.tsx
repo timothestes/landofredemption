@@ -44,7 +44,7 @@ import { useCardPreview } from '../state/CardPreviewContext';
 import { useLobArrivalEffect } from '@/app/shared/hooks/useLobArrivalEffect';
 import { useLostSoulDeals } from '@/app/shared/hooks/useLostSoulDeals';
 import { LostSoulDealLayer, type SoulDeal } from '@/app/shared/components/LostSoulDealLayer';
-import { computeDealFlight, soulCinematicDelayMs } from '@/app/shared/utils/lostSoulDeal';
+import { computeDealFlight } from '@/app/shared/utils/lostSoulDeal';
 import { useLostSoulCinematic } from '@/app/shared/hooks/useLostSoulCinematic';
 import { useLostSoulCinematicSetting } from '@/app/shared/hooks/useLostSoulCinematicSetting';
 import { LostSoulCinematic } from '@/app/shared/components/LostSoulCinematic';
@@ -124,14 +124,13 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
       } else if (newIds.length > 1) {
         showGameToast(`${newIds.length} Lost Souls dealt`);
       }
-      // Delayed until the last flyer lands so the deal reads first, then the chains.
+      // The cinematic plays over the deal flyer, not after it.
       enqueueSoulCinematic(
         newIds.flatMap((id) => {
           const c = lob.find(x => x.instanceId === id);
           if (!c) return [];
           return [{ instanceId: id, cardName: c.cardName, imageUrl: getCardImageUrl(c.cardImgFile) }];
         }),
-        soulCinematicDelayMs(newIds.length),
       );
     },
   );

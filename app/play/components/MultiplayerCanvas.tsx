@@ -100,7 +100,7 @@ import { CardScaleControl } from '@/app/shared/components/CardScaleControl';
 import { useLobArrivalEffect } from '@/app/shared/hooks/useLobArrivalEffect';
 import { useLostSoulDeals } from '@/app/shared/hooks/useLostSoulDeals';
 import { LostSoulDealLayer, type SoulDeal } from '@/app/shared/components/LostSoulDealLayer';
-import { computeDealFlight, soulCinematicDelayMs } from '@/app/shared/utils/lostSoulDeal';
+import { computeDealFlight } from '@/app/shared/utils/lostSoulDeal';
 import { useLostSoulCinematic } from '@/app/shared/hooks/useLostSoulCinematic';
 import { useLostSoulCinematicSetting } from '@/app/shared/hooks/useLostSoulCinematicSetting';
 import { LostSoulCinematic } from '@/app/shared/components/LostSoulCinematic';
@@ -1063,17 +1063,16 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     } else if (newIds.length > 1) {
       showGameToast(`${newIds.length} Lost Souls dealt`);
     }
-    // The cinematic is delayed until the last flyer lands so the deal reads
-    // first, then the chains. Resolve through the Forge-aware resolver so
-    // `forge:<uuid>` refs become the cookie-authed proxy URL — getCardImageUrl
-    // alone returns '' for them (blank card in the overlay).
+    // The cinematic plays over the deal flyer, not after it. Resolve through
+    // the Forge-aware resolver so `forge:<uuid>` refs become the cookie-authed
+    // proxy URL — getCardImageUrl alone returns '' for them (blank card in the
+    // overlay).
     enqueueSoulCinematic(
       newIds.flatMap((id) => {
         const c = lobSoulById.get(id);
         if (!c) return [];
         return [{ instanceId: id, cardName: c.cardName, imageUrl: resolveCardImageUrl(c.cardImgFile, forgeResolver) }];
       }),
-      soulCinematicDelayMs(newIds.length),
     );
   }, [lobSoulById, enqueueSoulCinematic, forgeResolver]);
 
