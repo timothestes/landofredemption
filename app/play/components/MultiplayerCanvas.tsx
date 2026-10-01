@@ -1057,11 +1057,15 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
   }, [myCards, opponentCards, sharedCards]);
 
   const onSoulsDealt = useCallback((newIds: string[]) => {
-    if (newIds.length === 1) {
-      const name = simplifyLostSoulName(lobSoulById.get(newIds[0])?.cardName ?? 'Lost Soul');
-      showGameToast(`Lost Soul dealt: ${name}`);
-    } else if (newIds.length > 1) {
-      showGameToast(`${newIds.length} Lost Souls dealt`);
+    // The toast is the fallback signal when the cinematic is off; with it on,
+    // the overlay already names the souls.
+    if (!soulCinematicEnabled) {
+      if (newIds.length === 1) {
+        const name = simplifyLostSoulName(lobSoulById.get(newIds[0])?.cardName ?? 'Lost Soul');
+        showGameToast(`Lost Soul dealt: ${name}`);
+      } else if (newIds.length > 1) {
+        showGameToast(`${newIds.length} Lost Souls dealt`);
+      }
     }
     // The cinematic plays over the deal flyer, not after it. Resolve through
     // the Forge-aware resolver so `forge:<uuid>` refs become the cookie-authed
@@ -1074,7 +1078,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         return [{ instanceId: id, cardName: c.cardName, imageUrl: resolveCardImageUrl(c.cardImgFile, forgeResolver) }];
       }),
     );
-  }, [lobSoulById, enqueueSoulCinematic, forgeResolver]);
+  }, [lobSoulById, enqueueSoulCinematic, forgeResolver, soulCinematicEnabled]);
 
   // Deck-source ids gate the deal: a soul only flies from the deck if it was in
   // the deck last frame (a draw/route), not dragged in from hand/reserve/etc.

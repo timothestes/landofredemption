@@ -118,11 +118,15 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
     true,
     (newIds) => {
       const lob = state.zones['land-of-bondage'] ?? [];
-      if (newIds.length === 1) {
-        const c = lob.find(x => x.instanceId === newIds[0]);
-        showGameToast(`Lost Soul dealt: ${simplifyLostSoulName(c?.cardName ?? 'Lost Soul')}`);
-      } else if (newIds.length > 1) {
-        showGameToast(`${newIds.length} Lost Souls dealt`);
+      // The toast is the fallback signal when the cinematic is off; with it on,
+      // the overlay already names the souls.
+      if (!soulCinematicEnabled) {
+        if (newIds.length === 1) {
+          const c = lob.find(x => x.instanceId === newIds[0]);
+          showGameToast(`Lost Soul dealt: ${simplifyLostSoulName(c?.cardName ?? 'Lost Soul')}`);
+        } else if (newIds.length > 1) {
+          showGameToast(`${newIds.length} Lost Souls dealt`);
+        }
       }
       // The cinematic plays over the deal flyer, not after it.
       enqueueSoulCinematic(
