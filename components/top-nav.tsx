@@ -195,12 +195,13 @@ const TopNav: React.FC = () => {
           <div className="hidden lg:flex lg:items-center lg:space-x-1 flex-1 justify-center">
             {/* Highlighted lead link (e.g. Nationals registration) — only when present */}
             {navLinks.filter((link) => link.highlight).map((link) => {
+              const Icon = link.icon;
               const isHighlight = link.highlight;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
                     ${isHighlight
                       ? 'border-2 border-primary text-primary hover:bg-primary/10'
                       : isActive(link.href)
@@ -208,6 +209,7 @@ const TopNav: React.FC = () => {
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`}
                 >
+                  <Icon className="w-4 h-4" />
                   {link.label}
                 </Link>
               );
@@ -224,6 +226,7 @@ const TopNav: React.FC = () => {
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`}
                 >
+                  <HiShieldCheck className="w-4 h-4" />
                   Admin
                   <svg
                     className={`w-4 h-4 transition-transform ${isAdminOpen ? 'rotate-180' : ''}`}
@@ -242,8 +245,9 @@ const TopNav: React.FC = () => {
                         <Link
                           href="/admin/registrations"
                           onClick={() => setIsAdminOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         >
+                          <HiUserAdd className="w-4 h-4" />
                           Registrations
                         </Link>
                       )}
@@ -251,8 +255,9 @@ const TopNav: React.FC = () => {
                         <Link
                           href="/admin/tags"
                           onClick={() => setIsAdminOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         >
+                          <TbCardsFilled className="w-4 h-4" />
                           Manage Tags
                         </Link>
                       )}
@@ -260,8 +265,9 @@ const TopNav: React.FC = () => {
                         <Link
                           href="/admin/spoilers"
                           onClick={() => setIsAdminOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         >
+                          <HiSparkles className="w-4 h-4" />
                           Manage Spoilers
                         </Link>
                       )}
@@ -269,8 +275,9 @@ const TopNav: React.FC = () => {
                         <Link
                           href="/admin/cards"
                           onClick={() => setIsAdminOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         >
+                          <HiCollection className="w-4 h-4" />
                           Manage Cards
                         </Link>
                       )}
@@ -278,8 +285,9 @@ const TopNav: React.FC = () => {
                         <Link
                           href="/admin/rulings"
                           onClick={() => setIsAdminOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         >
+                          <HiDocumentText className="w-4 h-4" />
                           Manage Rulings
                         </Link>
                       )}
@@ -287,8 +295,9 @@ const TopNav: React.FC = () => {
                         <Link
                           href="/admin/ytg"
                           onClick={() => setIsAdminOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         >
+                          <HiShoppingCart className="w-4 h-4" />
                           YTG Store
                         </Link>
                       )}
@@ -296,8 +305,9 @@ const TopNav: React.FC = () => {
                         <Link
                           href="/admin/posts"
                           onClick={() => setIsAdminOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         >
+                          <HiNewspaper className="w-4 h-4" />
                           Posts
                         </Link>
                       )}
@@ -305,8 +315,9 @@ const TopNav: React.FC = () => {
                         <Link
                           href="/admin/catalog"
                           onClick={() => setIsAdminOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         >
+                          <HiPencilAlt className="w-4 h-4" />
                           Manage Catalog
                         </Link>
                       )}
@@ -314,8 +325,9 @@ const TopNav: React.FC = () => {
                         <Link
                           href="/admin/permissions"
                           onClick={() => setIsAdminOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         >
+                          <HiKey className="w-4 h-4" />
                           Permissions
                         </Link>
                       )}
@@ -324,8 +336,9 @@ const TopNav: React.FC = () => {
                           <Link
                             href="/forge"
                             onClick={() => setIsAdminOpen(false)}
-                            className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted"
+                            className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                           >
+                            <GiAnvil className="w-4 h-4" />
                             The Forge
                           </Link>
                         </div>
@@ -339,12 +352,13 @@ const TopNav: React.FC = () => {
             {/* Play link - after Admin */}
             <Link
               href="/play"
-              className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
                 ${isActive('/play')
                 ? 'bg-muted text-foreground'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
             >
+              <GiCrossedSwords className="w-4 h-4" />
               Play
             </Link>
 
@@ -352,12 +366,13 @@ const TopNav: React.FC = () => {
             <div className="relative">
               <button
                 onClick={toggleTournaments}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
                   ${isTournamentsOpen || isActive('/tournaments') || isActive('/tracker/tournaments')
                     ? 'bg-muted text-foreground'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
               >
+                <FaTrophy className="w-4 h-4" />
                 Events
                 <svg
                   className={`w-4 h-4 transition-transform ${isTournamentsOpen ? 'rotate-180' : ''}`}
@@ -374,13 +389,15 @@ const TopNav: React.FC = () => {
                   <div className="py-2">
                     {tournamentLinks.map((link) => {
                       if (link.authRequired && !user) return null;
+                      const Icon = link.icon;
                       return (
                         <Link
                           key={link.href}
                           href={link.href}
                           onClick={() => setIsTournamentsOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         >
+                          <Icon className="w-4 h-4" />
                           {link.label}
                           {link.isNew && (
                             <span className="ml-auto px-1.5 py-0.5 bg-primary/15 text-primary text-[10px] font-bold rounded uppercase">
@@ -398,12 +415,13 @@ const TopNav: React.FC = () => {
             {/* Rest of nav links (Play, Spoilers and Articles are rendered separately, so exclude them) */}
             {navLinks.filter((link) => !link.highlight && link.href !== "/play" && link.href !== "/spoilers" && link.href !== "/articles").map((link) => {
               if (link.authRequired && !user) return null;
+              const Icon = link.icon;
               const isHighlight = link.highlight;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
                     ${isHighlight
                       ? 'border-2 border-primary text-primary hover:bg-primary/10'
                       : isActive(link.href)
@@ -411,6 +429,7 @@ const TopNav: React.FC = () => {
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`}
                 >
+                  <Icon className="w-4 h-4" />
                   {link.label}
                 </Link>
               );
@@ -420,12 +439,13 @@ const TopNav: React.FC = () => {
             <div className="relative">
               <button
                 onClick={toggleDecks}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
                   ${isDecksOpen || isActive('/decklist')
                     ? 'bg-muted text-foreground'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
               >
+                <TbCardsFilled className="w-4 h-4" />
                 Decks
                 <svg
                   className={`w-4 h-4 transition-transform ${isDecksOpen ? 'rotate-180' : ''}`}
@@ -441,13 +461,15 @@ const TopNav: React.FC = () => {
                 <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-card ring-1 ring-black ring-opacity-5">
                   <div className="py-2">
                     {deckLinks.map((link) => {
+                      const Icon = link.icon;
                       return (
                         <Link
                           key={link.href}
                           href={link.href}
                           onClick={() => setIsDecksOpen(false)}
-                          className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-muted"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         >
+                          <Icon className="w-4 h-4" />
                           {link.label}
                           {link.isNew && (
                             <span className="ml-auto px-1.5 py-0.5 bg-primary/15 text-primary text-[10px] font-bold rounded uppercase">
@@ -465,24 +487,26 @@ const TopNav: React.FC = () => {
             {/* Spoilers link - after Decks */}
             <Link
               href="/spoilers"
-              className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
                 ${isActive('/spoilers')
                 ? 'bg-muted text-foreground'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
             >
+              <HiSparkles className="w-4 h-4" />
               Spoilers
             </Link>
 
             {/* Articles link - after Spoilers */}
             <Link
               href="/articles"
-              className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
                 ${isActive('/articles')
                 ? 'bg-muted text-foreground'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 }`}
             >
+              <HiNewspaper className="w-4 h-4" />
               Articles
             </Link>
 
@@ -490,12 +514,13 @@ const TopNav: React.FC = () => {
             <div className="relative">
               <button
                 onClick={toggleResources}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
                   ${isResourcesOpen
                     ? 'bg-muted text-foreground'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   }`}
               >
+                <HiDocumentText className="w-4 h-4" />
                 Resources
                 <svg
                   className={`w-4 h-4 transition-transform ${isResourcesOpen ? 'rotate-180' : ''}`}
