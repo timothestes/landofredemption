@@ -31,6 +31,23 @@ describe("ArticleBody", () => {
     expect(html).toContain('alt="Alt text"');
   });
 
+  it('starts an image titled "reveal" face down behind the card back', () => {
+    const html = render('![The Accuser](https://x.public.blob.vercel-storage.com/posts/1/accuser.jpg "reveal")');
+    expect(html).toContain('aria-label="Reveal image"');
+    expect(html).toContain('src="/gameplay/cardback.webp"');
+    expect(html).toContain('src="https://x.public.blob.vercel-storage.com/posts/1/accuser.jpg"');
+    expect(html).toContain('alt="The Accuser"');
+    expect(html).not.toContain('title="reveal"');
+    // Markdown wraps an image in a <p>, where a <div> is invalid.
+    expect(html).not.toMatch(/<p[^>]*>.*<div/s);
+  });
+
+  it("leaves an image with any other title as a plain image", () => {
+    const html = render('![Alt text](https://x.public.blob.vercel-storage.com/posts/1/pic.webp "A caption")');
+    expect(html).not.toContain("cardback");
+    expect(html).toContain('title="A caption"');
+  });
+
   it("opens external links in a new tab and internal ones in place", () => {
     const html = render("[ext](https://example.com) [int](/articles)");
     expect(html).toContain('href="https://example.com" target="_blank" rel="noopener noreferrer"');

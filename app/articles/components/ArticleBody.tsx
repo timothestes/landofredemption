@@ -7,6 +7,7 @@ import { EMPTY_REFS, type ArticleRefs } from "../lib/refTypes";
 import CardMention from "./CardMention";
 import GlossaryMention from "./GlossaryMention";
 import DeckEmbed from "./DeckEmbed";
+import RevealImage from "./RevealImage";
 
 // The ONE markdown renderer: public article page (server) and editor preview
 // (client) both use it, so what the poster previews is what readers get.
@@ -79,18 +80,23 @@ function buildComponents(refs: ArticleRefs, draft: boolean): Components {
         </a>
       );
     },
-    img: ({ node: _node, src, alt, ...props }) => (
-      // Plain <img>: dimensions are unknown and hosts vary (Blob today, the old
-      // WordPress uploads after the import). next/image needs width/height.
-      <img
-        src={typeof src === "string" ? src : undefined}
-        alt={alt ?? ""}
-        loading="lazy"
-        decoding="async"
-        className="mx-auto max-w-full rounded-md"
-        {...props}
-      />
-    ),
+    img: ({ node: _node, src, alt, ...props }) => {
+      const url = typeof src === "string" ? src : undefined;
+      // `![alt](url "reveal")` starts face down behind the card back.
+      if (props.title === "reveal") return <RevealImage src={url} alt={alt ?? ""} />;
+      return (
+        // Plain <img>: dimensions are unknown and hosts vary (Blob today, the old
+        // WordPress uploads after the import). next/image needs width/height.
+        <img
+          src={url}
+          alt={alt ?? ""}
+          loading="lazy"
+          decoding="async"
+          className="mx-auto max-w-full rounded-md"
+          {...props}
+        />
+      );
+    },
     // Produced by remarkCardMentions: `name` is the card the mention points at,
     // `label` the words that stand on the page (they differ for `[[a|b]]`).
     //
