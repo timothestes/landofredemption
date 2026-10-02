@@ -5,22 +5,13 @@ import { Button } from "@/components/ui/button";
 import { getPosterContext } from "./lib/auth";
 import { listMyPostsAction, type PostRow } from "./actions";
 import AuthorProfileCard from "./components/AuthorProfileCard";
+import LocalDateTime from "./components/LocalDateTime";
 
 export const metadata = { title: "Posts" };
 export const dynamic = "force-dynamic";
 
 function fmt(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-function fmtScheduled(iso: string): string {
-  return new Date(iso).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 function Section({
@@ -32,7 +23,7 @@ function Section({
   heading: string;
   posts: PostRow[];
   showAuthor: boolean;
-  dateLabel?: (p: PostRow) => string;
+  dateLabel?: (p: PostRow) => React.ReactNode;
 }) {
   return (
     <section className="mb-8">
@@ -93,7 +84,11 @@ export default async function PostsAdminPage() {
           heading="Scheduled"
           posts={posts.filter((p) => p.status === "draft" && p.scheduled_at !== null)}
           showAuthor={ctx.isSuperuser}
-          dateLabel={(p) => `Scheduled for ${fmtScheduled(p.scheduled_at!)}`}
+          dateLabel={(p) => (
+            <>
+              Scheduled for <LocalDateTime iso={p.scheduled_at!} />
+            </>
+          )}
         />
         <Section heading="Drafts" posts={posts.filter((p) => p.status === "draft" && p.scheduled_at === null)} showAuthor={ctx.isSuperuser} />
         <Section heading="Published" posts={posts.filter((p) => p.status === "published")} showAuthor={ctx.isSuperuser} />

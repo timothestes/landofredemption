@@ -25,3 +25,20 @@ export function isFutureIso(iso: string | null, now: Date = new Date()): boolean
   const d = new Date(iso);
   return !Number.isNaN(d.getTime()) && d.getTime() > now.getTime();
 }
+
+/**
+ * "Oct 2, 2026, 1:36 PM PDT" — always carries the zone abbreviation, so the
+ * reader can tell whose clock it is. `timeZone` defaults to the runtime's own
+ * (the viewer's in a browser, UTC on the server).
+ */
+export function formatScheduled(iso: string, timeZone?: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+    timeZone,
+  });
+}

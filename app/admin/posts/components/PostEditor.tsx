@@ -25,7 +25,7 @@ import {
 } from "../actions";
 import { ACCEPT, type UploadKind } from "../lib/media";
 import { uploadPostMedia } from "../lib/uploadMedia";
-import { toDatetimeLocalValue, fromDatetimeLocalValue, isFutureIso } from "../lib/schedule";
+import { toDatetimeLocalValue, fromDatetimeLocalValue, isFutureIso, formatScheduled } from "../lib/schedule";
 import {
   continueList,
   insertBlock,
@@ -40,21 +40,12 @@ import MarkdownToolbar, { type ToolbarAction } from "./MarkdownToolbar";
 import TagInput from "./TagInput";
 import CardPicker from "@/components/ui/CardPicker";
 import DeckPicker from "./DeckPicker";
+import LocalDateTime from "./LocalDateTime";
 
 type Toast = { message: string; type: "success" | "error" } | null;
 type Busy = null | "save" | "publish" | "schedule" | "unpublish" | "delete";
 
 const LABEL = "block text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground";
-
-function formatScheduled(iso: string): string {
-  return new Date(iso).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 // One editor for /admin/posts/new (initial = null) and /admin/posts/[id].
 // The draft row is created lazily by ensureId() on the first save or upload;
@@ -629,7 +620,8 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   };
 
   const locked = busy !== null || uploading;
-  const willSchedule = status === "draft" && isFutureIso(fromDatetimeLocalValue(publishAt));
+  const publishIso = fromDatetimeLocalValue(publishAt);
+  const willSchedule = status === "draft" && isFutureIso(publishIso);
 
   // "← Posts" is a client-side navigation, which beforeunload never sees.
   // Save a draft and go; anything else (published edits, a failed save) asks.
@@ -869,11 +861,15 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
               className="mt-1 h-12 text-sm normal-case tracking-normal"
             />
             <span className="mt-1 block normal-case tracking-normal">
-              {willSchedule
-                ? "A future date — publishes automatically at this time."
-                : status === "published"
-                  ? "Shown as this post's publish date."
-                  : "Leave blank to use today. A past date backdates the post."}
+              {willSchedule ? (
+                <>
+                  Publishes automatically <LocalDateTime iso={publishIso!} />.
+                </>
+              ) : status === "published" ? (
+                "Shown as this post's publish date."
+              ) : (
+                "Leave blank to use today. A past date backdates the post."
+              )}
             </span>
             {scheduledAt && (
               <button
