@@ -10,10 +10,17 @@ import { cn } from "@/lib/utils";
 // Spans throughout: markdown puts an image inside a <p>, where a <div> is
 // invalid HTML and warns on hydration.
 //
-// The two faces carry the rounding, the shadow and the clipping. The element
-// that turns must stay free of overflow and filters, which flatten its 3D.
+// The turn is one flat element rotating, with its own perspective(), and the
+// two faces trading `visibility` as it passes edge-on. It deliberately uses no
+// preserve-3d and no backface-visibility: inside a <button>, Firefox and
+// Safari each leave the turned-away back showing, mirrored, on top of the face.
 
-const FACE = "absolute inset-0 overflow-hidden rounded-[5%_/_3.5%] shadow-lg shadow-black/30 [backface-visibility:hidden]";
+// The swap waits 55ms: where the 150ms turn passes edge-on. Written as a raw
+// property because tailwindcss-animate also claims `delay-*`, `duration-*` and
+// `ease-*`, which makes their arbitrary forms (`delay-[55ms]`) ambiguous —
+// Tailwind warns and generates nothing for them.
+const FACE =
+  "absolute inset-0 overflow-hidden rounded-[5%_/_3.5%] shadow-lg shadow-black/30 transition-[visibility] duration-0 [transition-delay:55ms]";
 
 export default function RevealImage({ src, alt }: { src?: string; alt: string }) {
   const [revealed, setRevealed] = useState(false);
@@ -35,19 +42,22 @@ export default function RevealImage({ src, alt }: { src?: string; alt: string })
       onClick={() => setRevealed((r) => !r)}
       aria-label={revealed ? undefined : "Reveal image"}
       className={cn(
-        "not-prose group mx-auto my-8 block w-full max-w-[24rem] cursor-pointer focus:outline-none [perspective:1200px]",
+        "not-prose group mx-auto my-8 block w-full max-w-[24rem] cursor-pointer focus:outline-none",
         "focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-8 focus-visible:outline-foreground/40",
       )}
     >
-      {/* Reduced motion gets no turn at all: the back fades off the face. */}
+      {/* Reduced motion gets no turn at all: the faces just trade places. */}
       <span
         className={cn(
-          "relative block w-full transition-transform duration-[900ms] ease-[cubic-bezier(0.3,1.3,0.5,1)] [transform-style:preserve-3d]",
-          revealed ? "motion-safe:[transform:rotateY(180deg)]" : "motion-safe:group-hover:[transform:rotateY(10deg)]",
+          "relative block w-full transition-transform",
+          revealed
+            ? "motion-safe:[transform:perspective(1200px)_rotateY(180deg)]"
+            : "motion-safe:[transform:perspective(1200px)_rotateY(0deg)] motion-safe:group-hover:[transform:perspective(1200px)_rotateY(10deg)]",
         )}
         style={{ aspectRatio: ratio }}
       >
-        <span className={cn(FACE, "motion-safe:[transform:rotateY(180deg)]")}>
+        {/* Mirrored, so it reads the right way round once the turn mirrors it back. */}
+        <span className={cn(FACE, "motion-safe:-scale-x-100", !revealed && "invisible")}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             ref={faceRef}
@@ -63,11 +73,11 @@ export default function RevealImage({ src, alt }: { src?: string; alt: string })
             aria-hidden
             className={cn(
               "pointer-events-none absolute inset-y-0 left-0 w-1/2 -translate-x-[150%] -skew-x-12 bg-gradient-to-r from-transparent via-white/35 to-transparent motion-reduce:hidden",
-              revealed && "translate-x-[250%] transition-transform delay-[450ms] duration-700 ease-out",
+              revealed && "translate-x-[250%] transition-transform duration-700 ease-out",
             )}
           />
         </span>
-        <span className={cn(FACE, "transition-opacity duration-500", revealed && "motion-reduce:opacity-0")}>
+        <span className={cn(FACE, revealed && "invisible")}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/gameplay/cardback.webp" alt="" className="h-full w-full object-cover" />
         </span>
