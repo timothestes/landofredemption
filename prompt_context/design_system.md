@@ -34,7 +34,7 @@ Tokens live in `app/globals.css` and are consumed through Tailwind (`bg-backgrou
 
 - Container: `mx-auto w-full max-w-5xl px-4`, page padding `py-6 sm:py-10`.
 - Mobile-first: tap targets at least 44px (`min-h-11`), no horizontal overflow, rows adapt for phones rather than hiding data.
-- Nav (`components/top-nav.tsx`): text-only on desktop, icons only in the mobile drawer, hairline bottom border, no shadow.
+- Nav (`components/top-nav.tsx`): a small icon before each label on desktop and in the mobile drawer, hairline bottom border, no shadow.
 - Footer (`components/site-footer.tsx`): on every public page. Section link grid, wordmark, copyright, sponsors, coffee link. No Cinzel, no ornament.
 
 ## Motion
@@ -54,4 +54,4 @@ State-conveying only: `transition-colors` on interactive text, short entrance fa
 
 ## Don't
 
-A bordered card per list item. Identical tile grids. Hero-metric blocks. An icon before every nav label. Gradient text. Glassmorphism. Blurred hero wallpaper. Pure `#fff` or `#000`. Blue accents. Cinzel on chrome. `font-mono` for dates. A new accent colour for a new feature.
+A bordered card per list item. Identical tile grids. Hero-metric blocks. Gradient text. Glassmorphism. Blurred hero wallpaper. Pure `#fff` or `#000`. Blue accents. Cinzel on chrome. `font-mono` for dates. A new accent colour for a new feature.
