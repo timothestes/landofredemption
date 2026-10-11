@@ -158,6 +158,7 @@ function emptyPerLevel(): Record<Level, FormatBreakdown[]> {
   return {
     local: [],
     district: [],
+    seasonal: [],
     state: [],
     regional: [],
     national: [],

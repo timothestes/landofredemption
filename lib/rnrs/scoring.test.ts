@@ -21,6 +21,7 @@ function player(
     wins: {
       local: wins.local ?? [],
       district: wins.district ?? [],
+      seasonal: wins.seasonal ?? [],
       state: wins.state ?? [],
       regional: wins.regional ?? [],
       national: wins.national ?? [],
