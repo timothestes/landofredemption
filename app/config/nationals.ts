@@ -19,6 +19,7 @@ interface NationalsConfig {
   dates: string;
   datesShort: string;
   adminOnly: boolean;
+  registrationOpen: boolean;
   emailSubject: string;
   eventDates: {
     thursday: string;
@@ -51,6 +52,13 @@ export const NATIONALS_CONFIG: NationalsConfig = {
   
   // Access control - set to true to make registration admin-only
   adminOnly: false,
+
+  // Set to true to open /register. The server action refuses submissions while
+  // this is false. Opening also needs the Turnstile keys in the environment
+  // (NEXT_PUBLIC_TURNSTILE_SITE_KEY / TURNSTILE_SECRET_KEY, see .env.example);
+  // without them the form shows a "not configured" notice and nothing can be
+  // submitted.
+  registrationOpen: false,
   
   // Email subject line
   emailSubject: "Registration Confirmed - Nationals 2026",

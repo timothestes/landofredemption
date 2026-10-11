@@ -11,6 +11,7 @@ import { createClient } from "../../utils/supabase/client";
 import { getUserSafe } from "../../utils/supabase/getUserSafe";
 import { NATIONALS_CONFIG } from "../config/nationals";
 import { useIsAdmin } from "../../hooks/useIsAdmin";
+import { Turnstile } from "../../components/turnstile";
 
 export default function RegistrationPage() {
   const [user, setUser] = useState(null);
@@ -63,6 +64,9 @@ export default function RegistrationPage() {
     message: string;
   }>({ type: null, message: "" });
   const [showThankYou, setShowThankYou] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileKey, setTurnstileKey] = useState(0);
+  const [emailSent, setEmailSent] = useState(true);
 
   // Reset form when navigating back to registration from header
   useEffect(() => {
@@ -163,6 +167,15 @@ export default function RegistrationPage() {
       return;
     }
 
+    if (!turnstileToken) {
+      setSubmitStatus({
+        type: "error",
+        message: "Please complete the verification above the submit button.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     // Upload photo if provided
     let photoUrl = null;
     if (photoFile) {
@@ -191,17 +204,21 @@ export default function RegistrationPage() {
       photoUrl = publicUrl;
     }
 
-    const result = await submitRegistration(formData, photoUrl);
+    const result = await submitRegistration(formData, photoUrl, turnstileToken);
 
-    if (result.success) {
-      setShowThankYou(true);
-    } else {
+    if (result.success === false) {
       setSubmitStatus({
         type: "error",
         message: result.error || "An error occurred. Please try again.",
       });
+    } else {
+      setEmailSent(result.emailSent);
+      setShowThankYou(true);
     }
 
+    // A Turnstile token is single-use; remount the widget for the next attempt.
+    setTurnstileToken(null);
+    setTurnstileKey((k) => k + 1);
     setIsSubmitting(false);
   };
 
@@ -229,7 +246,15 @@ export default function RegistrationPage() {
             </a>
           </p>
 
-          {showThankYou ? (
+          {!NATIONALS_CONFIG.registrationOpen ? (
+            <div className="bg-card border border-border rounded-lg shadow-sm p-8 text-center space-y-3">
+              <h2 className="text-2xl font-bold text-foreground">Registration is closed</h2>
+              <p className="text-muted-foreground">
+                Registration for {NATIONALS_CONFIG.displayName} has ended. Details for next year will be
+                posted in the articles when registration opens.
+              </p>
+            </div>
+          ) : showThankYou ? (
             <div className="bg-card border-2 border-border rounded-xl shadow-lg p-8 md:p-12 text-center space-y-8">
               {/* Success Icon with Animation */}
               <div className="relative">
@@ -277,7 +302,11 @@ export default function RegistrationPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     </span>
-                    <span>Check your email for a confirmation message</span>
+                    <span>
+                      {emailSent
+                        ? "Check your email for a confirmation message"
+                        : "We couldn't send your confirmation email, but your registration is saved. Contact Brian below if you need a copy."}
+                    </span>
                   </li>
                   <li className="flex items-start gap-3 text-foreground">
                     <span className="flex-shrink-0 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center mt-0.5">
@@ -908,11 +937,14 @@ export default function RegistrationPage() {
               </div>
             )}
 
+            {/* Bot check */}
+            <Turnstile key={turnstileKey} onToken={setTurnstileToken} />
+
             {/* Submit Button */}
               <div className="pt-4 flex justify-center">
                 <Button
                   type="submit"
-                  disabled={isSubmitting || isUploadingPhoto}
+                  disabled={isSubmitting || isUploadingPhoto || !turnstileToken}
                   variant="outline"
                   className="border-2 border-primary text-primary hover:bg-primary/10 hover:border-primary/80"
                   size="lg"
