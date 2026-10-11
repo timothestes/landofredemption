@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 import ToastNotification from "@/components/ui/toast-notification";
 import ArticleBody from "@/app/articles/components/ArticleBody";
 import { EMPTY_REFS, type ArticleRefs } from "@/app/articles/lib/refTypes";
-import { excerptFromMarkdown, opensCardPicker, slugify, youtubeId } from "@/app/articles/lib/markdown";
+import { excerptFromMarkdown, opensCardPicker, slugify } from "@/app/articles/lib/markdown";
 import {
   createDraftAction,
   updatePostAction,
@@ -23,23 +23,28 @@ import {
   searchCardsAction,
   type PostRow,
 } from "../actions";
-import { ACCEPT, type UploadKind } from "../lib/media";
+import { ACCEPT, altFromFileName, validateMediaFile, type UploadKind } from "../lib/media";
 import { uploadPostMedia } from "../lib/uploadMedia";
 import { toDatetimeLocalValue, fromDatetimeLocalValue, isFutureIso, formatScheduled } from "../lib/schedule";
+import { clearDraftStash, peekDraftStash, putDraftStash } from "../lib/draftStash";
 import {
   continueList,
   insertBlock,
   minimalEdit,
+  normalizeHref,
   prefixLines,
   replaceOnce,
   wrapSelection,
   type EditResult,
 } from "../lib/textarea";
 import { MAX_EXCERPT, MAX_TITLE } from "../lib/validate";
+import { wordStats } from "../lib/wordStats";
 import MarkdownToolbar, { type ToolbarAction } from "./MarkdownToolbar";
 import TagInput from "./TagInput";
 import CardPicker from "@/components/ui/CardPicker";
 import DeckPicker from "./DeckPicker";
+import InsertLinkDialog from "./InsertLinkDialog";
+import CoverCropDialog from "./CoverCropDialog";
 import LocalDateTime from "./LocalDateTime";
 
 type Toast = { message: string; type: "success" | "error" } | null;
@@ -47,31 +52,46 @@ type Busy = null | "save" | "publish" | "schedule" | "unpublish" | "delete";
 
 const LABEL = "block text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground";
 
+// Saves are serialized module-wide, not per instance: the draft-creation
+// remount (lib/draftStash.ts) swaps instances while an autosave can still be
+// in flight, and the next instance's first save must land after it.
+let saveChain: Promise<boolean> = Promise.resolve(true);
+// Uploads started by an instance that has since remounted. The next instance
+// re-attaches on mount so the result still lands in its state; keyed by the
+// body placeholder, plus one slot for the cover.
+const pendingBodyUploads = new Map<string, Promise<string>>();
+let pendingCoverUpload: Promise<string | null> | null = null;
+
 // One editor for /admin/posts/new (initial = null) and /admin/posts/[id].
 // The draft row is created lazily by ensureId() on the first save or upload;
 // the URL is then rewritten in place with history.replaceState so the
 // component keeps its state (a router.replace would remount it).
 export default function PostEditor({ initial }: { initial: PostRow | null }) {
   const router = useRouter();
+  // State parked by the instance this one replaces (lib/draftStash.ts); it
+  // beats `initial`, which the server read before that instance's last save.
+  const [stash] = useState(() => (initial && typeof window !== "undefined" ? peekDraftStash(initial.id) : null));
   const [id, setId] = useState<string | null>(initial?.id ?? null);
-  const [status, setStatus] = useState<"draft" | "published">(initial?.status ?? "draft");
-  const [title, setTitle] = useState(initial?.title ?? "");
-  const [slug, setSlug] = useState(initial?.slug ?? "");
-  const [slugTouched, setSlugTouched] = useState(initial !== null);
-  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
-  const [excerpt, setExcerpt] = useState(initial?.excerpt ?? "");
-  const [cover, setCover] = useState<string | null>(initial?.cover_image_url ?? null);
-  const [body, setBody] = useState(initial?.body_md ?? "");
+  const [status, setStatus] = useState<"draft" | "published">(stash?.status ?? initial?.status ?? "draft");
+  const [title, setTitle] = useState(stash?.title ?? initial?.title ?? "");
+  const [slug, setSlug] = useState(stash?.slug ?? initial?.slug ?? "");
+  const [slugTouched, setSlugTouched] = useState(stash?.slugTouched ?? initial !== null);
+  const [tags, setTags] = useState<string[]>(stash?.tags ?? initial?.tags ?? []);
+  const [excerpt, setExcerpt] = useState(stash?.excerpt ?? initial?.excerpt ?? "");
+  const [cover, setCover] = useState<string | null>(stash ? stash.cover : (initial?.cover_image_url ?? null));
+  const [body, setBody] = useState(stash?.body ?? initial?.body_md ?? "");
   // datetime-local string for the "Publish date" field. Pre-fills from a
   // pending schedule first (so reopening a scheduled draft shows the target
   // time), else the actual published_at.
-  const [publishAt, setPublishAt] = useState(toDatetimeLocalValue(initial?.scheduled_at ?? initial?.published_at ?? null));
+  const [publishAt, setPublishAt] = useState(
+    stash?.publishAt ?? toDatetimeLocalValue(initial?.scheduled_at ?? initial?.published_at ?? null),
+  );
   // The server-persisted schedule, separate from `publishAt`: it only
   // changes via an explicit Schedule/Cancel action, never by editing the
   // field or by autosave, so a half-typed future date can't silently
   // schedule a post out from under the poster.
-  const [scheduledAt, setScheduledAt] = useState<string | null>(initial?.scheduled_at ?? null);
-  const [dirty, setDirty] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState<string | null>(stash ? stash.scheduledAt : (initial?.scheduled_at ?? null));
+  const [dirty, setDirty] = useState(stash?.dirty ?? false);
   const [busy, setBusy] = useState<Busy>(null);
   // Drafts autosave silently (no busy, so the toolbar stays enabled); this is
   // the side channel the status text reads. Published posts never autosave:
@@ -82,6 +102,9 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   // below (any internal link, not just "← Posts"); defaults to the posts
   // list since that's what the dialog always navigated to before.
   const pendingHrefRef = useRef("/admin/posts");
+  // Set before every navigation this editor starts itself, so the unmount it
+  // causes does not park state for a remount that is not coming.
+  const leavingRef = useRef(false);
   // In-flight uploads. A counter, not a boolean: paste/drop bypass the locked
   // toolbar, so two uploads can overlap and must not clear each other's flag.
   const [uploadCount, setUploadCount] = useState(0);
@@ -99,6 +122,17 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     to: 0,
   });
   const [deckPickerOpen, setDeckPickerOpen] = useState(false);
+  // Link / YouTube dialog. The selection is captured on open: the textarea
+  // loses it once the dialog takes focus (why cardPicker stores from/to too).
+  const [linkDialog, setLinkDialog] = useState<{ open: boolean; mode: "link" | "youtube"; from: number; to: number }>({
+    open: false,
+    mode: "link",
+    from: 0,
+    to: 0,
+  });
+  // Cover crop dialog: an object URL of a just-picked file, or (file null)
+  // the existing cover's URL for a re-crop.
+  const [coverCrop, setCoverCrop] = useState<{ src: string; file: File | null } | null>(null);
   // Resolved card mentions and deck embeds for the preview — the same
   // resolution the public page runs (app/articles/lib/refs.ts).
   const [refs, setRefs] = useState<ArticleRefs>(EMPTY_REFS);
@@ -108,6 +142,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   const imageInput = useRef<HTMLInputElement>(null);
   const audioInput = useRef<HTMLInputElement>(null);
   const coverInput = useRef<HTMLInputElement>(null);
+  const coverZone = useRef<HTMLDivElement>(null);
   const idRef = useRef<string | null>(id);
   // Coalesces concurrent ensureId() callers (e.g. picking an image and
   // clicking Save before the first createDraftAction round trip lands) onto
@@ -135,8 +170,8 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   // Postgres AFTER the later one (slow function instance, cold start), it
   // overwrites newer content/an uploaded image with what it captured a moment
   // earlier. Chaining onto the prior save's promise guarantees each call only
-  // starts once the previous one's write has already landed.
-  const savePromiseRef = useRef<Promise<boolean>>(Promise.resolve(true));
+  // starts once the previous one's write has already landed. The chain is
+  // the module-level `saveChain`, so it survives a remount.
   // The editVersion a failed save was built from. Autosave doesn't retry
   // until an edit moves past it, so a persistent error can't loop every 1.5s.
   const failedVersion = useRef<number | null>(null);
@@ -152,8 +187,8 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     tags,
     published_at: fromDatetimeLocalValue(publishAt),
   };
-  const latest = useRef({ dirty, status, patch });
-  latest.current = { dirty, status, patch };
+  const latest = useRef({ dirty, status, patch, slugTouched, publishAt, scheduledAt });
+  latest.current = { dirty, status, patch, slugTouched, publishAt, scheduledAt };
 
   useEffect(() => {
     listTagsAction()
@@ -298,21 +333,10 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
         return applyEdit(prefixLines(body, sel, "> "));
       case "list":
         return applyEdit(prefixLines(body, sel, "- "));
-      case "link": {
-        const url = window.prompt("Link URL");
-        if (!url) return;
-        // A scheme-less "example.com" would become a RELATIVE href under
-        // /articles/<slug>; keep schemes, site-relative paths and anchors as typed.
-        const u = url.trim();
-        const href = /^([a-z][a-z0-9+.-]*:|\/|#)/i.test(u) ? u : `https://${u}`;
-        return applyEdit(wrapSelection(body, sel, "[", `](${href})`, "link text"));
-      }
-      case "youtube": {
-        const url = window.prompt("YouTube URL");
-        if (!url) return;
-        if (!youtubeId(url)) return fail("That doesn't look like a YouTube URL");
-        return applyEdit(insertBlock(body, sel, url.trim()));
-      }
+      case "link":
+        return setLinkDialog({ open: true, mode: "link", from: sel.start, to: sel.end });
+      case "youtube":
+        return setLinkDialog({ open: true, mode: "youtube", from: sel.start, to: sel.end });
       case "card":
         return setCardPicker({ open: true, query: body.slice(sel.start, sel.end).trim(), from: sel.start, to: sel.end });
       case "deck":
@@ -341,9 +365,44 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     applyEdit(insertBlock(body, selection(), url));
   };
 
+  const onInsertLink = ({ href, text }: { href: string; text: string }) => {
+    const { mode, from, to } = linkDialog;
+    setLinkDialog((p) => ({ ...p, open: false }));
+    if (mode === "youtube") return applyEdit(insertBlock(body, { start: from, end: to }, href));
+    const md = `[${text.trim() || "link text"}](${normalizeHref(href)})`;
+    const caret = from + md.length;
+    applyEdit({ value: body.slice(0, from) + md + body.slice(to), selectionStart: caret, selectionEnd: caret });
+  };
+
+  // Both attach an instance to an upload promise: this one on start, and the
+  // next one on mount when a remount cut this one off mid-upload.
+  const attachBodyUpload = (placeholder: string, done: Promise<string>) => {
+    setUploadCount((n) => n + 1);
+    void done
+      .then((md) => {
+        setBody((b) => replaceOnce(b, placeholder, md));
+        editVersion.current += 1;
+      })
+      .finally(() => setUploadCount((n) => n - 1));
+  };
+  const attachCoverUpload = (done: Promise<string | null>) => {
+    setUploadCount((n) => n + 1);
+    void done
+      .then((url) => {
+        if (url === null) return;
+        setCover(url);
+        editVersion.current += 1;
+        setDirty(true);
+      })
+      .finally(() => setUploadCount((n) => n - 1));
+  };
+
   const onPickMedia = async (kind: UploadKind, files: FileList | null) => {
     const file = files?.[0];
     if (!file) return;
+    // Before ensureId(): a bad file on a new post must not create a draft row.
+    const problem = validateMediaFile(file, kind);
+    if (problem) return fail(problem);
     let postId: string;
     try {
       const draft = await ensureId();
@@ -358,25 +417,24 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     setBody((b) => insertBlock(b, selection(), placeholder).value);
     editVersion.current += 1;
     setDirty(true);
-    setUploadCount((n) => n + 1);
-    try {
-      const { url } = await uploadPostMedia(postId, file, kind);
-      const label = file.name.replace(/\.[^.]+$/, "");
-      const md = kind === "image" ? `![${label}](${url})` : `[${label}](${url})`;
-      setBody((b) => replaceOnce(b, placeholder, md));
-      editVersion.current += 1;
-    } catch (e) {
-      setBody((b) => replaceOnce(b, placeholder, ""));
-      editVersion.current += 1;
-      fail(e instanceof Error ? e.message : "Upload failed");
-    } finally {
-      setUploadCount((n) => n - 1);
-    }
+    // Resolves to the markdown that replaces the placeholder ("" on failure).
+    const done = uploadPostMedia(postId, file, kind).then(
+      ({ url }) => {
+        // A camera name ("IMG_4821") would ship as the published alt text.
+        const label = kind === "image" ? altFromFileName(file.name) : file.name.replace(/\.[^.]+$/, "");
+        return kind === "image" ? `![${label}](${url})` : `[${label}](${url})`;
+      },
+      (e: unknown) => {
+        fail(e instanceof Error ? e.message : "Upload failed");
+        return "";
+      },
+    );
+    pendingBodyUploads.set(placeholder, done);
+    void done.finally(() => pendingBodyUploads.delete(placeholder));
+    attachBodyUpload(placeholder, done);
   };
 
-  const onPickCover = async (files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) return;
+  const uploadCover = async (file: File) => {
     let postId: string;
     try {
       const draft = await ensureId();
@@ -386,24 +444,42 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
       fail("Something went wrong. Check your connection and try again.");
       return;
     }
-    setUploadCount((n) => n + 1);
-    try {
-      const { url } = await uploadPostMedia(postId, file, "image");
-      setCover(url);
-      editVersion.current += 1;
-      setDirty(true);
-    } catch (e) {
-      fail(e instanceof Error ? e.message : "Upload failed");
-    } finally {
-      setUploadCount((n) => n - 1);
-    }
+    const done = uploadPostMedia(postId, file, "image").then(
+      ({ url }) => url,
+      (e: unknown) => {
+        fail(e instanceof Error ? e.message : "Upload failed");
+        return null;
+      },
+    );
+    pendingCoverUpload = done;
+    void done.finally(() => {
+      if (pendingCoverUpload === done) pendingCoverUpload = null;
+    });
+    attachCoverUpload(done);
+  };
+
+  // The crop dialog runs BEFORE uploadCover (and so before ensureId), so
+  // cancelling on a new post leaves no draft row behind. GIFs skip it: a
+  // canvas would freeze the animation.
+  const onPickCover = (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    const problem = validateMediaFile(file, "image");
+    if (problem) return fail(problem);
+    if (file.type === "image/gif") return void uploadCover(file);
+    setCoverCrop({ src: URL.createObjectURL(file), file });
+  };
+
+  const closeCoverCrop = () => {
+    if (coverCrop?.file) URL.revokeObjectURL(coverCrop.src);
+    setCoverCrop(null);
   };
 
   // `silent` is the autosave path: it reports through `autosave` instead of
   // busy/toast, so the toolbar never locks and errors don't spam toasts.
   const save = (opts: { silent?: boolean } = {}): Promise<boolean> => {
-    const run = savePromiseRef.current.then(() => runSave(opts));
-    savePromiseRef.current = run;
+    const run = saveChain.then(() => runSave(opts));
+    saveChain = run;
     return run;
   };
 
@@ -491,10 +567,73 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   useEffect(
     () => () => {
       const l = latest.current;
-      if (idRef.current && l.dirty && l.status === "draft") void updatePostAction(idRef.current, l.patch);
+      const id = idRef.current;
+      if (id && l.dirty && l.status === "draft") {
+        saveChain = saveChain.then(() =>
+          updatePostAction(id, l.patch).then(
+            (r) => r.success !== false,
+            () => false,
+          ),
+        );
+      }
     },
     [],
   );
+
+  // The draft-creation remount (lib/draftStash.ts). Parked after EVERY
+  // commit, not at unmount: React renders the replacement instance before it
+  // cleans this one up, so an unmount-time write comes too late to seed the
+  // replacement's state, while the last commit's write is exactly what its
+  // initializers find. Cheap: one small object per render.
+  useEffect(() => {
+    const id = idRef.current;
+    if (!id) return;
+    const el = bodyRef.current;
+    const focused = el !== null && document.activeElement === el;
+    putDraftStash({
+      id,
+      title,
+      slug,
+      slugTouched,
+      tags,
+      excerpt,
+      cover,
+      body,
+      publishAt,
+      scheduledAt,
+      status,
+      dirty,
+      selection: focused ? { start: el.selectionStart, end: el.selectionEnd } : null,
+    });
+  });
+  useEffect(() => {
+    // Uploads the previous instance started finish in this one.
+    if (stash) {
+      for (const [placeholder, done] of pendingBodyUploads) {
+        if (stash.body.includes(placeholder)) attachBodyUpload(placeholder, done);
+      }
+      if (pendingCoverUpload) attachCoverUpload(pendingCoverUpload);
+    }
+    // A navigation this editor chose must not park state for a remount that
+    // is not coming (the TTL covers unmounts it did not choose).
+    return () => {
+      if (leavingRef.current) clearDraftStash();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Focus and caret back where they were, before paint, so a keystroke
+  // mid-remount still lands in the body. Once only: dev StrictMode re-runs
+  // mount effects after a keystroke may already have moved the caret on.
+  const caretRestored = useRef(false);
+  useLayoutEffect(() => {
+    const sel = stash?.selection;
+    const el = bodyRef.current;
+    if (caretRestored.current || !sel || !el) return;
+    caretRestored.current = true;
+    el.focus();
+    el.setSelectionRange(sel.start, sel.end);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // The real fix for "a nav-bar link unmounts the editor mid-debounce and the
   // edit vanishes": save BEFORE the navigation happens, not after, the same
@@ -525,7 +664,10 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
           const id = idRef.current;
           if (!id) return setConfirmLeave(true);
           const r = await updatePostAction(id, latest.current.patch).catch(() => null);
-          if (r && r.success !== false) router.push(href);
+          if (r && r.success !== false) {
+            leavingRef.current = true;
+            router.push(href);
+          }
           else setConfirmLeave(true);
         })();
       } else {
@@ -611,6 +753,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
       if (r.success === false) return fail(r.error);
       setDirty(false);
       latest.current.dirty = false;
+      leavingRef.current = true;
       router.push("/admin/posts");
     } catch {
       fail("Something went wrong. Check your connection and try again.");
@@ -620,6 +763,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   };
 
   const locked = busy !== null || uploading;
+  const stats = useMemo(() => wordStats(body), [body]);
   const publishIso = fromDatetimeLocalValue(publishAt);
   const willSchedule = status === "draft" && isFutureIso(publishIso);
 
@@ -629,6 +773,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     if (!dirty || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
     if (status === "draft" && !locked && (await save())) {
+      leavingRef.current = true;
       router.push("/admin/posts");
       return;
     }
@@ -742,14 +887,19 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
               ))}
             </div>
             <div className="grid lg:grid-cols-2">
-              {/* min-w-0: the toolbar's one-row min-content width must scroll inside the pane, not widen the page. */}
+              {/* min-w-0: the pane sizes to its grid track, never to its content's min width. */}
               <div className={`min-w-0 ${tab === "write" ? "" : "hidden lg:block"}`}>
                 <MarkdownToolbar onAction={onToolbar} disabled={locked} />
                 {/* Always in view on desktop so nobody has to find a tooltip; phones
                     get the same two moves from the placeholder and the preview tip. */}
-                <p className="hidden bg-muted/40 px-3 py-1 text-xs text-muted-foreground lg:block">
-                  Type <kbd className="rounded bg-background px-1 font-mono text-[11px] text-foreground">[[</kbd> to mention
-                  a card {"\u00b7"} a deck link on its own line embeds it
+                <p className="hidden bg-muted/40 px-3 py-1 text-xs text-muted-foreground lg:flex lg:flex-wrap lg:items-center lg:justify-between lg:gap-x-3">
+                  <span>
+                    Type <kbd className="rounded bg-background px-1 font-mono text-[11px] text-foreground">[[</kbd> to mention
+                    a card {"\u00b7"} a deck link on its own line embeds it
+                  </span>
+                  <span className="ml-auto shrink-0 tabular-nums">
+                    {stats.words} words {"\u00b7"} {stats.minutes} min read
+                  </span>
                 </p>
                 <textarea
                   ref={bodyRef}
@@ -813,6 +963,8 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
                 />
               </div>
               <div className={`${tab === "preview" ? "" : "hidden lg:block"} rounded-b-md bg-muted/20 p-4 lg:rounded-r-md`}>
+                {/* Phones name the pane with the Write/Preview tabs already. */}
+                <div className="mb-2 hidden text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground lg:block">Preview</div>
                 {body.trim() ? (
                   <ArticleBody markdown={body} refs={refs} draft />
                 ) : (
@@ -905,13 +1057,14 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
                 without opening the file picker; drop works the same as the
                 body textarea's image drop. */}
             <div
+              ref={coverZone}
               tabIndex={0}
               aria-label="Cover image drop zone. Click, then paste or drop an image."
               onPaste={(e) => {
                 const f = e.clipboardData.files;
                 if (f.length) {
                   e.preventDefault();
-                  void onPickCover(f);
+                  onPickCover(f);
                 }
               }}
               onDragOver={(e) => {
@@ -921,28 +1074,47 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
                 const f = e.dataTransfer.files;
                 if (f.length) {
                   e.preventDefault();
-                  void onPickCover(f);
+                  onPickCover(f);
                 }
               }}
               className="mt-1 rounded-md outline-none"
             >
               {cover ? (
                 <div className="space-y-2">
+                  <p className="normal-case tracking-normal text-[11px] text-muted-foreground">Article cards crop to this 16:9 frame</p>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={cover} alt="" className="w-full rounded-md object-cover" style={{ aspectRatio: "16 / 9" }} />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="min-h-11"
-                    onClick={() => {
-                      setCover(null);
-                      editVersion.current += 1;
-                      setDirty(true);
-                    }}
-                    disabled={locked}
-                  >
-                    Remove cover
-                  </Button>
+                  <img src={cover} alt="" className="w-full rounded-sm object-cover" style={{ aspectRatio: "16 / 9" }} />
+                  <div className="flex flex-wrap gap-2">
+                    {/* Not for a GIF: the canvas would freeze the animation. */}
+                    {!/\.gif(\?|$)/i.test(cover) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="min-h-11"
+                        onClick={() => setCoverCrop({ src: cover, file: null })}
+                        disabled={locked}
+                      >
+                        Adjust crop
+                      </Button>
+                    )}
+                    {/* Through the file input, so the new file gets the crop dialog too. */}
+                    <Button variant="outline" size="sm" className="min-h-11" onClick={() => coverInput.current?.click()} disabled={locked}>
+                      Replace
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="min-h-11"
+                      onClick={() => {
+                        setCover(null);
+                        editVersion.current += 1;
+                        setDirty(true);
+                      }}
+                      disabled={locked}
+                    >
+                      Remove
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <Button variant="outline" className="min-h-11" onClick={() => coverInput.current?.click()} disabled={locked}>
@@ -950,7 +1122,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
                 </Button>
               )}
               <p className="mt-1 normal-case tracking-normal text-[11px] text-muted-foreground">
-                Click here, then paste (⌘V) or drop an image
+                {cover ? "Paste or drop an image to replace it" : "Click here, then paste (⌘V) or drop an image"}
               </p>
             </div>
           </div>
@@ -1015,7 +1187,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
         accept={ACCEPT.image}
         className="hidden"
         onChange={(e) => {
-          void onPickCover(e.target.files);
+          onPickCover(e.target.files);
           e.target.value = "";
         }}
       />
@@ -1038,6 +1210,35 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
           refocusBody();
         }}
       />
+      <InsertLinkDialog
+        open={linkDialog.open}
+        mode={linkDialog.mode}
+        initialText={body.slice(linkDialog.from, linkDialog.to)}
+        onInsert={onInsertLink}
+        onClose={() => {
+          setLinkDialog((p) => ({ ...p, open: false }));
+          refocusBody();
+        }}
+      />
+      <CoverCropDialog
+        open={coverCrop !== null}
+        src={coverCrop?.src ?? null}
+        file={coverCrop?.file ?? null}
+        onConfirm={(f) => {
+          closeCoverCrop();
+          void uploadCover(f);
+        }}
+        onUseFull={() => {
+          const f = coverCrop?.file;
+          closeCoverCrop();
+          if (f) void uploadCover(f);
+        }}
+        onCancel={() => {
+          closeCoverCrop();
+          // Back to the drop zone, not the body: that is where the poster was.
+          requestAnimationFrame(() => coverZone.current?.focus());
+        }}
+      />
       <ConfirmationDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
@@ -1056,6 +1257,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
         onConfirm={() => {
           setDirty(false);
           latest.current.dirty = false;
+          leavingRef.current = true;
           router.push(pendingHrefRef.current);
         }}
       />

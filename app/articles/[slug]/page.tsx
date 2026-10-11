@@ -7,6 +7,7 @@ import ArticleBody from "../components/ArticleBody";
 import AuthorBio from "../components/AuthorBio";
 import { resolveArticleRefs } from "../lib/refs";
 import PostCard, { formatPostDate } from "../components/PostCard";
+import { coverImageProps } from "../lib/coverImage";
 import {
   listPublishedTags,
   loadPostBySlug,
@@ -130,7 +131,8 @@ export default async function ArticlePage({ params }: PageProps) {
           // Only a very tall cover is capped, and object-contain keeps it whole.
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={post.cover_image_url}
+            {...coverImageProps(post.cover_image_url, [640, 828, 1080, 1200, 1920])}
+            sizes="(min-width: 768px) 736px, 100vw"
             alt=""
             fetchPriority="high"
             decoding="async"

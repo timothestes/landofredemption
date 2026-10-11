@@ -9,10 +9,14 @@ export const RNRS_PROXY =
   process.env.RNRS_PROXY_URL ?? "https://rnrs-proxy2.jhendrix6426.workers.dev";
 
 /** Seasons, newest first (drives the season selector order). */
-export const SEASONS: SeasonKey[] = ["2026", "2025", "2024", "2023"];
+export const SEASONS: SeasonKey[] = ["2027", "2026", "2025", "2024", "2023"];
 
+/** Starting 2027, Type 1 split into Limited (the newer-card pool Type 1 always
+ *  was, now named to contrast with the new Unlimited format) and Unlimited
+ *  (full historical card pool). Earlier seasons only ever had the one. */
 export const FORMATS: { key: FormatKey; label: string }[] = [
-  { key: "type1", label: "Type 1 – 2 Player" },
+  { key: "type1", label: "Type 1 Limited" },
+  { key: "type1Unlimited", label: "Type 1 Unlimited" },
   { key: "teams", label: "Type 1 Teams" },
   { key: "type2", label: "Type 2 – 2 Player" },
   { key: "closed", label: "Closed Deck" },
@@ -29,7 +33,8 @@ export const FORMAT_LABELS: Record<FormatKey, string> = FORMATS.reduce(
 
 /** Short labels for tight spaces (mobile, breakdown lines). */
 export const FORMAT_SHORT: Record<FormatKey, string> = {
-  type1: "T1",
+  type1: "T1 Ltd",
+  type1Unlimited: "T1 Unl",
   teams: "T1 Teams",
   type2: "T2",
   closed: "Closed",
@@ -37,8 +42,18 @@ export const FORMAT_SHORT: Record<FormatKey, string> = {
 };
 
 /** Published-sheet IDs per season per format (carried over from the RNRS
- *  community viewer). Adding a new season = add one entry here. */
-export const SEASON_SHEETS: Record<SeasonKey, Record<FormatKey, string>> = {
+ *  community viewer). Adding a new season = add one entry here. Partial per
+ *  season because `type1Unlimited` only exists starting 2027 — a season
+ *  missing a format entry just degrades that sheet fetch to an empty array. */
+export const SEASON_SHEETS: Record<SeasonKey, Partial<Record<FormatKey, string>>> = {
+  "2027": {
+    type1: "2PACX-1vRXHeZM1mvrjZTnSWee2q63wpwNq1ouD3F3wm-CZJTZDng5d2HS2_y_D614pOr8xqEgat4VZTkoQ1Hp",
+    type1Unlimited: "2PACX-1vSTADpDR5LUtNF6DrY6e7ou28WnzGTR2xmt_jKOO-8MaWsKIvi0sSObE5HSyGrf3eweEvpQ2I7SBI14",
+    teams: "2PACX-1vRY2XEUHYeF1O9OeigOi_E0rfngfz-SsdbYQZqfGAfdzCExMJoiAKwCqhBQ8IMwjbA48GZnUP9dILox",
+    type2: "2PACX-1vTZFMqzQL0ClqtMGrRauVTzn-Mk2kFlDdXBg-bvP5MEJ5o1PjQOzfejgowIh1LK-NAGuZNZF9ki8BCd",
+    closed: "2PACX-1vSRw2hia7nNIzbS8BQrHyrvEoe_u3ljEamGD1Bs3c11Kwh9Yw5zklBs6c5oM0tlbFt5IPbCVgFDnGSK",
+    draft: "2PACX-1vShSRp24LFpMvRGNmC7OdaKO7pAnkj8oVQ1SDPSqDEEpsMonjHrs-TVDfvy1tE6mICRh_8CYyqCEiEt",
+  },
   "2026": {
     type1: "2PACX-1vSa8W7dh2H4UNv5d5a4t6ntjeiE4hClteLSVgtoVI8j1LwsJIdR4lXvayFSt7ixZff-QcJmiF_FnIN5",
     teams: "2PACX-1vTrVjAXIfpeWwssgMU78DdbBh1GfVS9_1hPonWQh-aWRxvu_q1Cvw2UsN0Qch_gA9sHo7z0QgpPGNat",
@@ -69,9 +84,14 @@ export const SEASON_SHEETS: Record<SeasonKey, Record<FormatKey, string>> = {
   },
 };
 
+/** Starting 2027, Local and District merged into one "Seasonal" level (still
+ *  capped per format, now at 6 wins instead of 5+2 separately). 2023–2026
+ *  sheets still report Local/District separately, so both stay here — a
+ *  season just won't populate whichever tier(s) it didn't use. */
 export const LEVELS: Level[] = [
   "local",
   "district",
+  "seasonal",
   "state",
   "regional",
   "national",
@@ -80,6 +100,7 @@ export const LEVELS: Level[] = [
 export const LEVEL_LABELS: Record<Level, string> = {
   local: "Local",
   district: "District",
+  seasonal: "Seasonal",
   state: "State",
   regional: "Regional",
   national: "Nationals",
@@ -89,6 +110,7 @@ export const LEVEL_LABELS: Record<Level, string> = {
 export const LEVEL_PTS: Record<Level, number[]> = {
   local: [2, 1],
   district: [10, 5, 2],
+  seasonal: [5, 3, 1],
   state: [25, 12, 6],
   regional: [35, 17, 8],
   national: [45, 22, 11],
@@ -98,6 +120,7 @@ export const LEVEL_PTS: Record<Level, number[]> = {
 export const LEVEL_CAPS: Record<Level, number> = {
   local: 5,
   district: 2,
+  seasonal: 6,
   state: 1,
   regional: 1,
   national: 1,

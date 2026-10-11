@@ -21,6 +21,7 @@ function player(
     wins: {
       local: wins.local ?? [],
       district: wins.district ?? [],
+      seasonal: wins.seasonal ?? [],
       state: wins.state ?? [],
       regional: wins.regional ?? [],
       national: wins.national ?? [],
@@ -108,6 +109,9 @@ describe("buildLeaderboard — aggregate (All Formats) sums per-format caps", ()
 
 describe("placement labels & geography", () => {
   it("maps point values to placements", () => {
+    expect(placeLabel(5, "seasonal")).toBe("1st");
+    expect(placeLabel(3, "seasonal")).toBe("2nd");
+    expect(placeLabel(1, "seasonal")).toBe("3rd");
     expect(placeLabel(10, "district")).toBe("1st");
     expect(placeLabel(5, "district")).toBe("2nd");
     expect(placeLabel(25, "state")).toBe("1st");

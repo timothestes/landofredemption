@@ -1,8 +1,20 @@
 /** Redemption National Ranking System (RNRS) — shared types. */
 
-export type Level = "local" | "district" | "state" | "regional" | "national";
-export type FormatKey = "type1" | "teams" | "type2" | "closed" | "draft";
-export type SeasonKey = "2023" | "2024" | "2025" | "2026";
+export type Level =
+  | "local"
+  | "district"
+  | "seasonal"
+  | "state"
+  | "regional"
+  | "national";
+export type FormatKey =
+  | "type1"
+  | "type1Unlimited"
+  | "teams"
+  | "type2"
+  | "closed"
+  | "draft";
+export type SeasonKey = "2023" | "2024" | "2025" | "2026" | "2027";
 
 /** One player's results in a single (season, format) sheet. */
 export interface PlayerFormatResult {

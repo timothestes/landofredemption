@@ -12,9 +12,16 @@ interface EmailOptions {
   replyTo?: string;
 }
 
+// Mailbox providers score "no-reply" senders down (Resend flags it too), so the
+// default From is a plain address and replies are routed to a person. The
+// domain has no inbound mail, so reply_to is what actually reaches anyone.
+const DEFAULT_FROM = "Land of Redemption <hello@landofredemption.com>";
+const DEFAULT_REPLY_TO = "landofredemption@gmail.com";
+
 export async function sendEmail({ to, subject, html, from, replyTo }: EmailOptions) {
   const resendApiKey = process.env.RESEND_API_KEY;
-  const fromEmail = from ?? (process.env.FROM_EMAIL || "RedemptionCCG.app <noreply@landofredemption.com>");
+  const fromEmail = from ?? (process.env.FROM_EMAIL || DEFAULT_FROM);
+  const replyToEmail = replyTo ?? DEFAULT_REPLY_TO;
 
   if (!resendApiKey) {
     console.warn("RESEND_API_KEY not configured. Email not sent.");
@@ -33,7 +40,7 @@ export async function sendEmail({ to, subject, html, from, replyTo }: EmailOptio
         to,
         subject,
         html,
-        ...(replyTo ? { reply_to: replyTo } : {}),
+        reply_to: replyToEmail,
       }),
     });
 

@@ -85,6 +85,10 @@ const PLACE_MAPS: Record<Level, PlaceEntry[]> = LEVELS.reduce(
 
 export function placeLabel(pts: number, level: Level): string | null {
   const TOLERANCE = 0.05;
+  // An exact placing value wins over a tie average that happens to equal it
+  // (Seasonal 5/3/1: a 3-way 1st tie averages 3, the same as a 2nd place).
+  const exact = LEVEL_PTS[level].findIndex((p) => Math.abs(p - pts) < TOLERANCE);
+  if (exact >= 0) return ["1st", "2nd", "3rd"][exact] ?? null;
   const match = PLACE_MAPS[level].find((e) => Math.abs(e.val - pts) < TOLERANCE);
   return match ? match.label : null;
 }
@@ -158,6 +162,7 @@ function emptyPerLevel(): Record<Level, FormatBreakdown[]> {
   return {
     local: [],
     district: [],
+    seasonal: [],
     state: [],
     regional: [],
     national: [],

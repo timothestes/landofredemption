@@ -13,6 +13,7 @@ import { useCardPreview } from '@/app/goldfish/state/CardPreviewContext';
 import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { useDraggableModal } from '@/app/shared/hooks/useDraggableModal';
 import { DraggableTitleBar } from './DraggableTitleBar';
+import { isOnScrollbar } from '@/app/shared/utils/scrollbarHit';
 
 const MOVE_ZONES: { id: ZoneId; label: string }[] = [
   { id: 'hand', label: 'Hand' },
@@ -397,6 +398,9 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
     if (tag === 'button' || tag === 'img' || tag === 'input') return;
     // Block lasso if clicking inside a card element (has data-card-id)
     if (target.closest('[data-card-id]')) return;
+    // A grab on the grid's native scrollbar lands on the scroll container
+    // itself; it is not a click on empty space, so keep the selection.
+    if (isOnScrollbar(target, e.clientX, e.clientY)) return;
     const grid = gridRef.current;
     if (!grid) return;
     const rect = grid.getBoundingClientRect();
