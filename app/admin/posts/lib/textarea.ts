@@ -52,6 +52,16 @@ export function insertBlock(value: string, sel: Selection, block: string): EditR
   return { value: before + inserted + after, selectionStart: caret, selectionEnd: caret };
 }
 
+/**
+ * Href for a typed link URL. Schemes, site-relative paths and anchors stay as
+ * typed; a bare "example.com" gets https://, since a relative href would
+ * resolve under /articles/<slug>.
+ */
+export function normalizeHref(url: string): string {
+  const u = url.trim();
+  return /^([a-z][a-z0-9+.-]*:|\/|#)/i.test(u) ? u : `https://${u}`;
+}
+
 /** First-occurrence string replace without regex semantics in `needle`. */
 export function replaceOnce(value: string, needle: string, replacement: string): string {
   const i = value.indexOf(needle);

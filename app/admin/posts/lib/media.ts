@@ -57,6 +57,19 @@ export function mediaPathname(postId: string, fileName: string): string {
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CAMERA_NAME_RE = /^(IMG|DSC|PXL|DCIM|Screenshot|Screen Shot)[ _-]?\d/i;
+
+/**
+ * Default alt text for an uploaded image: the file name made readable, or ""
+ * when the name is a camera/screenshot/UUID/number that says nothing, so the
+ * published alt attribute is left empty for the poster to fill rather than
+ * shipping as "IMG_4821".
+ */
+export function altFromFileName(name: string): string {
+  const base = name.replace(/\.[^.]+$/, "");
+  if (CAMERA_NAME_RE.test(base) || UUID_RE.test(base) || /^\d+$/.test(base)) return "";
+  return base.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim();
+}
 
 /** The JSON the browser sends as clientPayload; null when malformed. */
 export function parseClientPayload(raw: string | null): { postId: string; kind: UploadKind } | null {
