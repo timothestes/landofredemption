@@ -32,7 +32,7 @@ const COLUMNS: { heading: string; links: FooterLink[] }[] = [
       { label: "Tournaments", href: "/tournaments" },
       { label: "Results", href: "/tournaments/results" },
       { label: "Metagame", href: "/tournaments/metagame" },
-      { label: "History", href: "/tournaments/history" },
+      { label: "Nationals History", href: "/tournaments/history" },
       { label: "RNRS points", href: "/tournaments/rnrs-points" },
     ],
   },

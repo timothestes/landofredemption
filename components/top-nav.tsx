@@ -140,7 +140,7 @@ const TopNav: React.FC = () => {
     { href: "/tournaments", label: "Upcoming Events", icon: HiCalendar },
     { href: "/tournaments/results", label: "Results", icon: HiClipboardList, isNew: true },
     { href: "/tournaments/rnrs-points", label: "RNRS Points", icon: HiChartBar },
-    { href: "/tournaments/history", label: "History", icon: FaBookOpen },
+    { href: "/tournaments/history", label: "Nationals History", icon: FaBookOpen },
     { href: "/tracker/tournaments", label: "My Tournaments", icon: FaTrophy, authRequired: true },
   ];
 
