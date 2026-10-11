@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
 import { ACCEPT, type UploadKind } from "../lib/media";
 import { uploadPostMedia } from "../lib/uploadMedia";
 import { toDatetimeLocalValue, fromDatetimeLocalValue, isFutureIso, formatScheduled } from "../lib/schedule";
+import { clearDraftStash, peekDraftStash, putDraftStash } from "../lib/draftStash";
 import {
   continueList,
   insertBlock,
@@ -47,31 +48,46 @@ type Busy = null | "save" | "publish" | "schedule" | "unpublish" | "delete";
 
 const LABEL = "block text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground";
 
+// Saves are serialized module-wide, not per instance: the draft-creation
+// remount (lib/draftStash.ts) swaps instances while an autosave can still be
+// in flight, and the next instance's first save must land after it.
+let saveChain: Promise<boolean> = Promise.resolve(true);
+// Uploads started by an instance that has since remounted. The next instance
+// re-attaches on mount so the result still lands in its state; keyed by the
+// body placeholder, plus one slot for the cover.
+const pendingBodyUploads = new Map<string, Promise<string>>();
+let pendingCoverUpload: Promise<string | null> | null = null;
+
 // One editor for /admin/posts/new (initial = null) and /admin/posts/[id].
 // The draft row is created lazily by ensureId() on the first save or upload;
 // the URL is then rewritten in place with history.replaceState so the
 // component keeps its state (a router.replace would remount it).
 export default function PostEditor({ initial }: { initial: PostRow | null }) {
   const router = useRouter();
+  // State parked by the instance this one replaces (lib/draftStash.ts); it
+  // beats `initial`, which the server read before that instance's last save.
+  const [stash] = useState(() => (initial && typeof window !== "undefined" ? peekDraftStash(initial.id) : null));
   const [id, setId] = useState<string | null>(initial?.id ?? null);
-  const [status, setStatus] = useState<"draft" | "published">(initial?.status ?? "draft");
-  const [title, setTitle] = useState(initial?.title ?? "");
-  const [slug, setSlug] = useState(initial?.slug ?? "");
-  const [slugTouched, setSlugTouched] = useState(initial !== null);
-  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
-  const [excerpt, setExcerpt] = useState(initial?.excerpt ?? "");
-  const [cover, setCover] = useState<string | null>(initial?.cover_image_url ?? null);
-  const [body, setBody] = useState(initial?.body_md ?? "");
+  const [status, setStatus] = useState<"draft" | "published">(stash?.status ?? initial?.status ?? "draft");
+  const [title, setTitle] = useState(stash?.title ?? initial?.title ?? "");
+  const [slug, setSlug] = useState(stash?.slug ?? initial?.slug ?? "");
+  const [slugTouched, setSlugTouched] = useState(stash?.slugTouched ?? initial !== null);
+  const [tags, setTags] = useState<string[]>(stash?.tags ?? initial?.tags ?? []);
+  const [excerpt, setExcerpt] = useState(stash?.excerpt ?? initial?.excerpt ?? "");
+  const [cover, setCover] = useState<string | null>(stash ? stash.cover : (initial?.cover_image_url ?? null));
+  const [body, setBody] = useState(stash?.body ?? initial?.body_md ?? "");
   // datetime-local string for the "Publish date" field. Pre-fills from a
   // pending schedule first (so reopening a scheduled draft shows the target
   // time), else the actual published_at.
-  const [publishAt, setPublishAt] = useState(toDatetimeLocalValue(initial?.scheduled_at ?? initial?.published_at ?? null));
+  const [publishAt, setPublishAt] = useState(
+    stash?.publishAt ?? toDatetimeLocalValue(initial?.scheduled_at ?? initial?.published_at ?? null),
+  );
   // The server-persisted schedule, separate from `publishAt`: it only
   // changes via an explicit Schedule/Cancel action, never by editing the
   // field or by autosave, so a half-typed future date can't silently
   // schedule a post out from under the poster.
-  const [scheduledAt, setScheduledAt] = useState<string | null>(initial?.scheduled_at ?? null);
-  const [dirty, setDirty] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState<string | null>(stash ? stash.scheduledAt : (initial?.scheduled_at ?? null));
+  const [dirty, setDirty] = useState(stash?.dirty ?? false);
   const [busy, setBusy] = useState<Busy>(null);
   // Drafts autosave silently (no busy, so the toolbar stays enabled); this is
   // the side channel the status text reads. Published posts never autosave:
@@ -82,6 +98,9 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   // below (any internal link, not just "← Posts"); defaults to the posts
   // list since that's what the dialog always navigated to before.
   const pendingHrefRef = useRef("/admin/posts");
+  // Set before every navigation this editor starts itself, so the unmount it
+  // causes does not park state for a remount that is not coming.
+  const leavingRef = useRef(false);
   // In-flight uploads. A counter, not a boolean: paste/drop bypass the locked
   // toolbar, so two uploads can overlap and must not clear each other's flag.
   const [uploadCount, setUploadCount] = useState(0);
@@ -135,8 +154,8 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   // Postgres AFTER the later one (slow function instance, cold start), it
   // overwrites newer content/an uploaded image with what it captured a moment
   // earlier. Chaining onto the prior save's promise guarantees each call only
-  // starts once the previous one's write has already landed.
-  const savePromiseRef = useRef<Promise<boolean>>(Promise.resolve(true));
+  // starts once the previous one's write has already landed. The chain is
+  // the module-level `saveChain`, so it survives a remount.
   // The editVersion a failed save was built from. Autosave doesn't retry
   // until an edit moves past it, so a persistent error can't loop every 1.5s.
   const failedVersion = useRef<number | null>(null);
@@ -152,8 +171,8 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     tags,
     published_at: fromDatetimeLocalValue(publishAt),
   };
-  const latest = useRef({ dirty, status, patch });
-  latest.current = { dirty, status, patch };
+  const latest = useRef({ dirty, status, patch, slugTouched, publishAt, scheduledAt });
+  latest.current = { dirty, status, patch, slugTouched, publishAt, scheduledAt };
 
   useEffect(() => {
     listTagsAction()
@@ -341,6 +360,29 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     applyEdit(insertBlock(body, selection(), url));
   };
 
+  // Both attach an instance to an upload promise: this one on start, and the
+  // next one on mount when a remount cut this one off mid-upload.
+  const attachBodyUpload = (placeholder: string, done: Promise<string>) => {
+    setUploadCount((n) => n + 1);
+    void done
+      .then((md) => {
+        setBody((b) => replaceOnce(b, placeholder, md));
+        editVersion.current += 1;
+      })
+      .finally(() => setUploadCount((n) => n - 1));
+  };
+  const attachCoverUpload = (done: Promise<string | null>) => {
+    setUploadCount((n) => n + 1);
+    void done
+      .then((url) => {
+        if (url === null) return;
+        setCover(url);
+        editVersion.current += 1;
+        setDirty(true);
+      })
+      .finally(() => setUploadCount((n) => n - 1));
+  };
+
   const onPickMedia = async (kind: UploadKind, files: FileList | null) => {
     const file = files?.[0];
     if (!file) return;
@@ -358,20 +400,20 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     setBody((b) => insertBlock(b, selection(), placeholder).value);
     editVersion.current += 1;
     setDirty(true);
-    setUploadCount((n) => n + 1);
-    try {
-      const { url } = await uploadPostMedia(postId, file, kind);
-      const label = file.name.replace(/\.[^.]+$/, "");
-      const md = kind === "image" ? `![${label}](${url})` : `[${label}](${url})`;
-      setBody((b) => replaceOnce(b, placeholder, md));
-      editVersion.current += 1;
-    } catch (e) {
-      setBody((b) => replaceOnce(b, placeholder, ""));
-      editVersion.current += 1;
-      fail(e instanceof Error ? e.message : "Upload failed");
-    } finally {
-      setUploadCount((n) => n - 1);
-    }
+    // Resolves to the markdown that replaces the placeholder ("" on failure).
+    const done = uploadPostMedia(postId, file, kind).then(
+      ({ url }) => {
+        const label = file.name.replace(/\.[^.]+$/, "");
+        return kind === "image" ? `![${label}](${url})` : `[${label}](${url})`;
+      },
+      (e: unknown) => {
+        fail(e instanceof Error ? e.message : "Upload failed");
+        return "";
+      },
+    );
+    pendingBodyUploads.set(placeholder, done);
+    void done.finally(() => pendingBodyUploads.delete(placeholder));
+    attachBodyUpload(placeholder, done);
   };
 
   const onPickCover = async (files: FileList | null) => {
@@ -386,24 +428,25 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
       fail("Something went wrong. Check your connection and try again.");
       return;
     }
-    setUploadCount((n) => n + 1);
-    try {
-      const { url } = await uploadPostMedia(postId, file, "image");
-      setCover(url);
-      editVersion.current += 1;
-      setDirty(true);
-    } catch (e) {
-      fail(e instanceof Error ? e.message : "Upload failed");
-    } finally {
-      setUploadCount((n) => n - 1);
-    }
+    const done = uploadPostMedia(postId, file, "image").then(
+      ({ url }) => url,
+      (e: unknown) => {
+        fail(e instanceof Error ? e.message : "Upload failed");
+        return null;
+      },
+    );
+    pendingCoverUpload = done;
+    void done.finally(() => {
+      if (pendingCoverUpload === done) pendingCoverUpload = null;
+    });
+    attachCoverUpload(done);
   };
 
   // `silent` is the autosave path: it reports through `autosave` instead of
   // busy/toast, so the toolbar never locks and errors don't spam toasts.
   const save = (opts: { silent?: boolean } = {}): Promise<boolean> => {
-    const run = savePromiseRef.current.then(() => runSave(opts));
-    savePromiseRef.current = run;
+    const run = saveChain.then(() => runSave(opts));
+    saveChain = run;
     return run;
   };
 
@@ -491,10 +534,73 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   useEffect(
     () => () => {
       const l = latest.current;
-      if (idRef.current && l.dirty && l.status === "draft") void updatePostAction(idRef.current, l.patch);
+      const id = idRef.current;
+      if (id && l.dirty && l.status === "draft") {
+        saveChain = saveChain.then(() =>
+          updatePostAction(id, l.patch).then(
+            (r) => r.success !== false,
+            () => false,
+          ),
+        );
+      }
     },
     [],
   );
+
+  // The draft-creation remount (lib/draftStash.ts). Parked after EVERY
+  // commit, not at unmount: React renders the replacement instance before it
+  // cleans this one up, so an unmount-time write comes too late to seed the
+  // replacement's state, while the last commit's write is exactly what its
+  // initializers find. Cheap: one small object per render.
+  useEffect(() => {
+    const id = idRef.current;
+    if (!id) return;
+    const el = bodyRef.current;
+    const focused = el !== null && document.activeElement === el;
+    putDraftStash({
+      id,
+      title,
+      slug,
+      slugTouched,
+      tags,
+      excerpt,
+      cover,
+      body,
+      publishAt,
+      scheduledAt,
+      status,
+      dirty,
+      selection: focused ? { start: el.selectionStart, end: el.selectionEnd } : null,
+    });
+  });
+  useEffect(() => {
+    // Uploads the previous instance started finish in this one.
+    if (stash) {
+      for (const [placeholder, done] of pendingBodyUploads) {
+        if (stash.body.includes(placeholder)) attachBodyUpload(placeholder, done);
+      }
+      if (pendingCoverUpload) attachCoverUpload(pendingCoverUpload);
+    }
+    // A navigation this editor chose must not park state for a remount that
+    // is not coming (the TTL covers unmounts it did not choose).
+    return () => {
+      if (leavingRef.current) clearDraftStash();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Focus and caret back where they were, before paint, so a keystroke
+  // mid-remount still lands in the body. Once only: dev StrictMode re-runs
+  // mount effects after a keystroke may already have moved the caret on.
+  const caretRestored = useRef(false);
+  useLayoutEffect(() => {
+    const sel = stash?.selection;
+    const el = bodyRef.current;
+    if (caretRestored.current || !sel || !el) return;
+    caretRestored.current = true;
+    el.focus();
+    el.setSelectionRange(sel.start, sel.end);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // The real fix for "a nav-bar link unmounts the editor mid-debounce and the
   // edit vanishes": save BEFORE the navigation happens, not after, the same
@@ -525,7 +631,10 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
           const id = idRef.current;
           if (!id) return setConfirmLeave(true);
           const r = await updatePostAction(id, latest.current.patch).catch(() => null);
-          if (r && r.success !== false) router.push(href);
+          if (r && r.success !== false) {
+            leavingRef.current = true;
+            router.push(href);
+          }
           else setConfirmLeave(true);
         })();
       } else {
@@ -611,6 +720,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
       if (r.success === false) return fail(r.error);
       setDirty(false);
       latest.current.dirty = false;
+      leavingRef.current = true;
       router.push("/admin/posts");
     } catch {
       fail("Something went wrong. Check your connection and try again.");
@@ -629,6 +739,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     if (!dirty || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
     if (status === "draft" && !locked && (await save())) {
+      leavingRef.current = true;
       router.push("/admin/posts");
       return;
     }
@@ -1056,6 +1167,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
         onConfirm={() => {
           setDirty(false);
           latest.current.dirty = false;
+          leavingRef.current = true;
           router.push(pendingHrefRef.current);
         }}
       />
