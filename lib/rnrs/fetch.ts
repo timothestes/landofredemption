@@ -21,6 +21,10 @@ export async function fetchAllRnrsData(): Promise<NormalizedData> {
       await Promise.all(
         FORMATS.map(async ({ key }) => {
           const id = SEASON_SHEETS[season][key];
+          if (!id) {
+            formats[key] = [];
+            return;
+          }
           try {
             const res = await fetch(
               `${RNRS_PROXY}/?sheet=${key}&season=${season}&id=${id}`,
