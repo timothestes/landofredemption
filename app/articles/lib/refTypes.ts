@@ -16,6 +16,8 @@ export interface ArticleRefs {
   decks: Record<string, DeckEmbedData | null>;
   /** Keyed by mentionKey(name). Community shorthand that is not a card. */
   terms: Record<string, GlossaryTerm>;
+  /** Natural size by image URL, for Blob-hosted images only. Missing key = unknown, render as before. */
+  images?: Record<string, { w: number; h: number }>;
 }
 
 export const EMPTY_REFS: ArticleRefs = { cards: {}, decks: {}, terms: {} };

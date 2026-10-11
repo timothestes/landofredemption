@@ -6,7 +6,7 @@
 const BLOB_BASE = process.env.NEXT_PUBLIC_BLOB_BASE_URL;
 
 /** Only hosts next.config.js allows in `images.remotePatterns` — anything else would 400. */
-function isOptimizable(url: string): boolean {
+export function isOptimizableUrl(url: string): boolean {
   let host: string;
   try {
     host = new URL(url).hostname;
@@ -31,7 +31,7 @@ const optimizerUrl = (url: string, w: number) => `/_next/image?url=${encodeURICo
  * `widths` is ascending; the middle one is the fallback `src`.
  */
 export function coverImageProps(url: string, widths: readonly number[]): { src: string; srcSet?: string } {
-  if (!isOptimizable(url)) return { src: url };
+  if (!isOptimizableUrl(url)) return { src: url };
   return {
     src: optimizerUrl(url, widths[Math.floor(widths.length / 2)]),
     srcSet: widths.map((w) => `${optimizerUrl(url, w)} ${w}w`).join(", "),

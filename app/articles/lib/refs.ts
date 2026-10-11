@@ -5,7 +5,8 @@
 import { loadPublicDeckDetail } from "@/lib/api/cache";
 import { findCard } from "@/lib/cards/lookup";
 import { buildDeckEmbed, type DeckEmbedData } from "@/lib/decks/embed";
-import { extractCardMentions, extractDeckIds } from "./markdown";
+import { extractCardMentions, extractDeckIds, extractImageUrls } from "./markdown";
+import { resolveImageSizes } from "./imageSize";
 import { resolveCardRefs } from "./cardRefs";
 import { resolveGlossaryTerms } from "@/lib/glossary/terms";
 import type { ArticleRefs } from "./refTypes";
@@ -23,6 +24,7 @@ export async function resolveArticleRefs(markdown: string): Promise<ArticleRefs>
   // always wins; a test asserts the two lists cannot overlap anyway.
   const terms = resolveGlossaryTerms(mentions);
   const decks: ArticleRefs["decks"] = {};
+  const images = resolveImageSizes(extractImageUrls(markdown));
   await Promise.all(
     extractDeckIds(markdown).map(async (id) => {
       try {
@@ -34,5 +36,5 @@ export async function resolveArticleRefs(markdown: string): Promise<ArticleRefs>
       }
     }),
   );
-  return { cards, decks, terms };
+  return { cards, decks, terms, images: await images };
 }

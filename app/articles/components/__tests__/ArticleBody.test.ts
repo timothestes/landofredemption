@@ -54,6 +54,37 @@ describe("ArticleBody", () => {
     expect(html).toMatch(/<a href="\/articles">int<\/a>/);
   });
 
+  describe("measured images", () => {
+    const URL = "https://x.public.blob.vercel-storage.com/posts/1/pic.png";
+    const refs = { cards: {}, decks: {}, terms: {}, images: { [URL]: { w: 360, h: 240 } } };
+    const renderWith = (md: string) => renderToStaticMarkup(createElement(ArticleBody, { markdown: md, refs }));
+
+    it("serves a measured image through the optimizer, with its size and a sizes capped at its own width", () => {
+      const html = renderWith(`![Alt](${URL})`);
+      expect(html).toContain("/_next/image?url=");
+      expect(html).toContain('width="360"');
+      expect(html).toContain('height="240"');
+      expect(html).toContain('sizes="(min-width: 704px) 360px, min(calc(100vw - 2rem), 360px)"');
+      expect(html).toContain("h-auto");
+    });
+
+    it("leaves an unmeasured image exactly as before", () => {
+      const html = render(`![Alt](${URL})`);
+      expect(html).not.toContain("/_next/image");
+      expect(html).not.toContain("srcSet");
+      expect(html).toContain(`src="${URL}"`);
+    });
+
+    it("does not re-encode an animated GIF", () => {
+      const gif = "https://x.public.blob.vercel-storage.com/posts/1/anim.gif";
+      const html = renderToStaticMarkup(
+        createElement(ArticleBody, { markdown: `![a](${gif})`, refs: { ...refs, images: { [gif]: { w: 300, h: 200 } } } }),
+      );
+      expect(html).not.toContain("/_next/image");
+      expect(html).toContain('width="300"');
+    });
+  });
+
   it("escapes raw HTML instead of rendering it", () => {
     const html = render("<script>alert(1)</script>\n\nSafe");
     expect(html).not.toContain("<script>");

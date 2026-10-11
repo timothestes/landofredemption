@@ -8,6 +8,7 @@ import CardMention from "./CardMention";
 import GlossaryMention from "./GlossaryMention";
 import DeckEmbed from "./DeckEmbed";
 import RevealImage from "./RevealImage";
+import { coverImageProps } from "../lib/coverImage";
 
 // The ONE markdown renderer: public article page (server) and editor preview
 // (client) both use it, so what the poster previews is what readers get.
@@ -48,6 +49,9 @@ export function YouTubeEmbed({ id }: { id: string }) {
   );
 }
 
+// Reading column is 640px; 2x covers a retina phone or desktop.
+const BODY_WIDTHS = [256, 384, 640, 828, 1080, 1200] as const;
+
 function buildComponents(refs: ArticleRefs, draft: boolean): Components {
   const components = {
     // A paragraph that is ONLY a YouTube link becomes the embed instead of a
@@ -84,15 +88,28 @@ function buildComponents(refs: ArticleRefs, draft: boolean): Components {
       const url = typeof src === "string" ? src : undefined;
       // `![alt](url "reveal")` starts face down behind the card back.
       if (props.title === "reveal") return <RevealImage src={url} alt={alt ?? ""} />;
+      // Blob-hosted images arrive with their natural size (refs.images, measured
+      // server-side): that gives the browser width/height to reserve space and a
+      // `sizes` that never claims more than the image's own width, so the
+      // optimizer's srcSet can't make a small image render larger. Anything
+      // unmeasured (other hosts, the editor preview before refs load) renders as before.
+      const size = url ? refs.images?.[url] : undefined;
+      const optimized =
+        url && size && !/\.gif(\?|$)/i.test(url) // animated GIFs are not re-encoded
+          ? {
+              ...coverImageProps(url, BODY_WIDTHS),
+              sizes: `(min-width: 704px) ${Math.min(size.w, 640)}px, min(calc(100vw - 2rem), ${size.w}px)`,
+            }
+          : { src: url };
       return (
-        // Plain <img>: dimensions are unknown and hosts vary (Blob today, the old
-        // WordPress uploads after the import). next/image needs width/height.
+        // Plain <img>: hosts vary (Blob today, the old WordPress uploads after the import).
         <img
-          src={url}
+          {...optimized}
+          {...(size ? { width: size.w, height: size.h } : {})}
           alt={alt ?? ""}
           loading="lazy"
           decoding="async"
-          className="mx-auto max-w-full rounded-md"
+          className={size ? "mx-auto h-auto max-w-full rounded-md" : "mx-auto max-w-full rounded-md"}
           {...props}
         />
       );
