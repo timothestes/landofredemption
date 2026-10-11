@@ -35,7 +35,7 @@ function rowHasPlacing(row: LeaderboardRow, level: Level, placing: Placing): boo
 
 export default function RnrsClient({ data }: { data: NormalizedData }) {
   const [view, setView] = useState<View>("leaderboard");
-  const [season, setSeason] = useState<SeasonKey | "all">("2026");
+  const [season, setSeason] = useState<SeasonKey | "all">("2027");
   const [format, setFormat] = useState<FormatKey | "all">("type1");
   const [sortKey, setSortKey] = useState<SortKey>("total");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");

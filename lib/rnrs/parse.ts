@@ -78,7 +78,14 @@ export function parseSheetCsv(text: string): PlayerFormatResult[] {
     if (!entry) {
       entry = {
         name,
-        wins: { local: [], district: [], state: [], regional: [], national: [] },
+        wins: {
+          local: [],
+          district: [],
+          seasonal: [],
+          state: [],
+          regional: [],
+          national: [],
+        },
         sheetTotal: 0,
       };
       merged.set(name, entry);
