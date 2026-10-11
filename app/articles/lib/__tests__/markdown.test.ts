@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { youtubeId, isAudioUrl, slugify, SLUG_RE, excerptFromMarkdown, opensCardPicker, flattenCardMentions, parseMention, extractCardMentions } from "../markdown";
+import { youtubeId, isAudioUrl, slugify, SLUG_RE, excerptFromMarkdown, opensCardPicker, flattenCardMentions, parseMention, extractCardMentions, extractImageUrls } from "../markdown";
 
 describe("youtubeId", () => {
   const ID = "dQw4w9WgXcQ";
@@ -118,5 +118,17 @@ describe("aliased mentions elsewhere", () => {
   });
   it("flattens to the words the author wrote, not the target", () => {
     expect(flattenCardMentions("Play [[Jacob (FooF)|Jacob]] early.")).toBe("Play Jacob early.");
+  });
+});
+
+describe("extractImageUrls", () => {
+  it("returns distinct absolute image urls outside code, ignoring titles", () => {
+    const md = [
+      "![a](https://x.test/a.png) and ![b](https://x.test/b.png \"reveal\") and ![dup](https://x.test/a.png)",
+      "`![code](https://x.test/inline.png)`",
+      "```\n![fence](https://x.test/fence.png)\n```",
+      "![rel](/local.png) [link](https://x.test/not-an-image.png)",
+    ].join("\n");
+    expect(extractImageUrls(md)).toEqual(["https://x.test/a.png", "https://x.test/b.png"]);
   });
 });

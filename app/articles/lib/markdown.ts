@@ -125,6 +125,19 @@ export function flattenCardMentions(text: string): string {
   return text.replace(CARD_MENTION_RE, (_match, inner: string) => parseMention(inner).label);
 }
 
+const IMAGE_RE = /!\[[^\]]*\]\(\s*<?(https?:\/\/[^\s)>]+)/g;
+
+/** Distinct absolute image URLs (`![alt](url)`) outside code, in document order, capped. */
+export function extractImageUrls(md: string, max = 30): string[] {
+  const text = md.replace(FENCE_RE, "").replace(INLINE_CODE_RE, "");
+  const urls = new Set<string>();
+  for (const m of text.matchAll(IMAGE_RE)) {
+    urls.add(m[1]);
+    if (urls.size >= max) break;
+  }
+  return [...urls];
+}
+
 /** Distinct mention names (as typed) outside code, in document order, capped. */
 export function extractCardMentions(md: string, max = 200): string[] {
   const seen = new Set<string>();
