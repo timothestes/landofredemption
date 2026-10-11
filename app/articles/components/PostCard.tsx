@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { coverImageProps } from "../lib/coverImage";
 import { postByline, postExcerpt, type PublicPost } from "../lib/queries";
 
 export function formatPostDate(iso: string | null): string {
@@ -20,14 +21,15 @@ interface PostCardProps {
   headingLevel?: 2 | 3;
 }
 
-function CoverImage({ src, priority }: { src: string; priority: boolean }) {
+function CoverImage({ src, sizes, widths, priority }: { src: string; sizes: string; widths: readonly number[]; priority: boolean }) {
   // The wrapper owns the aspect ratio; the image fills it absolutely so a
   // tall cover can't grow the box (h-full on a static img never resolved
   // against the ratio-derived height, so every cover laid out at natural size).
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src}
+      {...coverImageProps(src, widths)}
+      sizes={sizes}
       alt=""
       loading={priority ? "eager" : "lazy"}
       fetchPriority={priority ? "high" : undefined}
@@ -52,6 +54,11 @@ function CoverPlate({ title }: { title: string }) {
 // The title link is stretched over the whole card (`after:absolute after:inset-0`
 // on a `relative` article), so the entire row/tile is the tap target while the
 // accessible name stays the title. The kicker link sits above it with z-10.
+// Rendered widths: compact w-24/sm:w-28 (96/112px), row w-28/sm:w-36 (112/144px),
+// lead = half the 5xl column from md up, full width below. Widths include 2x.
+const THUMB_WIDTHS = [128, 256, 384] as const;
+const LEAD_WIDTHS = [384, 640, 828, 1080, 1200] as const;
+
 const STRETCHED = "hover:underline after:absolute after:inset-0";
 
 /** House small-caps label: kickers and bylines. Never Cinzel. */
@@ -69,7 +76,7 @@ export default function PostCard({ post, variant = "default", priority = false, 
       <article className="relative flex gap-3 py-3 first:pt-0">
         <div className="relative aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-sm bg-muted/60 sm:w-28">
           {post.cover_image_url ? (
-            <CoverImage src={post.cover_image_url} priority={false} />
+            <CoverImage src={post.cover_image_url} sizes="(min-width: 640px) 112px, 96px" widths={THUMB_WIDTHS} priority={false} />
           ) : (
             <CoverPlate title={post.title} />
           )}
@@ -91,7 +98,7 @@ export default function PostCard({ post, variant = "default", priority = false, 
       <article className="relative flex gap-4 border-t border-border/60 py-4">
         <div className="relative aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-sm bg-muted/60 sm:w-36">
           {post.cover_image_url ? (
-            <CoverImage src={post.cover_image_url} priority={false} />
+            <CoverImage src={post.cover_image_url} sizes="(min-width: 640px) 144px, 112px" widths={THUMB_WIDTHS} priority={false} />
           ) : (
             <CoverPlate title={post.title} />
           )}
@@ -118,7 +125,7 @@ export default function PostCard({ post, variant = "default", priority = false, 
     <article className="relative flex flex-col gap-2">
       <div className="relative mb-2 aspect-[16/9] w-full overflow-hidden rounded-sm bg-muted/60">
         {post.cover_image_url ? (
-          <CoverImage src={post.cover_image_url} priority={priority} />
+          <CoverImage src={post.cover_image_url} sizes="(min-width: 768px) 512px, 100vw" widths={LEAD_WIDTHS} priority={priority} />
         ) : (
           <CoverPlate title={post.title} />
         )}
