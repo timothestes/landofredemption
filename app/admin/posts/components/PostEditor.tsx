@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 import ToastNotification from "@/components/ui/toast-notification";
 import ArticleBody from "@/app/articles/components/ArticleBody";
 import { EMPTY_REFS, type ArticleRefs } from "@/app/articles/lib/refTypes";
-import { excerptFromMarkdown, opensCardPicker, slugify, youtubeId } from "@/app/articles/lib/markdown";
+import { excerptFromMarkdown, opensCardPicker, slugify } from "@/app/articles/lib/markdown";
 import {
   createDraftAction,
   updatePostAction,
@@ -23,7 +23,7 @@ import {
   searchCardsAction,
   type PostRow,
 } from "../actions";
-import { ACCEPT, type UploadKind } from "../lib/media";
+import { ACCEPT, altFromFileName, validateMediaFile, type UploadKind } from "../lib/media";
 import { uploadPostMedia } from "../lib/uploadMedia";
 import { toDatetimeLocalValue, fromDatetimeLocalValue, isFutureIso, formatScheduled } from "../lib/schedule";
 import { clearDraftStash, peekDraftStash, putDraftStash } from "../lib/draftStash";
@@ -31,16 +31,20 @@ import {
   continueList,
   insertBlock,
   minimalEdit,
+  normalizeHref,
   prefixLines,
   replaceOnce,
   wrapSelection,
   type EditResult,
 } from "../lib/textarea";
 import { MAX_EXCERPT, MAX_TITLE } from "../lib/validate";
+import { wordStats } from "../lib/wordStats";
 import MarkdownToolbar, { type ToolbarAction } from "./MarkdownToolbar";
 import TagInput from "./TagInput";
 import CardPicker from "@/components/ui/CardPicker";
 import DeckPicker from "./DeckPicker";
+import InsertLinkDialog from "./InsertLinkDialog";
+import CoverCropDialog from "./CoverCropDialog";
 import LocalDateTime from "./LocalDateTime";
 
 type Toast = { message: string; type: "success" | "error" } | null;
@@ -118,6 +122,17 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     to: 0,
   });
   const [deckPickerOpen, setDeckPickerOpen] = useState(false);
+  // Link / YouTube dialog. The selection is captured on open: the textarea
+  // loses it once the dialog takes focus (why cardPicker stores from/to too).
+  const [linkDialog, setLinkDialog] = useState<{ open: boolean; mode: "link" | "youtube"; from: number; to: number }>({
+    open: false,
+    mode: "link",
+    from: 0,
+    to: 0,
+  });
+  // Cover crop dialog: an object URL of a just-picked file, or (file null)
+  // the existing cover's URL for a re-crop.
+  const [coverCrop, setCoverCrop] = useState<{ src: string; file: File | null } | null>(null);
   // Resolved card mentions and deck embeds for the preview — the same
   // resolution the public page runs (app/articles/lib/refs.ts).
   const [refs, setRefs] = useState<ArticleRefs>(EMPTY_REFS);
@@ -127,6 +142,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   const imageInput = useRef<HTMLInputElement>(null);
   const audioInput = useRef<HTMLInputElement>(null);
   const coverInput = useRef<HTMLInputElement>(null);
+  const coverZone = useRef<HTMLDivElement>(null);
   const idRef = useRef<string | null>(id);
   // Coalesces concurrent ensureId() callers (e.g. picking an image and
   // clicking Save before the first createDraftAction round trip lands) onto
@@ -317,21 +333,10 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
         return applyEdit(prefixLines(body, sel, "> "));
       case "list":
         return applyEdit(prefixLines(body, sel, "- "));
-      case "link": {
-        const url = window.prompt("Link URL");
-        if (!url) return;
-        // A scheme-less "example.com" would become a RELATIVE href under
-        // /articles/<slug>; keep schemes, site-relative paths and anchors as typed.
-        const u = url.trim();
-        const href = /^([a-z][a-z0-9+.-]*:|\/|#)/i.test(u) ? u : `https://${u}`;
-        return applyEdit(wrapSelection(body, sel, "[", `](${href})`, "link text"));
-      }
-      case "youtube": {
-        const url = window.prompt("YouTube URL");
-        if (!url) return;
-        if (!youtubeId(url)) return fail("That doesn't look like a YouTube URL");
-        return applyEdit(insertBlock(body, sel, url.trim()));
-      }
+      case "link":
+        return setLinkDialog({ open: true, mode: "link", from: sel.start, to: sel.end });
+      case "youtube":
+        return setLinkDialog({ open: true, mode: "youtube", from: sel.start, to: sel.end });
       case "card":
         return setCardPicker({ open: true, query: body.slice(sel.start, sel.end).trim(), from: sel.start, to: sel.end });
       case "deck":
@@ -360,6 +365,15 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     applyEdit(insertBlock(body, selection(), url));
   };
 
+  const onInsertLink = ({ href, text }: { href: string; text: string }) => {
+    const { mode, from, to } = linkDialog;
+    setLinkDialog((p) => ({ ...p, open: false }));
+    if (mode === "youtube") return applyEdit(insertBlock(body, { start: from, end: to }, href));
+    const md = `[${text.trim() || "link text"}](${normalizeHref(href)})`;
+    const caret = from + md.length;
+    applyEdit({ value: body.slice(0, from) + md + body.slice(to), selectionStart: caret, selectionEnd: caret });
+  };
+
   // Both attach an instance to an upload promise: this one on start, and the
   // next one on mount when a remount cut this one off mid-upload.
   const attachBodyUpload = (placeholder: string, done: Promise<string>) => {
@@ -386,6 +400,9 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   const onPickMedia = async (kind: UploadKind, files: FileList | null) => {
     const file = files?.[0];
     if (!file) return;
+    // Before ensureId(): a bad file on a new post must not create a draft row.
+    const problem = validateMediaFile(file, kind);
+    if (problem) return fail(problem);
     let postId: string;
     try {
       const draft = await ensureId();
@@ -403,7 +420,8 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     // Resolves to the markdown that replaces the placeholder ("" on failure).
     const done = uploadPostMedia(postId, file, kind).then(
       ({ url }) => {
-        const label = file.name.replace(/\.[^.]+$/, "");
+        // A camera name ("IMG_4821") would ship as the published alt text.
+        const label = kind === "image" ? altFromFileName(file.name) : file.name.replace(/\.[^.]+$/, "");
         return kind === "image" ? `![${label}](${url})` : `[${label}](${url})`;
       },
       (e: unknown) => {
@@ -416,9 +434,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     attachBodyUpload(placeholder, done);
   };
 
-  const onPickCover = async (files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) return;
+  const uploadCover = async (file: File) => {
     let postId: string;
     try {
       const draft = await ensureId();
@@ -440,6 +456,23 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
       if (pendingCoverUpload === done) pendingCoverUpload = null;
     });
     attachCoverUpload(done);
+  };
+
+  // The crop dialog runs BEFORE uploadCover (and so before ensureId), so
+  // cancelling on a new post leaves no draft row behind. GIFs skip it: a
+  // canvas would freeze the animation.
+  const onPickCover = (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    const problem = validateMediaFile(file, "image");
+    if (problem) return fail(problem);
+    if (file.type === "image/gif") return void uploadCover(file);
+    setCoverCrop({ src: URL.createObjectURL(file), file });
+  };
+
+  const closeCoverCrop = () => {
+    if (coverCrop?.file) URL.revokeObjectURL(coverCrop.src);
+    setCoverCrop(null);
   };
 
   // `silent` is the autosave path: it reports through `autosave` instead of
@@ -730,6 +763,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   };
 
   const locked = busy !== null || uploading;
+  const stats = useMemo(() => wordStats(body), [body]);
   const publishIso = fromDatetimeLocalValue(publishAt);
   const willSchedule = status === "draft" && isFutureIso(publishIso);
 
@@ -853,14 +887,19 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
               ))}
             </div>
             <div className="grid lg:grid-cols-2">
-              {/* min-w-0: the toolbar's one-row min-content width must scroll inside the pane, not widen the page. */}
+              {/* min-w-0: the pane sizes to its grid track, never to its content's min width. */}
               <div className={`min-w-0 ${tab === "write" ? "" : "hidden lg:block"}`}>
                 <MarkdownToolbar onAction={onToolbar} disabled={locked} />
                 {/* Always in view on desktop so nobody has to find a tooltip; phones
                     get the same two moves from the placeholder and the preview tip. */}
-                <p className="hidden bg-muted/40 px-3 py-1 text-xs text-muted-foreground lg:block">
-                  Type <kbd className="rounded bg-background px-1 font-mono text-[11px] text-foreground">[[</kbd> to mention
-                  a card {"\u00b7"} a deck link on its own line embeds it
+                <p className="hidden bg-muted/40 px-3 py-1 text-xs text-muted-foreground lg:flex lg:flex-wrap lg:items-center lg:justify-between lg:gap-x-3">
+                  <span>
+                    Type <kbd className="rounded bg-background px-1 font-mono text-[11px] text-foreground">[[</kbd> to mention
+                    a card {"\u00b7"} a deck link on its own line embeds it
+                  </span>
+                  <span className="ml-auto shrink-0 tabular-nums">
+                    {stats.words} words {"\u00b7"} {stats.minutes} min read
+                  </span>
                 </p>
                 <textarea
                   ref={bodyRef}
@@ -924,6 +963,8 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
                 />
               </div>
               <div className={`${tab === "preview" ? "" : "hidden lg:block"} rounded-b-md bg-muted/20 p-4 lg:rounded-r-md`}>
+                {/* Phones name the pane with the Write/Preview tabs already. */}
+                <div className="mb-2 hidden text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground lg:block">Preview</div>
                 {body.trim() ? (
                   <ArticleBody markdown={body} refs={refs} draft />
                 ) : (
@@ -1016,13 +1057,14 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
                 without opening the file picker; drop works the same as the
                 body textarea's image drop. */}
             <div
+              ref={coverZone}
               tabIndex={0}
               aria-label="Cover image drop zone. Click, then paste or drop an image."
               onPaste={(e) => {
                 const f = e.clipboardData.files;
                 if (f.length) {
                   e.preventDefault();
-                  void onPickCover(f);
+                  onPickCover(f);
                 }
               }}
               onDragOver={(e) => {
@@ -1032,28 +1074,47 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
                 const f = e.dataTransfer.files;
                 if (f.length) {
                   e.preventDefault();
-                  void onPickCover(f);
+                  onPickCover(f);
                 }
               }}
               className="mt-1 rounded-md outline-none"
             >
               {cover ? (
                 <div className="space-y-2">
+                  <p className="normal-case tracking-normal text-[11px] text-muted-foreground">Article cards crop to this 16:9 frame</p>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={cover} alt="" className="w-full rounded-md object-cover" style={{ aspectRatio: "16 / 9" }} />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="min-h-11"
-                    onClick={() => {
-                      setCover(null);
-                      editVersion.current += 1;
-                      setDirty(true);
-                    }}
-                    disabled={locked}
-                  >
-                    Remove cover
-                  </Button>
+                  <img src={cover} alt="" className="w-full rounded-sm object-cover" style={{ aspectRatio: "16 / 9" }} />
+                  <div className="flex flex-wrap gap-2">
+                    {/* Not for a GIF: the canvas would freeze the animation. */}
+                    {!/\.gif(\?|$)/i.test(cover) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="min-h-11"
+                        onClick={() => setCoverCrop({ src: cover, file: null })}
+                        disabled={locked}
+                      >
+                        Adjust crop
+                      </Button>
+                    )}
+                    {/* Through the file input, so the new file gets the crop dialog too. */}
+                    <Button variant="outline" size="sm" className="min-h-11" onClick={() => coverInput.current?.click()} disabled={locked}>
+                      Replace
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="min-h-11"
+                      onClick={() => {
+                        setCover(null);
+                        editVersion.current += 1;
+                        setDirty(true);
+                      }}
+                      disabled={locked}
+                    >
+                      Remove
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 <Button variant="outline" className="min-h-11" onClick={() => coverInput.current?.click()} disabled={locked}>
@@ -1061,7 +1122,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
                 </Button>
               )}
               <p className="mt-1 normal-case tracking-normal text-[11px] text-muted-foreground">
-                Click here, then paste (⌘V) or drop an image
+                {cover ? "Paste or drop an image to replace it" : "Click here, then paste (⌘V) or drop an image"}
               </p>
             </div>
           </div>
@@ -1126,7 +1187,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
         accept={ACCEPT.image}
         className="hidden"
         onChange={(e) => {
-          void onPickCover(e.target.files);
+          onPickCover(e.target.files);
           e.target.value = "";
         }}
       />
@@ -1147,6 +1208,35 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
         onClose={() => {
           setDeckPickerOpen(false);
           refocusBody();
+        }}
+      />
+      <InsertLinkDialog
+        open={linkDialog.open}
+        mode={linkDialog.mode}
+        initialText={body.slice(linkDialog.from, linkDialog.to)}
+        onInsert={onInsertLink}
+        onClose={() => {
+          setLinkDialog((p) => ({ ...p, open: false }));
+          refocusBody();
+        }}
+      />
+      <CoverCropDialog
+        open={coverCrop !== null}
+        src={coverCrop?.src ?? null}
+        file={coverCrop?.file ?? null}
+        onConfirm={(f) => {
+          closeCoverCrop();
+          void uploadCover(f);
+        }}
+        onUseFull={() => {
+          const f = coverCrop?.file;
+          closeCoverCrop();
+          if (f) void uploadCover(f);
+        }}
+        onCancel={() => {
+          closeCoverCrop();
+          // Back to the drop zone, not the body: that is where the poster was.
+          requestAnimationFrame(() => coverZone.current?.focus());
         }}
       />
       <ConfirmationDialog

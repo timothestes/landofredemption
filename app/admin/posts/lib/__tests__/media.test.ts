@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateMediaFile, mediaPathname, parseClientPayload, MAX_IMAGE_BYTES, MAX_AUDIO_BYTES } from "../media";
+import { validateMediaFile, mediaPathname, parseClientPayload, altFromFileName, MAX_IMAGE_BYTES, MAX_AUDIO_BYTES } from "../media";
 
 describe("validateMediaFile", () => {
   it("accepts a small png as an image", () => expect(validateMediaFile({ type: "image/png", size: 10 }, "image")).toBeNull());
@@ -29,4 +29,26 @@ describe("parseClientPayload", () => {
     "rejects %j",
     (raw) => expect(parseClientPayload(raw)).toBeNull(),
   );
+});
+
+describe("altFromFileName", () => {
+  it("makes a descriptive name readable", () => {
+    expect(altFromFileName("my-deck_photo  final.jpg")).toBe("my deck photo final");
+    expect(altFromFileName("Lost Soul.png")).toBe("Lost Soul");
+  });
+  it.each([
+    "IMG_4821.jpeg",
+    "IMG4821.JPG",
+    "DSC01234.jpg",
+    "PXL_20261011_131422.jpg",
+    "Screenshot_20261011-131422.png",
+    "Screen Shot 2026-10-11 at 3.14.22 PM.png",
+    "11111111-1111-1111-1111-111111111111.png",
+    "20261011.png",
+    ".png",
+  ])("is empty for %s", (name) => expect(altFromFileName(name)).toBe(""));
+  it("keeps a name that merely starts like a camera prefix", () => {
+    expect(altFromFileName("image-of-eden.png")).toBe("image of eden");
+    expect(altFromFileName("dscription.png")).toBe("dscription");
+  });
 });
