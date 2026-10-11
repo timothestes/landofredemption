@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { wrapSelection, prefixLines, insertBlock, replaceOnce, minimalEdit, continueList } from "../textarea";
+import { wrapSelection, prefixLines, insertBlock, replaceOnce, minimalEdit, continueList, normalizeHref } from "../textarea";
 
 describe("wrapSelection", () => {
   it("wraps the selected text and keeps it selected", () => {
@@ -45,6 +45,19 @@ describe("insertBlock", () => {
   it("does not duplicate blank lines that already exist", () => {
     expect(insertBlock("a\n\n\n\nb", { start: 3, end: 3 }, "X").value).toBe("a\n\nX\n\nb");
   });
+});
+
+describe("normalizeHref", () => {
+  it("prefixes https:// on a bare host", () => expect(normalizeHref("example.com")).toBe("https://example.com"));
+  it("keeps site-relative paths and anchors as typed", () => {
+    expect(normalizeHref("/articles/x")).toBe("/articles/x");
+    expect(normalizeHref("#top")).toBe("#top");
+  });
+  it("keeps any scheme as typed", () => {
+    expect(normalizeHref("mailto:a@b.c")).toBe("mailto:a@b.c");
+    expect(normalizeHref("http://x.y")).toBe("http://x.y");
+  });
+  it("trims whitespace", () => expect(normalizeHref(" https://x.y ")).toBe("https://x.y"));
 });
 
 describe("replaceOnce", () => {
