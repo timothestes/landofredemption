@@ -17,6 +17,7 @@ vi.mock('react-konva', () => ({
 import {
   isHandCardFaceVisible,
   isFaceDownInPlayCardVisible,
+  isRevealedReserveCard,
   canViewerToggleMeek,
   isBattleBandActive,
 } from '../MultiplayerCanvas';
@@ -308,5 +309,17 @@ describe('isBattleBandActive', () => {
 
   it('closed while waiting (pre-game)', () => {
     expect(isBattleBandActive('waiting', 'battle', 'active')).toBe(false);
+  });
+});
+
+describe('isRevealedReserveCard', () => {
+  it('shows every reserve card, flipped or not, once the reserve is revealed', () => {
+    expect(isRevealedReserveCard({ zone: 'reserve' }, true)).toBe(true);
+  });
+  it('does not reveal while the reserve is hidden', () => {
+    expect(isRevealedReserveCard({ zone: 'reserve' }, false)).toBe(false);
+  });
+  it('never applies outside the reserve zone', () => {
+    expect(isRevealedReserveCard({ zone: 'territory' }, true)).toBe(false);
   });
 });

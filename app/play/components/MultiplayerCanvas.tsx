@@ -392,6 +392,20 @@ export function isFaceDownInPlayCardVisible(
 }
 
 /**
+ * Whether a reserve card's face is shown because its owner revealed the reserve.
+ * A reveal is zone-wide: it must show every card, not just those that happen to
+ * be face-up. Cards dealt into the reserve at setup are stored face-down
+ * (`isFlipped`), while cards moved in mid-game are face-up, so checking
+ * `isFlipped` alone shows a mix of faces and backs.
+ */
+export function isRevealedReserveCard(
+  card: { zone: string },
+  ownerReserveVisible: boolean,
+): boolean {
+  return card.zone === 'reserve' && ownerReserveVisible;
+}
+
+/**
  * Whether a double-click may toggle "meek" on a card. Any player may — meek can
  * be set on your own card OR an opponent's (e.g. a hero you've taken control
  * of); the server's meek_card/unmeek_card reducers don't gate on ownership
@@ -1254,13 +1268,14 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         return true;
       }
     }
+    if (isRevealedReserveCard(card, card.ownerId === 'player1' ? canViewMyReserve : canViewOppReserve)) return false;
     if (!card.isFlipped) return false;
     return !isFaceDownInPlayCardVisible(
       isSpectator ? 'spectator' : 'player',
       card.ownerId,
       { myShareHand, oppShareHand },
     );
-  }, [isSpectator, gameState.myPlayer, gameState.opponentPlayer, myShareHand, oppShareHand]);
+  }, [isSpectator, gameState.myPlayer, gameState.opponentPlayer, myShareHand, oppShareHand, canViewMyReserve, canViewOppReserve]);
 
   // ---- Stage ref ----
   const stageRef = useRef<Konva.Stage>(null);
