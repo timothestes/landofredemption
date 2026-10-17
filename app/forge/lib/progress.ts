@@ -23,6 +23,7 @@ export type ProgressModel = {
 // case-insensitive from a word start, so "draw" also catches "draws"/"drawn" but not "withdraw".
 export const KEYWORDS = [
   "cannot be negated", "cannot be interrupted", "cannot be prevented", "reserve", "draw", "protect",
+  "regardless of protect",
 ];
 const KEYWORD_RES = KEYWORDS.map((k) => new RegExp(`\\b${k.replace(/ /g, "\\s+")}`, "i"));
 
