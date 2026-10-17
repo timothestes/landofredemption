@@ -120,3 +120,13 @@ describe("computeProgress keywords by brigade", () => {
     expect(draw.byBrigade).toEqual({ Blue: 2, Green: 1, none: 1 });
   });
 });
+
+describe("computeProgress regardless of protect", () => {
+  it("matches 'regardless of protection' and still counts toward 'protect'", () => {
+    const m = computeProgress([
+      { snapshot: { cardType: ["EE"], brigades: ["Black"], rawText: "Discard a Hero regardless of protection." }, status: "draft" },
+    ], null);
+    expect(m.keywords.find((k) => k.keyword === "regardless of protect")?.count).toBe(1);
+    expect(m.keywords.find((k) => k.keyword === "protect")?.count).toBe(1);
+  });
+});

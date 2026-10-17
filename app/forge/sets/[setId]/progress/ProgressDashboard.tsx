@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import type { ProgressModel } from "@/app/forge/lib/progress";
 import { STATUS_LABEL } from "@/app/forge/lib/lifecycleCopy";
@@ -22,7 +21,6 @@ export default function ProgressDashboard({
   setId: string; model: ProgressModel; hasApprovedArt: boolean;
 }) {
   const live = model.headline.actual;
-  const [keywordsByBrigade, setKeywordsByBrigade] = useState(false);
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -114,60 +112,35 @@ export default function ProgressDashboard({
         </div>
       )}
 
-      {/* ability-text keyword breakdown — bars are each phrase's share of the set's cards;
-          the toggle swaps them for a keyword × brigade table */}
+      {/* ability-text keyword × brigade breakdown */}
       {live > 0 && (
         <div>
-          <div className="mb-1 flex items-center gap-3">
-            <p className="text-sm font-medium">Keywords</p>
-            <button
-              type="button"
-              aria-pressed={keywordsByBrigade}
-              onClick={() => setKeywordsByBrigade((v) => !v)}
-              className={`rounded-md border px-2 py-0.5 text-xs hover:bg-muted ${keywordsByBrigade ? "bg-muted" : "text-muted-foreground"}`}
-            >
-              By brigade
-            </button>
-          </div>
-          {keywordsByBrigade ? (
-            <div className="overflow-x-auto">
-              <table className="border-collapse text-xs">
-                <thead>
-                  <tr>
-                    <th className="sticky left-0 bg-background p-1 text-left">Keyword \ Brigade</th>
-                    {model.brigades.map((b) => <th key={b} className="p-1 font-normal">{b}</th>)}
-                    <th className="border-l p-1 font-normal">Total</th>
+          <p className="mb-1 text-sm font-medium">Keywords</p>
+          <div className="overflow-x-auto">
+            <table className="border-collapse text-xs">
+              <thead>
+                <tr>
+                  <th className="sticky left-0 bg-background p-1 text-left">Keyword \ Brigade</th>
+                  {model.brigades.map((b) => <th key={b} className="p-1 font-normal">{b}</th>)}
+                  <th className="border-l p-1 font-normal">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {model.keywords.map((k) => (
+                  <tr key={k.keyword}>
+                    <th className="sticky left-0 bg-background p-1 text-left font-normal">{k.keyword}</th>
+                    {model.brigades.map((b) => {
+                      const n = k.byBrigade[b] ?? 0;
+                      return (
+                        <td key={b} className={`p-1 text-center tabular-nums ${n ? "bg-muted" : "text-muted-foreground"}`}>{n}</td>
+                      );
+                    })}
+                    <td className="border-l p-1 text-center font-medium tabular-nums">{k.count}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {model.keywords.map((k) => (
-                    <tr key={k.keyword}>
-                      <th className="sticky left-0 bg-background p-1 text-left font-normal">{k.keyword}</th>
-                      {model.brigades.map((b) => {
-                        const n = k.byBrigade[b] ?? 0;
-                        return (
-                          <td key={b} className={`p-1 text-center tabular-nums ${n ? "bg-muted" : "text-muted-foreground"}`}>{n}</td>
-                        );
-                      })}
-                      <td className="border-l p-1 text-center font-medium tabular-nums">{k.count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-          <div className="grid max-w-md grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 text-xs">
-            {model.keywords.map((k) => (
-              <div key={k.keyword} className="contents">
-                <span className="text-muted-foreground">{k.keyword}</span>
-                <div className="h-2 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full bg-muted-foreground/60" style={{ width: `${(k.count / live) * 100}%` }} />
-                </div>
-                <span className="text-right tabular-nums">{k.count}</span>
-              </div>
-            ))}
+                ))}
+              </tbody>
+            </table>
           </div>
-          )}
         </div>
       )}
 
