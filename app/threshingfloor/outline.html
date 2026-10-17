@@ -300,25 +300,9 @@
   .tourn-remove-btn:hover { background: var(--red); color: #fff; }
 
   /* ===== Tournament Results Editor Modal ===== */
-  #tourn-results-editor-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1100; align-items: center; justify-content: center; padding: 20px;
-  }
-  #tourn-results-editor-overlay.open { display: flex; }
-  #tourn-results-editor-modal {
-    background: #fff; border-radius: 8px; width: 100%; max-width: 680px;
-    max-height: 90vh; overflow-y: auto; position: relative;
-    display: flex; flex-direction: column;
-  }
-  #tre-header {
-    background: var(--teal-dark); border-radius: 8px 8px 0 0;
-    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
-    flex-shrink: 0;
-  }
-  #tre-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px;
-    color: #fff; letter-spacing: 0.5px;
-  }
+  /* Tournament Results Editor — overlay/box/header/title/footer chrome from
+     the shared .tf-modal-* system; box width constrained for this content. */
+  #tourn-results-editor-modal { max-width: min(680px, 95vw); }
   #tre-fields {
     padding: 14px 16px 10px; border-bottom: 2px solid var(--teal-light);
     display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
@@ -377,29 +361,14 @@
   }
   .tre-tie-btn:hover { border-color: var(--teal); color: var(--teal); }
   .tre-tie-btn.active { background: var(--teal); border-color: var(--teal); color: #fff; }
-  #tre-footer {
-    padding: 10px 16px 14px; display: flex; justify-content: flex-end; gap: 8px;
-    border-top: 1px solid var(--gray-light);
-  }
 
   /* ===== Manual Tournament Form Modal (editor only) ===== */
-  #mtf-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1100; align-items: center; justify-content: center; padding: 20px;
-  }
-  #mtf-overlay.open { display: flex; }
-  #mtf-modal {
-    background: #fff; border-radius: 8px; width: 100%; max-width: 460px;
-    max-height: 90vh; overflow-y: auto; position: relative;
-  }
-  #mtf-header {
-    background: var(--teal-dark); border-radius: 8px 8px 0 0;
-    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
-  }
-  #mtf-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px;
-    color: #fff; letter-spacing: 0.5px;
-  }
+  /* MTF (manual tournament form) — overlay/box/header/footer chrome from the
+     shared .tf-modal-* system; body keeps its own padding (not flex/gap:
+     fields here rely on `.field-label { margin-top }` for rhythm, not a
+     wrapper-per-field + gap shape like the other modals). Box narrower than
+     the shared default since this form's fields don't need the extra room. */
+  #mtf-modal { max-width: min(460px, 95vw); }
   #mtf-body { padding: 14px 16px 18px; }
   #mtf-body .field-label { margin-top: 10px; }
   #mtf-body .field-label:first-child { margin-top: 0; }
@@ -415,21 +384,12 @@
   }
   .mtf-format-remove:hover { background: var(--red); color: #fff; }
   #mtf-status { font-size: 11px; color: var(--red); margin-top: 8px; min-height: 14px; }
-  #mtf-footer {
-    padding: 10px 16px 14px; display: flex; justify-content: flex-end; gap: 8px;
-    border-top: 1px solid var(--gray-light);
-  }
 
   /* ===== Tournament Results Display Modal (published) ===== */
-  #tourn-results-display-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1100; align-items: center; justify-content: center; padding: 20px;
-  }
-  #tourn-results-display-overlay.open { display: flex; }
-  #tourn-results-display-modal {
-    background: #fff; border-radius: 8px; width: 100%; max-width: 680px;
-    max-height: 90vh; overflow-y: auto; position: relative;
-  }
+  /* Overlay/box chrome from the shared .tf-modal-* system; header kept
+     bespoke (title + subtitle stacked, close button reserves space via
+     right padding rather than flex). */
+  #tourn-results-display-modal { max-width: min(680px, 95vw); }
   #trd-header {
     background: var(--teal-dark); border-radius: 8px 8px 0 0;
     padding: 12px 40px 12px 16px; position: relative;
@@ -466,8 +426,7 @@
 
   /* dark mode for new modals */
   body.dark-mode #tourn-results-editor-modal,
-  body.dark-mode #tourn-results-display-modal,
-  body.dark-mode #mtf-modal { background: var(--teal-dark); }
+  body.dark-mode #tourn-results-display-modal { background: var(--teal-dark); }
   body.dark-mode #tre-fields { border-bottom-color: rgba(255,255,255,0.08); }
   body.dark-mode #tre-results-label { color: var(--teal-mid); }
   body.dark-mode .tre-field-label { color: var(--teal-mid); }
@@ -480,7 +439,6 @@
   body.dark-mode .tre-player-input:focus { border-color: var(--teal-mid); }
   body.dark-mode .tre-player-input { border-bottom-color: rgba(255,255,255,0.15); }
   body.dark-mode .tre-format-block { border-bottom-color: rgba(255,255,255,0.08); }
-  body.dark-mode #tre-footer { border-top-color: rgba(255,255,255,0.08); }
   body.dark-mode .tre-tie-btn { border-color: rgba(255,255,255,0.2); color: var(--gray); }
   body.dark-mode .tre-tie-btn:hover { border-color: var(--teal-mid); color: var(--teal-mid); }
   body.dark-mode .tre-tie-btn.active { background: var(--teal-mid); border-color: var(--teal-mid); color: #fff; }
@@ -490,7 +448,6 @@
   body.dark-mode .trd-rank { color: var(--teal-mid); }
   body.dark-mode .trd-rank.tied { /* color unchanged when tied */ }
   body.dark-mode .trd-empty-state { color: var(--placeholder); }
-  body.dark-mode #mtf-footer { border-top-color: rgba(255,255,255,0.08); }
   body.dark-mode .mtf-format-remove { background: rgba(255,255,255,0.12); color: var(--text); }
   body.dark-mode .mtf-format-remove:hover { background: var(--red); color: #fff; }
 
@@ -547,27 +504,9 @@
   body.view-mode .venue-notes-card-empty { display: none !important; }
   body.view-mode .venue-notes-card { cursor: pointer; }
 
-  /* Venue Notes modal */
-  #venue-notes-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1050;
-    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
-  }
-  #venue-notes-overlay.open { display: flex; }
-  #venue-notes-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    min-width: 420px; max-width: min(720px, 95vw); width: max-content;
-    max-height: 90vh; overflow-y: auto; position: relative;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.28); display: flex; flex-direction: column;
-  }
-  #venue-notes-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
-  #venue-notes-header-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px;
-    letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
-  }
-  #venue-notes-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  /* Venue Notes modal — chrome (overlay/box/header/body/footer) now comes
+     from the shared .tf-modal-* system above; only content-specific CSS
+     stays here. */
   /* Edit view */
   #venue-notes-edit-wrap { border: 1px solid var(--teal-light); border-radius: 4px; overflow: hidden; }
   #venue-notes-bullet-editor {
@@ -590,25 +529,9 @@
   }
   /* Read-only view */
   #venue-notes-view { display: none; }
-  #venue-notes-view-list { margin: 0; padding-left: 18px; list-style: none; }
-  #venue-notes-view-list li { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; word-break: break-word; white-space: pre-wrap; max-width: 680px; }
-  #venue-notes-view-list li.bullet-l0::before { content: '•'; margin-right: 6px; }
-  #venue-notes-view-list li.bullet-l1 { padding-left: 20px; }
-  #venue-notes-view-list li.bullet-l1::before { content: '–'; margin-right: 6px; color: var(--gray); }
-  #venue-notes-view-list li.bullet-l2 { padding-left: 40px; }
-  #venue-notes-view-list li.bullet-l2::before { content: '◦'; margin-right: 6px; color: var(--gray); }
-  #venue-notes-footer {
-    padding: 12px 18px; border-top: 1px solid var(--teal-light);
-    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
-  }
-  body.dark-mode #venue-notes-modal { background: var(--teal-dark); }
   body.dark-mode #venue-notes-edit-wrap { border-color: rgba(255,255,255,0.15); }
   body.dark-mode #venue-notes-bullet-editor { background: rgba(255,255,255,0.05); color: var(--text); }
   body.dark-mode #venue-notes-edit-hint { background: rgba(255,255,255,0.04); border-top-color: rgba(255,255,255,0.1); color: var(--placeholder); }
-  body.dark-mode #venue-notes-footer { border-top-color: rgba(255,255,255,0.08); }
-  body.dark-mode #venue-notes-view-list li { color: rgba(255,255,255,0.9); }
-  body.dark-mode #venue-notes-view-list li.bullet-l1::before,
-  body.dark-mode #venue-notes-view-list li.bullet-l2::before { color: var(--teal-mid); }
   .countdown-info-dates { font-size: 10px; opacity: 0.75; margin-top: 2px; letter-spacing: 0.5px; }
   .countdown-date { margin-left: auto; text-align: right; font-size: 10px; opacity: 0.9; line-height: 1.6; }
   .countdown-date input {
@@ -656,27 +579,7 @@
   body.dark-mode .deadline-pill-label { color: var(--text); }
   body.dark-mode .deadline-pill-date { background: var(--teal-dark); color: var(--teal-mid); }
 
-  /* Deadline edit/view modal */
-  #dl-modal-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1050;
-    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
-  }
-  #dl-modal-overlay.open { display: flex; }
-  #dl-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    min-width: 420px; max-width: min(720px, 95vw); width: max-content;
-    max-height: 90vh; overflow-y: auto; position: relative;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.28); display: flex; flex-direction: column;
-  }
-  #dl-modal-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
-  #dl-modal-header-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px;
-    letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
-  }
-  #dl-modal-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  /* Deadline edit/view modal — chrome from the shared .tf-modal-* system. */
   .dl-modal-label {
     font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
@@ -715,19 +618,7 @@
     color: var(--teal-dark); text-transform: uppercase; margin-bottom: 2px;
   }
   #dl-view-date { font-size: 12px; color: var(--teal); font-weight: 600; margin-bottom: 10px; }
-  #dl-view-notes-list { margin: 0; padding-left: 18px; list-style: none; }
-  #dl-view-notes-list li { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; word-break: break-word; white-space: pre-wrap; max-width: 680px; }
-  #dl-view-notes-list li.bullet-l0::before { content: '•'; margin-right: 6px; }
-  #dl-view-notes-list li.bullet-l1 { padding-left: 20px; }
-  #dl-view-notes-list li.bullet-l1::before { content: '–'; margin-right: 6px; color: var(--gray); }
-  #dl-view-notes-list li.bullet-l2 { padding-left: 40px; }
-  #dl-view-notes-list li.bullet-l2::before { content: '◦'; margin-right: 6px; color: var(--gray); }
   #dl-view-notes-empty { font-size: 12px; color: var(--placeholder); font-style: italic; }
-  #dl-modal-footer {
-    padding: 12px 18px; border-top: 1px solid var(--teal-light);
-    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
-  }
-  body.dark-mode #dl-modal { background: var(--teal-dark); }
   body.dark-mode .dl-modal-label { color: var(--teal-mid); }
   body.dark-mode #dl-edit-section .dl-modal-label { color: var(--teal-mid); }
   body.dark-mode .dl-edit-input { background: rgba(255,255,255,0.07); color: var(--text); border-color: rgba(255,255,255,0.15); }
@@ -776,27 +667,7 @@
   body.dark-mode .se-tile-name { color: var(--teal); }
   body.dark-mode .se-tile-host { color: #fff; }
 
-  /* SE edit modal */
-  #se-edit-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1050;
-    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
-  }
-  #se-edit-overlay.open { display: flex; }
-  #se-edit-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
-    position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.28);
-    display: flex; flex-direction: column;
-  }
-  #se-edit-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
-  #se-edit-header-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px;
-    letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
-  }
-  #se-edit-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  /* SE edit modal — chrome from the shared .tf-modal-* system. */
   .se-edit-label {
     font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
@@ -826,11 +697,6 @@
     font-size: 10px; color: var(--gray); font-style: italic;
     padding: 4px 12px 6px; background: var(--gray-light); border-top: 1px solid var(--teal-light);
   }
-  #se-edit-footer {
-    padding: 12px 18px; border-top: 1px solid var(--teal-light);
-    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
-  }
-  body.dark-mode #se-edit-modal { background: var(--teal-dark); }
   body.dark-mode .se-edit-label { color: var(--teal-mid); }
   body.dark-mode .se-edit-input { background: rgba(255,255,255,0.07); color: var(--text); border-color: rgba(255,255,255,0.15); }
   body.dark-mode .se-edit-input:focus { border-color: var(--teal-mid); }
@@ -852,20 +718,12 @@
   body.dark-mode .ec-notes-btn:hover { background: rgba(10,173,166,0.12); }
   body.dark-mode .ec-notes-btn.has-notes { color: var(--teal-mid); border-color: var(--teal-mid); }
 
-  /* Side event detail modal */
-  #se-detail-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1000; align-items: center; justify-content: center; padding: 20px;
-  }
-  #se-detail-overlay.open { display: flex; }
-  #se-detail-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    min-width: 420px; max-width: min(720px, 95vw); width: max-content;
-    max-height: 90vh; overflow-y: auto; overflow-x: hidden; position: relative;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
-  }
+  /* Side event detail modal — overlay/box/body chrome from the shared
+     .tf-modal-* system; header kept bespoke since its content (name + host,
+     stacked) isn't the title-row shape .tf-modal-header assumes, but its
+     visual values (radius/padding) now match the shared spec. */
   #se-detail-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0; position: relative;
+    background: var(--teal-dark); padding: 14px 20px 12px; border-radius: 10px 10px 0 0; position: relative;
   }
   #se-detail-name {
     font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px;
@@ -874,24 +732,12 @@
   #se-detail-host {
     font-size: 11px; color: rgba(255,255,255,0.75); font-style: italic; margin-top: 2px;
   }
-  #se-detail-body { padding: 14px 18px 18px; }
   #se-detail-notes-label {
     font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px;
   }
-  #se-detail-notes-list { margin: 0; padding-left: 18px; list-style: none; }
-  #se-detail-notes-list li { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; max-width: 680px; }
-  #se-detail-notes-list li.bullet-l0::before { content: '•'; margin-right: 6px; }
-  #se-detail-notes-list li.bullet-l1 { padding-left: 20px; }
-  #se-detail-notes-list li.bullet-l1::before { content: '–'; margin-right: 6px; color: var(--gray); }
-  #se-detail-notes-list li.bullet-l2 { padding-left: 40px; }
-  #se-detail-notes-list li.bullet-l2::before { content: '◦'; margin-right: 6px; color: var(--gray); }
   #se-detail-notes-empty { font-size: 12px; color: var(--placeholder); font-style: italic; }
-  body.dark-mode #se-detail-modal { background: var(--teal-dark); }
   body.dark-mode #se-detail-notes-label { color: var(--teal-mid); }
-  body.dark-mode #se-detail-notes-list li { color: rgba(255,255,255,0.9); }
-  body.dark-mode #se-detail-notes-list li.bullet-l1::before,
-  body.dark-mode #se-detail-notes-list li.bullet-l2::before { color: var(--teal-mid); }
   body.dark-mode #se-detail-notes-empty { color: var(--placeholder); }
   /* #deck-viewer-panel is permanently dark regardless of mode toggle, but the
      shared .spoiler-modal-close idle-state colors are mode-relative -- without
@@ -899,19 +745,10 @@
      dark mode. Hover-to-red is unaffected (var(--red) isn't mode-relative). */
   body.dark-mode #deck-viewer-panel .spoiler-modal-close { background: rgba(255,255,255,0.15); color: #fff; }
 
-  #news-detail-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1000; align-items: center; justify-content: center; padding: 20px;
-  }
-  #news-detail-overlay.open { display: flex; }
-  #news-detail-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    min-width: 420px; max-width: min(720px, 95vw); width: max-content;
-    max-height: 90vh; overflow-y: auto; overflow-x: hidden; position: relative;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
-  }
+  /* News detail modal — overlay/box/body chrome shared; header kept bespoke
+     (topic + overview stacked, not the title-row shape). */
   #news-detail-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0; position: relative;
+    background: var(--teal-dark); padding: 14px 20px 12px; border-radius: 10px 10px 0 0; position: relative;
   }
   #news-detail-topic {
     font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px;
@@ -920,24 +757,12 @@
   #news-detail-overview {
     font-size: 11px; color: rgba(255,255,255,0.75); font-style: italic; margin-top: 2px;
   }
-  #news-detail-body { padding: 14px 18px 18px; }
   #news-detail-notes-label {
     font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px;
   }
-  #news-detail-notes-list { margin: 0; padding-left: 18px; list-style: none; }
-  #news-detail-notes-list li { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; max-width: 680px; }
-  #news-detail-notes-list li.bullet-l0::before { content: '•'; margin-right: 6px; }
-  #news-detail-notes-list li.bullet-l1 { padding-left: 20px; }
-  #news-detail-notes-list li.bullet-l1::before { content: '–'; margin-right: 6px; color: var(--gray); }
-  #news-detail-notes-list li.bullet-l2 { padding-left: 40px; }
-  #news-detail-notes-list li.bullet-l2::before { content: '◦'; margin-right: 6px; color: var(--gray); }
   #news-detail-notes-empty { font-size: 12px; color: var(--placeholder); font-style: italic; }
-  body.dark-mode #news-detail-modal { background: var(--teal-dark); }
   body.dark-mode #news-detail-notes-label { color: var(--teal-mid); }
-  body.dark-mode #news-detail-notes-list li { color: rgba(255,255,255,0.9); }
-  body.dark-mode #news-detail-notes-list li.bullet-l1::before,
-  body.dark-mode #news-detail-notes-list li.bullet-l2::before { color: var(--teal-mid); }
   body.dark-mode #news-detail-notes-empty { color: var(--placeholder); }
 
   /* News card tile (editor) */
@@ -968,28 +793,7 @@
   body.dark-mode .news-tile-title { color: var(--teal); }
   body.dark-mode .news-tile-desc { color: #fff; }
 
-  /* News edit modal */
-  #news-edit-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1050;
-    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
-  }
-  #news-edit-overlay.open { display: flex; }
-  #news-edit-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    width: 100%; max-width: 560px;
-    max-height: 90vh; overflow-y: auto; position: relative;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.28);
-    display: flex; flex-direction: column;
-  }
-  #news-edit-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
-  #news-edit-header-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px;
-    letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
-  }
-  #news-edit-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  /* News edit modal — chrome from the shared .tf-modal-* system. */
   #news-edit-title-input {
     width: 100%; font-family: 'Barlow', sans-serif; font-size: 14px;
     padding: 8px 10px; border: 1px solid var(--teal-light); border-radius: 4px;
@@ -1028,11 +832,6 @@
     font-size: 10px; color: var(--gray); font-style: italic;
     padding: 4px 12px 6px; background: var(--gray-light); border-top: 1px solid var(--teal-light);
   }
-  #news-edit-footer {
-    padding: 12px 18px; border-top: 1px solid var(--teal-light);
-    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
-  }
-  body.dark-mode #news-edit-modal { background: var(--teal-dark); }
   body.dark-mode #news-edit-title-input,
   body.dark-mode #news-edit-desc-input { background: rgba(255,255,255,0.07); color: var(--text); border-color: var(--teal); }
   body.dark-mode #news-edit-bullet-editor {
@@ -1477,25 +1276,9 @@
   body.dark-mode .agur-tile-sub { color: #fff; }
 
   /* Agur edit modal */
-  #agur-edit-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1050;
-    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
-  }
-  #agur-edit-overlay.open { display: flex; }
-  #agur-edit-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto;
-    position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.28);
-    display: flex; flex-direction: column;
-  }
-  #agur-edit-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
-  #agur-edit-header-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px;
-    letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
-  }
+  /* Agur Edit modal — overlay/box/header/title/body/footer chrome from the
+     shared .tf-modal-* system; box width constrained for this content. */
+  #agur-edit-modal { max-width: min(580px, 95vw); }
   /* Mode tabs */
   #agur-edit-tabs {
     display: flex; border-bottom: 2px solid var(--teal-light); flex-shrink: 0;
@@ -1509,7 +1292,6 @@
   }
   .agur-edit-tab.active { color: var(--teal-dark); border-bottom-color: var(--teal); }
   .agur-edit-tab:hover { color: var(--teal-dark); }
-  #agur-edit-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
   .agur-edit-label {
     font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
@@ -1562,11 +1344,6 @@
   #agur-edit-img-thumb-remove:hover { background: var(--red); }
   #agur-edit-img-row { display: flex; align-items: flex-start; gap: 12px; }
   #agur-edit-img-fields { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-  #agur-edit-footer {
-    padding: 12px 18px; border-top: 1px solid var(--teal-light);
-    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
-  }
-  body.dark-mode #agur-edit-modal { background: var(--teal-dark); }
   body.dark-mode #agur-edit-tabs { background: rgba(255,255,255,0.04); border-bottom-color: rgba(255,255,255,0.1); }
   body.dark-mode .agur-edit-tab { color: var(--placeholder); }
   body.dark-mode .agur-edit-tab.active { color: var(--teal-mid); border-bottom-color: var(--teal-mid); }
@@ -1576,20 +1353,15 @@
   body.dark-mode #agur-edit-notes-wrap { border-color: rgba(255,255,255,0.15); }
   body.dark-mode #agur-edit-bullet-editor { background: rgba(255,255,255,0.05); color: var(--text); }
   body.dark-mode #agur-edit-notes-hint { background: rgba(255,255,255,0.04); border-top-color: rgba(255,255,255,0.1); color: var(--placeholder); }
-  body.dark-mode #agur-edit-footer { border-top-color: rgba(255,255,255,0.08); }
   body.dark-mode #agur-edit-img-thumb { background: rgba(255,255,255,0.05); }
 
   /* Agur view modal */
-  #agur-view-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1100; align-items: center; justify-content: center; padding: 20px;
-  }
-  #agur-view-overlay.open { display: flex; }
-  #agur-view-content {
-    background: #fff; border-radius: 8px; padding: 20px;
-    max-width: 700px; width: 100%; max-height: 90vh;
-    position: relative; display: flex; gap: 20px; align-items: flex-start; overflow-y: auto;
-  }
+  /* Agur View modal — now uses the shared .tf-modal-* header+body+footer
+     chrome (previously had no header/footer at all, just a floating box).
+     #agur-view-body overrides the shared body's column direction back to
+     the original side-by-side card+notes row layout. */
+  #agur-view-content { max-width: min(760px, 95vw); }
+  #agur-view-body { flex-direction: row; gap: 20px; align-items: flex-start; }
   #agur-view-left { flex: 0 0 240px; max-width: 240px; }
   /* Text card spec display -- sized to the same portrait ratio as a physical
      Redemption card (~2.5x3.5in) so a text-only design occupies the same
@@ -1660,15 +1432,7 @@
     font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-dark); margin-bottom: 10px;
   }
-  #agur-view-notes-list { list-style: none; padding-left: 18px; margin: 0; }
-  #agur-view-notes-list li { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; word-break: break-word; white-space: pre-wrap; }
-  #agur-view-notes-list li.bullet-l0::before { content: '•'; margin-right: 6px; }
-  #agur-view-notes-list li.bullet-l1 { padding-left: 20px; }
-  #agur-view-notes-list li.bullet-l1::before { content: '–'; margin-right: 6px; color: var(--gray); }
-  #agur-view-notes-list li.bullet-l2 { padding-left: 40px; }
-  #agur-view-notes-list li.bullet-l2::before { content: '◦'; margin-right: 6px; color: var(--gray); }
   #agur-view-notes-empty { font-size: 12px; color: var(--placeholder); font-style: italic; }
-  body.dark-mode #agur-view-content { background: var(--teal-dark); }
   body.dark-mode #agur-view-spec { background: rgba(255,255,255,0.06); }
   body.dark-mode #agur-view-spec-stats { color: var(--teal-mid); }
   body.dark-mode #agur-view-spec-ability { color: rgba(255,255,255,0.85); border-top-color: rgba(255,255,255,0.1); }
@@ -1715,26 +1479,8 @@
   body.dark-mode .collectors-tile-sub { color: #fff; }
 
   /* Collector's Corner edit modal */
-  #collectors-edit-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1050;
-    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
-  }
-  #collectors-edit-overlay.open { display: flex; }
-  #collectors-edit-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto;
-    position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.28);
-    display: flex; flex-direction: column;
-  }
-  #collectors-edit-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
-  #collectors-edit-header-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px;
-    letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
-  }
-  #collectors-edit-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  /* Collectors Edit modal — chrome from the shared .tf-modal-* system. */
+  #collectors-edit-modal { max-width: min(580px, 95vw); }
   .collectors-edit-label {
     font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
@@ -1777,52 +1523,24 @@
   }
   #collectors-edit-card-thumb-remove:hover { background: var(--red); }
   #collectors-edit-card-fields { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-  #collectors-edit-footer {
-    padding: 12px 18px; border-top: 1px solid var(--teal-light);
-    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
-  }
-  body.dark-mode #collectors-edit-modal { background: var(--teal-dark); }
   body.dark-mode .collectors-edit-label { color: var(--teal-mid); }
   body.dark-mode .collectors-edit-input { background: rgba(255,255,255,0.07); color: var(--text); border-color: rgba(255,255,255,0.15); }
   body.dark-mode #collectors-edit-notes-wrap { border-color: rgba(255,255,255,0.15); }
   body.dark-mode #collectors-edit-bullet-editor { background: rgba(255,255,255,0.05); color: var(--text); }
   body.dark-mode #collectors-edit-notes-hint { background: rgba(255,255,255,0.04); border-top-color: rgba(255,255,255,0.1); color: var(--placeholder); }
-  body.dark-mode #collectors-edit-footer { border-top-color: rgba(255,255,255,0.08); }
   body.dark-mode #collectors-edit-card-thumb { background: rgba(255,255,255,0.05); }
 
-  /* Collector's Corner text-only view modal */
-  #collectors-view-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1050;
-    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
-  }
-  #collectors-view-overlay.open { display: flex; }
-  #collectors-view-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    min-width: 420px; max-width: min(720px, 95vw); width: max-content;
-    max-height: 90vh; overflow-y: auto; overflow-x: hidden; position: relative;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
-  }
+  /* Collector's Corner text-only view modal — overlay/box/body chrome
+     shared; header kept bespoke (single stacked title, no flex row). */
   #collectors-view-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0; position: relative;
+    background: var(--teal-dark); padding: 14px 20px 12px; border-radius: 10px 10px 0 0; position: relative;
   }
   #collectors-view-title {
     font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px;
     letter-spacing: 0.5px; color: #fff; text-transform: uppercase; margin-right: 28px;
   }
-  #collectors-view-body { padding: 14px 18px 18px; }
-  #collectors-view-notes-list { margin: 0; padding-left: 18px; list-style: none; }
-  #collectors-view-notes-list li { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; word-break: break-word; white-space: pre-wrap; max-width: 680px; }
-  #collectors-view-notes-list li.bullet-l0::before { content: '•'; margin-right: 6px; }
-  #collectors-view-notes-list li.bullet-l1 { padding-left: 20px; }
-  #collectors-view-notes-list li.bullet-l1::before { content: '–'; margin-right: 6px; color: var(--gray); }
-  #collectors-view-notes-list li.bullet-l2 { padding-left: 40px; }
-  #collectors-view-notes-list li.bullet-l2::before { content: '◦'; margin-right: 6px; color: var(--gray); }
   #collectors-view-notes-empty { font-size: 12px; color: var(--placeholder); font-style: italic; }
-  body.dark-mode #collectors-view-modal { background: var(--teal-dark); }
   body.dark-mode #collectors-view-title { color: #fff; }
-  body.dark-mode #collectors-view-notes-list li { color: rgba(255,255,255,0.9); }
-  body.dark-mode #collectors-view-notes-list li.bullet-l1::before,
-  body.dark-mode #collectors-view-notes-list li.bullet-l2::before { color: var(--teal-mid); }
 
   /* Hide old single-item layout */
   .collectors-topic-input { display: none !important; }
@@ -1879,16 +1597,12 @@
   .collectors-card-img-wrap img { cursor: zoom-in; }
 
   /* Collector's Corner card modal */
-  #collectors-card-modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1100; align-items: center; justify-content: center; padding: 20px;
-  }
-  #collectors-card-modal-overlay.open { display: flex; }
-  #collectors-card-modal-content {
-    background: #fff; border-radius: 8px; padding: 20px;
-    max-width: 700px; width: 100%; max-height: 90vh;
-    position: relative; display: flex; gap: 20px; align-items: flex-start;
-  }
+  /* Collector's Card view modal — now uses the shared .tf-modal-*
+     header+body+footer chrome (previously had no header/footer at all).
+     #collectors-card-modal-body overrides the shared body's column
+     direction back to the original side-by-side image+notes row layout. */
+  #collectors-card-modal-content { max-width: min(760px, 95vw); }
+  #collectors-card-modal-body { flex-direction: row; gap: 20px; align-items: flex-start; }
   #collectors-card-modal-img-col { flex: 0 0 260px; max-width: 260px; text-align: center; }
   #collectors-card-modal-img-col img { width: 100%; border-radius: 6px; object-fit: contain; }
   #collectors-card-modal-img-caption {
@@ -2169,15 +1883,59 @@
 
   /* Spoilers: enlarge modal */
   .spoiler-card-img-wrap { cursor: pointer; }
-  .spoiler-modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1000; align-items: center; justify-content: center; padding: 20px;
+  /* =========================================================================
+     Unified modal system (tf-modal-*). Every header-bar dialog/panel overlay
+     in this file shares this base instead of its own copy-pasted overlay/
+     box/header/footer CSS. Two z-index tiers only: base, and -stacked for
+     the one case a modal opens from inside another (Player Picker from
+     inside Player Profile). Lightweight view-only popups without a header
+     bar (Spoiler, Tournament/Nationals, Player Profile, Player Picker) use
+     the separate `.spoiler-modal-content`/`.spoiler-modal-close` base below
+     instead — that one predates this file's Next.js port and already is a
+     real shared pattern, just under its original name.
+     ========================================================================= */
+  .tf-modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 1100;
+    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
   }
-  .spoiler-modal-overlay.open { display: flex; }
-  /* These two can be opened from inside other modals (e.g. the Tournament
-     Results editor, z-index 1100) so they need to sit above everything else
-     in the app, not just the base .spoiler-modal-overlay z-index. */
-  #player-picker-overlay, #player-profile-modal-overlay { z-index: 1500; }
+  .tf-modal-overlay.open { display: flex; }
+  .tf-modal-overlay.tf-modal-stacked { z-index: 1500; }
+  .tf-modal-box {
+    background: #fff; border-radius: 10px; padding: 0;
+    min-width: 320px; max-width: min(640px, 95vw); width: max-content;
+    max-height: 90vh; overflow-y: auto; position: relative;
+    box-shadow: 0 10px 36px rgba(0,0,0,0.3); display: flex; flex-direction: column;
+  }
+  .tf-modal-box.tf-modal-wide { max-width: min(900px, 95vw); }
+  .tf-modal-header {
+    background: var(--teal-dark); padding: 14px 20px 12px; border-radius: 10px 10px 0 0;
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 12px;
+  }
+  .tf-modal-title {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px;
+    letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
+  }
+  /* Close button: reuse `.spoiler-modal-close` (see below) — it's already
+     the universal close-button hook, including on today's header-bar
+     modals, and its absolute box-corner positioning lands correctly here
+     too since `.tf-modal-box` is `position: relative`. No separate
+     `.tf-modal-close` needed. */
+  .tf-modal-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .tf-modal-footer {
+    padding: 12px 20px; border-top: 1px solid var(--teal-light);
+    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
+  }
+  body.dark-mode .tf-modal-box { background: var(--teal-dark); }
+  body.dark-mode .tf-modal-footer { border-top-color: rgba(255,255,255,0.08); }
+
+  /* Floating-box variant (no header bar): Spoiler, Tournament/Nationals,
+     Player Profile, Player Picker share this. Close button is absolutely
+     positioned against the box corner. Kept under its original names —
+     `.spoiler-modal-close` is also the universal close-button hook that
+     every other modal's close-guard function checks via
+     `event.target.classList.contains('spoiler-modal-close')`, including the
+     header-bar modals below; renaming it would mean touching every one of
+     those guards for no visual gain. */
   .spoiler-modal-content {
     background: #fff; border-radius: 8px; padding: 16px; max-width: 360px; width: 100%;
     max-height: 90vh; overflow-y: auto; position: relative; text-align: center;
@@ -2189,18 +1947,19 @@
     line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
   }
   .spoiler-modal-close:hover { background: var(--red); color: #fff; }
-  .spoiler-modal-caption {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px;
-    color: var(--teal-dark); margin-top: 10px;
-  }
-  .spoiler-modal-set { font-size: 11px; color: var(--gray); margin-top: 2px; }
-  .spoiler-modal-note {
-    font-size: 12px; color: var(--text); margin-top: 8px; padding-top: 8px;
-    border-top: 1px solid var(--gray-light); text-align: left;
-  }
-  .spoiler-modal-note:empty { display: none; }
-  .spoiler-modal-note ul { margin: 0; padding-left: 18px; }
-  .spoiler-modal-note li { margin-bottom: 6px; line-height: 1.4; }
+
+  /* Shared bullet-list look for every read-only "Notes" list across modals
+     (previously copy-pasted per modal as #x-view-list / #x-notes-list). */
+  .tf-modal-notes-list { margin: 0; padding-left: 18px; list-style: none; }
+  .tf-modal-notes-list li { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; word-break: break-word; white-space: pre-wrap; }
+  .tf-modal-notes-list li.bullet-l0::before { content: '•'; margin-right: 6px; }
+  .tf-modal-notes-list li.bullet-l1 { padding-left: 20px; }
+  .tf-modal-notes-list li.bullet-l1::before { content: '–'; margin-right: 6px; color: var(--gray); }
+  .tf-modal-notes-list li.bullet-l2 { padding-left: 40px; }
+  .tf-modal-notes-list li.bullet-l2::before { content: '◦'; margin-right: 6px; color: var(--gray); }
+  body.dark-mode .tf-modal-notes-list li { color: rgba(255,255,255,0.9); }
+  body.dark-mode .tf-modal-notes-list li.bullet-l1::before,
+  body.dark-mode .tf-modal-notes-list li.bullet-l2::before { color: var(--teal-mid); }
 
   /* Spoilers: side-by-side modal (card image left, talking points right) */
   .spoiler-modal-content-split {
@@ -2219,15 +1978,23 @@
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-dark); margin-bottom: 8px;
   }
   body.dark-mode .spoiler-modal-notes-label { color: var(--teal-mid); }
-  .spoiler-modal-notes-col .spoiler-modal-note {
-    border-top: none; margin-top: 0; padding-top: 0; font-size: 13px; line-height: 1.6;
+  .spoiler-modal-note {
+    font-size: 13px; color: var(--text); line-height: 1.6;
   }
-  .spoiler-modal-notes-col .spoiler-modal-note ul { padding-left: 20px; }
-  .spoiler-modal-notes-col .spoiler-modal-note li { margin-bottom: 6px; }
+  .spoiler-modal-note:empty { display: none; }
+  .spoiler-modal-note ul { margin: 0; padding-left: 20px; }
+  .spoiler-modal-note li { margin-bottom: 6px; }
   .spoiler-modal-note-empty {
     font-size: 12px; color: var(--placeholder); font-style: italic; display: none;
   }
   .spoiler-modal-note:empty ~ .spoiler-modal-note-empty { display: block; }
+  .spoiler-modal-caption {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px;
+    color: var(--teal-dark); margin-top: 10px;
+  }
+  .spoiler-modal-set { font-size: 11px; color: var(--gray); margin-top: 2px; }
+  .spoiler-modal-badge { font-size: 18px; padding: 10px 8px; margin-bottom: 10px; }
+  .spoiler-modal-badge:empty { display: none; margin-bottom: 0; }
   /* Inline editor inside spoiler modal (editor mode only) */
   #spoiler-modal-note-editor {
     width: 100%; min-height: 120px; border: 1px solid var(--teal-light); border-radius: 4px;
@@ -2437,9 +2204,7 @@
     .spoiler-card-note-print:empty { display: none; border-top: none; margin-top: 0; padding-top: 0; }
     #spoiler-empty-state { display: none; }
     .spoiler-card-caption-input, .spoiler-card-set-input { border: none !important; background: transparent !important; pointer-events: none; }
-    .spoiler-modal-overlay, #collectors-card-modal-overlay { display: none !important; }
-    #agur-modal-overlay { display: none !important; }
-    #mtf-overlay { display: none !important; }
+    .tf-modal-overlay { display: none !important; }
     #mailbag-add-row, #mailbag-body .tourn-remove-btn { display: none; }
     #guest-q-add-row, #guest-questions-body .tourn-remove-btn { display: none; }
     #dotw-section button, #dotw-fetch-status { display: none; }
@@ -2573,30 +2338,38 @@
 <body>
 
 <!-- Collectors Card Image Modal (publish: card + notes) -->
-<div id="collectors-card-modal-overlay" onclick="closeCollectorsCardModal(event)">
-  <div id="collectors-card-modal-content">
-    <button type="button" class="spoiler-modal-close" onclick="closeCollectorsCardModal()">&times;</button>
-    <div id="collectors-card-modal-img-col">
-      <img id="collectors-card-modal-img" src="" alt="Card reference">
-      <div id="collectors-card-modal-img-caption"></div>
+<div id="collectors-card-modal-overlay" class="tf-modal-overlay" onclick="closeCollectorsCardModal(event)">
+  <div id="collectors-card-modal-content" class="tf-modal-box tf-modal-wide">
+    <div class="tf-modal-header">
+      <span class="tf-modal-title">Collector's Corner — View</span>
+      <button type="button" class="spoiler-modal-close" onclick="closeCollectorsCardModal()">&times;</button>
     </div>
-    <div id="collectors-card-modal-notes-col">
-      <div id="collectors-card-modal-notes-label">Discussion Notes</div>
-      <div id="collectors-card-modal-topic"></div>
-      <ul id="collectors-card-modal-notes-list"></ul>
-      <div id="collectors-card-modal-notes-empty">No notes added yet.</div>
+    <div id="collectors-card-modal-body" class="tf-modal-body">
+      <div id="collectors-card-modal-img-col">
+        <img id="collectors-card-modal-img" src="" alt="Card reference">
+        <div id="collectors-card-modal-img-caption"></div>
+      </div>
+      <div id="collectors-card-modal-notes-col">
+        <div id="collectors-card-modal-notes-label">Discussion Notes</div>
+        <div id="collectors-card-modal-topic"></div>
+        <ul id="collectors-card-modal-notes-list"></ul>
+        <div id="collectors-card-modal-notes-empty">No notes added yet.</div>
+      </div>
+    </div>
+    <div class="tf-modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeCollectorsCardModal()">Close</button>
     </div>
   </div>
 </div>
 
 <!-- Collectors Edit Modal (editor only) -->
-<div id="collectors-edit-overlay" onclick="closeCollectorsEditModal(event)">
-  <div id="collectors-edit-modal">
-    <div id="collectors-edit-header">
-      <span id="collectors-edit-header-label">Collector's Corner Topic</span>
+<div id="collectors-edit-overlay" class="tf-modal-overlay" onclick="closeCollectorsEditModal(event)">
+  <div id="collectors-edit-modal" class="tf-modal-box">
+    <div id="collectors-edit-header" class="tf-modal-header">
+      <span id="collectors-edit-header-label" class="tf-modal-title">Collector's Corner Topic</span>
       <button type="button" class="spoiler-modal-close" onclick="saveAndCloseCollectorsEdit()">&times;</button>
     </div>
-    <div id="collectors-edit-body">
+    <div id="collectors-edit-body" class="tf-modal-body">
       <div>
         <div class="collectors-edit-label">Topic Title</div>
         <input class="collectors-edit-input" id="collectors-edit-title" type="text" placeholder="e.g. Foil price trends, rare finds..." autocomplete="off">
@@ -2623,7 +2396,7 @@
         </div>
       </div>
     </div>
-    <div id="collectors-edit-footer">
+    <div id="collectors-edit-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" onclick="closeCollectorsEditModal()">Cancel</button>
       <button type="button" class="btn btn-teal" onclick="saveAndCloseCollectorsEdit(true)">Save</button>
     </div>
@@ -2631,31 +2404,31 @@
 </div>
 
 <!-- Collectors Text-Only View Modal (publish: no card image) -->
-<div id="collectors-view-overlay" onclick="closeCollectorsViewModal(event)">
-  <div id="collectors-view-modal">
+<div id="collectors-view-overlay" class="tf-modal-overlay" onclick="closeCollectorsViewModal(event)">
+  <div id="collectors-view-modal" class="tf-modal-box">
     <div id="collectors-view-header">
       <button type="button" class="spoiler-modal-close" onclick="closeCollectorsViewModal()">&times;</button>
       <div id="collectors-view-title"></div>
     </div>
-    <div id="collectors-view-body">
-      <ul id="collectors-view-notes-list"></ul>
+    <div id="collectors-view-body" class="tf-modal-body">
+      <ul id="collectors-view-notes-list" class="tf-modal-notes-list"></ul>
       <div id="collectors-view-notes-empty" style="display:none;">No notes added yet.</div>
     </div>
   </div>
 </div>
 
 <!-- Agur Edit Modal (editor only) -->
-<div id="agur-edit-overlay" onclick="closeAgurEditModal(event)">
-  <div id="agur-edit-modal">
-    <div id="agur-edit-header">
-      <span id="agur-edit-header-label">Card Design</span>
+<div id="agur-edit-overlay" class="tf-modal-overlay" onclick="closeAgurEditModal(event)">
+  <div id="agur-edit-modal" class="tf-modal-box">
+    <div id="agur-edit-header" class="tf-modal-header">
+      <span id="agur-edit-header-label" class="tf-modal-title">Card Design</span>
       <button type="button" class="spoiler-modal-close" onclick="saveAndCloseAgurEdit()">&times;</button>
     </div>
     <div id="agur-edit-tabs">
       <button type="button" class="agur-edit-tab active" id="agur-tab-text" onclick="setAgurEditTab('text')">Text Entry</button>
       <button type="button" class="agur-edit-tab" id="agur-tab-image" onclick="setAgurEditTab('image')">Upload Image</button>
     </div>
-    <div id="agur-edit-body">
+    <div id="agur-edit-body" class="tf-modal-body">
       <!-- Text entry section -->
       <div id="agur-text-section">
         <div>
@@ -2722,7 +2495,7 @@
         </div>
       </div>
     </div>
-    <div id="agur-edit-footer">
+    <div id="agur-edit-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" onclick="closeAgurEditModal()">Cancel</button>
       <button type="button" class="btn btn-teal" onclick="saveAndCloseAgurEdit(true)">Save</button>
     </div>
@@ -2730,38 +2503,46 @@
 </div>
 
 <!-- Agur View Modal (publish) -->
-<div id="agur-view-overlay" onclick="closeAgurViewModal(event)">
-  <div id="agur-view-content">
-    <button type="button" class="spoiler-modal-close" onclick="closeAgurViewModal()">&times;</button>
-    <div id="agur-view-left">
-      <!-- Text spec card -->
-      <div id="agur-view-spec">
-        <div id="agur-view-spec-type"></div>
-        <div id="agur-view-spec-title"></div>
-        <div id="agur-view-spec-brigade"></div>
-        <div id="agur-view-spec-stats"></div>
-        <div id="agur-view-spec-class"></div>
-        <div id="agur-view-spec-identifier"></div>
-        <div id="agur-view-spec-ability"></div>
-        <div id="agur-view-spec-scripture"></div>
-      </div>
-      <!-- Image display -->
-      <div id="agur-view-img-wrap" style="display:none;">
-        <div id="agur-view-img-box">
-          <img id="agur-view-img" src="" alt="">
+<div id="agur-view-overlay" class="tf-modal-overlay" onclick="closeAgurViewModal(event)">
+  <div id="agur-view-content" class="tf-modal-box tf-modal-wide">
+    <div class="tf-modal-header">
+      <span class="tf-modal-title">Agur the Creator — View</span>
+      <button type="button" class="spoiler-modal-close" onclick="closeAgurViewModal()">&times;</button>
+    </div>
+    <div id="agur-view-body" class="tf-modal-body">
+      <div id="agur-view-left">
+        <!-- Text spec card -->
+        <div id="agur-view-spec">
+          <div id="agur-view-spec-type"></div>
+          <div id="agur-view-spec-title"></div>
+          <div id="agur-view-spec-brigade"></div>
+          <div id="agur-view-spec-stats"></div>
+          <div id="agur-view-spec-class"></div>
+          <div id="agur-view-spec-identifier"></div>
+          <div id="agur-view-spec-ability"></div>
+          <div id="agur-view-spec-scripture"></div>
         </div>
-        <div id="agur-view-img-caption"></div>
+        <!-- Image display -->
+        <div id="agur-view-img-wrap" style="display:none;">
+          <div id="agur-view-img-box">
+            <img id="agur-view-img" src="" alt="">
+          </div>
+          <div id="agur-view-img-caption"></div>
+        </div>
+      </div>
+      <div id="agur-view-right">
+        <div id="agur-view-notes-label">Discussion Notes</div>
+        <ul id="agur-view-notes-list" class="tf-modal-notes-list"></ul>
+        <div id="agur-view-notes-empty" style="display:none;">No notes added for this design.</div>
       </div>
     </div>
-    <div id="agur-view-right">
-      <div id="agur-view-notes-label">Discussion Notes</div>
-      <ul id="agur-view-notes-list"></ul>
-      <div id="agur-view-notes-empty" style="display:none;">No notes added for this design.</div>
+    <div class="tf-modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeAgurViewModal()">Close</button>
     </div>
   </div>
 </div>
 
-<div id="tournament-modal-overlay" class="spoiler-modal-overlay" onclick="closeTournamentModal(event)">
+<div id="tournament-modal-overlay" class="tf-modal-overlay" onclick="closeTournamentModal(event)">
   <div class="spoiler-modal-content tournament-modal-content">
     <button type="button" class="spoiler-modal-close" onclick="closeTournamentModal(event)">&times;</button>
     <div class="tournament-modal-badge" id="tournament-modal-badge"></div>
@@ -2776,10 +2557,10 @@
 </div>
 
 <!-- Add/Edit Manual Tournament Modal (editor only) -->
-<div id="mtf-overlay" onclick="closeManualTournForm(event)">
-  <div id="mtf-modal">
-    <div id="mtf-header">
-      <div id="mtf-title">Add Manual Tournament</div>
+<div id="mtf-overlay" class="tf-modal-overlay" onclick="closeManualTournForm(event)">
+  <div id="mtf-modal" class="tf-modal-box">
+    <div id="mtf-header" class="tf-modal-header">
+      <div id="mtf-title" class="tf-modal-title">Add Manual Tournament</div>
       <button type="button" class="spoiler-modal-close" onclick="closeManualTournForm()">&times;</button>
     </div>
     <div id="mtf-body">
@@ -2832,7 +2613,7 @@
 
       <div id="mtf-status"></div>
     </div>
-    <div id="mtf-footer">
+    <div id="mtf-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" onclick="closeManualTournForm()">Cancel</button>
       <button type="button" class="btn btn-teal" onclick="saveManualTournament()">Save Tournament</button>
     </div>
@@ -2843,7 +2624,7 @@
   <img id="deck-card-enlarge-img" src="" alt="">
 </div>
 
-<div id="player-profile-modal-overlay" class="spoiler-modal-overlay" onclick="closePlayerProfileModal(event)">
+<div id="player-profile-modal-overlay" class="tf-modal-overlay tf-modal-stacked" onclick="closePlayerProfileModal(event)">
   <div class="player-profile-modal">
     <button type="button" class="spoiler-modal-close" onclick="closePlayerProfileModal(event)">&times;</button>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:2px;">
@@ -2886,7 +2667,7 @@
   </div>
 </div>
 
-<div id="player-picker-overlay" class="spoiler-modal-overlay" onclick="closePlayerPicker(event)">
+<div id="player-picker-overlay" class="tf-modal-overlay tf-modal-stacked" onclick="closePlayerPicker(event)">
   <div class="player-picker-modal">
     <button type="button" class="spoiler-modal-close" onclick="closePlayerPicker()">&times;</button>
     <div class="player-picker-title">Select Player</div>
@@ -2928,29 +2709,29 @@
   </div>
 </div>
 
-<div id="se-detail-overlay" onclick="closeSeDetailModal(event)">
-  <div id="se-detail-modal">
+<div id="se-detail-overlay" class="tf-modal-overlay" onclick="closeSeDetailModal(event)">
+  <div id="se-detail-modal" class="tf-modal-box">
     <div id="se-detail-header">
       <button type="button" class="spoiler-modal-close" onclick="closeSeDetailModal()">&times;</button>
       <div id="se-detail-name"></div>
       <div id="se-detail-host"></div>
     </div>
-    <div id="se-detail-body">
+    <div id="se-detail-body" class="tf-modal-body">
       <div id="se-detail-notes-label">Event Notes</div>
-      <ul id="se-detail-notes-list"></ul>
+      <ul id="se-detail-notes-list" class="tf-modal-notes-list"></ul>
       <div id="se-detail-notes-empty" style="display:none;">No notes added yet.</div>
     </div>
   </div>
 </div>
 
 <!-- Side Event Edit Modal (editor only) -->
-<div id="se-edit-overlay" onclick="closeSeEditModal(event)">
-  <div id="se-edit-modal">
-    <div id="se-edit-header">
-      <span id="se-edit-header-label">Side Event</span>
+<div id="se-edit-overlay" class="tf-modal-overlay" onclick="closeSeEditModal(event)">
+  <div id="se-edit-modal" class="tf-modal-box">
+    <div id="se-edit-header" class="tf-modal-header">
+      <span id="se-edit-header-label" class="tf-modal-title">Side Event</span>
       <button type="button" class="spoiler-modal-close" onclick="saveAndCloseSeEdit()">&times;</button>
     </div>
-    <div id="se-edit-body">
+    <div id="se-edit-body" class="tf-modal-body">
       <div>
         <div class="se-edit-label">Event Name</div>
         <input class="se-edit-input" id="se-edit-name-input" type="text" placeholder="e.g. Type 2 Side Event" autocomplete="off">
@@ -2967,7 +2748,7 @@
         </div>
       </div>
     </div>
-    <div id="se-edit-footer">
+    <div id="se-edit-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" onclick="saveAndCloseSeEdit(false)">Cancel</button>
       <button type="button" class="btn btn-teal" onclick="saveAndCloseSeEdit(true)">Save</button>
     </div>
@@ -2975,13 +2756,13 @@
 </div>
 
 <!-- Deadline Edit/View Modal -->
-<div id="dl-modal-overlay" onclick="closeDlModal(event)">
-  <div id="dl-modal">
-    <div id="dl-modal-header">
-      <span id="dl-modal-header-label">Deadline</span>
+<div id="dl-modal-overlay" class="tf-modal-overlay" onclick="closeDlModal(event)">
+  <div id="dl-modal" class="tf-modal-box">
+    <div id="dl-modal-header" class="tf-modal-header">
+      <span id="dl-modal-header-label" class="tf-modal-title">Deadline</span>
       <button type="button" class="spoiler-modal-close" onclick="closeDlModal()">&times;</button>
     </div>
-    <div id="dl-modal-body">
+    <div id="dl-modal-body" class="tf-modal-body">
       <!-- Edit section -->
       <div id="dl-edit-section">
         <div>
@@ -3004,11 +2785,11 @@
       <div id="dl-view-section">
         <div id="dl-view-name"></div>
         <div id="dl-view-date"></div>
-        <ul id="dl-view-notes-list"></ul>
+        <ul id="dl-view-notes-list" class="tf-modal-notes-list"></ul>
         <div id="dl-view-notes-empty" style="display:none;">No details added yet.</div>
       </div>
     </div>
-    <div id="dl-modal-footer">
+    <div id="dl-modal-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" id="dl-cancel-btn" onclick="closeDlModal()">Cancel</button>
       <button type="button" class="btn btn-teal" id="dl-save-btn" onclick="saveDlModal()">Save</button>
     </div>
@@ -3016,13 +2797,13 @@
 </div>
 
 <!-- Venue / Other Notes Modal -->
-<div id="venue-notes-overlay" onclick="closeVenueNotesModal(event)">
-  <div id="venue-notes-modal">
-    <div id="venue-notes-header">
-      <span id="venue-notes-header-label">Venue / Other Notes</span>
+<div id="venue-notes-overlay" class="tf-modal-overlay" onclick="closeVenueNotesModal(event)">
+  <div id="venue-notes-modal" class="tf-modal-box">
+    <div id="venue-notes-header" class="tf-modal-header">
+      <span id="venue-notes-header-label" class="tf-modal-title">Venue / Other Notes</span>
       <button type="button" class="spoiler-modal-close" onclick="closeVenueNotesModal()">&times;</button>
     </div>
-    <div id="venue-notes-body">
+    <div id="venue-notes-body" class="tf-modal-body">
       <div id="venue-notes-edit-section">
         <div id="venue-notes-edit-wrap">
           <div id="venue-notes-bullet-editor" contenteditable="true" spellcheck="true"></div>
@@ -3030,10 +2811,10 @@
         </div>
       </div>
       <div id="venue-notes-view">
-        <ul id="venue-notes-view-list"></ul>
+        <ul id="venue-notes-view-list" class="tf-modal-notes-list"></ul>
       </div>
     </div>
-    <div id="venue-notes-footer">
+    <div id="venue-notes-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" id="venue-notes-cancel-btn" onclick="closeVenueNotesModal()">Cancel</button>
       <button type="button" class="btn btn-teal" id="venue-notes-save-btn" onclick="saveVenueNotes()">Save</button>
     </div>
@@ -3041,29 +2822,29 @@
 </div>
 
 <!-- News Topic Detail Modal (read-only; works in both editor and published view) -->
-<div id="news-detail-overlay" onclick="closeNewsDetailModal(event)">
-  <div id="news-detail-modal">
+<div id="news-detail-overlay" class="tf-modal-overlay" onclick="closeNewsDetailModal(event)">
+  <div id="news-detail-modal" class="tf-modal-box">
     <div id="news-detail-header">
       <button type="button" class="spoiler-modal-close" onclick="closeNewsDetailModal()">&times;</button>
       <div id="news-detail-topic"></div>
       <div id="news-detail-overview"></div>
     </div>
-    <div id="news-detail-body">
+    <div id="news-detail-body" class="tf-modal-body">
       <div id="news-detail-notes-label">Full Details</div>
-      <ul id="news-detail-notes-list"></ul>
+      <ul id="news-detail-notes-list" class="tf-modal-notes-list"></ul>
       <div id="news-detail-notes-empty" style="display:none;">No additional details added yet.</div>
     </div>
   </div>
 </div>
 
 <!-- News Topic Edit Modal (editor only) -->
-<div id="news-edit-overlay" onclick="closeNewsEditModal(event)">
-  <div id="news-edit-modal">
-    <div id="news-edit-header">
-      <span id="news-edit-header-label">News Topic</span>
+<div id="news-edit-overlay" class="tf-modal-overlay" onclick="closeNewsEditModal(event)">
+  <div id="news-edit-modal" class="tf-modal-box">
+    <div id="news-edit-header" class="tf-modal-header">
+      <span id="news-edit-header-label" class="tf-modal-title">News Topic</span>
       <button type="button" class="spoiler-modal-close" onclick="saveAndCloseNewsEdit()">&times;</button>
     </div>
-    <div id="news-edit-body">
+    <div id="news-edit-body" class="tf-modal-body">
       <div>
         <div class="news-edit-label">Topic Title</div>
         <input id="news-edit-title-input" type="text" placeholder="Topic name — e.g. Redemption with Jayden, or a one-off headline" autocomplete="off">
@@ -3080,7 +2861,7 @@
         </div>
       </div>
     </div>
-    <div id="news-edit-footer">
+    <div id="news-edit-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" onclick="saveAndCloseNewsEdit()">Cancel</button>
       <button type="button" class="btn btn-teal" onclick="saveAndCloseNewsEdit(true)">Save</button>
     </div>
@@ -3088,10 +2869,10 @@
 </div>
 
 <!-- Tournament Results Editor Modal (editor only) -->
-<div id="tourn-results-editor-overlay" onclick="closeTournResultsEditor(event)">
-  <div id="tourn-results-editor-modal">
-    <div id="tre-header">
-      <div id="tre-title">Tournament</div>
+<div id="tourn-results-editor-overlay" class="tf-modal-overlay" onclick="closeTournResultsEditor(event)">
+  <div id="tourn-results-editor-modal" class="tf-modal-box">
+    <div id="tre-header" class="tf-modal-header">
+      <div id="tre-title" class="tf-modal-title">Tournament</div>
       <button type="button" class="spoiler-modal-close" onclick="closeTournResultsEditor()">&times;</button>
     </div>
     <div id="tre-fields">
@@ -3124,7 +2905,7 @@
     </div>
     <div id="tre-results-label">Results</div>
     <div id="tre-body"></div>
-    <div id="tre-footer">
+    <div id="tre-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" onclick="closeTournResultsEditor()">Cancel</button>
       <button type="button" class="btn btn-teal" onclick="saveTournResults()">Save</button>
     </div>
@@ -3132,8 +2913,8 @@
 </div>
 
 <!-- Tournament Results Display Modal (published view) -->
-<div id="tourn-results-display-overlay" onclick="closeTournResultsDisplay(event)">
-  <div id="tourn-results-display-modal">
+<div id="tourn-results-display-overlay" class="tf-modal-overlay" onclick="closeTournResultsDisplay(event)">
+  <div id="tourn-results-display-modal" class="tf-modal-box">
     <div id="trd-header">
       <button type="button" class="spoiler-modal-close" onclick="closeTournResultsDisplay()">&times;</button>
       <div id="trd-title"></div>
@@ -3536,7 +3317,7 @@
             <div id="spoiler-empty-state" style="font-size:10px; color:var(--placeholder); font-style:italic; padding:6px 0;">No cards added yet -- fetch recent spoilers or add one manually.</div>
           </div>
 
-          <div id="spoiler-modal-overlay" class="spoiler-modal-overlay" onclick="closeSpoilerModal(event)">
+          <div id="spoiler-modal-overlay" class="tf-modal-overlay" onclick="closeSpoilerModal(event)">
             <div class="spoiler-modal-content spoiler-modal-content-split">
               <button type="button" class="spoiler-modal-close" onclick="closeSpoilerModal(event)">&times;</button>
               <div class="spoiler-modal-media">
@@ -3649,14 +3430,6 @@
 
           <div class="agur-grid" id="agur-grid"></div>
           <div id="agur-add-row"></div>
-
-          <!-- Legacy agur modal overlay (kept for store compat reference) -->
-          <div id="agur-modal-overlay" style="display:none!important;">
-            <img id="agur-modal-img" src="" alt="">
-            <div id="agur-modal-caption"></div>
-            <div id="agur-modal-note"></div>
-            <div id="agur-modal-note-empty"></div>
-          </div>
 
           <!-- agur-notes kept hidden for store compat -->
           <textarea id="agur-notes" style="display:none;"></textarea>
@@ -8391,10 +8164,6 @@
   function syncCollectorsBullets() {}
   function addCollectorsCard() {}
   function removeCollectorsCard() {}
-  function openCollectorsModal() {}
-  function closeCollectorsModal() {
-    document.getElementById('collectors-card-modal-overlay').classList.remove('open');
-  }
 
   function createCollectorsAddRow() {
     var addRow = document.getElementById('collectors-add-row');
