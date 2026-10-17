@@ -15,7 +15,8 @@ export type ProgressModel = {
   brigades: string[];
   cells: ProgressCell[];
   checklist: { type: string; brigade: string; remaining: number }[];
-  keywords: { keyword: string; count: number }[];
+  // byBrigade counts a card in each brigade it has ("none" if it has none), like the heatmap.
+  keywords: { keyword: string; count: number; byBrigade: Record<string, number> }[];
 };
 
 // Ability-text phrases the dashboard tallies. A card counts once per phrase; matching is
@@ -71,11 +72,15 @@ export function computeProgress(cards: CardLike[], targets: TargetCounts | null 
     }
   }
 
-  const texts = live.map((c) => c.snapshot.rawText ?? c.snapshot.specialAbility ?? "");
-  const keywords = KEYWORDS.map((keyword, i) => ({
-    keyword,
-    count: texts.filter((t) => KEYWORD_RES[i].test(t)).length,
-  }));
+  const keywords = KEYWORDS.map((keyword, i) => {
+    const matching = live.filter((c) => KEYWORD_RES[i].test(c.snapshot.rawText ?? c.snapshot.specialAbility ?? ""));
+    const byBrigade: Record<string, number> = {};
+    for (const c of matching) {
+      const bs = c.snapshot.brigades?.length ? c.snapshot.brigades : ["none"];
+      for (const b of bs) byBrigade[b] = (byBrigade[b] ?? 0) + 1;
+    }
+    return { keyword, count: matching.length, byBrigade };
+  });
 
   const target = safeTargets.total ?? 0;
   const pct = target > 0 ? Math.round((live.length / target) * 100) : 0;

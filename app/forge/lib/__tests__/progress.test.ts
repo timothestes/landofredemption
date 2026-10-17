@@ -106,3 +106,17 @@ describe("computeProgress keywords", () => {
     expect(count(m, "draw")).toBe(1);
   });
 });
+
+describe("computeProgress keywords by brigade", () => {
+  it("counts a matching card in each of its brigades, brigade-less under 'none'", () => {
+    const m = computeProgress([
+      { snapshot: { cardType: ["GE"], brigades: ["Blue", "Green"], rawText: "Draw 1." }, status: "draft" },
+      { snapshot: { cardType: ["GE"], brigades: ["Blue"], rawText: "Draw 2." }, status: "draft" },
+      { snapshot: { cardType: ["GE"], brigades: ["Red"], rawText: "Discard." }, status: "draft" },
+      { snapshot: { cardType: ["Artifact"], brigades: [], rawText: "Draw 3." }, status: "draft" },
+    ], null);
+    const draw = m.keywords.find((k) => k.keyword === "draw")!;
+    expect(draw.count).toBe(3);
+    expect(draw.byBrigade).toEqual({ Blue: 2, Green: 1, none: 1 });
+  });
+});
