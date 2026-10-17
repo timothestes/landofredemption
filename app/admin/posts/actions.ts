@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { del, list } from "@vercel/blob";
 import { revalidateArticles } from "@/app/articles/lib/revalidate";
 import { slugify, MAX_SLUG } from "@/app/articles/lib/markdown";
@@ -268,6 +269,52 @@ export async function deletePostAction(id: string): Promise<ActionResult> {
       }
     } catch (cleanupError) {
       console.error("post blob cleanup failed:", cleanupError);
+    }
+    return { success: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * Mints a fresh secret preview link for a draft, replacing any earlier one (so
+ * "New link" also cuts off whoever had the old link). Returns the token.
+ */
+export async function createPreviewLinkAction(id: string): Promise<ActionResult<{ token: string }>> {
+  try {
+    const ctx = await requirePoster();
+    const current = await loadVisiblePost(ctx, id);
+    if (!current) return { success: false, error: "Post not found" };
+    if (!canEditPost({ userId: ctx.user.id, isSuperuser: ctx.isSuperuser }, current)) {
+      return { success: false, error: "You can only edit your own posts" };
+    }
+    const token = randomBytes(24).toString("base64url");
+    const { error } = await ctx.supabase
+      .from("post_preview_links")
+      .upsert({ post_id: id, token, created_at: new Date().toISOString() }, { onConflict: "post_id" });
+    if (error) {
+      console.error("createPreviewLink:", error);
+      return { success: false, error: "Could not create the preview link" };
+    }
+    return { success: true, token };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Turns the draft's preview link off; the old URL 404s from the next request. */
+export async function deletePreviewLinkAction(id: string): Promise<ActionResult> {
+  try {
+    const ctx = await requirePoster();
+    const current = await loadVisiblePost(ctx, id);
+    if (!current) return { success: false, error: "Post not found" };
+    if (!canEditPost({ userId: ctx.user.id, isSuperuser: ctx.isSuperuser }, current)) {
+      return { success: false, error: "You can only edit your own posts" };
+    }
+    const { error } = await ctx.supabase.from("post_preview_links").delete().eq("post_id", id);
+    if (error) {
+      console.error("deletePreviewLink:", error);
+      return { success: false, error: "Could not turn off the preview link" };
     }
     return { success: true };
   } catch (e) {

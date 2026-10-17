@@ -18,6 +18,8 @@ import {
   schedulePostAction,
   cancelScheduleAction,
   deletePostAction,
+  createPreviewLinkAction,
+  deletePreviewLinkAction,
   listTagsAction,
   resolveArticleRefsAction,
   searchCardsAction,
@@ -48,7 +50,7 @@ import CoverCropDialog from "./CoverCropDialog";
 import LocalDateTime from "./LocalDateTime";
 
 type Toast = { message: string; type: "success" | "error" } | null;
-type Busy = null | "save" | "publish" | "schedule" | "unpublish" | "delete";
+type Busy = null | "save" | "publish" | "schedule" | "unpublish" | "delete" | "preview";
 
 const LABEL = "block text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground";
 
@@ -66,7 +68,13 @@ let pendingCoverUpload: Promise<string | null> | null = null;
 // The draft row is created lazily by ensureId() on the first save or upload;
 // the URL is then rewritten in place with history.replaceState so the
 // component keeps its state (a router.replace would remount it).
-export default function PostEditor({ initial }: { initial: PostRow | null }) {
+export default function PostEditor({
+  initial,
+  previewToken: initialPreviewToken = null,
+}: {
+  initial: PostRow | null;
+  previewToken?: string | null;
+}) {
   const router = useRouter();
   // State parked by the instance this one replaces (lib/draftStash.ts); it
   // beats `initial`, which the server read before that instance's last save.
@@ -91,6 +99,11 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
   // field or by autosave, so a half-typed future date can't silently
   // schedule a post out from under the poster.
   const [scheduledAt, setScheduledAt] = useState<string | null>(stash ? stash.scheduledAt : (initial?.scheduled_at ?? null));
+  // Secret proofreading link for a draft (/articles/preview/<token>).
+  const [previewToken, setPreviewToken] = useState<string | null>(stash ? stash.previewToken : initialPreviewToken);
+  // Filled after mount: the server render has no window to read it from.
+  const [origin, setOrigin] = useState("");
+  useEffect(() => setOrigin(window.location.origin), []);
   const [dirty, setDirty] = useState(stash?.dirty ?? false);
   const [busy, setBusy] = useState<Busy>(null);
   // Drafts autosave silently (no busy, so the toolbar stays enabled); this is
@@ -602,6 +615,7 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
       publishAt,
       scheduledAt,
       status,
+      previewToken,
       dirty,
       selection: focused ? { start: el.selectionStart, end: el.selectionEnd } : null,
     });
@@ -760,6 +774,45 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
     } finally {
       setBusy(null);
     }
+  };
+
+  // The link always shows the last SAVED draft, so save first: what the
+  // proofreader opens should match what the poster is looking at.
+  const onCreatePreview = async () => {
+    if (!(await save())) return;
+    setBusy("preview");
+    try {
+      const r = await createPreviewLinkAction(idRef.current!);
+      if (r.success === false) return fail(r.error);
+      setPreviewToken(r.token);
+    } catch {
+      fail("Something went wrong. Check your connection and try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onDeletePreview = async () => {
+    setBusy("preview");
+    try {
+      const r = await deletePreviewLinkAction(idRef.current!);
+      if (r.success === false) return fail(r.error);
+      setPreviewToken(null);
+      setToast({ message: "Preview link turned off", type: "success" });
+    } catch {
+      fail("Something went wrong. Check your connection and try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const previewUrl = previewToken ? `${origin}/articles/preview/${previewToken}` : null;
+  const onCopyPreview = () => {
+    if (!previewUrl) return;
+    navigator.clipboard.writeText(previewUrl).then(
+      () => setToast({ message: "Link copied", type: "success" }),
+      () => fail("Could not copy; select the link and copy it by hand"),
+    );
   };
 
   const locked = busy !== null || uploading;
@@ -1047,6 +1100,57 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
               </button>
             )}
           </label>
+
+          {status === "draft" && id && (
+            <div>
+              <span className={LABEL}>Preview link</span>
+              {previewUrl ? (
+                <>
+                  <div className="mt-1 flex gap-2">
+                    <Input
+                      readOnly
+                      value={previewUrl}
+                      aria-label="Preview link"
+                      onFocus={(e) => e.target.select()}
+                      className="h-11 min-w-0 font-mono text-xs"
+                    />
+                    <Button variant="outline" className="min-h-11 shrink-0" onClick={onCopyPreview}>
+                      Copy
+                    </Button>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Anyone with this link can read the last saved draft.{" "}
+                    <button
+                      type="button"
+                      onClick={onCreatePreview}
+                      disabled={locked}
+                      className="underline hover:text-foreground"
+                    >
+                      New link
+                    </button>
+                    {" \u00b7 "}
+                    <button
+                      type="button"
+                      onClick={onDeletePreview}
+                      disabled={locked}
+                      className="underline hover:text-foreground"
+                    >
+                      Turn off
+                    </button>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" className="mt-1 min-h-11 w-full" onClick={onCreatePreview} disabled={locked}>
+                    {busy === "preview" ? "Creating\u2026" : "Share preview"}
+                  </Button>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    A secret link for proofreaders. No login needed; it stops working when you turn it off.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
 
           <div>
             <span className={LABEL}>Tags</span>

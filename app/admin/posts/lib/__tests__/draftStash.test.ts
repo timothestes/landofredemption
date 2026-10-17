@@ -12,6 +12,7 @@ const base: DraftStash = {
   body: "Body typed before the first autosave.",
   publishAt: "",
   scheduledAt: null,
+  previewToken: null,
   status: "draft",
   dirty: true,
   selection: { start: 5, end: 5 },

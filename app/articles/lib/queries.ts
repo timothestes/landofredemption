@@ -154,3 +154,22 @@ export function loadPostsByTag(tag: string, limit = 4): Promise<PublicPost[]> {
     revalidate: 3600,
   })();
 }
+
+/** Token format minted by createPreviewLinkAction: 24 random bytes, base64url. */
+export const PREVIEW_TOKEN_RE = /^[A-Za-z0-9_-]{32}$/;
+
+/**
+ * The post behind a draft preview link, whatever its status, or null. Never
+ * cached: turning a link off has to take effect on the next request.
+ */
+export async function loadPostPreview(token: string): Promise<PublicPost | null> {
+  if (!PREVIEW_TOKEN_RE.test(token)) return null;
+  const { data, error } = await createAnonClient()
+    .rpc("get_post_preview", { p_token: token })
+    .select(COLUMNS)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`loadPostPreview: ${error.message}`);
+  }
+  return (data as unknown as PublicPost | null) ?? null;
+}
