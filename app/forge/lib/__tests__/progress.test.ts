@@ -79,3 +79,30 @@ describe("computeProgress", () => {
     }
   });
 });
+
+describe("computeProgress keywords", () => {
+  const withText = (rawText: string | undefined, status = "draft", specialAbility?: string) => ({
+    snapshot: { cardType: ["GE"], brigades: ["Blue"], rawText, specialAbility }, status,
+  });
+  const count = (m: ReturnType<typeof computeProgress>, k: string) => m.keywords.find((x) => x.keyword === k)?.count;
+
+  it("counts each card once per phrase, case-insensitive, from a word start", () => {
+    const m = computeProgress([
+      withText("Draw 2. Draw 1 more. Cannot be negated."),
+      withText("Opponent draws a card and withdraws."),
+      withText("Withdraw a hero."),
+      withText("Protects your Reserve. This ability CANNOT BE\nPREVENTED."),
+    ], null);
+    expect(count(m, "draw")).toBe(2);
+    expect(count(m, "cannot be negated")).toBe(1);
+    expect(count(m, "cannot be prevented")).toBe(1);
+    expect(count(m, "reserve")).toBe(1);
+    expect(count(m, "protect")).toBe(1);
+    expect(count(m, "cannot be interrupted")).toBe(0);
+  });
+
+  it("skips archived cards and falls back to legacy specialAbility", () => {
+    const m = computeProgress([withText("Draw 1.", "archived"), withText(undefined, "draft", "Draw 3.")], null);
+    expect(count(m, "draw")).toBe(1);
+  });
+});

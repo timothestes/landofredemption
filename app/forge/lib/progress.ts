@@ -15,9 +15,20 @@ export type ProgressModel = {
   brigades: string[];
   cells: ProgressCell[];
   checklist: { type: string; brigade: string; remaining: number }[];
+  keywords: { keyword: string; count: number }[];
 };
 
-type CardLike = { snapshot: { cardType?: string[]; brigades?: string[] }; status: string };
+// Ability-text phrases the dashboard tallies. A card counts once per phrase; matching is
+// case-insensitive from a word start, so "draw" also catches "draws"/"drawn" but not "withdraw".
+export const KEYWORDS = [
+  "cannot be negated", "cannot be interrupted", "cannot be prevented", "reserve", "draw", "protect",
+];
+const KEYWORD_RES = KEYWORDS.map((k) => new RegExp(`\\b${k.replace(/ /g, "\\s+")}`, "i"));
+
+type CardLike = {
+  snapshot: { cardType?: string[]; brigades?: string[]; rawText?: string; specialAbility?: string };
+  status: string;
+};
 
 export function computeProgress(cards: CardLike[], targets: TargetCounts | null | undefined): ProgressModel {
   const safeTargets = targets ?? {};
@@ -60,8 +71,14 @@ export function computeProgress(cards: CardLike[], targets: TargetCounts | null 
     }
   }
 
+  const texts = live.map((c) => c.snapshot.rawText ?? c.snapshot.specialAbility ?? "");
+  const keywords = KEYWORDS.map((keyword, i) => ({
+    keyword,
+    count: texts.filter((t) => KEYWORD_RES[i].test(t)).length,
+  }));
+
   const target = safeTargets.total ?? 0;
   const pct = target > 0 ? Math.round((live.length / target) * 100) : 0;
 
-  return { headline: { actual: live.length, target, pct }, byStatus, types, brigades, cells, checklist };
+  return { headline: { actual: live.length, target, pct }, byStatus, types, brigades, cells, checklist, keywords };
 }
