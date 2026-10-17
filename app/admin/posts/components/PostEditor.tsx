@@ -963,8 +963,21 @@ export default function PostEditor({ initial }: { initial: PostRow | null }) {
                 />
               </div>
               <div className={`${tab === "preview" ? "" : "hidden lg:block"} rounded-b-md bg-muted/20 p-4 lg:rounded-r-md`}>
-                {/* Phones name the pane with the Write/Preview tabs already. */}
-                <div className="mb-2 hidden text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground lg:block">Preview</div>
+                {/* The tabs name the pane on phones, but nothing there says it can't be typed in. */}
+                <div className="mb-2 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                  <span className="hidden text-[11px] font-medium uppercase tracking-[0.1em] lg:inline">Preview</span>
+                  <span className="hidden lg:inline">{"·"}</span>
+                  <span>
+                    Read-only <span className="hidden lg:inline">{"— edit the markdown on the left"}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setTab("write")}
+                    className="min-h-11 font-medium text-foreground underline underline-offset-2 lg:hidden"
+                  >
+                    Switch to Write
+                  </button>
+                </div>
                 {body.trim() ? (
                   <ArticleBody markdown={body} refs={refs} draft />
                 ) : (
