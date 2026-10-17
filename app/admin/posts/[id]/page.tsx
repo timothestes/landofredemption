@@ -19,10 +19,11 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
   // row, so visibility alone doesn't prove editability — gate on canEditPost.
   const { data } = await ctx.supabase.from("posts").select(ROW).eq("id", id).maybeSingle();
   if (!data || !canEditPost({ userId: ctx.user.id, isSuperuser: ctx.isSuperuser }, data)) notFound();
+  const { data: preview } = await ctx.supabase.from("post_preview_links").select("token").eq("post_id", id).maybeSingle();
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <TopNav />
-      <PostEditor initial={data as PostRow} />
+      <PostEditor initial={data as PostRow} previewToken={preview?.token ?? null} />
     </div>
   );
 }

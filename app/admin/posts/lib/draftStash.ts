@@ -26,6 +26,7 @@ export interface DraftStash {
   publishAt: string;
   scheduledAt: string | null;
   status: "draft" | "published";
+  previewToken: string | null;
   dirty: boolean;
   /** Body caret to restore, or null when the body was not focused. */
   selection: { start: number; end: number } | null;
