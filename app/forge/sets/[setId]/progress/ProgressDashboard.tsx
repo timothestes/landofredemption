@@ -112,6 +112,24 @@ export default function ProgressDashboard({
         </div>
       )}
 
+      {/* ability-text keyword breakdown — bars are each phrase's share of the set's cards */}
+      {live > 0 && (
+        <div>
+          <p className="mb-1 text-sm font-medium">Keywords</p>
+          <div className="grid max-w-md grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 text-xs">
+            {model.keywords.map((k) => (
+              <div key={k.keyword} className="contents">
+                <span className="text-muted-foreground">{k.keyword}</span>
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div className="h-full bg-muted-foreground/60" style={{ width: `${(k.count / live) * 100}%` }} />
+                </div>
+                <span className="text-right tabular-nums">{k.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* what's-left checklist */}
       {model.checklist.length > 0 && (
         <div>
