@@ -3301,7 +3301,12 @@
           <div class="field">
             <label class="field-label">Cards to Feature</label>
             <div style="display:flex; gap:6px; align-items:center; margin-bottom:4px; flex-wrap:wrap;">
-              <button class="btn btn-ghost" type="button" style="padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="fetchRecentSpoilers()">Fetch Recent Spoilers (Last 21 Days)</button>
+              <button class="btn btn-ghost" type="button" style="padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="fetchRecentSpoilers()">Fetch Recent Spoilers</button>
+              <span style="display:flex; align-items:center; gap:4px; font-size:10px; color:var(--placeholder); white-space:nowrap;">
+                last
+                <input type="number" id="spoiler-days-input" value="21" min="1" step="1" style="width:42px; border:none; border-bottom:1.5px solid var(--teal-light); background:transparent; font-family:'Barlow', sans-serif; font-size:10px; color:var(--text); padding:2px 2px; outline:none; text-align:center;">
+                days
+              </span>
               <select class="field-input" id="spoiler-picker" style="display:none; flex:1;"></select>
               <button class="btn btn-teal" type="button" id="spoiler-add-btn" style="display:none; padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="addSpoilerPick()">Add</button>
               <button class="btn btn-teal" type="button" id="spoiler-add-all-btn" style="display:none; padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="addAllSpoilerPicks()">Add All</button>
@@ -5526,6 +5531,11 @@
     var addBtn = document.getElementById('spoiler-add-btn');
     var addAllBtn = document.getElementById('spoiler-add-all-btn');
 
+    var daysInput = document.getElementById('spoiler-days-input');
+    var days = parseInt(daysInput.value, 10);
+    if (isNaN(days) || days < 1) days = 21;
+    daysInput.value = days;
+
     status.textContent = 'Fetching...';
     fetch('/threshingfloor/api/data?kind=spoilers')
       .then(function(res) {
@@ -5535,7 +5545,7 @@
       .then(function(listings) {
         var now = new Date();
         var cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - 21);
+        cutoff.setDate(cutoff.getDate() - days);
 
         var filtered = listings.filter(function(item) {
           var d = new Date(item.spoil_date + 'T00:00:00');
@@ -5543,7 +5553,7 @@
         });
 
         if (filtered.length === 0) {
-          status.textContent = 'No spoilers found in the last 21 days.';
+          status.textContent = 'No spoilers found in the last ' + days + ' days.';
           picker.style.display = 'none';
           addBtn.style.display = 'none';
           addAllBtn.style.display = 'none';
@@ -5569,7 +5579,7 @@
         picker.style.display = '';
         addBtn.style.display = '';
         addAllBtn.style.display = '';
-        status.textContent = 'Found ' + filtered.length + ' spoiler(s) in the last 21 days. Select one and click Add, or click Add All.';
+        status.textContent = 'Found ' + filtered.length + ' spoiler(s) in the last ' + days + ' days. Select one and click Add, or click Add All.';
       })
       .catch(function(err) {
         status.textContent = 'Could not fetch spoilers.';
