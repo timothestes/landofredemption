@@ -2370,7 +2370,10 @@
       transform: rotate(45deg); transition: transform 0.2s, margin 0.2s;
     }
     body.view-mode .section.collapsed > .sec-header::after { transform: rotate(-45deg); margin-top: 0; }
-    body.view-mode .section.collapsed > .sec-body { display: none; }
+    /* #news-body sets display:flex by id, which outranks the class rule,
+       so it needs its own id-level selector to collapse. */
+    body.view-mode .section.collapsed > .sec-body,
+    body.view-mode .section.collapsed > #news-body { display: none; }
     /* Read-only notes fit their content (fitViewTextareas()) instead of
        keeping the editor's empty typing room. */
     body.view-mode .canvas textarea { min-height: 0; }
