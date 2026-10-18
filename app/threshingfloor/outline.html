@@ -2201,6 +2201,14 @@
     display: none !important;
   }
   body.view-mode .rank-delta.empty { display: none; }
+  /* Empty items render as "+ Add ..." prompt tiles in the editor; on the
+     published page they're dead clutter. */
+  body.view-mode .tourn-block:has(.tourn-tile-add),
+  body.view-mode #news-body .repeat-item:has(.news-tile-add),
+  body.view-mode .event-card:has(.se-tile-add),
+  body.view-mode .agur-block:has(.agur-tile-add),
+  body.view-mode .collectors-block:has(.collectors-tile-add),
+  body.view-mode .deadline-pill:has(.deadline-pill-add) { display: none !important; }
   /* Render inputs/textviews as static text */
   body.view-mode input,
   body.view-mode textarea,
