@@ -1249,38 +1249,22 @@
     cursor: pointer; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; letter-spacing: 0.5px;
   }
   .spoiler-card-addnote-btn:hover { background: var(--teal-light); }
-  /* Spoilers sort menu -- shown in the editor and on the published page */
-  #spoiler-sort-wrap {
-    display: flex; align-items: center; gap: 6px; margin-left: auto;
-    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 10px;
-    letter-spacing: 1px; text-transform: uppercase; color: var(--teal-dark); white-space: nowrap;
-  }
-  #spoiler-sort-select {
-    font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text);
-    border: 1px solid var(--teal-light); border-radius: 4px; background: var(--white);
-    padding: 2px 6px; cursor: pointer;
-  }
-  body.view-mode #spoiler-sort-select {
-    pointer-events: auto; border: 1px solid var(--teal-light) !important;
-    background: var(--white) !important;
-  }
-  body.dark-mode #spoiler-sort-wrap { color: var(--teal-mid); }
-
-  /* Spoiler viewer: previous/next arrows on the overlay's sides */
+  /* Spoiler viewer: previous/next arrows. They're flex siblings of the
+     modal box in the centred overlay (prev, box, next), so they sit a fixed
+     gap off the box's sides at whatever width the box currently is. */
   .tf-modal-nav {
-    position: fixed; top: 50%; transform: translateY(-50%); z-index: 2;
+    flex-shrink: 0; margin: 0 20px;
     width: 52px; height: 52px; border: none; border-radius: 50%;
     background: rgba(255,255,255,0.16); color: #fff; font-size: 34px; line-height: 1;
     display: flex; align-items: center; justify-content: center; padding: 0 0 4px; cursor: pointer;
   }
   .tf-modal-nav:hover:not(:disabled) { background: rgba(255,255,255,0.3); }
   .tf-modal-nav:disabled { opacity: 0.25; cursor: default; }
-  .tf-modal-nav-prev { left: 24px; }
-  .tf-modal-nav-next { right: 24px; }
   .spoiler-modal-counter { font-size: 11px; color: var(--gray); margin-top: 6px; }
   .spoiler-modal-counter:empty { display: none; }
+  /* No room beside the box on phones: overlay the arrows on the screen edges. */
   @media (max-width: 620px) {
-    .tf-modal-nav { width: 40px; height: 40px; font-size: 26px; }
+    .tf-modal-nav { position: fixed; top: 50%; transform: translateY(-50%); z-index: 2; margin: 0; width: 40px; height: 40px; font-size: 26px; }
     .tf-modal-nav-prev { left: 6px; }
     .tf-modal-nav-next { right: 6px; }
   }
@@ -2340,7 +2324,7 @@
   body.view-mode #rtn-nats-fetch-status,
   body.view-mode #spoiler-fetch-status,
   body.view-mode #spoilers-section button:not(.spoiler-modal-close):not(.sec-collapse-btn):not(.tf-modal-nav),
-  body.view-mode #spoilers-section select:not(#spoiler-sort-select),
+  body.view-mode #spoilers-section select,
   body.view-mode #spoilers-section label.btn,
   body.view-mode #spoiler-days-wrap,
   body.view-mode .spoiler-card-remove,
@@ -2523,8 +2507,6 @@
     .rtn-row-remove { width: 22px; height: 22px; font-size: 13px; }
     #spoiler-days-wrap { font-size: 13px; gap: 6px; }
     #spoiler-days-input { font-size: 14px; width: 54px; padding: 4px 2px; }
-    #spoiler-sort-wrap { font-size: 13px; gap: 8px; }
-    #spoiler-sort-select { font-size: 15px; padding: 6px 10px; border-radius: 6px; }
     .spoiler-modal-counter { font-size: 13px; margin-top: 8px; }
 
     /* Tile grids: Tournaments, Side Events, News, Agur, Collector's Corner */
@@ -3813,13 +3795,7 @@
               <select class="field-input" id="spoiler-picker" style="display:none; flex:1;"></select>
               <button class="btn btn-teal btn-sm" type="button" id="spoiler-add-btn" style="display:none; white-space:nowrap;" onclick="addSpoilerPick()">Add</button>
               <button class="btn btn-teal btn-sm" type="button" id="spoiler-add-all-btn" style="display:none; white-space:nowrap;" onclick="addAllSpoilerPicks()">Add All</button>
-              <label id="spoiler-sort-wrap" style="display:none;">Sort
-                <select id="spoiler-sort-select" onchange="applySpoilerSort()">
-                  <option value="set">Set / Set #</option>
-                  <option value="spoiled">Date spoiled</option>
-                  <option value="added">Order added</option>
-                </select>
-              </label>
+              <button class="btn btn-ghost btn-sm" type="button" id="spoiler-sort-btn" style="display:none; white-space:nowrap;" onclick="sortSpoilerCardsBySet()">Sort by Set</button>
               <label class="btn btn-ghost btn-sm" style="white-space:nowrap; cursor:pointer; margin-bottom:0;">
                 + Upload Card Image
                 <input type="file" id="spoiler-manual-file" accept="image/*" style="display:none;" onchange="addManualSpoilerCard()">
@@ -3833,7 +3809,6 @@
 
           <div id="spoiler-modal-overlay" class="tf-modal-overlay" onclick="closeSpoilerModal(event)">
             <button type="button" class="tf-modal-nav tf-modal-nav-prev" id="spoiler-modal-prev" aria-label="Previous card" onclick="stepSpoilerModal(-1, event)">&#8249;</button>
-            <button type="button" class="tf-modal-nav tf-modal-nav-next" id="spoiler-modal-next" aria-label="Next card" onclick="stepSpoilerModal(1, event)">&#8250;</button>
             <div class="spoiler-modal-content spoiler-modal-content-split">
               <button type="button" class="spoiler-modal-close" onclick="closeSpoilerModal(event)">&times;</button>
               <div class="spoiler-modal-media">
@@ -3851,6 +3826,7 @@
                 <div id="spoiler-modal-note-hint">• top level &nbsp;|&nbsp; Tab → – sub &nbsp;|&nbsp; Tab again → ◦ sub-sub &nbsp;|&nbsp; Shift+Tab to outdent</div>
               </div>
             </div>
+            <button type="button" class="tf-modal-nav tf-modal-nav-next" id="spoiler-modal-next" aria-label="Next card" onclick="stepSpoilerModal(1, event)">&#8250;</button>
           </div>
 
           <!-- spoiler-notes kept hidden for store save/recall compat -->
@@ -6104,9 +6080,8 @@
     var idx = parseInt(picker.value, 10);
     var item = window.spoilerListings[idx];
     if (!item) return;
-    addSpoilerCard(item.card_name, item.set_name, item.set_number, item.image_url, { spoilDate: item.spoil_date });
+    addSpoilerCard(item.card_name, item.set_name, item.set_number, item.image_url);
     updateSpoilerSortBtnVisibility();
-    applySpoilerSort();
   }
 
   function addAllSpoilerPicks() {
@@ -6115,12 +6090,11 @@
     var existing = Array.from(document.querySelectorAll('#spoiler-card-grid .spoiler-card')).map(function(c) { return c.dataset.cardName; });
     sorted.forEach(function(item) {
       if (existing.indexOf(item.card_name) === -1) {
-        addSpoilerCard(item.card_name, item.set_name, item.set_number, item.image_url, { spoilDate: item.spoil_date });
+        addSpoilerCard(item.card_name, item.set_name, item.set_number, item.image_url);
         existing.push(item.card_name);
       }
     });
     updateSpoilerSortBtnVisibility();
-    applySpoilerSort();
   }
 
   // Compare two spoiler items (or two .spoiler-card datasets) by set name, then set number, then card name
@@ -6141,29 +6115,18 @@
     return 0;
   }
 
-  // Reorders the spoiler grid by the sort menu's choice (set/#, spoil date,
-  // or order added). Set/# is the default, so new cards land in set order.
-  function applySpoilerSort() {
+  function sortSpoilerCardsBySet() {
     var grid = document.getElementById('spoiler-card-grid');
-    var mode = (document.getElementById('spoiler-sort-select') || {}).value || 'set';
     var cards = [...grid.querySelectorAll('.spoiler-card')];
-    cards.sort(function(a, b) {
-      var A = a.dataset, B = b.dataset;
-      if (mode === 'spoiled' && A.spoilDate !== B.spoilDate) {
-        if (!A.spoilDate || !B.spoilDate) return A.spoilDate ? -1 : 1;
-        return A.spoilDate < B.spoilDate ? -1 : 1;
-      }
-      if (mode === 'added') return Number(A.added) - Number(B.added);
-      return compareBySetThenNumber(A, B);
-    });
+    cards.sort(function(a, b) { return compareBySetThenNumber(a.dataset, b.dataset); });
     cards.forEach(function(card) { grid.appendChild(card); });
   }
 
   function updateSpoilerSortBtnVisibility() {
-    var wrap = document.getElementById('spoiler-sort-wrap');
+    var btn = document.getElementById('spoiler-sort-btn');
     var grid = document.getElementById('spoiler-card-grid');
-    if (!wrap || !grid) return;
-    wrap.style.display = grid.querySelectorAll('.spoiler-card').length >= 2 ? '' : 'none';
+    if (!btn || !grid) return;
+    btn.style.display = grid.querySelectorAll('.spoiler-card').length >= 2 ? '' : 'none';
   }
 
   // Palette of distinct gradient pairs for set badges
@@ -6197,15 +6160,9 @@
     badge.style.background = 'linear-gradient(135deg, ' + pair[0] + ' 0%, ' + pair[1] + ' 100%)';
   }
 
-  // meta (optional): { spoilDate: 'YYYY-MM-DD', added: <sequence> } -- kept on
-  // the card for the sort menu and saved with the outline.
-  window.spoilerAddSeq = 0;
-  function addSpoilerCard(cardName, setName, setNumber, imageUrl, meta) {
-    meta = meta || {};
+  function addSpoilerCard(cardName, setName, setNumber, imageUrl) {
     window.spoilerCardCount++;
     var n = window.spoilerCardCount;
-    var added = meta.added || (window.spoilerAddSeq + 1);
-    window.spoilerAddSeq = Math.max(window.spoilerAddSeq, added);
 
     var card = document.createElement('div');
     card.className = 'spoiler-card';
@@ -6232,8 +6189,6 @@
     card.dataset.cardName = cardName || '';
     card.dataset.setName = setName || '';
     card.dataset.setNumber = setNumber || '';
-    card.dataset.spoilDate = meta.spoilDate || '';
-    card.dataset.added = String(added);
 
     var removeBtn = document.createElement('button');
     removeBtn.type = 'button';
@@ -6840,7 +6795,6 @@
       addSpoilerCard(baseName, '', '', dataUrl);
       fileField.value = '';
       updateSpoilerSortBtnVisibility();
-      applySpoilerSort();
     });
   }
 
@@ -8922,8 +8876,6 @@
         cardName: caption ? caption.value : (card.dataset.cardName || ''),
         setName: card.dataset.setName || '',
         setNumber: card.dataset.setNumber || '',
-        spoilDate: card.dataset.spoilDate || '',
-        added: Number(card.dataset.added) || 0,
         note: note ? note.value : ''
       };
     });
@@ -9421,9 +9373,8 @@
             }
 
             if (data['spoiler-cards'] && data['spoiler-cards'].length) {
-              data['spoiler-cards'].forEach(function(c, ci) {
-                // Older drafts have no spoilDate/added; their saved order stands in for "order added".
-                addSpoilerCard(c.cardName, c.setName, c.setNumber, c.img, { spoilDate: c.spoilDate, added: c.added || ci + 1 });
+              data['spoiler-cards'].forEach(function(c) {
+                addSpoilerCard(c.cardName, c.setName, c.setNumber, c.img);
                 var n = window.spoilerCardCount;
                 if (c.note) {
                   var noteEl = document.getElementById('spoiler-note-' + n);
