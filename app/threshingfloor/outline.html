@@ -1047,6 +1047,10 @@
     color: #fff; line-height: 1.2;
   }
   #dv-side-meta { font-size: 11px; color: var(--teal-mid); }
+  #dv-side-hint { color: rgba(255,255,255,0.2); font-size: 11px; font-style: italic; text-align: center; padding-top: 160px; }
+  .dv-notes-title { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--teal-mid); }
+  #deck-viewer-notes-count { font-size: 9px; color: var(--placeholder); font-style: italic; }
+  #deck-viewer-notes-chevron { margin-left: auto; color: rgba(255,255,255,0.4); font-size: 11px; transition: transform 0.2s; }
 
   /* Card enlarge overlay */
   #deck-card-enlarge-overlay {
@@ -1762,6 +1766,7 @@
   #ppm-edit-btn { margin-top: 12px; padding: 3px 10px; font-size: 10px; }
   #ppm-edit-form .pr-field-label { display: block; margin-top: 10px; }
   #ppm-edit-form .pr-field-label:first-child { margin-top: 0; }
+  #ppm-edit-handle-display { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text); padding: 4px 0; opacity: 0.7; }
   #ppm-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
   #ppm-edit-status { font-size: 11px; color: var(--red); margin-top: 6px; min-height: 14px; text-align: right; }
   body.view-mode #ppm-edit-btn { display: none !important; }
@@ -2379,7 +2384,9 @@
     .btn, .btn-sm { font-size: 13px; padding: 8px 18px; border-radius: 6px; }
     .btn-ghost { border-width: 1.5px; }
     body:not(.dark-mode) .sec-body .btn-ghost,
-    body:not(.dark-mode) .tf-modal-box .btn-ghost { color: var(--teal); border-color: var(--teal); }
+    body:not(.dark-mode) .tf-modal-box .btn-ghost,
+    body:not(.dark-mode) .player-picker-modal .btn-ghost,
+    body:not(.dark-mode) .player-profile-modal .btn-ghost { color: var(--teal); border-color: var(--teal); }
     .toggle-row { padding: 16px 24px; gap: 12px 22px; }
     .toggle-row-label { font-size: 12px; }
     .toggle-item { gap: 8px; }
@@ -2508,6 +2515,204 @@
     .spoiler-card-set-input { font-size: 11px; padding: 2px; }
     .spoiler-card-note { font-size: 13px; padding: 6px 0 0; margin-top: 6px; min-height: 56px; }
     .spoiler-card-addnote-btn { font-size: 12px; padding: 4px 0; margin-top: 6px; }
+
+    /* ---- Modals: shared chrome ---- */
+    .tf-modal-overlay { padding: 28px; }
+    .tf-modal-box { min-width: min(560px, 95vw); max-width: min(760px, 95vw); border-radius: 12px; }
+    .tf-modal-box.tf-modal-wide { max-width: min(1080px, 95vw); }
+    .tf-modal-header { padding: 18px 28px 16px; border-radius: 12px 12px 0 0; }
+    .tf-modal-title { font-size: 20px; }
+    .tf-modal-body { padding: 24px 28px; gap: 16px; }
+    .tf-modal-footer { padding: 16px 28px; gap: 10px; }
+    .spoiler-modal-close { width: 32px; height: 32px; font-size: 20px; top: 12px; right: 12px; }
+    .spoiler-modal-content { padding: 24px; max-width: 440px; border-radius: 12px; }
+    .tf-confirm-box { max-width: 480px; padding: 24px 28px 20px; }
+    .tf-confirm-message { font-size: 16px; margin-bottom: 20px; }
+    .tf-confirm-actions { gap: 10px; }
+
+    /* Modals: field labels, inputs, bullet editors, hints, read-only notes */
+    .dl-modal-label, .se-edit-label, .news-edit-label, .agur-edit-label, .collectors-edit-label,
+    #se-detail-notes-label, #news-detail-notes-label { font-size: 13px; margin-bottom: 6px; }
+    .dl-edit-input, .se-edit-input, .agur-edit-input, .agur-edit-textarea, .collectors-edit-input,
+    #news-edit-desc-input { font-size: 16px; padding: 10px 12px; border-radius: 6px; }
+    #news-edit-title-input { font-size: 17px; padding: 10px 12px; border-radius: 6px; }
+    #news-edit-desc-input { min-height: 68px; }
+    .agur-edit-textarea { min-height: 104px; }
+    #venue-notes-bullet-editor, #dl-edit-bullet-editor, #se-edit-bullet-editor, #news-edit-bullet-editor,
+    #agur-edit-bullet-editor, #collectors-edit-bullet-editor, #spoiler-modal-note-editor,
+    #card-notes-bullet-editor, #card-notes-popup-textarea { font-size: 16px; padding: 12px 14px; }
+    #venue-notes-bullet-editor, #news-edit-bullet-editor { min-height: 210px; }
+    #dl-edit-bullet-editor, #se-edit-bullet-editor, #collectors-edit-bullet-editor { min-height: 180px; }
+    #agur-edit-bullet-editor, #spoiler-modal-note-editor { min-height: 150px; }
+    #card-notes-bullet-editor, #card-notes-popup-textarea { min-height: 260px; }
+    #venue-notes-bullet-editor .bn-l1, #dl-edit-bullet-editor .bn-l1, #se-edit-bullet-editor .bn-l1,
+    #news-edit-bullet-editor .bn-l1, #agur-edit-bullet-editor .bn-l1, #collectors-edit-bullet-editor .bn-l1,
+    #spoiler-modal-note-editor .bn-l1, #card-notes-bullet-editor .bn-l1 { padding-left: 26px; }
+    #venue-notes-bullet-editor .bn-l2, #dl-edit-bullet-editor .bn-l2, #se-edit-bullet-editor .bn-l2,
+    #news-edit-bullet-editor .bn-l2, #agur-edit-bullet-editor .bn-l2, #collectors-edit-bullet-editor .bn-l2,
+    #spoiler-modal-note-editor .bn-l2, #card-notes-bullet-editor .bn-l2 { padding-left: 52px; }
+    #venue-notes-edit-hint, #dl-edit-notes-hint, #se-edit-notes-hint, #news-edit-notes-hint,
+    #agur-edit-notes-hint, #collectors-edit-notes-hint { font-size: 12px; padding: 6px 14px 8px; }
+    #spoiler-modal-note-hint, #card-notes-popup-hint { font-size: 12px; }
+    .tf-modal-notes-list { padding-left: 20px; }
+    .tf-modal-notes-list li { font-size: 16px; margin-bottom: 8px; }
+    .tf-modal-notes-list li.bullet-l1 { padding-left: 26px; }
+    .tf-modal-notes-list li.bullet-l2 { padding-left: 52px; }
+    #dl-view-notes-empty, #se-detail-notes-empty, #news-detail-notes-empty, #collectors-view-notes-empty,
+    #agur-view-notes-empty, #collectors-card-modal-notes-empty, .spoiler-modal-note-empty { font-size: 14px; }
+
+    /* Modals: bespoke stacked headers (detail views) */
+    #se-detail-header, #news-detail-header, #collectors-view-header { padding: 18px 28px 16px; border-radius: 12px 12px 0 0; }
+    #se-detail-name, #news-detail-topic, #collectors-view-title { font-size: 24px; margin-right: 36px; }
+    #se-detail-host, #news-detail-overview { font-size: 14px; margin-top: 4px; }
+    #dl-view-name { font-size: 22px; margin-bottom: 4px; }
+    #dl-view-date { font-size: 14px; margin-bottom: 14px; }
+
+    /* Modals: Tournament results editor / display, manual tournament form */
+    #tourn-results-editor-modal, #tourn-results-display-modal { max-width: min(840px, 95vw); }
+    #tre-fields { padding: 20px 28px 16px; gap: 14px; }
+    .tre-fields-row { gap: 14px; }
+    .tre-field-wrap.tre-field-sm { flex-basis: 90px; }
+    .tre-field-wrap.tre-field-state { flex-basis: 76px; }
+    .tre-field-label { font-size: 12px; margin-bottom: 5px; }
+    .tre-field-input { font-size: 16px; padding: 9px 11px; border-radius: 6px; }
+    #tre-results-label { font-size: 13px; padding: 16px 28px 0; }
+    #tre-body { padding: 12px 28px 24px; }
+    .tre-format-block { margin-bottom: 22px; }
+    .tre-format-label { font-size: 13px; padding-bottom: 6px; margin-bottom: 12px; }
+    .tre-rank-row { gap: 10px; margin-bottom: 8px; }
+    .tre-rank-label { font-size: 16px; width: 44px; }
+    .tre-player-input { font-size: 15px; padding: 5px 0; }
+    .tre-tie-badge { font-size: 13px; padding: 2px 7px; }
+    .tre-tie-btn { font-size: 11px; padding: 4px 9px; border-radius: 4px; }
+    .tre-profile-btn { font-size: 17px; }
+    #trd-header { padding: 18px 48px 16px 28px; border-radius: 12px 12px 0 0; }
+    #trd-title { font-size: 22px; }
+    #trd-subtitle { font-size: 14px; margin-top: 4px; }
+    #trd-body { padding: 20px 28px 26px; }
+    .trd-formats-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+    .trd-format-label { font-size: 12px; padding-bottom: 5px; margin-bottom: 10px; }
+    .trd-row { gap: 10px; margin-bottom: 6px; }
+    .trd-rank { font-size: 15px; width: 44px; }
+    .trd-player { font-size: 15px; }
+    .trd-empty-state { font-size: 14px; }
+    #mtf-modal { max-width: min(580px, 95vw); }
+    #mtf-body { padding: 22px 28px 26px; }
+    #mtf-body .field-label { margin-top: 16px; }
+    .mtf-row-2 { gap: 14px; margin-top: 16px; }
+    .mtf-format-row { gap: 10px; margin-bottom: 10px; }
+    .mtf-format-remove { width: 26px; height: 26px; font-size: 16px; }
+    #mtf-status { font-size: 13px; }
+
+    /* Modals: Agur edit/view, Collector's Corner edit/card view */
+    #agur-edit-modal, #collectors-edit-modal { max-width: min(720px, 95vw); }
+    .agur-edit-tab { font-size: 14px; padding: 12px 22px; }
+    #agur-text-section > div + div, #agur-image-section > div + div,
+    #dl-edit-section > div + div, #ppm-edit-form > div + div { margin-top: 16px; }
+    #agur-edit-img-thumb { width: 116px; }
+    #collectors-edit-card-thumb { width: 104px; }
+    #agur-edit-img-thumb-remove, #collectors-edit-card-thumb-remove { width: 22px; height: 22px; font-size: 13px; }
+    #agur-edit-img-row, #collectors-edit-card-row { gap: 16px; }
+    #agur-edit-img-fields, #collectors-edit-card-fields { gap: 10px; }
+    .agur-str-tgh-row { gap: 14px; }
+    #agur-view-content, #collectors-card-modal-content { max-width: min(940px, 95vw); }
+    #agur-view-body, #collectors-card-modal-body { gap: 28px; }
+    #agur-view-left { flex-basis: 300px; max-width: 300px; }
+    #agur-view-spec { padding: 18px 20px; border-radius: 10px; }
+    #agur-view-spec-type { font-size: 12px; margin-bottom: 6px; }
+    #agur-view-spec-title { font-size: 23px; margin-bottom: 8px; }
+    #agur-view-spec-brigade, #agur-view-spec-class { font-size: 14px; margin-bottom: 6px; }
+    #agur-view-spec-stats { font-size: 16px; margin-bottom: 6px; }
+    #agur-view-spec-identifier { font-size: 13px; margin-bottom: 10px; }
+    #agur-view-spec-ability { font-size: 15px; padding-top: 10px; }
+    #agur-view-spec-scripture { font-size: 13px; margin-top: 8px; }
+    #agur-view-img-caption { font-size: 17px; margin-top: 10px; }
+    #agur-view-right, #collectors-card-modal-notes-col { padding-left: 24px; }
+    #agur-view-notes-label, #collectors-card-modal-notes-label { font-size: 14px; margin-bottom: 14px; }
+    #collectors-card-modal-img-col { flex-basis: 320px; max-width: 320px; }
+    #collectors-card-modal-img-caption { font-size: 18px; margin-top: 12px; }
+    #collectors-card-modal-topic { font-size: 16px; margin-bottom: 14px; }
+    #collectors-card-modal-notes-list li { font-size: 16px; margin-bottom: 8px; }
+
+    /* Modals: Spoiler card, Tournament/Nationals detail */
+    .spoiler-modal-content-split { max-width: 940px; gap: 28px; }
+    .spoiler-modal-media { flex-basis: 380px; max-width: 380px; }
+    .spoiler-modal-notes-col { padding-left: 24px; }
+    .spoiler-modal-notes-label { font-size: 14px; margin-bottom: 12px; }
+    .spoiler-modal-note { font-size: 16px; }
+    .spoiler-modal-note li { margin-bottom: 8px; }
+    .spoiler-modal-caption { font-size: 20px; margin-top: 12px; }
+    .spoiler-modal-set { font-size: 13px; margin-top: 4px; }
+    .tournament-modal-content { max-width: 520px; }
+    .tournament-modal-badge { font-size: 13px; padding: 5px 12px; margin-bottom: 10px; }
+    .tournament-modal-title { font-size: 23px; margin-bottom: 4px; }
+    .tournament-modal-date { font-size: 14px; margin-bottom: 14px; }
+    .tournament-modal-section { font-size: 15px; padding-top: 12px; margin-top: 12px; }
+    .tournament-modal-formats-table td { font-size: 15px; padding: 4px 0; }
+
+    /* Modals: Player Profile, Player Picker */
+    .player-profile-modal { max-width: 440px; padding: 26px 28px 24px; border-radius: 12px; }
+    .player-profile-modal-name { font-size: 27px; margin: 0 36px 4px 0; }
+    .player-profile-modal-row { gap: 12px; padding: 10px 0; margin-top: 8px; }
+    .player-profile-modal-label { font-size: 13px; width: 100px; }
+    .player-profile-modal-value { font-size: 16px; }
+    .player-profile-modal-empty { font-size: 14px; margin-top: 14px; }
+    #ppm-edit-form .pr-field-label, #pp-add-fields .pr-field-label { font-size: 12px; margin-bottom: 5px; }
+    #ppm-edit-form .pr-field-input, #pp-add-fields .pr-field-input { font-size: 16px; padding: 9px 12px; border-radius: 6px; }
+    #ppm-edit-handle-display { font-size: 16px; }
+    #ppm-edit-actions { gap: 10px; margin-top: 18px; }
+    #ppm-edit-status, #pp-status { font-size: 13px; }
+    .player-picker-modal { max-width: 420px; padding: 26px 28px 24px; border-radius: 12px; }
+    .player-picker-title { font-size: 23px; margin: 0 36px 16px 0; }
+    .pp-search-input { font-size: 16px; padding: 10px 12px; margin-bottom: 10px; border-radius: 6px; }
+    .pp-list { max-height: 260px; margin-bottom: 16px; border-radius: 8px; }
+    .pp-item { font-size: 16px; padding: 11px 14px; gap: 10px; }
+    .pp-item-sub { font-size: 13px; }
+    .pp-empty { font-size: 14px; padding: 20px 14px; }
+    .pp-divider { font-size: 11px; margin: 4px 0 14px; }
+    #pp-add-fields { gap: 12px; margin-bottom: 14px; }
+    .pp-add-actions { gap: 10px; }
+    .pp-footer-link, .pp-footer-link button { font-size: 13px; }
+    .pp-footer-link { margin-top: 14px; padding-top: 14px; }
+
+    /* Player Registry panel */
+    #player-registry-panel { max-width: 780px; border-radius: 10px; }
+    #player-registry-header { padding: 16px 22px 14px; gap: 12px; }
+    #player-registry-header h2 { font-size: 18px; }
+    #player-registry-list-col { width: 250px; }
+    #player-registry-search { font-size: 15px; padding: 11px 16px; }
+    .player-registry-item { font-size: 15px; padding: 10px 16px; }
+    #player-registry-form-col { padding: 22px; gap: 14px; }
+    .pr-empty-state { font-size: 14px; padding: 32px 16px; }
+    .pr-field-label { font-size: 12px; margin-bottom: 5px; }
+    .pr-field-input { font-size: 16px; padding: 9px 12px; border-radius: 6px; }
+    #player-registry-footer { padding: 14px 22px; gap: 10px; }
+    #player-registry-save-status { font-size: 12px; }
+    #player-registry-save-status.pr-status-error { font-size: 13px; }
+
+    /* Card Notes popup, card enlarge */
+    #card-notes-popup { max-width: 600px; border-radius: 12px; position: relative; }
+    #card-notes-popup-header { padding: 14px 20px; }
+    #card-notes-popup-title { font-size: 17px; }
+    #card-notes-popup-footer { padding: 14px 20px; }
+    #deck-card-enlarge-overlay img { max-width: 480px; border-radius: 12px; }
+
+    /* Deck Viewer: card layout stays as-is (its density is the point);
+       only its text is bumped for legibility. */
+    #deck-viewer-name { font-size: 24px; }
+    #deck-viewer-sub { font-size: 13px; margin-top: 4px; }
+    .dv-toggle-btn { font-size: 12px; padding: 5px 11px; }
+    .deck-viewer-zone-title { font-size: 14px; }
+    .deck-viewer-card-name { font-size: 10px; }
+    .dv-stack-col-title { font-size: 11px; }
+    .dv-notes-title { font-size: 12px; }
+    #deck-viewer-notes-count { font-size: 12px; }
+    #deck-viewer-notes-chevron { font-size: 14px; }
+    .dv-note-item { font-size: 14px; }
+    .dv-note-bullet { font-size: 12px; }
+    #deck-viewer-notes-textarea { font-size: 15px; padding: 10px 12px; }
+    #dv-side-name { font-size: 18px; }
+    #dv-side-meta, #dv-side-hint { font-size: 13px; }
   }
 
   /* Phone-width viewers (mostly the published episode page): three tiles
@@ -2573,7 +2778,7 @@
             <button type="button" id="collectors-edit-card-thumb-remove" onclick="removeCollectorsEditCard()">&times;</button>
           </div>
           <div id="collectors-edit-card-fields">
-            <button type="button" class="btn btn-ghost" id="collectors-edit-card-btn" style="font-size:11px; padding:4px 10px;" onclick="document.getElementById('collectors-edit-card-file').click()">+ Add Card Image</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="collectors-edit-card-btn" onclick="document.getElementById('collectors-edit-card-file').click()">+ Add Card Image</button>
             <input type="file" id="collectors-edit-card-file" accept="image/*" style="display:none;" onchange="loadCollectorsEditCard(this)">
             <input class="collectors-edit-input" id="collectors-edit-caption" type="text" placeholder="Card name / note" autocomplete="off" style="display:none; margin-top:6px;">
           </div>
@@ -2664,7 +2869,7 @@
             <button type="button" id="agur-edit-img-thumb-remove" onclick="removeAgurEditImg()">&times;</button>
           </div>
           <div id="agur-edit-img-fields">
-            <button type="button" class="btn btn-ghost" id="agur-edit-img-btn" style="font-size:11px; padding:4px 10px;" onclick="document.getElementById('agur-edit-img-file').click()">+ Upload Card Image</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="agur-edit-img-btn" onclick="document.getElementById('agur-edit-img-file').click()">+ Upload Card Image</button>
             <input type="file" id="agur-edit-img-file" accept="image/*" style="display:none;" onchange="loadAgurEditImg(this)">
             <input class="agur-edit-input" id="agur-edit-img-caption" type="text" placeholder="Card title / design name" autocomplete="off" style="display:none; margin-top:6px;">
           </div>
@@ -2824,7 +3029,7 @@
     <div id="ppm-edit-form" style="display:none;">
       <div style="margin-bottom:6px;">
         <div class="pr-field-label" style="display:block; margin-bottom:2px;">Handle</div>
-        <div id="ppm-edit-handle-display" style="font-family:'Barlow',sans-serif; font-size:13px; color:var(--text); padding:4px 0; opacity:0.7;"></div>
+        <div id="ppm-edit-handle-display"></div>
       </div>
       <div>
         <label class="pr-field-label">Real Name</label>
@@ -2881,8 +3086,8 @@
     </div>
 
     <div class="pp-add-actions">
-      <button type="button" class="btn btn-ghost" style="padding:6px 12px; font-size:11px;" onclick="usePlayerPickerQuickName()">Use Without Saving</button>
-      <button type="button" class="btn btn-teal" style="padding:6px 12px; font-size:11px;" onclick="savePlayerPickerFullProfile()">Save to Registry &amp; Use</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="usePlayerPickerQuickName()">Use Without Saving</button>
+      <button type="button" class="btn btn-teal btn-sm" onclick="savePlayerPickerFullProfile()">Save to Registry &amp; Use</button>
     </div>
 
     <div id="pp-status"></div>
@@ -3139,9 +3344,9 @@
     </div>
     <div id="deck-viewer-notes-bar" style="display:none;">
       <div id="deck-viewer-notes-toggle" onclick="toggleDeckViewerNotes()" style="display:flex; align-items:center; gap:8px; padding:7px 16px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.15);">
-        <span style="font-family:'Barlow Condensed',sans-serif; font-size:9px; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:var(--teal-mid);">Strategy Notes</span>
-        <span id="deck-viewer-notes-count" style="font-size:9px; color:var(--placeholder); font-style:italic;"></span>
-        <span id="deck-viewer-notes-chevron" style="margin-left:auto; color:rgba(255,255,255,0.4); font-size:11px; transition:transform 0.2s;">&#8964;</span>
+        <span class="dv-notes-title">Strategy Notes</span>
+        <span id="deck-viewer-notes-count"></span>
+        <span id="deck-viewer-notes-chevron">&#8964;</span>
       </div>
       <div id="deck-viewer-notes-content" style="display:none; padding:10px 16px 12px; background:rgba(0,0,0,0.12); border-bottom:1px solid rgba(255,255,255,0.06);">
         <textarea id="deck-viewer-notes-textarea" placeholder="Key cards and their roles, strategy overview, talking points... (one per line)"></textarea>
@@ -3153,7 +3358,7 @@
     <div id="deck-viewer-stacked-wrap" style="display:none; flex:1; min-height:500px;">
       <div id="deck-viewer-columns"></div>
       <div id="deck-viewer-side-panel">
-        <div style="color:rgba(255,255,255,0.2); font-size:11px; font-style:italic; text-align:center; padding-top:160px;" id="dv-side-hint">Hover a card to preview</div>
+        <div id="dv-side-hint">Hover a card to preview</div>
         <img id="dv-side-img" src="" alt="" style="display:none;">
         <div id="dv-side-name" style="display:none;"></div>
         <div id="dv-side-meta" style="display:none;"></div>
