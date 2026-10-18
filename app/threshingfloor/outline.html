@@ -202,7 +202,6 @@
   .sec-order-controls { gap: 4px; }
   .sec-order-controls .sec-order-divider { width: 1px; background: rgba(255,255,255,0.25); margin: 0 2px; }
   .sec-order-controls .sec-order-divider:first-child { display: none; }
-  .sec-order-arrows { display: flex; gap: 2px; }
   .sec-body { padding: 8px 10px; background: var(--white); }
 
   .field { margin-bottom: 6px; }
@@ -2430,7 +2429,7 @@
     .canvas.page2 { margin-top: 24px; }
     .sec-header { padding: 16px 24px; }
     .sec-title { font-size: 16px; }
-    .sec-order-controls, .sec-order-arrows { gap: 6px; }
+    .sec-order-controls { gap: 6px; }
     .sec-order-btn { width: 30px; height: 30px; border-radius: 6px; font-size: 14px; }
     .sec-order-btn.sec-action-btn { padding: 0 12px; font-size: 13px; }
     .sec-body { padding: 24px; }
@@ -2505,12 +2504,8 @@
     .rank-profile-btn, .tre-profile-btn { font-size: 17px; }
     .rank-profile-btn-add { font-size: 20px; }
 
-    /* Power Rankings and Deck of the Week get opened separately during an
-       episode, so on screen they stack full-width like every other segment
-       (print keeps them side by side). Rank cards keep roughly their old
-       column width, left-aligned, rather than stretching across the page. */
-    .movable-section[data-sid="rankings-dotw"] > .grid-2 { grid-template-columns: 1fr; }
-    .movable-section[data-sid="rankings-dotw"] > .grid-2 > .section { border-right: none; }
+    /* Rank cards keep roughly their old half-page column width, left-aligned,
+       rather than stretching across the full-width section. */
     #rankings-grid { max-width: 840px; }
 
     /* Deck of the Week profile card */
@@ -3495,8 +3490,8 @@
     <label class="toggle-item"><input type="checkbox" id="tog-opening-closing" checked onchange="toggleOpeningClosing(this)"><span class="toggle-switch"></span><span class="toggle-item-label">Opening &amp; Closing</span></label>
     <label class="toggle-item"><input type="checkbox" id="tog-news" onchange="updateSection('news-section', this)"><span class="toggle-switch"></span><span class="toggle-item-label">Recent News</span></label>
     <label class="toggle-item"><input type="checkbox" id="tog-tournaments" onchange="updateSection('tournaments-section', this)"><span class="toggle-switch"></span><span class="toggle-item-label">Tournaments</span></label>
-    <label class="toggle-item"><input type="checkbox" id="tog-rankings" onchange="updateSection('rankings-section', this); placeRankingsDotwArrows();"><span class="toggle-switch"></span><span class="toggle-item-label">Power Rankings</span></label>
-    <label class="toggle-item"><input type="checkbox" id="tog-dotw" onchange="updateSection('dotw-section', this); placeRankingsDotwArrows();"><span class="toggle-switch"></span><span class="toggle-item-label">Deck of the Week</span></label>
+    <label class="toggle-item"><input type="checkbox" id="tog-rankings" onchange="updateSection('rankings-section', this);"><span class="toggle-switch"></span><span class="toggle-item-label">Power Rankings</span></label>
+    <label class="toggle-item"><input type="checkbox" id="tog-dotw" onchange="updateSection('dotw-section', this);"><span class="toggle-switch"></span><span class="toggle-item-label">Deck of the Week</span></label>
     <label class="toggle-item"><input type="checkbox" id="tog-mailbag" onchange="updateSection('mailbag-section', this)"><span class="toggle-switch"></span><span class="toggle-item-label">Community Mailbag</span></label>
     <label class="toggle-item"><input type="checkbox" id="tog-rtn" onchange="updateSection('rtn-section', this); if(this.checked) fetchNationalsInfo();"><span class="toggle-switch"></span><span class="toggle-item-label">Road to Nationals</span></label>
     <label class="toggle-item"><input type="checkbox" id="tog-spoilers" onchange="updateSection('spoilers-section', this)"><span class="toggle-switch"></span><span class="toggle-item-label">Spoilers</span></label>
@@ -3583,16 +3578,14 @@
     <div class="section-divider"></div>
     </div>
 
-    <div class="movable-section" data-sid="rankings-dotw">
-    <div class="grid-2">
+    <div class="movable-section" data-sid="rankings">
+    <div class="grid-1">
       <div class="section" id="rankings-section">
         <div class="sec-header">
           <span class="sec-title">Power Rankings</span>
           <span class="sec-order-controls" id="rankings-order-controls">
-            <span class="sec-order-arrows" id="rankings-dotw-arrows">
-              <button class="sec-order-btn" type="button" onclick="moveSection('rankings-dotw',-1)" title="Move up">&#9650;</button>
-              <button class="sec-order-btn" type="button" onclick="moveSection('rankings-dotw',1)" title="Move down">&#9660;</button>
-            </span>
+            <button class="sec-order-btn" type="button" onclick="moveSection('rankings',-1)" title="Move up">&#9650;</button>
+            <button class="sec-order-btn" type="button" onclick="moveSection('rankings',1)" title="Move down">&#9660;</button>
           </span>
         </div>
         <div class="sec-body">
@@ -3610,9 +3603,21 @@
           </div>
         </div>
       </div>
+    </div>
 
+    <div class="section-divider"></div>
+    </div>
+
+    <div class="movable-section" data-sid="dotw">
+    <div class="grid-1">
       <div class="section" id="dotw-section">
-        <div class="sec-header"><span class="sec-title">Deck of the Week</span><span class="sec-order-controls" id="dotw-order-controls"></span></div>
+        <div class="sec-header">
+          <span class="sec-title">Deck of the Week</span>
+          <span class="sec-order-controls" id="dotw-order-controls">
+            <button class="sec-order-btn" type="button" onclick="moveSection('dotw',-1)" title="Move up">&#9650;</button>
+            <button class="sec-order-btn" type="button" onclick="moveSection('dotw',1)" title="Move down">&#9660;</button>
+          </span>
+        </div>
         <div class="sec-body">
           <div class="field">
             <label class="field-label">Deck Profile Link</label>
@@ -9323,7 +9328,11 @@
                 var bySid = {};
                 secs.forEach(function(s){ bySid[s.dataset.sid] = s; });
                 data['section-order'].forEach(function(sid){
-                  if (bySid[sid]) secParent.insertBefore(bySid[sid], secAnchor);
+                  // Drafts saved before Power Rankings / Deck of the Week were
+                  // split into separate segments stored them as one block.
+                  (sid === 'rankings-dotw' ? ['rankings', 'dotw'] : [sid]).forEach(function(id) {
+                    if (bySid[id]) secParent.insertBefore(bySid[id], secAnchor);
+                  });
                 });
               }
             }
@@ -9422,11 +9431,6 @@
 
   // ---- Section reordering (session-only) ----
   function isSectionVisible(el) {
-    if (el.dataset.sid === 'rankings-dotw') {
-      var r = document.getElementById('tog-rankings');
-      var d = document.getElementById('tog-dotw');
-      return (r && r.checked) || (d && d.checked);
-    }
     var grid = el.querySelector('.grid-1, .grid-2');
     if (!grid) return true;
     return getComputedStyle(grid).display !== 'none';
@@ -9829,28 +9833,6 @@
   }
 
   window.addEventListener('beforeprint', markEmptySections);
-
-  // ---- Power Rankings / Deck of the Week: relocate shared move-arrows ----
-  // Both sections share one set of up/down arrows (they move together as 'rankings-dotw').
-  // On screen the pair stacks full-width, so the arrows sit on whichever of the two is on
-  // top: Power Rankings when it's on, otherwise Deck of the Week. (Print hides them.)
-  function placeRankingsDotwArrows() {
-    var arrows = document.getElementById('rankings-dotw-arrows');
-    var rankingsControls = document.getElementById('rankings-order-controls');
-    var dotwControls = document.getElementById('dotw-order-controls');
-    if (!arrows || !rankingsControls || !dotwControls) return;
-
-    var rankingsOn = document.getElementById('tog-rankings').checked;
-    var dotwOn = document.getElementById('tog-dotw').checked;
-
-    var target = (rankingsOn || !dotwOn) ? rankingsControls : dotwControls;
-
-    if (arrows.parentNode !== target) {
-      target.insertBefore(arrows, target.firstChild);
-    } else if (target.firstChild !== arrows) {
-      target.insertBefore(arrows, target.firstChild);
-    }
-  }
 
   // ---- Power Rankings: generate shareable graphic ----
   // ---- Rankings & Meta: persistent store for recall ----
