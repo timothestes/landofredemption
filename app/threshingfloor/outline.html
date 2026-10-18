@@ -47,7 +47,7 @@
   .header-left { flex: 1; }
   .podcast-name {
     font-family: 'Anton', 'Barlow Semi Condensed', sans-serif;
-    font-weight: 600;
+    font-weight: 400;
     font-size: 30px;
     color: var(--white);
     letter-spacing: 1px;
@@ -2737,6 +2737,19 @@
   @media screen and (max-width: 760px) {
     .tourn-block, .event-card, .agur-block, .collectors-block, #news-body .repeat-item, .venue-notes-card {
       width: calc((100% - 14px) / 2);
+    }
+  }
+
+  /* Phone-width card viewers: stack card over notes. Restates the earlier
+     620px spoiler rules, which the screen-scale block above overrides. */
+  @media screen and (max-width: 620px) {
+    .spoiler-modal-content-split { max-width: 400px; }
+    .spoiler-modal-media { flex: 1 1 auto; max-width: none; }
+    .spoiler-modal-notes-col { padding-left: 0; }
+    #agur-view-body, #collectors-card-modal-body { flex-direction: column; align-items: stretch; }
+    #agur-view-left, #collectors-card-modal-img-col { flex: 1 1 auto; max-width: none; }
+    #agur-view-right, #collectors-card-modal-notes-col {
+      border-left: none; border-top: 1px solid var(--gray-light); padding-left: 0; padding-top: 12px;
     }
   }
 </style>
@@ -6303,6 +6316,7 @@
   document.addEventListener('keydown', function(e) {
     if (!document.getElementById('spoiler-modal-overlay').classList.contains('open')) return;
     if (e.target.closest && e.target.closest('[contenteditable="true"], input, textarea, select')) return;
+    if (e.altKey || e.metaKey || e.ctrlKey) return;
     if (e.key === 'ArrowLeft') stepSpoilerModal(-1);
     else if (e.key === 'ArrowRight') stepSpoilerModal(1);
   });
@@ -9367,7 +9381,11 @@
                 });
               }
             }
-            if (window.__TF_VIEW__) markEmptySections();
+            if (window.__TF_VIEW__) {
+              markEmptySections();
+              // Sections that start open were sized before the text landed.
+              fitViewTextareas(document.body);
+            }
           }, 50);
     } catch(err) {
       document.getElementById('save-status').textContent = 'Could not apply that draft.';
