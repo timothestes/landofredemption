@@ -201,6 +201,7 @@
   .sec-order-btn.sec-action-btn { width: auto; padding: 0 6px; font-size: 10px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
   .sec-order-controls { gap: 4px; }
   .sec-order-controls .sec-order-divider { width: 1px; background: rgba(255,255,255,0.25); margin: 0 2px; }
+  .sec-order-controls .sec-order-divider:first-child { display: none; }
   .sec-order-arrows { display: flex; gap: 2px; }
   .sec-body { padding: 8px 10px; background: var(--white); }
 
@@ -2504,10 +2505,18 @@
     .rank-profile-btn, .tre-profile-btn { font-size: 17px; }
     .rank-profile-btn-add { font-size: 20px; }
 
+    /* Power Rankings and Deck of the Week get opened separately during an
+       episode, so on screen they stack full-width like every other segment
+       (print keeps them side by side). Rank cards keep roughly their old
+       column width, left-aligned, rather than stretching across the page. */
+    .movable-section[data-sid="rankings-dotw"] > .grid-2 { grid-template-columns: 1fr; }
+    .movable-section[data-sid="rankings-dotw"] > .grid-2 > .section { border-right: none; }
+    #rankings-grid { max-width: 840px; }
+
     /* Deck of the Week profile card */
     .dotw-card-header { gap: 18px; padding: 18px; border-radius: 8px; }
     .dotw-card-preview { gap: 6px; }
-    .dotw-card-preview img { width: 110px; border-radius: 4px; }
+    .dotw-card-preview img { width: 150px; border-radius: 4px; }
     .dotw-card-name { font-size: 20px; margin-bottom: 4px; }
     .dotw-card-desc { font-size: 13px; margin-bottom: 8px; }
     .dotw-card-creator { font-size: 14px; margin-bottom: 8px; }
@@ -9823,9 +9832,8 @@
 
   // ---- Power Rankings / Deck of the Week: relocate shared move-arrows ----
   // Both sections share one set of up/down arrows (they move together as 'rankings-dotw').
-  // Keep the arrows on whichever section currently occupies the right-hand column so their
-  // position lines up with every other section's order controls; if only one of the two
-  // is visible, it shifts left and the arrows move with it.
+  // On screen the pair stacks full-width, so the arrows sit on whichever of the two is on
+  // top: Power Rankings when it's on, otherwise Deck of the Week. (Print hides them.)
   function placeRankingsDotwArrows() {
     var arrows = document.getElementById('rankings-dotw-arrows');
     var rankingsControls = document.getElementById('rankings-order-controls');
@@ -9835,14 +9843,7 @@
     var rankingsOn = document.getElementById('tog-rankings').checked;
     var dotwOn = document.getElementById('tog-dotw').checked;
 
-    var target;
-    if (dotwOn) {
-      // DotW visible (either alone, or alongside rankings as the right column) -> arrows go here
-      target = dotwControls;
-    } else {
-      // Only rankings visible (or neither) -> arrows stay/return here
-      target = rankingsControls;
-    }
+    var target = (rankingsOn || !dotwOn) ? rankingsControls : dotwControls;
 
     if (arrows.parentNode !== target) {
       target.insertBefore(arrows, target.firstChild);
