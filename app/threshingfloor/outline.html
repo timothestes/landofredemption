@@ -250,7 +250,7 @@
     letter-spacing: 0.3px; color: var(--teal-dark); text-transform: uppercase;
     margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .tourn-tile-meta { font-size: 11px; color: #fff; line-height: 1.4; }
+  .tourn-tile-meta { font-size: 11px; color: #4f6664; line-height: 1.4; }
   .tourn-tile-results-dot {
     display: inline-block; width: 7px; height: 7px; border-radius: 50%;
     background: var(--teal); margin-left: 5px; vertical-align: middle;
@@ -668,7 +668,7 @@
     letter-spacing: 0.3px; color: var(--teal-dark); text-transform: uppercase;
     margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .se-tile-host { font-size: 11px; color: #fff; line-height: 1.3; }
+  .se-tile-host { font-size: 11px; color: #4f6664; line-height: 1.3; }
   body.dark-mode .se-tile-name { color: var(--teal); }
   body.dark-mode .se-tile-host { color: #fff; }
 
@@ -791,7 +791,7 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .news-tile-desc {
-    font-size: 12px; color: #fff; line-height: 1.4;
+    font-size: 12px; color: #4f6664; line-height: 1.4;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     overflow: hidden; word-break: break-word;
   }
@@ -1285,7 +1285,7 @@
     letter-spacing: 0.3px; color: var(--teal-dark); text-transform: uppercase;
     margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .agur-tile-sub { font-size: 11px; color: #fff; line-height: 1.3; }
+  .agur-tile-sub { font-size: 11px; color: #4f6664; line-height: 1.3; }
   body.dark-mode .agur-block { background: rgba(255,255,255,0.06); }
   body.dark-mode .agur-tile-title { color: var(--teal); }
   body.dark-mode .agur-tile-sub { color: #fff; }
@@ -1488,7 +1488,7 @@
     letter-spacing: 0.3px; color: var(--teal-dark); text-transform: uppercase;
     margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .collectors-tile-sub { font-size: 11px; color: #fff; line-height: 1.3; }
+  .collectors-tile-sub { font-size: 11px; color: #4f6664; line-height: 1.3; }
   body.dark-mode .collectors-block { background: rgba(255,255,255,0.06); }
   body.dark-mode .collectors-tile-title { color: var(--teal); }
   body.dark-mode .collectors-tile-sub { color: #fff; }
@@ -2270,7 +2270,7 @@
   body.view-mode #rankings-export-row,
   body.view-mode #meta-export-row,
   body.view-mode #prev-meta-rankings-field,
-  body.view-mode #tournaments-section button:not(.spoiler-modal-close),
+  body.view-mode #tournaments-section button:not(.spoiler-modal-close):not(.sec-collapse-btn),
   body.view-mode #tournaments-section select,
   body.view-mode #upcoming-fetch-status,
   body.view-mode .rtn-row-remove,
@@ -2284,7 +2284,7 @@
   body.view-mode #rtn-carryforward-status,
   body.view-mode #rtn-nats-fetch-status,
   body.view-mode #spoiler-fetch-status,
-  body.view-mode #spoilers-section button:not(.spoiler-modal-close),
+  body.view-mode #spoilers-section button:not(.spoiler-modal-close):not(.sec-collapse-btn),
   body.view-mode #spoilers-section select,
   body.view-mode #spoilers-section label.btn,
   body.view-mode #spoiler-days-wrap,
@@ -2304,9 +2304,9 @@
   body.view-mode .collectors-block .tourn-remove-btn { display: none !important; }
   body.view-mode .collectors-block-drag-handle { display: none !important; }
   body.view-mode #collectors-edit-overlay { display: none !important; }
-  body.view-mode #agur-section button, body.view-mode #agur-section label.btn { display: none; }
+  body.view-mode #agur-section button:not(.sec-collapse-btn), body.view-mode #agur-section label.btn { display: none; }
   body.view-mode #dotw-fetch-status,
-  body.view-mode #dotw-section button:not(.spoiler-modal-close):not(#dotw-view-deck-btn),
+  body.view-mode #dotw-section button:not(.spoiler-modal-close):not(#dotw-view-deck-btn):not(.sec-collapse-btn),
   body.view-mode #news-body label:has(input[type=checkbox]),
   body.view-mode #draft-picker-row,
   body.view-mode #player-registry-btn,
