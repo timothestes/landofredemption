@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Threshing Floor - Episode Outline</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&family=Anton&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=Anton&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -46,8 +46,8 @@
   }
   .header-left { flex: 1; }
   .podcast-name {
-    font-family: 'Anton', 'Barlow Condensed', sans-serif;
-    font-weight: 400;
+    font-family: 'Anton', 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600;
     font-size: 30px;
     color: var(--white);
     letter-spacing: 1px;
@@ -89,8 +89,8 @@
   }
   .toolbar-label { font-size: 10px; color: var(--teal-mid); letter-spacing: 2px; text-transform: uppercase; margin-right: 4px; }
   .btn {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    font-family: 'Barlow Semi Condensed', sans-serif;
+    font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
     border: none; border-radius: 4px; cursor: pointer;
     padding: 5px 14px; transition: all 0.15s;
   }
@@ -151,8 +151,8 @@
   .toggle-item input:checked ~ .toggle-switch { background: var(--teal); }
   .toggle-item input:checked ~ .toggle-switch::after { left: 15px; background: white; }
   .toggle-item-label {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 10.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    font-family: 'Barlow Semi Condensed', sans-serif;
+    font-size: 10.5px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
     color: rgba(255,255,255,0.5); transition: color 0.2s; user-select: none;
   }
   .toggle-item input:checked ~ .toggle-switch ~ .toggle-item-label { color: rgba(255,255,255,0.95); }
@@ -183,8 +183,8 @@
     display: flex; align-items: center; justify-content: space-between;
   }
   .sec-title {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    font-family: 'Barlow Semi Condensed', sans-serif;
+    font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
     color: #fff;
   }
   .sec-order-controls { display: flex; gap: 2px; }
@@ -198,7 +198,7 @@
   .sec-order-btn:hover { background: rgba(255,255,255,0.35); }
   .sec-order-btn:disabled { opacity: 0.3; cursor: default; }
   .sec-order-btn:disabled:hover { background: rgba(255,255,255,0.18); }
-  .sec-order-btn.sec-action-btn { width: auto; padding: 0 6px; font-size: 10px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  .sec-order-btn.sec-action-btn { width: auto; padding: 0 6px; font-size: 10px; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
   .sec-order-controls { gap: 4px; }
   .sec-order-controls .sec-order-divider { width: 1px; background: rgba(255,255,255,0.25); margin: 0 2px; }
   .sec-order-controls .sec-order-divider:first-child { display: none; }
@@ -241,12 +241,12 @@
   .tourn-tile { display: flex; flex-direction: column; justify-content: center; min-height: 60px; }
   .tourn-tile-add {
     align-items: center; justify-content: center; display: flex;
-    color: var(--teal); font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 60px;
+    color: var(--teal); font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 60px;
   }
   .tourn-tile-add::before { content: '+'; font-size: 20px; line-height: 1; }
   .tourn-tile-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 14px;
     letter-spacing: 0.3px; color: var(--teal-dark); text-transform: uppercase;
     margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
@@ -259,7 +259,7 @@
   body.dark-mode .tourn-tile-meta { color: #fff; }
 
   .tourn-name-input {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 13px;
     letter-spacing: 0.5px; text-transform: uppercase; color: var(--teal-dark);
     border: none; background: transparent; width: 85%; margin-bottom: 2px; outline: none;
     display: block;
@@ -318,7 +318,7 @@
   .tre-field-wrap.tre-field-state { flex: 0 0 60px; }
   .tre-field-wrap.tre-field-city { flex: 1; }
   .tre-field-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 10px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 10px;
     letter-spacing: 0.06em; text-transform: uppercase; color: var(--teal); margin-bottom: 3px;
   }
   .tre-field-input {
@@ -328,7 +328,7 @@
   }
   .tre-field-input:focus { border-color: var(--teal); }
   #tre-results-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 11px;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-dark);
     padding: 10px 16px 0; flex-shrink: 0;
   }
@@ -336,13 +336,13 @@
   .tre-format-block { margin-bottom: 16px; }
   .tre-format-block:last-child { margin-bottom: 0; }
   .tre-format-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 11px;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-dark);
     border-bottom: 1.5px solid var(--teal-light); padding-bottom: 4px; margin-bottom: 8px;
   }
   .tre-rank-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
   .tre-rank-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 13px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 13px;
     color: var(--teal); width: 36px; flex-shrink: 0; text-align: right;
   }
   .tre-rank-label.tied { /* color unchanged when tied */ }
@@ -354,14 +354,14 @@
   .tre-player-input:focus { border-color: var(--teal); }
   .tre-player-input::placeholder { color: var(--placeholder); font-style: italic; }
   .tre-tie-badge {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 11px;
     color: #fff; background: var(--teal); border-radius: 3px;
     padding: 1px 5px; flex-shrink: 0;
   }
   .tre-tie-btn {
     flex-shrink: 0; border: 1px solid var(--teal-light); background: transparent;
-    color: var(--gray); border-radius: 3px; font-size: 9px; font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; padding: 2px 6px;
+    color: var(--gray); border-radius: 3px; font-size: 9px; font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; padding: 2px 6px;
     cursor: pointer; transition: all 0.15s; white-space: nowrap;
   }
   .tre-tie-btn:hover { border-color: var(--teal); color: var(--teal); }
@@ -400,7 +400,7 @@
     padding: 12px 40px 12px 16px; position: relative;
   }
   #trd-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 18px;
     color: #fff; letter-spacing: 0.5px;
   }
   #trd-subtitle {
@@ -412,13 +412,13 @@
   }
   .trd-format-block { }
   .trd-format-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 10px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 10px;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-dark);
     border-bottom: 1.5px solid var(--teal-light); padding-bottom: 3px; margin-bottom: 6px;
   }
   .trd-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
   .trd-rank {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 12px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 12px;
     color: var(--teal); width: 36px; flex-shrink: 0; text-align: right;
   }
   .trd-rank.tied { /* color unchanged when tied */ }
@@ -476,7 +476,7 @@
     background: linear-gradient(135deg, var(--teal-dark) 0%, var(--teal) 100%);
     border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; color: #fff; position: relative;
   }
-  .countdown-number { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 32px; line-height: 1; }
+  .countdown-number { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 32px; line-height: 1; }
   .countdown-hero.clickable { cursor: pointer; }
   .countdown-hero.clickable:hover { filter: brightness(1.08); }
   .countdown-hero.clickable > * { pointer-events: none; }
@@ -485,7 +485,7 @@
   .countdown-info { flex: 1; min-width: 0; padding: 0 14px; }
   .countdown-info:empty { display: none; }
   .countdown-info-loc {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 15px;
     letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.2;
   }
   .countdown-info-venue { font-size: 11px; opacity: 0.85; margin-top: 2px; }
@@ -500,7 +500,7 @@
   }
   .venue-notes-card:hover { box-shadow: 0 0 0 2px var(--teal); }
   .venue-notes-card-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 13px;
     color: var(--teal-dark); text-transform: uppercase; letter-spacing: 0.3px;
   }
   .venue-notes-card-preview { display: none; }
@@ -568,8 +568,8 @@
   }
   .deadline-pill:hover { border-color: var(--teal); }
   .deadline-pill-add {
-    color: var(--teal); font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; font-size: 12px; letter-spacing: 0.3px;
+    color: var(--teal); font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; font-size: 12px; letter-spacing: 0.3px;
   }
   .deadline-pill-label {
     font-weight: 600; font-size: 11px; color: var(--text); white-space: nowrap;
@@ -586,7 +586,7 @@
 
   /* Deadline edit/view modal — chrome from the shared .tf-modal-* system. */
   .dl-modal-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
   }
   /* Edit mode fields */
@@ -619,7 +619,7 @@
   /* View mode fields */
   #dl-view-section { display: none; }
   #dl-view-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 18px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 18px;
     color: var(--teal-dark); text-transform: uppercase; margin-bottom: 2px;
   }
   #dl-view-date { font-size: 12px; color: var(--teal); font-weight: 600; margin-bottom: 10px; }
@@ -659,12 +659,12 @@
   .se-tile { display: flex; flex-direction: column; justify-content: center; min-height: 52px; }
   .se-tile-add {
     display: flex; align-items: center; justify-content: center;
-    color: var(--teal); font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 52px;
+    color: var(--teal); font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 52px;
   }
   .se-tile-add::before { content: '+'; font-size: 20px; line-height: 1; }
   .se-tile-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 13px;
     letter-spacing: 0.3px; color: var(--teal-dark); text-transform: uppercase;
     margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
@@ -674,7 +674,7 @@
 
   /* SE edit modal — chrome from the shared .tf-modal-* system. */
   .se-edit-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
   }
   .se-edit-input {
@@ -731,14 +731,14 @@
     background: var(--teal-dark); padding: 14px 20px 12px; border-radius: 10px 10px 0 0; position: relative;
   }
   #se-detail-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 20px;
     letter-spacing: 0.5px; color: #fff; text-transform: uppercase; margin-right: 28px;
   }
   #se-detail-host {
     font-size: 11px; color: rgba(255,255,255,0.75); font-style: italic; margin-top: 2px;
   }
   #se-detail-notes-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px;
   }
   #se-detail-notes-empty { font-size: 12px; color: var(--placeholder); font-style: italic; }
@@ -756,14 +756,14 @@
     background: var(--teal-dark); padding: 14px 20px 12px; border-radius: 10px 10px 0 0; position: relative;
   }
   #news-detail-topic {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 20px;
     letter-spacing: 0.5px; color: #fff; text-transform: uppercase; margin-right: 28px;
   }
   #news-detail-overview {
     font-size: 11px; color: rgba(255,255,255,0.75); font-style: italic; margin-top: 2px;
   }
   #news-detail-notes-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px;
   }
   #news-detail-notes-empty { font-size: 12px; color: var(--placeholder); font-style: italic; }
@@ -779,13 +779,13 @@
   .news-tile:hover { box-shadow: 0 0 0 2px var(--teal); }
   .news-tile-add {
     align-items: center; justify-content: center;
-    color: var(--teal); font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; font-size: 15px; letter-spacing: 0.5px;
+    color: var(--teal); font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; font-size: 15px; letter-spacing: 0.5px;
     gap: 4px;
   }
   .news-tile-add::before { content: '+'; font-size: 20px; line-height: 1; }
   .news-tile-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600;
     font-size: 14px; letter-spacing: 0.3px; color: var(--teal-dark);
     text-transform: uppercase; margin-bottom: 4px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -813,7 +813,7 @@
   }
   #news-edit-desc-input:focus { border-color: var(--teal); }
   .news-edit-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
   }
   #news-edit-notes-wrap {
@@ -854,12 +854,12 @@
   }
   .tournament-pill:hover { background: var(--teal-light); }
   .tournament-pill-date {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 13px;
     color: var(--teal-dark); white-space: nowrap;
   }
-  .tournament-pill-loc { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; color: var(--text); white-space: nowrap; }
+  .tournament-pill-loc { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 13px; color: var(--text); white-space: nowrap; }
   .tournament-pill-type {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 10px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 10px;
     letter-spacing: 0.5px; text-transform: uppercase; color: var(--teal-dark);
     background: var(--teal-light); border-radius: 10px; padding: 3px 9px; white-space: nowrap;
   }
@@ -873,12 +873,12 @@
 
   .tournament-modal-content { max-width: 420px; text-align: left; background: #fff; color: #1a2a29; }
   .tournament-modal-badge {
-    display: inline-block; font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+    display: inline-block; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700;
     font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: #fff;
     background: var(--teal); border-radius: 4px; padding: 4px 10px; margin-bottom: 8px;
   }
   .tournament-modal-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 18px;
     color: #044e4a; margin-bottom: 2px;
   }
   .tournament-modal-date { font-size: 12px; color: #8a9e9d; margin-bottom: 10px; }
@@ -908,7 +908,7 @@
   .dotw-card-preview img:hover { transform: scale(1.04); }
   .dotw-card-meta { flex: 1; min-width: 0; }
   .dotw-card-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 16px;
     color: #fff; margin-bottom: 2px;
   }
   .dotw-card-desc { font-size: 10px; color: var(--teal-mid); margin-bottom: 6px; font-style: italic; }
@@ -917,7 +917,7 @@
   .dotw-card-creator .dotw-creator-sub { font-size: 10px; color: var(--teal-mid); }
   .dotw-card-badges { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
   .dotw-format-badge {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 11px;
     background: var(--teal); color: #fff; border-radius: 4px; padding: 2px 8px;
   }
   .dotw-tag-badge {
@@ -947,7 +947,7 @@
   }
   #deck-viewer-title-block { flex: 1; min-width: 0; }
   #deck-viewer-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 20px;
     color: #fff; letter-spacing: 0.5px;
   }
   #deck-viewer-sub { font-size: 11px; color: var(--teal-mid); margin-top: 2px; }
@@ -955,8 +955,8 @@
   #deck-viewer-view-toggle { display: flex; gap: 4px; }
   .dv-toggle-btn {
     background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;
-    color: rgba(255,255,255,0.5); font-size: 10px; font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; letter-spacing: 1px; padding: 3px 8px; cursor: pointer;
+    color: rgba(255,255,255,0.5); font-size: 10px; font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; letter-spacing: 1px; padding: 3px 8px; cursor: pointer;
     transition: all 0.15s;
   }
   .dv-toggle-btn.active { background: var(--teal); border-color: var(--teal); color: #fff; }
@@ -965,7 +965,7 @@
   #deck-viewer-body { padding: 16px 18px; overflow-y: auto; }
   .deck-viewer-zone { margin-bottom: 20px; }
   .deck-viewer-zone-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 12px;
     letter-spacing: 2px; text-transform: uppercase; color: var(--teal-mid);
     margin-bottom: 10px; padding-bottom: 4px;
     border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -1013,7 +1013,7 @@
   }
   .dv-stack-col { flex-shrink: 0; width: 90px; }
   .dv-stack-col-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 9px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 9px;
     letter-spacing: 2px; text-transform: uppercase; color: var(--teal-mid);
     margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
@@ -1043,12 +1043,12 @@
     display: block;
   }
   #dv-side-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 15px;
     color: #fff; line-height: 1.2;
   }
   #dv-side-meta { font-size: 11px; color: var(--teal-mid); }
   #dv-side-hint { color: rgba(255,255,255,0.2); font-size: 11px; font-style: italic; text-align: center; padding-top: 160px; }
-  .dv-notes-title { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--teal-mid); }
+  .dv-notes-title { font-family: 'Barlow Semi Condensed', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--teal-mid); }
   #deck-viewer-notes-count { font-size: 9px; color: var(--placeholder); font-style: italic; }
   #deck-viewer-notes-chevron { margin-left: auto; color: rgba(255,255,255,0.4); font-size: 11px; transition: transform 0.2s; }
 
@@ -1081,7 +1081,7 @@
     display: flex; align-items: center; justify-content: space-between;
   }
   #card-notes-popup-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 14px;
     letter-spacing: 1px; text-transform: uppercase; color: #fff;
   }
   #card-notes-popup-textarea {
@@ -1148,7 +1148,7 @@
     display: flex; align-items: center; gap: 10px;
   }
   #player-registry-header h2 {
-    font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 800;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-size: 14px; font-weight: 700;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--white); flex: 1; margin: 0;
   }
   #player-registry-body { display: flex; flex: 1; min-height: 0; }
@@ -1246,7 +1246,7 @@
   .spoiler-card-addnote-btn {
     display: block; width: 100%; margin-top: 3px; font-size: 9px; color: var(--teal);
     background: none; border: 1px dashed var(--teal-mid); border-radius: 4px; padding: 2px 0;
-    cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: 0.5px;
+    cursor: pointer; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; letter-spacing: 0.5px;
   }
   .spoiler-card-addnote-btn:hover { background: var(--teal-light); }
   /* "last [N] days" lookback control beside Fetch Recent Spoilers */
@@ -1276,12 +1276,12 @@
   .agur-tile { display: flex; flex-direction: column; justify-content: center; min-height: 60px; }
   .agur-tile-add {
     display: flex; align-items: center; justify-content: center;
-    color: var(--teal); font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 60px;
+    color: var(--teal); font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 60px;
   }
   .agur-tile-add::before { content: '+'; font-size: 20px; line-height: 1; }
   .agur-tile-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 13px;
     letter-spacing: 0.3px; color: var(--teal-dark); text-transform: uppercase;
     margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
@@ -1300,7 +1300,7 @@
     background: var(--gray-light);
   }
   .agur-edit-tab {
-    padding: 8px 16px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    padding: 8px 16px; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600;
     font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
     color: var(--gray); cursor: pointer; border: none; background: transparent;
     border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.15s;
@@ -1308,7 +1308,7 @@
   .agur-edit-tab.active { color: var(--teal-dark); border-bottom-color: var(--teal); }
   .agur-edit-tab:hover { color: var(--teal-dark); }
   .agur-edit-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
   }
   .agur-edit-input {
@@ -1389,25 +1389,25 @@
     display: flex; flex-direction: column;
   }
   #agur-view-spec-type {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 10px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 10px;
     letter-spacing: 2px; text-transform: uppercase; color: var(--teal); margin-bottom: 4px;
   }
   #agur-view-spec-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 18px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 18px;
     color: var(--text); text-transform: uppercase; margin-bottom: 6px; line-height: 1.1;
   }
   #agur-view-spec-brigade {
     font-size: 11px; color: var(--gray); margin-bottom: 6px; font-style: italic;
   }
   #agur-view-spec-stats {
-    font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-size: 13px; font-weight: 600;
     color: var(--teal-dark); margin-bottom: 4px;
   }
   #agur-view-spec-class {
     font-size: 11px; color: var(--gray); margin-bottom: 4px; font-style: italic;
   }
   #agur-view-spec-identifier {
-    font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: var(--teal);
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px; color: var(--teal);
     margin-bottom: 8px; letter-spacing: 0.3px;
   }
   /* Ability text plays the role of a card's rules-text box: it fills whatever
@@ -1435,7 +1435,7 @@
   }
   #agur-view-img-box img { width: 100%; height: 100%; border-radius: 6px; object-fit: contain; }
   #agur-view-img-caption {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 14px;
     color: var(--teal-dark); margin-top: 8px; text-align: center;
   }
   /* Right notes column */
@@ -1444,7 +1444,7 @@
     padding-left: 18px; max-height: 75vh; overflow-y: auto;
   }
   #agur-view-notes-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 12px;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-dark); margin-bottom: 10px;
   }
   #agur-view-notes-empty { font-size: 12px; color: var(--placeholder); font-style: italic; }
@@ -1479,12 +1479,12 @@
   .collectors-tile { display: flex; flex-direction: column; justify-content: center; min-height: 60px; }
   .collectors-tile-add {
     display: flex; align-items: center; justify-content: center;
-    color: var(--teal); font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 60px;
+    color: var(--teal); font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 60px;
   }
   .collectors-tile-add::before { content: '+'; font-size: 20px; line-height: 1; }
   .collectors-tile-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 13px;
     letter-spacing: 0.3px; color: var(--teal-dark); text-transform: uppercase;
     margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
@@ -1497,7 +1497,7 @@
   /* Collectors Edit modal — chrome from the shared .tf-modal-* system. */
   #collectors-edit-modal { max-width: min(580px, 95vw); }
   .collectors-edit-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
   }
   .collectors-edit-input {
@@ -1551,7 +1551,7 @@
     background: var(--teal-dark); padding: 14px 20px 12px; border-radius: 10px 10px 0 0; position: relative;
   }
   #collectors-view-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 20px;
     letter-spacing: 0.5px; color: #fff; text-transform: uppercase; margin-right: 28px;
   }
   #collectors-view-notes-empty { font-size: 12px; color: var(--placeholder); font-style: italic; }
@@ -1588,7 +1588,7 @@
   }
   .collectors-card-placeholder:hover { background: var(--teal-light); border-color: var(--teal); }
   .collectors-card-placeholder-text {
-    font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-size: 10px; font-weight: 600;
     letter-spacing: 1px; text-transform: uppercase; color: var(--teal); padding: 8px;
   }
   .collectors-card-img-wrap {
@@ -1621,7 +1621,7 @@
   #collectors-card-modal-img-col { flex: 0 0 260px; max-width: 260px; text-align: center; }
   #collectors-card-modal-img-col img { width: 100%; border-radius: 6px; object-fit: contain; }
   #collectors-card-modal-img-caption {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 15px;
     color: var(--teal-dark); margin-top: 10px;
   }
   #collectors-card-modal-notes-col {
@@ -1629,7 +1629,7 @@
     padding-left: 18px; max-height: 75vh; overflow-y: auto;
   }
   #collectors-card-modal-notes-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 12px;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-dark); margin-bottom: 10px;
   }
   #collectors-card-modal-topic {
@@ -1746,7 +1746,7 @@
     box-shadow: 0 8px 32px rgba(0,0,0,0.18);
   }
   .player-profile-modal-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 22px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 22px;
     color: var(--teal-dark); margin: 0 24px 2px 0; line-height: 1.2;
   }
   .player-profile-modal-row {
@@ -1754,7 +1754,7 @@
     border-top: 1px solid var(--gray-light); margin-top: 6px;
   }
   .player-profile-modal-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; width: 80px; flex-shrink: 0;
   }
   .player-profile-modal-value {
@@ -1817,7 +1817,7 @@
     box-shadow: 0 8px 32px rgba(0,0,0,0.18);
   }
   .player-picker-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 19px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 19px;
     color: var(--teal-dark); margin: 0 24px 12px 0; line-height: 1.2;
   }
   .pp-search-input {
@@ -1928,7 +1928,7 @@
     display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 12px;
   }
   .tf-modal-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 16px;
     letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
   }
   /* Close button: reuse `.spoiler-modal-close` (see below) — it's already
@@ -1990,7 +1990,7 @@
     max-height: 75vh; overflow-y: auto;
   }
   .spoiler-modal-notes-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 12px;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-dark); margin-bottom: 8px;
   }
   body.dark-mode .spoiler-modal-notes-label { color: var(--teal-mid); }
@@ -2005,7 +2005,7 @@
   }
   .spoiler-modal-note:empty ~ .spoiler-modal-note-empty { display: block; }
   .spoiler-modal-caption {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 16px;
     color: var(--teal-dark); margin-top: 10px;
   }
   .spoiler-modal-set { font-size: 11px; color: var(--gray); margin-top: 2px; }
@@ -2042,7 +2042,7 @@
   /* Spoilers: per-card set hero strip */
   .spoiler-card-badge {
     width: 100%; box-sizing: border-box;
-    color: #fff; font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+    color: #fff; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700;
     font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; text-align: center;
     border-radius: 4px; padding: 3px 4px; line-height: 1.2; margin-bottom: 4px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -2064,12 +2064,12 @@
   .rank-card.rank-card-empty {
     border-left-color: var(--teal-light); cursor: pointer;
     justify-content: center; color: var(--teal);
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600;
     font-size: 12px; letter-spacing: 0.3px;
   }
   .rank-card.rank-card-empty:hover { box-shadow: 0 0 0 2px var(--teal); }
   .rank-card-num {
-    font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 900;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-size: 13px; font-weight: 700;
     color: var(--teal); width: 16px; flex-shrink: 0; text-align: center; line-height: 1;
   }
   .rank-card-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
@@ -2095,7 +2095,7 @@
   }
   .rank-card-clear:hover { background: var(--red); color: #fff; }
   .rank-delta {
-    font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-size: 10px; font-weight: 600;
     min-width: 28px; text-align: center; border-radius: 3px; padding: 1px 4px; flex-shrink: 0;
   }
   .rank-delta.up   { background: transparent; color: #22c55e; }
@@ -2152,8 +2152,8 @@
     border-bottom: 3px solid var(--teal);
   }
   .page2-banner-title {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 16px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase;
+    font-family: 'Barlow Semi Condensed', sans-serif;
+    font-size: 16px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
     color: #fff;
   }
   .page2-banner-sub { font-size: 10px; color: var(--teal-mid); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
