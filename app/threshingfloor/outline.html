@@ -2351,6 +2351,56 @@
   body.view-mode .tourn-block { cursor: pointer; pointer-events: auto; }
   body.view-mode .tourn-block:hover { box-shadow: 0 2px 8px rgba(4,78,74,0.18); }
 
+  /* =========================================================================
+     Print / PDF summary. Printing no longer reproduces the on-screen page:
+     buildPrintSummary() writes a plain one-column outline into
+     #print-summary right before printing, and in print it's the only thing
+     shown. Never visible on screen.
+     ========================================================================= */
+  #print-summary { display: none; }
+  @media print {
+    @page { margin: 0.6in 0.65in; }
+    body > *:not(#print-summary) { display: none !important; }
+    html body { background: #fff !important; padding: 0 !important; }
+    #print-summary {
+      display: block; font-family: 'Barlow', sans-serif; font-size: 10.5pt;
+      line-height: 1.45; color: #1a2a29;
+    }
+    .ps-header { border-bottom: 2px solid #0aada6; padding-bottom: 8pt; margin-bottom: 16pt; }
+    .ps-show {
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 9pt;
+      letter-spacing: 2px; text-transform: uppercase; color: #0a8f89;
+    }
+    .ps-header h1 {
+      font-family: 'Anton', 'Barlow Condensed', sans-serif; font-weight: 400; font-size: 22pt;
+      letter-spacing: 0.5px; text-transform: uppercase; color: #022e2b; margin-top: 2pt;
+    }
+    .ps-meta { font-size: 9.5pt; color: #5c7270; margin-top: 2pt; }
+    .ps-section { margin-bottom: 14pt; }
+    .ps-section h2 {
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 12pt;
+      letter-spacing: 1.5px; text-transform: uppercase; color: #044e4a;
+      border-bottom: 1px solid #b9e6e3; padding-bottom: 3pt; margin-bottom: 7pt;
+      break-after: avoid; page-break-after: avoid;
+    }
+    .ps-section h3.ps-group { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 10pt;
+      letter-spacing: 1px; text-transform: uppercase; color: #5c7270; margin: 8pt 0 3pt; break-after: avoid; }
+    .ps-item { margin-bottom: 8pt; break-inside: avoid; page-break-inside: avoid; }
+    .ps-item h3 { font-weight: 600; font-size: 10.5pt; }
+    .ps-sub { font-weight: 400; color: #5c7270; }
+    .ps-item p, .ps-line { margin: 2pt 0; }
+    .ps-label { font-weight: 600; color: #044e4a; }
+    .ps-bullets, .ps-plain { margin: 3pt 0 0; padding-left: 15pt; }
+    .ps-bullets li, .ps-plain li { margin-bottom: 1.5pt; }
+    .ps-bullets li.ps-l1 { margin-left: 14pt; list-style-type: circle; }
+    .ps-bullets li.ps-l2 { margin-left: 28pt; list-style-type: square; }
+    .ps-ranks { columns: 2; column-gap: 28pt; padding-left: 20pt; margin: 0 0 4pt; break-inside: avoid; page-break-inside: avoid; }
+    .ps-ranks li { margin-bottom: 2pt; break-inside: avoid; }
+    .ps-move { font-size: 8.5pt; color: #5c7270; margin-left: 4pt; }
+    .ps-link { font-size: 9pt; color: #0a8f89; word-break: break-all; }
+    .ps-q { font-style: italic; }
+  }
+
   /* Collapsible sections, in the editor and the published view (see
      initCollapsibleSections() in the script). Screen-only, so print/PDF
      always shows every section in full regardless of state. */
@@ -3484,7 +3534,7 @@
     <button class="btn btn-ghost" onclick="loadData()">Load Draft</button>
     <button class="btn btn-ghost" onclick="publishEpisode()">Publish</button>
     <button class="btn btn-ghost" onclick="openPublishPreview()" title="See how this would look if published, without actually publishing it">Preview</button>
-    <button class="btn btn-ghost" onclick="window.print()">Print / Export PDF</button>
+    <button class="btn btn-ghost" onclick="printOutline()">Print / Export PDF</button>
     <button class="btn btn-red" onclick="clearAll()">Clear All</button>
     <span class="save-status" id="save-status">No draft saved yet</span>
     <button class="btn btn-ghost" id="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode" style="margin-left:8px; padding:6px 10px; font-size:17px;">&#127769;</button>
@@ -10935,6 +10985,204 @@
     cb.dispatchEvent(new Event('change'));
   });
 
+  // ---- Print / PDF: plain outline summary ----
+  // Builds the document that print/PDF actually shows: the episode's switched-
+  // on segments in running order, with the basic details of each -- a follow-
+  // along outline, not a copy of every field the editor holds. Reads the
+  // same live values collectData() saves, so it works the same in the editor
+  // and on the published page. Runs on beforeprint, so Ctrl+P is covered too.
+  function buildPrintSummary() {
+    function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+    function on(id) { var el = document.getElementById(id); return !!(el && el.checked); }
+    function esc(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function longDate(isoDate) {
+      var d = new Date(isoDate + 'T00:00:00');
+      return isNaN(d) ? isoDate : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
+    // Multi-line notes; leading tabs are the bullet editors' indent levels.
+    function bullets(text) {
+      var items = (text || '').split('\n').map(function(lineText) {
+        var level = Math.min(lineText.match(/^\t*/)[0].length, 2);
+        var t = lineText.replace(/^\t+/, '').trim();
+        return t ? '<li class="ps-l' + level + '">' + esc(t) + '</li>' : '';
+      }).join('');
+      return items ? '<ul class="ps-bullets">' + items + '</ul>' : '';
+    }
+    function plainList(items) {
+      items = items.filter(Boolean);
+      return items.length ? '<ul class="ps-plain">' + items.map(function(t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '';
+    }
+    function line(label, text) {
+      return text ? '<p class="ps-line"><span class="ps-label">' + esc(label) + '</span> ' + esc(text) + '</p>' : '';
+    }
+    function item(title, sub, body) {
+      if (!title && !body) return '';
+      return '<div class="ps-item">' +
+        (title ? '<h3>' + esc(title) + (sub ? ' <span class="ps-sub">' + esc(sub) + '</span>' : '') + '</h3>' : '') +
+        (body || '') + '</div>';
+    }
+    function group(title, body) { return body ? '<h3 class="ps-group">' + esc(title) + '</h3>' + body : ''; }
+    function section(title, body) {
+      return body ? '<section class="ps-section"><h2>' + esc(title) + '</h2>' + body + '</section>' : '';
+    }
+    function idsInOrder(selector, prefix) {
+      return [].map.call(document.querySelectorAll(selector), function(el) { return el.id.replace(prefix, ''); });
+    }
+    function rankList(prefix, prevMap, nameFn) {
+      var rows = '';
+      for (var i = 1; i <= 10; i++) {
+        var name = val(prefix + '-' + i);
+        if (!name) continue;
+        var move = '';
+        if (prevMap) {
+          var prev = prevMap[name];
+          move = prev === undefined ? 'new' : prev > i ? '▲' + (prev - i) : prev < i ? '▼' + (i - prev) : '–';
+        }
+        rows += '<li value="' + i + '">' + esc(nameFn ? nameFn(name) : name) +
+          (move ? '<span class="ps-move">' + move + '</span>' : '') + '</li>';
+      }
+      return rows ? '<ol class="ps-ranks">' + rows + '</ol>' : '';
+    }
+
+    var builders = {
+      news: function() {
+        return section('Recent News', idsInOrder('#news-body .repeat-item', 'news-item-').map(function(n) {
+          var overview = val('news-overview-' + n);
+          return item(val('news-topic-' + n), '', overview ? '<p>' + esc(overview) + '</p>' : '');
+        }).join(''));
+      },
+      tournaments: function() {
+        var results = idsInOrder('.tourn-block', 'tourn-block-').map(function(n) {
+          var players = val('t' + n + '-participants');
+          var sub = [val('t' + n + '-location'), players ? players + ' players' : ''].filter(Boolean).join(' · ');
+          var res = (window.tournResults || {})[n] || {};
+          var formats = tournFormats.map(function(fmt) {
+            var placings = (res[fmt.key] || []).map(function(row, ri) {
+              var p = [row.p1, row.p2, row.p3, row.p4].map(function(x) { return displayPlayerName((x || '').trim()); });
+              if (!p[0] && !p[1]) return '';
+              var who;
+              if (fmt.teams) {
+                var team1 = [p[0], p[1]].filter(Boolean).join(' & ');
+                var team2 = [p[2], p[3]].filter(Boolean).join(' & ');
+                who = row.tie && team2 ? team1 + ' / ' + team2 : team1;
+              } else {
+                who = row.tie ? [p[0], p[1]].filter(Boolean).join(' / ') : p[0];
+              }
+              return (row.tie ? 'T-' : '') + rankLabels[ri] + ' ' + who;
+            }).filter(Boolean);
+            return line(fmt.label + ':', placings.join(' · '));
+          }).join('');
+          return item(val('t' + n + '-name'), sub, formats);
+        }).join('');
+        var upcoming = plainList((window.upcomingPicked || []).map(function(t) {
+          return dateRangeLabel(t) + ' — ' + [t.city, t.state].filter(Boolean).join(', ') +
+            (t.tournament_type ? ' · ' + t.tournament_type : '');
+        }));
+        return section('Tournaments', group('Recent Results', results) + group('Upcoming', upcoming));
+      },
+      rankings: function() {
+        return section('Power Rankings', rankList('rank', window.previousRankings, displayPlayerName));
+      },
+      dotw: function() {
+        var deck = window.dotwDeckData || {};
+        var name = deck.name || val('dotw-name');
+        var creator = deck.username || deck.creator || val('dotw-creator');
+        var link = val('dotw-link');
+        var sub = [creator ? 'by ' + creator : '', val('dotw-format')].filter(Boolean).join(' · ');
+        return section('Deck of the Week', item(name || link, name ? sub : '',
+          (name && link ? '<p class="ps-link">' + esc(link) + '</p>' : '') + bullets(val('dotw-notes'))));
+      },
+      rtn: function() {
+        var info = window.rtnNationalsInfo || {};
+        var natsDate = val('rtn-nats-date');
+        var where = [[info.city, info.state].filter(Boolean).join(', '), info.venue_name].filter(Boolean).join(' · ');
+        var days = (document.getElementById('rtn-countdown-number') || {}).textContent;
+        var overview = line('Nationals:', [where, natsDate ? longDate(natsDate) : ''].filter(Boolean).join(' · ')) +
+          (natsDate && days && days !== '--' ? line('Countdown:', days + ' days') : '');
+        var deadlines = plainList(idsInOrder('[id^="rtn-deadline-label-"]', 'rtn-deadline-label-').map(function(n) {
+          var label = val('rtn-deadline-label-' + n), date = val('rtn-deadline-date-' + n);
+          return label ? label + (date ? ' — ' + longDate(date) : '') : '';
+        }));
+        var events = plainList(idsInOrder('#rtn-events-list .event-card', 'rtn-event-row-').map(function(n) {
+          var name = val('rtn-event-name-' + n), host = val('rtn-event-host-' + n);
+          return name ? name + (host ? ' (' + host + ')' : '') : '';
+        }));
+        return section('Road to Nationals', overview + group('Key Deadlines', deadlines) +
+          group('Side Events', events) + group('Venue / Other Notes', bullets(val('rtn-extra-notes'))));
+      },
+      spoilers: function() {
+        return section('Spoilers', [].map.call(document.querySelectorAll('.spoiler-card'), function(card) {
+          var caption = card.querySelector('.spoiler-card-caption-input');
+          var note = card.querySelector('.spoiler-card-note');
+          return item((caption && caption.value.trim()) || card.dataset.cardName || 'Card', card.dataset.setName || '',
+            bullets(note ? note.value : ''));
+        }).join(''));
+      },
+      collectors: function() {
+        return section("Collector's Corner", idsInOrder('.collectors-block', 'collectors-block-').map(function(n) {
+          return item(val('collectors-title-' + n), '', bullets(val('collectors-notes-' + n)));
+        }).join(''));
+      },
+      meta: function() {
+        return section('Meta Forecast', rankList('meta-rank', window.previousMetaRankings) + bullets(val('meta-notes')));
+      },
+      agur: function() {
+        return section('Agur the Creator', idsInOrder('.agur-block', 'agur-block-').map(function(n) {
+          var sub = [val('agur-type-' + n), val('agur-brigade-' + n)].filter(Boolean).join(' · ');
+          return item(val('agur-title-' + n), sub, bullets(val('agur-notes-item-' + n)));
+        }).join(''));
+      },
+      potm: function() {
+        var name = val('potm-name');
+        return section('Player of the Month', item(name ? displayPlayerName(name) : '', '', bullets(val('potm-notes'))));
+      },
+      mailbag: function() {
+        return section('Community Mailbag', idsInOrder('[id^="mb-q-"]', 'mb-q-').map(function(n) {
+          var by = val('mb-by-' + n), q = val('mb-q-' + n);
+          return item(by ? 'From ' + by : '', '', (q ? '<p class="ps-q">' + esc(q) + '</p>' : '') + bullets(val('mb-notes-' + n)));
+        }).join(''));
+      }
+    };
+
+    var body = '';
+    if (on('tog-opening-closing')) {
+      body += section('Opening', line('Sponsor:', val('sponsor')) + bullets(val('opening-notes')));
+    }
+    document.querySelectorAll('.movable-section').forEach(function(m) {
+      var sid = m.dataset.sid;
+      if (builders[sid] && on('tog-' + sid)) body += builders[sid]();
+    });
+    if (on('tog-guest')) {
+      var guestName = val('guest-name');
+      var questions = [].map.call(document.querySelectorAll('#guest-questions-body textarea'), function(ta) { return ta.value.trim(); });
+      body += section('Guest Interview', item(guestName ? displayPlayerName(guestName) : '', '', bullets(val('guest-bio'))) +
+        group('Questions & Topics', plainList(questions)) + group('Resources', bullets(val('guest-links'))));
+    }
+    if (on('tog-opening-closing')) {
+      body += section('Closing', line('Sponsor:', val('close-sponsor')) + bullets(val('close-reminders')));
+    }
+
+    var ep = val('ep-num'), recDate = val('ep-date'), runtime = val('ep-runtime');
+    var meta = [recDate ? 'Recorded ' + longDate(recDate) : '', runtime ? 'Runtime ' + runtime : ''].filter(Boolean).join(' · ');
+    var out = document.getElementById('print-summary');
+    if (!out) {
+      out = document.createElement('div');
+      out.id = 'print-summary';
+      document.body.appendChild(out);
+    }
+    out.innerHTML = '<header class="ps-header"><div class="ps-show">The Threshing Floor</div>' +
+      '<h1>' + (ep ? 'Episode ' + esc(ep) : 'Episode Outline') + '</h1>' +
+      (meta ? '<p class="ps-meta">' + esc(meta) + '</p>' : '') + '</header>' + body;
+  }
+
+  function printOutline() {
+    buildPrintSummary();
+    window.print();
+  }
+  window.addEventListener('beforeprint', buildPrintSummary);
+
   // ---- Collapsible sections (editor and published view) ----
   // Each section's title bar folds its body away, so finished segments stop
   // being visual noise -- while building an outline in the editor, or while
@@ -11015,6 +11263,16 @@
       // Leave whatever rendered; a partial outline beats a blank page.
     }
     initCollapsibleSections(true);
+    // The published page has no toolbar, so its PDF button lives on the
+    // collapse bar, left of Expand/Collapse All.
+    var pdfBtn = document.createElement('button');
+    pdfBtn.type = 'button';
+    pdfBtn.className = 'btn btn-ghost btn-sm';
+    pdfBtn.style.marginRight = 'auto';
+    pdfBtn.textContent = 'Print / PDF';
+    pdfBtn.addEventListener('click', printOutline);
+    var collapseBar = document.querySelector('.collapse-bar');
+    collapseBar.insertBefore(pdfBtn, collapseBar.firstChild);
   } else {
     initCollapsibleSections(false);
   }
