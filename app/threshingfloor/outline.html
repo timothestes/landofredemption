@@ -2351,6 +2351,31 @@
   body.view-mode .tourn-block { cursor: pointer; pointer-events: auto; }
   body.view-mode .tourn-block:hover { box-shadow: 0 2px 8px rgba(4,78,74,0.18); }
 
+  /* Published view: collapsible sections. Clicking a title bar folds its
+     body away (initCollapsibleSections() in the script). Screen-only, so
+     print/PDF always shows every section in full regardless of state. */
+  .view-collapse-bar { display: none; }
+  @media screen {
+    body.view-mode .view-collapse-bar {
+      display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+      background: var(--teal-deep); padding: 12px 24px;
+      border-bottom: 1px solid rgba(10,173,166,0.3);
+    }
+    body.view-mode .sec-header { cursor: pointer; user-select: none; }
+    body.view-mode .sec-header:hover { filter: brightness(1.06); }
+    body.view-mode .sec-header:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
+    body.view-mode .sec-header::after {
+      content: ''; flex-shrink: 0; width: 9px; height: 9px; margin: -5px 6px 0 auto;
+      border-right: 2.5px solid #fff; border-bottom: 2.5px solid #fff;
+      transform: rotate(45deg); transition: transform 0.2s, margin 0.2s;
+    }
+    body.view-mode .section.collapsed > .sec-header::after { transform: rotate(-45deg); margin-top: 0; }
+    body.view-mode .section.collapsed > .sec-body { display: none; }
+    /* Read-only notes fit their content (fitViewTextareas()) instead of
+       keeping the editor's empty typing room. */
+    body.view-mode .canvas textarea { min-height: 0; }
+  }
+
   /* =========================================================================
      Screen spacing scale. The rules above were sized to share one screen
      with a webcam feed; that constraint is gone, so on screen everything
@@ -10918,6 +10943,69 @@
     cb.dispatchEvent(new Event('change'));
   });
 
+  // ---- View mode: collapsible sections ----
+  // The published page starts with every segment folded to its title bar so
+  // the episode reads as a running order; hosts open each one as they reach
+  // it. Opening and Closing bracket every episode, so they start open. Set
+  // VIEW_START_COLLAPSED to false to start with everything expanded instead.
+  var VIEW_START_COLLAPSED = true;
+  var VIEW_START_OPEN_WRAPPERS = ['opening-wrapper', 'closing-wrapper-p1'];
+
+  // Size read-only textareas to their text. Only measurable while visible,
+  // so this reruns whenever a section opens, fonts finish loading, or the
+  // window width changes the wrapping.
+  function fitViewTextareas(root) {
+    root.querySelectorAll('textarea').forEach(function(ta) {
+      if (!ta.offsetParent) return;
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+    });
+  }
+
+  function setSectionCollapsed(sec, collapsed) {
+    sec.classList.toggle('collapsed', collapsed);
+    sec.querySelector(':scope > .sec-header').setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    if (!collapsed) fitViewTextareas(sec);
+  }
+
+  function initCollapsibleSections() {
+    var sections = [].filter.call(document.querySelectorAll('.canvas .section'), function(sec) {
+      return sec.querySelector(':scope > .sec-header');
+    });
+    sections.forEach(function(sec) {
+      var header = sec.querySelector(':scope > .sec-header');
+      header.setAttribute('role', 'button');
+      header.tabIndex = 0;
+      var startOpen = VIEW_START_OPEN_WRAPPERS.some(function(id) { return sec.closest('#' + id); });
+      setSectionCollapsed(sec, VIEW_START_COLLAPSED && !startOpen);
+      header.addEventListener('click', function() {
+        setSectionCollapsed(sec, !sec.classList.contains('collapsed'));
+      });
+      header.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); header.click(); }
+      });
+    });
+
+    var bar = document.createElement('div');
+    bar.className = 'view-collapse-bar';
+    [['Expand All', false], ['Collapse All', true]].forEach(function(cfg) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-ghost btn-sm';
+      btn.textContent = cfg[0];
+      btn.addEventListener('click', function() {
+        sections.forEach(function(sec) { setSectionCollapsed(sec, cfg[1]); });
+      });
+      bar.appendChild(btn);
+    });
+    var firstCanvas = document.querySelector('.canvas');
+    firstCanvas.parentNode.insertBefore(bar, firstCanvas);
+
+    var refit = function() { fitViewTextareas(document.querySelector('.canvas')); };
+    if (document.fonts) document.fonts.ready.then(refit);
+    window.addEventListener('resize', refit);
+  }
+
   // ---- View mode: render a published snapshot read-only ----
   if (window.__TF_VIEW__) {
     document.body.classList.add('view-mode');
@@ -10926,6 +11014,7 @@
     } catch (e) {
       // Leave whatever rendered; a partial outline beats a blank page.
     }
+    initCollapsibleSections();
   }
 </script>
 </body>
