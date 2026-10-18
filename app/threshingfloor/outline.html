@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Threshing Floor - Episode Outline</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&family=Anton&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=Anton&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -30,6 +30,7 @@
     min-height: 100vh;
     padding: 24px 16px 48px;
   }
+  .page-wrap { max-width: 1000px; margin: 0 auto; }
 
   .page-header {
     background:
@@ -45,7 +46,7 @@
   }
   .header-left { flex: 1; }
   .podcast-name {
-    font-family: 'Anton', 'Barlow Condensed', sans-serif;
+    font-family: 'Anton', 'Barlow Semi Condensed', sans-serif;
     font-weight: 400;
     font-size: 30px;
     color: var(--white);
@@ -88,8 +89,8 @@
   }
   .toolbar-label { font-size: 10px; color: var(--teal-mid); letter-spacing: 2px; text-transform: uppercase; margin-right: 4px; }
   .btn {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    font-family: 'Barlow Semi Condensed', sans-serif;
+    font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
     border: none; border-radius: 4px; cursor: pointer;
     padding: 5px 14px; transition: all 0.15s;
   }
@@ -99,6 +100,10 @@
   .btn-ghost:hover { background: rgba(10,173,166,0.15); }
   .btn-red   { background: var(--red); color: #fff; }
   .btn-red:hover { background: #e02020; }
+  .btn-sm { padding: 3px 10px; font-size: 10px; }
+  /* Small italic status/hint line under a section's action buttons */
+  .tf-status { font-size: 9px; color: var(--placeholder); font-style: italic; }
+  .tf-empty-note { font-size: 10px; color: var(--placeholder); font-style: italic; padding: 6px 0; }
   .save-status { font-size: 10px; color: var(--teal-mid); margin-left: auto; font-style: italic; }
 
   .tf-confirm-overlay {
@@ -146,8 +151,8 @@
   .toggle-item input:checked ~ .toggle-switch { background: var(--teal); }
   .toggle-item input:checked ~ .toggle-switch::after { left: 15px; background: white; }
   .toggle-item-label {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 10.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    font-family: 'Barlow Semi Condensed', sans-serif;
+    font-size: 10.5px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
     color: rgba(255,255,255,0.5); transition: color 0.2s; user-select: none;
   }
   .toggle-item input:checked ~ .toggle-switch ~ .toggle-item-label { color: rgba(255,255,255,0.95); }
@@ -178,8 +183,8 @@
     display: flex; align-items: center; justify-content: space-between;
   }
   .sec-title {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    font-family: 'Barlow Semi Condensed', sans-serif;
+    font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
     color: #fff;
   }
   .sec-order-controls { display: flex; gap: 2px; }
@@ -193,10 +198,10 @@
   .sec-order-btn:hover { background: rgba(255,255,255,0.35); }
   .sec-order-btn:disabled { opacity: 0.3; cursor: default; }
   .sec-order-btn:disabled:hover { background: rgba(255,255,255,0.18); }
-  .sec-order-btn.sec-action-btn { width: auto; padding: 0 6px; font-size: 10px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+  .sec-order-btn.sec-action-btn { width: auto; padding: 0 6px; font-size: 10px; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
   .sec-order-controls { gap: 4px; }
   .sec-order-controls .sec-order-divider { width: 1px; background: rgba(255,255,255,0.25); margin: 0 2px; }
-  .sec-order-arrows { display: flex; gap: 2px; }
+  .sec-order-controls .sec-order-divider:first-child { display: none; }
   .sec-body { padding: 8px 10px; background: var(--white); }
 
   .field { margin-bottom: 6px; }
@@ -236,16 +241,16 @@
   .tourn-tile { display: flex; flex-direction: column; justify-content: center; min-height: 60px; }
   .tourn-tile-add {
     align-items: center; justify-content: center; display: flex;
-    color: var(--teal); font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 60px;
+    color: var(--teal); font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 60px;
   }
   .tourn-tile-add::before { content: '+'; font-size: 20px; line-height: 1; }
   .tourn-tile-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 14px;
     letter-spacing: 0.3px; color: var(--teal-dark); text-transform: uppercase;
     margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .tourn-tile-meta { font-size: 11px; color: #fff; line-height: 1.4; }
+  .tourn-tile-meta { font-size: 11px; color: #4f6664; line-height: 1.4; }
   .tourn-tile-results-dot {
     display: inline-block; width: 7px; height: 7px; border-radius: 50%;
     background: var(--teal); margin-left: 5px; vertical-align: middle;
@@ -254,7 +259,7 @@
   body.dark-mode .tourn-tile-meta { color: #fff; }
 
   .tourn-name-input {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 13px;
     letter-spacing: 0.5px; text-transform: uppercase; color: var(--teal-dark);
     border: none; background: transparent; width: 85%; margin-bottom: 2px; outline: none;
     display: block;
@@ -300,25 +305,9 @@
   .tourn-remove-btn:hover { background: var(--red); color: #fff; }
 
   /* ===== Tournament Results Editor Modal ===== */
-  #tourn-results-editor-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1100; align-items: center; justify-content: center; padding: 20px;
-  }
-  #tourn-results-editor-overlay.open { display: flex; }
-  #tourn-results-editor-modal {
-    background: #fff; border-radius: 8px; width: 100%; max-width: 680px;
-    max-height: 90vh; overflow-y: auto; position: relative;
-    display: flex; flex-direction: column;
-  }
-  #tre-header {
-    background: var(--teal-dark); border-radius: 8px 8px 0 0;
-    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
-    flex-shrink: 0;
-  }
-  #tre-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px;
-    color: #fff; letter-spacing: 0.5px;
-  }
+  /* Tournament Results Editor — overlay/box/header/title/footer chrome from
+     the shared .tf-modal-* system; box width constrained for this content. */
+  #tourn-results-editor-modal { max-width: min(680px, 95vw); }
   #tre-fields {
     padding: 14px 16px 10px; border-bottom: 2px solid var(--teal-light);
     display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
@@ -329,7 +318,7 @@
   .tre-field-wrap.tre-field-state { flex: 0 0 60px; }
   .tre-field-wrap.tre-field-city { flex: 1; }
   .tre-field-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 10px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 10px;
     letter-spacing: 0.06em; text-transform: uppercase; color: var(--teal); margin-bottom: 3px;
   }
   .tre-field-input {
@@ -339,7 +328,7 @@
   }
   .tre-field-input:focus { border-color: var(--teal); }
   #tre-results-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 11px;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-dark);
     padding: 10px 16px 0; flex-shrink: 0;
   }
@@ -347,13 +336,13 @@
   .tre-format-block { margin-bottom: 16px; }
   .tre-format-block:last-child { margin-bottom: 0; }
   .tre-format-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 11px;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-dark);
     border-bottom: 1.5px solid var(--teal-light); padding-bottom: 4px; margin-bottom: 8px;
   }
   .tre-rank-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
   .tre-rank-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 13px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 13px;
     color: var(--teal); width: 36px; flex-shrink: 0; text-align: right;
   }
   .tre-rank-label.tied { /* color unchanged when tied */ }
@@ -365,41 +354,26 @@
   .tre-player-input:focus { border-color: var(--teal); }
   .tre-player-input::placeholder { color: var(--placeholder); font-style: italic; }
   .tre-tie-badge {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 11px;
     color: #fff; background: var(--teal); border-radius: 3px;
     padding: 1px 5px; flex-shrink: 0;
   }
   .tre-tie-btn {
     flex-shrink: 0; border: 1px solid var(--teal-light); background: transparent;
-    color: var(--gray); border-radius: 3px; font-size: 9px; font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; padding: 2px 6px;
+    color: var(--gray); border-radius: 3px; font-size: 9px; font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; padding: 2px 6px;
     cursor: pointer; transition: all 0.15s; white-space: nowrap;
   }
   .tre-tie-btn:hover { border-color: var(--teal); color: var(--teal); }
   .tre-tie-btn.active { background: var(--teal); border-color: var(--teal); color: #fff; }
-  #tre-footer {
-    padding: 10px 16px 14px; display: flex; justify-content: flex-end; gap: 8px;
-    border-top: 1px solid var(--gray-light);
-  }
 
   /* ===== Manual Tournament Form Modal (editor only) ===== */
-  #mtf-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1100; align-items: center; justify-content: center; padding: 20px;
-  }
-  #mtf-overlay.open { display: flex; }
-  #mtf-modal {
-    background: #fff; border-radius: 8px; width: 100%; max-width: 460px;
-    max-height: 90vh; overflow-y: auto; position: relative;
-  }
-  #mtf-header {
-    background: var(--teal-dark); border-radius: 8px 8px 0 0;
-    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
-  }
-  #mtf-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px;
-    color: #fff; letter-spacing: 0.5px;
-  }
+  /* MTF (manual tournament form) — overlay/box/header/footer chrome from the
+     shared .tf-modal-* system; body keeps its own padding (not flex/gap:
+     fields here rely on `.field-label { margin-top }` for rhythm, not a
+     wrapper-per-field + gap shape like the other modals). Box narrower than
+     the shared default since this form's fields don't need the extra room. */
+  #mtf-modal { max-width: min(460px, 95vw); }
   #mtf-body { padding: 14px 16px 18px; }
   #mtf-body .field-label { margin-top: 10px; }
   #mtf-body .field-label:first-child { margin-top: 0; }
@@ -415,27 +389,18 @@
   }
   .mtf-format-remove:hover { background: var(--red); color: #fff; }
   #mtf-status { font-size: 11px; color: var(--red); margin-top: 8px; min-height: 14px; }
-  #mtf-footer {
-    padding: 10px 16px 14px; display: flex; justify-content: flex-end; gap: 8px;
-    border-top: 1px solid var(--gray-light);
-  }
 
   /* ===== Tournament Results Display Modal (published) ===== */
-  #tourn-results-display-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1100; align-items: center; justify-content: center; padding: 20px;
-  }
-  #tourn-results-display-overlay.open { display: flex; }
-  #tourn-results-display-modal {
-    background: #fff; border-radius: 8px; width: 100%; max-width: 680px;
-    max-height: 90vh; overflow-y: auto; position: relative;
-  }
+  /* Overlay/box chrome from the shared .tf-modal-* system; header kept
+     bespoke (title + subtitle stacked, close button reserves space via
+     right padding rather than flex). */
+  #tourn-results-display-modal { max-width: min(680px, 95vw); }
   #trd-header {
     background: var(--teal-dark); border-radius: 8px 8px 0 0;
     padding: 12px 40px 12px 16px; position: relative;
   }
   #trd-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 18px;
     color: #fff; letter-spacing: 0.5px;
   }
   #trd-subtitle {
@@ -447,13 +412,13 @@
   }
   .trd-format-block { }
   .trd-format-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 10px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 10px;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-dark);
     border-bottom: 1.5px solid var(--teal-light); padding-bottom: 3px; margin-bottom: 6px;
   }
   .trd-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
   .trd-rank {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 12px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 12px;
     color: var(--teal); width: 36px; flex-shrink: 0; text-align: right;
   }
   .trd-rank.tied { /* color unchanged when tied */ }
@@ -466,8 +431,7 @@
 
   /* dark mode for new modals */
   body.dark-mode #tourn-results-editor-modal,
-  body.dark-mode #tourn-results-display-modal,
-  body.dark-mode #mtf-modal { background: var(--teal-dark); }
+  body.dark-mode #tourn-results-display-modal { background: var(--teal-dark); }
   body.dark-mode #tre-fields { border-bottom-color: rgba(255,255,255,0.08); }
   body.dark-mode #tre-results-label { color: var(--teal-mid); }
   body.dark-mode .tre-field-label { color: var(--teal-mid); }
@@ -480,7 +444,6 @@
   body.dark-mode .tre-player-input:focus { border-color: var(--teal-mid); }
   body.dark-mode .tre-player-input { border-bottom-color: rgba(255,255,255,0.15); }
   body.dark-mode .tre-format-block { border-bottom-color: rgba(255,255,255,0.08); }
-  body.dark-mode #tre-footer { border-top-color: rgba(255,255,255,0.08); }
   body.dark-mode .tre-tie-btn { border-color: rgba(255,255,255,0.2); color: var(--gray); }
   body.dark-mode .tre-tie-btn:hover { border-color: var(--teal-mid); color: var(--teal-mid); }
   body.dark-mode .tre-tie-btn.active { background: var(--teal-mid); border-color: var(--teal-mid); color: #fff; }
@@ -490,7 +453,6 @@
   body.dark-mode .trd-rank { color: var(--teal-mid); }
   body.dark-mode .trd-rank.tied { /* color unchanged when tied */ }
   body.dark-mode .trd-empty-state { color: var(--placeholder); }
-  body.dark-mode #mtf-footer { border-top-color: rgba(255,255,255,0.08); }
   body.dark-mode .mtf-format-remove { background: rgba(255,255,255,0.12); color: var(--text); }
   body.dark-mode .mtf-format-remove:hover { background: var(--red); color: #fff; }
 
@@ -514,7 +476,7 @@
     background: linear-gradient(135deg, var(--teal-dark) 0%, var(--teal) 100%);
     border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; color: #fff; position: relative;
   }
-  .countdown-number { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 32px; line-height: 1; }
+  .countdown-number { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 32px; line-height: 1; }
   .countdown-hero.clickable { cursor: pointer; }
   .countdown-hero.clickable:hover { filter: brightness(1.08); }
   .countdown-hero.clickable > * { pointer-events: none; }
@@ -523,7 +485,7 @@
   .countdown-info { flex: 1; min-width: 0; padding: 0 14px; }
   .countdown-info:empty { display: none; }
   .countdown-info-loc {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 15px;
     letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.2;
   }
   .countdown-info-venue { font-size: 11px; opacity: 0.85; margin-top: 2px; }
@@ -538,7 +500,7 @@
   }
   .venue-notes-card:hover { box-shadow: 0 0 0 2px var(--teal); }
   .venue-notes-card-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 13px;
     color: var(--teal-dark); text-transform: uppercase; letter-spacing: 0.3px;
   }
   .venue-notes-card-preview { display: none; }
@@ -547,27 +509,9 @@
   body.view-mode .venue-notes-card-empty { display: none !important; }
   body.view-mode .venue-notes-card { cursor: pointer; }
 
-  /* Venue Notes modal */
-  #venue-notes-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1050;
-    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
-  }
-  #venue-notes-overlay.open { display: flex; }
-  #venue-notes-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    min-width: 420px; max-width: min(720px, 95vw); width: max-content;
-    max-height: 90vh; overflow-y: auto; position: relative;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.28); display: flex; flex-direction: column;
-  }
-  #venue-notes-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
-  #venue-notes-header-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px;
-    letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
-  }
-  #venue-notes-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  /* Venue Notes modal — chrome (overlay/box/header/body/footer) now comes
+     from the shared .tf-modal-* system above; only content-specific CSS
+     stays here. */
   /* Edit view */
   #venue-notes-edit-wrap { border: 1px solid var(--teal-light); border-radius: 4px; overflow: hidden; }
   #venue-notes-bullet-editor {
@@ -590,25 +534,9 @@
   }
   /* Read-only view */
   #venue-notes-view { display: none; }
-  #venue-notes-view-list { margin: 0; padding-left: 18px; list-style: none; }
-  #venue-notes-view-list li { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; word-break: break-word; white-space: pre-wrap; max-width: 680px; }
-  #venue-notes-view-list li.bullet-l0::before { content: '•'; margin-right: 6px; }
-  #venue-notes-view-list li.bullet-l1 { padding-left: 20px; }
-  #venue-notes-view-list li.bullet-l1::before { content: '–'; margin-right: 6px; color: var(--gray); }
-  #venue-notes-view-list li.bullet-l2 { padding-left: 40px; }
-  #venue-notes-view-list li.bullet-l2::before { content: '◦'; margin-right: 6px; color: var(--gray); }
-  #venue-notes-footer {
-    padding: 12px 18px; border-top: 1px solid var(--teal-light);
-    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
-  }
-  body.dark-mode #venue-notes-modal { background: var(--teal-dark); }
   body.dark-mode #venue-notes-edit-wrap { border-color: rgba(255,255,255,0.15); }
   body.dark-mode #venue-notes-bullet-editor { background: rgba(255,255,255,0.05); color: var(--text); }
   body.dark-mode #venue-notes-edit-hint { background: rgba(255,255,255,0.04); border-top-color: rgba(255,255,255,0.1); color: var(--placeholder); }
-  body.dark-mode #venue-notes-footer { border-top-color: rgba(255,255,255,0.08); }
-  body.dark-mode #venue-notes-view-list li { color: rgba(255,255,255,0.9); }
-  body.dark-mode #venue-notes-view-list li.bullet-l1::before,
-  body.dark-mode #venue-notes-view-list li.bullet-l2::before { color: var(--teal-mid); }
   .countdown-info-dates { font-size: 10px; opacity: 0.75; margin-top: 2px; letter-spacing: 0.5px; }
   .countdown-date { margin-left: auto; text-align: right; font-size: 10px; opacity: 0.9; line-height: 1.6; }
   .countdown-date input {
@@ -617,10 +545,6 @@
   }
   .countdown-date input::-webkit-calendar-picker-indicator { filter: invert(1); }
   .countdown-date-print { display: none; font-size: 11px; font-weight: 600; }
-  @media print {
-    .countdown-date input { display: none !important; }
-    .countdown-date-print { display: block; }
-  }
   body.view-mode .countdown-date input { display: none !important; }
   body.view-mode .countdown-date-print { display: block; }
   .countdown-remove {
@@ -640,8 +564,8 @@
   }
   .deadline-pill:hover { border-color: var(--teal); }
   .deadline-pill-add {
-    color: var(--teal); font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; font-size: 12px; letter-spacing: 0.3px;
+    color: var(--teal); font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; font-size: 12px; letter-spacing: 0.3px;
   }
   .deadline-pill-label {
     font-weight: 600; font-size: 11px; color: var(--text); white-space: nowrap;
@@ -656,29 +580,9 @@
   body.dark-mode .deadline-pill-label { color: var(--text); }
   body.dark-mode .deadline-pill-date { background: var(--teal-dark); color: var(--teal-mid); }
 
-  /* Deadline edit/view modal */
-  #dl-modal-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1050;
-    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
-  }
-  #dl-modal-overlay.open { display: flex; }
-  #dl-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    min-width: 420px; max-width: min(720px, 95vw); width: max-content;
-    max-height: 90vh; overflow-y: auto; position: relative;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.28); display: flex; flex-direction: column;
-  }
-  #dl-modal-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
-  #dl-modal-header-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px;
-    letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
-  }
-  #dl-modal-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  /* Deadline edit/view modal — chrome from the shared .tf-modal-* system. */
   .dl-modal-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
   }
   /* Edit mode fields */
@@ -711,23 +615,11 @@
   /* View mode fields */
   #dl-view-section { display: none; }
   #dl-view-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 18px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 18px;
     color: var(--teal-dark); text-transform: uppercase; margin-bottom: 2px;
   }
   #dl-view-date { font-size: 12px; color: var(--teal); font-weight: 600; margin-bottom: 10px; }
-  #dl-view-notes-list { margin: 0; padding-left: 18px; list-style: none; }
-  #dl-view-notes-list li { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; word-break: break-word; white-space: pre-wrap; max-width: 680px; }
-  #dl-view-notes-list li.bullet-l0::before { content: '•'; margin-right: 6px; }
-  #dl-view-notes-list li.bullet-l1 { padding-left: 20px; }
-  #dl-view-notes-list li.bullet-l1::before { content: '–'; margin-right: 6px; color: var(--gray); }
-  #dl-view-notes-list li.bullet-l2 { padding-left: 40px; }
-  #dl-view-notes-list li.bullet-l2::before { content: '◦'; margin-right: 6px; color: var(--gray); }
   #dl-view-notes-empty { font-size: 12px; color: var(--placeholder); font-style: italic; }
-  #dl-modal-footer {
-    padding: 12px 18px; border-top: 1px solid var(--teal-light);
-    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
-  }
-  body.dark-mode #dl-modal { background: var(--teal-dark); }
   body.dark-mode .dl-modal-label { color: var(--teal-mid); }
   body.dark-mode #dl-edit-section .dl-modal-label { color: var(--teal-mid); }
   body.dark-mode .dl-edit-input { background: rgba(255,255,255,0.07); color: var(--text); border-color: rgba(255,255,255,0.15); }
@@ -763,42 +655,22 @@
   .se-tile { display: flex; flex-direction: column; justify-content: center; min-height: 52px; }
   .se-tile-add {
     display: flex; align-items: center; justify-content: center;
-    color: var(--teal); font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 52px;
+    color: var(--teal); font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 52px;
   }
   .se-tile-add::before { content: '+'; font-size: 20px; line-height: 1; }
   .se-tile-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 13px;
     letter-spacing: 0.3px; color: var(--teal-dark); text-transform: uppercase;
     margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .se-tile-host { font-size: 11px; color: #fff; line-height: 1.3; }
+  .se-tile-host { font-size: 11px; color: #4f6664; line-height: 1.3; }
   body.dark-mode .se-tile-name { color: var(--teal); }
   body.dark-mode .se-tile-host { color: #fff; }
 
-  /* SE edit modal */
-  #se-edit-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1050;
-    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
-  }
-  #se-edit-overlay.open { display: flex; }
-  #se-edit-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
-    position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.28);
-    display: flex; flex-direction: column;
-  }
-  #se-edit-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
-  #se-edit-header-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px;
-    letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
-  }
-  #se-edit-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  /* SE edit modal — chrome from the shared .tf-modal-* system. */
   .se-edit-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
   }
   .se-edit-input {
@@ -826,11 +698,6 @@
     font-size: 10px; color: var(--gray); font-style: italic;
     padding: 4px 12px 6px; background: var(--gray-light); border-top: 1px solid var(--teal-light);
   }
-  #se-edit-footer {
-    padding: 12px 18px; border-top: 1px solid var(--teal-light);
-    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
-  }
-  body.dark-mode #se-edit-modal { background: var(--teal-dark); }
   body.dark-mode .se-edit-label { color: var(--teal-mid); }
   body.dark-mode .se-edit-input { background: rgba(255,255,255,0.07); color: var(--text); border-color: rgba(255,255,255,0.15); }
   body.dark-mode .se-edit-input:focus { border-color: var(--teal-mid); }
@@ -852,46 +719,26 @@
   body.dark-mode .ec-notes-btn:hover { background: rgba(10,173,166,0.12); }
   body.dark-mode .ec-notes-btn.has-notes { color: var(--teal-mid); border-color: var(--teal-mid); }
 
-  /* Side event detail modal */
-  #se-detail-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1000; align-items: center; justify-content: center; padding: 20px;
-  }
-  #se-detail-overlay.open { display: flex; }
-  #se-detail-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    min-width: 420px; max-width: min(720px, 95vw); width: max-content;
-    max-height: 90vh; overflow-y: auto; overflow-x: hidden; position: relative;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
-  }
+  /* Side event detail modal — overlay/box/body chrome from the shared
+     .tf-modal-* system; header kept bespoke since its content (name + host,
+     stacked) isn't the title-row shape .tf-modal-header assumes, but its
+     visual values (radius/padding) now match the shared spec. */
   #se-detail-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0; position: relative;
+    background: var(--teal-dark); padding: 14px 20px 12px; border-radius: 10px 10px 0 0; position: relative;
   }
   #se-detail-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 20px;
     letter-spacing: 0.5px; color: #fff; text-transform: uppercase; margin-right: 28px;
   }
   #se-detail-host {
     font-size: 11px; color: rgba(255,255,255,0.75); font-style: italic; margin-top: 2px;
   }
-  #se-detail-body { padding: 14px 18px 18px; }
   #se-detail-notes-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px;
   }
-  #se-detail-notes-list { margin: 0; padding-left: 18px; list-style: none; }
-  #se-detail-notes-list li { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; max-width: 680px; }
-  #se-detail-notes-list li.bullet-l0::before { content: '•'; margin-right: 6px; }
-  #se-detail-notes-list li.bullet-l1 { padding-left: 20px; }
-  #se-detail-notes-list li.bullet-l1::before { content: '–'; margin-right: 6px; color: var(--gray); }
-  #se-detail-notes-list li.bullet-l2 { padding-left: 40px; }
-  #se-detail-notes-list li.bullet-l2::before { content: '◦'; margin-right: 6px; color: var(--gray); }
   #se-detail-notes-empty { font-size: 12px; color: var(--placeholder); font-style: italic; }
-  body.dark-mode #se-detail-modal { background: var(--teal-dark); }
   body.dark-mode #se-detail-notes-label { color: var(--teal-mid); }
-  body.dark-mode #se-detail-notes-list li { color: rgba(255,255,255,0.9); }
-  body.dark-mode #se-detail-notes-list li.bullet-l1::before,
-  body.dark-mode #se-detail-notes-list li.bullet-l2::before { color: var(--teal-mid); }
   body.dark-mode #se-detail-notes-empty { color: var(--placeholder); }
   /* #deck-viewer-panel is permanently dark regardless of mode toggle, but the
      shared .spoiler-modal-close idle-state colors are mode-relative -- without
@@ -899,45 +746,24 @@
      dark mode. Hover-to-red is unaffected (var(--red) isn't mode-relative). */
   body.dark-mode #deck-viewer-panel .spoiler-modal-close { background: rgba(255,255,255,0.15); color: #fff; }
 
-  #news-detail-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1000; align-items: center; justify-content: center; padding: 20px;
-  }
-  #news-detail-overlay.open { display: flex; }
-  #news-detail-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    min-width: 420px; max-width: min(720px, 95vw); width: max-content;
-    max-height: 90vh; overflow-y: auto; overflow-x: hidden; position: relative;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
-  }
+  /* News detail modal — overlay/box/body chrome shared; header kept bespoke
+     (topic + overview stacked, not the title-row shape). */
   #news-detail-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0; position: relative;
+    background: var(--teal-dark); padding: 14px 20px 12px; border-radius: 10px 10px 0 0; position: relative;
   }
   #news-detail-topic {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 20px;
     letter-spacing: 0.5px; color: #fff; text-transform: uppercase; margin-right: 28px;
   }
   #news-detail-overview {
     font-size: 11px; color: rgba(255,255,255,0.75); font-style: italic; margin-top: 2px;
   }
-  #news-detail-body { padding: 14px 18px 18px; }
   #news-detail-notes-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px;
   }
-  #news-detail-notes-list { margin: 0; padding-left: 18px; list-style: none; }
-  #news-detail-notes-list li { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; word-break: break-word; overflow-wrap: anywhere; white-space: pre-wrap; max-width: 680px; }
-  #news-detail-notes-list li.bullet-l0::before { content: '•'; margin-right: 6px; }
-  #news-detail-notes-list li.bullet-l1 { padding-left: 20px; }
-  #news-detail-notes-list li.bullet-l1::before { content: '–'; margin-right: 6px; color: var(--gray); }
-  #news-detail-notes-list li.bullet-l2 { padding-left: 40px; }
-  #news-detail-notes-list li.bullet-l2::before { content: '◦'; margin-right: 6px; color: var(--gray); }
   #news-detail-notes-empty { font-size: 12px; color: var(--placeholder); font-style: italic; }
-  body.dark-mode #news-detail-modal { background: var(--teal-dark); }
   body.dark-mode #news-detail-notes-label { color: var(--teal-mid); }
-  body.dark-mode #news-detail-notes-list li { color: rgba(255,255,255,0.9); }
-  body.dark-mode #news-detail-notes-list li.bullet-l1::before,
-  body.dark-mode #news-detail-notes-list li.bullet-l2::before { color: var(--teal-mid); }
   body.dark-mode #news-detail-notes-empty { color: var(--placeholder); }
 
   /* News card tile (editor) */
@@ -949,47 +775,26 @@
   .news-tile:hover { box-shadow: 0 0 0 2px var(--teal); }
   .news-tile-add {
     align-items: center; justify-content: center;
-    color: var(--teal); font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; font-size: 15px; letter-spacing: 0.5px;
+    color: var(--teal); font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; font-size: 15px; letter-spacing: 0.5px;
     gap: 4px;
   }
   .news-tile-add::before { content: '+'; font-size: 20px; line-height: 1; }
   .news-tile-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600;
     font-size: 14px; letter-spacing: 0.3px; color: var(--teal-dark);
     text-transform: uppercase; margin-bottom: 4px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .news-tile-desc {
-    font-size: 12px; color: #fff; line-height: 1.4;
+    font-size: 12px; color: #4f6664; line-height: 1.4;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     overflow: hidden; word-break: break-word;
   }
   body.dark-mode .news-tile-title { color: var(--teal); }
   body.dark-mode .news-tile-desc { color: #fff; }
 
-  /* News edit modal */
-  #news-edit-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1050;
-    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
-  }
-  #news-edit-overlay.open { display: flex; }
-  #news-edit-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    width: 100%; max-width: 560px;
-    max-height: 90vh; overflow-y: auto; position: relative;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.28);
-    display: flex; flex-direction: column;
-  }
-  #news-edit-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
-  #news-edit-header-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px;
-    letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
-  }
-  #news-edit-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  /* News edit modal — chrome from the shared .tf-modal-* system. */
   #news-edit-title-input {
     width: 100%; font-family: 'Barlow', sans-serif; font-size: 14px;
     padding: 8px 10px; border: 1px solid var(--teal-light); border-radius: 4px;
@@ -1004,7 +809,7 @@
   }
   #news-edit-desc-input:focus { border-color: var(--teal); }
   .news-edit-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
   }
   #news-edit-notes-wrap {
@@ -1028,11 +833,6 @@
     font-size: 10px; color: var(--gray); font-style: italic;
     padding: 4px 12px 6px; background: var(--gray-light); border-top: 1px solid var(--teal-light);
   }
-  #news-edit-footer {
-    padding: 12px 18px; border-top: 1px solid var(--teal-light);
-    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
-  }
-  body.dark-mode #news-edit-modal { background: var(--teal-dark); }
   body.dark-mode #news-edit-title-input,
   body.dark-mode #news-edit-desc-input { background: rgba(255,255,255,0.07); color: var(--text); border-color: var(--teal); }
   body.dark-mode #news-edit-bullet-editor {
@@ -1050,12 +850,12 @@
   }
   .tournament-pill:hover { background: var(--teal-light); }
   .tournament-pill-date {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 13px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 13px;
     color: var(--teal-dark); white-space: nowrap;
   }
-  .tournament-pill-loc { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; color: var(--text); white-space: nowrap; }
+  .tournament-pill-loc { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 13px; color: var(--text); white-space: nowrap; }
   .tournament-pill-type {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 10px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 10px;
     letter-spacing: 0.5px; text-transform: uppercase; color: var(--teal-dark);
     background: var(--teal-light); border-radius: 10px; padding: 3px 9px; white-space: nowrap;
   }
@@ -1069,12 +869,12 @@
 
   .tournament-modal-content { max-width: 420px; text-align: left; background: #fff; color: #1a2a29; }
   .tournament-modal-badge {
-    display: inline-block; font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+    display: inline-block; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700;
     font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: #fff;
     background: var(--teal); border-radius: 4px; padding: 4px 10px; margin-bottom: 8px;
   }
   .tournament-modal-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 18px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 18px;
     color: #044e4a; margin-bottom: 2px;
   }
   .tournament-modal-date { font-size: 12px; color: #8a9e9d; margin-bottom: 10px; }
@@ -1104,7 +904,7 @@
   .dotw-card-preview img:hover { transform: scale(1.04); }
   .dotw-card-meta { flex: 1; min-width: 0; }
   .dotw-card-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 16px;
     color: #fff; margin-bottom: 2px;
   }
   .dotw-card-desc { font-size: 10px; color: var(--teal-mid); margin-bottom: 6px; font-style: italic; }
@@ -1113,7 +913,7 @@
   .dotw-card-creator .dotw-creator-sub { font-size: 10px; color: var(--teal-mid); }
   .dotw-card-badges { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
   .dotw-format-badge {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 11px;
     background: var(--teal); color: #fff; border-radius: 4px; padding: 2px 8px;
   }
   .dotw-tag-badge {
@@ -1143,7 +943,7 @@
   }
   #deck-viewer-title-block { flex: 1; min-width: 0; }
   #deck-viewer-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 20px;
     color: #fff; letter-spacing: 0.5px;
   }
   #deck-viewer-sub { font-size: 11px; color: var(--teal-mid); margin-top: 2px; }
@@ -1151,8 +951,8 @@
   #deck-viewer-view-toggle { display: flex; gap: 4px; }
   .dv-toggle-btn {
     background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;
-    color: rgba(255,255,255,0.5); font-size: 10px; font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; letter-spacing: 1px; padding: 3px 8px; cursor: pointer;
+    color: rgba(255,255,255,0.5); font-size: 10px; font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; letter-spacing: 1px; padding: 3px 8px; cursor: pointer;
     transition: all 0.15s;
   }
   .dv-toggle-btn.active { background: var(--teal); border-color: var(--teal); color: #fff; }
@@ -1161,7 +961,7 @@
   #deck-viewer-body { padding: 16px 18px; overflow-y: auto; }
   .deck-viewer-zone { margin-bottom: 20px; }
   .deck-viewer-zone-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 12px;
     letter-spacing: 2px; text-transform: uppercase; color: var(--teal-mid);
     margin-bottom: 10px; padding-bottom: 4px;
     border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -1209,7 +1009,7 @@
   }
   .dv-stack-col { flex-shrink: 0; width: 90px; }
   .dv-stack-col-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 9px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 9px;
     letter-spacing: 2px; text-transform: uppercase; color: var(--teal-mid);
     margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
@@ -1239,10 +1039,14 @@
     display: block;
   }
   #dv-side-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 15px;
     color: #fff; line-height: 1.2;
   }
   #dv-side-meta { font-size: 11px; color: var(--teal-mid); }
+  #dv-side-hint { color: rgba(255,255,255,0.2); font-size: 11px; font-style: italic; text-align: center; padding-top: 160px; }
+  .dv-notes-title { font-family: 'Barlow Semi Condensed', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--teal-mid); }
+  #deck-viewer-notes-count { font-size: 9px; color: var(--placeholder); font-style: italic; }
+  #deck-viewer-notes-chevron { margin-left: auto; color: rgba(255,255,255,0.4); font-size: 11px; transition: transform 0.2s; }
 
   /* Card enlarge overlay */
   #deck-card-enlarge-overlay {
@@ -1273,7 +1077,7 @@
     display: flex; align-items: center; justify-content: space-between;
   }
   #card-notes-popup-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 14px;
     letter-spacing: 1px; text-transform: uppercase; color: #fff;
   }
   #card-notes-popup-textarea {
@@ -1340,7 +1144,7 @@
     display: flex; align-items: center; gap: 10px;
   }
   #player-registry-header h2 {
-    font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 800;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-size: 14px; font-weight: 700;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--white); flex: 1; margin: 0;
   }
   #player-registry-body { display: flex; flex: 1; min-height: 0; }
@@ -1438,9 +1242,54 @@
   .spoiler-card-addnote-btn {
     display: block; width: 100%; margin-top: 3px; font-size: 9px; color: var(--teal);
     background: none; border: 1px dashed var(--teal-mid); border-radius: 4px; padding: 2px 0;
-    cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: 0.5px;
+    cursor: pointer; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; letter-spacing: 0.5px;
   }
   .spoiler-card-addnote-btn:hover { background: var(--teal-light); }
+  /* Spoiler viewer: previous/next arrows. They're flex siblings of the
+     modal box in the centred overlay (prev, box, next), so they sit a fixed
+     gap off the box's sides at whatever width the box currently is. */
+  .tf-modal-nav {
+    flex-shrink: 0; margin: 0 20px;
+    width: 52px; height: 52px; border: none; border-radius: 50%;
+    background: rgba(255,255,255,0.16); color: #fff; font-size: 34px; line-height: 1;
+    display: flex; align-items: center; justify-content: center; padding: 0 0 4px; cursor: pointer;
+  }
+  .tf-modal-nav:hover:not(:disabled) { background: rgba(255,255,255,0.3); }
+  .tf-modal-nav:disabled { opacity: 0.25; cursor: default; }
+  .spoiler-modal-counter { font-size: 11px; color: var(--gray); margin-top: 6px; }
+  .spoiler-modal-counter:empty { display: none; }
+  /* No room beside the box on phones: overlay the arrows on the screen edges. */
+  @media (max-width: 620px) {
+    .tf-modal-nav { position: fixed; top: 50%; transform: translateY(-50%); z-index: 2; margin: 0; width: 40px; height: 40px; font-size: 26px; }
+    .tf-modal-nav-prev { left: 6px; }
+    .tf-modal-nav-next { right: 6px; }
+  }
+
+  /* Card viewers with no notes: the card takes the whole modal instead of
+     sitting beside an empty notes column (toggled by the open* functions). */
+  .spoiler-modal-content-split.card-only { max-width: min(620px, 95vw); justify-content: center; }
+  .spoiler-modal-content-split.card-only .spoiler-modal-notes-col { display: none; }
+  /* Media column sized to the card (5:7), capped so it never runs taller
+     than ~72% of the viewport; the set badge then spans exactly the card. */
+  .spoiler-modal-content-split.card-only .spoiler-modal-media {
+    flex: 0 1 auto; width: min(500px, calc(72vh * 5 / 7), 100%); max-width: none; margin: 0 auto;
+  }
+  .spoiler-modal-content-split.card-only #spoiler-modal-img { display: block; width: 100%; }
+  #agur-view-content.card-only,
+  #collectors-card-modal-content.card-only { max-width: min(560px, 95vw); }
+  #agur-view-content.card-only #agur-view-right,
+  #collectors-card-modal-content.card-only #collectors-card-modal-notes-col { display: none; }
+  #agur-view-content.card-only #agur-view-body,
+  #collectors-card-modal-content.card-only #collectors-card-modal-body { justify-content: center; }
+  #agur-view-content.card-only #agur-view-left,
+  #collectors-card-modal-content.card-only #collectors-card-modal-img-col { flex: 0 1 420px; max-width: 420px; }
+
+  /* "last [N] days" lookback control beside Fetch Recent Spoilers */
+  #spoiler-days-wrap { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--placeholder); white-space: nowrap; }
+  #spoiler-days-input {
+    width: 42px; border: none; border-bottom: 1.5px solid var(--teal-light); background: transparent;
+    font-family: 'Barlow', sans-serif; font-size: 10px; color: var(--text); padding: 2px 2px; outline: none; text-align: center;
+  }
 
   /* Agur the Creator: fan-art card grid (mirrors spoiler cards minus set/badge) */
   /* Agur the Creator — tile grid (mirrors Collector's Corner) */
@@ -1462,56 +1311,39 @@
   .agur-tile { display: flex; flex-direction: column; justify-content: center; min-height: 60px; }
   .agur-tile-add {
     display: flex; align-items: center; justify-content: center;
-    color: var(--teal); font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 60px;
+    color: var(--teal); font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 60px;
   }
   .agur-tile-add::before { content: '+'; font-size: 20px; line-height: 1; }
   .agur-tile-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 13px;
     letter-spacing: 0.3px; color: var(--teal-dark); text-transform: uppercase;
     margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .agur-tile-sub { font-size: 11px; color: #fff; line-height: 1.3; }
+  .agur-tile-sub { font-size: 11px; color: #4f6664; line-height: 1.3; }
   body.dark-mode .agur-block { background: rgba(255,255,255,0.06); }
   body.dark-mode .agur-tile-title { color: var(--teal); }
   body.dark-mode .agur-tile-sub { color: #fff; }
 
   /* Agur edit modal */
-  #agur-edit-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1050;
-    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
-  }
-  #agur-edit-overlay.open { display: flex; }
-  #agur-edit-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto;
-    position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.28);
-    display: flex; flex-direction: column;
-  }
-  #agur-edit-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
-  #agur-edit-header-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px;
-    letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
-  }
+  /* Agur Edit modal — overlay/box/header/title/body/footer chrome from the
+     shared .tf-modal-* system; box width constrained for this content. */
+  #agur-edit-modal { max-width: min(580px, 95vw); }
   /* Mode tabs */
   #agur-edit-tabs {
     display: flex; border-bottom: 2px solid var(--teal-light); flex-shrink: 0;
     background: var(--gray-light);
   }
   .agur-edit-tab {
-    padding: 8px 16px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    padding: 8px 16px; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600;
     font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;
     color: var(--gray); cursor: pointer; border: none; background: transparent;
     border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.15s;
   }
   .agur-edit-tab.active { color: var(--teal-dark); border-bottom-color: var(--teal); }
   .agur-edit-tab:hover { color: var(--teal-dark); }
-  #agur-edit-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
   .agur-edit-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
   }
   .agur-edit-input {
@@ -1562,11 +1394,6 @@
   #agur-edit-img-thumb-remove:hover { background: var(--red); }
   #agur-edit-img-row { display: flex; align-items: flex-start; gap: 12px; }
   #agur-edit-img-fields { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-  #agur-edit-footer {
-    padding: 12px 18px; border-top: 1px solid var(--teal-light);
-    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
-  }
-  body.dark-mode #agur-edit-modal { background: var(--teal-dark); }
   body.dark-mode #agur-edit-tabs { background: rgba(255,255,255,0.04); border-bottom-color: rgba(255,255,255,0.1); }
   body.dark-mode .agur-edit-tab { color: var(--placeholder); }
   body.dark-mode .agur-edit-tab.active { color: var(--teal-mid); border-bottom-color: var(--teal-mid); }
@@ -1576,20 +1403,15 @@
   body.dark-mode #agur-edit-notes-wrap { border-color: rgba(255,255,255,0.15); }
   body.dark-mode #agur-edit-bullet-editor { background: rgba(255,255,255,0.05); color: var(--text); }
   body.dark-mode #agur-edit-notes-hint { background: rgba(255,255,255,0.04); border-top-color: rgba(255,255,255,0.1); color: var(--placeholder); }
-  body.dark-mode #agur-edit-footer { border-top-color: rgba(255,255,255,0.08); }
   body.dark-mode #agur-edit-img-thumb { background: rgba(255,255,255,0.05); }
 
   /* Agur view modal */
-  #agur-view-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1100; align-items: center; justify-content: center; padding: 20px;
-  }
-  #agur-view-overlay.open { display: flex; }
-  #agur-view-content {
-    background: #fff; border-radius: 8px; padding: 20px;
-    max-width: 700px; width: 100%; max-height: 90vh;
-    position: relative; display: flex; gap: 20px; align-items: flex-start; overflow-y: auto;
-  }
+  /* Agur View modal — now uses the shared .tf-modal-* header+body+footer
+     chrome (previously had no header/footer at all, just a floating box).
+     #agur-view-body overrides the shared body's column direction back to
+     the original side-by-side card+notes row layout. */
+  #agur-view-content { max-width: min(760px, 95vw); }
+  #agur-view-body { flex-direction: row; gap: 20px; align-items: flex-start; }
   #agur-view-left { flex: 0 0 240px; max-width: 240px; }
   /* Text card spec display -- sized to the same portrait ratio as a physical
      Redemption card (~2.5x3.5in) so a text-only design occupies the same
@@ -1602,25 +1424,25 @@
     display: flex; flex-direction: column;
   }
   #agur-view-spec-type {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 10px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 10px;
     letter-spacing: 2px; text-transform: uppercase; color: var(--teal); margin-bottom: 4px;
   }
   #agur-view-spec-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 18px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 18px;
     color: var(--text); text-transform: uppercase; margin-bottom: 6px; line-height: 1.1;
   }
   #agur-view-spec-brigade {
     font-size: 11px; color: var(--gray); margin-bottom: 6px; font-style: italic;
   }
   #agur-view-spec-stats {
-    font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-size: 13px; font-weight: 600;
     color: var(--teal-dark); margin-bottom: 4px;
   }
   #agur-view-spec-class {
     font-size: 11px; color: var(--gray); margin-bottom: 4px; font-style: italic;
   }
   #agur-view-spec-identifier {
-    font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: var(--teal);
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px; color: var(--teal);
     margin-bottom: 8px; letter-spacing: 0.3px;
   }
   /* Ability text plays the role of a card's rules-text box: it fills whatever
@@ -1648,7 +1470,7 @@
   }
   #agur-view-img-box img { width: 100%; height: 100%; border-radius: 6px; object-fit: contain; }
   #agur-view-img-caption {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 14px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 14px;
     color: var(--teal-dark); margin-top: 8px; text-align: center;
   }
   /* Right notes column */
@@ -1657,18 +1479,10 @@
     padding-left: 18px; max-height: 75vh; overflow-y: auto;
   }
   #agur-view-notes-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 12px;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-dark); margin-bottom: 10px;
   }
-  #agur-view-notes-list { list-style: none; padding-left: 18px; margin: 0; }
-  #agur-view-notes-list li { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; word-break: break-word; white-space: pre-wrap; }
-  #agur-view-notes-list li.bullet-l0::before { content: '•'; margin-right: 6px; }
-  #agur-view-notes-list li.bullet-l1 { padding-left: 20px; }
-  #agur-view-notes-list li.bullet-l1::before { content: '–'; margin-right: 6px; color: var(--gray); }
-  #agur-view-notes-list li.bullet-l2 { padding-left: 40px; }
-  #agur-view-notes-list li.bullet-l2::before { content: '◦'; margin-right: 6px; color: var(--gray); }
   #agur-view-notes-empty { font-size: 12px; color: var(--placeholder); font-style: italic; }
-  body.dark-mode #agur-view-content { background: var(--teal-dark); }
   body.dark-mode #agur-view-spec { background: rgba(255,255,255,0.06); }
   body.dark-mode #agur-view-spec-stats { color: var(--teal-mid); }
   body.dark-mode #agur-view-spec-ability { color: rgba(255,255,255,0.85); border-top-color: rgba(255,255,255,0.1); }
@@ -1700,43 +1514,25 @@
   .collectors-tile { display: flex; flex-direction: column; justify-content: center; min-height: 60px; }
   .collectors-tile-add {
     display: flex; align-items: center; justify-content: center;
-    color: var(--teal); font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 60px;
+    color: var(--teal); font-family: 'Barlow Semi Condensed', sans-serif;
+    font-weight: 600; font-size: 15px; letter-spacing: 0.5px; gap: 4px; min-height: 60px;
   }
   .collectors-tile-add::before { content: '+'; font-size: 20px; line-height: 1; }
   .collectors-tile-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 13px;
     letter-spacing: 0.3px; color: var(--teal-dark); text-transform: uppercase;
     margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .collectors-tile-sub { font-size: 11px; color: #fff; line-height: 1.3; }
+  .collectors-tile-sub { font-size: 11px; color: #4f6664; line-height: 1.3; }
   body.dark-mode .collectors-block { background: rgba(255,255,255,0.06); }
   body.dark-mode .collectors-tile-title { color: var(--teal); }
   body.dark-mode .collectors-tile-sub { color: #fff; }
 
   /* Collector's Corner edit modal */
-  #collectors-edit-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1050;
-    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
-  }
-  #collectors-edit-overlay.open { display: flex; }
-  #collectors-edit-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto;
-    position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.28);
-    display: flex; flex-direction: column;
-  }
-  #collectors-edit-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0;
-    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-  }
-  #collectors-edit-header-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 16px;
-    letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
-  }
-  #collectors-edit-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  /* Collectors Edit modal — chrome from the shared .tf-modal-* system. */
+  #collectors-edit-modal { max-width: min(580px, 95vw); }
   .collectors-edit-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;
   }
   .collectors-edit-input {
@@ -1777,52 +1573,24 @@
   }
   #collectors-edit-card-thumb-remove:hover { background: var(--red); }
   #collectors-edit-card-fields { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-  #collectors-edit-footer {
-    padding: 12px 18px; border-top: 1px solid var(--teal-light);
-    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
-  }
-  body.dark-mode #collectors-edit-modal { background: var(--teal-dark); }
   body.dark-mode .collectors-edit-label { color: var(--teal-mid); }
   body.dark-mode .collectors-edit-input { background: rgba(255,255,255,0.07); color: var(--text); border-color: rgba(255,255,255,0.15); }
   body.dark-mode #collectors-edit-notes-wrap { border-color: rgba(255,255,255,0.15); }
   body.dark-mode #collectors-edit-bullet-editor { background: rgba(255,255,255,0.05); color: var(--text); }
   body.dark-mode #collectors-edit-notes-hint { background: rgba(255,255,255,0.04); border-top-color: rgba(255,255,255,0.1); color: var(--placeholder); }
-  body.dark-mode #collectors-edit-footer { border-top-color: rgba(255,255,255,0.08); }
   body.dark-mode #collectors-edit-card-thumb { background: rgba(255,255,255,0.05); }
 
-  /* Collector's Corner text-only view modal */
-  #collectors-view-overlay {
-    display: none; position: fixed; inset: 0; z-index: 1050;
-    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
-  }
-  #collectors-view-overlay.open { display: flex; }
-  #collectors-view-modal {
-    background: #fff; border-radius: 8px; padding: 0;
-    min-width: 420px; max-width: min(720px, 95vw); width: max-content;
-    max-height: 90vh; overflow-y: auto; overflow-x: hidden; position: relative;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
-  }
+  /* Collector's Corner text-only view modal — overlay/box/body chrome
+     shared; header kept bespoke (single stacked title, no flex row). */
   #collectors-view-header {
-    background: var(--teal-dark); padding: 14px 18px 12px; border-radius: 8px 8px 0 0; position: relative;
+    background: var(--teal-dark); padding: 14px 20px 12px; border-radius: 10px 10px 0 0; position: relative;
   }
   #collectors-view-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 20px;
     letter-spacing: 0.5px; color: #fff; text-transform: uppercase; margin-right: 28px;
   }
-  #collectors-view-body { padding: 14px 18px 18px; }
-  #collectors-view-notes-list { margin: 0; padding-left: 18px; list-style: none; }
-  #collectors-view-notes-list li { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; word-break: break-word; white-space: pre-wrap; max-width: 680px; }
-  #collectors-view-notes-list li.bullet-l0::before { content: '•'; margin-right: 6px; }
-  #collectors-view-notes-list li.bullet-l1 { padding-left: 20px; }
-  #collectors-view-notes-list li.bullet-l1::before { content: '–'; margin-right: 6px; color: var(--gray); }
-  #collectors-view-notes-list li.bullet-l2 { padding-left: 40px; }
-  #collectors-view-notes-list li.bullet-l2::before { content: '◦'; margin-right: 6px; color: var(--gray); }
   #collectors-view-notes-empty { font-size: 12px; color: var(--placeholder); font-style: italic; }
-  body.dark-mode #collectors-view-modal { background: var(--teal-dark); }
   body.dark-mode #collectors-view-title { color: #fff; }
-  body.dark-mode #collectors-view-notes-list li { color: rgba(255,255,255,0.9); }
-  body.dark-mode #collectors-view-notes-list li.bullet-l1::before,
-  body.dark-mode #collectors-view-notes-list li.bullet-l2::before { color: var(--teal-mid); }
 
   /* Hide old single-item layout */
   .collectors-topic-input { display: none !important; }
@@ -1855,7 +1623,7 @@
   }
   .collectors-card-placeholder:hover { background: var(--teal-light); border-color: var(--teal); }
   .collectors-card-placeholder-text {
-    font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-size: 10px; font-weight: 600;
     letter-spacing: 1px; text-transform: uppercase; color: var(--teal); padding: 8px;
   }
   .collectors-card-img-wrap {
@@ -1879,20 +1647,16 @@
   .collectors-card-img-wrap img { cursor: zoom-in; }
 
   /* Collector's Corner card modal */
-  #collectors-card-modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1100; align-items: center; justify-content: center; padding: 20px;
-  }
-  #collectors-card-modal-overlay.open { display: flex; }
-  #collectors-card-modal-content {
-    background: #fff; border-radius: 8px; padding: 20px;
-    max-width: 700px; width: 100%; max-height: 90vh;
-    position: relative; display: flex; gap: 20px; align-items: flex-start;
-  }
+  /* Collector's Card view modal — now uses the shared .tf-modal-*
+     header+body+footer chrome (previously had no header/footer at all).
+     #collectors-card-modal-body overrides the shared body's column
+     direction back to the original side-by-side image+notes row layout. */
+  #collectors-card-modal-content { max-width: min(760px, 95vw); }
+  #collectors-card-modal-body { flex-direction: row; gap: 20px; align-items: flex-start; }
   #collectors-card-modal-img-col { flex: 0 0 260px; max-width: 260px; text-align: center; }
   #collectors-card-modal-img-col img { width: 100%; border-radius: 6px; object-fit: contain; }
   #collectors-card-modal-img-caption {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 15px;
     color: var(--teal-dark); margin-top: 10px;
   }
   #collectors-card-modal-notes-col {
@@ -1900,7 +1664,7 @@
     padding-left: 18px; max-height: 75vh; overflow-y: auto;
   }
   #collectors-card-modal-notes-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 12px;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-dark); margin-bottom: 10px;
   }
   #collectors-card-modal-topic {
@@ -1924,7 +1688,7 @@
 
   .bullet-notes-print { display: none; }
 
-  /* ===== Dark Mode (additive overrides; affects screen and print/PDF) ===== */
+  /* ===== Dark Mode (additive overrides; screen only -- print/PDF is the plain summary) ===== */
 
   body.dark-mode {
     --white: #1c2e2d;
@@ -2017,7 +1781,7 @@
     box-shadow: 0 8px 32px rgba(0,0,0,0.18);
   }
   .player-profile-modal-name {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 22px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 22px;
     color: var(--teal-dark); margin: 0 24px 2px 0; line-height: 1.2;
   }
   .player-profile-modal-row {
@@ -2025,7 +1789,7 @@
     border-top: 1px solid var(--gray-light); margin-top: 6px;
   }
   .player-profile-modal-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 11px;
     color: var(--teal); letter-spacing: 0.06em; text-transform: uppercase; width: 80px; flex-shrink: 0;
   }
   .player-profile-modal-value {
@@ -2037,6 +1801,7 @@
   #ppm-edit-btn { margin-top: 12px; padding: 3px 10px; font-size: 10px; }
   #ppm-edit-form .pr-field-label { display: block; margin-top: 10px; }
   #ppm-edit-form .pr-field-label:first-child { margin-top: 0; }
+  #ppm-edit-handle-display { font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--text); padding: 4px 0; opacity: 0.7; }
   #ppm-edit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
   #ppm-edit-status { font-size: 11px; color: var(--red); margin-top: 6px; min-height: 14px; text-align: right; }
   body.view-mode #ppm-edit-btn { display: none !important; }
@@ -2087,7 +1852,7 @@
     box-shadow: 0 8px 32px rgba(0,0,0,0.18);
   }
   .player-picker-title {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 19px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 19px;
     color: var(--teal-dark); margin: 0 24px 12px 0; line-height: 1.2;
   }
   .pp-search-input {
@@ -2138,46 +1903,62 @@
 
   body.dark-mode .btn-ghost { color: var(--teal-mid); border-color: var(--teal-mid); }
 
-  @media print {
-    .bullet-textarea, .bullet-marks, .collectors-card-placeholder, .collectors-card-remove { display: none !important; }
-    .collectors-card-caption-input { border: none !important; background: transparent !important; pointer-events: none; }
-    .bullet-notes-print {
-      display: block; font-size: 11px; color: var(--text); line-height: 1.6; padding-left: 16px;
-    }
-    .bullet-notes-print li { margin-bottom: 3px; }
-    .bullet-notes-print:empty { display: none; }
-    .field:has(> .bullet-notes-print:empty) { display: none !important; }
-    /* Recent News: PDF/print shows only the one-line Overview -- full details
-       stay accessible via click-to-view on the published page only, same as
-       RTN Side Events (which never had a print bullet list to begin with). */
-    #news-body .bullet-notes-print { display: none !important; }
-
-    /* Header meta fields: show as clean text, not input boxes */
-    .meta-input { display: none !important; }
-    .meta-value-print { display: inline; color: #ffffff; font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 700; }
-    .meta-field:has(.meta-value-print:empty) { display: none !important; }
-    .meta-field { display: inline-block !important; width: auto !important; margin-right: 14px; }
-    .meta-field .meta-label { display: block; }
-    .meta-field.ep-num-text-only .meta-label { display: none !important; }
-
-    /* Hide empty Discussion Notes (Spoilers, Agur, Meta Forecast, etc.) */
-    .field:has(> textarea.field-textarea:placeholder-shown) { display: none !important; }
-
-    /* Hide empty per-card set/promo line on spoiler cards */
-    .spoiler-card-set-input:placeholder-shown { display: none !important; }
-  }
 
   /* Spoilers: enlarge modal */
   .spoiler-card-img-wrap { cursor: pointer; }
-  .spoiler-modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(2,46,43,0.75);
-    z-index: 1000; align-items: center; justify-content: center; padding: 20px;
+  /* =========================================================================
+     Unified modal system (tf-modal-*). Every header-bar dialog/panel overlay
+     in this file shares this base instead of its own copy-pasted overlay/
+     box/header/footer CSS. Two z-index tiers only: base, and -stacked for
+     the one case a modal opens from inside another (Player Picker from
+     inside Player Profile). Lightweight view-only popups without a header
+     bar (Spoiler, Tournament/Nationals, Player Profile, Player Picker) use
+     the separate `.spoiler-modal-content`/`.spoiler-modal-close` base below
+     instead — that one predates this file's Next.js port and already is a
+     real shared pattern, just under its original name.
+     ========================================================================= */
+  .tf-modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 1100;
+    background: rgba(2,30,28,0.65); align-items: center; justify-content: center; padding: 20px;
   }
-  .spoiler-modal-overlay.open { display: flex; }
-  /* These two can be opened from inside other modals (e.g. the Tournament
-     Results editor, z-index 1100) so they need to sit above everything else
-     in the app, not just the base .spoiler-modal-overlay z-index. */
-  #player-picker-overlay, #player-profile-modal-overlay { z-index: 1500; }
+  .tf-modal-overlay.open { display: flex; }
+  .tf-modal-overlay.tf-modal-stacked { z-index: 1500; }
+  .tf-modal-box {
+    background: #fff; border-radius: 10px; padding: 0;
+    min-width: 320px; max-width: min(640px, 95vw); width: max-content;
+    max-height: 90vh; overflow-y: auto; position: relative;
+    box-shadow: 0 10px 36px rgba(0,0,0,0.3); display: flex; flex-direction: column;
+  }
+  .tf-modal-box.tf-modal-wide { max-width: min(900px, 95vw); }
+  .tf-modal-header {
+    background: var(--teal-dark); padding: 14px 20px 12px; border-radius: 10px 10px 0 0;
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 12px;
+  }
+  .tf-modal-title {
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 16px;
+    letter-spacing: 0.5px; color: #fff; text-transform: uppercase;
+  }
+  /* Close button: reuse `.spoiler-modal-close` (see below) — it's already
+     the universal close-button hook, including on today's header-bar
+     modals, and its absolute box-corner positioning lands correctly here
+     too since `.tf-modal-box` is `position: relative`. No separate
+     `.tf-modal-close` needed. */
+  .tf-modal-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .tf-modal-footer {
+    padding: 12px 20px; border-top: 1px solid var(--teal-light);
+    display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
+  }
+  body.dark-mode .tf-modal-box { background: var(--teal-dark); }
+  body.dark-mode .tf-modal-footer { border-top-color: rgba(255,255,255,0.08); }
+
+  /* Floating-box variant (no header bar): Spoiler, Tournament/Nationals,
+     Player Profile, Player Picker share this. Close button is absolutely
+     positioned against the box corner. Kept under its original names —
+     `.spoiler-modal-close` is also the universal close-button hook that
+     every other modal's close-guard function checks via
+     `event.target.classList.contains('spoiler-modal-close')`, including the
+     header-bar modals below; renaming it would mean touching every one of
+     those guards for no visual gain. */
   .spoiler-modal-content {
     background: #fff; border-radius: 8px; padding: 16px; max-width: 360px; width: 100%;
     max-height: 90vh; overflow-y: auto; position: relative; text-align: center;
@@ -2189,18 +1970,19 @@
     line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
   }
   .spoiler-modal-close:hover { background: var(--red); color: #fff; }
-  .spoiler-modal-caption {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px;
-    color: var(--teal-dark); margin-top: 10px;
-  }
-  .spoiler-modal-set { font-size: 11px; color: var(--gray); margin-top: 2px; }
-  .spoiler-modal-note {
-    font-size: 12px; color: var(--text); margin-top: 8px; padding-top: 8px;
-    border-top: 1px solid var(--gray-light); text-align: left;
-  }
-  .spoiler-modal-note:empty { display: none; }
-  .spoiler-modal-note ul { margin: 0; padding-left: 18px; }
-  .spoiler-modal-note li { margin-bottom: 6px; line-height: 1.4; }
+
+  /* Shared bullet-list look for every read-only "Notes" list across modals
+     (previously copy-pasted per modal as #x-view-list / #x-notes-list). */
+  .tf-modal-notes-list { margin: 0; padding-left: 18px; list-style: none; }
+  .tf-modal-notes-list li { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 6px; word-break: break-word; white-space: pre-wrap; }
+  .tf-modal-notes-list li.bullet-l0::before { content: '•'; margin-right: 6px; }
+  .tf-modal-notes-list li.bullet-l1 { padding-left: 20px; }
+  .tf-modal-notes-list li.bullet-l1::before { content: '–'; margin-right: 6px; color: var(--gray); }
+  .tf-modal-notes-list li.bullet-l2 { padding-left: 40px; }
+  .tf-modal-notes-list li.bullet-l2::before { content: '◦'; margin-right: 6px; color: var(--gray); }
+  body.dark-mode .tf-modal-notes-list li { color: rgba(255,255,255,0.9); }
+  body.dark-mode .tf-modal-notes-list li.bullet-l1::before,
+  body.dark-mode .tf-modal-notes-list li.bullet-l2::before { color: var(--teal-mid); }
 
   /* Spoilers: side-by-side modal (card image left, talking points right) */
   .spoiler-modal-content-split {
@@ -2215,19 +1997,27 @@
     max-height: 75vh; overflow-y: auto;
   }
   .spoiler-modal-notes-label {
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 12px;
     letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-dark); margin-bottom: 8px;
   }
   body.dark-mode .spoiler-modal-notes-label { color: var(--teal-mid); }
-  .spoiler-modal-notes-col .spoiler-modal-note {
-    border-top: none; margin-top: 0; padding-top: 0; font-size: 13px; line-height: 1.6;
+  .spoiler-modal-note {
+    font-size: 13px; color: var(--text); line-height: 1.6;
   }
-  .spoiler-modal-notes-col .spoiler-modal-note ul { padding-left: 20px; }
-  .spoiler-modal-notes-col .spoiler-modal-note li { margin-bottom: 6px; }
+  .spoiler-modal-note:empty { display: none; }
+  .spoiler-modal-note ul { margin: 0; padding-left: 20px; }
+  .spoiler-modal-note li { margin-bottom: 6px; }
   .spoiler-modal-note-empty {
     font-size: 12px; color: var(--placeholder); font-style: italic; display: none;
   }
   .spoiler-modal-note:empty ~ .spoiler-modal-note-empty { display: block; }
+  .spoiler-modal-caption {
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 16px;
+    color: var(--teal-dark); margin-top: 10px;
+  }
+  .spoiler-modal-set { font-size: 11px; color: var(--gray); margin-top: 2px; }
+  .spoiler-modal-badge { font-size: 18px; padding: 10px 8px; margin-bottom: 10px; }
+  .spoiler-modal-badge:empty { display: none; margin-bottom: 0; }
   /* Inline editor inside spoiler modal (editor mode only) */
   #spoiler-modal-note-editor {
     width: 100%; min-height: 120px; border: 1px solid var(--teal-light); border-radius: 4px;
@@ -2259,7 +2049,7 @@
   /* Spoilers: per-card set hero strip */
   .spoiler-card-badge {
     width: 100%; box-sizing: border-box;
-    color: #fff; font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+    color: #fff; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700;
     font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; text-align: center;
     border-radius: 4px; padding: 3px 4px; line-height: 1.2; margin-bottom: 4px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -2281,12 +2071,12 @@
   .rank-card.rank-card-empty {
     border-left-color: var(--teal-light); cursor: pointer;
     justify-content: center; color: var(--teal);
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600;
     font-size: 12px; letter-spacing: 0.3px;
   }
   .rank-card.rank-card-empty:hover { box-shadow: 0 0 0 2px var(--teal); }
   .rank-card-num {
-    font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 900;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-size: 13px; font-weight: 700;
     color: var(--teal); width: 16px; flex-shrink: 0; text-align: center; line-height: 1;
   }
   .rank-card-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
@@ -2312,7 +2102,7 @@
   }
   .rank-card-clear:hover { background: var(--red); color: #fff; }
   .rank-delta {
-    font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-size: 10px; font-weight: 600;
     min-width: 28px; text-align: center; border-radius: 3px; padding: 1px 4px; flex-shrink: 0;
   }
   .rank-delta.up   { background: transparent; color: #22c55e; }
@@ -2369,8 +2159,8 @@
     border-bottom: 3px solid var(--teal);
   }
   .page2-banner-title {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 16px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase;
+    font-family: 'Barlow Semi Condensed', sans-serif;
+    font-size: 16px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
     color: #fff;
   }
   .page2-banner-sub { font-size: 10px; color: var(--teal-mid); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
@@ -2385,93 +2175,6 @@
   #guest-section-wrapper { display: none; }
   #guest-section-wrapper.active { display: block; }
 
-  @media print {
-    @page { margin: 0.4in; }
-    body { background: white; padding: 0; }
-    .toolbar, .toggle-row { display: none; }
-    .sec-order-controls { display: none !important; }
-    .page-header { border-radius: 0; }
-    .canvas { box-shadow: none; border-radius: 0; }
-    .venue-notes-card-empty { display: none !important; }
-    .venue-notes-card { display: none !important; }
-
-    /* Keep each section together on one page; if it doesn't fit, push the whole thing to the next page */
-    .movable-section, .grid-1, .grid-2 {
-      break-inside: avoid;
-      page-break-inside: avoid;
-      break-before: avoid;
-      page-break-before: avoid;
-    }
-    .sec-header {
-      break-after: avoid;
-      page-break-after: avoid;
-    }
-    #tourn-add-row, .tourn-remove-btn, .rank-clear, .rank-card-clear, .rank-profile-btn, .ec-notes-btn, .tourn-results-btn { display: none; }
-    #tourn-results-section:not(:has(.tourn-block)) { display: none; }
-    /* Hide empty tournament card fields (Host/Location/# Players placeholders) in
-       print/PDF -- previously this was only handled for the published view-mode
-       page, so an empty field still showed its placeholder text when printing
-       directly from the editor. */
-    .tourn-host-input:placeholder-shown,
-    .tourn-location-input:placeholder-shown,
-    .tourn-participants-input:placeholder-shown { display: none; }
-    .rank-delta.empty { display: none; }
-    #prev-rankings-field { display: none; }
-    #rankings-export-row { display: none !important; }
-    #meta-export-row { display: none !important; }
-    #prev-meta-rankings-field { display: none; }
-    #tournaments-section button, #tournaments-section select, #upcoming-fetch-status { display: none; }
-    .rtn-row-remove, .countdown-remove, .event-card-drag-handle, .tourn-block-drag-handle, .repeat-item-drag-handle { display: none; }
-    #rtn-section .btn { display: none; }
-    #rtn-carryforward-status { display: none; }
-    #rtn-nats-fetch-status { display: none; }
-    #spoiler-fetch-status, #spoilers-section button, #spoilers-section select, #spoilers-section label.btn { display: none; }
-    .spoiler-card-remove, .spoiler-card-addnote-btn { display: none; }
-    .spoiler-card-note { display: none; }
-    .spoiler-card-note-print {
-      display: block; font-size: 9.5px; color: var(--text); margin: 4px 0 0;
-      padding-top: 4px; border-top: 1px solid var(--teal-light); padding-left: 14px;
-      line-height: 1.35;
-    }
-    .spoiler-card-note-print li { margin-bottom: 2px; }
-    .spoiler-card-note-print:empty { display: none; border-top: none; margin-top: 0; padding-top: 0; }
-    #spoiler-empty-state { display: none; }
-    .spoiler-card-caption-input, .spoiler-card-set-input { border: none !important; background: transparent !important; pointer-events: none; }
-    .spoiler-modal-overlay, #collectors-card-modal-overlay { display: none !important; }
-    #agur-modal-overlay { display: none !important; }
-    #mtf-overlay { display: none !important; }
-    #mailbag-add-row, #mailbag-body .tourn-remove-btn { display: none; }
-    #guest-q-add-row, #guest-questions-body .tourn-remove-btn { display: none; }
-    #dotw-section button, #dotw-fetch-status { display: none; }
-    #news-add-row, #news-body .tourn-remove-btn { display: none; }
-    #news-body label:has(input[type=checkbox]) { display: none !important; }
-    #agur-section button, #agur-section label.btn { display: none; }
-    .agur-card-remove, .agur-card-addnote-btn { display: none; }
-    .agur-card-note { display: none; }
-    .agur-card-note-print {
-      display: block; font-size: 9.5px; color: var(--text); margin: 4px 0 0;
-      padding-top: 4px; border-top: 1px solid var(--teal-light); padding-left: 14px;
-      line-height: 1.35;
-    }
-    .agur-card-note-print li { margin-bottom: 2px; }
-    .agur-card-note-print:empty { display: none; border-top: none; margin-top: 0; padding-top: 0; }
-    #agur-empty-state { display: none; }
-    .agur-card-caption-input { border: none !important; background: transparent !important; pointer-events: none; }
-    .rtn-row { border-bottom: 1px solid var(--teal-light); padding-bottom: 2px; }
-    .movable-section[data-content-empty="true"],
-    .movable-section[data-content-empty="true"] + .section-divider {
-      display: none !important;
-    }
-    /* Guest interview: hide empty subsections */
-    #guest-background-wrapper:has(input:placeholder-shown):has(textarea:placeholder-shown),
-    #guest-background-wrapper:has(.bullet-notes-print:empty):not(:has(input:not(:placeholder-shown))) { display: none !important; }
-    #guest-background-wrapper:has(input:placeholder-shown):has(textarea:placeholder-shown) + .section-divider { display: none !important; }
-    #guest-questions-wrapper:has(textarea:placeholder-shown):not(:has(textarea:not(:placeholder-shown))) { display: none !important; }
-    #guest-divider-2:has(+ #guest-questions-wrapper:has(textarea:placeholder-shown):not(:has(textarea:not(:placeholder-shown)))) { display: none !important; }
-    #guest-resources-wrapper:has(textarea.bullet-textarea:placeholder-shown) { display: none !important; }
-    #guest-divider-2 + #guest-resources-wrapper:has(textarea.bullet-textarea:placeholder-shown) + .section-divider { display: none !important; }
-    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  }
 
   /* ---- Live View Mode (public read-only render) ---- */
   body.view-mode .toolbar,
@@ -2489,7 +2192,7 @@
   body.view-mode #rankings-export-row,
   body.view-mode #meta-export-row,
   body.view-mode #prev-meta-rankings-field,
-  body.view-mode #tournaments-section button:not(.spoiler-modal-close),
+  body.view-mode #tournaments-section button:not(.spoiler-modal-close):not(.sec-collapse-btn),
   body.view-mode #tournaments-section select,
   body.view-mode #upcoming-fetch-status,
   body.view-mode .rtn-row-remove,
@@ -2503,9 +2206,10 @@
   body.view-mode #rtn-carryforward-status,
   body.view-mode #rtn-nats-fetch-status,
   body.view-mode #spoiler-fetch-status,
-  body.view-mode #spoilers-section button:not(.spoiler-modal-close),
+  body.view-mode #spoilers-section button:not(.spoiler-modal-close):not(.sec-collapse-btn):not(.tf-modal-nav),
   body.view-mode #spoilers-section select,
   body.view-mode #spoilers-section label.btn,
+  body.view-mode #spoiler-days-wrap,
   body.view-mode .spoiler-card-remove,
   body.view-mode .spoiler-card-addnote-btn,
   body.view-mode .spoiler-card-note,
@@ -2522,9 +2226,9 @@
   body.view-mode .collectors-block .tourn-remove-btn { display: none !important; }
   body.view-mode .collectors-block-drag-handle { display: none !important; }
   body.view-mode #collectors-edit-overlay { display: none !important; }
-  body.view-mode #agur-section button, body.view-mode #agur-section label.btn { display: none; }
+  body.view-mode #agur-section button:not(.sec-collapse-btn), body.view-mode #agur-section label.btn { display: none; }
   body.view-mode #dotw-fetch-status,
-  body.view-mode #dotw-section button:not(.spoiler-modal-close):not(#dotw-view-deck-btn),
+  body.view-mode #dotw-section button:not(.spoiler-modal-close):not(#dotw-view-deck-btn):not(.sec-collapse-btn),
   body.view-mode #news-body label:has(input[type=checkbox]),
   body.view-mode #draft-picker-row,
   body.view-mode #player-registry-btn,
@@ -2536,6 +2240,14 @@
     display: none !important;
   }
   body.view-mode .rank-delta.empty { display: none; }
+  /* Empty items render as "+ Add ..." prompt tiles in the editor; on the
+     published page they're dead clutter. */
+  body.view-mode .tourn-block:has(.tourn-tile-add),
+  body.view-mode #news-body .repeat-item:has(.news-tile-add),
+  body.view-mode .event-card:has(.se-tile-add),
+  body.view-mode .agur-block:has(.agur-tile-add),
+  body.view-mode .collectors-block:has(.collectors-tile-add),
+  body.view-mode .deadline-pill:has(.deadline-pill-add) { display: none !important; }
   /* Render inputs/textviews as static text */
   body.view-mode input,
   body.view-mode textarea,
@@ -2568,35 +2280,515 @@
   body.view-mode #tourn-results-section:not(:has(.tourn-block)) { display: none; }
   body.view-mode .tourn-block { cursor: pointer; pointer-events: auto; }
   body.view-mode .tourn-block:hover { box-shadow: 0 2px 8px rgba(4,78,74,0.18); }
+
+  /* =========================================================================
+     Print / PDF summary. Printing no longer reproduces the on-screen page:
+     buildPrintSummary() writes a plain one-column outline into
+     #print-summary right before printing, and in print it's the only thing
+     shown. Never visible on screen.
+     ========================================================================= */
+  #print-summary { display: none; }
+  @media print {
+    @page { margin: 0.6in 0.65in; }
+    body > *:not(#print-summary) { display: none !important; }
+    html body { background: #fff !important; padding: 0 !important; }
+    #print-summary {
+      display: block; font-family: 'Barlow', sans-serif; font-size: 10.5pt;
+      line-height: 1.45; color: #1a2a29;
+    }
+    .ps-header { border-bottom: 2px solid #0aada6; padding-bottom: 8pt; margin-bottom: 16pt; }
+    .ps-show {
+      font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 9pt;
+      letter-spacing: 2px; text-transform: uppercase; color: #0a8f89;
+    }
+    .ps-header h1 {
+      font-family: 'Anton', 'Barlow Condensed', sans-serif; font-weight: 400; font-size: 22pt;
+      letter-spacing: 0.5px; text-transform: uppercase; color: #022e2b; margin-top: 2pt;
+    }
+    .ps-meta { font-size: 9.5pt; color: #5c7270; margin-top: 2pt; }
+    .ps-section { margin-bottom: 14pt; }
+    .ps-section h2 {
+      font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 12pt;
+      letter-spacing: 1.5px; text-transform: uppercase; color: #044e4a;
+      border-bottom: 1px solid #b9e6e3; padding-bottom: 3pt; margin-bottom: 7pt;
+      break-after: avoid; page-break-after: avoid;
+    }
+    .ps-section h3.ps-group { font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 700; font-size: 10pt;
+      letter-spacing: 1px; text-transform: uppercase; color: #5c7270; margin: 8pt 0 3pt; break-after: avoid; }
+    .ps-item { margin-bottom: 8pt; break-inside: avoid; page-break-inside: avoid; }
+    .ps-item h3 { font-weight: 600; font-size: 10.5pt; }
+    .ps-sub { font-weight: 400; color: #5c7270; }
+    .ps-item p, .ps-line { margin: 2pt 0; }
+    .ps-label { font-weight: 600; color: #044e4a; }
+    .ps-bullets, .ps-plain { margin: 3pt 0 0; padding-left: 15pt; }
+    .ps-bullets li, .ps-plain li { margin-bottom: 1.5pt; }
+    .ps-bullets li.ps-l1 { margin-left: 14pt; list-style-type: circle; }
+    .ps-bullets li.ps-l2 { margin-left: 28pt; list-style-type: square; }
+    .ps-ranks { columns: 2; column-gap: 28pt; padding-left: 20pt; margin: 0 0 4pt; break-inside: avoid; page-break-inside: avoid; }
+    .ps-ranks li { margin-bottom: 2pt; break-inside: avoid; }
+    .ps-move { font-size: 8.5pt; color: #5c7270; margin-left: 4pt; }
+    .ps-link { font-size: 9pt; color: #0a8f89; word-break: break-all; }
+    .ps-q { font-style: italic; }
+  }
+
+  /* Collapsible sections, in the editor and the published view (see
+     initCollapsibleSections() in the script). Print/PDF is the separate
+     summary document, so collapse state never affects it. */
+  .collapse-bar, .sec-collapse-btn { display: none; }
+  @media screen {
+    .collapse-bar {
+      display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+      background: var(--teal-deep); padding: 12px 24px;
+      border-bottom: 1px solid rgba(10,173,166,0.3);
+    }
+    .canvas .sec-header { cursor: pointer; user-select: none; }
+    .canvas .sec-title { margin-right: auto; }
+    .sec-collapse-btn {
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      width: 30px; height: 30px; margin-left: 10px; padding: 0;
+      border: none; border-radius: 6px; background: transparent; cursor: pointer;
+    }
+    .sec-collapse-btn:hover { background: rgba(255,255,255,0.18); }
+    .sec-collapse-btn:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+    .sec-collapse-btn::before {
+      content: ''; width: 9px; height: 9px; margin-top: -5px;
+      border-right: 2.5px solid #fff; border-bottom: 2.5px solid #fff;
+      transform: rotate(45deg); transition: transform 0.2s, margin 0.2s;
+    }
+    .section.collapsed > .sec-header .sec-collapse-btn::before { transform: rotate(-45deg); margin-top: 0; }
+    /* #news-body sets display:flex by id, which outranks the class rule,
+       so it needs its own id-level selector to collapse. */
+    .section.collapsed > .sec-body,
+    .section.collapsed > #news-body { display: none; }
+    /* Read-only notes fit their content (fitViewTextareas()) instead of
+       keeping the editor's empty typing room. */
+    body.view-mode .canvas textarea { min-height: 0; }
+  }
+
+  /* =========================================================================
+     Screen spacing scale. The rules above were sized to share one screen
+     with a webcam feed; that constraint is gone, so on screen everything
+     gets the roomier scale approved in the redesign mockup. (Print/PDF no
+     longer renders the page at all -- see the Print / PDF summary block.)
+
+     Type: 12px labels/captions/status, 13px buttons & controls, 14px
+     secondary text, 16px primary content/inputs, 17px tile titles.
+     Space: 24px section gutters, 20px between fields, 14px between tiles.
+     Selectors mirror the originals' specificity so source order wins
+     without !important.
+     ========================================================================= */
+  @media screen {
+    body { padding: 32px 24px 64px; }
+    .page-wrap { max-width: 1400px; }
+
+    /* Header, toolbar, segment toggles */
+    .page-header { padding: 28px 24px 22px; }
+    .podcast-name { font-size: 40px; }
+    .podcast-sub { font-size: 14px; margin-top: 6px; }
+    .header-meta { gap: 14px; }
+    .meta-field { gap: 4px; }
+    .meta-label { font-size: 12px; }
+    .meta-input { font-size: 15px; padding: 7px 10px; width: 150px; border-radius: 6px; }
+    .meta-input.narrow { width: 96px; }
+    .toolbar { padding: 14px 24px; gap: 12px; flex-wrap: wrap; }
+    .toolbar-label { font-size: 12px; }
+    .save-status { font-size: 13px; }
+    .btn, .btn-sm { font-size: 13px; padding: 8px 18px; border-radius: 6px; }
+    .btn-ghost { border-width: 1.5px; }
+    body:not(.dark-mode) .sec-body .btn-ghost,
+    body:not(.dark-mode) .tf-modal-box .btn-ghost,
+    body:not(.dark-mode) .player-picker-modal .btn-ghost,
+    body:not(.dark-mode) .player-profile-modal .btn-ghost { color: var(--teal); border-color: var(--teal); }
+    .toggle-row { padding: 16px 24px; gap: 12px 22px; }
+    .toggle-row-label { font-size: 12px; }
+    .toggle-item { gap: 8px; }
+    .toggle-switch { width: 40px; height: 22px; border-radius: 11px; }
+    .toggle-switch::after { left: 3px; top: 3px; width: 16px; height: 16px; }
+    .toggle-item input:checked ~ .toggle-switch::after { left: 21px; }
+    .toggle-item-label { font-size: 13px; }
+    .tf-status { font-size: 12px; }
+    .tf-empty-note { font-size: 13px; padding: 10px 0; }
+
+    /* Section chrome */
+    .canvas.page2 { margin-top: 24px; }
+    .sec-header { padding: 16px 24px; }
+    .sec-title { font-size: 16px; }
+    .sec-order-controls { gap: 6px; }
+    .sec-order-btn { width: 30px; height: 30px; border-radius: 6px; font-size: 14px; }
+    .sec-order-btn.sec-action-btn { padding: 0 12px; font-size: 13px; }
+    .sec-body { padding: 24px; }
+    .page2-banner { padding: 16px 24px; }
+    .page2-banner-title { font-size: 20px; }
+    .page2-banner-sub { font-size: 12px; margin-top: 4px; }
+    .page-footer { font-size: 12px; padding: 12px; }
+
+    /* Fields */
+    .field { margin-bottom: 20px; }
+    .field-label { font-size: 12px; letter-spacing: 1.2px; margin-bottom: 5px; }
+    .field-input, .field-textarea { font-size: 16px; padding: 6px 0; }
+    .field-textarea { min-height: 54px; }
+    .field-textarea.tall { min-height: 84px; }
+    .field-textarea.xtall { min-height: 140px; }
+    .bullet-textarea { font-size: 16px; padding: 6px 0 6px 22px; min-height: 140px; }
+    .bullet-textarea.short { min-height: 84px; }
+    .bullet-marks { top: 6px; font-size: 16px; }
+    .repeat-item { margin-bottom: 20px; padding-bottom: 16px; }
+    .repeat-item-drag-handle { top: 14px; left: 8px; font-size: 14px; }
+    .rtn-row { gap: 10px; margin-bottom: 8px; }
+    .rtn-row-remove { width: 22px; height: 22px; font-size: 13px; }
+    #spoiler-days-wrap { font-size: 13px; gap: 6px; }
+    #spoiler-days-input { font-size: 14px; width: 54px; padding: 4px 2px; }
+    .spoiler-modal-counter { font-size: 13px; margin-top: 8px; }
+
+    /* Tile grids: Tournaments, Side Events, News, Agur, Collector's Corner */
+    .tourn-grid, .agur-grid, .collectors-grid { gap: 14px; margin-bottom: 16px; }
+    .event-cards { gap: 14px; margin-top: 8px; }
+    #news-body { gap: 14px; }
+    .tourn-block, .event-card, .agur-block, .collectors-block, #news-body .repeat-item, .venue-notes-card {
+      width: calc((100% - 28px) / 3);
+    }
+    .tourn-block, .event-card, .agur-block, .collectors-block,
+    #news-body .news-tile, #news-body .news-tile-add { padding: 14px 16px 14px 30px; border-radius: 8px; }
+    .tourn-tile, .tourn-tile-add, .agur-tile, .agur-tile-add,
+    .collectors-tile, .collectors-tile-add, #news-body .news-tile, #news-body .news-tile-add { min-height: 84px; }
+    .se-tile, .se-tile-add { min-height: 72px; }
+    .tourn-block-drag-handle, .event-card-drag-handle, .agur-block-drag-handle, .collectors-block-drag-handle {
+      top: 12px; left: 8px; font-size: 14px;
+    }
+    .tourn-remove-btn { width: 24px; height: 24px; font-size: 15px; }
+    .tourn-block .tourn-remove-btn, .agur-block .tourn-remove-btn, .collectors-block .tourn-remove-btn,
+    .event-card .rtn-row-remove { top: 10px; right: 10px; }
+    #news-body .repeat-item .tourn-remove-btn { top: 10px; right: 10px; }
+    .tourn-tile-add, .se-tile-add, .news-tile-add, .agur-tile-add, .collectors-tile-add { font-size: 18px; gap: 6px; }
+    .tourn-tile-add::before, .se-tile-add::before, .news-tile-add::before,
+    .agur-tile-add::before, .collectors-tile-add::before { font-size: 24px; }
+    .tourn-tile-name, .se-tile-name, .news-tile-title, .agur-tile-title, .collectors-tile-title {
+      font-size: 17px; margin-bottom: 4px;
+    }
+    .tourn-tile-meta, .se-tile-host, .news-tile-desc, .agur-tile-sub, .collectors-tile-sub { font-size: 14px; }
+    .tourn-tile-results-dot { width: 9px; height: 9px; }
+    .tourn-results-btn, .ec-notes-btn { padding: 4px 10px; font-size: 12px; border-radius: 4px; margin-top: 6px; }
+
+    /* Upcoming tournament pills */
+    .tournament-pills { gap: 12px; margin: 8px 0 16px; }
+    .tournament-pill { gap: 12px; padding: 12px 14px 12px 20px; font-size: 14px; border-radius: 26px; }
+    .tournament-pill-date, .tournament-pill-loc { font-size: 16px; }
+    .tournament-pill-type { font-size: 12px; padding: 4px 11px; border-radius: 12px; }
+    .tournament-pill-remove { width: 24px; height: 24px; font-size: 14px; }
+
+    /* Power Rankings / Meta Forecast rank cards */
+    .rankings-grid { gap: 8px 12px; }
+    .rank-card { gap: 10px; padding: 10px 12px; min-height: 54px; border-radius: 6px; border-left-width: 3px; }
+    .rank-card.rank-card-empty { font-size: 15px; }
+    .rank-card-num { font-size: 17px; width: 22px; }
+    .rank-card-name { font-size: 15px; }
+    .rank-card-team-logo { height: 26px; max-width: 90px; }
+    .rank-card-right { min-width: 36px; gap: 4px; }
+    .rank-card-clear { width: 20px; height: 20px; font-size: 12px; }
+    .rank-delta { font-size: 13px; min-width: 36px; }
+    .rank-profile-btn, .tre-profile-btn { font-size: 17px; }
+    .rank-profile-btn-add { font-size: 20px; }
+
+    /* Rank cards keep roughly their old half-page column width, left-aligned,
+       rather than stretching across the full-width section. */
+    #rankings-grid { max-width: 840px; }
+
+    /* Deck of the Week profile card */
+    .dotw-card-header { gap: 18px; padding: 18px; border-radius: 8px; }
+    .dotw-card-preview { gap: 6px; }
+    .dotw-card-preview img { width: 150px; border-radius: 4px; }
+    .dotw-card-name { font-size: 20px; margin-bottom: 4px; }
+    .dotw-card-desc { font-size: 13px; margin-bottom: 8px; }
+    .dotw-card-creator { font-size: 14px; margin-bottom: 8px; }
+    .dotw-card-creator .dotw-creator-sub { font-size: 12px; }
+    .dotw-card-badges { gap: 6px; }
+    .dotw-format-badge { font-size: 13px; padding: 3px 10px; }
+    .dotw-tag-badge, .dotw-card-count { font-size: 12px; }
+    .dotw-tag-badge { padding: 3px 10px; }
+
+    /* Road to Nationals */
+    .countdown-hero { gap: 20px; padding: 18px 22px; margin-bottom: 18px; border-radius: 8px; }
+    .countdown-number { font-size: 44px; }
+    .countdown-label { font-size: 12px; margin-top: 2px; }
+    .countdown-info { padding: 0 18px; }
+    .countdown-info-loc { font-size: 19px; }
+    .countdown-info-venue { font-size: 14px; margin-top: 4px; }
+    .countdown-info-dates, .countdown-date { font-size: 12px; }
+    .countdown-date input { font-size: 14px; padding: 5px 8px; border-radius: 6px; }
+    .countdown-remove { width: 22px; height: 22px; font-size: 13px; top: 10px; right: 10px; }
+    .deadline-pills { gap: 12px; margin-top: 8px; }
+    .deadline-pill { gap: 10px; padding: 8px 12px 8px 18px; font-size: 14px; border-radius: 24px; }
+    .deadline-pill-add { font-size: 15px; }
+    .deadline-pill-label { font-size: 14px; }
+    .deadline-pill-date { font-size: 12px; padding: 3px 10px; }
+    .venue-notes-card { margin-top: 14px; padding: 14px 16px 14px 20px; min-height: 72px; border-radius: 8px; }
+    .venue-notes-card-label { font-size: 16px; }
+
+    /* Spoilers */
+    .spoiler-card-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; margin: 8px 0 16px; }
+    .spoiler-card-badge { font-size: 11px; padding: 4px 6px; margin-bottom: 6px; }
+    .spoiler-card-remove { width: 24px; height: 24px; font-size: 14px; top: 6px; right: 6px; }
+    .spoiler-card-caption-input { font-size: 13px; margin-top: 6px; padding: 2px; }
+    .spoiler-card-set-input { font-size: 11px; padding: 2px; }
+    .spoiler-card-note { font-size: 13px; padding: 6px 0 0; margin-top: 6px; min-height: 56px; }
+    .spoiler-card-addnote-btn { font-size: 12px; padding: 4px 0; margin-top: 6px; }
+
+    /* ---- Modals: shared chrome ---- */
+    .tf-modal-overlay { padding: 28px; }
+    .tf-modal-box { min-width: min(560px, 95vw); max-width: min(760px, 95vw); border-radius: 12px; }
+    .tf-modal-box.tf-modal-wide { max-width: min(1080px, 95vw); }
+    .tf-modal-header { padding: 18px 28px 16px; border-radius: 12px 12px 0 0; }
+    .tf-modal-title { font-size: 20px; }
+    .tf-modal-body { padding: 24px 28px; gap: 16px; }
+    .tf-modal-footer { padding: 16px 28px; gap: 10px; }
+    .spoiler-modal-close { width: 32px; height: 32px; font-size: 20px; top: 12px; right: 12px; }
+    .spoiler-modal-content { padding: 24px; max-width: 440px; border-radius: 12px; }
+    .tf-confirm-box { max-width: 480px; padding: 24px 28px 20px; }
+    .tf-confirm-message { font-size: 16px; margin-bottom: 20px; }
+    .tf-confirm-actions { gap: 10px; }
+
+    /* Modals: field labels, inputs, bullet editors, hints, read-only notes */
+    .dl-modal-label, .se-edit-label, .news-edit-label, .agur-edit-label, .collectors-edit-label,
+    #se-detail-notes-label, #news-detail-notes-label { font-size: 13px; margin-bottom: 6px; }
+    .dl-edit-input, .se-edit-input, .agur-edit-input, .agur-edit-textarea, .collectors-edit-input,
+    #news-edit-desc-input { font-size: 16px; padding: 10px 12px; border-radius: 6px; }
+    #news-edit-title-input { font-size: 17px; padding: 10px 12px; border-radius: 6px; }
+    #news-edit-desc-input { min-height: 68px; }
+    .agur-edit-textarea { min-height: 104px; }
+    #venue-notes-bullet-editor, #dl-edit-bullet-editor, #se-edit-bullet-editor, #news-edit-bullet-editor,
+    #agur-edit-bullet-editor, #collectors-edit-bullet-editor, #spoiler-modal-note-editor,
+    #card-notes-bullet-editor, #card-notes-popup-textarea { font-size: 16px; padding: 12px 14px; }
+    #venue-notes-bullet-editor, #news-edit-bullet-editor { min-height: 210px; }
+    #dl-edit-bullet-editor, #se-edit-bullet-editor, #collectors-edit-bullet-editor { min-height: 180px; }
+    #agur-edit-bullet-editor, #spoiler-modal-note-editor { min-height: 150px; }
+    #card-notes-bullet-editor, #card-notes-popup-textarea { min-height: 260px; }
+    #venue-notes-bullet-editor .bn-l1, #dl-edit-bullet-editor .bn-l1, #se-edit-bullet-editor .bn-l1,
+    #news-edit-bullet-editor .bn-l1, #agur-edit-bullet-editor .bn-l1, #collectors-edit-bullet-editor .bn-l1,
+    #spoiler-modal-note-editor .bn-l1, #card-notes-bullet-editor .bn-l1 { padding-left: 26px; }
+    #venue-notes-bullet-editor .bn-l2, #dl-edit-bullet-editor .bn-l2, #se-edit-bullet-editor .bn-l2,
+    #news-edit-bullet-editor .bn-l2, #agur-edit-bullet-editor .bn-l2, #collectors-edit-bullet-editor .bn-l2,
+    #spoiler-modal-note-editor .bn-l2, #card-notes-bullet-editor .bn-l2 { padding-left: 52px; }
+    #venue-notes-edit-hint, #dl-edit-notes-hint, #se-edit-notes-hint, #news-edit-notes-hint,
+    #agur-edit-notes-hint, #collectors-edit-notes-hint { font-size: 12px; padding: 6px 14px 8px; }
+    #spoiler-modal-note-hint, #card-notes-popup-hint { font-size: 12px; }
+    .tf-modal-notes-list { padding-left: 20px; }
+    .tf-modal-notes-list li { font-size: 16px; margin-bottom: 8px; }
+    .tf-modal-notes-list li.bullet-l1 { padding-left: 26px; }
+    .tf-modal-notes-list li.bullet-l2 { padding-left: 52px; }
+    #dl-view-notes-empty, #se-detail-notes-empty, #news-detail-notes-empty, #collectors-view-notes-empty,
+    #agur-view-notes-empty, #collectors-card-modal-notes-empty, .spoiler-modal-note-empty { font-size: 14px; }
+
+    /* Modals: bespoke stacked headers (detail views) */
+    #se-detail-header, #news-detail-header, #collectors-view-header { padding: 18px 28px 16px; border-radius: 12px 12px 0 0; }
+    #se-detail-name, #news-detail-topic, #collectors-view-title { font-size: 24px; margin-right: 36px; }
+    #se-detail-host, #news-detail-overview { font-size: 14px; margin-top: 4px; }
+    #dl-view-name { font-size: 22px; margin-bottom: 4px; }
+    #dl-view-date { font-size: 14px; margin-bottom: 14px; }
+
+    /* Modals: Tournament results editor / display, manual tournament form */
+    #tourn-results-editor-modal, #tourn-results-display-modal { max-width: min(840px, 95vw); }
+    #tre-fields { padding: 20px 28px 16px; gap: 14px; }
+    .tre-fields-row { gap: 14px; }
+    .tre-field-wrap.tre-field-sm { flex-basis: 90px; }
+    .tre-field-wrap.tre-field-state { flex-basis: 76px; }
+    .tre-field-label { font-size: 12px; margin-bottom: 5px; }
+    .tre-field-input { font-size: 16px; padding: 9px 11px; border-radius: 6px; }
+    #tre-results-label { font-size: 13px; padding: 16px 28px 0; }
+    #tre-body { padding: 12px 28px 24px; }
+    .tre-format-block { margin-bottom: 22px; }
+    .tre-format-label { font-size: 13px; padding-bottom: 6px; margin-bottom: 12px; }
+    .tre-rank-row { gap: 10px; margin-bottom: 8px; }
+    .tre-rank-label { font-size: 16px; width: 44px; }
+    .tre-player-input { font-size: 15px; padding: 5px 0; }
+    .tre-tie-badge { font-size: 13px; padding: 2px 7px; }
+    .tre-tie-btn { font-size: 11px; padding: 4px 9px; border-radius: 4px; }
+    .tre-profile-btn { font-size: 17px; }
+    #trd-header { padding: 18px 48px 16px 28px; border-radius: 12px 12px 0 0; }
+    #trd-title { font-size: 22px; }
+    #trd-subtitle { font-size: 14px; margin-top: 4px; }
+    #trd-body { padding: 20px 28px 26px; }
+    .trd-formats-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+    .trd-format-label { font-size: 12px; padding-bottom: 5px; margin-bottom: 10px; }
+    .trd-row { gap: 10px; margin-bottom: 6px; }
+    .trd-rank { font-size: 15px; width: 44px; }
+    .trd-player { font-size: 15px; }
+    .trd-empty-state { font-size: 14px; }
+    #mtf-modal { max-width: min(580px, 95vw); }
+    #mtf-body { padding: 22px 28px 26px; }
+    #mtf-body .field-label { margin-top: 16px; }
+    .mtf-row-2 { gap: 14px; margin-top: 16px; }
+    .mtf-format-row { gap: 10px; margin-bottom: 10px; }
+    .mtf-format-remove { width: 26px; height: 26px; font-size: 16px; }
+    #mtf-status { font-size: 13px; }
+
+    /* Modals: Agur edit/view, Collector's Corner edit/card view */
+    #agur-edit-modal, #collectors-edit-modal { max-width: min(720px, 95vw); }
+    .agur-edit-tab { font-size: 14px; padding: 12px 22px; }
+    #agur-text-section > div + div, #agur-image-section > div + div,
+    #dl-edit-section > div + div, #ppm-edit-form > div + div { margin-top: 16px; }
+    #agur-edit-img-thumb { width: 116px; }
+    #collectors-edit-card-thumb { width: 104px; }
+    #agur-edit-img-thumb-remove, #collectors-edit-card-thumb-remove { width: 22px; height: 22px; font-size: 13px; }
+    #agur-edit-img-row, #collectors-edit-card-row { gap: 16px; }
+    #agur-edit-img-fields, #collectors-edit-card-fields { gap: 10px; }
+    .agur-str-tgh-row { gap: 14px; }
+    #agur-view-content, #collectors-card-modal-content { max-width: min(940px, 95vw); }
+    #agur-view-body, #collectors-card-modal-body { gap: 28px; }
+    #agur-view-left { flex-basis: 300px; max-width: 300px; }
+    #agur-view-spec { padding: 18px 20px; border-radius: 10px; }
+    #agur-view-spec-type { font-size: 12px; margin-bottom: 6px; }
+    #agur-view-spec-title { font-size: 23px; margin-bottom: 8px; }
+    #agur-view-spec-brigade, #agur-view-spec-class { font-size: 14px; margin-bottom: 6px; }
+    #agur-view-spec-stats { font-size: 16px; margin-bottom: 6px; }
+    #agur-view-spec-identifier { font-size: 13px; margin-bottom: 10px; }
+    #agur-view-spec-ability { font-size: 15px; padding-top: 10px; }
+    #agur-view-spec-scripture { font-size: 13px; margin-top: 8px; }
+    #agur-view-img-caption { font-size: 17px; margin-top: 10px; }
+    #agur-view-right, #collectors-card-modal-notes-col { padding-left: 24px; }
+    #agur-view-notes-label, #collectors-card-modal-notes-label { font-size: 14px; margin-bottom: 14px; }
+    #collectors-card-modal-img-col { flex-basis: 320px; max-width: 320px; }
+    #collectors-card-modal-img-caption { font-size: 18px; margin-top: 12px; }
+    #collectors-card-modal-topic { font-size: 16px; margin-bottom: 14px; }
+    #collectors-card-modal-notes-list li { font-size: 16px; margin-bottom: 8px; }
+
+    /* Modals: Spoiler card, Tournament/Nationals detail */
+    .spoiler-modal-content-split { max-width: 940px; gap: 28px; }
+    .spoiler-modal-media { flex-basis: 380px; max-width: 380px; }
+    .spoiler-modal-notes-col { padding-left: 24px; }
+    .spoiler-modal-notes-label { font-size: 14px; margin-bottom: 12px; }
+    .spoiler-modal-note { font-size: 16px; }
+    .spoiler-modal-note li { margin-bottom: 8px; }
+    .spoiler-modal-caption { font-size: 20px; margin-top: 12px; }
+    .spoiler-modal-set { font-size: 13px; margin-top: 4px; }
+    .tournament-modal-content { max-width: 520px; }
+    .tournament-modal-badge { font-size: 13px; padding: 5px 12px; margin-bottom: 10px; }
+    .tournament-modal-title { font-size: 23px; margin-bottom: 4px; }
+    .tournament-modal-date { font-size: 14px; margin-bottom: 14px; }
+    .tournament-modal-section { font-size: 15px; padding-top: 12px; margin-top: 12px; }
+    .tournament-modal-formats-table td { font-size: 15px; padding: 4px 0; }
+
+    /* Modals: Player Profile, Player Picker */
+    .player-profile-modal { max-width: 440px; padding: 26px 28px 24px; border-radius: 12px; }
+    .player-profile-modal-name { font-size: 27px; margin: 0 36px 4px 0; }
+    .player-profile-modal-row { gap: 12px; padding: 10px 0; margin-top: 8px; }
+    .player-profile-modal-label { font-size: 13px; width: 100px; }
+    .player-profile-modal-value { font-size: 16px; }
+    .player-profile-modal-empty { font-size: 14px; margin-top: 14px; }
+    #ppm-edit-form .pr-field-label, #pp-add-fields .pr-field-label { font-size: 12px; margin-bottom: 5px; }
+    #ppm-edit-form .pr-field-input, #pp-add-fields .pr-field-input { font-size: 16px; padding: 9px 12px; border-radius: 6px; }
+    #ppm-edit-handle-display { font-size: 16px; }
+    #ppm-edit-actions { gap: 10px; margin-top: 18px; }
+    #ppm-edit-status, #pp-status { font-size: 13px; }
+    .player-picker-modal { max-width: 420px; padding: 26px 28px 24px; border-radius: 12px; }
+    .player-picker-title { font-size: 23px; margin: 0 36px 16px 0; }
+    .pp-search-input { font-size: 16px; padding: 10px 12px; margin-bottom: 10px; border-radius: 6px; }
+    .pp-list { max-height: 260px; margin-bottom: 16px; border-radius: 8px; }
+    .pp-item { font-size: 16px; padding: 11px 14px; gap: 10px; }
+    .pp-item-sub { font-size: 13px; }
+    .pp-empty { font-size: 14px; padding: 20px 14px; }
+    .pp-divider { font-size: 11px; margin: 4px 0 14px; }
+    #pp-add-fields { gap: 12px; margin-bottom: 14px; }
+    .pp-add-actions { gap: 10px; }
+    .pp-footer-link, .pp-footer-link button { font-size: 13px; }
+    .pp-footer-link { margin-top: 14px; padding-top: 14px; }
+
+    /* Player Registry panel */
+    #player-registry-panel { max-width: 780px; border-radius: 10px; }
+    #player-registry-header { padding: 16px 22px 14px; gap: 12px; }
+    #player-registry-header h2 { font-size: 18px; }
+    #player-registry-list-col { width: 250px; }
+    #player-registry-search { font-size: 15px; padding: 11px 16px; }
+    .player-registry-item { font-size: 15px; padding: 10px 16px; }
+    #player-registry-form-col { padding: 22px; gap: 14px; }
+    .pr-empty-state { font-size: 14px; padding: 32px 16px; }
+    .pr-field-label { font-size: 12px; margin-bottom: 5px; }
+    .pr-field-input { font-size: 16px; padding: 9px 12px; border-radius: 6px; }
+    #player-registry-footer { padding: 14px 22px; gap: 10px; }
+    #player-registry-save-status { font-size: 12px; }
+    #player-registry-save-status.pr-status-error { font-size: 13px; }
+
+    /* Card Notes popup, card enlarge */
+    #card-notes-popup { max-width: 600px; border-radius: 12px; position: relative; }
+    #card-notes-popup-header { padding: 14px 20px; }
+    #card-notes-popup-title { font-size: 17px; }
+    #card-notes-popup-footer { padding: 14px 20px; }
+    #deck-card-enlarge-overlay img { max-width: 480px; border-radius: 12px; }
+
+    /* Deck Viewer: card layout stays as-is (its density is the point);
+       only its text is bumped for legibility. */
+    #deck-viewer-name { font-size: 24px; }
+    #deck-viewer-sub { font-size: 13px; margin-top: 4px; }
+    .dv-toggle-btn { font-size: 12px; padding: 5px 11px; }
+    .deck-viewer-zone-title { font-size: 14px; }
+    .deck-viewer-card-name { font-size: 10px; }
+    .dv-stack-col-title { font-size: 11px; }
+    .dv-notes-title { font-size: 12px; }
+    #deck-viewer-notes-count { font-size: 12px; }
+    #deck-viewer-notes-chevron { font-size: 14px; }
+    .dv-note-item { font-size: 14px; }
+    .dv-note-bullet { font-size: 12px; }
+    #deck-viewer-notes-textarea { font-size: 15px; padding: 10px 12px; }
+    #dv-side-name { font-size: 18px; }
+    #dv-side-meta, #dv-side-hint { font-size: 13px; }
+  }
+
+  /* Phone-width viewers (mostly the published episode page): three tiles
+     across no longer fit the larger type, so drop to two. */
+  @media screen and (max-width: 760px) {
+    .tourn-block, .event-card, .agur-block, .collectors-block, #news-body .repeat-item, .venue-notes-card {
+      width: calc((100% - 14px) / 2);
+    }
+  }
+
+  /* Phone-width card viewers: stack card over notes. Restates the earlier
+     620px spoiler rules, which the screen-scale block above overrides. */
+  @media screen and (max-width: 620px) {
+    .spoiler-modal-content-split { max-width: 400px; }
+    .spoiler-modal-media { flex: 1 1 auto; max-width: none; }
+    .spoiler-modal-notes-col { padding-left: 0; }
+    #agur-view-body, #collectors-card-modal-body { flex-direction: column; align-items: stretch; }
+    #agur-view-left, #collectors-card-modal-img-col { flex: 1 1 auto; max-width: none; }
+    #agur-view-right, #collectors-card-modal-notes-col {
+      border-left: none; border-top: 1px solid var(--gray-light); padding-left: 0; padding-top: 12px;
+    }
+  }
 </style>
 </head>
 <body>
 
 <!-- Collectors Card Image Modal (publish: card + notes) -->
-<div id="collectors-card-modal-overlay" onclick="closeCollectorsCardModal(event)">
-  <div id="collectors-card-modal-content">
-    <button type="button" class="spoiler-modal-close" onclick="closeCollectorsCardModal()">&times;</button>
-    <div id="collectors-card-modal-img-col">
-      <img id="collectors-card-modal-img" src="" alt="Card reference">
-      <div id="collectors-card-modal-img-caption"></div>
+<div id="collectors-card-modal-overlay" class="tf-modal-overlay" onclick="closeCollectorsCardModal(event)">
+  <div id="collectors-card-modal-content" class="tf-modal-box tf-modal-wide">
+    <div class="tf-modal-header">
+      <span class="tf-modal-title">Collector's Corner — View</span>
+      <button type="button" class="spoiler-modal-close" onclick="closeCollectorsCardModal()">&times;</button>
     </div>
-    <div id="collectors-card-modal-notes-col">
-      <div id="collectors-card-modal-notes-label">Discussion Notes</div>
-      <div id="collectors-card-modal-topic"></div>
-      <ul id="collectors-card-modal-notes-list"></ul>
-      <div id="collectors-card-modal-notes-empty">No notes added yet.</div>
+    <div id="collectors-card-modal-body" class="tf-modal-body">
+      <div id="collectors-card-modal-img-col">
+        <img id="collectors-card-modal-img" src="" alt="Card reference">
+        <div id="collectors-card-modal-img-caption"></div>
+      </div>
+      <div id="collectors-card-modal-notes-col">
+        <div id="collectors-card-modal-notes-label">Discussion Notes</div>
+        <div id="collectors-card-modal-topic"></div>
+        <ul id="collectors-card-modal-notes-list"></ul>
+        <div id="collectors-card-modal-notes-empty">No notes added yet.</div>
+      </div>
+    </div>
+    <div class="tf-modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeCollectorsCardModal()">Close</button>
     </div>
   </div>
 </div>
 
 <!-- Collectors Edit Modal (editor only) -->
-<div id="collectors-edit-overlay" onclick="closeCollectorsEditModal(event)">
-  <div id="collectors-edit-modal">
-    <div id="collectors-edit-header">
-      <span id="collectors-edit-header-label">Collector's Corner Topic</span>
+<div id="collectors-edit-overlay" class="tf-modal-overlay" onclick="closeCollectorsEditModal(event)">
+  <div id="collectors-edit-modal" class="tf-modal-box">
+    <div id="collectors-edit-header" class="tf-modal-header">
+      <span id="collectors-edit-header-label" class="tf-modal-title">Collector's Corner Topic</span>
       <button type="button" class="spoiler-modal-close" onclick="saveAndCloseCollectorsEdit()">&times;</button>
     </div>
-    <div id="collectors-edit-body">
+    <div id="collectors-edit-body" class="tf-modal-body">
       <div>
         <div class="collectors-edit-label">Topic Title</div>
         <input class="collectors-edit-input" id="collectors-edit-title" type="text" placeholder="e.g. Foil price trends, rare finds..." autocomplete="off">
@@ -2616,14 +2808,14 @@
             <button type="button" id="collectors-edit-card-thumb-remove" onclick="removeCollectorsEditCard()">&times;</button>
           </div>
           <div id="collectors-edit-card-fields">
-            <button type="button" class="btn btn-ghost" id="collectors-edit-card-btn" style="font-size:11px; padding:4px 10px;" onclick="document.getElementById('collectors-edit-card-file').click()">+ Add Card Image</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="collectors-edit-card-btn" onclick="document.getElementById('collectors-edit-card-file').click()">+ Add Card Image</button>
             <input type="file" id="collectors-edit-card-file" accept="image/*" style="display:none;" onchange="loadCollectorsEditCard(this)">
             <input class="collectors-edit-input" id="collectors-edit-caption" type="text" placeholder="Card name / note" autocomplete="off" style="display:none; margin-top:6px;">
           </div>
         </div>
       </div>
     </div>
-    <div id="collectors-edit-footer">
+    <div id="collectors-edit-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" onclick="closeCollectorsEditModal()">Cancel</button>
       <button type="button" class="btn btn-teal" onclick="saveAndCloseCollectorsEdit(true)">Save</button>
     </div>
@@ -2631,31 +2823,31 @@
 </div>
 
 <!-- Collectors Text-Only View Modal (publish: no card image) -->
-<div id="collectors-view-overlay" onclick="closeCollectorsViewModal(event)">
-  <div id="collectors-view-modal">
+<div id="collectors-view-overlay" class="tf-modal-overlay" onclick="closeCollectorsViewModal(event)">
+  <div id="collectors-view-modal" class="tf-modal-box">
     <div id="collectors-view-header">
       <button type="button" class="spoiler-modal-close" onclick="closeCollectorsViewModal()">&times;</button>
       <div id="collectors-view-title"></div>
     </div>
-    <div id="collectors-view-body">
-      <ul id="collectors-view-notes-list"></ul>
+    <div id="collectors-view-body" class="tf-modal-body">
+      <ul id="collectors-view-notes-list" class="tf-modal-notes-list"></ul>
       <div id="collectors-view-notes-empty" style="display:none;">No notes added yet.</div>
     </div>
   </div>
 </div>
 
 <!-- Agur Edit Modal (editor only) -->
-<div id="agur-edit-overlay" onclick="closeAgurEditModal(event)">
-  <div id="agur-edit-modal">
-    <div id="agur-edit-header">
-      <span id="agur-edit-header-label">Card Design</span>
+<div id="agur-edit-overlay" class="tf-modal-overlay" onclick="closeAgurEditModal(event)">
+  <div id="agur-edit-modal" class="tf-modal-box">
+    <div id="agur-edit-header" class="tf-modal-header">
+      <span id="agur-edit-header-label" class="tf-modal-title">Card Design</span>
       <button type="button" class="spoiler-modal-close" onclick="saveAndCloseAgurEdit()">&times;</button>
     </div>
     <div id="agur-edit-tabs">
       <button type="button" class="agur-edit-tab active" id="agur-tab-text" onclick="setAgurEditTab('text')">Text Entry</button>
       <button type="button" class="agur-edit-tab" id="agur-tab-image" onclick="setAgurEditTab('image')">Upload Image</button>
     </div>
-    <div id="agur-edit-body">
+    <div id="agur-edit-body" class="tf-modal-body">
       <!-- Text entry section -->
       <div id="agur-text-section">
         <div>
@@ -2707,7 +2899,7 @@
             <button type="button" id="agur-edit-img-thumb-remove" onclick="removeAgurEditImg()">&times;</button>
           </div>
           <div id="agur-edit-img-fields">
-            <button type="button" class="btn btn-ghost" id="agur-edit-img-btn" style="font-size:11px; padding:4px 10px;" onclick="document.getElementById('agur-edit-img-file').click()">+ Upload Card Image</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="agur-edit-img-btn" onclick="document.getElementById('agur-edit-img-file').click()">+ Upload Card Image</button>
             <input type="file" id="agur-edit-img-file" accept="image/*" style="display:none;" onchange="loadAgurEditImg(this)">
             <input class="agur-edit-input" id="agur-edit-img-caption" type="text" placeholder="Card title / design name" autocomplete="off" style="display:none; margin-top:6px;">
           </div>
@@ -2722,7 +2914,7 @@
         </div>
       </div>
     </div>
-    <div id="agur-edit-footer">
+    <div id="agur-edit-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" onclick="closeAgurEditModal()">Cancel</button>
       <button type="button" class="btn btn-teal" onclick="saveAndCloseAgurEdit(true)">Save</button>
     </div>
@@ -2730,38 +2922,46 @@
 </div>
 
 <!-- Agur View Modal (publish) -->
-<div id="agur-view-overlay" onclick="closeAgurViewModal(event)">
-  <div id="agur-view-content">
-    <button type="button" class="spoiler-modal-close" onclick="closeAgurViewModal()">&times;</button>
-    <div id="agur-view-left">
-      <!-- Text spec card -->
-      <div id="agur-view-spec">
-        <div id="agur-view-spec-type"></div>
-        <div id="agur-view-spec-title"></div>
-        <div id="agur-view-spec-brigade"></div>
-        <div id="agur-view-spec-stats"></div>
-        <div id="agur-view-spec-class"></div>
-        <div id="agur-view-spec-identifier"></div>
-        <div id="agur-view-spec-ability"></div>
-        <div id="agur-view-spec-scripture"></div>
-      </div>
-      <!-- Image display -->
-      <div id="agur-view-img-wrap" style="display:none;">
-        <div id="agur-view-img-box">
-          <img id="agur-view-img" src="" alt="">
+<div id="agur-view-overlay" class="tf-modal-overlay" onclick="closeAgurViewModal(event)">
+  <div id="agur-view-content" class="tf-modal-box tf-modal-wide">
+    <div class="tf-modal-header">
+      <span class="tf-modal-title">Agur the Creator — View</span>
+      <button type="button" class="spoiler-modal-close" onclick="closeAgurViewModal()">&times;</button>
+    </div>
+    <div id="agur-view-body" class="tf-modal-body">
+      <div id="agur-view-left">
+        <!-- Text spec card -->
+        <div id="agur-view-spec">
+          <div id="agur-view-spec-type"></div>
+          <div id="agur-view-spec-title"></div>
+          <div id="agur-view-spec-brigade"></div>
+          <div id="agur-view-spec-stats"></div>
+          <div id="agur-view-spec-class"></div>
+          <div id="agur-view-spec-identifier"></div>
+          <div id="agur-view-spec-ability"></div>
+          <div id="agur-view-spec-scripture"></div>
         </div>
-        <div id="agur-view-img-caption"></div>
+        <!-- Image display -->
+        <div id="agur-view-img-wrap" style="display:none;">
+          <div id="agur-view-img-box">
+            <img id="agur-view-img" src="" alt="">
+          </div>
+          <div id="agur-view-img-caption"></div>
+        </div>
+      </div>
+      <div id="agur-view-right">
+        <div id="agur-view-notes-label">Discussion Notes</div>
+        <ul id="agur-view-notes-list" class="tf-modal-notes-list"></ul>
+        <div id="agur-view-notes-empty" style="display:none;">No notes added for this design.</div>
       </div>
     </div>
-    <div id="agur-view-right">
-      <div id="agur-view-notes-label">Discussion Notes</div>
-      <ul id="agur-view-notes-list"></ul>
-      <div id="agur-view-notes-empty" style="display:none;">No notes added for this design.</div>
+    <div class="tf-modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeAgurViewModal()">Close</button>
     </div>
   </div>
 </div>
 
-<div id="tournament-modal-overlay" class="spoiler-modal-overlay" onclick="closeTournamentModal(event)">
+<div id="tournament-modal-overlay" class="tf-modal-overlay" onclick="closeTournamentModal(event)">
   <div class="spoiler-modal-content tournament-modal-content">
     <button type="button" class="spoiler-modal-close" onclick="closeTournamentModal(event)">&times;</button>
     <div class="tournament-modal-badge" id="tournament-modal-badge"></div>
@@ -2776,10 +2976,10 @@
 </div>
 
 <!-- Add/Edit Manual Tournament Modal (editor only) -->
-<div id="mtf-overlay" onclick="closeManualTournForm(event)">
-  <div id="mtf-modal">
-    <div id="mtf-header">
-      <div id="mtf-title">Add Manual Tournament</div>
+<div id="mtf-overlay" class="tf-modal-overlay" onclick="closeManualTournForm(event)">
+  <div id="mtf-modal" class="tf-modal-box">
+    <div id="mtf-header" class="tf-modal-header">
+      <div id="mtf-title" class="tf-modal-title">Add Manual Tournament</div>
       <button type="button" class="spoiler-modal-close" onclick="closeManualTournForm()">&times;</button>
     </div>
     <div id="mtf-body">
@@ -2825,14 +3025,14 @@
 
       <label class="field-label">Formats</label>
       <div id="mtf-formats-list"></div>
-      <button type="button" class="btn btn-ghost" style="padding:3px 10px; font-size:10px; margin-top:4px;" onclick="addManualFormatRow()">+ Add Format</button>
+      <button type="button" class="btn btn-ghost btn-sm" style="margin-top:4px;" onclick="addManualFormatRow()">+ Add Format</button>
 
       <label class="field-label" style="margin-top:10px;">Description</label>
       <textarea class="field-textarea" id="mtf-description" placeholder="Additional details for attendees..."></textarea>
 
       <div id="mtf-status"></div>
     </div>
-    <div id="mtf-footer">
+    <div id="mtf-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" onclick="closeManualTournForm()">Cancel</button>
       <button type="button" class="btn btn-teal" onclick="saveManualTournament()">Save Tournament</button>
     </div>
@@ -2843,7 +3043,7 @@
   <img id="deck-card-enlarge-img" src="" alt="">
 </div>
 
-<div id="player-profile-modal-overlay" class="spoiler-modal-overlay" onclick="closePlayerProfileModal(event)">
+<div id="player-profile-modal-overlay" class="tf-modal-overlay tf-modal-stacked" onclick="closePlayerProfileModal(event)">
   <div class="player-profile-modal">
     <button type="button" class="spoiler-modal-close" onclick="closePlayerProfileModal(event)">&times;</button>
     <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:2px;">
@@ -2853,13 +3053,13 @@
 
     <div id="ppm-view">
       <div id="ppm-rows"></div>
-      <button type="button" class="btn btn-ghost" id="ppm-edit-btn" onclick="enterPlayerProfileEditMode()" style="margin-top:10px; padding:3px 10px; font-size:10px;">Edit Profile</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="ppm-edit-btn" onclick="enterPlayerProfileEditMode()" style="margin-top:10px;">Edit Profile</button>
     </div>
 
     <div id="ppm-edit-form" style="display:none;">
       <div style="margin-bottom:6px;">
         <div class="pr-field-label" style="display:block; margin-bottom:2px;">Handle</div>
-        <div id="ppm-edit-handle-display" style="font-family:'Barlow',sans-serif; font-size:13px; color:var(--text); padding:4px 0; opacity:0.7;"></div>
+        <div id="ppm-edit-handle-display"></div>
       </div>
       <div>
         <label class="pr-field-label">Real Name</label>
@@ -2886,7 +3086,7 @@
   </div>
 </div>
 
-<div id="player-picker-overlay" class="spoiler-modal-overlay" onclick="closePlayerPicker(event)">
+<div id="player-picker-overlay" class="tf-modal-overlay tf-modal-stacked" onclick="closePlayerPicker(event)">
   <div class="player-picker-modal">
     <button type="button" class="spoiler-modal-close" onclick="closePlayerPicker()">&times;</button>
     <div class="player-picker-title">Select Player</div>
@@ -2916,8 +3116,8 @@
     </div>
 
     <div class="pp-add-actions">
-      <button type="button" class="btn btn-ghost" style="padding:6px 12px; font-size:11px;" onclick="usePlayerPickerQuickName()">Use Without Saving</button>
-      <button type="button" class="btn btn-teal" style="padding:6px 12px; font-size:11px;" onclick="savePlayerPickerFullProfile()">Save to Registry &amp; Use</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="usePlayerPickerQuickName()">Use Without Saving</button>
+      <button type="button" class="btn btn-teal btn-sm" onclick="savePlayerPickerFullProfile()">Save to Registry &amp; Use</button>
     </div>
 
     <div id="pp-status"></div>
@@ -2928,29 +3128,29 @@
   </div>
 </div>
 
-<div id="se-detail-overlay" onclick="closeSeDetailModal(event)">
-  <div id="se-detail-modal">
+<div id="se-detail-overlay" class="tf-modal-overlay" onclick="closeSeDetailModal(event)">
+  <div id="se-detail-modal" class="tf-modal-box">
     <div id="se-detail-header">
       <button type="button" class="spoiler-modal-close" onclick="closeSeDetailModal()">&times;</button>
       <div id="se-detail-name"></div>
       <div id="se-detail-host"></div>
     </div>
-    <div id="se-detail-body">
+    <div id="se-detail-body" class="tf-modal-body">
       <div id="se-detail-notes-label">Event Notes</div>
-      <ul id="se-detail-notes-list"></ul>
+      <ul id="se-detail-notes-list" class="tf-modal-notes-list"></ul>
       <div id="se-detail-notes-empty" style="display:none;">No notes added yet.</div>
     </div>
   </div>
 </div>
 
 <!-- Side Event Edit Modal (editor only) -->
-<div id="se-edit-overlay" onclick="closeSeEditModal(event)">
-  <div id="se-edit-modal">
-    <div id="se-edit-header">
-      <span id="se-edit-header-label">Side Event</span>
+<div id="se-edit-overlay" class="tf-modal-overlay" onclick="closeSeEditModal(event)">
+  <div id="se-edit-modal" class="tf-modal-box">
+    <div id="se-edit-header" class="tf-modal-header">
+      <span id="se-edit-header-label" class="tf-modal-title">Side Event</span>
       <button type="button" class="spoiler-modal-close" onclick="saveAndCloseSeEdit()">&times;</button>
     </div>
-    <div id="se-edit-body">
+    <div id="se-edit-body" class="tf-modal-body">
       <div>
         <div class="se-edit-label">Event Name</div>
         <input class="se-edit-input" id="se-edit-name-input" type="text" placeholder="e.g. Type 2 Side Event" autocomplete="off">
@@ -2967,7 +3167,7 @@
         </div>
       </div>
     </div>
-    <div id="se-edit-footer">
+    <div id="se-edit-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" onclick="saveAndCloseSeEdit(false)">Cancel</button>
       <button type="button" class="btn btn-teal" onclick="saveAndCloseSeEdit(true)">Save</button>
     </div>
@@ -2975,13 +3175,13 @@
 </div>
 
 <!-- Deadline Edit/View Modal -->
-<div id="dl-modal-overlay" onclick="closeDlModal(event)">
-  <div id="dl-modal">
-    <div id="dl-modal-header">
-      <span id="dl-modal-header-label">Deadline</span>
+<div id="dl-modal-overlay" class="tf-modal-overlay" onclick="closeDlModal(event)">
+  <div id="dl-modal" class="tf-modal-box">
+    <div id="dl-modal-header" class="tf-modal-header">
+      <span id="dl-modal-header-label" class="tf-modal-title">Deadline</span>
       <button type="button" class="spoiler-modal-close" onclick="closeDlModal()">&times;</button>
     </div>
-    <div id="dl-modal-body">
+    <div id="dl-modal-body" class="tf-modal-body">
       <!-- Edit section -->
       <div id="dl-edit-section">
         <div>
@@ -3004,11 +3204,11 @@
       <div id="dl-view-section">
         <div id="dl-view-name"></div>
         <div id="dl-view-date"></div>
-        <ul id="dl-view-notes-list"></ul>
+        <ul id="dl-view-notes-list" class="tf-modal-notes-list"></ul>
         <div id="dl-view-notes-empty" style="display:none;">No details added yet.</div>
       </div>
     </div>
-    <div id="dl-modal-footer">
+    <div id="dl-modal-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" id="dl-cancel-btn" onclick="closeDlModal()">Cancel</button>
       <button type="button" class="btn btn-teal" id="dl-save-btn" onclick="saveDlModal()">Save</button>
     </div>
@@ -3016,13 +3216,13 @@
 </div>
 
 <!-- Venue / Other Notes Modal -->
-<div id="venue-notes-overlay" onclick="closeVenueNotesModal(event)">
-  <div id="venue-notes-modal">
-    <div id="venue-notes-header">
-      <span id="venue-notes-header-label">Venue / Other Notes</span>
+<div id="venue-notes-overlay" class="tf-modal-overlay" onclick="closeVenueNotesModal(event)">
+  <div id="venue-notes-modal" class="tf-modal-box">
+    <div id="venue-notes-header" class="tf-modal-header">
+      <span id="venue-notes-header-label" class="tf-modal-title">Venue / Other Notes</span>
       <button type="button" class="spoiler-modal-close" onclick="closeVenueNotesModal()">&times;</button>
     </div>
-    <div id="venue-notes-body">
+    <div id="venue-notes-body" class="tf-modal-body">
       <div id="venue-notes-edit-section">
         <div id="venue-notes-edit-wrap">
           <div id="venue-notes-bullet-editor" contenteditable="true" spellcheck="true"></div>
@@ -3030,10 +3230,10 @@
         </div>
       </div>
       <div id="venue-notes-view">
-        <ul id="venue-notes-view-list"></ul>
+        <ul id="venue-notes-view-list" class="tf-modal-notes-list"></ul>
       </div>
     </div>
-    <div id="venue-notes-footer">
+    <div id="venue-notes-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" id="venue-notes-cancel-btn" onclick="closeVenueNotesModal()">Cancel</button>
       <button type="button" class="btn btn-teal" id="venue-notes-save-btn" onclick="saveVenueNotes()">Save</button>
     </div>
@@ -3041,29 +3241,29 @@
 </div>
 
 <!-- News Topic Detail Modal (read-only; works in both editor and published view) -->
-<div id="news-detail-overlay" onclick="closeNewsDetailModal(event)">
-  <div id="news-detail-modal">
+<div id="news-detail-overlay" class="tf-modal-overlay" onclick="closeNewsDetailModal(event)">
+  <div id="news-detail-modal" class="tf-modal-box">
     <div id="news-detail-header">
       <button type="button" class="spoiler-modal-close" onclick="closeNewsDetailModal()">&times;</button>
       <div id="news-detail-topic"></div>
       <div id="news-detail-overview"></div>
     </div>
-    <div id="news-detail-body">
+    <div id="news-detail-body" class="tf-modal-body">
       <div id="news-detail-notes-label">Full Details</div>
-      <ul id="news-detail-notes-list"></ul>
+      <ul id="news-detail-notes-list" class="tf-modal-notes-list"></ul>
       <div id="news-detail-notes-empty" style="display:none;">No additional details added yet.</div>
     </div>
   </div>
 </div>
 
 <!-- News Topic Edit Modal (editor only) -->
-<div id="news-edit-overlay" onclick="closeNewsEditModal(event)">
-  <div id="news-edit-modal">
-    <div id="news-edit-header">
-      <span id="news-edit-header-label">News Topic</span>
+<div id="news-edit-overlay" class="tf-modal-overlay" onclick="closeNewsEditModal(event)">
+  <div id="news-edit-modal" class="tf-modal-box">
+    <div id="news-edit-header" class="tf-modal-header">
+      <span id="news-edit-header-label" class="tf-modal-title">News Topic</span>
       <button type="button" class="spoiler-modal-close" onclick="saveAndCloseNewsEdit()">&times;</button>
     </div>
-    <div id="news-edit-body">
+    <div id="news-edit-body" class="tf-modal-body">
       <div>
         <div class="news-edit-label">Topic Title</div>
         <input id="news-edit-title-input" type="text" placeholder="Topic name — e.g. Redemption with Jayden, or a one-off headline" autocomplete="off">
@@ -3080,7 +3280,7 @@
         </div>
       </div>
     </div>
-    <div id="news-edit-footer">
+    <div id="news-edit-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" onclick="saveAndCloseNewsEdit()">Cancel</button>
       <button type="button" class="btn btn-teal" onclick="saveAndCloseNewsEdit(true)">Save</button>
     </div>
@@ -3088,10 +3288,10 @@
 </div>
 
 <!-- Tournament Results Editor Modal (editor only) -->
-<div id="tourn-results-editor-overlay" onclick="closeTournResultsEditor(event)">
-  <div id="tourn-results-editor-modal">
-    <div id="tre-header">
-      <div id="tre-title">Tournament</div>
+<div id="tourn-results-editor-overlay" class="tf-modal-overlay" onclick="closeTournResultsEditor(event)">
+  <div id="tourn-results-editor-modal" class="tf-modal-box">
+    <div id="tre-header" class="tf-modal-header">
+      <div id="tre-title" class="tf-modal-title">Tournament</div>
       <button type="button" class="spoiler-modal-close" onclick="closeTournResultsEditor()">&times;</button>
     </div>
     <div id="tre-fields">
@@ -3124,7 +3324,7 @@
     </div>
     <div id="tre-results-label">Results</div>
     <div id="tre-body"></div>
-    <div id="tre-footer">
+    <div id="tre-footer" class="tf-modal-footer">
       <button type="button" class="btn btn-ghost" onclick="closeTournResultsEditor()">Cancel</button>
       <button type="button" class="btn btn-teal" onclick="saveTournResults()">Save</button>
     </div>
@@ -3132,8 +3332,8 @@
 </div>
 
 <!-- Tournament Results Display Modal (published view) -->
-<div id="tourn-results-display-overlay" onclick="closeTournResultsDisplay(event)">
-  <div id="tourn-results-display-modal">
+<div id="tourn-results-display-overlay" class="tf-modal-overlay" onclick="closeTournResultsDisplay(event)">
+  <div id="tourn-results-display-modal" class="tf-modal-box">
     <div id="trd-header">
       <button type="button" class="spoiler-modal-close" onclick="closeTournResultsDisplay()">&times;</button>
       <div id="trd-title"></div>
@@ -3174,9 +3374,9 @@
     </div>
     <div id="deck-viewer-notes-bar" style="display:none;">
       <div id="deck-viewer-notes-toggle" onclick="toggleDeckViewerNotes()" style="display:flex; align-items:center; gap:8px; padding:7px 16px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.15);">
-        <span style="font-family:'Barlow Condensed',sans-serif; font-size:9px; font-weight:800; letter-spacing:2px; text-transform:uppercase; color:var(--teal-mid);">Strategy Notes</span>
-        <span id="deck-viewer-notes-count" style="font-size:9px; color:var(--placeholder); font-style:italic;"></span>
-        <span id="deck-viewer-notes-chevron" style="margin-left:auto; color:rgba(255,255,255,0.4); font-size:11px; transition:transform 0.2s;">&#8964;</span>
+        <span class="dv-notes-title">Strategy Notes</span>
+        <span id="deck-viewer-notes-count"></span>
+        <span id="deck-viewer-notes-chevron">&#8964;</span>
       </div>
       <div id="deck-viewer-notes-content" style="display:none; padding:10px 16px 12px; background:rgba(0,0,0,0.12); border-bottom:1px solid rgba(255,255,255,0.06);">
         <textarea id="deck-viewer-notes-textarea" placeholder="Key cards and their roles, strategy overview, talking points... (one per line)"></textarea>
@@ -3188,7 +3388,7 @@
     <div id="deck-viewer-stacked-wrap" style="display:none; flex:1; min-height:500px;">
       <div id="deck-viewer-columns"></div>
       <div id="deck-viewer-side-panel">
-        <div style="color:rgba(255,255,255,0.2); font-size:11px; font-style:italic; text-align:center; padding-top:160px;" id="dv-side-hint">Hover a card to preview</div>
+        <div id="dv-side-hint">Hover a card to preview</div>
         <img id="dv-side-img" src="" alt="" style="display:none;">
         <div id="dv-side-name" style="display:none;"></div>
         <div id="dv-side-meta" style="display:none;"></div>
@@ -3202,8 +3402,8 @@
   <div id="player-registry-panel">
     <div id="player-registry-header">
       <h2>&#128100; Player Registry</h2>
-      <button type="button" class="btn btn-ghost" style="padding:3px 10px; font-size:10px;" onclick="addNewPlayer()">+ New Player</button>
-      <button type="button" class="btn btn-ghost" style="padding:3px 10px; font-size:10px;" onclick="closePlayerRegistry()">&times; Close</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="addNewPlayer()">+ New Player</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closePlayerRegistry()">&times; Close</button>
     </div>
     <div id="player-registry-body">
       <div id="player-registry-list-col">
@@ -3244,7 +3444,7 @@
   </div>
 </div>
 
-<div style="max-width: 1000px; margin: 0 auto;">
+<div class="page-wrap">
 
   <div class="page-header">
     <div class="header-left">
@@ -3276,11 +3476,11 @@
     <button class="btn btn-ghost" onclick="loadData()">Load Draft</button>
     <button class="btn btn-ghost" onclick="publishEpisode()">Publish</button>
     <button class="btn btn-ghost" onclick="openPublishPreview()" title="See how this would look if published, without actually publishing it">Preview</button>
-    <button class="btn btn-ghost" onclick="window.print()">Print / Export PDF</button>
+    <button class="btn btn-ghost" onclick="printOutline()">Print / Export PDF</button>
     <button class="btn btn-red" onclick="clearAll()">Clear All</button>
     <span class="save-status" id="save-status">No draft saved yet</span>
-    <button class="btn btn-ghost" id="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode" style="margin-left:8px; padding:5px 8px; font-size:15px;">&#127769;</button>
-    <button class="btn btn-ghost" id="player-registry-btn" onclick="openPlayerRegistry()" title="Player Registry" style="margin-left:4px; padding:5px 8px; font-size:15px;">&#128100;</button>
+    <button class="btn btn-ghost" id="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode" style="margin-left:8px; padding:6px 10px; font-size:17px;">&#127769;</button>
+    <button class="btn btn-ghost" id="player-registry-btn" onclick="openPlayerRegistry()" title="Player Registry" style="margin-left:4px; padding:6px 10px; font-size:17px;">&#128100;</button>
   </div>
 
   <div class="toggle-row">
@@ -3288,8 +3488,8 @@
     <label class="toggle-item"><input type="checkbox" id="tog-opening-closing" checked onchange="toggleOpeningClosing(this)"><span class="toggle-switch"></span><span class="toggle-item-label">Opening &amp; Closing</span></label>
     <label class="toggle-item"><input type="checkbox" id="tog-news" onchange="updateSection('news-section', this)"><span class="toggle-switch"></span><span class="toggle-item-label">Recent News</span></label>
     <label class="toggle-item"><input type="checkbox" id="tog-tournaments" onchange="updateSection('tournaments-section', this)"><span class="toggle-switch"></span><span class="toggle-item-label">Tournaments</span></label>
-    <label class="toggle-item"><input type="checkbox" id="tog-rankings" onchange="updateSection('rankings-section', this); placeRankingsDotwArrows();"><span class="toggle-switch"></span><span class="toggle-item-label">Power Rankings</span></label>
-    <label class="toggle-item"><input type="checkbox" id="tog-dotw" onchange="updateSection('dotw-section', this); placeRankingsDotwArrows();"><span class="toggle-switch"></span><span class="toggle-item-label">Deck of the Week</span></label>
+    <label class="toggle-item"><input type="checkbox" id="tog-rankings" onchange="updateSection('rankings-section', this);"><span class="toggle-switch"></span><span class="toggle-item-label">Power Rankings</span></label>
+    <label class="toggle-item"><input type="checkbox" id="tog-dotw" onchange="updateSection('dotw-section', this);"><span class="toggle-switch"></span><span class="toggle-item-label">Deck of the Week</span></label>
     <label class="toggle-item"><input type="checkbox" id="tog-mailbag" onchange="updateSection('mailbag-section', this)"><span class="toggle-switch"></span><span class="toggle-item-label">Community Mailbag</span></label>
     <label class="toggle-item"><input type="checkbox" id="tog-rtn" onchange="updateSection('rtn-section', this); if(this.checked) fetchNationalsInfo();"><span class="toggle-switch"></span><span class="toggle-item-label">Road to Nationals</span></label>
     <label class="toggle-item"><input type="checkbox" id="tog-spoilers" onchange="updateSection('spoilers-section', this)"><span class="toggle-switch"></span><span class="toggle-item-label">Spoilers</span></label>
@@ -3358,15 +3558,15 @@
           </div>
           <label class="field-label">Upcoming Tournaments</label>
           <div style="display:flex; gap:6px; align-items:center; margin-bottom:4px;">
-            <button class="btn btn-ghost" type="button" style="padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="fetchUpcomingTournaments()">Fetch Upcoming (Next 21 Days)</button>
-            <button class="btn btn-ghost" type="button" style="padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="openManualTournForm()">+ Add Manual</button>
+            <button class="btn btn-ghost btn-sm" type="button" style="white-space:nowrap;" onclick="fetchUpcomingTournaments()">Fetch Upcoming (Next 21 Days)</button>
+            <button class="btn btn-ghost btn-sm" type="button" style="white-space:nowrap;" onclick="openManualTournForm()">+ Add Manual</button>
             <select class="field-input" id="upcoming-picker" style="display:none; flex:1;"></select>
-            <button class="btn btn-teal" type="button" id="upcoming-add-btn" style="display:none; padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="addUpcomingPick()">Add</button>
-            <button class="btn btn-teal" type="button" id="upcoming-add-all-btn" style="display:none; padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="addAllUpcomingPicks()">Add All</button>
+            <button class="btn btn-teal btn-sm" type="button" id="upcoming-add-btn" style="display:none; white-space:nowrap;" onclick="addUpcomingPick()">Add</button>
+            <button class="btn btn-teal btn-sm" type="button" id="upcoming-add-all-btn" style="display:none; white-space:nowrap;" onclick="addAllUpcomingPicks()">Add All</button>
           </div>
-          <div id="upcoming-fetch-status" style="font-size:9px; color:var(--placeholder); font-style:italic; margin-bottom:4px;"></div>
+          <div class="tf-status" id="upcoming-fetch-status" style="margin-bottom:4px;"></div>
           <div class="tournament-pills" id="upcoming-pills"></div>
-          <div id="upcoming-empty-state" style="font-size:10px; color:var(--placeholder); font-style:italic; padding:6px 0;">No upcoming tournaments added yet -- fetch and select from the list above.</div>
+          <div class="tf-empty-note" id="upcoming-empty-state">No upcoming tournaments added yet -- fetch and select from the list above.</div>
 
 
         </div>
@@ -3376,44 +3576,54 @@
     <div class="section-divider"></div>
     </div>
 
-    <div class="movable-section" data-sid="rankings-dotw">
-    <div class="grid-2">
+    <div class="movable-section" data-sid="rankings">
+    <div class="grid-1">
       <div class="section" id="rankings-section">
         <div class="sec-header">
           <span class="sec-title">Power Rankings</span>
           <span class="sec-order-controls" id="rankings-order-controls">
-            <span class="sec-order-arrows" id="rankings-dotw-arrows">
-              <button class="sec-order-btn" type="button" onclick="moveSection('rankings-dotw',-1)" title="Move up">&#9650;</button>
-              <button class="sec-order-btn" type="button" onclick="moveSection('rankings-dotw',1)" title="Move down">&#9660;</button>
-            </span>
+            <button class="sec-order-btn" type="button" onclick="moveSection('rankings',-1)" title="Move up">&#9650;</button>
+            <button class="sec-order-btn" type="button" onclick="moveSection('rankings',1)" title="Move down">&#9660;</button>
           </span>
         </div>
         <div class="sec-body">
           <div class="field" id="prev-rankings-field" style="margin-bottom:8px;">
             <label class="field-label">Previous Episode's Rankings (for movement +/-)</label>
             <div style="display:flex; gap:6px; align-items:center;">
-              <button class="btn btn-ghost" type="button" style="padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="recallRankingsStore('rankings')">&#8635; Recall Last Rankings</button>
-              <span id="prev-rankings-status" style="font-size:9px; color:var(--placeholder); font-style:italic;">No previous rankings loaded</span>
+              <button class="btn btn-ghost btn-sm" type="button" style="white-space:nowrap;" onclick="recallRankingsStore('rankings')">&#8635; Recall Last Rankings</button>
+              <span class="tf-status" id="prev-rankings-status">No previous rankings loaded</span>
             </div>
           </div>
           <div class="rankings-grid" id="rankings-grid"></div>
           <div style="margin-top:8px; display:flex; align-items:center; gap:8px;" id="rankings-export-row">
-            <button class="btn btn-ghost" type="button" style="padding:3px 10px; font-size:10px; display:inline-flex; align-items:center; gap:5px;" onclick="generateRankingsGraphic()"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" style="flex-shrink:0;"><rect x="0.6" y="0.6" width="12.8" height="12.8" rx="2"/><circle cx="4.5" cy="4.5" r="1.5"/><polyline points="0,10 4,6.5 7,9 10,6 14,10.5"/></svg> Generate Graphic</button>
-            <span id="rankings-graphic-status" style="font-size:9px; color:var(--placeholder); font-style:italic;"></span>
+            <button class="btn btn-ghost btn-sm" type="button" style="display:inline-flex; align-items:center; gap:5px;" onclick="generateRankingsGraphic()"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" style="flex-shrink:0;"><rect x="0.6" y="0.6" width="12.8" height="12.8" rx="2"/><circle cx="4.5" cy="4.5" r="1.5"/><polyline points="0,10 4,6.5 7,9 10,6 14,10.5"/></svg> Generate Graphic</button>
+            <span class="tf-status" id="rankings-graphic-status"></span>
           </div>
         </div>
       </div>
+    </div>
 
+    <div class="section-divider"></div>
+    </div>
+
+    <div class="movable-section" data-sid="dotw">
+    <div class="grid-1">
       <div class="section" id="dotw-section">
-        <div class="sec-header"><span class="sec-title">Deck of the Week</span><span class="sec-order-controls" id="dotw-order-controls"></span></div>
+        <div class="sec-header">
+          <span class="sec-title">Deck of the Week</span>
+          <span class="sec-order-controls" id="dotw-order-controls">
+            <button class="sec-order-btn" type="button" onclick="moveSection('dotw',-1)" title="Move up">&#9650;</button>
+            <button class="sec-order-btn" type="button" onclick="moveSection('dotw',1)" title="Move down">&#9660;</button>
+          </span>
+        </div>
         <div class="sec-body">
           <div class="field">
             <label class="field-label">Deck Profile Link</label>
             <div style="display:flex; gap:6px; align-items:center;">
               <input class="field-input" id="dotw-link" placeholder="https://landofredemption.com/decklist/..." autocomplete="off" style="flex:1;">
-              <button class="btn btn-ghost" type="button" style="padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="fetchDeckInfo()">Fetch</button>
+              <button class="btn btn-ghost btn-sm" type="button" style="white-space:nowrap;" onclick="fetchDeckInfo()">Fetch</button>
             </div>
-            <div id="dotw-fetch-status" style="font-size:9px; color:var(--placeholder); font-style:italic; margin-top:2px;"></div>
+            <div class="tf-status" id="dotw-fetch-status" style="margin-top:2px;"></div>
           </div>
 
           <!-- Deck profile card (populated after fetch) -->
@@ -3425,7 +3635,7 @@
                 <div class="dotw-card-desc" id="dotw-card-desc"></div>
                 <div class="dotw-card-creator" id="dotw-card-creator"></div>
                 <div class="dotw-card-badges" id="dotw-card-badges"></div>
-                <button class="btn btn-teal" type="button" id="dotw-view-deck-btn" style="margin-top:8px; padding:4px 12px; font-size:10px;" onclick="openDeckViewer()">&#9776; View Full Deck</button>
+                <button class="btn btn-teal btn-sm" type="button" id="dotw-view-deck-btn" style="margin-top:8px;" onclick="openDeckViewer()">&#9776; View Full Deck</button>
               </div>
             </div>
           </div>
@@ -3459,7 +3669,7 @@
           </span>
         </div>
         <div class="sec-body">
-          <div id="rtn-nats-fetch-status" style="font-size:9px; color:var(--placeholder); font-style:italic; margin-bottom:6px;"></div>
+          <div class="tf-status" id="rtn-nats-fetch-status" style="margin-bottom:6px;"></div>
           <div class="countdown-hero" id="rtn-countdown-field" style="display:none;" onclick="openNationalsModal(event)">
             <div>
               <div class="countdown-number" id="rtn-countdown-number">--</div>
@@ -3494,10 +3704,10 @@
           <ul class="bullet-notes-print" id="rtn-extra-notes-print" style="display:none;"></ul>
 
           <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:8px;">
-            <button class="btn btn-ghost" type="button" style="padding:3px 10px; font-size:10px;" onclick="addDeadlineRow()">+ Add Deadline</button>
-            <button class="btn btn-ghost" type="button" style="padding:3px 10px; font-size:10px;" onclick="addSideEventRow()">+ Add Side Event</button>
-            <button class="btn btn-ghost" type="button" style="padding:3px 10px; font-size:10px;" onclick="carryForwardRtn()">&#8635; Recall Previous RTN Data</button>
-            <span id="rtn-carryforward-status" style="font-size:9px; color:var(--placeholder); font-style:italic;"></span>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="addDeadlineRow()">+ Add Deadline</button>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="addSideEventRow()">+ Add Side Event</button>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="carryForwardRtn()">&#8635; Recall Previous RTN Data</button>
+            <span class="tf-status" id="rtn-carryforward-status"></span>
           </div>
         </div>
       </div>
@@ -3520,23 +3730,29 @@
           <div class="field">
             <label class="field-label">Cards to Feature</label>
             <div style="display:flex; gap:6px; align-items:center; margin-bottom:4px; flex-wrap:wrap;">
-              <button class="btn btn-ghost" type="button" style="padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="fetchRecentSpoilers()">Fetch Recent Spoilers (Last 21 Days)</button>
+              <button class="btn btn-ghost btn-sm" type="button" style="white-space:nowrap;" onclick="fetchRecentSpoilers()">Fetch Recent Spoilers</button>
+              <span id="spoiler-days-wrap">
+                last
+                <input type="number" id="spoiler-days-input" value="21" min="1" step="1">
+                days
+              </span>
               <select class="field-input" id="spoiler-picker" style="display:none; flex:1;"></select>
-              <button class="btn btn-teal" type="button" id="spoiler-add-btn" style="display:none; padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="addSpoilerPick()">Add</button>
-              <button class="btn btn-teal" type="button" id="spoiler-add-all-btn" style="display:none; padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="addAllSpoilerPicks()">Add All</button>
-              <button class="btn btn-ghost" type="button" id="spoiler-sort-btn" style="display:none; padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="sortSpoilerCardsBySet()">Sort by Set</button>
-              <label class="btn btn-ghost" style="padding:3px 10px; font-size:10px; white-space:nowrap; cursor:pointer; margin-bottom:0;">
+              <button class="btn btn-teal btn-sm" type="button" id="spoiler-add-btn" style="display:none; white-space:nowrap;" onclick="addSpoilerPick()">Add</button>
+              <button class="btn btn-teal btn-sm" type="button" id="spoiler-add-all-btn" style="display:none; white-space:nowrap;" onclick="addAllSpoilerPicks()">Add All</button>
+              <button class="btn btn-ghost btn-sm" type="button" id="spoiler-sort-btn" style="display:none; white-space:nowrap;" onclick="sortSpoilerCardsBySet()">Sort by Set</button>
+              <label class="btn btn-ghost btn-sm" style="white-space:nowrap; cursor:pointer; margin-bottom:0;">
                 + Upload Card Image
                 <input type="file" id="spoiler-manual-file" accept="image/*" style="display:none;" onchange="addManualSpoilerCard()">
               </label>
             </div>
-            <div id="spoiler-fetch-status" style="font-size:9px; color:var(--placeholder); font-style:italic; margin-bottom:4px;"></div>
+            <div class="tf-status" id="spoiler-fetch-status" style="margin-bottom:4px;"></div>
 
             <div class="spoiler-card-grid" id="spoiler-card-grid"></div>
-            <div id="spoiler-empty-state" style="font-size:10px; color:var(--placeholder); font-style:italic; padding:6px 0;">No cards added yet -- fetch recent spoilers or add one manually.</div>
+            <div class="tf-empty-note" id="spoiler-empty-state">No cards added yet -- fetch recent spoilers or add one manually.</div>
           </div>
 
-          <div id="spoiler-modal-overlay" class="spoiler-modal-overlay" onclick="closeSpoilerModal(event)">
+          <div id="spoiler-modal-overlay" class="tf-modal-overlay" onclick="closeSpoilerModal(event)">
+            <button type="button" class="tf-modal-nav tf-modal-nav-prev" id="spoiler-modal-prev" aria-label="Previous card" onclick="stepSpoilerModal(-1, event)">&#8249;</button>
             <div class="spoiler-modal-content spoiler-modal-content-split">
               <button type="button" class="spoiler-modal-close" onclick="closeSpoilerModal(event)">&times;</button>
               <div class="spoiler-modal-media">
@@ -3544,6 +3760,7 @@
                 <img id="spoiler-modal-img" src="" alt="">
                 <div class="spoiler-modal-caption" id="spoiler-modal-caption"></div>
                 <div class="spoiler-modal-set" id="spoiler-modal-set"></div>
+                <div class="spoiler-modal-counter" id="spoiler-modal-counter"></div>
               </div>
               <div class="spoiler-modal-notes-col">
                 <div class="spoiler-modal-notes-label">Talking Points</div>
@@ -3553,6 +3770,7 @@
                 <div id="spoiler-modal-note-hint">• top level &nbsp;|&nbsp; Tab → – sub &nbsp;|&nbsp; Tab again → ◦ sub-sub &nbsp;|&nbsp; Shift+Tab to outdent</div>
               </div>
             </div>
+            <button type="button" class="tf-modal-nav tf-modal-nav-next" id="spoiler-modal-next" aria-label="Next card" onclick="stepSpoilerModal(1, event)">&#8250;</button>
           </div>
 
           <!-- spoiler-notes kept hidden for store save/recall compat -->
@@ -3609,14 +3827,14 @@
           <div class="field" id="prev-meta-rankings-field" style="margin-bottom:8px;">
             <label class="field-label">Previous Episode's Deck Rankings (for movement +/-)</label>
             <div style="display:flex; gap:6px; align-items:center;">
-              <button class="btn btn-ghost" type="button" style="padding:3px 10px; font-size:10px; white-space:nowrap;" onclick="recallRankingsStore('meta')">&#8635; Recall Last Meta</button>
-              <span id="prev-meta-rankings-status" style="font-size:9px; color:var(--placeholder); font-style:italic;">No previous rankings loaded</span>
+              <button class="btn btn-ghost btn-sm" type="button" style="white-space:nowrap;" onclick="recallRankingsStore('meta')">&#8635; Recall Last Meta</button>
+              <span class="tf-status" id="prev-meta-rankings-status">No previous rankings loaded</span>
             </div>
           </div>
           <div class="rankings-grid" id="meta-rankings-grid"></div>
           <div style="margin-top:8px; display:flex; align-items:center; gap:8px;" id="meta-export-row">
-            <button class="btn btn-ghost" type="button" style="padding:3px 10px; font-size:10px; display:inline-flex; align-items:center; gap:5px;" onclick="generateMetaGraphic()"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" style="flex-shrink:0;"><rect x="0.6" y="0.6" width="12.8" height="12.8" rx="2"/><circle cx="4.5" cy="4.5" r="1.5"/><polyline points="0,10 4,6.5 7,9 10,6 14,10.5"/></svg> Generate Graphic</button>
-            <span id="meta-graphic-status" style="font-size:9px; color:var(--placeholder); font-style:italic;"></span>
+            <button class="btn btn-ghost btn-sm" type="button" style="display:inline-flex; align-items:center; gap:5px;" onclick="generateMetaGraphic()"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" style="flex-shrink:0;"><rect x="0.6" y="0.6" width="12.8" height="12.8" rx="2"/><circle cx="4.5" cy="4.5" r="1.5"/><polyline points="0,10 4,6.5 7,9 10,6 14,10.5"/></svg> Generate Graphic</button>
+            <span class="tf-status" id="meta-graphic-status"></span>
           </div>
           <div class="field" style="margin-top:8px;">
             <label class="field-label bullet-field-label">Discussion Notes</label>
@@ -3649,14 +3867,6 @@
 
           <div class="agur-grid" id="agur-grid"></div>
           <div id="agur-add-row"></div>
-
-          <!-- Legacy agur modal overlay (kept for store compat reference) -->
-          <div id="agur-modal-overlay" style="display:none!important;">
-            <img id="agur-modal-img" src="" alt="">
-            <div id="agur-modal-caption"></div>
-            <div id="agur-modal-note"></div>
-            <div id="agur-modal-note-empty"></div>
-          </div>
 
           <!-- agur-notes kept hidden for store compat -->
           <textarea id="agur-notes" style="display:none;"></textarea>
@@ -5753,6 +5963,11 @@
     var addBtn = document.getElementById('spoiler-add-btn');
     var addAllBtn = document.getElementById('spoiler-add-all-btn');
 
+    var daysInput = document.getElementById('spoiler-days-input');
+    var days = parseInt(daysInput.value, 10);
+    if (isNaN(days) || days < 1) days = 21;
+    daysInput.value = days;
+
     status.textContent = 'Fetching...';
     fetch('/threshingfloor/api/data?kind=spoilers')
       .then(function(res) {
@@ -5762,7 +5977,7 @@
       .then(function(listings) {
         var now = new Date();
         var cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - 21);
+        cutoff.setDate(cutoff.getDate() - days);
 
         var filtered = listings.filter(function(item) {
           var d = new Date(item.spoil_date + 'T00:00:00');
@@ -5770,7 +5985,7 @@
         });
 
         if (filtered.length === 0) {
-          status.textContent = 'No spoilers found in the last 21 days.';
+          status.textContent = 'No spoilers found in the last ' + days + ' days.';
           picker.style.display = 'none';
           addBtn.style.display = 'none';
           addAllBtn.style.display = 'none';
@@ -5796,7 +6011,7 @@
         picker.style.display = '';
         addBtn.style.display = '';
         addAllBtn.style.display = '';
-        status.textContent = 'Found ' + filtered.length + ' spoiler(s) in the last 21 days. Select one and click Add, or click Add All.';
+        status.textContent = 'Found ' + filtered.length + ' spoiler(s) in the last ' + days + ' days. Select one and click Add, or click Add All.';
       })
       .catch(function(err) {
         status.textContent = 'Could not fetch spoilers.';
@@ -6057,14 +6272,57 @@
       }
     }
 
-    document.getElementById('spoiler-modal-overlay').classList.add('open');
+    // Published view with no notes: the card takes the whole viewer.
+    var overlay = document.getElementById('spoiler-modal-overlay');
+    overlay.querySelector('.spoiler-modal-content').classList.toggle('card-only',
+      !isEditor && !(noteEl && noteEl.value.trim()));
+
+    var cards = spoilerCardsInOrder();
+    var idx = cards.indexOf(card);
+    var prev = document.getElementById('spoiler-modal-prev');
+    var next = document.getElementById('spoiler-modal-next');
+    prev.style.display = next.style.display = cards.length > 1 ? '' : 'none';
+    prev.disabled = idx <= 0;
+    next.disabled = idx >= cards.length - 1;
+    document.getElementById('spoiler-modal-counter').textContent = cards.length > 1 ? (idx + 1) + ' of ' + cards.length : '';
+
+    overlay.classList.add('open');
   }
 
   function closeSpoilerModal(event) {
     if (event && event.target.closest('.spoiler-modal-content') && !event.target.classList.contains('spoiler-modal-close')) {
       return;
     }
-    // Save inline editor content back to the card's hidden textarea
+    saveSpoilerModalNote();
+    window._spoilerModalCurrentN = null;
+    document.getElementById('spoiler-modal-overlay').classList.remove('open');
+  }
+
+  function spoilerCardsInOrder() {
+    return [...document.querySelectorAll('#spoiler-card-grid .spoiler-card')];
+  }
+
+  // Previous/next card in the grid's current order (arrows or arrow keys).
+  function stepSpoilerModal(dir, event) {
+    if (event) event.stopPropagation();
+    var cards = spoilerCardsInOrder();
+    var idx = cards.indexOf(document.getElementById('spoiler-card-' + window._spoilerModalCurrentN));
+    var target = cards[idx + dir];
+    if (idx < 0 || !target) return;
+    saveSpoilerModalNote();
+    openSpoilerModal(target.id.replace('spoiler-card-', ''));
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (!document.getElementById('spoiler-modal-overlay').classList.contains('open')) return;
+    if (e.target.closest && e.target.closest('[contenteditable="true"], input, textarea, select')) return;
+    if (e.altKey || e.metaKey || e.ctrlKey) return;
+    if (e.key === 'ArrowLeft') stepSpoilerModal(-1);
+    else if (e.key === 'ArrowRight') stepSpoilerModal(1);
+  });
+
+  // Save the inline editor's notes back to the current card (editor only).
+  function saveSpoilerModalNote() {
     var n = window._spoilerModalCurrentN;
     if (n && !document.body.classList.contains('view-mode')) {
       var noteEl = document.getElementById('spoiler-note-' + n);
@@ -6087,8 +6345,6 @@
         if (btn) btn.textContent = noteEl.value.trim() ? '✏ Notes ●' : '✏ Notes';
       }
     }
-    window._spoilerModalCurrentN = null;
-    document.getElementById('spoiler-modal-overlay').classList.remove('open');
   }
 
   // ---- Agur the Creator: multi-item tile system ----
@@ -6402,6 +6658,7 @@
     var hasNotes = list.children.length > 0;
     list.style.display = hasNotes ? '' : 'none';
     empty.style.display = hasNotes ? 'none' : '';
+    document.getElementById('agur-view-content').classList.toggle('card-only', !hasNotes);
 
     document.getElementById('agur-view-overlay').classList.add('open');
   }
@@ -8352,6 +8609,8 @@
       var hasNotes = list.children.length > 0;
       list.style.display = hasNotes ? '' : 'none';
       empty.style.display = hasNotes ? 'none' : '';
+      // A topic with no notes still needs the notes column to show it.
+      document.getElementById('collectors-card-modal-content').classList.toggle('card-only', !hasNotes && !title);
       document.getElementById('collectors-card-modal-overlay').classList.add('open');
     } else {
       // Text-only modal
@@ -8391,10 +8650,6 @@
   function syncCollectorsBullets() {}
   function addCollectorsCard() {}
   function removeCollectorsCard() {}
-  function openCollectorsModal() {}
-  function closeCollectorsModal() {
-    document.getElementById('collectors-card-modal-overlay').classList.remove('open');
-  }
 
   function createCollectorsAddRow() {
     var addRow = document.getElementById('collectors-add-row');
@@ -9118,11 +9373,19 @@
                 var bySid = {};
                 secs.forEach(function(s){ bySid[s.dataset.sid] = s; });
                 data['section-order'].forEach(function(sid){
-                  if (bySid[sid]) secParent.insertBefore(bySid[sid], secAnchor);
+                  // Drafts saved before Power Rankings / Deck of the Week were
+                  // split into separate segments stored them as one block.
+                  (sid === 'rankings-dotw' ? ['rankings', 'dotw'] : [sid]).forEach(function(id) {
+                    if (bySid[id]) secParent.insertBefore(bySid[id], secAnchor);
+                  });
                 });
               }
             }
-            if (window.__TF_VIEW__) markEmptySections();
+            if (window.__TF_VIEW__) {
+              markEmptySections();
+              // Sections that start open were sized before the text landed.
+              fitViewTextareas(document.body);
+            }
           }, 50);
     } catch(err) {
       document.getElementById('save-status').textContent = 'Could not apply that draft.';
@@ -9217,11 +9480,6 @@
 
   // ---- Section reordering (session-only) ----
   function isSectionVisible(el) {
-    if (el.dataset.sid === 'rankings-dotw') {
-      var r = document.getElementById('tog-rankings');
-      var d = document.getElementById('tog-dotw');
-      return (r && r.checked) || (d && d.checked);
-    }
     var grid = el.querySelector('.grid-1, .grid-2');
     if (!grid) return true;
     return getComputedStyle(grid).display !== 'none';
@@ -9581,7 +9839,7 @@
     target.appendChild(removeBtn);
   });
 
-  // ---- Hide orphaned (empty) sections in print/PDF and published view ----
+  // ---- Hide orphaned (empty) sections in the published view ----
   function sectionHasContent(sectionEl) {
     var hasContent = false;
 
@@ -9623,37 +9881,6 @@
     });
   }
 
-  window.addEventListener('beforeprint', markEmptySections);
-
-  // ---- Power Rankings / Deck of the Week: relocate shared move-arrows ----
-  // Both sections share one set of up/down arrows (they move together as 'rankings-dotw').
-  // Keep the arrows on whichever section currently occupies the right-hand column so their
-  // position lines up with every other section's order controls; if only one of the two
-  // is visible, it shifts left and the arrows move with it.
-  function placeRankingsDotwArrows() {
-    var arrows = document.getElementById('rankings-dotw-arrows');
-    var rankingsControls = document.getElementById('rankings-order-controls');
-    var dotwControls = document.getElementById('dotw-order-controls');
-    if (!arrows || !rankingsControls || !dotwControls) return;
-
-    var rankingsOn = document.getElementById('tog-rankings').checked;
-    var dotwOn = document.getElementById('tog-dotw').checked;
-
-    var target;
-    if (dotwOn) {
-      // DotW visible (either alone, or alongside rankings as the right column) -> arrows go here
-      target = dotwControls;
-    } else {
-      // Only rankings visible (or neither) -> arrows stay/return here
-      target = rankingsControls;
-    }
-
-    if (arrows.parentNode !== target) {
-      target.insertBefore(arrows, target.firstChild);
-    } else if (target.firstChild !== arrows) {
-      target.insertBefore(arrows, target.firstChild);
-    }
-  }
 
   // ---- Power Rankings: generate shareable graphic ----
   // ---- Rankings & Meta: persistent store for recall ----
@@ -10750,6 +10977,275 @@
     cb.dispatchEvent(new Event('change'));
   });
 
+  // ---- Print / PDF: plain outline summary ----
+  // Builds the document that print/PDF actually shows: the episode's switched-
+  // on segments in running order, with the basic details of each -- a follow-
+  // along outline, not a copy of every field the editor holds. Reads the
+  // same live values collectData() saves, so it works the same in the editor
+  // and on the published page. Runs on beforeprint, so Ctrl+P is covered too.
+  function buildPrintSummary() {
+    function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+    function on(id) { var el = document.getElementById(id); return !!(el && el.checked); }
+    function esc(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function longDate(isoDate) {
+      var d = new Date(isoDate + 'T00:00:00');
+      return isNaN(d) ? isoDate : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
+    // Multi-line notes; leading tabs are the bullet editors' indent levels.
+    function bullets(text) {
+      var items = (text || '').split('\n').map(function(lineText) {
+        var level = Math.min(lineText.match(/^\t*/)[0].length, 2);
+        var t = lineText.replace(/^\t+/, '').trim();
+        return t ? '<li class="ps-l' + level + '">' + esc(t) + '</li>' : '';
+      }).join('');
+      return items ? '<ul class="ps-bullets">' + items + '</ul>' : '';
+    }
+    function plainList(items) {
+      items = items.filter(Boolean);
+      return items.length ? '<ul class="ps-plain">' + items.map(function(t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '';
+    }
+    function line(label, text) {
+      return text ? '<p class="ps-line"><span class="ps-label">' + esc(label) + '</span> ' + esc(text) + '</p>' : '';
+    }
+    function item(title, sub, body) {
+      if (!title && !body) return '';
+      return '<div class="ps-item">' +
+        (title ? '<h3>' + esc(title) + (sub ? ' <span class="ps-sub">' + esc(sub) + '</span>' : '') + '</h3>' : '') +
+        (body || '') + '</div>';
+    }
+    function group(title, body) { return body ? '<h3 class="ps-group">' + esc(title) + '</h3>' + body : ''; }
+    function section(title, body) {
+      return body ? '<section class="ps-section"><h2>' + esc(title) + '</h2>' + body + '</section>' : '';
+    }
+    function idsInOrder(selector, prefix) {
+      return [].map.call(document.querySelectorAll(selector), function(el) { return el.id.replace(prefix, ''); });
+    }
+    function rankList(prefix, prevMap, nameFn) {
+      var rows = '';
+      for (var i = 1; i <= 10; i++) {
+        var name = val(prefix + '-' + i);
+        if (!name) continue;
+        var move = '';
+        if (prevMap) {
+          var prev = prevMap[name];
+          move = prev === undefined ? 'new' : prev > i ? '▲' + (prev - i) : prev < i ? '▼' + (i - prev) : '–';
+        }
+        rows += '<li value="' + i + '">' + esc(nameFn ? nameFn(name) : name) +
+          (move ? '<span class="ps-move">' + move + '</span>' : '') + '</li>';
+      }
+      return rows ? '<ol class="ps-ranks">' + rows + '</ol>' : '';
+    }
+
+    var builders = {
+      news: function() {
+        return section('Recent News', idsInOrder('#news-body .repeat-item', 'news-item-').map(function(n) {
+          var overview = val('news-overview-' + n);
+          return item(val('news-topic-' + n), '', overview ? '<p>' + esc(overview) + '</p>' : '');
+        }).join(''));
+      },
+      tournaments: function() {
+        var results = idsInOrder('.tourn-block', 'tourn-block-').map(function(n) {
+          var players = val('t' + n + '-participants');
+          var sub = [val('t' + n + '-location'), players ? players + ' players' : ''].filter(Boolean).join(' · ');
+          var res = (window.tournResults || {})[n] || {};
+          var formats = tournFormats.map(function(fmt) {
+            var placings = (res[fmt.key] || []).map(function(row, ri) {
+              var p = [row.p1, row.p2, row.p3, row.p4].map(function(x) { return displayPlayerName((x || '').trim()); });
+              if (!p[0] && !p[1]) return '';
+              var who;
+              if (fmt.teams) {
+                var team1 = [p[0], p[1]].filter(Boolean).join(' & ');
+                var team2 = [p[2], p[3]].filter(Boolean).join(' & ');
+                who = row.tie && team2 ? team1 + ' / ' + team2 : team1;
+              } else {
+                who = row.tie ? [p[0], p[1]].filter(Boolean).join(' / ') : p[0];
+              }
+              return (row.tie ? 'T-' : '') + rankLabels[ri] + ' ' + who;
+            }).filter(Boolean);
+            return line(fmt.label + ':', placings.join(' · '));
+          }).join('');
+          return item(val('t' + n + '-name'), sub, formats);
+        }).join('');
+        var upcoming = plainList((window.upcomingPicked || []).map(function(t) {
+          return dateRangeLabel(t) + ' — ' + [t.city, t.state].filter(Boolean).join(', ') +
+            (t.tournament_type ? ' · ' + t.tournament_type : '');
+        }));
+        return section('Tournaments', group('Recent Results', results) + group('Upcoming', upcoming));
+      },
+      rankings: function() {
+        return section('Power Rankings', rankList('rank', window.previousRankings, displayPlayerName));
+      },
+      dotw: function() {
+        var deck = window.dotwDeckData || {};
+        var name = deck.name || val('dotw-name');
+        var creator = deck.username || deck.creator || val('dotw-creator');
+        var link = val('dotw-link');
+        var sub = [creator ? 'by ' + creator : '', val('dotw-format')].filter(Boolean).join(' · ');
+        return section('Deck of the Week', item(name || link, name ? sub : '',
+          (name && link ? '<p class="ps-link">' + esc(link) + '</p>' : '') + bullets(val('dotw-notes'))));
+      },
+      rtn: function() {
+        var info = window.rtnNationalsInfo || {};
+        var natsDate = val('rtn-nats-date');
+        var where = [[info.city, info.state].filter(Boolean).join(', '), info.venue_name].filter(Boolean).join(' · ');
+        var days = (document.getElementById('rtn-countdown-number') || {}).textContent;
+        var overview = line('Nationals:', [where, natsDate ? longDate(natsDate) : ''].filter(Boolean).join(' · ')) +
+          (natsDate && days && days !== '--' ? line('Countdown:', days + ' days') : '');
+        var deadlines = plainList(idsInOrder('[id^="rtn-deadline-label-"]', 'rtn-deadline-label-').map(function(n) {
+          var label = val('rtn-deadline-label-' + n), date = val('rtn-deadline-date-' + n);
+          return label ? label + (date ? ' — ' + longDate(date) : '') : '';
+        }));
+        var events = plainList(idsInOrder('#rtn-events-list .event-card', 'rtn-event-row-').map(function(n) {
+          var name = val('rtn-event-name-' + n), host = val('rtn-event-host-' + n);
+          return name ? name + (host ? ' (' + host + ')' : '') : '';
+        }));
+        return section('Road to Nationals', overview + group('Key Deadlines', deadlines) +
+          group('Side Events', events) + group('Venue / Other Notes', bullets(val('rtn-extra-notes'))));
+      },
+      spoilers: function() {
+        return section('Spoilers', [].map.call(document.querySelectorAll('.spoiler-card'), function(card) {
+          var caption = card.querySelector('.spoiler-card-caption-input');
+          var note = card.querySelector('.spoiler-card-note');
+          return item((caption && caption.value.trim()) || card.dataset.cardName || 'Card', card.dataset.setName || '',
+            bullets(note ? note.value : ''));
+        }).join(''));
+      },
+      collectors: function() {
+        return section("Collector's Corner", idsInOrder('.collectors-block', 'collectors-block-').map(function(n) {
+          return item(val('collectors-title-' + n), '', bullets(val('collectors-notes-' + n)));
+        }).join(''));
+      },
+      meta: function() {
+        return section('Meta Forecast', rankList('meta-rank', window.previousMetaRankings) + bullets(val('meta-notes')));
+      },
+      agur: function() {
+        return section('Agur the Creator', idsInOrder('.agur-block', 'agur-block-').map(function(n) {
+          var sub = [val('agur-type-' + n), val('agur-brigade-' + n)].filter(Boolean).join(' · ');
+          return item(val('agur-title-' + n), sub, bullets(val('agur-notes-item-' + n)));
+        }).join(''));
+      },
+      potm: function() {
+        var name = val('potm-name');
+        return section('Player of the Month', item(name ? displayPlayerName(name) : '', '', bullets(val('potm-notes'))));
+      },
+      mailbag: function() {
+        return section('Community Mailbag', idsInOrder('[id^="mb-q-"]', 'mb-q-').map(function(n) {
+          var by = val('mb-by-' + n), q = val('mb-q-' + n);
+          return item(by ? 'From ' + by : '', '', (q ? '<p class="ps-q">' + esc(q) + '</p>' : '') + bullets(val('mb-notes-' + n)));
+        }).join(''));
+      }
+    };
+
+    var body = '';
+    if (on('tog-opening-closing')) {
+      body += section('Opening', line('Sponsor:', val('sponsor')) + bullets(val('opening-notes')));
+    }
+    document.querySelectorAll('.movable-section').forEach(function(m) {
+      var sid = m.dataset.sid;
+      if (builders[sid] && on('tog-' + sid)) body += builders[sid]();
+    });
+    if (on('tog-guest')) {
+      var guestName = val('guest-name');
+      var questions = [].map.call(document.querySelectorAll('#guest-questions-body textarea'), function(ta) { return ta.value.trim(); });
+      body += section('Guest Interview', item(guestName ? displayPlayerName(guestName) : '', '', bullets(val('guest-bio'))) +
+        group('Questions & Topics', plainList(questions)) + group('Resources', bullets(val('guest-links'))));
+    }
+    if (on('tog-opening-closing')) {
+      body += section('Closing', line('Sponsor:', val('close-sponsor')) + bullets(val('close-reminders')));
+    }
+
+    var ep = val('ep-num'), recDate = val('ep-date'), runtime = val('ep-runtime');
+    var meta = [recDate ? 'Recorded ' + longDate(recDate) : '', runtime ? 'Runtime ' + runtime : ''].filter(Boolean).join(' · ');
+    var out = document.getElementById('print-summary');
+    if (!out) {
+      out = document.createElement('div');
+      out.id = 'print-summary';
+      document.body.appendChild(out);
+    }
+    out.innerHTML = '<header class="ps-header"><div class="ps-show">The Threshing Floor</div>' +
+      '<h1>' + (ep ? 'Episode ' + esc(ep) : 'Episode Outline') + '</h1>' +
+      (meta ? '<p class="ps-meta">' + esc(meta) + '</p>' : '') + '</header>' + body;
+  }
+
+  function printOutline() {
+    buildPrintSummary();
+    window.print();
+  }
+  window.addEventListener('beforeprint', buildPrintSummary);
+
+  // ---- Collapsible sections (editor and published view) ----
+  // Each section's title bar folds its body away, so finished segments stop
+  // being visual noise -- while building an outline in the editor, or while
+  // recording from the published page. The editor starts fully expanded. The
+  // published page starts collapsed so it reads as a running order, except
+  // Opening and Closing, which bracket every episode; set
+  // VIEW_START_COLLAPSED to false to start it expanded instead.
+  var VIEW_START_COLLAPSED = true;
+  var VIEW_START_OPEN_WRAPPERS = ['opening-wrapper', 'closing-wrapper-p1'];
+
+  // Size read-only textareas to their text (published view only). Only
+  // measurable while visible, so this reruns whenever a section opens, fonts
+  // finish loading, or the window width changes the wrapping.
+  function fitViewTextareas(root) {
+    root.querySelectorAll('textarea').forEach(function(ta) {
+      if (!ta.offsetParent) return;
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+    });
+  }
+
+  function setSectionCollapsed(sec, collapsed) {
+    sec.classList.toggle('collapsed', collapsed);
+    var btn = sec.querySelector(':scope > .sec-header .sec-collapse-btn');
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    btn.setAttribute('aria-label', (collapsed ? 'Expand ' : 'Collapse ') + sec.querySelector('.sec-title').textContent);
+    if (!collapsed && document.body.classList.contains('view-mode')) fitViewTextareas(sec);
+  }
+
+  function initCollapsibleSections(isViewMode) {
+    var sections = [].filter.call(document.querySelectorAll('.canvas .section'), function(sec) {
+      return sec.querySelector(':scope > .sec-header');
+    });
+    sections.forEach(function(sec) {
+      var header = sec.querySelector(':scope > .sec-header');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sec-collapse-btn';
+      header.appendChild(btn);
+      var startOpen = VIEW_START_OPEN_WRAPPERS.some(function(id) { return sec.closest('#' + id); });
+      setSectionCollapsed(sec, isViewMode && VIEW_START_COLLAPSED && !startOpen);
+      // The whole bar is a click target (the chevron button is the keyboard
+      // one); the editor's arrows and Reset/Remove keep their own behaviour.
+      header.addEventListener('click', function(e) {
+        if (e.target.closest('.sec-order-controls')) return;
+        setSectionCollapsed(sec, !sec.classList.contains('collapsed'));
+      });
+    });
+
+    var bar = document.createElement('div');
+    bar.className = 'collapse-bar';
+    [['Expand All', false], ['Collapse All', true]].forEach(function(cfg) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-ghost btn-sm';
+      btn.textContent = cfg[0];
+      btn.addEventListener('click', function() {
+        sections.forEach(function(sec) { setSectionCollapsed(sec, cfg[1]); });
+      });
+      bar.appendChild(btn);
+    });
+    var firstCanvas = document.querySelector('.canvas');
+    firstCanvas.parentNode.insertBefore(bar, firstCanvas);
+
+    if (isViewMode) {
+      var refit = function() { fitViewTextareas(firstCanvas); };
+      if (document.fonts) document.fonts.ready.then(refit);
+      window.addEventListener('resize', refit);
+    }
+  }
+
   // ---- View mode: render a published snapshot read-only ----
   if (window.__TF_VIEW__) {
     document.body.classList.add('view-mode');
@@ -10758,6 +11254,19 @@
     } catch (e) {
       // Leave whatever rendered; a partial outline beats a blank page.
     }
+    initCollapsibleSections(true);
+    // The published page has no toolbar, so its PDF button lives on the
+    // collapse bar, left of Expand/Collapse All.
+    var pdfBtn = document.createElement('button');
+    pdfBtn.type = 'button';
+    pdfBtn.className = 'btn btn-ghost btn-sm';
+    pdfBtn.style.marginRight = 'auto';
+    pdfBtn.textContent = 'Print / PDF';
+    pdfBtn.addEventListener('click', printOutline);
+    var collapseBar = document.querySelector('.collapse-bar');
+    collapseBar.insertBefore(pdfBtn, collapseBar.firstChild);
+  } else {
+    initCollapsibleSections(false);
   }
 </script>
 </body>
