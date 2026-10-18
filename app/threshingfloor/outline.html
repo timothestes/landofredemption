@@ -1249,6 +1249,61 @@
     cursor: pointer; font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; letter-spacing: 0.5px;
   }
   .spoiler-card-addnote-btn:hover { background: var(--teal-light); }
+  /* Spoilers sort menu -- shown in the editor and on the published page */
+  #spoiler-sort-wrap {
+    display: flex; align-items: center; gap: 6px; margin-left: auto;
+    font-family: 'Barlow Semi Condensed', sans-serif; font-weight: 600; font-size: 10px;
+    letter-spacing: 1px; text-transform: uppercase; color: var(--teal-dark); white-space: nowrap;
+  }
+  #spoiler-sort-select {
+    font-family: 'Barlow', sans-serif; font-size: 11px; color: var(--text);
+    border: 1px solid var(--teal-light); border-radius: 4px; background: var(--white);
+    padding: 2px 6px; cursor: pointer;
+  }
+  body.view-mode #spoiler-sort-select {
+    pointer-events: auto; border: 1px solid var(--teal-light) !important;
+    background: var(--white) !important;
+  }
+  body.dark-mode #spoiler-sort-wrap { color: var(--teal-mid); }
+
+  /* Spoiler viewer: previous/next arrows on the overlay's sides */
+  .tf-modal-nav {
+    position: fixed; top: 50%; transform: translateY(-50%); z-index: 2;
+    width: 52px; height: 52px; border: none; border-radius: 50%;
+    background: rgba(255,255,255,0.16); color: #fff; font-size: 34px; line-height: 1;
+    display: flex; align-items: center; justify-content: center; padding: 0 0 4px; cursor: pointer;
+  }
+  .tf-modal-nav:hover:not(:disabled) { background: rgba(255,255,255,0.3); }
+  .tf-modal-nav:disabled { opacity: 0.25; cursor: default; }
+  .tf-modal-nav-prev { left: 24px; }
+  .tf-modal-nav-next { right: 24px; }
+  .spoiler-modal-counter { font-size: 11px; color: var(--gray); margin-top: 6px; }
+  .spoiler-modal-counter:empty { display: none; }
+  @media (max-width: 620px) {
+    .tf-modal-nav { width: 40px; height: 40px; font-size: 26px; }
+    .tf-modal-nav-prev { left: 6px; }
+    .tf-modal-nav-next { right: 6px; }
+  }
+
+  /* Card viewers with no notes: the card takes the whole modal instead of
+     sitting beside an empty notes column (toggled by the open* functions). */
+  .spoiler-modal-content-split.card-only { max-width: min(620px, 95vw); justify-content: center; }
+  .spoiler-modal-content-split.card-only .spoiler-modal-notes-col { display: none; }
+  /* Media column sized to the card (5:7), capped so it never runs taller
+     than ~72% of the viewport; the set badge then spans exactly the card. */
+  .spoiler-modal-content-split.card-only .spoiler-modal-media {
+    flex: 0 1 auto; width: min(500px, calc(72vh * 5 / 7), 100%); max-width: none; margin: 0 auto;
+  }
+  .spoiler-modal-content-split.card-only #spoiler-modal-img { display: block; width: 100%; }
+  #agur-view-content.card-only,
+  #collectors-card-modal-content.card-only { max-width: min(560px, 95vw); }
+  #agur-view-content.card-only #agur-view-right,
+  #collectors-card-modal-content.card-only #collectors-card-modal-notes-col { display: none; }
+  #agur-view-content.card-only #agur-view-body,
+  #collectors-card-modal-content.card-only #collectors-card-modal-body { justify-content: center; }
+  #agur-view-content.card-only #agur-view-left,
+  #collectors-card-modal-content.card-only #collectors-card-modal-img-col { flex: 0 1 420px; max-width: 420px; }
+
   /* "last [N] days" lookback control beside Fetch Recent Spoilers */
   #spoiler-days-wrap { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--placeholder); white-space: nowrap; }
   #spoiler-days-input {
@@ -2284,8 +2339,8 @@
   body.view-mode #rtn-carryforward-status,
   body.view-mode #rtn-nats-fetch-status,
   body.view-mode #spoiler-fetch-status,
-  body.view-mode #spoilers-section button:not(.spoiler-modal-close):not(.sec-collapse-btn),
-  body.view-mode #spoilers-section select,
+  body.view-mode #spoilers-section button:not(.spoiler-modal-close):not(.sec-collapse-btn):not(.tf-modal-nav),
+  body.view-mode #spoilers-section select:not(#spoiler-sort-select),
   body.view-mode #spoilers-section label.btn,
   body.view-mode #spoiler-days-wrap,
   body.view-mode .spoiler-card-remove,
@@ -2468,6 +2523,9 @@
     .rtn-row-remove { width: 22px; height: 22px; font-size: 13px; }
     #spoiler-days-wrap { font-size: 13px; gap: 6px; }
     #spoiler-days-input { font-size: 14px; width: 54px; padding: 4px 2px; }
+    #spoiler-sort-wrap { font-size: 13px; gap: 8px; }
+    #spoiler-sort-select { font-size: 15px; padding: 6px 10px; border-radius: 6px; }
+    .spoiler-modal-counter { font-size: 13px; margin-top: 8px; }
 
     /* Tile grids: Tournaments, Side Events, News, Agur, Collector's Corner */
     .tourn-grid, .agur-grid, .collectors-grid { gap: 14px; margin-bottom: 16px; }
@@ -3755,7 +3813,13 @@
               <select class="field-input" id="spoiler-picker" style="display:none; flex:1;"></select>
               <button class="btn btn-teal btn-sm" type="button" id="spoiler-add-btn" style="display:none; white-space:nowrap;" onclick="addSpoilerPick()">Add</button>
               <button class="btn btn-teal btn-sm" type="button" id="spoiler-add-all-btn" style="display:none; white-space:nowrap;" onclick="addAllSpoilerPicks()">Add All</button>
-              <button class="btn btn-ghost btn-sm" type="button" id="spoiler-sort-btn" style="display:none; white-space:nowrap;" onclick="sortSpoilerCardsBySet()">Sort by Set</button>
+              <label id="spoiler-sort-wrap" style="display:none;">Sort
+                <select id="spoiler-sort-select" onchange="applySpoilerSort()">
+                  <option value="set">Set / Set #</option>
+                  <option value="spoiled">Date spoiled</option>
+                  <option value="added">Order added</option>
+                </select>
+              </label>
               <label class="btn btn-ghost btn-sm" style="white-space:nowrap; cursor:pointer; margin-bottom:0;">
                 + Upload Card Image
                 <input type="file" id="spoiler-manual-file" accept="image/*" style="display:none;" onchange="addManualSpoilerCard()">
@@ -3768,6 +3832,8 @@
           </div>
 
           <div id="spoiler-modal-overlay" class="tf-modal-overlay" onclick="closeSpoilerModal(event)">
+            <button type="button" class="tf-modal-nav tf-modal-nav-prev" id="spoiler-modal-prev" aria-label="Previous card" onclick="stepSpoilerModal(-1, event)">&#8249;</button>
+            <button type="button" class="tf-modal-nav tf-modal-nav-next" id="spoiler-modal-next" aria-label="Next card" onclick="stepSpoilerModal(1, event)">&#8250;</button>
             <div class="spoiler-modal-content spoiler-modal-content-split">
               <button type="button" class="spoiler-modal-close" onclick="closeSpoilerModal(event)">&times;</button>
               <div class="spoiler-modal-media">
@@ -3775,6 +3841,7 @@
                 <img id="spoiler-modal-img" src="" alt="">
                 <div class="spoiler-modal-caption" id="spoiler-modal-caption"></div>
                 <div class="spoiler-modal-set" id="spoiler-modal-set"></div>
+                <div class="spoiler-modal-counter" id="spoiler-modal-counter"></div>
               </div>
               <div class="spoiler-modal-notes-col">
                 <div class="spoiler-modal-notes-label">Talking Points</div>
@@ -6037,8 +6104,9 @@
     var idx = parseInt(picker.value, 10);
     var item = window.spoilerListings[idx];
     if (!item) return;
-    addSpoilerCard(item.card_name, item.set_name, item.set_number, item.image_url);
+    addSpoilerCard(item.card_name, item.set_name, item.set_number, item.image_url, { spoilDate: item.spoil_date });
     updateSpoilerSortBtnVisibility();
+    applySpoilerSort();
   }
 
   function addAllSpoilerPicks() {
@@ -6047,11 +6115,12 @@
     var existing = Array.from(document.querySelectorAll('#spoiler-card-grid .spoiler-card')).map(function(c) { return c.dataset.cardName; });
     sorted.forEach(function(item) {
       if (existing.indexOf(item.card_name) === -1) {
-        addSpoilerCard(item.card_name, item.set_name, item.set_number, item.image_url);
+        addSpoilerCard(item.card_name, item.set_name, item.set_number, item.image_url, { spoilDate: item.spoil_date });
         existing.push(item.card_name);
       }
     });
     updateSpoilerSortBtnVisibility();
+    applySpoilerSort();
   }
 
   // Compare two spoiler items (or two .spoiler-card datasets) by set name, then set number, then card name
@@ -6072,18 +6141,29 @@
     return 0;
   }
 
-  function sortSpoilerCardsBySet() {
+  // Reorders the spoiler grid by the sort menu's choice (set/#, spoil date,
+  // or order added). Set/# is the default, so new cards land in set order.
+  function applySpoilerSort() {
     var grid = document.getElementById('spoiler-card-grid');
+    var mode = (document.getElementById('spoiler-sort-select') || {}).value || 'set';
     var cards = [...grid.querySelectorAll('.spoiler-card')];
-    cards.sort(function(a, b) { return compareBySetThenNumber(a.dataset, b.dataset); });
+    cards.sort(function(a, b) {
+      var A = a.dataset, B = b.dataset;
+      if (mode === 'spoiled' && A.spoilDate !== B.spoilDate) {
+        if (!A.spoilDate || !B.spoilDate) return A.spoilDate ? -1 : 1;
+        return A.spoilDate < B.spoilDate ? -1 : 1;
+      }
+      if (mode === 'added') return Number(A.added) - Number(B.added);
+      return compareBySetThenNumber(A, B);
+    });
     cards.forEach(function(card) { grid.appendChild(card); });
   }
 
   function updateSpoilerSortBtnVisibility() {
-    var btn = document.getElementById('spoiler-sort-btn');
+    var wrap = document.getElementById('spoiler-sort-wrap');
     var grid = document.getElementById('spoiler-card-grid');
-    if (!btn || !grid) return;
-    btn.style.display = grid.querySelectorAll('.spoiler-card').length >= 2 ? '' : 'none';
+    if (!wrap || !grid) return;
+    wrap.style.display = grid.querySelectorAll('.spoiler-card').length >= 2 ? '' : 'none';
   }
 
   // Palette of distinct gradient pairs for set badges
@@ -6117,9 +6197,15 @@
     badge.style.background = 'linear-gradient(135deg, ' + pair[0] + ' 0%, ' + pair[1] + ' 100%)';
   }
 
-  function addSpoilerCard(cardName, setName, setNumber, imageUrl) {
+  // meta (optional): { spoilDate: 'YYYY-MM-DD', added: <sequence> } -- kept on
+  // the card for the sort menu and saved with the outline.
+  window.spoilerAddSeq = 0;
+  function addSpoilerCard(cardName, setName, setNumber, imageUrl, meta) {
+    meta = meta || {};
     window.spoilerCardCount++;
     var n = window.spoilerCardCount;
+    var added = meta.added || (window.spoilerAddSeq + 1);
+    window.spoilerAddSeq = Math.max(window.spoilerAddSeq, added);
 
     var card = document.createElement('div');
     card.className = 'spoiler-card';
@@ -6146,6 +6232,8 @@
     card.dataset.cardName = cardName || '';
     card.dataset.setName = setName || '';
     card.dataset.setNumber = setNumber || '';
+    card.dataset.spoilDate = meta.spoilDate || '';
+    card.dataset.added = String(added);
 
     var removeBtn = document.createElement('button');
     removeBtn.type = 'button';
@@ -6285,14 +6373,56 @@
       }
     }
 
-    document.getElementById('spoiler-modal-overlay').classList.add('open');
+    // Published view with no notes: the card takes the whole viewer.
+    var overlay = document.getElementById('spoiler-modal-overlay');
+    overlay.querySelector('.spoiler-modal-content').classList.toggle('card-only',
+      !isEditor && !(noteEl && noteEl.value.trim()));
+
+    var cards = spoilerCardsInOrder();
+    var idx = cards.indexOf(card);
+    var prev = document.getElementById('spoiler-modal-prev');
+    var next = document.getElementById('spoiler-modal-next');
+    prev.style.display = next.style.display = cards.length > 1 ? '' : 'none';
+    prev.disabled = idx <= 0;
+    next.disabled = idx >= cards.length - 1;
+    document.getElementById('spoiler-modal-counter').textContent = cards.length > 1 ? (idx + 1) + ' of ' + cards.length : '';
+
+    overlay.classList.add('open');
   }
 
   function closeSpoilerModal(event) {
     if (event && event.target.closest('.spoiler-modal-content') && !event.target.classList.contains('spoiler-modal-close')) {
       return;
     }
-    // Save inline editor content back to the card's hidden textarea
+    saveSpoilerModalNote();
+    window._spoilerModalCurrentN = null;
+    document.getElementById('spoiler-modal-overlay').classList.remove('open');
+  }
+
+  function spoilerCardsInOrder() {
+    return [...document.querySelectorAll('#spoiler-card-grid .spoiler-card')];
+  }
+
+  // Previous/next card in the grid's current order (arrows or arrow keys).
+  function stepSpoilerModal(dir, event) {
+    if (event) event.stopPropagation();
+    var cards = spoilerCardsInOrder();
+    var idx = cards.indexOf(document.getElementById('spoiler-card-' + window._spoilerModalCurrentN));
+    var target = cards[idx + dir];
+    if (idx < 0 || !target) return;
+    saveSpoilerModalNote();
+    openSpoilerModal(target.id.replace('spoiler-card-', ''));
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (!document.getElementById('spoiler-modal-overlay').classList.contains('open')) return;
+    if (e.target.closest && e.target.closest('[contenteditable="true"], input, textarea, select')) return;
+    if (e.key === 'ArrowLeft') stepSpoilerModal(-1);
+    else if (e.key === 'ArrowRight') stepSpoilerModal(1);
+  });
+
+  // Save the inline editor's notes back to the current card (editor only).
+  function saveSpoilerModalNote() {
     var n = window._spoilerModalCurrentN;
     if (n && !document.body.classList.contains('view-mode')) {
       var noteEl = document.getElementById('spoiler-note-' + n);
@@ -6315,8 +6445,6 @@
         if (btn) btn.textContent = noteEl.value.trim() ? '✏ Notes ●' : '✏ Notes';
       }
     }
-    window._spoilerModalCurrentN = null;
-    document.getElementById('spoiler-modal-overlay').classList.remove('open');
   }
 
   // ---- Agur the Creator: multi-item tile system ----
@@ -6630,6 +6758,7 @@
     var hasNotes = list.children.length > 0;
     list.style.display = hasNotes ? '' : 'none';
     empty.style.display = hasNotes ? 'none' : '';
+    document.getElementById('agur-view-content').classList.toggle('card-only', !hasNotes);
 
     document.getElementById('agur-view-overlay').classList.add('open');
   }
@@ -6711,6 +6840,7 @@
       addSpoilerCard(baseName, '', '', dataUrl);
       fileField.value = '';
       updateSpoilerSortBtnVisibility();
+      applySpoilerSort();
     });
   }
 
@@ -8580,6 +8710,8 @@
       var hasNotes = list.children.length > 0;
       list.style.display = hasNotes ? '' : 'none';
       empty.style.display = hasNotes ? 'none' : '';
+      // A topic with no notes still needs the notes column to show it.
+      document.getElementById('collectors-card-modal-content').classList.toggle('card-only', !hasNotes && !title);
       document.getElementById('collectors-card-modal-overlay').classList.add('open');
     } else {
       // Text-only modal
@@ -8790,6 +8922,8 @@
         cardName: caption ? caption.value : (card.dataset.cardName || ''),
         setName: card.dataset.setName || '',
         setNumber: card.dataset.setNumber || '',
+        spoilDate: card.dataset.spoilDate || '',
+        added: Number(card.dataset.added) || 0,
         note: note ? note.value : ''
       };
     });
@@ -9287,8 +9421,9 @@
             }
 
             if (data['spoiler-cards'] && data['spoiler-cards'].length) {
-              data['spoiler-cards'].forEach(function(c) {
-                addSpoilerCard(c.cardName, c.setName, c.setNumber, c.img);
+              data['spoiler-cards'].forEach(function(c, ci) {
+                // Older drafts have no spoilDate/added; their saved order stands in for "order added".
+                addSpoilerCard(c.cardName, c.setName, c.setNumber, c.img, { spoilDate: c.spoilDate, added: c.added || ci + 1 });
                 var n = window.spoilerCardCount;
                 if (c.note) {
                   var noteEl = document.getElementById('spoiler-note-' + n);
