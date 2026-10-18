@@ -545,10 +545,6 @@
   }
   .countdown-date input::-webkit-calendar-picker-indicator { filter: invert(1); }
   .countdown-date-print { display: none; font-size: 11px; font-weight: 600; }
-  @media print {
-    .countdown-date input { display: none !important; }
-    .countdown-date-print { display: block; }
-  }
   body.view-mode .countdown-date input { display: none !important; }
   body.view-mode .countdown-date-print { display: block; }
   .countdown-remove {
@@ -1653,7 +1649,7 @@
 
   .bullet-notes-print { display: none; }
 
-  /* ===== Dark Mode (additive overrides; affects screen and print/PDF) ===== */
+  /* ===== Dark Mode (additive overrides; screen only -- print/PDF is the plain summary) ===== */
 
   body.dark-mode {
     --white: #1c2e2d;
@@ -1868,34 +1864,6 @@
 
   body.dark-mode .btn-ghost { color: var(--teal-mid); border-color: var(--teal-mid); }
 
-  @media print {
-    .bullet-textarea, .bullet-marks, .collectors-card-placeholder, .collectors-card-remove { display: none !important; }
-    .collectors-card-caption-input { border: none !important; background: transparent !important; pointer-events: none; }
-    .bullet-notes-print {
-      display: block; font-size: 11px; color: var(--text); line-height: 1.6; padding-left: 16px;
-    }
-    .bullet-notes-print li { margin-bottom: 3px; }
-    .bullet-notes-print:empty { display: none; }
-    .field:has(> .bullet-notes-print:empty) { display: none !important; }
-    /* Recent News: PDF/print shows only the one-line Overview -- full details
-       stay accessible via click-to-view on the published page only, same as
-       RTN Side Events (which never had a print bullet list to begin with). */
-    #news-body .bullet-notes-print { display: none !important; }
-
-    /* Header meta fields: show as clean text, not input boxes */
-    .meta-input { display: none !important; }
-    .meta-value-print { display: inline; color: #ffffff; font-family: 'Barlow', sans-serif; font-size: 12px; font-weight: 700; }
-    .meta-field:has(.meta-value-print:empty) { display: none !important; }
-    .meta-field { display: inline-block !important; width: auto !important; margin-right: 14px; }
-    .meta-field .meta-label { display: block; }
-    .meta-field.ep-num-text-only .meta-label { display: none !important; }
-
-    /* Hide empty Discussion Notes (Spoilers, Agur, Meta Forecast, etc.) */
-    .field:has(> textarea.field-textarea:placeholder-shown) { display: none !important; }
-
-    /* Hide empty per-card set/promo line on spoiler cards */
-    .spoiler-card-set-input:placeholder-shown { display: none !important; }
-  }
 
   /* Spoilers: enlarge modal */
   .spoiler-card-img-wrap { cursor: pointer; }
@@ -2168,91 +2136,6 @@
   #guest-section-wrapper { display: none; }
   #guest-section-wrapper.active { display: block; }
 
-  @media print {
-    @page { margin: 0.4in; }
-    body { background: white; padding: 0; }
-    .toolbar, .toggle-row { display: none; }
-    .sec-order-controls { display: none !important; }
-    .page-header { border-radius: 0; }
-    .canvas { box-shadow: none; border-radius: 0; }
-    .venue-notes-card-empty { display: none !important; }
-    .venue-notes-card { display: none !important; }
-
-    /* Keep each section together on one page; if it doesn't fit, push the whole thing to the next page */
-    .movable-section, .grid-1, .grid-2 {
-      break-inside: avoid;
-      page-break-inside: avoid;
-      break-before: avoid;
-      page-break-before: avoid;
-    }
-    .sec-header {
-      break-after: avoid;
-      page-break-after: avoid;
-    }
-    #tourn-add-row, .tourn-remove-btn, .rank-clear, .rank-card-clear, .rank-profile-btn, .ec-notes-btn, .tourn-results-btn { display: none; }
-    #tourn-results-section:not(:has(.tourn-block)) { display: none; }
-    /* Hide empty tournament card fields (Host/Location/# Players placeholders) in
-       print/PDF -- previously this was only handled for the published view-mode
-       page, so an empty field still showed its placeholder text when printing
-       directly from the editor. */
-    .tourn-host-input:placeholder-shown,
-    .tourn-location-input:placeholder-shown,
-    .tourn-participants-input:placeholder-shown { display: none; }
-    .rank-delta.empty { display: none; }
-    #prev-rankings-field { display: none; }
-    #rankings-export-row { display: none !important; }
-    #meta-export-row { display: none !important; }
-    #prev-meta-rankings-field { display: none; }
-    #tournaments-section button, #tournaments-section select, #upcoming-fetch-status { display: none; }
-    .rtn-row-remove, .countdown-remove, .event-card-drag-handle, .tourn-block-drag-handle, .repeat-item-drag-handle { display: none; }
-    #rtn-section .btn { display: none; }
-    #rtn-carryforward-status { display: none; }
-    #rtn-nats-fetch-status { display: none; }
-    #spoiler-fetch-status, #spoilers-section button, #spoilers-section select, #spoilers-section label.btn, #spoiler-days-wrap { display: none; }
-    .spoiler-card-remove, .spoiler-card-addnote-btn { display: none; }
-    .spoiler-card-note { display: none; }
-    .spoiler-card-note-print {
-      display: block; font-size: 9.5px; color: var(--text); margin: 4px 0 0;
-      padding-top: 4px; border-top: 1px solid var(--teal-light); padding-left: 14px;
-      line-height: 1.35;
-    }
-    .spoiler-card-note-print li { margin-bottom: 2px; }
-    .spoiler-card-note-print:empty { display: none; border-top: none; margin-top: 0; padding-top: 0; }
-    #spoiler-empty-state { display: none; }
-    .spoiler-card-caption-input, .spoiler-card-set-input { border: none !important; background: transparent !important; pointer-events: none; }
-    .tf-modal-overlay { display: none !important; }
-    #mailbag-add-row, #mailbag-body .tourn-remove-btn { display: none; }
-    #guest-q-add-row, #guest-questions-body .tourn-remove-btn { display: none; }
-    #dotw-section button, #dotw-fetch-status { display: none; }
-    #news-add-row, #news-body .tourn-remove-btn { display: none; }
-    #news-body label:has(input[type=checkbox]) { display: none !important; }
-    #agur-section button, #agur-section label.btn { display: none; }
-    .agur-card-remove, .agur-card-addnote-btn { display: none; }
-    .agur-card-note { display: none; }
-    .agur-card-note-print {
-      display: block; font-size: 9.5px; color: var(--text); margin: 4px 0 0;
-      padding-top: 4px; border-top: 1px solid var(--teal-light); padding-left: 14px;
-      line-height: 1.35;
-    }
-    .agur-card-note-print li { margin-bottom: 2px; }
-    .agur-card-note-print:empty { display: none; border-top: none; margin-top: 0; padding-top: 0; }
-    #agur-empty-state { display: none; }
-    .agur-card-caption-input { border: none !important; background: transparent !important; pointer-events: none; }
-    .rtn-row { border-bottom: 1px solid var(--teal-light); padding-bottom: 2px; }
-    .movable-section[data-content-empty="true"],
-    .movable-section[data-content-empty="true"] + .section-divider {
-      display: none !important;
-    }
-    /* Guest interview: hide empty subsections */
-    #guest-background-wrapper:has(input:placeholder-shown):has(textarea:placeholder-shown),
-    #guest-background-wrapper:has(.bullet-notes-print:empty):not(:has(input:not(:placeholder-shown))) { display: none !important; }
-    #guest-background-wrapper:has(input:placeholder-shown):has(textarea:placeholder-shown) + .section-divider { display: none !important; }
-    #guest-questions-wrapper:has(textarea:placeholder-shown):not(:has(textarea:not(:placeholder-shown))) { display: none !important; }
-    #guest-divider-2:has(+ #guest-questions-wrapper:has(textarea:placeholder-shown):not(:has(textarea:not(:placeholder-shown)))) { display: none !important; }
-    #guest-resources-wrapper:has(textarea.bullet-textarea:placeholder-shown) { display: none !important; }
-    #guest-divider-2 + #guest-resources-wrapper:has(textarea.bullet-textarea:placeholder-shown) + .section-divider { display: none !important; }
-    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  }
 
   /* ---- Live View Mode (public read-only render) ---- */
   body.view-mode .toolbar,
@@ -2402,8 +2285,8 @@
   }
 
   /* Collapsible sections, in the editor and the published view (see
-     initCollapsibleSections() in the script). Screen-only, so print/PDF
-     always shows every section in full regardless of state. */
+     initCollapsibleSections() in the script). Print/PDF is the separate
+     summary document, so collapse state never affects it. */
   .collapse-bar, .sec-collapse-btn { display: none; }
   @media screen {
     .collapse-bar {
@@ -2438,10 +2321,8 @@
   /* =========================================================================
      Screen spacing scale. The rules above were sized to share one screen
      with a webcam feed; that constraint is gone, so on screen everything
-     gets the roomier scale approved in the redesign mockup. Print/PDF never
-     matches `screen`, so the printed outline keeps the original dense sizing
-     above untouched -- if you change a size here, print is unaffected, and
-     vice versa.
+     gets the roomier scale approved in the redesign mockup. (Print/PDF no
+     longer renders the page at all -- see the Print / PDF summary block.)
 
      Type: 12px labels/captions/status, 13px buttons & controls, 14px
      secondary text, 16px primary content/inputs, 17px tile titles.
@@ -9846,7 +9727,7 @@
     target.appendChild(removeBtn);
   });
 
-  // ---- Hide orphaned (empty) sections in print/PDF and published view ----
+  // ---- Hide orphaned (empty) sections in the published view ----
   function sectionHasContent(sectionEl) {
     var hasContent = false;
 
@@ -9888,7 +9769,6 @@
     });
   }
 
-  window.addEventListener('beforeprint', markEmptySections);
 
   // ---- Power Rankings: generate shareable graphic ----
   // ---- Rankings & Meta: persistent store for recall ----
