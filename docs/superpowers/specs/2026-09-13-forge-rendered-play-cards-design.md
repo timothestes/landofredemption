@@ -32,7 +32,9 @@ card**, drawn from the released version's data the way the Forge preview draws i
   doesn't satisfy the `promote.ts` `no_finished_image` blocker.
 - **Forge pages don't change.** The studio, set grid, deckbuilder and deck view keep
   drawing the preview in the browser with today's DOM.
-- **Working snapshots aren't rendered.** Only released versions are.
+- **Working snapshots aren't rendered for play.** Only released versions are. (Amended
+  2026-10-19: the studio's copy-image button renders the working snapshot on demand through
+  `kind=rendered&v=working`; that render is never cached, in Blob or the browser.)
 - **No cleanup of stale renders.** Renders from earlier renderer versions stay in Blob.
 - **Deck view and the deckbuilder don't match the game.** They keep showing the original
   uncropped art and hiding placeholder art (`hasApprovedArt`, the 066 art branch). The

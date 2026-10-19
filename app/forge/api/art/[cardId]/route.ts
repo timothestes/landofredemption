@@ -78,9 +78,10 @@ export async function GET(
 // still passes the owner / granted-set policies. my_forge_role() is the member gate
 // forge_art_key (066) runs; it runs in parallel with the lookup, so it adds no round trip.
 async function renderedCard(supabase: Supabase, cardId: string, url: URL): Promise<Response> {
-  if (url.searchParams.get("v") !== "approved" || url.searchParams.get("download") === "1") {
-    return notFoundResponse();
-  }
+  if (url.searchParams.get("download") === "1") return notFoundResponse();
+  const v = url.searchParams.get("v");
+  if (v === "working") return renderedWorkingCard(supabase, cardId);
+  if (v !== "approved") return notFoundResponse();
   const [{ data: userData, error: userError }, { data: role }, { data: card }] = await Promise.all([
     supabase.auth.getUser(),
     supabase.rpc("my_forge_role"),
@@ -136,5 +137,32 @@ async function renderedCard(supabase: Supabase, cardId: string, url: URL): Promi
   if (!out) return notFoundResponse();
   return new Response(new Uint8Array(out.jpeg), {
     headers: { "Content-Type": "image/jpeg", "Cache-Control": immutable && !out.degraded ? IMMUTABLE : NO_STORE },
+  });
+}
+
+// v=working: the live draft, drawn on demand for the studio's copy-image button. It changes with
+// every autosave, so nothing is cached — not in Blob, not in the browser. Same member gate as the
+// released render; RLS on forge_cards decides which drafts the caller may see. Placeholder art is
+// drawn too: the copy should match the studio preview, which shows it.
+async function renderedWorkingCard(supabase: Supabase, cardId: string): Promise<Response> {
+  const [{ data: userData, error: userError }, { data: role }, { data: card }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.rpc("my_forge_role"),
+    supabase.from("forge_cards").select("working_snapshot, working_art_key").eq("id", cardId).maybeSingle(),
+  ]);
+  if (userError || !userData?.user) return notFoundResponse();
+  if (typeof role !== "string" || !MEMBER_ROLES.has(role)) return notFoundResponse();
+  if (!card) return notFoundResponse();
+
+  const { renderWorking } = await import("@/app/forge/lib/renderedCard");
+  const out = await renderWorking({
+    cardId,
+    data: card.working_snapshot ?? {},
+    artKey: card.working_art_key ?? null,
+    year: new Date().getUTCFullYear(),
+  });
+  if (!out) return notFoundResponse();
+  return new Response(new Uint8Array(out.jpeg), {
+    headers: { "Content-Type": "image/jpeg", "Cache-Control": NO_STORE },
   });
 }

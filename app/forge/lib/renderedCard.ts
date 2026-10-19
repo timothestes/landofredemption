@@ -44,6 +44,20 @@ export function renderAndStore(job: RenderJob, io: RenderIO = blobRenderIO): Pro
   return pending;
 }
 
+export type WorkingRenderJob = { cardId: string; data: DesignCard; artKey: string | null; year: number };
+
+/** Render a card's WORKING snapshot (the studio's copy-image button). Never stored and no
+ *  failure is remembered: the draft changes with every autosave, so neither would be hit again.
+ *  null means respond 404. */
+export async function renderWorking(job: WorkingRenderJob, io: RenderIO = blobRenderIO): Promise<RenderOutput | null> {
+  try {
+    return await renderCardImage({ data: job.data, artKey: job.artKey, year: job.year }, io);
+  } catch (err) {
+    console.error("[forge] working card render failed", { cardId: job.cardId, error: String(err).slice(0, 300) });
+    return null;
+  }
+}
+
 async function run(job: RenderJob, io: RenderIO): Promise<RenderOutput | null> {
   const where = { cardId: job.cardId, versionId: job.versionId };
   let out: RenderOutput;

@@ -8,12 +8,12 @@ vi.mock("@/utils/supabase/server", () => ({ createClient: vi.fn() }));
 vi.mock("@/app/forge/lib/art", () => ({ readForgeArt: vi.fn() }));
 // The renderer is never loaded in these tests (it would pull in resvg); the route imports it
 // dynamically only on a cache miss.
-vi.mock("@/app/forge/lib/renderedCard", () => ({ renderAndStore: vi.fn() }));
+vi.mock("@/app/forge/lib/renderedCard", () => ({ renderAndStore: vi.fn(), renderWorking: vi.fn() }));
 
 import { GET } from "@/app/forge/api/art/[cardId]/route";
 import { createClient } from "@/utils/supabase/server";
 import { readForgeArt } from "@/app/forge/lib/art";
-import { renderAndStore } from "@/app/forge/lib/renderedCard";
+import { renderAndStore, renderWorking } from "@/app/forge/lib/renderedCard";
 import { RENDER_VERSION } from "@/app/forge/lib/renderVersion";
 
 /**
@@ -293,5 +293,59 @@ describe("GET /forge/api/art/[cardId]?kind=rendered", () => {
     (readForgeArt as Mock).mockResolvedValue(null);
     (renderAndStore as Mock).mockResolvedValue(null);
     expect((await get(`v=approved&kind=rendered&t=${TOKEN}`)).status).toBe(404);
+  });
+});
+
+// The studio's copy-image button: the live draft, rendered on demand and never cached.
+describe("GET /forge/api/art/[cardId]?kind=rendered&v=working", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const draft = { working_snapshot: { name: "Oppressive Spirit" }, working_art_key: "forge-art/w" };
+  const get = (qs: string) =>
+    GET(new Request(`http://localhost/forge/api/art/abc?${qs}`) as never, { params: Promise.resolve({ cardId: "abc" }) });
+
+  it("404s without a session, for a non-member, and for download=1 — before rendering", async () => {
+    mockSupabase({ user: false, card: draft });
+    expect((await get("kind=rendered&v=working")).status).toBe(404);
+    mockSupabase({ role: null, card: draft });
+    expect((await get("kind=rendered&v=working")).status).toBe(404);
+    mockSupabase({ card: draft });
+    expect((await get("kind=rendered&v=working&download=1")).status).toBe(404);
+    expect(renderWorking).not.toHaveBeenCalled();
+    expect(readForgeArt).not.toHaveBeenCalled();
+  });
+
+  it("404s when RLS hides the card", async () => {
+    mockSupabase({ card: null });
+    expect((await get("kind=rendered&v=working")).status).toBe(404);
+    expect(renderWorking).not.toHaveBeenCalled();
+  });
+
+  it("renders the working snapshot with the working art and this year, uncached", async () => {
+    mockSupabase({ card: draft });
+    (renderWorking as Mock).mockResolvedValue({ jpeg: Buffer.from([1, 2, 3]), degraded: false });
+    const res = await get("kind=rendered&v=working");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("image/jpeg");
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    expect(renderWorking).toHaveBeenCalledWith({
+      cardId: "abc", data: { name: "Oppressive Spirit" }, artKey: "forge-art/w", year: new Date().getUTCFullYear(),
+    });
+    // No Blob cache lookup on this path: a draft render is never stored.
+    expect(readForgeArt).not.toHaveBeenCalled();
+    expect(renderAndStore).not.toHaveBeenCalled();
+  });
+
+  it("renders a draft with no art or snapshot yet", async () => {
+    mockSupabase({ card: { working_snapshot: null, working_art_key: null } });
+    (renderWorking as Mock).mockResolvedValue({ jpeg: Buffer.from([1]), degraded: false });
+    expect((await get("kind=rendered&v=working")).status).toBe(200);
+    expect(renderWorking).toHaveBeenCalledWith(expect.objectContaining({ data: {}, artKey: null }));
+  });
+
+  it("404s when the render fails", async () => {
+    mockSupabase({ card: draft });
+    (renderWorking as Mock).mockResolvedValue(null);
+    expect((await get("kind=rendered&v=working")).status).toBe(404);
   });
 });

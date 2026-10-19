@@ -25,6 +25,7 @@ import { useForgeCardChannel } from "@/app/forge/lib/useForgeRealtime";
 import PresenceBar from "./PresenceBar";
 import { StudioSyncProvider } from "./StudioSyncContext";
 import CardDetailsFields from "./CardDetailsFields";
+import CopyCardImageButton from "./CopyCardImageButton";
 import ScriptureFields from "./ScriptureFields";
 
 // DESCOPE (2026-07-03): the structured template (FullModeForm) was removed from the
@@ -338,6 +339,17 @@ export default function StudioEditor({
                 <ChevronRight className="h-5 w-5" aria-hidden="true" />
               </Link>
             )}
+            {/* Copy the face as a PNG to share. Tucked into the bottom-right corner, small
+                enough to sit over the frame's blank corner. The draft is flushed first so the
+                server renders what is on screen, not the last autosave. */}
+            <CopyCardImageButton
+              className="absolute bottom-1.5 right-1.5 z-10"
+              src={card.hasFinished
+                ? `/forge/api/art/${card.id}?kind=finished&t=${t}`
+                : `/forge/api/art/${card.id}?kind=rendered&v=working`}
+              prepare={async () => { if (!(await flushPending()).ok) throw new Error("unsaved edit"); }}
+              onError={setErr}
+            />
           </div>
           {position && (
             <p className="mt-2 text-center text-xs text-muted-foreground">
