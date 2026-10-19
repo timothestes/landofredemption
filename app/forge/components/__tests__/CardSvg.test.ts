@@ -105,6 +105,48 @@ describe("RENDER_VERSION guard", () => {
       .map((card, i) => render(props(card, { noArt: i % 2 === 1, rasters: { art: i % 2 === 1 ? null : "data:art" } })))
       .join("");
     const hash = createHash("sha256").update(markup).digest("hex");
-    expect({ RENDER_VERSION, hash }).toEqual({ RENDER_VERSION: 4, hash: "7555ea44323d3f5ba5b3ca5e2b543593fd2e737e912d0f4bb835254bf12088c6" });
+    expect({ RENDER_VERSION, hash }).toEqual({ RENDER_VERSION: 5, hash: "ff82fa16047ddeac1bda824c29160b2bf9df8b1d4b8ce7b1481fc0005d7a4382" });
+  });
+});
+
+// A dual-alignment card (Perfidy, Joab the General): two boxes, the washes blended left to
+// right, the title between the boxes. See frameAssets.test.ts for the print references.
+describe("CardSvg dual alignment", () => {
+  const PERFIDY: DesignCard = { name: "Perfidy", cardType: ["GE", "EE"], brigades: ["Green", "Brown"], strength: "6 (0)", toughness: "2 (6)" };
+
+  it("blends the evil column in over the good one, left to right, 40% to 60% of the width", () => {
+    const html = render(props(PERFIDY));
+    const grad = html.match(/<linearGradient id="rwx"([^>]*)>(.*?)<[/]linearGradient>/);
+    expect(grad).not.toBeNull();
+    expect(grad![1]).toContain('x2="1"');
+    expect(grad![1]).toContain('y2="0"');
+    expect(grad![2]).toContain('offset="0.4" stop-color="#000"');
+    expect(grad![2]).toContain('offset="0.6" stop-color="#fff"');
+    expect(html).toContain('<g><image href="inline:/forge/frames/washes/green.webp"');
+    expect(html).toContain('<g mask="url(#rwh)"><image href="inline:/forge/frames/washes/brown.webp"');
+    // One brigade a side: no top-to-bottom fade on either.
+    expect(html).not.toContain('mask="url(#rwm');
+  });
+
+  it("paints a side that has no brigade yet neutral, under the same blend", () => {
+    const html = render(props({ ...PERFIDY, brigades: ["Green"] }));
+    expect(html).toContain('<g mask="url(#rwh)"><rect x="37.5" y="37.5" width="675" height="975" fill="#b9b3aa"');
+  });
+
+  it("draws both boxes with their own stats and centres the title between them", () => {
+    const html = render(props(PERFIDY));
+    expect(html).toMatch(/<text[^>]*>6\/2<\/text>/);
+    expect(html).toMatch(/<text[^>]*>0\/6<\/text>/);
+    const title = html.match(/<text x="([\d.]+)"[^>]*text-anchor="middle"[^>]*>Perfidy<\/text>/);
+    expect(title).not.toBeNull();
+    expect(Number(title![1])).toBeGreaterThan(360);
+    expect(Number(title![1])).toBeLessThan(390);
+  });
+
+  it("leaves a single-alignment card's washes stacked top to bottom with no horizontal blend", () => {
+    const html = render(props({ cardType: ["Hero"], brigades: ["Blue", "Green"], strength: 5, toughness: 5 }));
+    expect(html).not.toContain('id="rwx"');
+    expect(html).not.toContain("url(#rwh)");
+    expect(html).toContain('mask="url(#rwm1)"');
   });
 });

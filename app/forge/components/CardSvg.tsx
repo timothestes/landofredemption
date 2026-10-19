@@ -16,9 +16,9 @@
 // sized in container units (cqw): WebKit multiplies those by the page-zoom factor a second time,
 // so a Safari reader with a remembered per-site zoom saw the ability run off the text box.
 
-import { printedName, type DesignCard, type StatValue } from "@/app/forge/lib/designCard";
+import { printedName, type DesignCard } from "@/app/forge/lib/designCard";
 import {
-  washPaths, washBands, iconBox, classIcons, isPreviewApproximate, type IconBox,
+  washColumns, washBands, iconBox, classIcons, isPreviewApproximate, type IconBox,
 } from "@/app/forge/lib/frameAssets";
 import { textFit, textWidth, TEXT_WIDTH, TEXT_METRICS as TM } from "@/app/forge/lib/textFit";
 import { CANVAS, RECTS, BORDER_STROKE } from "@/app/forge/lib/frameGeometry";
@@ -76,11 +76,6 @@ export type CardSvgProps = {
   rasters: null | { art: string | null };
 };
 
-function statText(s: StatValue | undefined, t: StatValue | undefined): string {
-  const f = (v: StatValue | undefined) => (v === null || v === undefined || v === "" ? "?" : String(v));
-  return `${f(s)}/${f(t)}`;
-}
-
 /** Trim `text` to `width` with an ellipsis, the way `text-overflow: ellipsis` would. */
 function clampText(text: string, size: number, width: number): string {
   if (textWidth(text, "bold", size) <= width) return text;
@@ -101,12 +96,13 @@ function tabPath({ x, y, w, h }: Rect, side: "left" | "right"): string {
     + `H${x + r}A${r} ${r} 0 0 1 ${x} ${y + h - r}V${y + tl}A${tl} ${tl} 0 0 1 ${x + tl} ${y}Z`;
 }
 
-function IconBoxG({ id, box, rect, side, stat, statFont, assetHref }: {
-  id: string; box: IconBox; rect: Rect; side: "left" | "right"; stat: string | null;
+function IconBoxG({ id, box, side, statFont, assetHref }: {
+  id: string; box: IconBox; side: "left" | "right";
   statFont: string; assetHref: (publicPath: string) => string;
 }) {
-  const { x, y, w, h } = rect;
-  const d = tabPath(rect, side);
+  const { x, y, w, h } = box.rect;
+  const d = tabPath(box.rect, side);
+  const stat = box.stats;
   // Each band below the first runs to the bottom over the one before, in equal heights: two
   // brigades split the box 50 / 50 on every Roots, IR, Roots 2, II and T2C card checked, three
   // into thirds.
@@ -145,38 +141,60 @@ function IconBoxG({ id, box, rect, side, stat, statFont, assetHref }: {
 
 // Server-only layers, under the chrome: white card, the washes clipped to the border (each
 // brigade after the first fades in through a luminance mask, black to white over washBands —
-// the same bands as the browser preview's CSS masks), and the art window (cover-cropped).
+// the same bands as the browser preview's CSS masks; a dual-alignment card's evil column
+// fades in over its good column the same way, left to right), and the art window
+// (cover-cropped).
 function RasterLayers({ card, idPrefix, assetHref, art }: {
   card: DesignCard; idPrefix: string; assetHref: (publicPath: string) => string; art: string | null;
 }) {
   const B = RECTS.border, A = RECTS.art;
-  const washes = washPaths(card);
-  const bands = washBands(washes.length);
+  // Every wash with its column's fade-in band; ids count across the columns.
+  let k = 0;
+  const columns = washColumns(card).map((col) => {
+    const bands = washBands(col.length);
+    return col.map((src, i) => ({ src, band: bands[i], k: k++ }));
+  });
+  const split = columns.length > 1 ? washBands(2)[1]! : null;
   return (
     <>
       <rect x={0} y={0} width={CW} height={CH} fill="#fff" />
       <defs>
         <clipPath id={`${idPrefix}wb`}><rect x={B.x} y={B.y} width={B.w} height={B.h} rx={B.r} /></clipPath>
         <clipPath id={`${idPrefix}wa`}><rect x={A.x} y={A.y} width={A.w} height={A.h} rx={A.r} /></clipPath>
-        {bands.map((band, i) => band && (
-          <g key={i}>
-            <linearGradient id={`${idPrefix}wg${i}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset={band.from / 100} stopColor="#000" />
-              <stop offset={band.to / 100} stopColor="#fff" />
+        {split && (
+          <>
+            <linearGradient id={`${idPrefix}wx`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset={split.from / 100} stopColor="#000" />
+              <stop offset={split.to / 100} stopColor="#fff" />
             </linearGradient>
-            <mask id={`${idPrefix}wm${i}`} maskUnits="userSpaceOnUse" x={B.x} y={B.y} width={B.w} height={B.h}>
-              <rect x={B.x} y={B.y} width={B.w} height={B.h} fill={`url(#${idPrefix}wg${i})`} />
+            <mask id={`${idPrefix}wh`} maskUnits="userSpaceOnUse" x={B.x} y={B.y} width={B.w} height={B.h}>
+              <rect x={B.x} y={B.y} width={B.w} height={B.h} fill={`url(#${idPrefix}wx)`} />
+            </mask>
+          </>
+        )}
+        {columns.flat().map((w) => w.band && (
+          <g key={w.k}>
+            <linearGradient id={`${idPrefix}wg${w.k}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset={w.band.from / 100} stopColor="#000" />
+              <stop offset={w.band.to / 100} stopColor="#fff" />
+            </linearGradient>
+            <mask id={`${idPrefix}wm${w.k}`} maskUnits="userSpaceOnUse" x={B.x} y={B.y} width={B.w} height={B.h}>
+              <rect x={B.x} y={B.y} width={B.w} height={B.h} fill={`url(#${idPrefix}wg${w.k})`} />
             </mask>
           </g>
         ))}
       </defs>
       <g clipPath={`url(#${idPrefix}wb)`}>
-        {washes.length === 0 && <rect x={B.x} y={B.y} width={B.w} height={B.h} fill="#b9b3aa" />}
-        {washes.map((src, i) => (
-          <image
-            key={i} href={assetHref(src)} x={B.x} y={B.y} width={B.w} height={B.h} preserveAspectRatio="xMidYMid slice"
-            {...(bands[i] ? { mask: `url(#${idPrefix}wm${i})` } : {})}
-          />
+        {columns.map((col, c) => (
+          <g key={c} {...(c > 0 ? { mask: `url(#${idPrefix}wh)` } : {})}>
+            {col.length === 0 && <rect x={B.x} y={B.y} width={B.w} height={B.h} fill="#b9b3aa" />}
+            {col.map((w) => (
+              <image
+                key={w.k} href={assetHref(w.src)} x={B.x} y={B.y} width={B.w} height={B.h} preserveAspectRatio="xMidYMid slice"
+                {...(w.band ? { mask: `url(#${idPrefix}wm${w.k})` } : {})}
+              />
+            ))}
+          </g>
         ))}
       </g>
       <g clipPath={`url(#${idPrefix}wa)`}>
@@ -206,18 +224,18 @@ export default function CardSvg({
   const A = RECTS.art, B = RECTS.border, T = RECTS.textBox, I = RECTS.textInset;
   const name = printedName(card) || "Card Name";
   // Title: right-aligned into the art window's edge; centered between the boxes when there is
-  // a right box (Covenants / Curses); a Lost Soul, which has no box, centers "Lost Soul" on the
-  // card. Fixed at 9 pt, squeezed only when its real width overruns the frame.
+  // a right box (Covenants / Curses, dual-alignment cards); a Lost Soul, which has no box,
+  // centers "Lost Soul" on the card. Fixed at 9 pt, squeezed only when its real width overruns
+  // the frame.
   const lostSoul = (card.cardType ?? []).includes("LostSoul");
   const titleLeft = RECTS.title.x;
-  const titleRight = right ? RECTS.rightBox.x - 12 : titleLeft + RECTS.title.w - TITLE_INSET;
+  const titleRight = right ? right.rect.x - 12 : titleLeft + RECTS.title.w - TITLE_INSET;
   const titleAvail = titleRight - titleLeft;
   const titleSize = TITLE_SIZE;
   const titleSqueeze = textWidth(name, "title", titleSize) * TITLE_KERN > titleAvail;
   const titleX = lostSoul ? CW / 2 : right ? (titleLeft + titleRight) / 2 : titleRight;
   const titleAnchor = lostSoul || right ? "middle" : "end";
   const ids = card.identifiers ?? [];
-  const stat = left?.withStats ? statText(card.strength, card.toughness) : null;
 
   // Ability: the lines textFit wrapped, at the printed size, top-anchored and never shrunk,
   // so the picture and the fit verdict agree. A long one runs into the verse, and the pill
@@ -291,8 +309,8 @@ export default function CardSvg({
       <rect x={T.x} y={T.y} width={T.w} height={T.h} rx={T.r} fill={`url(#${uid}g)`} stroke={INK} strokeWidth={4} />
       <rect x={A.x} y={A.y} width={A.w} height={A.h} rx={A.r} fill="none" stroke={INK} strokeWidth={4} />
       <rect x={B.x} y={B.y} width={B.w} height={B.h} rx={B.r} fill="none" stroke={INK} strokeWidth={BORDER_STROKE} />
-      {left && <IconBoxG id={`${uid}l`} box={left} rect={RECTS.leftBox} side="left" stat={stat} statFont={fonts.stat} assetHref={assetHref} />}
-      {right && <IconBoxG id={`${uid}r`} box={right} rect={RECTS.rightBox} side="right" stat={null} statFont={fonts.stat} assetHref={assetHref} />}
+      {left && <IconBoxG id={`${uid}l`} box={left} side="left" statFont={fonts.stat} assetHref={assetHref} />}
+      {right && <IconBoxG id={`${uid}r`} box={right} side="right" statFont={fonts.stat} assetHref={assetHref} />}
       {classes.map((c) => (
         <image key={c.src} href={assetHref(c.src)} x={c.rect.x} y={c.rect.y} width={c.rect.w} height={c.rect.h} preserveAspectRatio="xMidYMid meet" />
       ))}

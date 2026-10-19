@@ -140,3 +140,20 @@ describe("stripXmlInvalid / sanitizeDesignCard", () => {
     expect(sanitizeDesignCard({ name: `A${vt}B`, identifiers: [`I${vt}d`], strength: 5 })).toEqual({ name: "AB", identifiers: ["Id"], strength: 5 });
   });
 });
+
+describe("renderCardImage dual alignment", () => {
+  beforeEach(() => _resetRenderCardCaches());
+
+  it("paints the good wash down the left edge and the evil wash down the right", async () => {
+    const perfidy: DesignCard = { ...HERO, name: "Perfidy", cardType: ["GE", "EE"], brigades: ["Green", "Brown"], strength: "6 (0)", toughness: "2 (6)" };
+    const { jpeg } = await render(perfidy);
+    const band = { y: RECTS.art.y + 200, w: RECTS.art.x - RECTS.border.x - 16, h: 60 };
+    const left = await region(jpeg, { x: RECTS.border.x + 8, ...band });
+    const right = await region(jpeg, { x: RECTS.art.x + RECTS.art.w + 8, ...band });
+    // Green wash: green leads red. Brown wash: red leads green. (A single-alignment card
+    // would show green on both edges at this height — its bands run top to bottom.)
+    expect(mean(left, 1)).toBeGreaterThan(mean(left, 0) + 10);
+    expect(mean(right, 0)).toBeGreaterThan(mean(right, 1) + 10);
+    expect(meanDiff(left, right)).toBeGreaterThan(10);
+  }, 30000);
+});

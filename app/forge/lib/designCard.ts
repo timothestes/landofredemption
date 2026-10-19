@@ -11,8 +11,8 @@ export type CardType = (typeof CARD_TYPES)[number];
 export const ALIGNMENTS = ["Good", "Evil", "Neutral", "Good_Evil"] as const;
 export type Alignment = (typeof ALIGNMENTS)[number];
 
-const GOOD_TYPES: readonly CardType[] = ["Hero", "GE"];
-const EVIL_TYPES: readonly CardType[] = ["EvilCharacter", "EE"];
+export const GOOD_TYPES: readonly CardType[] = ["Hero", "GE"];
+export const EVIL_TYPES: readonly CardType[] = ["EvilCharacter", "EE"];
 
 /**
  * Derives the alignment implied by a card's selected types, for auto-filling the

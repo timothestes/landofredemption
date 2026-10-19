@@ -153,6 +153,19 @@ describe("ForgeCardPreview brigade bands", () => {
     expect(a[0]).toBeCloseTo(100 / 3 - 20 / 3, 6); expect(a[1]).toBeCloseTo(40, 6);
     expect(b[0]).toBeCloseTo(60, 6); expect(b[1]).toBeCloseTo(200 / 3 + 20 / 3, 6);
   });
+
+  // Dual-alignment cards (Perfidy, Joab the General): the good side's wash on the left blends
+  // into the evil side's on the right, 40% to 60% of the width; each box prints its own stats.
+  it("blends a dual-alignment card's washes left to right, the evil side under a horizontal mask", () => {
+    const html = render({ cardType: ["GE", "EE"], brigades: ["Green", "Brown"], strength: "6 (0)", toughness: "2 (6)" });
+    expect(html.match(/\/forge\/frames\/washes\//g)).toHaveLength(2);
+    expect(masks(html)).toEqual([]);
+    expect(html.match(/(?<!-webkit-)mask-image:linear-gradient\(to right, transparent 40%, #000 60%\)/g)).toHaveLength(1);
+    expect(html.indexOf("washes/green.webp")).toBeLessThan(html.indexOf("mask-image:linear-gradient(to right"));
+    expect(html.indexOf("mask-image:linear-gradient(to right")).toBeLessThan(html.indexOf("washes/brown.webp"));
+    expect(statText(html, "6/2")).toBeTruthy();
+    expect(statText(html, "0/6")).toBeTruthy();
+  });
 });
 
 // A long ability and a verse, neither carrying a character React escapes, so the rendered

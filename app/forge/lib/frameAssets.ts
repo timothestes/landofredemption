@@ -3,7 +3,8 @@
 // The kit and app/forge/lib/frameGeometry.ts are generated from the design team's
 // Illustrator template by scripts/forge-extract-template.py — see the kit README.
 //
-// Print rules this follows (checked against printed cards, 2026-09-10; multi-brigade 2026-09-13):
+// Print rules this follows (checked against printed cards, 2026-09-10; multi-brigade 2026-09-13;
+// dual alignment 2026-10-19):
 //  * One icon box, top-left, banded top to bottom in brigade order in equal heights. The
 //    wash blends the same brigades the same way, top to bottom. Only a card of every brigade
 //    of one alignment (printed "Multi") uses the multi-brigade foil.
@@ -12,10 +13,21 @@
 //    artifact chalice in a second box on the right; the title centers between them.
 //  * Stats print for Heroes and Evil Characters always, and for enhancements, Covenants
 //    and Curses when a value is entered.
+//  * A dual-alignment card (a good and an evil type, or alignment Good/Evil) prints as two
+//    half-frames: the good type's icon in a box of the good brigades on the left, the evil
+//    type's in a box of the evil brigades on the right, the title between them. Each box
+//    prints its side of a paired stat ("6 (0)": 6 left, 0 right; a single value on both),
+//    the wash blends good into evil left to right, and a character's class shields print
+//    under both boxes. (Perfidy, Measured Mien, Return to Fight, Quake in Edom, Joab the
+//    General, Battle Axe, Philosophy, Defenestrated!, Blood Avenger.)
 
 import type { Alignment, Brigade, CardType, DesignCard, StatValue } from "./designCard";
-import { cardApplicability, multiBrigadeSide } from "./designCard";
-import { BRIGADE_BOX_HEX, ICON_RECTS } from "./frameGeometry";
+import {
+  cardApplicability, multiBrigadeSide, GOOD_TYPES, EVIL_TYPES, GOOD_BRIGADES, EVIL_BRIGADES,
+} from "./designCard";
+import { BRIGADE_BOX_HEX, CANVAS, ICON_RECTS, RECTS } from "./frameGeometry";
+
+export type Side = "left" | "right";
 
 const KIT = "/forge/frames";
 
@@ -59,10 +71,48 @@ function multiFoil(brigades: readonly Brigade[]): "multi-good" | "multi-evil" | 
   return side === "Good" ? "multi-good" : side === "Evil" ? "multi-evil" : null;
 }
 
-/** Wash image URLs, top to bottom: [] (no brigade yet), or one per brigade (the renderer
- *  blends each in below the one before). A special type, or a card of every brigade (the
- *  multi-brigade foil), always yields exactly one. */
-export function washPaths(card: DesignCard): string[] {
+/** Whether the card prints as a dual-alignment frame — a good half on the left, an evil half
+ *  on the right: any card with both a good and an evil type (GE/EE, Hero/Evil Character), or
+ *  whose alignment is set to Good/Evil (a dual Dominant). The catalog files GE/EE cards as
+ *  Neutral, so the types decide before the alignment does. Pure. */
+export function isDualAlignment(card: DesignCard): boolean {
+  if (card.alignment === "Good_Evil") return true;
+  const types = card.cardType ?? [];
+  return types.some((t) => GOOD_TYPES.includes(t)) && types.some((t) => EVIL_TYPES.includes(t));
+}
+
+/** One side of a paired stat: "6 (0)" prints 6 in the good (left) box and 0 in the evil
+ *  (right) one; a single value prints in both (Battle Axe, 4/3 (2): 4/3 and 4/2). Pure. */
+export function sideStat(v: StatValue | undefined, side: Side): StatValue | undefined {
+  if (typeof v !== "string") return v;
+  const m = /^(.+?)\s*\((.+)\)$/.exec(v.trim());
+  if (!m) return v;
+  const part = (side === "left" ? m[1] : m[2]).trim();
+  return /^\d+$/.test(part) ? Number(part) : part;
+}
+
+/** One half of a dual-alignment card as a card of its own: the types that are not the other
+ *  side's (all of them when none is left), that side's alignment and brigades, and its side
+ *  of each stat. */
+function sideCard(card: DesignCard, side: Side): DesignCard {
+  const good = side === "left";
+  const other: readonly CardType[] = good ? EVIL_TYPES : GOOD_TYPES;
+  const own: readonly Brigade[] = good ? GOOD_BRIGADES : EVIL_BRIGADES;
+  const types = card.cardType ?? [];
+  const sideTypes = types.filter((t) => !other.includes(t));
+  return {
+    ...card,
+    cardType: sideTypes.length ? sideTypes : types,
+    alignment: good ? "Good" : "Evil",
+    brigades: (card.brigades ?? []).filter((b) => own.includes(b)),
+    strength: sideStat(card.strength, side),
+    toughness: sideStat(card.toughness, side),
+  };
+}
+
+/** One column of washes, top to bottom: [] (no brigade yet), or one per brigade. A special
+ *  type, or a card of every brigade (the multi-brigade foil), always yields exactly one. */
+function columnWashes(card: DesignCard): string[] {
   const special = specialWash(card);
   if (special) return [`${KIT}/washes/${special}.webp`];
   const brigades = card.brigades ?? [];
@@ -71,9 +121,26 @@ export function washPaths(card: DesignCard): string[] {
   return brigades.map((b) => `${KIT}/washes/${BRIGADE_SLUG[b]}.webp`);
 }
 
+/** Wash columns, left to right: one for the usual card, two for a dual-alignment card (the
+ *  good half's washes, then the evil half's), which the renderers blend left to right. Each
+ *  column runs top to bottom (the renderer blends each wash in below the one before) and may
+ *  be empty — no brigade on that side yet — which paints neutral. */
+export function washColumns(card: DesignCard): string[][] {
+  if (!isDualAlignment(card)) return [columnWashes(card)];
+  return [columnWashes(sideCard(card, "left")), columnWashes(sideCard(card, "right"))];
+}
+
+/** Every wash a card draws, in draw order (left column first, each top to bottom). */
+export function washPaths(card: DesignCard): string[] {
+  return washColumns(card).flat();
+}
+
 export type IconRect = { readonly x: number; readonly y: number; readonly w: number; readonly h: number };
 
 export type IconBox = {
+  /** Where the box sits, canvas px: the template's left slot, its mirror image on the right
+   *  of a dual-alignment card, or the template's chalice slot. */
+  rect: IconRect;
   /** Fill of the box — the top band when there are `bands`. */
   fill: string;
   /** Fills of the bands below the top one, top to bottom: one per further brigade. */
@@ -89,6 +156,8 @@ export type IconBox = {
   iconRect: IconRect | null;
   /** Stats text ("S/T") shares the box; the icon drops into the lower slot. */
   withStats: boolean;
+  /** The readout itself ("9/6", "?/?" until entered), or null when the box prints none. */
+  stats: string | null;
   /** Light fills take dark stat text (the template ships #/# in white and black). */
   darkText: boolean;
 };
@@ -132,33 +201,52 @@ function luminance(hex: string): number {
   return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 }
 
+/** The same rect on the other side of the card. */
+const mirror = (r: IconRect): IconRect => ({ x: CANVAS.w - r.x - r.w, y: r.y, w: r.w, h: r.h });
+
+function statText(s: StatValue | undefined, t: StatValue | undefined): string {
+  const f = (v: StatValue | undefined) => (v === null || v === undefined || v === "" ? "?" : String(v));
+  return `${f(s)}/${f(t)}`;
+}
+
 /** The icon box for one side. Left exists once a type is chosen (never for Lost Souls);
- *  right only for Covenants and Curses, holding the artifact chalice. */
-export function iconBox(card: DesignCard, side: "left" | "right"): IconBox | null {
+ *  right for Covenants and Curses, holding the artifact chalice, and for a dual-alignment
+ *  card, holding its evil half (the left box then holds the good half). */
+export function iconBox(card: DesignCard, side: Side): IconBox | null {
   const types = card.cardType ?? [];
   if (types.length === 0 || types.includes("LostSoul")) return null;
+  const withStats = showsStats(card);
+  if (isDualAlignment(card)) return brigadeBox(sideCard(card, side), side, withStats);
   if (side === "right") {
     if (!types.some((t) => ARTIFACT_LIKE.includes(t))) return null;
     return {
-      fill: NEUTRAL_BOX, bands: [], badge: `${KIT}/badges/artifact.webp`, badgeAlign: BADGE_ALIGN.artifact,
-      icon: null, iconRect: null, withStats: false, darkText: false,
+      rect: RECTS.rightBox, fill: NEUTRAL_BOX, bands: [], badge: `${KIT}/badges/artifact.webp`, badgeAlign: BADGE_ALIGN.artifact,
+      icon: null, iconRect: null, withStats: false, stats: null, darkText: false,
     };
   }
+  return brigadeBox(card, "left", withStats);
+}
+
+/** A brigade-colored type box: the template's left box, or its mirror image on the right. */
+function brigadeBox(card: DesignCard, side: Side, withStats: boolean): IconBox {
+  const types = card.cardType ?? [];
   const brigades = card.brigades ?? [];
   const badge = badgeFor(types, card.alignment, brigades);
   const fill = brigades[0] ? BRIGADE_HEX[brigades[0]] : NEUTRAL_BOX;
   const bands = badge ? [] : brigades.slice(1).map((b) => BRIGADE_HEX[b]);
-  const withStats = showsStats(card);
   const base = ICON_BY_TYPE[types[0]];
   const slot = (base && withStats && STATS_SLOT.has(base) ? `${base}Stats` : base) as keyof typeof ICON_RECTS | null;
+  const iconRect = slot ? ICON_RECTS[slot] : null;
   return {
+    rect: side === "left" ? RECTS.leftBox : mirror(RECTS.leftBox),
     fill,
     bands,
     badge: badge ? `${KIT}/badges/${badge}.webp` : null,
     badgeAlign: (badge && BADGE_ALIGN[badge]) || "xMidYMid",
     icon: base ? `${KIT}/icons/${base}.png` : null,
-    iconRect: slot ? ICON_RECTS[slot] : null,
+    iconRect: iconRect && side === "right" ? mirror(iconRect) : iconRect,
     withStats,
+    stats: withStats ? statText(card.strength, card.toughness) : null,
     darkText: !badge && luminance(fill) > 0.55,
   };
 }
@@ -171,12 +259,19 @@ export function classIcons(card: DesignCard): ClassIcon[] {
   for (const c of card.class ?? []) slugs.push(c === "Warrior" ? "warrior" : "weapon");
   if ((card.icons ?? []).includes("Territory")) slugs.push("territory");
   let next: number | null = null;
-  return slugs.map((s) => {
+  const icons = slugs.map((s) => {
     const slot = s === "territory" ? ICON_RECTS.territory : ICON_RECTS.shield;
     const rect = { x: ICON_RECTS.shield.x, y: next ?? slot.y, w: slot.w, h: slot.h };
     next = rect.y + rect.h + 6;
-    return { src: `${KIT}/icons/${s}.png`, rect };
+    return { slug: s, src: `${KIT}/icons/${s}.png`, rect };
   });
+  const out: ClassIcon[] = icons.map(({ src, rect }) => ({ src, rect }));
+  // A dual-alignment character prints its shield(s) under both boxes (Joab, the General);
+  // the territory plate stays on the left.
+  if (isDualAlignment(card)) {
+    for (const c of icons) if (c.slug !== "territory") out.push({ src: c.src, rect: mirror(c.rect) });
+  }
+  return out;
 }
 
 export function isPreviewApproximate(card: DesignCard): boolean {
