@@ -25,6 +25,7 @@ import { useForgeCardChannel } from "@/app/forge/lib/useForgeRealtime";
 import PresenceBar from "./PresenceBar";
 import { StudioSyncProvider } from "./StudioSyncContext";
 import CardDetailsFields from "./CardDetailsFields";
+import ScriptureFields from "./ScriptureFields";
 
 // DESCOPE (2026-07-03): the structured template (FullModeForm) was removed from the
 // studio; it remains on disk (unused) for recovery. A card is a name + raw text +
@@ -74,6 +75,8 @@ export default function StudioEditor({
   const savedRef = useRef(saved);
   const [pendingFinished, setPendingFinished] = useState<File | null>(null);
   const [uploading, setUploading] = useState<"finished" | null>(null);
+  // The verse finder's candidate excerpt, drawn on the preview face only. Never saved.
+  const [previewScripture, setPreviewScripture] = useState<string | null>(null);
   const router = useRouter();
 
   const { others, setEditing } = useForgeCardChannel(
@@ -221,6 +224,7 @@ export default function StudioEditor({
   // cache each t-stamped art URL indefinitely and still swap after router.refresh().
   const t = Date.parse(card.updatedAt) || 0;
   const activeSourceId = artCandidates.find((c) => c.isActiveSource)?.id ?? null;
+  const previewCard = previewScripture === null ? snapshot : { ...snapshot, scripture: previewScripture };
 
   return (
     <div className="mx-auto max-w-5xl p-4">
@@ -321,7 +325,7 @@ export default function StudioEditor({
                 artUrl={card.hasArt ? `/forge/api/art/${card.id}?t=${t}` : null}
               />
             ) : (
-              <ForgeCardPreview card={snapshot} artUrl={card.hasArt ? `/forge/api/art/${card.id}?t=${t}` : null} />
+              <ForgeCardPreview card={previewCard} artUrl={card.hasArt ? `/forge/api/art/${card.id}?t=${t}` : null} />
             )}
             {/* Prev/next within the set — same order as the grid, no wrap at ends. */}
             {prevId && (
@@ -356,6 +360,8 @@ export default function StudioEditor({
             <textarea value={snapshot.rawText ?? ""} onChange={(e) => update({ rawText: e.target.value })}
               placeholder="Type the card's special ability."
               className="max-h-[60vh] min-h-40 w-full rounded-md border bg-background px-3 py-2 text-sm [field-sizing:content]" />
+
+            <ScriptureFields snapshot={snapshot} update={update} onPreview={setPreviewScripture} />
 
             <CardDetailsFields snapshot={snapshot} update={update} />
 

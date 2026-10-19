@@ -11,7 +11,6 @@ import {
   typeIconSrc, brigadeIconSrc, multiBrigadeIconSrc, glyphIconSrc,
   typeLabel, brigadeLabel,
 } from "@/app/forge/lib/filterIcons";
-import { deriveTestamentAndGospel, formatTestament } from "@/app/decklist/card-search/data/testament";
 
 type ClassName = (typeof CLASSES)[number];
 type IconName = (typeof ICONS)[number];
@@ -49,7 +48,7 @@ function Tile({ src, label, title, ariaLabel, selected, onClick }: {
 
 // Structured, deck-relevant fields. The freeform text box stays the primary way to
 // write a card; these give the deckbuilder/validator machine-readable data (type,
-// brigade, stats, class, icons, identifiers, alignment, scripture). Every field is
+// brigade, stats, class, icons, identifiers, alignment). Every field is
 // always editable so any card — including a brand-new idea with no type yet — can be
 // filled out completely.
 export default function CardDetailsFields({
@@ -70,12 +69,6 @@ export default function CardDetailsFields({
     }
     update(patch);
   }
-
-  // Testament is never stored — it's derived from the reference. Mirror what the
-  // deckbuilder's N.T./O.T. filter will see so designers get instant feedback
-  // (and catch a mistyped reference that wouldn't classify).
-  const reference = (snapshot.reference ?? "").trim();
-  const { testament, isGospel } = deriveTestamentAndGospel(reference);
 
   // Collapsed by default (the block is tall); the summary previews what's set so
   // the card stays readable at a glance without opening it.
@@ -230,40 +223,6 @@ export default function CardDetailsFields({
           onChange={(identifiers) => update({ identifiers })}
           placeholder="Comma-separated, e.g. Genesis, Patriarch"
           className="w-full rounded-md border bg-background px-3 py-2 text-sm" />
-      </label>
-
-      {/* Reference — scripture citation printed on the card */}
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium">Reference</span>
-        <input
-          value={snapshot.reference ?? ""}
-          onChange={(e) => update({ reference: e.target.value || undefined })}
-          placeholder="e.g. Revelation 19:15"
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm" />
-        <span className="mt-1 block text-xs text-muted-foreground">The scripture reference printed on the card.</span>
-        {reference !== "" &&
-          (testament ? (
-            <span className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
-              <span className="rounded border px-1.5 py-0.5 font-medium text-muted-foreground">{formatTestament(testament)}</span>
-              {isGospel && (
-                <span className="rounded border px-1.5 py-0.5 font-medium text-muted-foreground">Gospel</span>
-              )}
-            </span>
-          ) : (
-            <span className="mt-1.5 block text-xs text-amber-700 dark:text-amber-300">
-              Couldn&rsquo;t determine testament from this reference.
-            </span>
-          ))}
-      </label>
-
-      {/* Scripture — the verse text printed on the card */}
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium">Scripture</span>
-        <textarea
-          value={snapshot.scripture ?? ""}
-          onChange={(e) => update({ scripture: e.target.value || undefined })}
-          placeholder="The scripture text printed on the card."
-          className="h-20 w-full rounded-md border bg-background px-3 py-2 text-sm" />
       </label>
       </div>
     </details>
