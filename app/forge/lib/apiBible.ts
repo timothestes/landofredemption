@@ -1,5 +1,6 @@
 // Server-only: reads API_BIBLE_KEY. Import from route handlers and server code only.
 import { unstable_cache } from "next/cache";
+import { BOOKS } from "@/app/forge/lib/scriptureRef";
 
 // NASB 2020. (NASB 1995 is b8ee27bcd1cae43a-01.)
 export const NASB_2020_ID = "a761ca71e0b3ddcf-01";
@@ -57,6 +58,16 @@ export function repairSearchText(text: string): string {
     .trim();
 }
 
+// NASB 2020 gives every book an `intro` pseudo-chapter, so GEN.1 has previous "GEN.intro" and MAL.4 has
+// next "MAT.intro". Map those to real chapters (null before Genesis 1).
+export function normalizeNeighbour(id: string | null, direction: "prev" | "next"): string | null {
+  if (id === null || !id.endsWith(".intro")) return id;
+  const book = id.slice(0, -".intro".length);
+  if (direction === "next") return `${book}.1`;
+  const i = BOOKS.findIndex((b) => b.id === book);
+  return i > 0 ? `${BOOKS[i - 1].id}.${BOOKS[i - 1].chapters}` : null;
+}
+
 async function getJson(path: string): Promise<any> {
   const key = process.env.API_BIBLE_KEY;
   if (!key) throw new UpstreamError("API.Bible is not configured");
@@ -86,8 +97,8 @@ const fetchChapterCached = unstable_cache(
       bookId: d.bookId,
       chapter: Number(d.number),
       verses: splitChapterText(d.content),
-      prev: d.previous?.id ?? null,
-      next: d.next?.id ?? null,
+      prev: normalizeNeighbour(d.previous?.id ?? null, "prev"),
+      next: normalizeNeighbour(d.next?.id ?? null, "next"),
       copyright: d.copyright ?? NASB_COPYRIGHT,
       fumsToken: json.meta?.fumsToken ?? "",
     };

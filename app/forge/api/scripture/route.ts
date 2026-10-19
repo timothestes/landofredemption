@@ -31,6 +31,7 @@ export async function GET(req: Request): Promise<Response> {
   if (q !== null) {
     const query = q.trim().replace(/\s+/g, " ");
     if (!query) return json({ error: "empty_query" }, 400);
+    if (query.length > 200) return json({ error: "bad_request" }, 400);
     try {
       return json(await searchVerses(query, 20));
     } catch (err) {

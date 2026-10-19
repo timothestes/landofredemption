@@ -181,7 +181,9 @@ export function classify(text: string): Classified {
   const ref = parseRef(trimmed);
   if (ref) return { kind: "ref", ref };
   const lead = leadingBook(trimmed);
-  if (lead) return { kind: "invalid", book: lead.book.name };
+  // A book name with nothing after it, or with a digit-led tail that failed the grammar, is a malformed
+  // reference. A book word followed by prose ("John the Baptist", "mark of the beast") is a keyword search.
+  if (lead && (!lead.rest || /^\d/.test(lead.rest))) return { kind: "invalid", book: lead.book.name };
   const [first, ...others] = trimmed.split(/\s+/);
   // Only a typo'd book followed by a reference tail is a suggestion; anything else is a keyword search.
   const book = SUGGEST_TAIL.test(others.join(" ")) ? suggestBook(first) : null;

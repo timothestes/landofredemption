@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 import { canonicalRef, parseRef } from "@/app/forge/lib/scriptureRef";
@@ -20,6 +20,7 @@ export default function ScriptureFields({
 }) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   // Testament is never stored — it's derived from the reference. Mirror what the
   // deckbuilder's N.T./O.T. filter will see so designers get instant feedback
@@ -33,6 +34,12 @@ export default function ScriptureFields({
   function close() {
     setOpen(false);
     onPreview(null);
+  }
+
+  // Esc / the toggle close the panel from inside it; hand focus back to the toggle so the builder keeps their place.
+  function closeToToggle() {
+    close();
+    toggleRef.current?.focus();
   }
 
   function edit(patch: Partial<DesignCard>) {
@@ -67,8 +74,8 @@ export default function ScriptureFields({
             ))}
         </label>
         {/* mt-6 lines the button up with the input under the label. */}
-        <Button type="button" variant="outline" size="sm" className="mt-6 shrink-0" aria-expanded={open}
-          onClick={() => (open ? close() : setOpen(true))}>
+        <Button ref={toggleRef} type="button" variant="outline" size="sm" className="mt-6 shrink-0" aria-expanded={open}
+          onClick={() => (open ? closeToToggle() : setOpen(true))}>
           {buttonLabel}
         </Button>
       </div>
@@ -89,7 +96,7 @@ export default function ScriptureFields({
           snapshot={snapshot}
           initialQuery={snapshot.reference ?? ""}
           onPreview={onPreview}
-          onClose={close}
+          onClose={closeToToggle}
           onUse={(patch) => {
             update(patch);
             close();
@@ -99,7 +106,7 @@ export default function ScriptureFields({
           }} />
       )}
 
-      {status && <p className="text-xs text-muted-foreground">{status}</p>}
+      <p role="status" className="text-xs text-muted-foreground">{status}</p>
     </div>
   );
 }

@@ -38,6 +38,10 @@ it("drops an opening quote at the cut start and keeps a closing quote after a se
   const v = [{ n: 1, text: "Then the Lord said to Noah, “Enter the ark, you and all your household.”" }];
   expect(excerpt(v, { start: { verse: 1, word: 6 }, end: { verse: 1, word: 14 } }).text).toBe("…Enter the ark, you and all your household.”");
 });
+it("a comma under a closing quote becomes an ellipsis before the quote", () => {
+  const v = [{ n: 1, text: "“The kings of the earth waged war,” and then the end came." }];
+  expect(excerpt(v, { start: { verse: 1, word: 0 }, end: { verse: 1, word: 7 } }).text).toBe("“The kings of the earth waged war…”");
+});
 it("start never passes end; at least one word stays selected", () => {
   const h = clampHandles(gen6, { start: { verse: 2, word: 5 }, end: { verse: 2, word: 5 } });
   expect(excerpt(gen6, h).text.length).toBeGreaterThan(0);

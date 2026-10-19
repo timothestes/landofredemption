@@ -5,6 +5,7 @@ import {
   NASB_2020_ID,
   UpstreamError,
   fetchChapter,
+  normalizeNeighbour,
   repairSearchText,
   searchVerses,
   splitChapterText,
@@ -69,5 +70,21 @@ describe("apiBible", () => {
     expect(s.total).toBe(5);
     expect(s.verses.find((v) => v.id === "GEN.26.18")!.text).not.toMatch(/L ord|  /);
     expect(s.copyright.startsWith("NEW AMERICAN STANDARD BIBLE")).toBe(true);
+    expect(s.verses.find((v) => v.id === "AMO.1.8")!.text.endsWith("Says the Lord God.")).toBe(true);
+  });
+
+  it("normalizeNeighbour maps .intro pseudo-chapters to real chapters", () => {
+    expect(normalizeNeighbour("GEN.intro", "prev")).toBeNull();
+    expect(normalizeNeighbour("EXO.intro", "prev")).toBe("GEN.50");
+    expect(normalizeNeighbour("MAT.intro", "next")).toBe("MAT.1");
+    expect(normalizeNeighbour("GEN.7", "next")).toBe("GEN.7");
+    expect(normalizeNeighbour(null, "next")).toBeNull();
+  });
+
+  it("fetchChapter normalizes an .intro previous at Genesis 1 to null", async () => {
+    process.env.API_BIBLE_KEY = "k";
+    const body = { ...genesis6, data: { ...genesis6.data, previous: { id: "GEN.intro" } } };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 200 })));
+    expect((await fetchChapter("GEN.1")).prev).toBeNull();
   });
 });

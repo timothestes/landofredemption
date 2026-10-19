@@ -96,6 +96,13 @@ describe("GET /forge/api/scripture", () => {
     expect(searchVerses).toHaveBeenCalledWith("wells Philistines", 20);
   });
 
+  it("q: 400 bad_request when longer than 200 characters", async () => {
+    const res = await get(`q=${"a".repeat(201)}`);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "bad_request" });
+    expect(searchVerses).not.toHaveBeenCalled();
+  });
+
   it("q: 400 empty_query on blank", async () => {
     const res = await get("q=%20%20");
     expect(res.status).toBe(400);

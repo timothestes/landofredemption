@@ -100,12 +100,19 @@ export function excerpt(verses: Verse[], h: Handles): { text: string; from: numb
   const leading = kept[0].at > rowOf(kept[0].n).offset || /^\p{Ll}/u.test(bare);
   const lastKept = kept[kept.length - 1];
   const cutEnd = lastKept.at + 1 < rowOf(lastKept.n).offset + rowOf(lastKept.n).w.length;
-  const trailing = (cutEnd || /[,;:]$/.test(last)) && !SENTENCE_END.test(last);
+  const trailing = (cutEnd || /[,;:][”’"]?$/.test(last)) && !SENTENCE_END.test(last);
 
   if (leading) parts[0] = bare;
-  if (trailing) parts[parts.length - 1] = parts[parts.length - 1].replace(/[,;:]$/, "");
+  // The ellipsis replaces trailing punctuation and sits before a closing quote: `war,”` -> `war…”`.
+  let closing = "";
+  if (trailing) {
+    const tail = parts[parts.length - 1].replace(/[,;:](?=[”’"]?$)/, "");
+    const q = tail.match(/[”’"]$/);
+    closing = q ? q[0] : "";
+    parts[parts.length - 1] = closing ? tail.slice(0, -1) : tail;
+  }
   return {
-    text: (leading ? "…" : "") + parts.join(" ") + (trailing ? "…" : ""),
+    text: (leading ? "…" : "") + parts.join(" ") + (trailing ? "…" + closing : ""),
     from: kept[0].n,
     to: kept[kept.length - 1].n,
   };

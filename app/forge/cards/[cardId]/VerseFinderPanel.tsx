@@ -77,6 +77,7 @@ export default function VerseFinderPanel({
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const startHandleRef = useRef<HTMLButtonElement>(null);
+  const mountLookup = useRef(false);
   const onPreviewRef = useRef(onPreview);
   useEffect(() => {
     onPreviewRef.current = onPreview;
@@ -156,7 +157,10 @@ export default function VerseFinderPanel({
       document.head.appendChild(s);
     }
     const c = classify(initialQuery);
-    if (c.kind === "ref") run(`ref=${encodeURIComponent(initialQuery.trim())}`, { kind: "chapter", ref: c.ref });
+    if (c.kind === "ref") {
+      mountLookup.current = true;
+      run(`ref=${encodeURIComponent(initialQuery.trim())}`, { kind: "chapter", ref: c.ref });
+    }
     return () => abortRef.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -218,6 +222,12 @@ export default function VerseFinderPanel({
   // Only from <body>: focus the builder moved elsewhere on purpose is left alone.
   useEffect(() => {
     if (loading) return;
+    // The automatic mount lookup landed while focus is still in the input: go straight to the start
+    // handle so a keyboard builder doesn't Tab through Look up / prev / next first.
+    if (mountLookup.current && chapter) {
+      mountLookup.current = false;
+      if (document.activeElement === inputRef.current) startHandleRef.current?.focus();
+    }
     const root = rootRef.current;
     const active = document.activeElement;
     if (!root || root.contains(active) || (active && active !== document.body)) return;
