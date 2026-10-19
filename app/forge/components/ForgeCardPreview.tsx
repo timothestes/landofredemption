@@ -2,7 +2,7 @@
 
 import { useId, type CSSProperties } from "react";
 import type { DesignCard } from "@/app/forge/lib/designCard";
-import { washPaths, washBands } from "@/app/forge/lib/frameAssets";
+import { washColumns, washBands } from "@/app/forge/lib/frameAssets";
 import { CANVAS, RECTS } from "@/app/forge/lib/frameGeometry";
 import CardSvg, { INK } from "@/app/forge/components/CardSvg";
 
@@ -40,8 +40,9 @@ export default function ForgeCardPreview({
   card, artUrl, className,
 }: { card: DesignCard; artUrl?: string | null; className?: string }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
-  const washes = washPaths(card);
-  const bands = washBands(washes.length);
+  const columns = washColumns(card);
+  // A dual-alignment card's evil column fades in over its good one, left to right.
+  const split = columns.length > 1 ? washBands(2)[1]! : null;
   const B = RECTS.border, A = RECTS.art;
 
   return (
@@ -55,18 +56,31 @@ export default function ForgeCardPreview({
         fontFamily: FONTS.body, userSelect: "none",
       }}
     >
-      {/* 1. wash(es) inside the border rect: each further brigade blends in below the one
-            before, in equal bands, in the order of the icon box's bands. Each fade spans
-            40% / N of the height, so two brigades fade 40% to 60%. */}
-      {washes.length === 0 && <div style={{ ...place(B), borderRadius: radius(B), background: "#b9b3aa" }} />}
-      {washes.map((src, i) => {
-        const band = bands[i];
-        const mask = band ? `linear-gradient(to bottom, transparent ${band.from}%, #000 ${band.to}%)` : null;
+      {/* 1. wash(es) inside the border rect, one column per alignment: each further brigade
+            blends in below the one before, in equal bands, in the order of the icon box's
+            bands. Each fade spans 40% / N of the height, so two brigades fade 40% to 60%. A
+            dual-alignment card's evil column blends in over its good column the same way,
+            left to right. */}
+      {columns.map((col, c) => {
+        const bands = washBands(col.length);
+        const across = c > 0 && split ? `linear-gradient(to right, transparent ${split.from}%, #000 ${split.to}%)` : null;
         return (
-          <Img key={i} src={src} style={{
-            ...place(B), borderRadius: radius(B), objectFit: "cover",
-            ...(mask ? { WebkitMaskImage: mask, maskImage: mask } : {}),
-          }} />
+          <div key={c} style={{
+            ...place(B), borderRadius: radius(B), overflow: "hidden",
+            ...(across ? { WebkitMaskImage: across, maskImage: across } : {}),
+          }}>
+            {col.length === 0 && <div style={{ position: "absolute", inset: 0, background: "#b9b3aa" }} />}
+            {col.map((src, i) => {
+              const band = bands[i];
+              const mask = band ? `linear-gradient(to bottom, transparent ${band.from}%, #000 ${band.to}%)` : null;
+              return (
+                <Img key={i} src={src} style={{
+                  position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
+                  ...(mask ? { WebkitMaskImage: mask, maskImage: mask } : {}),
+                }} />
+              );
+            })}
+          </div>
         );
       })}
 

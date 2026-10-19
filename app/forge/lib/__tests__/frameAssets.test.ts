@@ -3,7 +3,8 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { BRIGADES, CARD_TYPES, EVIL_BRIGADES, GOOD_BRIGADES, type DesignCard } from "../designCard";
 import {
-  BRIGADE_HEX, BRIGADE_SLUG, SYNTHESIZED_WASHES, washPaths, iconBox, classIcons,
+  BRIGADE_HEX, BRIGADE_SLUG, SYNTHESIZED_WASHES, washPaths, washColumns, iconBox, classIcons, framePaths,
+  isDualAlignment, sideStat,
   isPreviewApproximate, specialWash, showsStats,
 } from "../frameAssets";
 import { RECTS, CANVAS, BRIGADE_BOX_HEX, ICON_RECTS } from "../frameGeometry";
@@ -225,5 +226,130 @@ describe("classIcons / approximate", () => {
     expect(isPreviewApproximate({ brigades: [...EVIL_BRIGADES] })).toBe(true);
     expect(isPreviewApproximate({ legality: "Classic" })).toBe(true);
     expect(isPreviewApproximate({ brigades: ["Teal"] })).toBe(true);
+  });
+});
+
+// Dual-alignment cards print as two half-frames. Checked on Perfidy, Measured Mien, Return to
+// Fight (T2C), Quake in Edom, Joab the General (II), Battle Axe, Philosophy (RR2), Defenestrated!
+// (Roots) and Blood Avenger (IR): the good type's icon in a box of the good brigade on the left,
+// the evil type's in a box of the evil brigade on the right, each box carrying its own side of
+// the stats; the wash blends good into evil left to right; the title sits between the boxes.
+describe("dual alignment", () => {
+  const PERFIDY: DesignCard = { name: "Perfidy", cardType: ["GE", "EE"], brigades: ["Green", "Brown"], strength: "6 (0)", toughness: "2 (6)" };
+  const JOAB: DesignCard = { name: "Joab, the General", cardType: ["Hero", "EvilCharacter"], brigades: ["Purple", "Brown"], strength: "12 (6)", toughness: "6 (12)", class: ["Warrior"] };
+
+  it("is any card with both a good and an evil type, or whose alignment is set to Good/Evil", () => {
+    expect(isDualAlignment(PERFIDY)).toBe(true);
+    expect(isDualAlignment(JOAB)).toBe(true);
+    expect(isDualAlignment({ ...PERFIDY, alignment: "Neutral" })).toBe(true); // the catalog files GE/EE cards as Neutral
+    expect(isDualAlignment({ cardType: ["Dominant"], alignment: "Good_Evil" })).toBe(true);
+    expect(isDualAlignment({ cardType: ["GE"], brigades: ["Green", "Brown"] })).toBe(false);
+    expect(isDualAlignment({ cardType: ["Covenant"], brigades: ["Green"], alignment: "Good" })).toBe(false);
+  });
+
+  it("splits a paired stat between the sides; a single value prints on both (Battle Axe: 4/3 (2) → 4/3 and 4/2)", () => {
+    expect(sideStat("6 (0)", "left")).toBe(6);
+    expect(sideStat("6 (0)", "right")).toBe(0);
+    expect(sideStat("X (0)", "left")).toBe("X");
+    expect(sideStat("X (0)", "right")).toBe(0);
+    expect(sideStat(4, "left")).toBe(4);
+    expect(sideStat(4, "right")).toBe(4);
+    expect(sideStat("X", "right")).toBe("X");
+    expect(sideStat(null, "right")).toBeNull();
+    expect(sideStat(undefined, "left")).toBeUndefined();
+  });
+
+  it("boxes: good type and brigade on the left, evil on the right, each with its side's stats", () => {
+    const left = iconBox(PERFIDY, "left")!, right = iconBox(PERFIDY, "right")!;
+    expect(left.icon).toBe("/forge/frames/icons/bible.png");
+    expect(left.fill).toBe(BRIGADE_HEX.Green);
+    expect(left.bands).toEqual([]);
+    expect(left.stats).toBe("6/2");
+    expect(left.rect).toEqual(RECTS.leftBox);
+    expect(right.icon).toBe("/forge/frames/icons/skull.png");
+    expect(right.fill).toBe(BRIGADE_HEX.Brown);
+    expect(right.bands).toEqual([]);
+    expect(right.badge).toBeNull();
+    expect(right.withStats).toBe(true);
+    expect(right.stats).toBe("0/6");
+    expect(right.darkText).toBe(false);
+  });
+
+  it("mirrors the right box and its icon slot across the card", () => {
+    const right = iconBox(PERFIDY, "right")!;
+    const L = RECTS.leftBox;
+    expect(right.rect).toEqual({ x: CANVAS.w - L.x - L.w, y: L.y, w: L.w, h: L.h });
+    const slot = ICON_RECTS.skullStats;
+    expect(right.iconRect).toEqual({ x: CANVAS.w - slot.x - slot.w, y: slot.y, w: slot.w, h: slot.h });
+    // Without stats the plain slot, mirrored.
+    const plain = iconBox({ cardType: ["GE", "EE"], brigades: ["Green", "Brown"] }, "right")!;
+    expect(plain.stats).toBeNull();
+    expect(plain.iconRect!.y).toBe(ICON_RECTS.skull.y);
+  });
+
+  it("a white side takes dark stat text, as any white box does (Measured Mien)", () => {
+    const card: DesignCard = { cardType: ["GE", "EE"], brigades: ["White", "Crimson"], strength: "4 (0)", toughness: "0 (4)" };
+    expect(iconBox(card, "left")!.darkText).toBe(true);
+    expect(iconBox(card, "right")!.darkText).toBe(false);
+  });
+
+  it("characters: cross left, dragon right; the class shield prints under both boxes (Joab)", () => {
+    expect(iconBox(JOAB, "left")!.icon).toBe("/forge/frames/icons/cross.png");
+    expect(iconBox(JOAB, "left")!.stats).toBe("12/6");
+    expect(iconBox(JOAB, "right")!.icon).toBe("/forge/frames/icons/dragon.png");
+    expect(iconBox(JOAB, "right")!.stats).toBe("6/12");
+    const shields = classIcons(JOAB);
+    expect(shields.map((c) => c.src)).toEqual(["/forge/frames/icons/warrior.png", "/forge/frames/icons/warrior.png"]);
+    expect(shields[0].rect).toEqual(ICON_RECTS.shield);
+    expect(shields[1].rect.x).toBeCloseTo(CANVAS.w - ICON_RECTS.shield.x - ICON_RECTS.shield.w, 6);
+    expect(shields[1].rect.y).toBe(shields[0].rect.y);
+    // The territory plate stays on the left.
+    const withPlate = classIcons({ ...JOAB, icons: ["Territory"] });
+    expect(withPlate.filter((c) => c.src.endsWith("territory.png"))).toHaveLength(1);
+  });
+
+  it("a dual Dominant takes the lamb on the left and the reaper on the right, over the two nebulae", () => {
+    const card: DesignCard = { cardType: ["Dominant"], alignment: "Good_Evil" };
+    expect(iconBox(card, "left")!.badge).toBe("/forge/frames/badges/lamb.webp");
+    expect(iconBox(card, "right")!.badge).toBe("/forge/frames/badges/reaper.webp");
+    expect(washColumns(card)).toEqual([["/forge/frames/washes/good-dom.webp"], ["/forge/frames/washes/evil-dom.webp"]]);
+  });
+
+  it("washes: the good brigades' column on the left, the evil brigades' on the right", () => {
+    expect(washColumns(PERFIDY)).toEqual([["/forge/frames/washes/green.webp"], ["/forge/frames/washes/brown.webp"]]);
+    expect(washPaths(PERFIDY)).toEqual(["/forge/frames/washes/green.webp", "/forge/frames/washes/brown.webp"]);
+    // A side with no brigade yet is an empty column; the renderers paint it neutral.
+    expect(washColumns({ cardType: ["GE", "EE"], brigades: ["Green"] })).toEqual([["/forge/frames/washes/green.webp"], []]);
+    // Each side bands its own brigades in listed order, the way a single-alignment card does.
+    const three: DesignCard = { cardType: ["GE", "EE"], brigades: ["Green", "Purple", "PaleGreen"] };
+    expect(washColumns(three)).toEqual([
+      ["/forge/frames/washes/green.webp", "/forge/frames/washes/purple.webp"], ["/forge/frames/washes/pale-green.webp"],
+    ]);
+    expect(iconBox(three, "left")!.bands).toEqual([BRIGADE_HEX.Purple]);
+    expect(iconBox(three, "right")!.fill).toBe(BRIGADE_HEX.PaleGreen);
+    // Single-alignment cards are one column, unchanged.
+    expect(washColumns({ brigades: ["Blue", "Green"] })).toEqual([["/forge/frames/washes/blue.webp", "/forge/frames/washes/green.webp"]]);
+    expect(washColumns({})).toEqual([[]]);
+  });
+
+  it("leaves a single-alignment card with an off-side brigade banded as before", () => {
+    const box = iconBox({ cardType: ["GE"], brigades: ["Green", "Brown"] }, "left")!;
+    expect(box.bands).toEqual([BRIGADE_HEX.Brown]);
+    expect(iconBox({ cardType: ["GE"], brigades: ["Green", "Brown"] }, "right")).toBeNull();
+  });
+
+  it("the chalice box keeps the template's right-box slot and no stats", () => {
+    const right = iconBox({ cardType: ["Covenant"], brigades: ["Green"], strength: 5 }, "right")!;
+    expect(right.rect).toEqual(RECTS.rightBox);
+    expect(right.stats).toBeNull();
+  });
+
+  it("framePaths lists both sides' washes and icons", () => {
+    const paths = framePaths(JOAB);
+    for (const p of [
+      "/forge/frames/washes/purple.webp", "/forge/frames/washes/brown.webp",
+      "/forge/frames/icons/cross.png", "/forge/frames/icons/dragon.png", "/forge/frames/icons/warrior.png",
+    ]) expect(paths).toContain(p);
+    expect(new Set(paths).size).toBe(paths.length);
   });
 });
