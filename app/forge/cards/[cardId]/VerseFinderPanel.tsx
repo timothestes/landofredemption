@@ -9,7 +9,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNod
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { classify, canonicalRef, parseRef, type ParsedRef } from "@/app/forge/lib/scriptureRef";
+import { classify, canonicalRef, type ParsedRef } from "@/app/forge/lib/scriptureRef";
 import {
   words,
   excerpt,
@@ -24,7 +24,8 @@ import {
 import { pushRecent, readRecent, writeRecent, type RecentChapter } from "@/app/forge/lib/recentChapters";
 import { wrapLines, textFit, TEXT_METRICS, TEXT_WIDTH } from "@/app/forge/lib/textFit";
 import type { DesignCard } from "@/app/forge/lib/designCard";
-import type { BibleEdition } from "@/app/forge/lib/apiBible";
+import { SCOPES, cardNameQuery, scopeById, scopeNameFor, type ScopeId } from "@/app/forge/lib/searchScope";
+import VerseSearch, { type Hit, type SearchSort } from "./VerseSearch";
 
 declare global {
   interface Window {
@@ -44,30 +45,41 @@ type Chapter = {
   copyright: string;
   fumsToken: string;
 };
-type Hit = { id: string; reference: string; text: string };
-type Search = { total: number; verses: Hit[]; copyright: string; fumsToken: string };
+type Search = { total: number; verses: Hit[]; copyright: string; fumsToken: string; offset: number; limit: number };
+/** Where the results on screen came from, so paging / chips / sort re-run the same words. */
+type SearchOpts = { range: string | null; scopeLabel: string | null; boxScoped: boolean };
+/** Recorded when the response lands: paging and the chip row follow the rows on screen, not pending state. */
+type LastSearch = SearchOpts & { words: string; sort: SearchSort; exact: boolean };
+type SearchSettings = { sort: SearchSort; exact: boolean };
 type Which = "start" | "end";
 
 const UPSTREAM = "Couldn't reach API.Bible. Type the verse by hand for now.";
-const NO_HITS = "No verses matched.";
 const CANT_FIT = "Can't fit without the ability shrinking";
-const EDITION_KEY = "forge.verseFinder.edition";
+const SEARCH_KEY = "forge.verseFinder.search";
 
 export default function VerseFinderPanel({
   snapshot,
   initialQuery,
+  cardName,
   onUse,
   onClose,
   onPreview,
 }: {
   snapshot: DesignCard;
   initialQuery: string;
+  /** Prefills the box (as keywords, selected) when the card has no reference yet. */
+  cardName?: string | null;
   onUse: (patch: { reference: string; scripture: string }) => void;
   onClose: () => void;
   /** Candidate excerpt for the live card preview; null when nothing is loaded. Never saved. */
   onPreview?: (scripture: string | null) => void;
 }) {
-  const [query, setQuery] = useState(initialQuery);
+  // A bare book name ("Daniel") would classify as a malformed reference and dead-end; quoted it is a phrase search.
+  const [prefill] = useState(() => {
+    const q = initialQuery.trim() ? null : cardNameQuery(cardName);
+    return q && classify(q).kind === "invalid" ? `"${q}"` : q;
+  });
+  const [query, setQuery] = useState(prefill ?? initialQuery);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [chapter, setChapter] = useState<Chapter | null>(null);
@@ -75,12 +87,20 @@ export default function VerseFinderPanel({
   const [highlight, setHighlight] = useState(0);
   const [handles, setHandles] = useState<Handles | null>(null);
   const [recent, setRecent] = useState<RecentChapter[]>([]);
-  const [edition, setEdition] = useState<BibleEdition>("2020");
+  const [scope, setScope] = useState<ScopeId>("any"); // per card: never persisted
+  const [sort, setSort] = useState<SearchSort>("relevance");
+  const [exact, setExact] = useState(false);
+  const [lastSearch, setLastSearch] = useState<LastSearch | null>(null);
+  const [offset, setOffset] = useState(0);
+  /** The chapter on screen was opened from a result row: Esc / ← Results go back to the list. */
+  const [fromHit, setFromHit] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const startHandleRef = useRef<HTMLButtonElement>(null);
   const mountLookup = useRef(false);
+  /** Set by an action whose landing should focus the results list (back from a hit, chip / sort / exact). */
+  const focusList = useRef(false);
   const onPreviewRef = useRef(onPreview);
   useEffect(() => {
     onPreviewRef.current = onPreview;
@@ -90,8 +110,9 @@ export default function VerseFinderPanel({
 
   async function run(
     qs: string,
-    opts: { kind: "chapter" | "search"; ref?: ParsedRef; select?: number },
-    ed: BibleEdition = edition,
+    opts:
+      | { kind: "chapter"; ref?: ParsedRef; select?: number; fromHit?: boolean }
+      | { kind: "search"; search: LastSearch; at: number },
   ) {
     abortRef.current?.abort();
     const ac = new AbortController();
@@ -99,64 +120,188 @@ export default function VerseFinderPanel({
     setLoading(true);
     setStatus(null);
     try {
-      const res = await fetch(`/forge/api/scripture?${qs}&bible=${ed}`, { signal: ac.signal });
+      const res = await fetch(`/forge/api/scripture?${qs}`, { signal: ac.signal });
       const body = await res.json().catch(() => null);
       if (ac.signal.aborted) return;
-      if (res.status === 404 && body?.error === "verse_out_of_range" && opts.ref) {
+      if (opts.kind === "chapter" && res.status === 404 && body?.error === "verse_out_of_range" && opts.ref) {
         setStatus(`${opts.ref.book} ${opts.ref.chapter} has ${body.verseCount} verses.`);
         return;
       }
       if (!res.ok || !body) {
+        focusList.current = false;
         setStatus(UPSTREAM);
         return;
       }
       if (opts.kind === "search") {
         const data = body as Search;
-        setChapter(null);
-        setHandles(null);
-        setResults(data);
-        setHighlight(0);
-        if (!data.verses.length) setStatus(NO_HITS);
+        if (opts.at > 0) {
+          // A page: append to the list on screen; highlight and focus stay where they are.
+          // Upstream relevance paging can shift, so drop rows already listed (keeps `key={hit.id}` unique).
+          // An empty page (upstream can report total 0 there) keeps the total and offset on screen.
+          setResults((prev) => {
+            if (!prev) return data;
+            if (!data.verses.length) return prev;
+            const seen = new Set(prev.verses.map((v) => v.id));
+            return { ...data, verses: [...prev.verses, ...data.verses.filter((v) => !seen.has(v.id))] };
+          });
+        } else {
+          setChapter(null);
+          setHandles(null);
+          setFromHit(false);
+          setResults(data);
+          setHighlight(0);
+        }
+        if (opts.at === 0 || data.verses.length) setOffset(opts.at);
+        setLastSearch(opts.search);
+        // Scope follows the landed response, so a failed or aborted chip re-run never runs ahead of the screen.
+        if (!opts.search.boxScoped) setScope(SCOPES.find((x) => x.range === opts.search.range)?.id ?? "any");
       } else {
         const data = body as Chapter;
         const from = opts.select ?? data.requested.from;
         const to = opts.select ?? data.requested.to;
-        setResults(null);
+        // A hit keeps the list behind the chapter; a reference lookup replaces it.
+        if (!opts.fromHit) {
+          setResults(null);
+          setLastSearch(null);
+        }
+        setFromHit(!!opts.fromHit);
         setChapter(data);
         setHandles(wholeRange(data.verses, from, to));
       }
     } catch {
-      if (!ac.signal.aborted) setStatus(UPSTREAM);
+      if (!ac.signal.aborted) {
+        focusList.current = false;
+        setStatus(UPSTREAM);
+      }
     } finally {
       if (abortRef.current === ac) setLoading(false);
     }
   }
 
+  // One keyword search call. A new search from the box uses state; re-runs and pages pass the
+  // settings of the search on screen (`fromLast`) with at most one value changed.
+  function search(
+    words: string,
+    opts: SearchOpts,
+    at = 0,
+    { sort: so, exact: ex }: SearchSettings = { sort, exact },
+  ) {
+    const p = new URLSearchParams({ q: words, offset: String(at) });
+    if (opts.range) p.set("range", opts.range);
+    if (so === "canonical") p.set("sort", "canonical");
+    if (ex) p.set("exact", "1");
+    const { range, scopeLabel, boxScoped } = opts;
+    run(p.toString(), { kind: "search", search: { words, range, scopeLabel, boxScoped, sort: so, exact: ex }, at });
+  }
+  const fromLast = (l: LastSearch): SearchSettings => ({ sort: l.sort, exact: l.exact });
+
+  // The chip the rows on screen came from (none while a book from the box scopes them).
+  const shownScope: ScopeId | null = lastSearch
+    ? lastSearch.boxScoped
+      ? null
+      : (SCOPES.find((x) => x.range === lastSearch.range)?.id ?? "any")
+    : scope;
+
+  const chipSearch = (id: ScopeId): SearchOpts => {
+    const s = scopeById(id);
+    return { range: s.range, scopeLabel: id === "any" ? null : s.label, boxScoped: false };
+  };
+
   function submit() {
+    focusList.current = false; // typed in the box: focus stays there
     const c = classified;
     if (c.kind === "ref") run(`ref=${encodeURIComponent(query.trim())}`, { kind: "chapter", ref: c.ref });
-    else if (c.kind === "search") run(`q=${encodeURIComponent(query.trim())}`, { kind: "search" });
+    else if (c.kind === "scoped") search(c.rest, { range: c.book.id, scopeLabel: scopeNameFor(c.book), boxScoped: true });
+    else if (c.kind === "search") search(query.trim(), chipSearch(scope));
     else if (c.kind === "suggest") setQuery(`${c.book} ${c.rest}`.trim());
   }
 
-  const loadChapter = (id: string, select?: number) =>
-    run(`chapter=${encodeURIComponent(id)}`, { kind: "chapter", select });
+  const loadChapter = (id: string, select?: number, fromHit = false) =>
+    run(`chapter=${encodeURIComponent(id)}`, { kind: "chapter", select, fromHit });
 
   function openHit(hit: Hit) {
     const [book, ch, verse] = hit.id.split(".");
-    loadChapter(`${book}.${ch}`, Number(verse));
+    loadChapter(`${book}.${ch}`, Number(verse), true);
   }
+
+  function saveSearchPrefs(next: { sort: SearchSort; exact: boolean }) {
+    try {
+      window.sessionStorage.setItem(SEARCH_KEY, JSON.stringify(next));
+    } catch {
+      // storage blocked — the choice still holds for this panel
+    }
+  }
+
+  // Chip / sort / exact changes re-run what is on screen at offset 0 (one call); with nothing on
+  // screen they only update state.
+  // The chip row renders from lastSearch, so a click also re-syncs state to what is on screen.
+  // A re-run that lands moves focus to the list (`focusList`), not back to the input.
+  function changeScope(id: ScopeId) {
+    if (id === shownScope) return;
+    if (results && lastSearch && !lastSearch.boxScoped) {
+      focusList.current = true;
+      search(lastSearch.words, chipSearch(id), 0, fromLast(lastSearch));
+    } else setScope(id);
+  }
+  function changeSort(next: SearchSort) {
+    const cur = lastSearch ?? { sort, exact };
+    if (next === cur.sort) return;
+    setSort(next);
+    setExact(cur.exact);
+    saveSearchPrefs({ sort: next, exact: cur.exact });
+    if (results && lastSearch) {
+      focusList.current = true;
+      search(lastSearch.words, lastSearch, 0, { ...fromLast(lastSearch), sort: next });
+    }
+  }
+  function changeExact(next: boolean) {
+    const cur = lastSearch ?? { sort, exact };
+    setExact(next);
+    setSort(cur.sort);
+    saveSearchPrefs({ sort: cur.sort, exact: next });
+    if (results && lastSearch) {
+      focusList.current = true;
+      search(lastSearch.words, lastSearch, 0, { ...fromLast(lastSearch), exact: next });
+    }
+  }
+  function more() {
+    if (results && lastSearch) search(lastSearch.words, lastSearch, offset + results.limit, fromLast(lastSearch));
+  }
+  function everywhere() {
+    if (!lastSearch) return;
+    if (lastSearch.boxScoped) setQuery(lastSearch.words);
+    search(lastSearch.words, chipSearch("any"), 0, fromLast(lastSearch));
+  }
+
+  // Back from a chapter opened from a hit: the list returns with the same row highlighted, no fetch.
+  // The preview effect releases the card preview (null) once `chapter` is gone.
+  const backable = !!chapter && !!results && fromHit;
+  function backToResults() {
+    setChapter(null);
+    setHandles(null);
+    setFromHit(false);
+    setStatus(null);
+    focusList.current = true;
+    // The same response is shown again: one more view.
+    if (results?.fumsToken) window.fums?.("trackView", results.fumsToken);
+  }
+  // "Esc · back to results" only while the box still holds the search on screen; edited text gets the normal hint.
+  const boxShowsSearch =
+    !!lastSearch &&
+    (lastSearch.boxScoped
+      ? classified.kind === "scoped" && classified.book.id === lastSearch.range && classified.rest.trim() === lastSearch.words
+      : query.trim() === lastSearch.words);
 
   // Mount: recent chips, FUMS script + queue stub, and the one automatic lookup.
   useEffect(() => {
     setRecent(readRecent());
-    let ed: BibleEdition = "2020";
     try {
-      if (window.sessionStorage.getItem(EDITION_KEY) === "1995") ed = "1995";
+      const saved = JSON.parse(window.sessionStorage.getItem(SEARCH_KEY) ?? "null");
+      if (saved?.sort === "canonical") setSort("canonical");
+      if (saved?.exact === true) setExact(true);
     } catch {
-      // storage blocked — stay on 2020
+      // storage blocked or junk — defaults
     }
-    setEdition(ed);
     window.fumsData = window.fumsData || [];
     window.fums =
       window.fums ||
@@ -173,8 +318,10 @@ export default function VerseFinderPanel({
     const c = classify(initialQuery);
     if (c.kind === "ref") {
       mountLookup.current = true;
-      run(`ref=${encodeURIComponent(initialQuery.trim())}`, { kind: "chapter", ref: c.ref }, ed);
+      run(`ref=${encodeURIComponent(initialQuery.trim())}`, { kind: "chapter", ref: c.ref });
     }
+    // A card-name prefill is only a suggestion: select it so typing replaces it. No fetch.
+    if (prefill) inputRef.current?.select();
     return () => abortRef.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -189,22 +336,6 @@ export default function VerseFinderPanel({
 
   const ex = useMemo(() => (chapter && handles ? excerpt(chapter.verses, handles) : null), [chapter, handles]);
 
-  // Switching editions refetches what is on screen (same verse span, or the same search).
-  function switchEdition(next: BibleEdition) {
-    if (next === edition) return;
-    setEdition(next);
-    try {
-      window.sessionStorage.setItem(EDITION_KEY, next);
-    } catch {
-      // storage blocked — the choice still holds for this panel
-    }
-    if (chapter && ex) {
-      const canonical = canonicalRef(chapter.bookId, chapter.chapter, ex.from, ex.to);
-      run(`ref=${encodeURIComponent(canonical)}`, { kind: "chapter", ref: parseRef(canonical) ?? undefined }, next);
-    } else if (results && classified.kind === "search") {
-      run(`q=${encodeURIComponent(query.trim())}`, { kind: "search" }, next);
-    }
-  }
   const lines = useMemo(
     () => (ex ? wrapLines(ex.text, "italic", TEXT_METRICS.verse.size, TEXT_WIDTH) : []),
     [ex],
@@ -237,7 +368,8 @@ export default function VerseFinderPanel({
     } else if (e.key === "Escape") {
       e.preventDefault();
       e.stopPropagation();
-      onClose();
+      if (backable) backToResults();
+      else onClose();
     }
   }
 
@@ -251,6 +383,13 @@ export default function VerseFinderPanel({
   // Keep focus inside the panel so Esc / ⌘Enter / handle keys keep working. Opening a hit or a chip,
   // a successful trim, and disabled-while-loading buttons all drop focus to <body>; pull it back.
   // Only from <body>: focus the builder moved elsewhere on purpose is left alone.
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (focusList.current && !chapter) {
+      focusList.current = false;
+      listRef.current?.focus();
+    }
+  }, [chapter, results]);
   useEffect(() => {
     if (loading) return;
     // The automatic mount lookup landed while focus is still in the input: go straight to the start
@@ -265,7 +404,6 @@ export default function VerseFinderPanel({
     (startHandleRef.current ?? inputRef.current)?.focus();
   }, [chapter, handles, loading]);
 
-  const listRef = useRef<HTMLDivElement>(null);
   const hasResults = !!results?.verses.length;
   const copyright = chapter ? chapter.copyright : hasResults ? results!.copyright : null;
 
@@ -280,29 +418,46 @@ export default function VerseFinderPanel({
         inputRef={inputRef}
         query={query}
         setQuery={setQuery}
-        hint={hintFor(classified)}
+        hint={backable && boxShowsSearch ? "Esc · back to results" : hintFor(classified)}
         status={status}
         loading={loading}
         onSubmit={submit}
-        onArrowDown={() => hasResults && listRef.current?.focus()}
+        onArrowDown={() => !chapter && hasResults && listRef.current?.focus()}
         chapter={chapter}
-        onPrev={() => chapter?.prev && loadChapter(chapter.prev)}
-        onNext={() => chapter?.next && loadChapter(chapter.next)}
-        edition={edition}
-        onEdition={switchEdition}
+        onPrev={() => chapter?.prev && loadChapter(chapter.prev, undefined, fromHit)}
+        onNext={() => chapter?.next && loadChapter(chapter.next, undefined, fromHit)}
       />
-      {!chapter && !hasResults && <RecentChips recent={recent} disabled={loading} onPick={(id) => loadChapter(id)} />}
-      {!chapter && hasResults && (
-        <ResultsList
+      {!chapter && !results && <RecentChips recent={recent} disabled={loading} onPick={(id) => loadChapter(id)} />}
+      {!chapter && results && lastSearch && (
+        <VerseSearch
           listRef={listRef}
-          hits={results!.verses}
+          results={{ total: results.total, verses: results.verses, offset, limit: results.limit }}
+          words={lastSearch.words}
+          scopeLabel={lastSearch.scopeLabel}
+          boxScoped={lastSearch.boxScoped}
+          scope={shownScope ?? "any"}
+          onScope={changeScope}
+          sort={lastSearch.sort}
+          onSort={changeSort}
+          exact={lastSearch.exact}
+          onExact={changeExact}
           highlight={highlight}
           setHighlight={setHighlight}
+          loading={loading}
           onOpen={openHit}
+          onMore={more}
+          onEverywhere={everywhere}
         />
       )}
       {chapter && handles && ex && (
         <>
+          {backable && (
+            <div className="flex items-center">
+              <Button type="button" variant="ghost" size="sm" onClick={backToResults}>
+                <span aria-hidden="true">←</span> Results ({results!.total})
+              </Button>
+            </div>
+          )}
           <ChapterView
             startHandleRef={startHandleRef}
             chapter={chapter}
@@ -332,6 +487,8 @@ function hintFor(c: ReturnType<typeof classify>): string | null {
       return `→ ${canonicalRef(c.ref.bookId, c.ref.chapter, c.ref.from, c.ref.to)}`;
     case "search":
       return "Keyword search";
+    case "scoped":
+      return `Keyword search · in ${scopeNameFor(c.book)}`;
     case "suggest":
       return `Did you mean ${`${c.book} ${c.rest}`.trim()}?`;
     case "invalid":
@@ -353,8 +510,6 @@ function InputRow(props: {
   chapter: Chapter | null;
   onPrev: () => void;
   onNext: () => void;
-  edition: BibleEdition;
-  onEdition: (e: BibleEdition) => void;
 }) {
   const { chapter, loading } = props;
   return (
@@ -377,24 +532,6 @@ function InputRow(props: {
           aria-label="Verse reference or keywords"
           className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm"
         />
-        <div role="group" aria-label="NASB edition" className="flex shrink-0 overflow-hidden rounded-md border">
-          {(["2020", "1995"] as const).map((e) => (
-            <button
-              key={e}
-              type="button"
-              aria-pressed={props.edition === e}
-              title={`NASB ${e}`}
-              onClick={() => props.onEdition(e)}
-              disabled={loading}
-              className={cn(
-                "px-2.5 py-1.5 text-xs tabular-nums",
-                props.edition === e ? "bg-accent font-medium" : "text-muted-foreground hover:bg-accent/60",
-              )}
-            >
-              {e}
-            </button>
-          ))}
-        </div>
         <Button type="button" variant="secondary" size="sm" onClick={props.onSubmit} disabled={loading}>
           {loading && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
           Look up
@@ -455,74 +592,6 @@ function RecentChips({
           {r.label}
           {i === 0 && " · last used"}
         </button>
-      ))}
-    </div>
-  );
-}
-
-function ResultsList({
-  listRef,
-  hits,
-  highlight,
-  setHighlight,
-  onOpen,
-}: {
-  listRef: RefObject<HTMLDivElement | null>;
-  hits: Hit[];
-  highlight: number;
-  setHighlight: (i: number) => void;
-  onOpen: (hit: Hit) => void;
-}) {
-  useEffect(() => {
-    // Scroll only the list itself (scrollIntoView would also scroll the page).
-    const list = listRef.current;
-    const row = list?.querySelector<HTMLElement>(`[data-index="${highlight}"]`);
-    if (!list || !row) return;
-    if (row.offsetTop < list.scrollTop) list.scrollTop = row.offsetTop;
-    else if (row.offsetTop + row.offsetHeight > list.scrollTop + list.clientHeight)
-      list.scrollTop = row.offsetTop + row.offsetHeight - list.clientHeight;
-  }, [highlight, listRef]);
-
-  return (
-    <div
-      ref={listRef}
-      tabIndex={0}
-      role="listbox"
-      aria-label="Search results"
-      aria-activedescendant={`verse-hit-${highlight}`}
-      onKeyDown={(e) => {
-        if (e.key === "ArrowDown") {
-          e.preventDefault();
-          setHighlight(Math.min(highlight + 1, hits.length - 1));
-        } else if (e.key === "ArrowUp") {
-          e.preventDefault();
-          setHighlight(Math.max(highlight - 1, 0));
-        } else if (e.key === "Enter" && !e.metaKey && !e.ctrlKey) {
-          e.preventDefault();
-          if (hits[highlight]) onOpen(hits[highlight]);
-        }
-      }}
-      className="relative max-h-72 overflow-y-auto rounded-md border outline-none"
-    >
-      {hits.map((hit, i) => (
-        <div
-          key={hit.id}
-          id={`verse-hit-${i}`}
-          data-index={i}
-          role="option"
-          aria-selected={i === highlight}
-          onClick={() => {
-            setHighlight(i);
-            onOpen(hit);
-          }}
-          className={cn(
-            "cursor-pointer border-b px-3 py-2 text-sm last:border-b-0",
-            i === highlight ? "bg-muted" : "hover:bg-muted/50",
-          )}
-        >
-          <div className="font-medium">{hit.reference}</div>
-          <div className="text-muted-foreground">{hit.text}</div>
-        </div>
       ))}
     </div>
   );

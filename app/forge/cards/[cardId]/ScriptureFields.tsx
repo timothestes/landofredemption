@@ -95,6 +95,7 @@ export default function ScriptureFields({
         <VerseFinderPanel
           snapshot={snapshot}
           initialQuery={snapshot.reference ?? ""}
+          cardName={snapshot.name ?? null}
           onPreview={onPreview}
           onClose={closeToToggle}
           onUse={(patch) => {

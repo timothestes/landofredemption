@@ -1,6 +1,6 @@
 import { requireForge, notFoundResponse } from "@/app/forge/lib/auth";
 import { parseRef, bookById } from "@/app/forge/lib/scriptureRef";
-import { fetchChapter, searchVerses, isBibleEdition, UpstreamError } from "@/app/forge/lib/apiBible";
+import { fetchChapter, searchVerses, isBibleEdition, isValidRange, UpstreamError } from "@/app/forge/lib/apiBible";
 
 export const dynamic = "force-dynamic";
 
@@ -35,8 +35,27 @@ export async function GET(req: Request): Promise<Response> {
     const query = q.trim().replace(/\s+/g, " ");
     if (!query) return json({ error: "empty_query" }, 400);
     if (query.length > 200) return json({ error: "bad_request" }, 400);
+    const rangeParam = params.get("range");
+    const sort = params.get("sort") ?? "relevance";
+    const exactParam = params.get("exact");
+    const offsetParam = params.get("offset") ?? "0";
+    if (
+      (rangeParam !== null && !isValidRange(rangeParam)) ||
+      (sort !== "relevance" && sort !== "canonical") ||
+      (exactParam !== null && exactParam !== "1") ||
+      !/^\d{1,3}$/.test(offsetParam) ||
+      Number(offsetParam) > 100
+    ) {
+      return json({ error: "bad_request" }, 400);
+    }
     try {
-      return json(await searchVerses(query, 20, bible));
+      return json(
+        await searchVerses(
+          query,
+          { limit: 25, offset: Number(offsetParam), range: rangeParam ?? undefined, sort, exact: exactParam === "1" },
+          bible,
+        ),
+      );
     } catch (err) {
       return upstream(err);
     }

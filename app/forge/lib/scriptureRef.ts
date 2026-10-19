@@ -100,11 +100,15 @@ for (const book of BOOKS) {
 const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ").replace(/\.+$/, "").trim();
 
 // Longest run of leading tokens that names a book, plus the text after it.
-function leadingBook(text: string): { book: Book; rest: string } | null {
+function leadingBook(text: string): { book: Book; rest: string; key: string } | null {
   const tokens = text.trim().split(/\s+/);
   for (let k = Math.min(tokens.length, 5); k >= 1; k--) {
-    const id = KEYS.get(norm(tokens.slice(0, k).join(" ")).replace(/\.(?=\s|$)/g, ""));
-    if (id) return { book: bookById(id)!, rest: tokens.slice(k).join(" ") };
+    const typed = norm(tokens.slice(0, k).join(" ")).replace(/\.(?=\s|$)/g, "");
+    const id = KEYS.get(typed);
+    if (id) {
+      const key = NUMERAL.test(id) ? typed.replace(/^(iii|ii|i|[123])\s*/, "") : typed;
+      return { book: bookById(id)!, rest: tokens.slice(k).join(" "), key };
+    }
   }
   return null;
 }
@@ -171,7 +175,7 @@ export function suggestBook(token: string): string | null {
 
 export type Classified =
   | { kind: "empty" } | { kind: "ref"; ref: ParsedRef } | { kind: "suggest"; book: string; rest: string }
-  | { kind: "invalid"; book: string } | { kind: "search" };
+  | { kind: "invalid"; book: string } | { kind: "scoped"; book: Book; rest: string } | { kind: "search" };
 
 const SUGGEST_TAIL = /^\d+(:\d+(-\d+)?)?\.?$/;
 
@@ -184,6 +188,9 @@ export function classify(text: string): Classified {
   // A book name with nothing after it, or with a digit-led tail that failed the grammar, is a malformed
   // reference. A book word followed by prose ("John the Baptist", "mark of the beast") is a keyword search.
   if (lead && (!lead.rest || /^\d/.test(lead.rest))) return { kind: "invalid", book: lead.book.name };
+  // Two-letter aliases ("is", "am", "ex") collide with ordinary words, so only 3+ letter book keys scope.
+  // "ps" is the one exception: it is not an English word and "Ps shepherd" is a natural way to scope to Psalms.
+  if (lead && (lead.key.replace(/[^a-z]/g, "").length >= 3 || lead.key === "ps")) return { kind: "scoped", book: lead.book, rest: lead.rest };
   const [first, ...others] = trimmed.split(/\s+/);
   // Only a typo'd book followed by a reference tail is a suggestion; anything else is a keyword search.
   const book = SUGGEST_TAIL.test(others.join(" ")) ? suggestBook(first) : null;

@@ -8,6 +8,7 @@ import {
   normalizeNeighbour,
   repairSearchText,
   searchVerses,
+  isValidRange,
   splitChapterText,
   NASB_1995_ID,
   NASB_1995_COPYRIGHT,
@@ -79,11 +80,63 @@ describe("apiBible", () => {
   it("searchVerses repairs text, collapses whitespace, and forwards total", async () => {
     process.env.API_BIBLE_KEY = "k";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(searchWells), { status: 200 })));
-    const s = await searchVerses("wells Philistines");
+    const s = await searchVerses("wells Philistines", {});
     expect(s.total).toBe(5);
     expect(s.verses.find((v) => v.id === "GEN.26.18")!.text).not.toMatch(/L ord|  /);
     expect(s.copyright.startsWith("NEW AMERICAN STANDARD BIBLE")).toBe(true);
     expect(s.verses.find((v) => v.id === "AMO.1.8")!.text.endsWith("Says the Lord God.")).toBe(true);
+  });
+
+  it("searchVerses forwards range, sort, exact and offset and fixes limit at 25", async () => {
+    process.env.API_BIBLE_KEY = "k";
+    const f = vi.fn().mockResolvedValue(new Response(JSON.stringify(searchWells), { status: 200 }));
+    vi.stubGlobal("fetch", f);
+    const s = await searchVerses("shepherd", { offset: 25, range: "PSA", sort: "canonical", exact: true });
+    const url = String(f.mock.calls[0][0]);
+    expect(url).toContain("limit=25");
+    expect(url).toContain("offset=25");
+    expect(url).toContain("range=PSA");
+    expect(url).toContain("sort=canonical");
+    expect(url).toContain("fuzziness=0");
+    expect(s).toMatchObject({ offset: 25, limit: 25 });
+  });
+
+  it("searchVerses sends fuzziness=AUTO by default and omits range and sort", async () => {
+    process.env.API_BIBLE_KEY = "k";
+    const f = vi.fn().mockResolvedValue(new Response(JSON.stringify(searchWells), { status: 200 }));
+    vi.stubGlobal("fetch", f);
+    await searchVerses("shepherd", {});
+    const url = String(f.mock.calls[0][0]);
+    expect(url).toContain("fuzziness=AUTO");
+    expect(url).toContain("offset=0");
+    expect(url).not.toContain("range=");
+    expect(url).not.toContain("sort=");
+  });
+
+  it("searchVerses resolves an upstream 400 to zero matches", async () => {
+    process.env.API_BIBLE_KEY = "k";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("search error", { status: 400 })));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const s = await searchVerses("ark gopher zebra", {});
+    expect(s).toMatchObject({ total: 0, verses: [], offset: 0, limit: 25, fumsToken: "" });
+    expect(s.copyright).toBe(NASB_COPYRIGHT);
+    expect(warn).toHaveBeenCalledWith("[scripture] search 400", "ark gopher zebra".length);
+    warn.mockRestore();
+  });
+
+  it("searchVerses still throws on other upstream statuses", async () => {
+    process.env.API_BIBLE_KEY = "k";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("no", { status: 429 })));
+    await expect(searchVerses("x", {})).rejects.toBeInstanceOf(UpstreamError);
+  });
+
+  it("isValidRange accepts ids and canonical spans, rejects reversed and unknown", () => {
+    expect(isValidRange("PSA")).toBe(true);
+    expect(isValidRange("GEN-MAL")).toBe(true);
+    expect(isValidRange("MAT-JHN")).toBe(true);
+    expect(isValidRange("MAL-GEN")).toBe(false);
+    expect(isValidRange("XYZ")).toBe(false);
+    expect(isValidRange("GEN-")).toBe(false);
   });
 
   it("normalizeNeighbour maps .intro pseudo-chapters to real chapters", () => {
@@ -108,7 +161,7 @@ describe("apiBible", () => {
     await fetchChapter("GEN.6", "1995");
     expect(f.mock.calls[0][0]).toContain(`/bibles/${NASB_1995_ID}/chapters/GEN.6?`);
     f.mockResolvedValue(new Response(JSON.stringify(searchWells), { status: 200 }));
-    const s = await searchVerses("wells Philistines", 20, "1995");
+    const s = await searchVerses("wells Philistines", {}, "1995");
     expect(f.mock.calls[1][0]).toContain(`/bibles/${NASB_1995_ID}/search?`);
     expect(s.copyright).toBe(NASB_1995_COPYRIGHT);
     expect(NASB_1995_COPYRIGHT).not.toBe(NASB_COPYRIGHT);

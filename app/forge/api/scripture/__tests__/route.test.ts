@@ -11,6 +11,7 @@ vi.mock("@/app/forge/lib/apiBible", async () => {
   return {
     UpstreamError: actual.UpstreamError,
     isBibleEdition: actual.isBibleEdition,
+    isValidRange: actual.isValidRange,
     fetchChapter: vi.fn(),
     searchVerses: vi.fn(),
   };
@@ -98,8 +99,34 @@ describe("GET /forge/api/scripture", () => {
     const res = await get("q=%20wells%20%20Philistines%20");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual(payload);
-    expect(searchVerses).toHaveBeenCalledWith("wells Philistines", 20, "2020");
+    expect(searchVerses).toHaveBeenCalledWith(
+      "wells Philistines",
+      { limit: 25, offset: 0, range: undefined, sort: "relevance", exact: false },
+      "2020",
+    );
   });
+
+  it("q: forwards range, sort, exact and offset", async () => {
+    asMock(searchVerses).mockResolvedValue({ total: 0, verses: [], fumsToken: "f" });
+    const res = await get("q=shepherd&range=PSA&sort=canonical&exact=1&offset=50");
+    expect(res.status).toBe(200);
+    expect(searchVerses).toHaveBeenCalledWith(
+      "shepherd",
+      { limit: 25, offset: 50, range: "PSA", sort: "canonical", exact: true },
+      "2020",
+    );
+  });
+
+  it.each(["range=XYZ", "range=MAL-GEN", "sort=random", "offset=101", "offset=abc", "offset=-1", "exact=2"])(
+    "q: 400 on %s",
+    async (qs) => {
+      asMock(searchVerses).mockClear();
+      const res = await get(`q=shepherd&${qs}`);
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: "bad_request" });
+      expect(searchVerses).not.toHaveBeenCalled();
+    },
+  );
 
   it("q: 400 bad_request when longer than 200 characters", async () => {
     const res = await get(`q=${"a".repeat(201)}`);
@@ -154,7 +181,11 @@ describe("GET /forge/api/scripture", () => {
     expect(asMock(fetchChapter).mock.calls.at(-1)).toEqual(["GEN.6", "2020"]);
     asMock(searchVerses).mockResolvedValue({ total: 0, verses: [], copyright: "", fumsToken: "" });
     expect((await get("q=wells&bible=1995")).status).toBe(200);
-    expect(asMock(searchVerses).mock.calls.at(-1)).toEqual(["wells", 20, "1995"]);
+    expect(asMock(searchVerses).mock.calls.at(-1)).toEqual([
+      "wells",
+      { limit: 25, offset: 0, range: undefined, sort: "relevance", exact: false },
+      "1995",
+    ]);
     const bad = await get("ref=Gen%206:2&bible=1611");
     expect(bad.status).toBe(400);
     expect(await bad.json()).toEqual({ error: "bad_request" });

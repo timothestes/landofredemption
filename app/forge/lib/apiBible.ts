@@ -37,6 +37,16 @@ export type SearchPayload = {
   verses: { id: string; reference: string; text: string }[];
   copyright: string;
   fumsToken: string;
+  offset: number;
+  limit: number;
+};
+
+export type SearchOptions = {
+  limit?: number;
+  offset?: number;
+  range?: string;
+  sort?: "relevance" | "canonical";
+  exact?: boolean;
 };
 
 export class UpstreamError extends Error {
@@ -126,10 +136,38 @@ export function fetchChapter(chapterId: string, edition: BibleEdition = "2020"):
   return fetchChapterCached(chapterId, edition);
 }
 
-export async function searchVerses(query: string, limit?: number, edition: BibleEdition = "2020"): Promise<SearchPayload> {
-  const json = await getJson(
-    `/bibles/${BIBLE_IDS[edition]}/search?query=${encodeURIComponent(query)}&limit=${limit ?? 20}&fums-version=3`,
-  );
+// A BOOKS id ("PSA"), or a canonical span "A-B" where both are ids and A comes first.
+export function isValidRange(range: string): boolean {
+  const idx = (id: string) => BOOKS.findIndex((b) => b.id === id);
+  const parts = range.split("-");
+  if (parts.length === 1) return idx(parts[0]) >= 0;
+  if (parts.length !== 2) return false;
+  const [a, b] = [idx(parts[0]), idx(parts[1])];
+  return a >= 0 && b >= 0 && a < b;
+}
+
+export async function searchVerses(
+  query: string,
+  opts: SearchOptions,
+  edition: BibleEdition = "2020",
+): Promise<SearchPayload> {
+  const limit = opts.limit ?? 25;
+  const offset = opts.offset ?? 0;
+  let url = `/bibles/${BIBLE_IDS[edition]}/search?query=${encodeURIComponent(query)}&limit=${limit}&offset=${offset}`;
+  if (opts.range) url += `&range=${encodeURIComponent(opts.range)}`;
+  if (opts.sort === "canonical") url += "&sort=canonical";
+  url += `&fuzziness=${opts.exact ? "0" : "AUTO"}&fums-version=3`;
+  let json: any;
+  try {
+    json = await getJson(url);
+  } catch (err) {
+    // API.Bible answers some queries it cannot parse with a 400; to the reader that is just "no matches".
+    if (err instanceof UpstreamError && err.status === 400) {
+      console.warn("[scripture] search 400", query.length);
+      return { total: 0, verses: [], copyright: NASB_COPYRIGHTS[edition], fumsToken: "", offset, limit };
+    }
+    throw err;
+  }
   const d = json.data;
   return {
     total: d.total ?? 0,
@@ -140,5 +178,7 @@ export async function searchVerses(query: string, limit?: number, edition: Bible
     })),
     copyright: NASB_COPYRIGHTS[edition],
     fumsToken: json.meta?.fumsToken ?? "",
+    offset,
+    limit,
   };
 }
