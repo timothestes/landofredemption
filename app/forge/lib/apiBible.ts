@@ -2,13 +2,21 @@
 import { unstable_cache } from "next/cache";
 import { BOOKS } from "@/app/forge/lib/scriptureRef";
 
-// NASB 2020. (NASB 1995 is b8ee27bcd1cae43a-01.)
+export type BibleEdition = "2020" | "1995";
 export const NASB_2020_ID = "a761ca71e0b3ddcf-01";
+export const NASB_1995_ID = "b8ee27bcd1cae43a-01";
+export const BIBLE_IDS: Record<BibleEdition, string> = { "2020": NASB_2020_ID, "1995": NASB_1995_ID };
+export function isBibleEdition(v: unknown): v is BibleEdition {
+  return v === "2020" || v === "1995";
+}
 
 // The rights notice the chapter endpoint returns for NASB 2020. Search responses carry none,
 // but the terms require it wherever text is shown.
 export const NASB_COPYRIGHT =
   "NEW AMERICAN STANDARD BIBLE® NASB® Copyright © 1960, 1971, 1977,1995, 2020 by The Lockman Foundation A Corporation Not for Profit La Habra, CA All Rights Reserved www.lockman.org";
+export const NASB_1995_COPYRIGHT =
+  "NEW AMERICAN STANDARD BIBLE® NASB® Copyright © 1960,1962,1963,1968,1971,1972,1973,1975,1977,1995 by The Lockman Foundation A Corporation Not for Profit La Habra, CA All Rights Reserved www.lockman.org";
+export const NASB_COPYRIGHTS: Record<BibleEdition, string> = { "2020": NASB_COPYRIGHT, "1995": NASB_1995_COPYRIGHT };
 
 const BASE = "https://rest.api.bible/v1";
 const CHAPTER_PARAMS =
@@ -88,9 +96,9 @@ async function getJson(path: string): Promise<any> {
 }
 
 const fetchChapterCached = unstable_cache(
-  async (chapterId: string): Promise<ChapterPayload> => {
+  async (chapterId: string, edition: BibleEdition): Promise<ChapterPayload> => {
     const json = await getJson(
-      `/bibles/${NASB_2020_ID}/chapters/${encodeURIComponent(chapterId)}?${CHAPTER_PARAMS}`,
+      `/bibles/${BIBLE_IDS[edition]}/chapters/${encodeURIComponent(chapterId)}?${CHAPTER_PARAMS}`,
     );
     const d = json.data;
     return {
@@ -99,7 +107,7 @@ const fetchChapterCached = unstable_cache(
       verses: splitChapterText(d.content),
       prev: normalizeNeighbour(d.previous?.id ?? null, "prev"),
       next: normalizeNeighbour(d.next?.id ?? null, "next"),
-      copyright: d.copyright ?? NASB_COPYRIGHT,
+      copyright: d.copyright ?? NASB_COPYRIGHTS[edition],
       fumsToken: json.meta?.fumsToken ?? "",
     };
   },
@@ -107,13 +115,13 @@ const fetchChapterCached = unstable_cache(
   { revalidate: 604800 },
 );
 
-export function fetchChapter(chapterId: string): Promise<ChapterPayload> {
-  return fetchChapterCached(chapterId);
+export function fetchChapter(chapterId: string, edition: BibleEdition = "2020"): Promise<ChapterPayload> {
+  return fetchChapterCached(chapterId, edition);
 }
 
-export async function searchVerses(query: string, limit?: number): Promise<SearchPayload> {
+export async function searchVerses(query: string, limit?: number, edition: BibleEdition = "2020"): Promise<SearchPayload> {
   const json = await getJson(
-    `/bibles/${NASB_2020_ID}/search?query=${encodeURIComponent(query)}&limit=${limit ?? 20}&fums-version=3`,
+    `/bibles/${BIBLE_IDS[edition]}/search?query=${encodeURIComponent(query)}&limit=${limit ?? 20}&fums-version=3`,
   );
   const d = json.data;
   return {
@@ -123,7 +131,7 @@ export async function searchVerses(query: string, limit?: number): Promise<Searc
       reference: v.reference,
       text: repairSearchText(v.text),
     })),
-    copyright: NASB_COPYRIGHT,
+    copyright: NASB_COPYRIGHTS[edition],
     fumsToken: json.meta?.fumsToken ?? "",
   };
 }

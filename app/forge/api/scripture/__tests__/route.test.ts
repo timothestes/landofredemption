@@ -8,7 +8,12 @@ vi.mock("@/app/forge/lib/apiBible", async () => {
   const actual = await vi.importActual<typeof import("@/app/forge/lib/apiBible")>(
     "@/app/forge/lib/apiBible",
   );
-  return { UpstreamError: actual.UpstreamError, fetchChapter: vi.fn(), searchVerses: vi.fn() };
+  return {
+    UpstreamError: actual.UpstreamError,
+    isBibleEdition: actual.isBibleEdition,
+    fetchChapter: vi.fn(),
+    searchVerses: vi.fn(),
+  };
 });
 
 import { GET } from "@/app/forge/api/scripture/route";
@@ -53,7 +58,7 @@ describe("GET /forge/api/scripture", () => {
     expect(body.requested).toEqual({ from: 2, to: 2 });
     expect(body.book).toBe("Genesis");
     expect(body.verses).toHaveLength(22);
-    expect(fetchChapter).toHaveBeenCalledWith("GEN.6");
+    expect(fetchChapter).toHaveBeenCalledWith("GEN.6", "2020");
   });
 
   it("ref: 400 unrecognized_reference and no fetch", async () => {
@@ -77,7 +82,7 @@ describe("GET /forge/api/scripture", () => {
     const body = await res.json();
     expect(body.requested).toEqual({ from: 1, to: 1 });
     expect(body.book).toBe("Genesis");
-    expect(fetchChapter).toHaveBeenCalledWith("GEN.7");
+    expect(fetchChapter).toHaveBeenCalledWith("GEN.7", "2020");
   });
 
   it("chapter: 400 bad_request on a malformed id", async () => {
@@ -93,7 +98,7 @@ describe("GET /forge/api/scripture", () => {
     const res = await get("q=%20wells%20%20Philistines%20");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual(payload);
-    expect(searchVerses).toHaveBeenCalledWith("wells Philistines", 20);
+    expect(searchVerses).toHaveBeenCalledWith("wells Philistines", 20, "2020");
   });
 
   it("q: 400 bad_request when longer than 200 characters", async () => {
@@ -138,5 +143,20 @@ describe("GET /forge/api/scripture", () => {
     }
     expect(fetchChapter).not.toHaveBeenCalled();
     expect(searchVerses).not.toHaveBeenCalled();
+  });
+
+  it("bible=1995 is forwarded to the client; the default is 2020; other values are 400", async () => {
+    asMock(requireForge).mockResolvedValue({ user: { id: "u1" } });
+    asMock(fetchChapter).mockResolvedValue(chapter("GEN", 22));
+    expect((await get("ref=Gen%206:2&bible=1995")).status).toBe(200);
+    expect(asMock(fetchChapter).mock.calls.at(-1)).toEqual(["GEN.6", "1995"]);
+    expect((await get("ref=Gen%206:2")).status).toBe(200);
+    expect(asMock(fetchChapter).mock.calls.at(-1)).toEqual(["GEN.6", "2020"]);
+    asMock(searchVerses).mockResolvedValue({ total: 0, verses: [], copyright: "", fumsToken: "" });
+    expect((await get("q=wells&bible=1995")).status).toBe(200);
+    expect(asMock(searchVerses).mock.calls.at(-1)).toEqual(["wells", 20, "1995"]);
+    const bad = await get("ref=Gen%206:2&bible=1611");
+    expect(bad.status).toBe(400);
+    expect(await bad.json()).toEqual({ error: "bad_request" });
   });
 });

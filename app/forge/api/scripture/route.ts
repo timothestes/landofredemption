@@ -1,6 +1,6 @@
 import { requireForge, notFoundResponse } from "@/app/forge/lib/auth";
 import { parseRef, bookById } from "@/app/forge/lib/scriptureRef";
-import { fetchChapter, searchVerses, UpstreamError } from "@/app/forge/lib/apiBible";
+import { fetchChapter, searchVerses, isBibleEdition, UpstreamError } from "@/app/forge/lib/apiBible";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +23,9 @@ export async function GET(req: Request): Promise<Response> {
   if ([ref, chapter, q].filter((v) => v !== null).length !== 1) {
     return json({ error: "bad_request" }, 400);
   }
+  // Edition: NASB 2020 unless the panel asks for 1995.
+  const bible = params.get("bible") ?? "2020";
+  if (!isBibleEdition(bible)) return json({ error: "bad_request" }, 400);
 
   let chapterId: string;
   let range: { from: number; to: number };
@@ -33,7 +36,7 @@ export async function GET(req: Request): Promise<Response> {
     if (!query) return json({ error: "empty_query" }, 400);
     if (query.length > 200) return json({ error: "bad_request" }, 400);
     try {
-      return json(await searchVerses(query, 20));
+      return json(await searchVerses(query, 20, bible));
     } catch (err) {
       return upstream(err);
     }
@@ -50,7 +53,7 @@ export async function GET(req: Request): Promise<Response> {
   }
 
   try {
-    const payload = await fetchChapter(chapterId);
+    const payload = await fetchChapter(chapterId, bible);
     if (strict && range.to > payload.verses.length) {
       return json({ error: "verse_out_of_range", verseCount: payload.verses.length }, 404);
     }

@@ -9,6 +9,9 @@ import {
   repairSearchText,
   searchVerses,
   splitChapterText,
+  NASB_1995_ID,
+  NASB_1995_COPYRIGHT,
+  NASB_COPYRIGHT,
 } from "../apiBible";
 
 vi.mock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn }));
@@ -86,5 +89,18 @@ describe("apiBible", () => {
     const body = { ...genesis6, data: { ...genesis6.data, previous: { id: "GEN.intro" } } };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 200 })));
     expect((await fetchChapter("GEN.1")).prev).toBeNull();
+  });
+
+  it("fetchChapter and searchVerses target the 1995 edition on request, with its own notice", async () => {
+    process.env.API_BIBLE_KEY = "k";
+    const f = vi.fn().mockResolvedValue(new Response(JSON.stringify(genesis6), { status: 200 }));
+    vi.stubGlobal("fetch", f);
+    await fetchChapter("GEN.6", "1995");
+    expect(f.mock.calls[0][0]).toContain(`/bibles/${NASB_1995_ID}/chapters/GEN.6?`);
+    f.mockResolvedValue(new Response(JSON.stringify(searchWells), { status: 200 }));
+    const s = await searchVerses("wells Philistines", 20, "1995");
+    expect(f.mock.calls[1][0]).toContain(`/bibles/${NASB_1995_ID}/search?`);
+    expect(s.copyright).toBe(NASB_1995_COPYRIGHT);
+    expect(NASB_1995_COPYRIGHT).not.toBe(NASB_COPYRIGHT);
   });
 });

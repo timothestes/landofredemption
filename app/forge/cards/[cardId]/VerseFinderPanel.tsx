@@ -9,7 +9,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNod
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { classify, canonicalRef, type ParsedRef } from "@/app/forge/lib/scriptureRef";
+import { classify, canonicalRef, parseRef, type ParsedRef } from "@/app/forge/lib/scriptureRef";
 import {
   words,
   excerpt,
@@ -24,6 +24,7 @@ import {
 import { pushRecent, readRecent, writeRecent, type RecentChapter } from "@/app/forge/lib/recentChapters";
 import { wrapLines, textFit, TEXT_METRICS, TEXT_WIDTH } from "@/app/forge/lib/textFit";
 import type { DesignCard } from "@/app/forge/lib/designCard";
+import type { BibleEdition } from "@/app/forge/lib/apiBible";
 
 declare global {
   interface Window {
@@ -50,6 +51,7 @@ type Which = "start" | "end";
 const UPSTREAM = "Couldn't reach API.Bible. Type the verse by hand for now.";
 const NO_HITS = "No verses matched.";
 const CANT_FIT = "Can't fit without the ability shrinking";
+const EDITION_KEY = "forge.verseFinder.edition";
 
 export default function VerseFinderPanel({
   snapshot,
@@ -73,6 +75,7 @@ export default function VerseFinderPanel({
   const [highlight, setHighlight] = useState(0);
   const [handles, setHandles] = useState<Handles | null>(null);
   const [recent, setRecent] = useState<RecentChapter[]>([]);
+  const [edition, setEdition] = useState<BibleEdition>("2020");
   const abortRef = useRef<AbortController | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -85,14 +88,18 @@ export default function VerseFinderPanel({
 
   const classified = useMemo(() => classify(query), [query]);
 
-  async function run(qs: string, opts: { kind: "chapter" | "search"; ref?: ParsedRef; select?: number }) {
+  async function run(
+    qs: string,
+    opts: { kind: "chapter" | "search"; ref?: ParsedRef; select?: number },
+    ed: BibleEdition = edition,
+  ) {
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
     setLoading(true);
     setStatus(null);
     try {
-      const res = await fetch(`/forge/api/scripture?${qs}`, { signal: ac.signal });
+      const res = await fetch(`/forge/api/scripture?${qs}&bible=${ed}`, { signal: ac.signal });
       const body = await res.json().catch(() => null);
       if (ac.signal.aborted) return;
       if (res.status === 404 && body?.error === "verse_out_of_range" && opts.ref) {
@@ -143,6 +150,13 @@ export default function VerseFinderPanel({
   // Mount: recent chips, FUMS script + queue stub, and the one automatic lookup.
   useEffect(() => {
     setRecent(readRecent());
+    let ed: BibleEdition = "2020";
+    try {
+      if (window.sessionStorage.getItem(EDITION_KEY) === "1995") ed = "1995";
+    } catch {
+      // storage blocked — stay on 2020
+    }
+    setEdition(ed);
     window.fumsData = window.fumsData || [];
     window.fums =
       window.fums ||
@@ -159,7 +173,7 @@ export default function VerseFinderPanel({
     const c = classify(initialQuery);
     if (c.kind === "ref") {
       mountLookup.current = true;
-      run(`ref=${encodeURIComponent(initialQuery.trim())}`, { kind: "chapter", ref: c.ref });
+      run(`ref=${encodeURIComponent(initialQuery.trim())}`, { kind: "chapter", ref: c.ref }, ed);
     }
     return () => abortRef.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -174,6 +188,23 @@ export default function VerseFinderPanel({
   }, [results]);
 
   const ex = useMemo(() => (chapter && handles ? excerpt(chapter.verses, handles) : null), [chapter, handles]);
+
+  // Switching editions refetches what is on screen (same verse span, or the same search).
+  function switchEdition(next: BibleEdition) {
+    if (next === edition) return;
+    setEdition(next);
+    try {
+      window.sessionStorage.setItem(EDITION_KEY, next);
+    } catch {
+      // storage blocked — the choice still holds for this panel
+    }
+    if (chapter && ex) {
+      const canonical = canonicalRef(chapter.bookId, chapter.chapter, ex.from, ex.to);
+      run(`ref=${encodeURIComponent(canonical)}`, { kind: "chapter", ref: parseRef(canonical) ?? undefined }, next);
+    } else if (results && classified.kind === "search") {
+      run(`q=${encodeURIComponent(query.trim())}`, { kind: "search" }, next);
+    }
+  }
   const lines = useMemo(
     () => (ex ? wrapLines(ex.text, "italic", TEXT_METRICS.verse.size, TEXT_WIDTH) : []),
     [ex],
@@ -257,6 +288,8 @@ export default function VerseFinderPanel({
         chapter={chapter}
         onPrev={() => chapter?.prev && loadChapter(chapter.prev)}
         onNext={() => chapter?.next && loadChapter(chapter.next)}
+        edition={edition}
+        onEdition={switchEdition}
       />
       {!chapter && !hasResults && <RecentChips recent={recent} disabled={loading} onPick={(id) => loadChapter(id)} />}
       {!chapter && hasResults && (
@@ -320,6 +353,8 @@ function InputRow(props: {
   chapter: Chapter | null;
   onPrev: () => void;
   onNext: () => void;
+  edition: BibleEdition;
+  onEdition: (e: BibleEdition) => void;
 }) {
   const { chapter, loading } = props;
   return (
@@ -342,6 +377,24 @@ function InputRow(props: {
           aria-label="Verse reference or keywords"
           className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm"
         />
+        <div role="group" aria-label="NASB edition" className="flex shrink-0 overflow-hidden rounded-md border">
+          {(["2020", "1995"] as const).map((e) => (
+            <button
+              key={e}
+              type="button"
+              aria-pressed={props.edition === e}
+              title={`NASB ${e}`}
+              onClick={() => props.onEdition(e)}
+              disabled={loading}
+              className={cn(
+                "px-2.5 py-1.5 text-xs tabular-nums",
+                props.edition === e ? "bg-accent font-medium" : "text-muted-foreground hover:bg-accent/60",
+              )}
+            >
+              {e}
+            </button>
+          ))}
+        </div>
         <Button type="button" variant="secondary" size="sm" onClick={props.onSubmit} disabled={loading}>
           {loading && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
           Look up
