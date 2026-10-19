@@ -6,7 +6,7 @@ vi.mock("@/app/forge/lib/renderCard", () => {
   return { renderCardImage: vi.fn(), RenderInputError };
 });
 
-import { renderAndStore, _resetRenderedCardState } from "../renderedCard";
+import { renderAndStore, renderWorking, _resetRenderedCardState } from "../renderedCard";
 import { renderCardImage, RenderInputError } from "@/app/forge/lib/renderCard";
 import { uploadForgeRendered } from "@/app/forge/lib/art";
 
@@ -63,5 +63,29 @@ describe("renderAndStore", () => {
     vi.advanceTimersByTime(5 * 60_000 + 1);
     (renderCardImage as Mock).mockResolvedValue(ok);
     expect(await renderAndStore(job, io)).toBe(ok);
+  });
+});
+
+describe("renderWorking", () => {
+  const draft = { cardId: "c1", data: { name: "Draft" }, artKey: "forge-art/w", year: 2026 };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    _resetRenderedCardState();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  it("renders the draft and never stores it", async () => {
+    (renderCardImage as Mock).mockResolvedValue(ok);
+    expect(await renderWorking(draft, io)).toBe(ok);
+    expect(renderCardImage).toHaveBeenCalledWith({ data: draft.data, artKey: "forge-art/w", year: 2026 }, io);
+    expect(uploadForgeRendered).not.toHaveBeenCalled();
+  });
+
+  it("returns null on a failure and does not remember it — the next edit may well render", async () => {
+    (renderCardImage as Mock).mockRejectedValueOnce(new Error("SVG data parsing failed")).mockResolvedValueOnce(ok);
+    expect(await renderWorking(draft, io)).toBeNull();
+    expect(await renderWorking(draft, io)).toBe(ok);
+    expect(renderCardImage).toHaveBeenCalledTimes(2);
   });
 });
