@@ -142,14 +142,14 @@ function distance(a: string, b2: string): number {
   return d[a.length][b2.length];
 }
 
-// Candidates are the spellings of each book without a numeral; a numbered book suggests its
-// base name ("Samuel") because the user's own numeral stays in the text that follows.
+// Candidates are the spellings of each book without a numeral. A numbered book's base
+// ("Samuel") suggests the first book's canonical form ("I Samuel"); the user can edit the numeral.
 const SUGGESTIONS: { key: string; name: string; full: boolean }[] = [];
 for (const book of BOOKS) {
-  const name = book.name.replace(/^I{1,3} /, "");
-  if (name !== book.name && SUGGESTIONS.some((s) => s.name === name)) continue;
-  SUGGESTIONS.push({ key: name.toLowerCase(), name, full: true });
-  for (const alias of book.aliases) SUGGESTIONS.push({ key: alias, name, full: false });
+  const base = book.name.replace(/^I{1,3} /, "");
+  if (base !== book.name && SUGGESTIONS.some((s) => s.key === base.toLowerCase())) continue;
+  SUGGESTIONS.push({ key: base.toLowerCase(), name: book.name, full: true });
+  for (const alias of book.aliases) SUGGESTIONS.push({ key: alias, name: book.name, full: false });
 }
 
 export function suggestBook(token: string): string | null {
@@ -173,6 +173,8 @@ export type Classified =
   | { kind: "empty" } | { kind: "ref"; ref: ParsedRef } | { kind: "suggest"; book: string; rest: string }
   | { kind: "invalid"; book: string } | { kind: "search" };
 
+const SUGGEST_TAIL = /^\d+(:\d+(-\d+)?)?\.?$/;
+
 export function classify(text: string): Classified {
   const trimmed = text.trim();
   if (!trimmed) return { kind: "empty" };
@@ -181,7 +183,8 @@ export function classify(text: string): Classified {
   const lead = leadingBook(trimmed);
   if (lead) return { kind: "invalid", book: lead.book.name };
   const [first, ...others] = trimmed.split(/\s+/);
-  const book = suggestBook(first);
+  // Only a typo'd book followed by a reference tail is a suggestion; anything else is a keyword search.
+  const book = SUGGEST_TAIL.test(others.join(" ")) ? suggestBook(first) : null;
   if (book) return { kind: "suggest", book, rest: others.join(" ") };
   return { kind: "search" };
 }

@@ -41,6 +41,8 @@ describe("suggestBook", () => {
   it("fixes near misses and ignores exact names", () => {
     expect(suggestBook("Pslam")).toBe("Psalm"); expect(suggestBook("Jhn")).toBe("John");
     expect(suggestBook("Genesis")).toBeNull(); expect(suggestBook("wells")).toBeNull();
+    expect(suggestBook("Samual")).toBe("I Samuel"); expect(suggestBook("Samuel")).toBe("I Samuel");
+    expect(suggestBook("Jude")).toBeNull();
   });
 });
 describe("classify", () => {
@@ -48,5 +50,8 @@ describe("classify", () => {
     ["", { kind: "empty" }], ["Gen 6:2", { kind: "ref" }], ["Pslam 23", { kind: "suggest", book: "Psalm", rest: "23" }],
     ["Genesis 6:2; Matthew 1:1", { kind: "invalid", book: "Genesis" }], ["Rev 19:15 (Rev 19:11)", { kind: "invalid" }],
     ["Genesis", { kind: "invalid", book: "Genesis" }], ["wells Philistines", { kind: "search" }],
+    ["man of God", { kind: "search" }], ["king David", { kind: "search" }], ["pet shop", { kind: "search" }],
+    ["Jhn 3:16", { kind: "suggest", book: "John", rest: "3:16" }],
+    ["Samuel 17:4", { kind: "suggest", book: "I Samuel", rest: "17:4" }],
   ])("classifies %s", (text, expected) => expect(classify(text)).toMatchObject(expected));
 });
