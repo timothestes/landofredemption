@@ -12,12 +12,11 @@ import { SCOPES, highlightSegments, type ScopeId } from "@/app/forge/lib/searchS
 export type Hit = { id: string; reference: string; text: string };
 export type SearchSort = "relevance" | "canonical";
 
-/** The API caps keyword search at offset 100 with 25 per page. */
-export const PAGE = 25;
+/** The API caps keyword search at offset 100 (5 pages of `limit` = 25). */
 export const CAP = 125;
 
-export function hasMore(r: { total: number; offset: number }): boolean {
-  return r.offset + PAGE < Math.min(r.total, CAP);
+export function hasMore(r: { total: number; offset: number; limit: number }): boolean {
+  return r.offset + r.limit < Math.min(r.total, CAP);
 }
 
 const toggle = (pressed: boolean) =>
@@ -50,7 +49,7 @@ export default function VerseSearch(props: {
   const { total, verses } = results;
   const shown = verses.length;
   const more = hasMore(results);
-  const capped = !more && total > CAP && results.offset + PAGE >= CAP;
+  const capped = !more && total > CAP && results.offset + results.limit >= CAP;
 
   const where = scopeLabel ? `in ${scopeLabel}` : "matches";
   const count =

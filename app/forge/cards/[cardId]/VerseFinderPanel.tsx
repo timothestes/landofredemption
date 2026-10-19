@@ -25,8 +25,8 @@ import { pushRecent, readRecent, writeRecent, type RecentChapter } from "@/app/f
 import { wrapLines, textFit, TEXT_METRICS, TEXT_WIDTH } from "@/app/forge/lib/textFit";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 import type { BibleEdition } from "@/app/forge/lib/apiBible";
-import { cardNameQuery, scopeById, type ScopeId } from "@/app/forge/lib/searchScope";
-import VerseSearch, { PAGE, type Hit, type SearchSort } from "./VerseSearch";
+import { SCOPES, cardNameQuery, scopeById, type ScopeId } from "@/app/forge/lib/searchScope";
+import VerseSearch, { type Hit, type SearchSort } from "./VerseSearch";
 
 declare global {
   interface Window {
@@ -49,7 +49,9 @@ type Chapter = {
 type Search = { total: number; verses: Hit[]; copyright: string; fumsToken: string; offset: number; limit: number };
 /** Where the results on screen came from, so paging / chips / sort re-run the same words. */
 type SearchOpts = { range: string | null; scopeLabel: string | null; boxScoped: boolean };
-type LastSearch = SearchOpts & { words: string };
+/** Recorded when the response lands: paging and the chip row follow the rows on screen, not pending state. */
+type LastSearch = SearchOpts & { words: string; sort: SearchSort; exact: boolean; edition: BibleEdition };
+type SearchSettings = { sort: SearchSort; exact: boolean; ed: BibleEdition };
 type Which = "start" | "end";
 
 const UPSTREAM = "Couldn't reach API.Bible. Type the verse by hand for now.";
@@ -131,7 +133,12 @@ export default function VerseFinderPanel({
         const data = body as Search;
         if (opts.at > 0) {
           // A page: append to the list on screen; highlight and focus stay where they are.
-          setResults((prev) => (prev ? { ...data, verses: [...prev.verses, ...data.verses] } : data));
+          // Upstream relevance paging can shift, so drop rows already listed (keeps `key={hit.id}` unique).
+          setResults((prev) => {
+            if (!prev) return data;
+            const seen = new Set(prev.verses.map((v) => v.id));
+            return { ...data, verses: [...prev.verses, ...data.verses.filter((v) => !seen.has(v.id))] };
+          });
         } else {
           setChapter(null);
           setHandles(null);
@@ -161,21 +168,33 @@ export default function VerseFinderPanel({
     }
   }
 
-  // One keyword search call. sort / exact / edition default to state; callers that just changed one
-  // pass the new value since state hasn't committed yet.
+  // One keyword search call. A new search from the box uses state; re-runs and pages pass the
+  // settings of the search on screen (`fromLast`) with at most one value changed.
   function search(
     words: string,
     opts: SearchOpts,
     at = 0,
-    o: { sort?: SearchSort; exact?: boolean; ed?: BibleEdition } = {},
+    { sort: so, exact: ex, ed }: SearchSettings = { sort, exact, ed: edition },
   ) {
     const p = new URLSearchParams({ q: words, offset: String(at) });
     if (opts.range) p.set("range", opts.range);
-    if ((o.sort ?? sort) === "canonical") p.set("sort", "canonical");
-    if (o.exact ?? exact) p.set("exact", "1");
+    if (so === "canonical") p.set("sort", "canonical");
+    if (ex) p.set("exact", "1");
     const { range, scopeLabel, boxScoped } = opts;
-    run(p.toString(), { kind: "search", search: { words, range, scopeLabel, boxScoped }, at }, o.ed ?? edition);
+    run(
+      p.toString(),
+      { kind: "search", search: { words, range, scopeLabel, boxScoped, sort: so, exact: ex, edition: ed }, at },
+      ed,
+    );
   }
+  const fromLast = (l: LastSearch): SearchSettings => ({ sort: l.sort, exact: l.exact, ed: l.edition });
+
+  // The chip the rows on screen came from (none while a book from the box scopes them).
+  const shownScope: ScopeId | null = lastSearch
+    ? lastSearch.boxScoped
+      ? null
+      : (SCOPES.find((x) => x.range === lastSearch.range)?.id ?? "any")
+    : scope;
 
   const chipSearch = (id: ScopeId): SearchOpts => {
     const s = scopeById(id);
@@ -208,30 +227,35 @@ export default function VerseFinderPanel({
 
   // Chip / sort / exact changes re-run what is on screen at offset 0 (one call); with nothing on
   // screen they only update state.
+  // The chip row renders from lastSearch, so a click also re-syncs state to what is on screen.
   function changeScope(id: ScopeId) {
-    if (id === scope) return;
+    if (id === shownScope) return;
     setScope(id);
-    if (results && lastSearch && !lastSearch.boxScoped) search(lastSearch.words, chipSearch(id));
+    if (results && lastSearch && !lastSearch.boxScoped) search(lastSearch.words, chipSearch(id), 0, fromLast(lastSearch));
   }
   function changeSort(next: SearchSort) {
-    if (next === sort) return;
+    const cur = lastSearch ?? { sort, exact };
+    if (next === cur.sort) return;
     setSort(next);
-    saveSearchPrefs({ sort: next, exact });
-    if (results && lastSearch) search(lastSearch.words, lastSearch, 0, { sort: next });
+    setExact(cur.exact);
+    saveSearchPrefs({ sort: next, exact: cur.exact });
+    if (results && lastSearch) search(lastSearch.words, lastSearch, 0, { ...fromLast(lastSearch), sort: next });
   }
   function changeExact(next: boolean) {
+    const cur = lastSearch ?? { sort, exact };
     setExact(next);
-    saveSearchPrefs({ sort, exact: next });
-    if (results && lastSearch) search(lastSearch.words, lastSearch, 0, { exact: next });
+    setSort(cur.sort);
+    saveSearchPrefs({ sort: cur.sort, exact: next });
+    if (results && lastSearch) search(lastSearch.words, lastSearch, 0, { ...fromLast(lastSearch), exact: next });
   }
   function more() {
-    if (results && lastSearch) search(lastSearch.words, lastSearch, offset + PAGE);
+    if (results && lastSearch) search(lastSearch.words, lastSearch, offset + results.limit, fromLast(lastSearch));
   }
   function everywhere() {
     if (!lastSearch) return;
     if (lastSearch.boxScoped) setQuery(lastSearch.words);
     setScope("any");
-    search(lastSearch.words, chipSearch("any"));
+    search(lastSearch.words, chipSearch("any"), 0, fromLast(lastSearch));
   }
 
   // Back from a chapter opened from a hit: the list returns with the same row highlighted, no fetch.
@@ -314,7 +338,7 @@ export default function VerseFinderPanel({
         next,
       );
     } else if (results && lastSearch) {
-      search(lastSearch.words, lastSearch, 0, { ed: next });
+      search(lastSearch.words, lastSearch, 0, { ...fromLast(lastSearch), ed: next });
     }
   }
   const lines = useMemo(
@@ -418,11 +442,11 @@ export default function VerseFinderPanel({
           words={lastSearch.words}
           scopeLabel={lastSearch.scopeLabel}
           boxScoped={lastSearch.boxScoped}
-          scope={scope}
+          scope={shownScope ?? "any"}
           onScope={changeScope}
-          sort={sort}
+          sort={lastSearch.sort}
           onSort={changeSort}
-          exact={exact}
+          exact={lastSearch.exact}
           onExact={changeExact}
           highlight={highlight}
           setHighlight={setHighlight}
@@ -437,7 +461,7 @@ export default function VerseFinderPanel({
           {backable && (
             <div className="flex items-center">
               <Button type="button" variant="ghost" size="sm" onClick={backToResults}>
-                ← Results ({results!.total})
+                <span aria-hidden="true">←</span> Results ({results!.total})
               </Button>
             </div>
           )}
