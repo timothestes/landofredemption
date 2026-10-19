@@ -118,7 +118,7 @@ const fetchChapterCached = unstable_cache(
       fumsToken: json.meta?.fumsToken ?? "",
     };
   },
-  ["api-bible-chapter"],
+  ["api-bible-chapter", "v2"], // v2: asterisk markers stripped; bumps past 7-day entries cached with them
   { revalidate: 604800 },
 );
 
