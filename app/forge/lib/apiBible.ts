@@ -48,17 +48,24 @@ export class UpstreamError extends Error {
   }
 }
 
+// NASB marks a "historical present" (a Greek present tense rendered as past) with an
+// asterisk glued to the verb: "they *took Him along". It is translator's apparatus, not
+// wording; printed cards never carry it, so it is dropped wherever text is shown or stored.
+export function stripNasbMarkers(text: string): string {
+  return text.replace(/\*(?=\p{L})/gu, "");
+}
+
 export function splitChapterText(content: string): { n: number; text: string }[] {
   const parts = content.split(/\s*\[(\d+)\]\s*/);
   const verses: { n: number; text: string }[] = [];
   for (let i = 1; i < parts.length; i += 2) {
-    verses.push({ n: Number(parts[i]), text: parts[i + 1].replace(/\s+/g, " ").trim() });
+    verses.push({ n: Number(parts[i]), text: stripNasbMarkers(parts[i + 1].replace(/\s+/g, " ").trim()) });
   }
   return verses;
 }
 
 export function repairSearchText(text: string): string {
-  return text
+  return stripNasbMarkers(text)
     .replace(/\bL ord\b/g, "Lord")
     .replace(/\bG od\b/g, "God")
     .replace(/\s+/g, " ")

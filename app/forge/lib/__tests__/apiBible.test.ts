@@ -12,6 +12,7 @@ import {
   NASB_1995_ID,
   NASB_1995_COPYRIGHT,
   NASB_COPYRIGHT,
+  stripNasbMarkers,
 } from "../apiBible";
 
 vi.mock("next/cache", () => ({ unstable_cache: (fn: unknown) => fn }));
@@ -36,6 +37,15 @@ describe("apiBible", () => {
       { n: 1, text: "Praise Him [Selah] now" },
       { n: 2, text: "again" },
     ]));
+
+  it("drops NASB's historical-present asterisk from chapter and search text", () => {
+    expect(splitChapterText(" [36] After dismissing the crowd, they *took Him along [37] And a fierce gale *developed")).toEqual([
+      { n: 36, text: "After dismissing the crowd, they took Him along" },
+      { n: 37, text: "And a fierce gale developed" },
+    ]);
+    expect(repairSearchText("Jesus *said to them")).toBe("Jesus said to them");
+    expect(stripNasbMarkers("5 * 3 and *x")).toBe("5 * 3 and x");
+  });
 
   it("repairs small-caps artefacts and doubled spaces for display", () => {
     expect(repairSearchText("to the L ord ; and  then")).toBe("to the Lord; and then");
