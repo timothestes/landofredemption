@@ -44,7 +44,7 @@ type Chapter = {
   fumsToken: string;
 };
 type Hit = { id: string; reference: string; text: string };
-type Search = { total: number; verses: Hit[]; fumsToken: string };
+type Search = { total: number; verses: Hit[]; copyright: string; fumsToken: string };
 type Which = "start" | "end";
 
 const UPSTREAM = "Couldn't reach API.Bible. Type the verse by hand for now.";
@@ -56,11 +56,14 @@ export default function VerseFinderPanel({
   initialQuery,
   onUse,
   onClose,
+  onPreview,
 }: {
   snapshot: DesignCard;
   initialQuery: string;
   onUse: (patch: { reference: string; scripture: string }) => void;
   onClose: () => void;
+  /** Candidate excerpt for the live card preview; null when nothing is loaded. Never saved. */
+  onPreview?: (scripture: string | null) => void;
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [loading, setLoading] = useState(false);
@@ -69,9 +72,15 @@ export default function VerseFinderPanel({
   const [results, setResults] = useState<Search | null>(null);
   const [highlight, setHighlight] = useState(0);
   const [handles, setHandles] = useState<Handles | null>(null);
-  const [copyright, setCopyright] = useState<string | null>(null);
   const [recent, setRecent] = useState<RecentChapter[]>([]);
   const abortRef = useRef<AbortController | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const startHandleRef = useRef<HTMLButtonElement>(null);
+  const onPreviewRef = useRef(onPreview);
+  useEffect(() => {
+    onPreviewRef.current = onPreview;
+  });
 
   const classified = useMemo(() => classify(query), [query]);
 
@@ -107,7 +116,6 @@ export default function VerseFinderPanel({
         setResults(null);
         setChapter(data);
         setHandles(wholeRange(data.verses, from, to));
-        setCopyright(data.copyright);
       }
     } catch {
       if (!ac.signal.aborted) setStatus(UPSTREAM);
@@ -198,12 +206,37 @@ export default function VerseFinderPanel({
     }
   }
 
+  // Live preview: the candidate excerpt while a chapter is loaded, null otherwise and on unmount.
+  const previewText = chapter && ex ? ex.text : null;
+  useEffect(() => {
+    onPreviewRef.current?.(previewText);
+  }, [previewText]);
+  useEffect(() => () => onPreviewRef.current?.(null), []);
+
+  // Keep focus inside the panel so Esc / ⌘Enter / handle keys keep working. Opening a hit or a chip,
+  // a successful trim, and disabled-while-loading buttons all drop focus to <body>; pull it back.
+  // Only from <body>: focus the builder moved elsewhere on purpose is left alone.
+  useEffect(() => {
+    if (loading) return;
+    const root = rootRef.current;
+    const active = document.activeElement;
+    if (!root || root.contains(active) || (active && active !== document.body)) return;
+    (startHandleRef.current ?? inputRef.current)?.focus();
+  }, [chapter, handles, loading]);
+
   const listRef = useRef<HTMLDivElement>(null);
   const hasResults = !!results?.verses.length;
+  const copyright = chapter ? chapter.copyright : hasResults ? results!.copyright : null;
 
   return (
-    <div onKeyDown={onRootKeyDown} className="flex flex-col gap-3 rounded-md border bg-card p-3">
+    <div
+      ref={rootRef}
+      tabIndex={-1}
+      onKeyDown={onRootKeyDown}
+      className="flex flex-col gap-3 rounded-md border bg-card p-3 outline-none"
+    >
       <InputRow
+        inputRef={inputRef}
         query={query}
         setQuery={setQuery}
         hint={hintFor(classified)}
@@ -228,6 +261,7 @@ export default function VerseFinderPanel({
       {chapter && handles && ex && (
         <>
           <ChapterView
+            startHandleRef={startHandleRef}
             chapter={chapter}
             handles={handles}
             excerptText={ex.text}
@@ -265,6 +299,7 @@ function hintFor(c: ReturnType<typeof classify>): string | null {
 }
 
 function InputRow(props: {
+  inputRef: RefObject<HTMLInputElement | null>;
   query: string;
   setQuery: (q: string) => void;
   hint: string | null;
@@ -282,6 +317,7 @@ function InputRow(props: {
       <div className="flex items-center gap-2">
         <input
           autoFocus
+          ref={props.inputRef}
           value={props.query}
           onChange={(e) => props.setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -375,7 +411,13 @@ function ResultsList({
   onOpen: (hit: Hit) => void;
 }) {
   useEffect(() => {
-    listRef.current?.querySelector(`[data-index="${highlight}"]`)?.scrollIntoView({ block: "nearest" });
+    // Scroll only the list itself (scrollIntoView would also scroll the page).
+    const list = listRef.current;
+    const row = list?.querySelector<HTMLElement>(`[data-index="${highlight}"]`);
+    if (!list || !row) return;
+    if (row.offsetTop < list.scrollTop) list.scrollTop = row.offsetTop;
+    else if (row.offsetTop + row.offsetHeight > list.scrollTop + list.clientHeight)
+      list.scrollTop = row.offsetTop + row.offsetHeight - list.clientHeight;
   }, [highlight, listRef]);
 
   return (
@@ -397,7 +439,7 @@ function ResultsList({
           if (hits[highlight]) onOpen(hits[highlight]);
         }
       }}
-      className="max-h-72 overflow-y-auto rounded-md border outline-none"
+      className="relative max-h-72 overflow-y-auto rounded-md border outline-none"
     >
       {hits.map((hit, i) => (
         <div
@@ -424,11 +466,13 @@ function ResultsList({
 }
 
 function ChapterView({
+  startHandleRef,
   chapter,
   handles,
   excerptText,
   onChange,
 }: {
+  startHandleRef: RefObject<HTMLButtonElement | null>;
   chapter: Chapter;
   handles: Handles;
   excerptText: string;
@@ -436,7 +480,7 @@ function ChapterView({
 }) {
   const { verses } = chapter;
   const containerRef = useRef<HTMLDivElement>(null);
-  const handleRefs = { start: useRef<HTMLButtonElement>(null), end: useRef<HTMLButtonElement>(null) };
+  const handleRefs = { start: startHandleRef, end: useRef<HTMLButtonElement>(null) };
   const refocus = useRef<Which | null>(null);
 
   // Word axis for rendering and click routing (offset of each verse's first word).
@@ -458,7 +502,10 @@ function ChapterView({
 
   // Scroll the selection into view once per loaded chapter.
   useEffect(() => {
-    containerRef.current?.querySelector('[data-first="true"]')?.scrollIntoView({ block: "center" });
+    // Center the first selected word by scrolling this box only (never the page).
+    const box = containerRef.current;
+    const word = box?.querySelector<HTMLElement>('[data-first="true"]');
+    if (box && word) box.scrollTop = word.offsetTop + word.offsetHeight / 2 - box.clientHeight / 2;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chapter]);
 
@@ -556,7 +603,7 @@ function ChapterView({
   return (
     <div
       ref={containerRef}
-      className="max-h-72 select-none overflow-y-auto rounded-md border bg-background p-3 text-sm leading-7"
+      className="relative max-h-[50vh] select-none overflow-y-auto rounded-md border bg-background p-3 text-sm leading-7"
     >
       {items}
     </div>

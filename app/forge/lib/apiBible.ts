@@ -4,6 +4,11 @@ import { unstable_cache } from "next/cache";
 // NASB 2020. (NASB 1995 is b8ee27bcd1cae43a-01.)
 export const NASB_2020_ID = "a761ca71e0b3ddcf-01";
 
+// The rights notice the chapter endpoint returns for NASB 2020. Search responses carry none,
+// but the terms require it wherever text is shown.
+export const NASB_COPYRIGHT =
+  "NEW AMERICAN STANDARD BIBLE® NASB® Copyright © 1960, 1971, 1977,1995, 2020 by The Lockman Foundation A Corporation Not for Profit La Habra, CA All Rights Reserved www.lockman.org";
+
 const BASE = "https://rest.api.bible/v1";
 const CHAPTER_PARAMS =
   "content-type=text&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=true&include-verse-spans=false&fums-version=3";
@@ -21,6 +26,7 @@ export type ChapterPayload = {
 export type SearchPayload = {
   total: number;
   verses: { id: string; reference: string; text: string }[];
+  copyright: string;
   fumsToken: string;
 };
 
@@ -82,7 +88,7 @@ const fetchChapterCached = unstable_cache(
       verses: splitChapterText(d.content),
       prev: d.previous?.id ?? null,
       next: d.next?.id ?? null,
-      copyright: d.copyright,
+      copyright: d.copyright ?? NASB_COPYRIGHT,
       fumsToken: json.meta?.fumsToken ?? "",
     };
   },
@@ -106,6 +112,7 @@ export async function searchVerses(query: string, limit?: number): Promise<Searc
       reference: v.reference,
       text: repairSearchText(v.text),
     })),
+    copyright: NASB_COPYRIGHT,
     fumsToken: json.meta?.fumsToken ?? "",
   };
 }

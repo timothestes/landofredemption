@@ -68,5 +68,6 @@ describe("apiBible", () => {
     const s = await searchVerses("wells Philistines");
     expect(s.total).toBe(5);
     expect(s.verses.find((v) => v.id === "GEN.26.18")!.text).not.toMatch(/L ord|  /);
+    expect(s.copyright.startsWith("NEW AMERICAN STANDARD BIBLE")).toBe(true);
   });
 });
