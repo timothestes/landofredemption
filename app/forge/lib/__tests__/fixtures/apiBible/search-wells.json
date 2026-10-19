@@ -1,0 +1,59 @@
+{
+  "data": {
+    "query": "wells Philistines",
+    "limit": 5,
+    "offset": 0,
+    "total": 5,
+    "verseCount": 5,
+    "verses": [
+      {
+        "id": "GEN.26.15",
+        "orgId": "GEN.26.15",
+        "bookId": "GEN",
+        "bibleId": "a761ca71e0b3ddcf-01",
+        "chapterId": "GEN.26",
+        "reference": "Genesis 26:15",
+        "text": "Now all the wells which his father’s servants had dug in the days of his father Abraham, the Philistines stopped up by filling them with dirt."
+      },
+      {
+        "id": "AMO.1.8",
+        "orgId": "AMO.1.8",
+        "bookId": "AMO",
+        "bibleId": "a761ca71e0b3ddcf-01",
+        "chapterId": "AMO.1",
+        "reference": "Amos 1:8",
+        "text": "“I will also eliminate every  inhabitant from Ashdod, As well as him who holds the scepter, from Ashkelon; And I will direct My  power against Ekron, And the remnant of the Philistines will perish,” Says the Lord  G od ."
+      },
+      {
+        "id": "GEN.26.18",
+        "orgId": "GEN.26.18",
+        "bookId": "GEN",
+        "bibleId": "a761ca71e0b3ddcf-01",
+        "chapterId": "GEN.26",
+        "reference": "Genesis 26:18",
+        "text": "Then Isaac dug again the wells of water which had been dug in the days of his father Abraham, for the Philistines had stopped them up after the death of Abraham; and he  gave them the same names which his father had  given them."
+      },
+      {
+        "id": "1CH.11.18",
+        "orgId": "1CH.11.18",
+        "bookId": "1CH",
+        "bibleId": "a761ca71e0b3ddcf-01",
+        "chapterId": "1CH.11",
+        "reference": "1 Chronicles 11:18",
+        "text": "So the three broke through the camp of the Philistines and drew water from the well of Bethlehem which was  by the gate, and took  it  and brought  it  to David; however, David would not drink it, but poured it out to the L ord ;"
+      },
+      {
+        "id": "2SA.23.16",
+        "orgId": "2SA.23.16",
+        "bookId": "2SA",
+        "bibleId": "a761ca71e0b3ddcf-01",
+        "chapterId": "2SA.23",
+        "reference": "2 Samuel 23:16",
+        "text": "So the three mighty men forced their way into the camp of the Philistines, and drew water from the well of Bethlehem which was by the gate, and carried it  and brought  it  to David. Yet he would not drink it, but poured it out as an offering to the L ord ;"
+      }
+    ]
+  },
+  "meta": {
+    "fumsToken": "fixture-token"
+  }
+}
