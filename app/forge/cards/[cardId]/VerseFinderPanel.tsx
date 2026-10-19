@@ -24,7 +24,7 @@ import {
 import { pushRecent, readRecent, writeRecent, type RecentChapter } from "@/app/forge/lib/recentChapters";
 import { wrapLines, textFit, TEXT_METRICS, TEXT_WIDTH } from "@/app/forge/lib/textFit";
 import type { DesignCard } from "@/app/forge/lib/designCard";
-import { SCOPES, cardNameQuery, scopeById, type ScopeId } from "@/app/forge/lib/searchScope";
+import { SCOPES, cardNameQuery, scopeById, scopeNameFor, type ScopeId } from "@/app/forge/lib/searchScope";
 import VerseSearch, { type Hit, type SearchSort } from "./VerseSearch";
 
 declare global {
@@ -74,7 +74,11 @@ export default function VerseFinderPanel({
   /** Candidate excerpt for the live card preview; null when nothing is loaded. Never saved. */
   onPreview?: (scripture: string | null) => void;
 }) {
-  const [prefill] = useState(() => (initialQuery.trim() ? null : cardNameQuery(cardName)));
+  // A bare book name ("Daniel") would classify as a malformed reference and dead-end; quoted it is a phrase search.
+  const [prefill] = useState(() => {
+    const q = initialQuery.trim() ? null : cardNameQuery(cardName);
+    return q && classify(q).kind === "invalid" ? `"${q}"` : q;
+  });
   const [query, setQuery] = useState(prefill ?? initialQuery);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -95,6 +99,8 @@ export default function VerseFinderPanel({
   const inputRef = useRef<HTMLInputElement>(null);
   const startHandleRef = useRef<HTMLButtonElement>(null);
   const mountLookup = useRef(false);
+  /** Set by an action whose landing should focus the results list (back from a hit, chip / sort / exact). */
+  const focusList = useRef(false);
   const onPreviewRef = useRef(onPreview);
   useEffect(() => {
     onPreviewRef.current = onPreview;
@@ -122,6 +128,7 @@ export default function VerseFinderPanel({
         return;
       }
       if (!res.ok || !body) {
+        focusList.current = false;
         setStatus(UPSTREAM);
         return;
       }
@@ -130,8 +137,10 @@ export default function VerseFinderPanel({
         if (opts.at > 0) {
           // A page: append to the list on screen; highlight and focus stay where they are.
           // Upstream relevance paging can shift, so drop rows already listed (keeps `key={hit.id}` unique).
+          // An empty page (upstream can report total 0 there) keeps the total and offset on screen.
           setResults((prev) => {
             if (!prev) return data;
+            if (!data.verses.length) return prev;
             const seen = new Set(prev.verses.map((v) => v.id));
             return { ...data, verses: [...prev.verses, ...data.verses.filter((v) => !seen.has(v.id))] };
           });
@@ -142,8 +151,10 @@ export default function VerseFinderPanel({
           setResults(data);
           setHighlight(0);
         }
-        setOffset(opts.at);
+        if (opts.at === 0 || data.verses.length) setOffset(opts.at);
         setLastSearch(opts.search);
+        // Scope follows the landed response, so a failed or aborted chip re-run never runs ahead of the screen.
+        if (!opts.search.boxScoped) setScope(SCOPES.find((x) => x.range === opts.search.range)?.id ?? "any");
       } else {
         const data = body as Chapter;
         const from = opts.select ?? data.requested.from;
@@ -158,7 +169,10 @@ export default function VerseFinderPanel({
         setHandles(wholeRange(data.verses, from, to));
       }
     } catch {
-      if (!ac.signal.aborted) setStatus(UPSTREAM);
+      if (!ac.signal.aborted) {
+        focusList.current = false;
+        setStatus(UPSTREAM);
+      }
     } finally {
       if (abortRef.current === ac) setLoading(false);
     }
@@ -194,9 +208,10 @@ export default function VerseFinderPanel({
   };
 
   function submit() {
+    focusList.current = false; // typed in the box: focus stays there
     const c = classified;
     if (c.kind === "ref") run(`ref=${encodeURIComponent(query.trim())}`, { kind: "chapter", ref: c.ref });
-    else if (c.kind === "scoped") search(c.rest, { range: c.book.id, scopeLabel: c.book.name, boxScoped: true });
+    else if (c.kind === "scoped") search(c.rest, { range: c.book.id, scopeLabel: scopeNameFor(c.book), boxScoped: true });
     else if (c.kind === "search") search(query.trim(), chipSearch(scope));
     else if (c.kind === "suggest") setQuery(`${c.book} ${c.rest}`.trim());
   }
@@ -220,10 +235,13 @@ export default function VerseFinderPanel({
   // Chip / sort / exact changes re-run what is on screen at offset 0 (one call); with nothing on
   // screen they only update state.
   // The chip row renders from lastSearch, so a click also re-syncs state to what is on screen.
+  // A re-run that lands moves focus to the list (`focusList`), not back to the input.
   function changeScope(id: ScopeId) {
     if (id === shownScope) return;
-    setScope(id);
-    if (results && lastSearch && !lastSearch.boxScoped) search(lastSearch.words, chipSearch(id), 0, fromLast(lastSearch));
+    if (results && lastSearch && !lastSearch.boxScoped) {
+      focusList.current = true;
+      search(lastSearch.words, chipSearch(id), 0, fromLast(lastSearch));
+    } else setScope(id);
   }
   function changeSort(next: SearchSort) {
     const cur = lastSearch ?? { sort, exact };
@@ -231,14 +249,20 @@ export default function VerseFinderPanel({
     setSort(next);
     setExact(cur.exact);
     saveSearchPrefs({ sort: next, exact: cur.exact });
-    if (results && lastSearch) search(lastSearch.words, lastSearch, 0, { ...fromLast(lastSearch), sort: next });
+    if (results && lastSearch) {
+      focusList.current = true;
+      search(lastSearch.words, lastSearch, 0, { ...fromLast(lastSearch), sort: next });
+    }
   }
   function changeExact(next: boolean) {
     const cur = lastSearch ?? { sort, exact };
     setExact(next);
     setSort(cur.sort);
     saveSearchPrefs({ sort: cur.sort, exact: next });
-    if (results && lastSearch) search(lastSearch.words, lastSearch, 0, { ...fromLast(lastSearch), exact: next });
+    if (results && lastSearch) {
+      focusList.current = true;
+      search(lastSearch.words, lastSearch, 0, { ...fromLast(lastSearch), exact: next });
+    }
   }
   function more() {
     if (results && lastSearch) search(lastSearch.words, lastSearch, offset + results.limit, fromLast(lastSearch));
@@ -246,21 +270,27 @@ export default function VerseFinderPanel({
   function everywhere() {
     if (!lastSearch) return;
     if (lastSearch.boxScoped) setQuery(lastSearch.words);
-    setScope("any");
     search(lastSearch.words, chipSearch("any"), 0, fromLast(lastSearch));
   }
 
   // Back from a chapter opened from a hit: the list returns with the same row highlighted, no fetch.
   // The preview effect releases the card preview (null) once `chapter` is gone.
   const backable = !!chapter && !!results && fromHit;
-  const focusList = useRef(false);
   function backToResults() {
     setChapter(null);
     setHandles(null);
     setFromHit(false);
     setStatus(null);
     focusList.current = true;
+    // The same response is shown again: one more view.
+    if (results?.fumsToken) window.fums?.("trackView", results.fumsToken);
   }
+  // "Esc · back to results" only while the box still holds the search on screen; edited text gets the normal hint.
+  const boxShowsSearch =
+    !!lastSearch &&
+    (lastSearch.boxScoped
+      ? classified.kind === "scoped" && classified.book.id === lastSearch.range && classified.rest.trim() === lastSearch.words
+      : query.trim() === lastSearch.words);
 
   // Mount: recent chips, FUMS script + queue stub, and the one automatic lookup.
   useEffect(() => {
@@ -359,7 +389,7 @@ export default function VerseFinderPanel({
       focusList.current = false;
       listRef.current?.focus();
     }
-  }, [chapter]);
+  }, [chapter, results]);
   useEffect(() => {
     if (loading) return;
     // The automatic mount lookup landed while focus is still in the input: go straight to the start
@@ -388,14 +418,14 @@ export default function VerseFinderPanel({
         inputRef={inputRef}
         query={query}
         setQuery={setQuery}
-        hint={backable ? "Esc · back to results" : hintFor(classified)}
+        hint={backable && boxShowsSearch ? "Esc · back to results" : hintFor(classified)}
         status={status}
         loading={loading}
         onSubmit={submit}
         onArrowDown={() => !chapter && hasResults && listRef.current?.focus()}
         chapter={chapter}
-        onPrev={() => chapter?.prev && loadChapter(chapter.prev)}
-        onNext={() => chapter?.next && loadChapter(chapter.next)}
+        onPrev={() => chapter?.prev && loadChapter(chapter.prev, undefined, fromHit)}
+        onNext={() => chapter?.next && loadChapter(chapter.next, undefined, fromHit)}
       />
       {!chapter && !results && <RecentChips recent={recent} disabled={loading} onPick={(id) => loadChapter(id)} />}
       {!chapter && results && lastSearch && (
@@ -458,7 +488,7 @@ function hintFor(c: ReturnType<typeof classify>): string | null {
     case "search":
       return "Keyword search";
     case "scoped":
-      return `Keyword search · in ${c.book.name}`;
+      return `Keyword search · in ${scopeNameFor(c.book)}`;
     case "suggest":
       return `Did you mean ${`${c.book} ${c.rest}`.trim()}?`;
     case "invalid":

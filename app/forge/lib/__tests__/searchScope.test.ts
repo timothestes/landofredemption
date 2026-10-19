@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { BOOKS } from "@/app/forge/lib/scriptureRef";
-import { SCOPES, scopeById, highlightSegments, cardNameQuery } from "@/app/forge/lib/searchScope";
+import { SCOPES, scopeById, highlightSegments, cardNameQuery, scopeNameFor } from "@/app/forge/lib/searchScope";
 
 const index = (id: string) => BOOKS.findIndex((b) => b.id === id);
 
@@ -38,6 +38,28 @@ describe("highlightSegments", () => {
     expect(highlightSegments("abc", "a")).toEqual([{ text: "abc", hit: false }]);
     expect(highlightSegments("a foo-bar b", 'foo "-bar"')).toEqual([
       { text: "a ", hit: false }, { text: "foo-bar", hit: true }, { text: " b", hit: false }]);
+  });
+});
+
+describe("highlightSegments function words", () => {
+  const bold = (text: string, words: string) => highlightSegments(text, words).filter((s) => s.hit).map((s) => s.text);
+  it("stopwords never mark; short tokens match whole words only", () => {
+    expect(bold("Then the Lord said to Moses, Israel is My son", "the Lord is my shepherd")).toEqual(["Lord", "My"]);
+    expect(bold("they offered an offering of fire", "chariot of fire")).toEqual(["fire"]);
+  });
+  it("longer tokens keep prefix matching; quoted phrases stay one token", () => {
+    expect(bold("the shepherds fled", "shepherd")).toEqual(["shepherd"]);
+    expect(bold("I am the good shepherd, a good man", '"good shepherd"')).toEqual(["good shepherd"]);
+  });
+  it("a query of only stopwords marks nothing", () =>
+    expect(highlightSegments("the son of the king", "the of")).toEqual([{ text: "the son of the king", hit: false }]));
+  it("the left boundary is Unicode-aware", () => expect(bold("\u00c9sa\u00efe, sa\u00efe", "sa\u00efe")).toEqual(["sa\u00efe"]));
+});
+
+describe("scopeNameFor", () => {
+  it("names Psalms in the plural and other books by name", () => {
+    expect(scopeNameFor({ id: "PSA", name: "Psalm" })).toBe("Psalms");
+    expect(scopeNameFor({ id: "GEN", name: "Genesis" })).toBe("Genesis");
   });
 });
 
