@@ -611,6 +611,46 @@ export default function ModalWithClose({
     };
   }, [modalCard]);
 
+  // On phones, Back is the natural way out of a full-screen view. Give the
+  // open modal its own same-URL history entry so Back closes it instead of
+  // leaving the page (and any unsaved deck edits with it). One entry per
+  // open, not per card, so swiping through cards doesn't stack entries;
+  // closing from the UI pops the entry again. history.state is pushed as-is
+  // so Next's router internals ride along and the pop is a no-op restore.
+  // Nothing here reads history.state back: Next rewrites it on its own
+  // router updates, so a marker there would not survive.
+  const isOpen = !!modalCard;
+  const setModalCardRef = React.useRef(setModalCard);
+  setModalCardRef.current = setModalCard;
+  // The pop is deferred a tick from the cleanup: in dev, StrictMode runs the
+  // cleanup and the effect again right after mount, and the re-run cancels
+  // the pending pop instead of pushing a second entry.
+  const pendingPopRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  React.useEffect(() => {
+    if (!isOpen) return;
+    if (pendingPopRef.current) {
+      clearTimeout(pendingPopRef.current);
+      pendingPopRef.current = null;
+    } else {
+      window.history.pushState(window.history.state, "", window.location.href);
+    }
+    let popped = false;
+    const onPopState = () => {
+      popped = true;
+      setModalCardRef.current(null);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      if (!popped) {
+        pendingPopRef.current = setTimeout(() => {
+          pendingPopRef.current = null;
+          window.history.back();
+        }, 0);
+      }
+    };
+  }, [isOpen]);
+
   // Wrap setModalCard to animate out before unmounting
   const closeModal = React.useCallback(() => {
     setIsClosing(true);

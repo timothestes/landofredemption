@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useState, useMemo, useRef } from "react";
 
 const BATCH_SIZE = 60;
 import { useRouter, useSearchParams } from "next/navigation";
@@ -218,6 +218,10 @@ export default function CardSearchClient({
 
   const [modalCard, setModalCardRaw] = useState<Card | null>(null);
   const modalOpenedFromDeckRef = useRef(false);
+  // The mobile deck drawer unmounts while the card modal is up; remember its
+  // list scroll so reopening it doesn't land back at the top.
+  const mobileDrawerRef = useRef<HTMLDivElement>(null);
+  const mobileDrawerScrollRef = useRef(0);
   const setModalCard = React.useCallback((card: Card | null) => {
     if (card === null && modalOpenedFromDeckRef.current) {
       // Reopen deck drawer when closing modal that was opened from deck
@@ -399,6 +403,16 @@ export default function CardSearchClient({
       document.body.style.overflow = 'hidden';
       return () => { document.body.style.overflow = ''; };
     }
+  }, [isMobileDeckDrawerOpen]);
+
+  // Put the drawer's list back where it was when it remounts after the card
+  // modal closes (saved in the drawer's onViewCard). Layout effect so the
+  // restored position is what paints.
+  useLayoutEffect(() => {
+    if (!isMobileDeckDrawerOpen || !mobileDrawerScrollRef.current) return;
+    const grid = mobileDrawerRef.current?.querySelector('[data-deck-grid]');
+    if (grid) grid.scrollTop = mobileDrawerScrollRef.current;
+    mobileDrawerScrollRef.current = 0;
   }, [isMobileDeckDrawerOpen]);
 
   // Deck panel resize state
@@ -2719,26 +2733,27 @@ export default function CardSearchClient({
 
 
                     {/* Quantity Badge - Bottom Right, Always Visible. Color-coded so a glance tells you where the card already lives:
-                        emerald = in main deck, amber = in reserve, violet = on the maybeboard, neutral C = in your collection. */}
+                        emerald = in main deck, amber = in reserve, violet = on the maybeboard, neutral C = in your collection.
+                        Translucent with no blur so the card text under the badge stays readable on phones, where there is no hover preview. */}
                     {!isSpotlight && (quantityInDeck > 0 || quantityInReserve > 0 || quantityInMaybeboard > 0 || quantityInCollection > 0) && (
                       <div className="absolute bottom-1 right-1 flex flex-col items-end gap-0.5">
                         {quantityInDeck > 0 && (
-                          <div key={`m${quantityInDeck}`} title={`${quantityInDeck} in main deck`} className="animate-qty-pop bg-emerald-500/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded font-bold text-xs shadow-lg ring-1 ring-black/20">
+                          <div key={`m${quantityInDeck}`} title={`${quantityInDeck} in main deck`} className="animate-qty-pop bg-emerald-500/65 text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.7)] px-1.5 py-0.5 rounded font-bold text-xs shadow-lg ring-1 ring-black/20">
                             ×{quantityInDeck}
                           </div>
                         )}
                         {quantityInReserve > 0 && (
-                          <div key={`r${quantityInReserve}`} title={`${quantityInReserve} in reserve`} className="animate-qty-pop bg-amber-500/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded font-bold text-xs shadow-lg ring-1 ring-black/20">
+                          <div key={`r${quantityInReserve}`} title={`${quantityInReserve} in reserve`} className="animate-qty-pop bg-amber-500/65 text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.7)] px-1.5 py-0.5 rounded font-bold text-xs shadow-lg ring-1 ring-black/20">
                             ×{quantityInReserve} R
                           </div>
                         )}
                         {quantityInMaybeboard > 0 && (
-                          <div key={`mb${quantityInMaybeboard}`} title={`${quantityInMaybeboard} on maybeboard`} className="animate-qty-pop bg-violet-500/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded font-bold text-xs shadow-lg ring-1 ring-black/20">
+                          <div key={`mb${quantityInMaybeboard}`} title={`${quantityInMaybeboard} on maybeboard`} className="animate-qty-pop bg-violet-500/65 text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.7)] px-1.5 py-0.5 rounded font-bold text-xs shadow-lg ring-1 ring-black/20">
                             ×{quantityInMaybeboard} M
                           </div>
                         )}
                         {quantityInCollection > 0 && (
-                          <div key={`c${quantityInCollection}`} title={`${quantityInCollection} in your collection`} className="animate-qty-pop bg-zinc-800/80 backdrop-blur-sm text-zinc-100 px-1.5 py-0.5 rounded font-bold text-xs shadow-lg ring-1 ring-white/20">
+                          <div key={`c${quantityInCollection}`} title={`${quantityInCollection} in your collection`} className="animate-qty-pop bg-zinc-800/55 text-zinc-100 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)] px-1.5 py-0.5 rounded font-bold text-xs shadow-lg ring-1 ring-white/20">
                             ×{quantityInCollection} C
                           </div>
                         )}
@@ -3017,7 +3032,7 @@ export default function CardSearchClient({
 
       {/* Mobile Deck View (replaces search when Deck tab is active) */}
       {isMobileDeckDrawerOpen && (
-        <div className="md:hidden fixed inset-x-0 top-[64px] bottom-[3.5rem] z-40 bg-background flex flex-col overflow-hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div ref={mobileDrawerRef} className="md:hidden fixed inset-x-0 top-[64px] bottom-[3.5rem] z-40 bg-background flex flex-col overflow-hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           {isInitializing ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8">
               <div className="w-8 h-8 border-2 border-border border-t-primary rounded-full animate-spin" />
@@ -3071,6 +3086,8 @@ export default function CardSearchClient({
               onActiveTabChange={setActiveDeckTab}
               onViewCard={(card, fromReserve) => {
                 setFullDeckViewSection(fromReserve ? 'reserve' : 'main');
+                mobileDrawerScrollRef.current =
+                  mobileDrawerRef.current?.querySelector('[data-deck-grid]')?.scrollTop ?? 0;
                 modalOpenedFromDeckRef.current = true;
                 setModalCard(card);
                 setIsMobileDeckDrawerOpen(false);
