@@ -3,19 +3,24 @@ import type { ZoneRect } from './zoneLayout';
 import { compareCardsByType, compareTypeGroups } from '@/lib/cards/defaultSort';
 
 /**
- * "Spread Deck" layout: lay the deck pile out across Territory the way the
- * deck builder's expanded view draws a deck with viewMode='stacked' and
+ * "Spread Deck" layout: lay the whole deck out across Territory the way the
+ * deck builder's expanded view draws it with viewMode='stacked' and
  * groupBy='type' (app/decklist/card-search/components/FullDeckView.tsx).
  *
- * One or more vertical columns per type bucket, buckets in canonical order,
- * every copy its own card, each card overlapping the one above so only a top
- * strip shows. Pure: the caller (GoldfishCanvas) supplies the Territory rect
- * and the current card size; the reducer only applies the positions.
+ * Main deck: one or more vertical columns per type bucket, buckets in
+ * canonical order, every copy its own card, each card overlapping the one
+ * above so only a top strip shows. Reserve: after the main columns with an
+ * extra gap, sorted but not bucketed (the deck builder's single "Reserve"
+ * column), split at the same per-column cap so one long column cannot
+ * squeeze the strip for everything else. Pure: the caller (GoldfishCanvas)
+ * supplies the Territory rect and the current card size; the reducer only
+ * applies the positions.
  */
 
 /** Max cards per column before a bucket is split — FullDeckView.splitTypeGroup. */
 export const SPREAD_MAX_PER_COLUMN = 17;
-/** Column gap as a fraction of card width: `md:gap-4` (16px) on a `md:w-28` (112px) card. */
+/** Column gap as a fraction of card width: `md:gap-4` (16px) on a `md:w-28` (112px) card.
+ *  The deck builder's reserve column also carries `ml-4`, the same 16px again. */
 export const SPREAD_GAP_RATIO = 0.14;
 /** Visible strip per stacked card as a fraction of card height: a 112×156.8
  *  card in a `flex-col gap-2` column with `-mb-32` shows 156.8 − 128 + 8 ≈ 36.8px. */
@@ -56,7 +61,7 @@ interface Run {
   cards: GameCard[];
 }
 
-// Collapse a sorted bucket into runs of identical copies (same name + set),
+// Collapse a sorted list into runs of identical copies (same name + set),
 // the "entries with quantity" FullDeckView balances on.
 function runsOf(sorted: GameCard[]): Run[] {
   const runs: Run[] = [];
@@ -103,6 +108,17 @@ function splitIntoColumns(sorted: GameCard[], maxPerColumn = SPREAD_MAX_PER_COLU
   return columns;
 }
 
+function byType(a: GameCard, b: GameCard): number {
+  return compareCardsByType(toSortable(a), toSortable(b));
+}
+
+export interface DeckSpreadInput {
+  /** Every card of the deck that is not in Reserve, whatever zone it sits in. */
+  main: GameCard[];
+  /** Cards in the Reserve zone. */
+  reserve: GameCard[];
+}
+
 export interface DeckSpreadLayout {
   /** Column by column, top to bottom. Append in this order so later cards paint on top. */
   orderedIds: string[];
@@ -110,38 +126,40 @@ export interface DeckSpreadLayout {
 }
 
 export function computeDeckSpreadLayout(
-  cards: GameCard[],
+  input: DeckSpreadInput,
   zone: ZoneRect,
   cardWidth: number,
   cardHeight: number,
 ): DeckSpreadLayout {
   const buckets = new Map<string, GameCard[]>();
-  for (const card of cards) {
+  for (const card of input.main) {
     const key = spreadBucketKey(card.type);
     const list = buckets.get(key);
     if (list) list.push(card);
     else buckets.set(key, [card]);
   }
 
-  const columns: GameCard[][] = [];
+  const mainColumns: GameCard[][] = [];
   for (const key of [...buckets.keys()].sort(compareTypeGroups)) {
-    const sorted = [...buckets.get(key)!].sort((a, b) =>
-      compareCardsByType(toSortable(a), toSortable(b)),
-    );
-    columns.push(...splitIntoColumns(sorted));
+    mainColumns.push(...splitIntoColumns([...buckets.get(key)!].sort(byType)));
   }
+  const reserveColumns = splitIntoColumns([...input.reserve].sort(byType));
+  const columns = [...mainColumns, ...reserveColumns];
 
   const orderedIds: string[] = [];
   const positions: DeckSpreadLayout['positions'] = {};
   if (columns.length === 0) return { orderedIds, positions };
 
+  const gap = Math.round(cardWidth * SPREAD_GAP_RATIO);
+  const reserveGap = mainColumns.length > 0 && reserveColumns.length > 0 ? gap : 0;
+
   const availW = zone.width - EDGE_PAD * 2;
   const availH = zone.height - TOP_PAD - EDGE_PAD;
   const maxLen = Math.max(...columns.map((c) => c.length));
 
-  const defaultPitch = cardWidth + Math.round(cardWidth * SPREAD_GAP_RATIO);
+  const defaultPitch = cardWidth + gap;
   const pitch = columns.length > 1
-    ? Math.max(0, Math.min(defaultPitch, (availW - cardWidth) / (columns.length - 1)))
+    ? Math.max(0, Math.min(defaultPitch, (availW - cardWidth - reserveGap) / (columns.length - 1)))
     : defaultPitch;
 
   const defaultStrip = Math.round(cardHeight * SPREAD_STRIP_RATIO);
@@ -153,9 +171,10 @@ export function computeDeckSpreadLayout(
   const y0 = zone.y + TOP_PAD;
 
   columns.forEach((column, col) => {
+    const extra = col >= mainColumns.length ? reserveGap : 0;
     column.forEach((card, row) => {
       orderedIds.push(card.instanceId);
-      positions[card.instanceId] = { posX: x0 + col * pitch, posY: y0 + row * strip };
+      positions[card.instanceId] = { posX: x0 + col * pitch + extra, posY: y0 + row * strip };
     });
   });
 

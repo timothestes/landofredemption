@@ -41,6 +41,18 @@ export const DEFAULT_OPTIONS: GoldfishOptions = {
   alwaysStartWith: [],
 };
 
+/** Where a spread card sat before "Spread Deck" moved it, and how to put it
+ *  back: its zone and index there, its face, its Territory spot, and the
+ *  warrior it was attached to. */
+export interface DeckSpreadOrigin {
+  zone: ZoneId;
+  index: number;
+  isFlipped: boolean;
+  posX?: number;
+  posY?: number;
+  equippedTo?: string;
+}
+
 export interface GameState {
   sessionId: string;
   deckId: string;
@@ -63,13 +75,14 @@ export interface GameState {
    *  the top deck card face up and draggable while set. Optional so states
    *  saved before the field existed load cleanly. */
   topDeckRevealed?: boolean;
-  /** Instance ids of deck-pile cards laid out across Territory by the gear
-   *  menu's "Spread Deck" (deck-builder expanded layout). Present only while
-   *  at least one of them is still in Territory — the reducer prunes ids as
-   *  cards leave, and drops the field when none remain — so a defined value
-   *  means the menu should offer "Gather Deck". Named apart from the hand's
-   *  `isSpreadHand` fan/unfan toggle. */
-  deckSpreadIds?: string[];
+  /** Cards laid out across Territory by the gear menu's "Spread Deck"
+   *  (deck-builder expanded layout), keyed by instance id, each remembering
+   *  where it came from so "Gather Deck" can put it back. Present only while
+   *  at least one of them is still in Territory — the reducer prunes entries
+   *  as cards leave, and drops the field when none remain — so a defined
+   *  value means the menu should offer "Gather Deck". Named apart from the
+   *  hand's `isSpreadHand` fan/unfan toggle. */
+  deckSpread?: Record<string, DeckSpreadOrigin>;
   /** Logged-in user's profile username (null when not signed in). Used only to
    *  gate the per-user cycling-token easter egg; everything else ignores it. */
   currentUsername?: string | null;
