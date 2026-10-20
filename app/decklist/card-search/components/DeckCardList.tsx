@@ -449,9 +449,11 @@ export default function DeckCardList({
                     </button>
                   </div>
                   
-                  {/* Bottom Right: Quantity Display - Always Visible, Compact Style */}
+                  {/* Bottom Right: Quantity Display - Always Visible, Compact Style.
+                      Translucent with no blur so the card text under it stays
+                      readable on phones, where there is no hover preview. */}
                   <div className="flex items-center justify-center">
-                    <div key={quantity} className="animate-qty-pop bg-black/75 backdrop-blur-sm text-white px-2.5 py-1 rounded-md font-bold text-sm shadow-lg">
+                    <div key={quantity} className="animate-qty-pop bg-black/50 text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.9)] px-2.5 py-1 rounded-md font-bold text-sm shadow-lg">
                       ×{quantity}
                     </div>
                   </div>
