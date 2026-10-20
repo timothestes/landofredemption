@@ -8,6 +8,7 @@ import { useGame } from '../state/GameContext';
 import { calculateZoneLayout, calculateCardPositionsInZone, type ZoneRect } from '../layout/zoneLayout';
 import { CARD_WIDTH, CARD_HEIGHT, CARD_ASPECT_RATIO } from '../layout/zoneLayout';
 import { calculateHandPositions } from '../layout/handLayout';
+import { computeDeckSpreadLayout } from '../layout/deckSpreadLayout';
 import { calculateAutoArrangePositions } from '../../play/layout/multiplayerAutoArrange';
 import { VIRTUAL_WIDTH, VIRTUAL_HEIGHT, virtualToScreen } from '@/app/shared/layout/virtualCanvas';
 import { preloadImitateSouls } from '@/app/shared/utils/preloadImitateSouls';
@@ -79,7 +80,7 @@ interface GoldfishCanvasProps {
 }
 
 export default function GoldfishCanvas({ containerWidth, containerHeight, scale, offsetX, offsetY, virtualWidth, onLoadDeck, hideBackButton }: GoldfishCanvasProps) {
-  const { state, dispatch, drawCard, drawMultiple, moveCard, moveCardsBatch, moveCardToTopOfDeck, moveCardToBottomOfDeck, shuffleCardIntoDeck, shuffleDeck, meekCard, unmeekCard, flipCard, revealCardInHand, addCounter, removeCounter, addNote, addOpponentLostSoul, removeOpponentToken, executeCardAbility, addPlayerLostSoul, reorderHand, attachCard, detachCard } = useGame();
+  const { state, dispatch, drawCard, drawMultiple, moveCard, moveCardsBatch, moveCardToTopOfDeck, moveCardToBottomOfDeck, shuffleCardIntoDeck, shuffleDeck, meekCard, unmeekCard, flipCard, revealCardInHand, addCounter, removeCounter, addNote, addOpponentLostSoul, removeOpponentToken, executeCardAbility, addPlayerLostSoul, reorderHand, attachCard, detachCard, spreadDeckPile, gatherDeckPile } = useGame();
   const { setPreviewCard, isLoupeVisible } = useCardPreview();
   const stageRef = useRef<Konva.Stage>(null);
   const gameLayerRef = useRef<Konva.Layer>(null);
@@ -633,6 +634,28 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
   const lobCardWidth = Math.round(lobCardHeight / CARD_ASPECT_RATIO);
   // Virtual canvas is always 16:9 — no need to rotate sidebar piles
   const rotateSidebarPiles = false;
+
+  // ---- Gear menu "Spread Deck" / "Gather Deck" ----
+  // The layout needs the Territory rect and the live card size, which only
+  // this component knows; the reducer just applies the positions. The ids
+  // list is pruned by the reducer as spread cards leave Territory, so a
+  // non-empty list means there is something to gather.
+  const isDeckSpread = (state.deckSpreadIds?.length ?? 0) > 0;
+  const handleToggleDeckSpread = useCallback(() => {
+    if (isDeckSpread) {
+      gatherDeckPile();
+      return;
+    }
+    const deck = state.zones.deck;
+    if (deck.length === 0) {
+      showGameToast('Deck is empty');
+      return;
+    }
+    const { orderedIds, positions } = computeDeckSpreadLayout(
+      deck, zoneLayout['territory'], cardWidth, cardHeight,
+    );
+    spreadDeckPile(orderedIds, positions);
+  }, [isDeckSpread, gatherDeckPile, spreadDeckPile, state.zones.deck, zoneLayout, cardWidth, cardHeight]);
 
   // Escape key clears selection
   useEffect(() => {
@@ -2840,6 +2863,8 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
         onLoadDeck={onLoadDeck}
         isSoulCinematicEnabled={soulCinematicEnabled}
         onToggleSoulCinematic={toggleSoulCinematic}
+        onToggleDeckSpread={handleToggleDeckSpread}
+        isDeckSpread={isDeckSpread}
       />
 
       {contextMenu && (

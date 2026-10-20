@@ -112,6 +112,17 @@ export const actions = {
     return createAction('REORDER_LOB', { cardInstanceIds });
   },
 
+  /** Lay the deck pile out across Territory at precomputed positions (see
+   *  layout/deckSpreadLayout.ts). `cardInstanceIds` is the paint order. */
+  spreadDeckPile(cardInstanceIds: string[], positions: Record<string, { posX: number; posY: number }>): GameAction {
+    return createAction('DECK_SPREAD', { cardInstanceIds, positions });
+  },
+
+  /** Return the spread cards still in Territory to the pile and shuffle. */
+  gatherDeckPile(): GameAction {
+    return createAction('DECK_GATHER');
+  },
+
   attachCard(cardInstanceId: string, warriorInstanceId: string): GameAction {
     return createAction('ATTACH_CARD', { cardInstanceId, warriorInstanceId });
   },

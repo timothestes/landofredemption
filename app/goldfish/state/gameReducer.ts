@@ -851,6 +851,27 @@ function findAndRemoveCard(
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
+  return pruneDeckSpread(reduceGame(state, action));
+}
+
+/**
+ * Keep `deckSpreadIds` honest after every action: a spread card that leaves
+ * Territory for any reason (dragged to hand, discarded, shuffled in, an
+ * ability moved it) stops being "spread", and coming back later does not
+ * re-add it. Runs here, once, instead of inside every path that can move a
+ * card. Returns the same object when nothing changed so no-op actions stay
+ * referentially no-op.
+ */
+function pruneDeckSpread(state: GameState): GameState {
+  const ids = state.deckSpreadIds;
+  if (!ids) return state;
+  const inTerritory = new Set(state.zones.territory.map(c => c.instanceId));
+  const kept = ids.filter(id => inTerritory.has(id));
+  if (kept.length === ids.length) return state;
+  return { ...state, deckSpreadIds: kept.length > 0 ? kept : undefined };
+}
+
+function reduceGame(state: GameState, action: GameAction): GameState {
   // Handle special meta-actions
   if (action.payload.value === '__UNDO__') {
     return undoAction(state);
@@ -1698,6 +1719,73 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       zones.hand = [...zones.hand];
       zones.hand[idx] = { ...zones.hand[idx], revealUntil: value };
       return { ...state, zones, history };
+    }
+
+    case 'DECK_SPREAD': {
+      // Gear menu "Spread Deck": the pile goes face-up onto Territory at the
+      // positions GoldfishCanvas computed from the deck-builder layout. Cards
+      // are appended in the given order so each one paints over the card
+      // above it, leaving the deck builder's top strips visible.
+      const { cardInstanceIds, positions } = action.payload;
+      if (!cardInstanceIds || zones.deck.length === 0) return state;
+      const moved: string[] = [];
+      for (const id of cardInstanceIds) {
+        const idx = zones.deck.findIndex(c => c.instanceId === id);
+        if (idx === -1) continue;
+        const [card] = zones.deck.splice(idx, 1);
+        const pos = positions?.[id];
+        zones.territory.push({
+          ...card,
+          zone: 'territory',
+          isFlipped: false,
+          revealUntil: undefined,
+          posX: pos?.posX,
+          posY: pos?.posY,
+        });
+        moved.push(id);
+      }
+      if (moved.length === 0) return state;
+      return { ...state, zones, history, deckSpreadIds: moved };
+    }
+
+    case 'DECK_GATHER': {
+      // Gear menu "Gather Deck": the spread cards still in Territory go back
+      // to the pile face-down with their in-play state dropped (the same
+      // cleanup MOVE_CARD does on leaving Territory, plus meek — MOVE_CARD
+      // into the deck never clears that), then the pile is shuffled. Cards the
+      // player moved elsewhere were already pruned from the list.
+      const ids = state.deckSpreadIds;
+      if (!ids || ids.length === 0) return state;
+      const gathering = new Set(ids);
+      const returned: GameCard[] = [];
+      zones.territory = zones.territory.filter(card => {
+        if (!gathering.has(card.instanceId)) return true;
+        returned.push({
+          ...card,
+          zone: 'deck',
+          isFlipped: true,
+          isMeek: false,
+          counters: [],
+          notes: '',
+          outlineColor: undefined,
+          isRotated: undefined,
+          revealUntil: undefined,
+          revealDurationMs: undefined,
+          posX: undefined,
+          posY: undefined,
+          equippedTo: undefined,
+        });
+        return false;
+      });
+      if (returned.length === 0) return state;
+      // A weapon the player attached to a gathered card stays put, unlinked.
+      for (const zoneId of Object.keys(zones) as ZoneId[]) {
+        zones[zoneId] = zones[zoneId].map(c =>
+          c.equippedTo && gathering.has(c.equippedTo) ? { ...c, equippedTo: undefined } : c,
+        );
+      }
+      zones.deck = shuffleArray([...zones.deck, ...returned]);
+      return { ...state, zones, history, deckSpreadIds: undefined };
     }
 
     default:

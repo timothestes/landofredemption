@@ -39,6 +39,9 @@ interface GameContextValue {
   attachCard: (cardInstanceId: string, warriorInstanceId: string) => void;
   detachCard: (cardInstanceId: string, posX?: number, posY?: number) => void;
   toggleSpreadHand: () => void;
+  /** Gear menu "Spread Deck" / "Gather Deck" — see layout/deckSpreadLayout.ts. */
+  spreadDeckPile: (cardInstanceIds: string[], positions: Record<string, { posX: number; posY: number }>) => void;
+  gatherDeckPile: () => void;
 }
 
 const GameContext = createContext<GameContextValue | null>(null);
@@ -164,6 +167,12 @@ export function GameProvider({ children, deck, optionsOverrides, username }: Gam
       dispatch(actions.detachCard(cardInstanceId, posX, posY)),
     [dispatch]
   );
+  const spreadDeckPile = useCallback(
+    (cardInstanceIds: string[], positions: Record<string, { posX: number; posY: number }>) =>
+      dispatch(actions.spreadDeckPile(cardInstanceIds, positions)),
+    [dispatch]
+  );
+  const gatherDeckPile = useCallback(() => dispatch(actions.gatherDeckPile()), [dispatch]);
 
   const toggleSpreadHand = useCallback(() => {
     // Spread hand toggle — handled via a special action or direct state
@@ -210,6 +219,8 @@ export function GameProvider({ children, deck, optionsOverrides, username }: Gam
       attachCard,
       detachCard,
       toggleSpreadHand,
+      spreadDeckPile,
+      gatherDeckPile,
     }),
     [
       state, dispatch, drawCard, drawMultiple, moveCard,
@@ -217,6 +228,7 @@ export function GameProvider({ children, deck, optionsOverrides, username }: Gam
       shuffleDeck, undo, newGame, advancePhase, regressPhase, endTurn,
       addCounter, removeCounter, meekCard, unmeekCard, flipCard, revealCardInHand,
       addNote, addOpponentLostSoul, removeOpponentToken, executeCardAbility, moveCardsBatch, addPlayerLostSoul, reorderHand, reorderLob, attachCard, detachCard, toggleSpreadHand,
+      spreadDeckPile, gatherDeckPile,
     ]
   );
 

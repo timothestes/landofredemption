@@ -147,7 +147,9 @@ export type ActionType =
   | 'KEEP_ONE_SHUFFLE_DRAW'
   | 'SET_CARD_OUTLINE'
   | 'IMITATE_LOST_SOUL'
-  | 'STOP_IMITATING_LOST_SOUL';
+  | 'STOP_IMITATING_LOST_SOUL'
+  | 'DECK_SPREAD'
+  | 'DECK_GATHER';
 
 export interface GameAction {
   id: string;
