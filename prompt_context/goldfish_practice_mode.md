@@ -206,6 +206,12 @@ Options are accessible during a session (no pre-game configuration screen):
 | Sound enabled | On | Enable sound effects (framework in place, not yet fully implemented). |
 | Always start with | Empty | Array of card names to tutor to hand on game start. |
 
+### Gear menu (bottom-left)
+
+The gear button opens a small popover with the card-size slider, the Lost Soul cinematic toggle, and:
+
+- **Spread Deck** — lays every card of the deck, wherever it currently sits (pile, hand, Territory, Land of Bondage, discard, banish, Land of Redemption, Reserve), face-up across Territory in the deck builder's expanded layout (Stacked + Type): one or more vertical columns per type bucket in canonical order, every copy its own card, each card overlapping the one above so only a top strip shows, then the Reserve as its own sorted column after an extra gap. Opponent tokens and the Paragon Soul Deck stay put. Spread cards are ordinary Territory cards (drag, select, hover, right-click). While a spread is on the table the entry reads **Gather Deck**, which puts every spread card still in Territory back where it came from: same zone, same order, same face, same Territory spot, weapons re-attached. Nothing is shuffled. Cards the player moved elsewhere in the meantime stay where they were put. Both are single undoable steps. Layout math lives in `layout/deckSpreadLayout.ts`; design notes in `docs/superpowers/specs/2026-10-19-goldfish-spread-deck-design.md`.
+
 ---
 
 ## Game Toolbar

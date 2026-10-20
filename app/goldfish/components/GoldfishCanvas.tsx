@@ -8,11 +8,12 @@ import { useGame } from '../state/GameContext';
 import { calculateZoneLayout, calculateCardPositionsInZone, type ZoneRect } from '../layout/zoneLayout';
 import { CARD_WIDTH, CARD_HEIGHT, CARD_ASPECT_RATIO } from '../layout/zoneLayout';
 import { calculateHandPositions } from '../layout/handLayout';
+import { computeDeckSpreadLayout } from '../layout/deckSpreadLayout';
 import { calculateAutoArrangePositions } from '../../play/layout/multiplayerAutoArrange';
 import { VIRTUAL_WIDTH, VIRTUAL_HEIGHT, virtualToScreen } from '@/app/shared/layout/virtualCanvas';
 import { preloadImitateSouls } from '@/app/shared/utils/preloadImitateSouls';
 import { computeHandBrigades } from '@/app/shared/utils/handBrigades';
-import { GameCard, ZoneId, ZONE_LABELS } from '../types';
+import { GameCard, ZoneId, ZONE_LABELS, ALL_ZONES } from '../types';
 import { GameCardNode, CardBackShape, cardBackListeners, cardBackLoaded } from '../../shared/components/GameCardNode';
 import { PhaseBar } from './PhaseBar';
 import { GameToolbar } from './GameToolbar';
@@ -79,7 +80,7 @@ interface GoldfishCanvasProps {
 }
 
 export default function GoldfishCanvas({ containerWidth, containerHeight, scale, offsetX, offsetY, virtualWidth, onLoadDeck, hideBackButton }: GoldfishCanvasProps) {
-  const { state, dispatch, drawCard, drawMultiple, moveCard, moveCardsBatch, moveCardToTopOfDeck, moveCardToBottomOfDeck, shuffleCardIntoDeck, shuffleDeck, meekCard, unmeekCard, flipCard, revealCardInHand, addCounter, removeCounter, addNote, addOpponentLostSoul, removeOpponentToken, executeCardAbility, addPlayerLostSoul, reorderHand, attachCard, detachCard } = useGame();
+  const { state, dispatch, drawCard, drawMultiple, moveCard, moveCardsBatch, moveCardToTopOfDeck, moveCardToBottomOfDeck, shuffleCardIntoDeck, shuffleDeck, meekCard, unmeekCard, flipCard, revealCardInHand, addCounter, removeCounter, addNote, addOpponentLostSoul, removeOpponentToken, executeCardAbility, addPlayerLostSoul, reorderHand, attachCard, detachCard, spreadDeckPile, gatherDeckPile } = useGame();
   const { setPreviewCard, isLoupeVisible } = useCardPreview();
   const stageRef = useRef<Konva.Stage>(null);
   const gameLayerRef = useRef<Konva.Layer>(null);
@@ -633,6 +634,39 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
   const lobCardWidth = Math.round(lobCardHeight / CARD_ASPECT_RATIO);
   // Virtual canvas is always 16:9 — no need to rotate sidebar piles
   const rotateSidebarPiles = false;
+
+  // ---- Gear menu "Spread Deck" / "Gather Deck" ----
+  // The layout needs the Territory rect and the live card size, which only
+  // this component knows; the reducer just applies the positions. The record
+  // is pruned by the reducer as spread cards leave Territory, so its presence
+  // means there is something to gather.
+  const isDeckSpread = !!state.deckSpread;
+  const handleToggleDeckSpread = useCallback(() => {
+    if (isDeckSpread) {
+      gatherDeckPile();
+      return;
+    }
+    // Every card of the player's deck, wherever it sits: the pile, hand,
+    // Territory, Land of Bondage, discard, banish, Land of Redemption — and
+    // Reserve, which the deck builder shows as its own column after the main
+    // deck. Opponent tokens and the Paragon Soul Deck's shared souls are not
+    // the player's deck and stay put; the Paragon card lives in the drawer.
+    const own = (c: GameCard) => c.ownerId === 'player1' && !c.isToken && !c.isSoulDeckOrigin;
+    const main: GameCard[] = [];
+    for (const zoneId of ALL_ZONES) {
+      if (zoneId === 'reserve' || zoneId === 'soul-deck' || zoneId === 'paragon') continue;
+      main.push(...state.zones[zoneId].filter(own));
+    }
+    const reserve = state.zones.reserve.filter(own);
+    if (main.length + reserve.length === 0) {
+      showGameToast('No cards to spread');
+      return;
+    }
+    const { orderedIds, positions } = computeDeckSpreadLayout(
+      { main, reserve }, zoneLayout['territory'], cardWidth, cardHeight,
+    );
+    spreadDeckPile(orderedIds, positions);
+  }, [isDeckSpread, gatherDeckPile, spreadDeckPile, state.zones, zoneLayout, cardWidth, cardHeight]);
 
   // Escape key clears selection
   useEffect(() => {
@@ -2840,6 +2874,8 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
         onLoadDeck={onLoadDeck}
         isSoulCinematicEnabled={soulCinematicEnabled}
         onToggleSoulCinematic={toggleSoulCinematic}
+        onToggleDeckSpread={handleToggleDeckSpread}
+        isDeckSpread={isDeckSpread}
       />
 
       {contextMenu && (

@@ -112,6 +112,18 @@ export const actions = {
     return createAction('REORDER_LOB', { cardInstanceIds });
   },
 
+  /** Lay the whole deck (every listed card, whatever zone it sits in) out
+   *  across Territory at precomputed positions (see layout/deckSpreadLayout.ts).
+   *  `cardInstanceIds` is the paint order. */
+  spreadDeckPile(cardInstanceIds: string[], positions: Record<string, { posX: number; posY: number }>): GameAction {
+    return createAction('DECK_SPREAD', { cardInstanceIds, positions });
+  },
+
+  /** Put every spread card still in Territory back where it came from. */
+  gatherDeckPile(): GameAction {
+    return createAction('DECK_GATHER');
+  },
+
   attachCard(cardInstanceId: string, warriorInstanceId: string): GameAction {
     return createAction('ATTACH_CARD', { cardInstanceId, warriorInstanceId });
   },

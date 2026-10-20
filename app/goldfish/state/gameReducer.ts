@@ -4,6 +4,7 @@ import {
   GameCard,
   ZoneId,
   PHASE_ORDER,
+  DeckSpreadOrigin,
 } from '../types';
 import { buildInitialGameState } from './gameInitializer';
 import { refillSoulDeck } from '@/app/shared/paragon/refill';
@@ -851,6 +852,31 @@ function findAndRemoveCard(
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
+  return pruneDeckSpread(reduceGame(state, action));
+}
+
+/**
+ * Keep `deckSpread` honest after every action: a spread card that leaves
+ * Territory for any reason (dragged to hand, discarded, shuffled in, an
+ * ability moved it) stops being "spread", and coming back later does not
+ * re-add it. Runs here, once, instead of inside every path that can move a
+ * card. Returns the same object when nothing changed so no-op actions stay
+ * referentially no-op.
+ */
+function pruneDeckSpread(state: GameState): GameState {
+  const record = state.deckSpread;
+  if (!record) return state;
+  const inTerritory = new Set(state.zones.territory.map(c => c.instanceId));
+  const keys = Object.keys(record);
+  const kept = keys.filter(id => inTerritory.has(id));
+  if (kept.length === keys.length) return state;
+  if (kept.length === 0) return { ...state, deckSpread: undefined };
+  const next: Record<string, DeckSpreadOrigin> = {};
+  for (const id of kept) next[id] = record[id];
+  return { ...state, deckSpread: next };
+}
+
+function reduceGame(state: GameState, action: GameAction): GameState {
   // Handle special meta-actions
   if (action.payload.value === '__UNDO__') {
     return undoAction(state);
@@ -1698,6 +1724,105 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       zones.hand = [...zones.hand];
       zones.hand[idx] = { ...zones.hand[idx], revealUntil: value };
       return { ...state, zones, history };
+    }
+
+    case 'DECK_SPREAD': {
+      // Gear menu "Spread Deck": every listed card, whatever zone it sits in,
+      // goes face-up onto Territory at the positions GoldfishCanvas computed
+      // from the deck-builder layout. Cards are appended in the given order
+      // so each one paints over the card above it, leaving the deck builder's
+      // top strips visible. Each card's origin (zone, index, face, Territory
+      // spot, attached warrior) is recorded so DECK_GATHER can put it back.
+      const { cardInstanceIds, positions } = action.payload;
+      if (!cardInstanceIds || cardInstanceIds.length === 0) return state;
+      const wanted = new Set(cardInstanceIds);
+      // Origins come from the untouched zones so indices are pre-removal.
+      const origins: Record<string, DeckSpreadOrigin> = {};
+      const found = new Map<string, GameCard>();
+      for (const zoneId of Object.keys(zones) as ZoneId[]) {
+        zones[zoneId].forEach((card, index) => {
+          if (!wanted.has(card.instanceId)) return;
+          const origin: DeckSpreadOrigin = { zone: zoneId, index, isFlipped: card.isFlipped };
+          if (card.posX !== undefined) origin.posX = card.posX;
+          if (card.posY !== undefined) origin.posY = card.posY;
+          if (card.equippedTo) origin.equippedTo = card.equippedTo;
+          origins[card.instanceId] = origin;
+          found.set(card.instanceId, card);
+        });
+      }
+      if (found.size === 0) return state;
+      // Pull the movers out of every zone; any equip link that touches a
+      // mover is dropped (the spread gives each card its own slot).
+      for (const zoneId of Object.keys(zones) as ZoneId[]) {
+        zones[zoneId] = zones[zoneId]
+          .filter(c => !found.has(c.instanceId))
+          .map(c => (c.equippedTo && found.has(c.equippedTo) ? { ...c, equippedTo: undefined } : c));
+      }
+      for (const id of cardInstanceIds) {
+        const card = found.get(id);
+        if (!card) continue;
+        const pos = positions?.[id];
+        zones.territory.push({
+          ...card,
+          zone: 'territory',
+          isFlipped: false,
+          revealUntil: undefined,
+          equippedTo: undefined,
+          posX: pos?.posX,
+          posY: pos?.posY,
+        });
+      }
+      return { ...state, zones, history, deckSpread: origins };
+    }
+
+    case 'DECK_GATHER': {
+      // Gear menu "Gather Deck": every spread card still in Territory goes
+      // back to the zone it came from, at its old index (clamped), with its
+      // old face. Nothing is shuffled — the pile's order was never shown.
+      // Cards returning to a non-play zone drop in-play state (counters,
+      // notes, outline, meek); cards returning to Territory keep theirs and
+      // get their old spot, and a weapon re-links to its warrior if the
+      // warrior is back on the table. Cards the player moved elsewhere while
+      // spread were already pruned from the record and stay where they are.
+      const record = state.deckSpread;
+      if (!record) return state;
+      const pulled: GameCard[] = [];
+      zones.territory = zones.territory.filter(card => {
+        if (!(card.instanceId in record)) return true;
+        pulled.push(card);
+        return false;
+      });
+      if (pulled.length === 0) return state;
+      // Ascending original index so relative order inside each zone survives.
+      pulled.sort((a, b) => record[a.instanceId].index - record[b.instanceId].index);
+      for (const card of pulled) {
+        const origin = record[card.instanceId];
+        const backInPlay = origin.zone === 'territory' || origin.zone === 'land-of-bondage';
+        const toTerritory = origin.zone === 'territory';
+        const restored: GameCard = {
+          ...card,
+          zone: origin.zone,
+          isFlipped: origin.isFlipped,
+          revealUntil: undefined,
+          revealDurationMs: undefined,
+          equippedTo: undefined,
+          posX: toTerritory ? (origin.posX ?? card.posX) : undefined,
+          posY: toTerritory ? (origin.posY ?? card.posY) : undefined,
+          ...(backInPlay
+            ? {}
+            : { isMeek: false, counters: [], notes: '', outlineColor: undefined, isRotated: undefined }),
+        };
+        const target = zones[origin.zone];
+        target.splice(Math.min(origin.index, target.length), 0, restored);
+      }
+      const onTable = new Set(zones.territory.map(c => c.instanceId));
+      zones.territory = zones.territory.map(c => {
+        const origin = record[c.instanceId];
+        return origin?.equippedTo && onTable.has(origin.equippedTo)
+          ? { ...c, equippedTo: origin.equippedTo, posX: undefined, posY: undefined }
+          : c;
+      });
+      return { ...state, zones, history, deckSpread: undefined };
     }
 
     default:

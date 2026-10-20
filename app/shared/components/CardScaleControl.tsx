@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Settings, RotateCcw, RefreshCw, Clock, EyeOff, Link, Unlink } from 'lucide-react';
+import { Settings, RotateCcw, RefreshCw, Clock, EyeOff, Link, Unlink, LayoutGrid, Layers } from 'lucide-react';
 import { useInputMode } from '@/app/shared/hooks/useInputMode';
 
 interface CardScaleControlProps {
@@ -28,6 +28,11 @@ interface CardScaleControlProps {
   isSoulCinematicEnabled?: boolean;
   /** Toggle the Lost Soul cinematic setting. */
   onToggleSoulCinematic?: () => void;
+  /** Spread the deck pile across Territory in the deck builder's expanded
+   *  layout, or gather a spread back into the pile (goldfish only). */
+  onToggleDeckSpread?: () => void;
+  /** True while a spread is on the table — flips the label to Gather Deck. */
+  isDeckSpread?: boolean;
 }
 
 export function CardScaleControl({
@@ -48,6 +53,8 @@ export function CardScaleControl({
   onToggleTimer,
   isSoulCinematicEnabled,
   onToggleSoulCinematic,
+  onToggleDeckSpread,
+  isDeckSpread,
 }: CardScaleControlProps) {
   const [open, setOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -436,6 +443,53 @@ export function CardScaleControl({
               >
                 {isSoulCinematicEnabled ? <Link size={14} /> : <Unlink size={14} />}
                 {isSoulCinematicEnabled ? 'Soul Cinematic On' : 'Soul Cinematic Off'}
+              </button>
+            </>
+          )}
+
+          {/* Spread / gather the deck pile — goldfish only */}
+          {onToggleDeckSpread && (
+            <>
+              <div style={{
+                height: 1,
+                background: 'var(--gf-border, #3d2e1f)',
+                margin: '4px 0',
+              }} />
+              <button
+                onClick={() => {
+                  onToggleDeckSpread();
+                  setOpen(false);
+                }}
+                data-testid="toggle-deck-spread"
+                title={isDeckSpread
+                  ? 'Return the spread cards to the deck and shuffle'
+                  : 'Lay the deck out across Territory by type, like the deck builder'}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  width: '100%',
+                  padding: '6px 4px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  color: 'var(--gf-text, #e8d5a3)',
+                  fontFamily: 'var(--font-cinzel), Georgia, serif',
+                  fontSize: 11,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--gf-hover, #2a1f12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                {isDeckSpread ? <Layers size={14} /> : <LayoutGrid size={14} />}
+                {isDeckSpread ? 'Gather Deck' : 'Spread Deck'}
               </button>
             </>
           )}
