@@ -223,6 +223,12 @@ export const RevealTimeout = __t.object("RevealTimeout", {
 });
 export type RevealTimeout = __Infer<typeof RevealTimeout>;
 
+export const SoloGame = __t.object("SoloGame", {
+  gameId: __t.u64(),
+  activeSeat: __t.u64(),
+});
+export type SoloGame = __Infer<typeof SoloGame>;
+
 export const Spectator = __t.object("Spectator", {
   id: __t.u64(),
   gameId: __t.u64(),

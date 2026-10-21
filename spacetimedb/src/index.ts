@@ -29,6 +29,7 @@ import {
   type Seat,
 } from './pregameFlow';
 import { TURN_PHASES, STOP_PHASES, gateBoundaryIndex, parseStops, toggleStop, firstStopInRange } from './stopFlow';
+import { pickSoloRow, type SeatHint } from './soloSeat';
 
 // Auto-reveal duration for cards that land in a hand via a move whose log
 // payload reveals the card identity (cross-player moves, face-up moves, etc.).
@@ -166,13 +167,30 @@ function normalizeFormat(format: string): 'T1' | 'T2' | 'Paragon' {
 // ---------------------------------------------------------------------------
 // Helper: findPlayerBySender
 // ---------------------------------------------------------------------------
-function findPlayerBySender(ctx: any, gameId: bigint) {
+// In a solo game the sender holds both rows; `hint` says which seat the action
+// belongs to (see soloSeat.ts). With no hint it is the seat in hand
+// (SoloGame.activeSeat). In a two-human game the hint is ignored.
+function findPlayerBySender(ctx: any, gameId: bigint, hint?: SeatHint) {
+  const sender = ctx.sender.toHexString();
+  const rows: any[] = [];
   for (const player of ctx.db.Player.player_game_id.filter(gameId)) {
-    if (player.identity.toHexString() === ctx.sender.toHexString()) {
-      return player;
-    }
+    if (player.identity.toHexString() === sender) rows.push(player);
   }
-  throw new SenderError('Player not found in this game');
+  const solo = rows.length > 1 ? soloGameRow(ctx, gameId) : undefined;
+  let cardOwnerId: bigint | null = null;
+  if (solo && hint && 'cardId' in hint) {
+    cardOwnerId = ctx.db.CardInstance.id.find(hint.cardId)?.ownerId ?? null;
+  }
+  const player = pickSoloRow(rows, solo ? hint : undefined, solo?.activeSeat ?? 0n, cardOwnerId);
+  if (!player) throw new SenderError('Player not found in this game');
+  return player;
+}
+
+// ---------------------------------------------------------------------------
+// Helper: soloGameRow — the SoloGame marker for a game, if it is a solo game.
+// ---------------------------------------------------------------------------
+function soloGameRow(ctx: any, gameId: bigint): { gameId: bigint; activeSeat: bigint } | undefined {
+  return ctx.db.SoloGame.gameId.find(gameId) ?? undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -923,6 +941,138 @@ export const join_game = spacetimedb.reducer(
   { code: t.string(), deckId: t.string(), displayName: t.string(), paragon: t.string(),
     format: t.string(), supabaseUserId: t.string(), deckData: t.string() },
   (ctx, args) => { joinGameCore(ctx, args, false); }
+);
+
+// ---------------------------------------------------------------------------
+// Reducer: create_solo_game
+// One identity plays both seats (Deck Bracket). Skips the lobby, roll and
+// REG Pre-Game Phase: the game lands in exactly the state a normal game is in
+// right after finishPregame — status 'playing', pregamePhase '', turn 1,
+// currentTurn = firstSeat, round clock started, GAME_STARTED logged.
+// ---------------------------------------------------------------------------
+export const create_solo_game = spacetimedb.reducer(
+  { code: t.string(), format: t.string(), supabaseUserId: t.string(),
+    displayNameA: t.string(), deckIdA: t.string(), deckDataA: t.string(), paragonA: t.string(),
+    displayNameB: t.string(), deckIdB: t.string(), deckDataB: t.string(), paragonB: t.string(),
+    firstSeat: t.u64() },
+  (ctx, args) => {
+    const { code, format, supabaseUserId, displayNameA, deckIdA, deckDataA, paragonA,
+            displayNameB, deckIdB, deckDataB, paragonB, firstSeat } = args;
+    for (const g of ctx.db.Game.game_code.filter(code)) {
+      if (g.status !== 'finished') throw new SenderError('Game code already in use');
+    }
+    if (firstSeat !== 0n && firstSeat !== 1n) throw new SenderError('firstSeat must be 0 or 1');
+    if (!deckDataA || !deckDataB) throw new SenderError('Both seats need deck data');
+
+    const game = ctx.db.Game.insert({
+      id: 0n,
+      code,
+      status: 'playing',
+      currentTurn: firstSeat,
+      currentPhase: 'draw',
+      turnNumber: 1n,
+      format,
+      rngCounter: 1n,
+      lastDiceRoll: '',
+      createdAt: ctx.timestamp,
+      createdBy: ctx.sender,
+      isPublic: false,
+      lobbyMessage: '',
+      createdByName: displayNameA,
+      pregamePhase: '',
+      pregameReady0: true,
+      pregameReady1: true,
+      rollWinner: '',
+      rollResult0: 0n,
+      rollResult1: 0n,
+      rematchRequestedBy: '',
+      rematchDeckId0: '',
+      rematchDeckData0: '',
+      rematchDeckId1: '',
+      rematchDeckData1: '',
+      rematchParagon0: '',
+      rematchParagon1: '',
+      rematchResponse: '',
+      rematchCode: '',
+      disconnectTimeoutFired: false,
+      choosingDeadlineMicros: 0n,
+      playingStartedAtMicros: 0n,
+      pauseRequestedBy: '',
+      pauseRequestType: '',
+      pauseStartedAtMicros: 0n,
+      totalPausedMicros: 0n,
+      battleState: '',
+      battleAttackerSeat: '',
+      lastBattlePlayBySeat: '',
+    });
+
+    const seats = [
+      { seat: 0n, deckId: deckIdA, displayName: displayNameA, paragon: paragonA, deckData: deckDataA },
+      { seat: 1n, deckId: deckIdB, displayName: displayNameB, paragon: paragonB, deckData: deckDataB },
+    ];
+    const players: any[] = seats.map((s) => ctx.db.Player.insert({
+      id: 0n,
+      gameId: game.id,
+      identity: ctx.sender,
+      seat: s.seat,
+      deckId: s.deckId,
+      displayName: s.displayName,
+      paragon: s.paragon,
+      supabaseUserId,
+      isConnected: true,
+      autoRouteLostSouls: true,
+      handRevealed: false,
+      handRevealSnapshot: '',
+      reserveRevealed: false,
+      pendingDeckData: s.deckData,
+      revealedCards: '',
+      shareHandWithSpectators: false,
+      topDeckRevealed: false,
+    }));
+
+    logAction(ctx, game.id, players[0].id, 'GAME_CREATED', JSON.stringify({ code }), 0n, 'draw');
+    logAction(ctx, game.id, players[1].id, 'PLAYER_JOINED', '', 0n, 'pregame');
+
+    // Insert cards, shuffle, and draw opening hands (as joinGameCore does).
+    for (const p of players) {
+      const currentGame = ctx.db.Game.id.find(game.id);
+      if (!currentGame) throw new SenderError('Game not found');
+      insertCardsShuffleDraw(ctx, currentGame, p, p.pendingDeckData);
+      const latestPlayer = ctx.db.Player.id.find(p.id);
+      if (latestPlayer) {
+        ctx.db.Player.id.update({ ...latestPlayer, pendingDeckData: '' });
+      }
+    }
+
+    const gameForSoulInit = ctx.db.Game.id.find(game.id);
+    if (gameForSoulInit && normalizeFormat(gameForSoulInit.format) === 'Paragon') {
+      initializeSoulDeck(ctx, gameForSoulInit);
+    }
+
+    ctx.db.SoloGame.insert({ gameId: game.id, activeSeat: firstSeat });
+
+    // Tolerates the absent PregameState / PregameStar / idle-timeout rows
+    // (delete of a missing key is a no-op, as in clearPregameRows).
+    finishPregame(ctx, game.id);
+  }
+);
+
+// ---------------------------------------------------------------------------
+// Reducer: solo_swap_seat — hand the solo player's controls to the other seat.
+// ---------------------------------------------------------------------------
+export const solo_swap_seat = spacetimedb.reducer(
+  { gameId: t.u64() },
+  (ctx, { gameId }) => {
+    const solo = soloGameRow(ctx, gameId);
+    if (!solo) throw new SenderError('Not a solo game');
+    const sender = ctx.sender.toHexString();
+    let held = 0;
+    for (const p of ctx.db.Player.player_game_id.filter(gameId)) {
+      if (p.identity.toHexString() === sender) held++;
+    }
+    if (held < 2) throw new SenderError('Player not found in this game');
+    ctx.db.SoloGame.gameId.update({ ...solo, activeSeat: solo.activeSeat === 0n ? 1n : 0n });
+  }
 );
 
 // ---------------------------------------------------------------------------
@@ -2142,21 +2292,23 @@ export const register_presence = spacetimedb.reducer(
     const game = ctx.db.Game.id.find(gameId);
     if (!game || game.status === 'finished') return;
 
-    for (const player of ctx.db.Player.player_game_id.filter(gameId)) {
+    // Revive EVERY row the sender holds — a solo game has two.
+    let found = false;
+    for (const player of [...ctx.db.Player.player_game_id.filter(gameId)]) {
       if (player.identity.toHexString() !== ctx.sender.toHexString()) continue;
+      found = true;
 
       if (!player.isConnected) {
         ctx.db.Player.id.update({ ...player, isConnected: true });
       }
 
-      for (const timeout of ctx.db.DisconnectTimeout.disconnect_timeout_player_id.filter(player.id)) {
+      for (const timeout of [...ctx.db.DisconnectTimeout.disconnect_timeout_player_id.filter(player.id)]) {
         ctx.db.DisconnectTimeout.scheduledId.delete(timeout.scheduledId);
       }
+    }
 
-      if (game.disconnectTimeoutFired) {
-        ctx.db.Game.id.update({ ...game, disconnectTimeoutFired: false });
-      }
-      return;
+    if (found && game.disconnectTimeoutFired) {
+      ctx.db.Game.id.update({ ...game, disconnectTimeoutFired: false });
     }
   }
 );
@@ -2859,6 +3011,10 @@ function performTurnFlip(ctx: any, gameId: bigint, actingPlayer: any): void {
     currentPhase: 'draw',
     turnNumber: newTurnNumber,
   });
+
+  // Solo: the seat in hand follows the turn.
+  const solo = soloGameRow(ctx, gameId);
+  if (solo) ctx.db.SoloGame.gameId.update({ ...solo, activeSeat: nextSeat });
 
   // Find the new active player
   let newActivePlayer: any = null;

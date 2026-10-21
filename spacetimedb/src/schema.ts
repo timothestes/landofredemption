@@ -649,6 +649,21 @@ export const StopHoldTimeout = table(
 );
 
 // ---------------------------------------------------------------------------
+// 22. SoloGame — marks a game where ONE identity holds both Player rows
+//     (Deck Bracket "solo" play). activeSeat is the "seat in hand": the seat
+//     an un-hinted action resolves to. Flips with the turn and on
+//     solo_swap_seat. A separate table, not Game columns, for the same BSATN
+//     reason as ForgeGame / TurnStop.
+// ---------------------------------------------------------------------------
+export const SoloGame = table(
+  { name: 'solo_game', public: true },
+  {
+    gameId: t.u64().primaryKey(),
+    activeSeat: t.u64(),
+  }
+);
+
+// ---------------------------------------------------------------------------
 // Schema export
 // ---------------------------------------------------------------------------
 const spacetimedb = schema({
@@ -676,6 +691,7 @@ const spacetimedb = schema({
   PregameIdleTimeout,
   TurnStop,
   StopHoldTimeout,
+  SoloGame,
 });
 
 export default spacetimedb;

@@ -44,6 +44,7 @@ import ClearRevealedCardsReducer from "./clear_revealed_cards_reducer";
 import CompleteZoneSearchReducer from "./complete_zone_search_reducer";
 import CreateForgeGameReducer from "./create_forge_game_reducer";
 import CreateGameReducer from "./create_game_reducer";
+import CreateSoloGameReducer from "./create_solo_game_reducer";
 import DenyZoneSearchReducer from "./deny_zone_search_reducer";
 import DetachCardReducer from "./detach_card_reducer";
 import DiscardReserveCharactersExecuteReducer from "./discard_reserve_characters_execute_reducer";
@@ -127,6 +128,7 @@ import ShuffleCardIntoDeckReducer from "./shuffle_card_into_deck_reducer";
 import ShuffleDeckReducer from "./shuffle_deck_reducer";
 import ShuffleOpponentDeckReducer from "./shuffle_opponent_deck_reducer";
 import ShuffleSoulDeckReducer from "./shuffle_soul_deck_reducer";
+import SoloSwapSeatReducer from "./solo_swap_seat_reducer";
 import SpawnLostSoulReducer from "./spawn_lost_soul_reducer";
 import StopImitatingLostSoulReducer from "./stop_imitating_lost_soul_reducer";
 import SurrenderLostSoulReducer from "./surrender_lost_soul_reducer";
@@ -157,6 +159,7 @@ import PregameIdleTimeoutRow from "./pregame_idle_timeout_table";
 import PregameStarRow from "./pregame_star_table";
 import PregameStateRow from "./pregame_state_table";
 import RevealTimeoutRow from "./reveal_timeout_table";
+import SoloGameRow from "./solo_game_table";
 import SpectatorRow from "./spectator_table";
 import SpectatorBanRow from "./spectator_ban_table";
 import SpectatorHandRequestRow from "./spectator_hand_request_table";
@@ -379,6 +382,17 @@ const tablesSchema = __schema({
       { name: 'reveal_timeout_scheduled_id_key', constraint: 'unique', columns: ['scheduledId'] },
     ],
   }, RevealTimeoutRow),
+  soloGame: __table({
+    name: 'solo_game',
+    indexes: [
+      { accessor: 'gameId', name: 'solo_game_game_id_idx_btree', algorithm: 'btree', columns: [
+        'gameId',
+      ] },
+    ],
+    constraints: [
+      { name: 'solo_game_game_id_key', constraint: 'unique', columns: ['gameId'] },
+    ],
+  }, SoloGameRow),
   spectator: __table({
     name: 'spectator',
     indexes: [
@@ -488,6 +502,7 @@ const reducersSchema = __reducers(
   __reducerSchema("complete_zone_search", CompleteZoneSearchReducer),
   __reducerSchema("create_forge_game", CreateForgeGameReducer),
   __reducerSchema("create_game", CreateGameReducer),
+  __reducerSchema("create_solo_game", CreateSoloGameReducer),
   __reducerSchema("deny_zone_search", DenyZoneSearchReducer),
   __reducerSchema("detach_card", DetachCardReducer),
   __reducerSchema("discard_reserve_characters_execute", DiscardReserveCharactersExecuteReducer),
@@ -571,6 +586,7 @@ const reducersSchema = __reducers(
   __reducerSchema("shuffle_deck", ShuffleDeckReducer),
   __reducerSchema("shuffle_opponent_deck", ShuffleOpponentDeckReducer),
   __reducerSchema("shuffle_soul_deck", ShuffleSoulDeckReducer),
+  __reducerSchema("solo_swap_seat", SoloSwapSeatReducer),
   __reducerSchema("spawn_lost_soul", SpawnLostSoulReducer),
   __reducerSchema("stop_imitating_lost_soul", StopImitatingLostSoulReducer),
   __reducerSchema("surrender_lost_soul", SurrenderLostSoulReducer),
@@ -620,6 +636,8 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "PregameState": Omit<typeof tablesSchema.schemaType.tables["pregameState"], "accessorName"> & { readonly accessorName: "PregameState" };
     /** @deprecated Use `revealTimeout` instead. This alias will be removed in the next major version. */
     readonly "RevealTimeout": Omit<typeof tablesSchema.schemaType.tables["revealTimeout"], "accessorName"> & { readonly accessorName: "RevealTimeout" };
+    /** @deprecated Use `soloGame` instead. This alias will be removed in the next major version. */
+    readonly "SoloGame": Omit<typeof tablesSchema.schemaType.tables["soloGame"], "accessorName"> & { readonly accessorName: "SoloGame" };
     /** @deprecated Use `spectator` instead. This alias will be removed in the next major version. */
     readonly "Spectator": Omit<typeof tablesSchema.schemaType.tables["spectator"], "accessorName"> & { readonly accessorName: "Spectator" };
     /** @deprecated Use `spectatorBan` instead. This alias will be removed in the next major version. */
@@ -667,6 +685,7 @@ const tableAccessorAliases = {
   "PregameStar": "pregameStar",
   "PregameState": "pregameState",
   "RevealTimeout": "revealTimeout",
+  "SoloGame": "soloGame",
   "Spectator": "spectator",
   "SpectatorBan": "spectatorBan",
   "SpectatorHandRequest": "spectatorHandRequest",
@@ -724,6 +743,8 @@ export type DbView = __DbViewBase & {
   readonly "PregameState": __DbViewBase["pregameState"];
   /** @deprecated Use `revealTimeout` instead. This alias will be removed in the next major version. */
   readonly "RevealTimeout": __DbViewBase["revealTimeout"];
+  /** @deprecated Use `soloGame` instead. This alias will be removed in the next major version. */
+  readonly "SoloGame": __DbViewBase["soloGame"];
   /** @deprecated Use `spectator` instead. This alias will be removed in the next major version. */
   readonly "Spectator": __DbViewBase["spectator"];
   /** @deprecated Use `spectatorBan` instead. This alias will be removed in the next major version. */
@@ -772,6 +793,8 @@ export type Tables = __TablesBase & {
   readonly "PregameState": __TablesBase["pregameState"];
   /** @deprecated Use `revealTimeout` instead. This alias will be removed in the next major version. */
   readonly "RevealTimeout": __TablesBase["revealTimeout"];
+  /** @deprecated Use `soloGame` instead. This alias will be removed in the next major version. */
+  readonly "SoloGame": __TablesBase["soloGame"];
   /** @deprecated Use `spectator` instead. This alias will be removed in the next major version. */
   readonly "Spectator": __TablesBase["spectator"];
   /** @deprecated Use `spectatorBan` instead. This alias will be removed in the next major version. */
