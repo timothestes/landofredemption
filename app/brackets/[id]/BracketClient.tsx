@@ -18,7 +18,7 @@ import {
 } from '../actions';
 import { BracketView } from '../components/BracketView';
 import { ChampionPanel } from '../components/ChampionPanel';
-import { DECIDED_KEY, stdbFormatFor, writeSoloGameParams } from '../lib/gameParams';
+import { DECIDED_KEY, stdbFormatFor, writeHostGameParams, writeSoloGameParams } from '../lib/gameParams';
 import { buildMatchViews, championPath, firstActionableMatchId, type MatchView } from '../lib/view';
 import type { BracketPageData } from '../types';
 import { RecordResultDialog } from './RecordResultDialog';
@@ -125,9 +125,40 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
     router.push('/play/' + g.code);
   };
 
+  const onPlayOnline = async (matchId: string) => {
+    const view = viewById.get(matchId);
+    if (!viewer || !view || busy) return;
+    setBusy(true);
+    const res = await startBracketGameAction(matchId, 'online');
+    if (res.ok === false) { setBusy(false); fail(res.error); return; }
+    const g = res.data;
+    writeHostGameParams(g.code, {
+      deckAId: g.deckAId,
+      deckAName: g.deckAName,
+      displayName: viewer.displayName,
+      supabaseUserId: viewer.id,
+      format: stdbFormatFor(g.format),
+      bracket: bracketParams(view, { id: g.gameId, gameNumber: g.gameNumber, mode: 'online' }),
+    });
+    router.push('/play/' + g.code);
+  };
+
   const onResume = (game: BracketGame) => {
     const view = viewById.get(game.matchId);
     if (!viewer || !view || !game.code || !view.a?.deckId || !view.b?.deckId) return;
+    if (game.mode === 'online') {
+      // The host resumes their own waiting room; the friend rejoins from the invite link.
+      writeHostGameParams(game.code, {
+        deckAId: view.a.deckId,
+        deckAName: view.a.deckName,
+        displayName: viewer.displayName,
+        supabaseUserId: viewer.id,
+        format: stdbFormatFor(bracket.format),
+        bracket: bracketParams(view, { id: game.id, gameNumber: game.gameNumber, mode: 'online' }),
+      });
+      router.push('/play/' + game.code);
+      return;
+    }
     writeSoloGameParams(game.code, {
       deckAId: view.a.deckId,
       deckBId: view.b.deckId,
@@ -135,7 +166,7 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
       supabaseUserId: viewer.id,
       format: stdbFormatFor(bracket.format),
       firstSeat: game.firstEntryId === view.match.entryBId ? 1 : 0,
-      bracket: bracketParams(view, { id: game.id, gameNumber: game.gameNumber, mode: game.mode === 'online' ? 'online' : 'solo' }),
+      bracket: bracketParams(view, { id: game.id, gameNumber: game.gameNumber, mode: 'solo' }),
     });
     router.push('/play/' + game.code);
   };
@@ -259,7 +290,7 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
         decidedMatchId={decidedMatchId}
         champion={championPanel}
         canReset={matchId => resetMatchAllowed(matches, games, matchId)}
-        {...(isOwner ? { onPlay, onResume, onRecord: setRecordMatchId, onAbandon, onReset } : {})}
+        {...(isOwner ? { onPlay, onPlayOnline, onResume, onRecord: setRecordMatchId, onAbandon, onReset } : {})}
       />
 
       {isOwner && (

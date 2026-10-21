@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
-import { findCard } from '@/lib/cards/lookup';
+import { deckToGameData } from './lib/deckToGameData';
 import { requireForge } from '@/app/forge/lib/auth';
 import { stdbHttpBase } from '@/app/forge/lib/stdbHttp';
 import { deckFormatFilterFor, deckFamilyFilterFor } from '@/lib/api/cache';
@@ -80,29 +80,7 @@ export async function loadDeckForGame(deckId: string): Promise<LoadDeckResult> {
   }
 
   // Expand quantity > 1 rows into individual card entries
-  const deckData: GameCardData[] = [];
-  for (const card of cards || []) {
-    const quantity = card.quantity || 1;
-    const imgFile = (card.card_img_file || '').replace(/\.jpe?g$/i, '');
-    const enriched = findCard(card.card_name || '', card.card_set || undefined, imgFile);
-
-    for (let i = 0; i < quantity; i++) {
-      deckData.push({
-        cardName: card.card_name || '',
-        cardSet: card.card_set || '',
-        cardImgFile: card.card_img_file || '',
-        cardType: enriched?.type || '',
-        brigade: enriched?.brigade || '',
-        strength: enriched?.strength || '',
-        toughness: enriched?.toughness || '',
-        alignment: enriched?.alignment || '',
-        identifier: enriched?.identifier || '',
-        reference: enriched?.reference || '',
-        specialAbility: enriched?.specialAbility || '',
-        isReserve: card.zone === 'reserve',
-      });
-    }
-  }
+  const deckData = deckToGameData(cards || []);
 
   // Stamp last_played_at if this is the user's own deck
   if (ownDeck) {

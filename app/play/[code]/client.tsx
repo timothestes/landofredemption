@@ -52,7 +52,7 @@ import {
   writeSoloGameParams, writeHostGameParams, stdbFormatFor, DECIDED_KEY, type BracketGameParams,
 } from '@/app/play/lib/bracketGameParams';
 import { resolveWinnerSeat, soulsBySeat } from '@/app/play/lib/bracketResult';
-import { recordBracketGameResultAction, startBracketGameAction } from '@/app/brackets/actions';
+import { loadBracketSeatDeckAction, recordBracketGameResultAction, startBracketGameAction } from '@/app/brackets/actions';
 import BracketGameOverOverlay, { type BracketSeriesOutcome } from '@/app/play/components/BracketGameOverOverlay';
 import { BracketRecoveryScreen, type BracketRecoveryReason } from '@/app/play/components/BracketRecoveryScreen';
 
@@ -322,6 +322,10 @@ function GameInner({ code, isConnected }: GameInnerProps) {
   // Solo only: deck B's serialized cards, and each deck's paragon (from the deck rows).
   const [deckDataB, setDeckDataB] = useState<string | null>(null);
   const [soloParagons, setSoloParagons] = useState<{ a: string; b: string }>({ a: '', b: '' });
+  // Online bracket games: the seat deck's paragon, read from the deck row (the
+  // bracket's session params carry none). Format stays gameParams.format so both
+  // seats send the bracket's format.
+  const [bracketParagon, setBracketParagon] = useState<string | null>(null);
 
   // Forge state — declared before `gameState`/`isForge` so the deck-load
   // effect below (which branches on gameParams.isForge) and useGameState
@@ -362,10 +366,24 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           if (cancelled) return;
           setDeckLoadError(err instanceof Error ? err.message : 'Failed to load deck.');
         });
+    } else if (gameParams.role === 'join' && gameParams.bracket) {
+      // The invited friend plays the bracket owner's deck B, which may be private.
+      loadBracketSeatDeckAction(gameParams.bracket.gameId)
+        .then((r) => {
+          if (cancelled) return;
+          if (r.ok === false) { setDeckLoadError(r.error); return; }
+          setBracketParagon(r.data.deck.paragon ?? '');
+          setDeckData(JSON.stringify(r.data.deckData));
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setDeckLoadError(err instanceof Error ? err.message : 'Failed to load deck.');
+        });
     } else {
       loadDeckForGame(gameParams.deckId)
         .then((result) => {
           if (cancelled) return;
+          if (gameParams.bracket) setBracketParagon(result.deck.paragon ?? '');
           setDeckData(JSON.stringify(result.deckData));
         })
         .catch((err) => {
@@ -958,7 +976,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           code,
           deckId: gameParams.deckId,
           displayName: gameParams.displayName,
-          paragon: gameParams.paragon || '',
+          paragon: bracketParagon ?? gameParams.paragon ?? '',
           format: gameParams.format ?? 'standard',
           supabaseUserId: gameParams.supabaseUserId,
           deckData,
@@ -997,7 +1015,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           code,
           deckId: gameParams.deckId,
           displayName: gameParams.displayName,
-          paragon: gameParams.paragon || '',
+          paragon: bracketParagon ?? gameParams.paragon ?? '',
           format: gameParams.format ?? 'Type 1',
           supabaseUserId: gameParams.supabaseUserId,
           deckData,
@@ -1017,7 +1035,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
       setErrorMessage(e instanceof Error ? e.message : 'Failed to initialize game');
       setLifecycle('error');
     }
-  }, [gameState.isGamesReady, gameState.isPlayersReady, conn, code, gameParams, deckData, gameState.identityHex, forgeDeckMeta, deckDataB, soloParagons]);
+  }, [gameState.isGamesReady, gameState.isPlayersReady, conn, code, gameParams, deckData, gameState.identityHex, forgeDeckMeta, deckDataB, soloParagons, bracketParagon]);
 
   // Also get raw game list to find our game by code before we know the ID
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1701,6 +1719,9 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           conn.reducers.setGamePublic({ gameId, isPublic });
         } : undefined}
         isForge={isForge}
+        inviteUrl={gameParams?.bracket && typeof window !== 'undefined'
+          ? `${window.location.origin}/brackets/${gameParams.bracket.bracketId}/join/${gameParams.bracket.gameId}`
+          : undefined}
         onDeckChanged={(next) => {
           // Mirror the practice-swap bookkeeping: keep gameParams/sessionStorage
           // and the local deckData (which feeds practice goldfish + image

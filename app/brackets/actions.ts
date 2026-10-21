@@ -15,6 +15,10 @@ import {
   type DeckBracketMatchRow, type DeckBracketRow,
 } from './types';
 import { generateGameCode } from './lib/gameCode';
+import type { BracketGameParams } from './lib/gameParams';
+import { createAdminClient } from '@/utils/supabase/admin';
+import { deckToGameData } from '@/app/play/lib/deckToGameData';
+import type { GameCardData } from '@/app/play/actions';
 
 export type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -550,4 +554,93 @@ export async function deleteBracketAction(id: string): Promise<ActionResult<null
   const { error } = await supabase.from('deck_brackets').delete().eq('id', id);
   if (error) return fail(error.message);
   return { ok: true, data: null };
+}
+
+/**
+ * Loads the bracket's B-side deck for the friend invited to an online bracket
+ * game. The deck may be private to the bracket owner, so after every gate is
+ * checked with the caller's own client, the deck and its cards are read with
+ * the service-role client (that read only).
+ */
+export async function loadBracketSeatDeckAction(gameId: string): Promise<ActionResult<{
+  deck: { id: string; name: string; format: string; paragon: string | null };
+  deckData: GameCardData[];
+  code: string;
+  bracket: BracketGameParams;
+}>> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return fail('Sign in to join this game.');
+
+  const { data: gRow, error: gErr } = await supabase
+    .from('deck_bracket_games').select('*').eq('id', gameId).maybeSingle();
+  if (gErr) return fail(gErr.message);
+  if (!gRow) return fail('This game was cancelled.');
+  const game = gRow as DeckBracketGameRow;
+  if (game.mode !== 'online' || !game.code) return fail('This game is not open to join.');
+  if (game.winner_entry_id) return fail('This game is already finished.');
+
+  const { data: mRow, error: mErr } = await supabase
+    .from('deck_bracket_matches').select('*').eq('id', game.match_id).maybeSingle();
+  if (mErr) return fail(mErr.message);
+  if (!mRow) return fail('Match not found.');
+  const match = mRow as DeckBracketMatchRow;
+
+  const { data: bRow, error: bErr } = await supabase
+    .from('deck_brackets').select('*').eq('id', match.bracket_id).maybeSingle();
+  if (bErr) return fail(bErr.message);
+  if (!bRow) return fail('Bracket not found.');
+  const bracketRow = bRow as DeckBracketRow;
+  if (bracketRow.owner_id === user.id) return fail('This is your own bracket; open it to play.');
+
+  if (!match.entry_a_id || !match.entry_b_id) return fail('This match is not ready to play.');
+  const { data: eRows, error: eErr } = await supabase
+    .from('deck_bracket_entries').select('*').in('id', [match.entry_a_id, match.entry_b_id]);
+  if (eErr) return fail(eErr.message);
+  const entries = (eRows ?? []) as DeckBracketEntryRow[];
+  const entryA = entries.find(e => e.id === match.entry_a_id);
+  const entryB = entries.find(e => e.id === match.entry_b_id);
+  if (!entryA || !entryB) return fail('This match is not ready to play.');
+  if (!entryB.deck_id) return fail('This deck has been deleted, so the game cannot be played.');
+
+  let admin;
+  try { admin = createAdminClient(); } catch (e) { return fail(message(e)); }
+  const [d, c] = await Promise.all([
+    admin.from('decks').select('id, name, format, paragon').eq('id', entryB.deck_id).maybeSingle(),
+    // Maybeboard rows are excluded, matching loadDeckForGame.
+    admin.from('deck_cards')
+      .select('card_name, card_set, card_img_file, quantity, zone')
+      .eq('deck_id', entryB.deck_id)
+      .in('zone', ['main', 'reserve']),
+  ]);
+  if (d.error) return fail(d.error.message);
+  if (!d.data) return fail('This deck has been deleted, so the game cannot be played.');
+  if (c.error) return fail('Failed to load deck cards.');
+
+  return {
+    ok: true,
+    data: {
+      deck: {
+        id: d.data.id as string,
+        name: d.data.name as string,
+        format: (d.data.format as string | null) ?? entryB.deck_format,
+        paragon: (d.data.paragon as string | null) ?? null,
+      },
+      deckData: deckToGameData(c.data ?? []),
+      code: game.code,
+      bracket: {
+        gameId: game.id,
+        bracketId: bracketRow.id,
+        matchId: match.id,
+        gameNumber: game.game_number,
+        bestOf: bracketRow.best_of,
+        mode: 'online',
+        entryAId: entryA.id,
+        entryBId: entryB.id,
+        deckAName: entryA.deck_name,
+        deckBName: entryB.deck_name,
+        returnTo: '/brackets/' + bracketRow.id,
+      },
+    },
+  };
 }

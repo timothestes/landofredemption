@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { abandonBracketGameAction, startBracketGameAction } from '@/app/brackets/actions';
-import { stdbFormatFor, writeSoloGameParams, type BracketGameParams } from '@/app/play/lib/bracketGameParams';
+import { stdbFormatFor, writeHostGameParams, writeSoloGameParams, type BracketGameParams } from '@/app/play/lib/bracketGameParams';
 
 export type BracketRecoveryReason = 'no-result' | 'other-device';
 
@@ -48,29 +48,37 @@ export function BracketRecoveryScreen({ reason, bracket, displayName, supabaseUs
     const started = await startBracketGameAction(bracket.matchId, bracket.mode);
     if (started.ok === false) { setError(started.error); setBusy(false); return; }
     const g = started.data;
-    if (bracket.mode !== 'solo') {
-      // Online games are launched from the bracket page, which knows each side's role.
-      router.push(bracket.returnTo);
-      return;
-    }
-    writeSoloGameParams(g.code, {
-      deckAId: g.deckAId,
-      deckBId: g.deckBId,
-      displayName,
-      supabaseUserId,
-      format: stdbFormatFor(g.format),
-      firstSeat: g.firstSeat,
-      bracket: {
-        ...bracket,
-        gameId: g.gameId,
-        gameNumber: g.gameNumber,
-        bestOf: g.bestOf,
-        entryAId: g.entryAId,
-        entryBId: g.entryBId,
+    const next: BracketGameParams = {
+      ...bracket,
+      gameId: g.gameId,
+      gameNumber: g.gameNumber,
+      bestOf: g.bestOf,
+      entryAId: g.entryAId,
+      entryBId: g.entryBId,
+      deckAName: g.deckAName,
+      deckBName: g.deckBName,
+    };
+    if (bracket.mode === 'online') {
+      // The host lands in the new waiting room; the friend needs the new invite link.
+      writeHostGameParams(g.code, {
+        deckAId: g.deckAId,
         deckAName: g.deckAName,
-        deckBName: g.deckBName,
-      },
-    });
+        displayName,
+        supabaseUserId,
+        format: stdbFormatFor(g.format),
+        bracket: next,
+      });
+    } else {
+      writeSoloGameParams(g.code, {
+        deckAId: g.deckAId,
+        deckBId: g.deckBId,
+        displayName,
+        supabaseUserId,
+        format: stdbFormatFor(g.format),
+        firstSeat: g.firstSeat,
+        bracket: next,
+      });
+    }
     router.replace('/play/' + g.code);
   };
 
