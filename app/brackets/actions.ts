@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { getFormatDef } from '@/lib/formats';
 import {
   applyGameResult, buildBracket, canPlayMatch, currentRoundName, firstEntryForGame,
-  matchState, resetMatchAllowed, resetMatchUpdates, roundNames, seriesState, sizeFor,
+  matchState, reconcileUpdates, resetMatchAllowed, resetMatchUpdates, roundNames, seriesState, sizeFor,
 } from '@/lib/bracket';
 import type {
   BestOf, Bracket, BracketEntry, BracketFormat, BracketGame, BracketMatch, RowUpdate, SeriesState,
@@ -177,7 +177,7 @@ export async function listMyBracketsAction(): Promise<ActionResult<Array<{
 
   const { data, error } = await supabase
     .from('deck_brackets')
-    .select('*, deck_bracket_entries(*), deck_bracket_matches(*, deck_bracket_games(*))')
+    .select('*, deck_bracket_entries!bracket_id(*), deck_bracket_matches(*, deck_bracket_games(*))')
     .eq('owner_id', user.id)
     .order('created_at', { ascending: false })
     .limit(100);
@@ -329,18 +329,24 @@ function summarise(loaded: Loaded, matchId: string): RecordData {
   };
 }
 
+const ALREADY_RECORDED = 'already-recorded';
+
 async function persistUpdates(
   supabase: Supabase, bracketId: string, updates: RowUpdate[], souls?: { a?: number; b?: number },
 ): Promise<string | null> {
   for (const u of updates) {
     let error: { message: string } | null = null;
     if (u.kind === 'game') {
-      ({ error } = await supabase.from('deck_bracket_games').update({
+      // Atomic claim: only an undecided game can take a winner, so a racing or
+      // repeated call never overwrites an existing result.
+      const res = await supabase.from('deck_bracket_games').update({
         winner_entry_id: u.winnerEntryId,
         souls_a: souls?.a ?? null,
         souls_b: souls?.b ?? null,
         finished_at: new Date().toISOString(),
-      }).eq('id', u.gameId));
+      }).eq('id', u.gameId).is('winner_entry_id', null).select('id');
+      error = res.error;
+      if (!error && (res.data ?? []).length === 0) return ALREADY_RECORDED;
     } else if (u.kind === 'match-winner') {
       ({ error } = await supabase.from('deck_bracket_matches')
         .update({ winner_entry_id: u.winnerEntryId === '' ? null : u.winnerEntryId })
@@ -361,6 +367,23 @@ async function persistUpdates(
   return null;
 }
 
+/** Heals any half-applied advancement, then returns the reloaded state. */
+async function reconcileAndLoad(supabase: Supabase, bracketId: string): Promise<ActionResult<Loaded>> {
+  let loaded = await loadAll(supabase, bracketId);
+  if (loaded.ok === false) return loaded;
+  let repairs: RowUpdate[];
+  try {
+    repairs = reconcileUpdates(loaded.data.bracket, loaded.data.matches, loaded.data.games);
+  } catch (e) {
+    return fail(message(e));
+  }
+  if (repairs.length === 0) return loaded;
+  const err = await persistUpdates(supabase, bracketId, repairs);
+  if (err) return fail(err);
+  loaded = await loadAll(supabase, bracketId);
+  return loaded;
+}
+
 async function applyAndPersist(
   supabase: Supabase, bracketId: string, gameId: string, winnerEntryId: string,
   souls?: { a?: number; b?: number },
@@ -370,22 +393,23 @@ async function applyAndPersist(
   const game = loaded.data.games.find(g => g.id === gameId);
   if (!game) return fail('Game not found.');
 
-  // Idempotent: a result already recorded is returned as-is, nothing changes.
-  if (game.winnerEntryId) return { ok: true, data: summarise(loaded.data, game.matchId) };
-
-  let updates: RowUpdate[];
-  try {
-    updates = applyGameResult({
-      bracket: loaded.data.bracket, matches: loaded.data.matches, games: loaded.data.games,
-      gameId, winnerEntryId,
-    });
-  } catch (e) {
-    return fail(message(e));
+  // Idempotent: a result already recorded changes nothing, but any half-applied
+  // advancement from an earlier failed call is repaired first.
+  if (!game.winnerEntryId) {
+    let updates: RowUpdate[];
+    try {
+      updates = applyGameResult({
+        bracket: loaded.data.bracket, matches: loaded.data.matches, games: loaded.data.games,
+        gameId, winnerEntryId,
+      });
+    } catch (e) {
+      return fail(message(e));
+    }
+    const err = await persistUpdates(supabase, bracketId, updates, souls);
+    if (err && err !== ALREADY_RECORDED) return fail(err);
   }
-  const err = await persistUpdates(supabase, bracketId, updates, souls);
-  if (err) return fail(err);
 
-  const after = await loadAll(supabase, bracketId);
+  const after = await reconcileAndLoad(supabase, bracketId);
   if (after.ok === false) return after;
   return { ok: true, data: summarise(after.data, game.matchId) };
 }

@@ -181,3 +181,32 @@ export function currentRoundName(bracket: Bracket, matches: BracketMatch[], _gam
   }
   return 'Complete';
 }
+
+/**
+ * Repairs a half-applied advancement (the writes are separate, non-transactional
+ * updates). Every emitted update is a value-set write, so repeating one is safe.
+ */
+export function reconcileUpdates(bracket: Bracket, matches: BracketMatch[], games: BracketGame[]): RowUpdate[] {
+  const updates: RowUpdate[] = [];
+  const last = roundCount(bracket.size);
+  for (const match of matches) {
+    let winner = match.winnerEntryId;
+    if (!winner && !match.isBye) {
+      const series = seriesState(games, match, bracket.bestOf);
+      if (series.decided) {
+        winner = series.winner === 'a' ? match.entryAId : match.entryBId;
+        if (winner) updates.push({ kind: 'match-winner', matchId: match.id, winnerEntryId: winner });
+      }
+    }
+    if (!winner) continue;
+    if (match.round === last) {
+      if (bracket.championEntryId !== winner) updates.push({ kind: 'champion', entryId: winner });
+      continue;
+    }
+    const fed = fedMatch(matches, match);
+    if (!fed) continue;
+    const held = fed.side === 'a' ? fed.target.entryAId : fed.target.entryBId;
+    if (held !== winner) updates.push({ kind: 'match-slot', matchId: fed.target.id, side: fed.side, entryId: winner });
+  }
+  return updates;
+}

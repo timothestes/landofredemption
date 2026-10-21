@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { sizeFor, slotOrder, roundNames, matchLabel, nextSlot, buildBracket, seriesState,
-  firstEntryForGame, matchState, canPlayMatch, applyGameResult, resetMatchAllowed, resetMatchUpdates } from '../index';
+  firstEntryForGame, matchState, canPlayMatch, applyGameResult, resetMatchAllowed, resetMatchUpdates, reconcileUpdates } from '../index';
 import type { BracketMatch, Bracket } from '../types';
 import { entry, entries, ids, match, game } from './fixtures';
 
@@ -160,5 +160,36 @@ describe('reset', () => {
       { kind: 'match-winner', matchId: 'm1', winnerEntryId: '' },
       { kind: 'match-slot', matchId: 'm3', side: 'a', entryId: null },
     ]);
+  });
+});
+
+describe('reconcileUpdates', () => {
+  const bracket: Bracket = { id: 'b', name: 'x', format: 'T1', size: 4, bestOf: 3, status: 'active', championEntryId: null };
+  const base = (): BracketMatch[] => [
+    match({ id: 'm1', round: 1, position: 0 }),
+    match({ id: 'm2', round: 1, position: 1, entryAId: 'e3', entryBId: 'e4' }),
+    match({ id: 'm3', round: 2, position: 0, entryAId: null, entryBId: null }),
+  ];
+  it('emits nothing for a consistent bracket', () => {
+    const ms = base(); ms[0].winnerEntryId = 'e1'; ms[2].entryAId = 'e1';
+    expect(reconcileUpdates(bracket, ms, [game(1, 'e1'), game(2, 'e1')])).toEqual([]);
+  });
+  it('emits match-winner and match-slot for a decided series with no match winner', () => {
+    expect(reconcileUpdates(bracket, base(), [game(1, 'e1'), game(2, 'e1')])).toEqual([
+      { kind: 'match-winner', matchId: 'm1', winnerEntryId: 'e1' },
+      { kind: 'match-slot', matchId: 'm3', side: 'a', entryId: 'e1' },
+    ]);
+  });
+  it('emits only match-slot when the winner is set but the fed slot is empty', () => {
+    const ms = base(); ms[0].winnerEntryId = 'e1';
+    expect(reconcileUpdates(bracket, ms, [game(1, 'e1'), game(2, 'e1')])).toEqual([
+      { kind: 'match-slot', matchId: 'm3', side: 'a', entryId: 'e1' },
+    ]);
+  });
+  it('emits champion when the final is won but no champion is set', () => {
+    const ms = base(); ms[2].entryAId = 'e1'; ms[2].entryBId = 'e3'; ms[2].winnerEntryId = 'e3';
+    ms[0].winnerEntryId = 'e1'; ms[1].winnerEntryId = 'e3';
+    ms[0].isBye = true; ms[1].isBye = true;
+    expect(reconcileUpdates(bracket, ms, [])).toEqual([{ kind: 'champion', entryId: 'e3' }]);
   });
 });
