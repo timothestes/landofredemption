@@ -463,6 +463,7 @@ right hint. Known sites:
 |---|---|
 | `enter_battle` ("your own cards into battle") | `{ cardId }` |
 | `surrender_lost_soul` ("your own Lost Souls") | `{ cardId }` |
+| Card ability reducers that take a source card: `execute_card_ability`, `execute_card_ability_with_count`, `matthew_draw_brigades`, `resurrect_heroes`, `imitate_lost_soul`, `stop_imitating_lost_soul`, `keep_one_shuffle_draw` (caster half) | `{ cardId }` = the source card, so the ability acts as the card's owner, not the seat in hand |
 | `rescue_lost_soul` ("cannot rescue your own") | `{ seat }` = the seat that does not own the soul |
 | `set_phase`, `end_turn`, `end_battle`, `resolve_battle`, `release_turn_stop` ("Not your turn" / turn player) | `{ seat: game.currentTurn }` |
 | `surrender_soul` (defender in T1, attacker otherwise) | `{ seat }` computed from `format` and `battleAttackerSeat` |
@@ -498,7 +499,11 @@ Other reducers and changes:
   (`keep_one_shuffle_draw` for Philip's Daughters and `three_nails_reset`)
   stay `'pending'` in solo; the client shows their prompt to the human
   and the target-half reducers act as the target through the `{ playerId
-  }` hint. No seat change is involved.
+  }` hint. No seat change is involved. `execute_card_ability`'s
+  `all_players_shuffle_and_draw` case inserts its `shuffle_and_draw`
+  request itself, so it applies the same rule: `'approved'` in solo,
+  `'pending'` otherwise. (`spawn_lost_soul` takes no source card; its
+  target LoB is already explicit in `targetPlayerId`, so it needs no hint.)
 - `register_presence` (and anything else that revives or inspects "the
   sender's row"): act on **every** row matching the identity, so the
   other seat is never left disconnected and the five-minute disconnect
@@ -603,8 +608,13 @@ the host's client (the bracket owner; in solo that is the only client):
 
 1. Resolves the winner **seat** explicitly from the last game action:
    `WIN` → that player won; `RESIGN` → that player lost; `TIMEOUT` can
-   only happen in online mode and means the claimer won. Do not reuse the
-   viewer-relative `deriveEndReason`.
+   only happen in online mode and counts as a win only when it was a
+   claim: `claim_timeout_victory` logs it for the claimer with payload
+   `reason: 'claimed_by_opponent'`, and the claimer won. A waiting/pregame
+   disconnect timeout (`handle_disconnect_timeout`, payload `reason:
+   'disconnect_timeout'`, logged with the *disconnected* player's id) ends
+   the game with no result and shows the recovery screen. Do not reuse
+   the viewer-relative `deriveEndReason`.
 2. Maps seat 0 → entry A, seat 1 → entry B, counts each side's redeemed
    souls for `souls_a` / `souls_b` (`gameState.soulsRescued` already
    has them), and calls `recordBracketGameResultAction({ gameId,
@@ -660,8 +670,12 @@ touching anything else.
   through a new `loadBracketSeatDeckAction(gameId)` instead of
   `loadDeckForGame`. The action checks that the game row is `online`,
   unresolved, and that the caller is not the bracket owner, then returns
-  deck B enriched exactly as `loadDeckForGame` does, regardless of deck
-  ownership (the bracket owner designated the deck). The usual
+  deck B enriched exactly as `loadDeckForGame` does, regardless of who is
+  joining (the bracket owner designated the deck). Because the entry's
+  `deck_id` is owner-writable, the service-role read also verifies that
+  deck B is owned by the bracket owner or public, and refuses ("Deck not
+  available.") otherwise; migration 114 enforces the same rule on writes
+  to `deck_bracket_entries`. The usual
   `join_game` call follows; the self-join guard stays.
 - Everything else is a normal game: pregame roll, hidden hands, consent
   prompts, stops, pause. The friend sees a normal table with no bracket
