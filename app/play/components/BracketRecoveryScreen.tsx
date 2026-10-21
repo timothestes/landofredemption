@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { abandonBracketGameAction, startBracketGameAction } from '@/app/brackets/actions';
 import { stdbFormatFor, writeSoloGameParams, type BracketGameParams } from '@/app/play/lib/bracketGameParams';
@@ -32,14 +32,19 @@ export function BracketRecoveryScreen({ reason, bracket, displayName, supabaseUs
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set once the old game is gone, so a retry after a failed start skips abandon.
+  const abandonedRef = useRef(false);
   const { title, body } = COPY[reason];
 
   const startOver = async () => {
     if (busy) return;
     setBusy(true);
     setError(null);
-    const abandoned = await abandonBracketGameAction(bracket.gameId);
-    if (abandoned.ok === false) { setError(abandoned.error); setBusy(false); return; }
+    if (!abandonedRef.current) {
+      const abandoned = await abandonBracketGameAction(bracket.gameId);
+      if (abandoned.ok === false) { setError(abandoned.error); setBusy(false); return; }
+      abandonedRef.current = true;
+    }
     const started = await startBracketGameAction(bracket.matchId, bracket.mode);
     if (started.ok === false) { setError(started.error); setBusy(false); return; }
     const g = started.data;

@@ -109,6 +109,9 @@ export interface GameState {
   // isGamesReady races the Player subscription and falsely fires joinGame on a
   // playing-status game, which the server rejects.
   isPlayersReady: boolean;
+  // True once this game's GameAction subscription has applied. Required before
+  // reading an empty action log as "no ending action" (bracket recovery).
+  isActionsReady: boolean;
 
   // Connection identity (as hex string for comparisons)
   identityHex: string | undefined;
@@ -263,8 +266,12 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
   const [allChat, chatLoading] = useTable(
     tables.ChatMessage.where(m => m.gameId.eq(gameId)),
   ) as [ChatMessageRow[], boolean];
+  // Disabled until the game id is known: useTable's applied flag never resets
+  // on a query change, so a subscription for id 0 would report ready for the
+  // real game before its actions arrive. Disabling resets the flag.
   const [allActions, actionsLoading] = useTable(
     tables.GameAction.where(a => a.gameId.eq(gameId)),
+    { enabled: gameId !== BigInt(0) },
   ) as [GameActionRow[], boolean];
   const [allSpectators, spectatorsLoading] = useTable(
     tables.Spectator.where(s => s.gameId.eq(gameId)),
@@ -1140,6 +1147,7 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
     isLoading,
     isGamesReady: gamesLoading,
     isPlayersReady: playersLoading,
+    isActionsReady: gameId !== BigInt(0) && actionsLoading,
     identityHex,
     drawCard,
     drawMultiple,

@@ -1325,6 +1325,8 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     const game = gameState.game;
     if (!gameParams?.bracket || !game) return null;
     if (game.status === 'finished') {
+      // An empty action log only means "no result" once both subscriptions applied.
+      if (!gameState.isActionsReady || !gameState.isPlayersReady) return null;
       const players = gameState.allPlayers.filter((p: any) => p.gameId === game.id);
       return resolveWinnerSeat(gameState.gameActions, players).kind === 'none' ? 'no-result' : null;
     }
