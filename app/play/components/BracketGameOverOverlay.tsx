@@ -3,7 +3,6 @@
 import { useToastKeyboardNav, toastFocusShadow } from '@/app/shared/components/toastKeyboardNav';
 import { useInputMode } from '@/app/shared/hooks/useInputMode';
 import { useCardPreview } from '@/app/goldfish/state/CardPreviewContext';
-import { cn } from '@/lib/utils';
 import type { recordBracketGameResultAction } from '@/app/brackets/actions';
 import type { BracketGameParams } from '@/app/play/lib/bracketGameParams';
 
@@ -18,7 +17,6 @@ export type BracketSeriesOutcome = BracketRecordData | 'pending' | 'failed';
 interface Option {
   label: string;
   onClick: () => void;
-  primary?: boolean;
 }
 
 function Pips({ wins, needed }: { wins: number; needed: number }) {
@@ -27,7 +25,10 @@ function Pips({ wins, needed }: { wins: number; needed: number }) {
       {Array.from({ length: needed }, (_, i) => (
         <span
           key={i}
-          className={cn('h-2 w-2 rounded-full', i < wins ? 'bg-primary' : 'border border-border')}
+          className="h-2 w-2 rounded-full"
+          style={i < wins
+            ? { background: 'rgba(196, 149, 90, 0.85)' }
+            : { border: '1px solid rgba(196, 149, 90, 0.45)' }}
         />
       ))}
     </span>
@@ -66,17 +67,17 @@ export default function BracketGameOverOverlay({
     options.push({ label: 'Back to bracket', onClick: onBack });
   } else if (series === 'failed') {
     statusLine = 'Could not save this result.';
-    options.push({ label: 'Retry', onClick: onRetry, primary: true });
+    options.push({ label: 'Retry', onClick: onRetry });
     options.push({ label: 'Back to bracket', onClick: onBack });
   } else if (!series.decided) {
-    options.push({ label: `Play game ${series.series.nextGameNumber}`, onClick: onPlayNext, primary: true });
+    options.push({ label: `Play game ${series.series.nextGameNumber}`, onClick: onPlayNext });
     options.push({ label: 'Back to bracket', onClick: onBack });
   } else {
     const winner = series.series.winner === 'b' ? bracket.deckBName : bracket.deckAName;
     statusLine = series.champion
       ? `${winner} is the champion`
       : `${winner} advances to ${series.nextRoundName ?? 'the next round'}`;
-    options.push({ label: 'Back to bracket', onClick: onBack, primary: true });
+    options.push({ label: 'Back to bracket', onClick: onBack });
     const next = series.nextReadyMatch;
     if (next) {
       options.push({ label: `Next match: ${next.deckAName} vs ${next.deckBName}`, onClick: () => onNextMatch(next.id) });
@@ -92,63 +93,100 @@ export default function BracketGameOverOverlay({
     onCancel: () => {},
   });
 
+  // The play table's own palette, copied from GameOverOverlay (not site
+  // tokens: those turn the card white over the dark table in light mode).
+  const gold = 'rgba(196, 149, 90, 0.5)';
   return (
     <div
-      className="fixed inset-0 z-[900] flex items-center justify-center bg-background/70 p-4 backdrop-blur-[3px]"
-      // Same inset as GameOverOverlay: dodge the desktop loupe column; touch is full-width.
-      style={{ right: isTouch ? 0 : isLoupeVisible ? 'clamp(280px, 20vw, 380px)' : '36px' }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        // Same inset as GameOverOverlay: dodge the desktop loupe column; touch is full-width.
+        right: isTouch ? 0 : isLoupeVisible ? 'clamp(280px, 20vw, 380px)' : '36px',
+        zIndex: 900,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        background: 'rgba(6, 4, 2, 0.7)',
+        backdropFilter: 'blur(3px)',
+      }}
     >
       <div
         role="dialog"
         aria-label="Game over"
-        className="w-full max-w-[340px] rounded-[10px] border border-border bg-card px-9 py-8 text-center text-card-foreground shadow-2xl"
+        style={{
+          background: 'rgba(14, 10, 6, 0.97)',
+          border: '1px solid rgba(196, 149, 90, 0.4)',
+          borderRadius: 10,
+          padding: '32px 36px',
+          textAlign: 'center',
+          maxWidth: 340,
+          width: '100%',
+          boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(196, 149, 90, 0.08)',
+        }}
       >
-        <h2 className="text-xl font-semibold">
+        <h2 style={{
+          fontFamily: 'var(--font-cinzel), Georgia, serif',
+          fontSize: 18,
+          fontWeight: 700,
+          color: '#e8d5a3',
+          textShadow: '0 1px 4px rgba(0,0,0,0.5)',
+        }}>
           {result.winnerName} wins game {bracket.gameNumber}
         </h2>
 
         {data && (
-          <div className="mt-4 space-y-2 text-sm">
-            <p className="text-muted-foreground">
+          <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8, fontFamily: 'Georgia, serif', fontSize: 13 }}>
+            <p style={{ color: gold }}>
               Series {data.series.winsA}–{data.series.winsB}
             </p>
-            <div className="flex items-center justify-between gap-3">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, color: '#e8d5a3' }}>
               <span className="truncate">{bracket.deckAName}</span>
               <Pips wins={data.series.winsA} needed={data.series.needed} />
             </div>
-            <div className="flex items-center justify-between gap-3">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, color: '#e8d5a3' }}>
               <span className="truncate">{bracket.deckBName}</span>
               <Pips wins={data.series.winsB} needed={data.series.needed} />
             </div>
           </div>
         )}
 
-        {series === 'pending' && <p className="mt-3 text-sm text-muted-foreground">Saving…</p>}
+        {series === 'pending' && (
+          <p style={{ marginTop: 12, fontFamily: 'Georgia, serif', fontSize: 13, color: gold }}>Saving…</p>
+        )}
         {statusLine && (
-          <p role={series === 'failed' ? 'alert' : undefined} className="mt-4 text-sm font-medium">
+          <p
+            role={series === 'failed' ? 'alert' : undefined}
+            style={{ marginTop: 16, fontFamily: 'Georgia, serif', fontSize: 13, color: '#e8d5a3' }}
+          >
             {statusLine}
           </p>
         )}
 
-        <div className="mt-6 flex flex-col gap-2">
+        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {options.map((o, i) => (
             <button
               key={o.label}
               type="button"
               onClick={o.onClick}
               onMouseEnter={() => setFocusedIndex(i)}
-              className={cn(
-                'w-full rounded-md px-4 py-2.5 text-sm font-medium transition-colors',
-                isTouch && 'min-h-11',
-                o.primary
-                  ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                  : 'border border-border hover:bg-muted',
-              )}
               style={{
-                boxShadow:
-                  focusedIndex === i
-                    ? toastFocusShadow('hsl(var(--primary))', 'hsl(var(--primary) / 0.35)')
-                    : 'none',
+                width: '100%',
+                padding: '10px 16px',
+                minHeight: isTouch ? 44 : undefined,
+                borderRadius: 4,
+                border: '1px solid rgba(196, 149, 90, 0.45)',
+                background: focusedIndex === i ? 'rgba(196, 149, 90, 0.30)' : 'rgba(196, 149, 90, 0.15)',
+                color: '#e8d5a3',
+                fontFamily: 'var(--font-cinzel), Georgia, serif',
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                boxShadow: focusedIndex === i ? toastFocusShadow('rgba(196, 149, 90, 0.85)', 'rgba(196, 149, 90, 0.4)') : 'none',
+                transition: 'background 0.14s, box-shadow 0.14s, color 0.14s, border-color 0.14s',
               }}
             >
               {o.label}

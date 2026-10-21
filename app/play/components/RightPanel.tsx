@@ -170,7 +170,7 @@ export default function RightPanel({
               textTransform: 'uppercase',
               whiteSpace: 'nowrap',
             }}>
-              {isTouch ? 'Chat & Log' : 'Preview'}
+              {isTouch ? (hideChat ? 'Log' : 'Chat & Log') : 'Preview'}
             </span>
           </>
         ) : (
@@ -219,7 +219,7 @@ export default function RightPanel({
                   opacity: 0.8,
                 }}
               >
-                Chat &amp; Log
+                {hideChat ? 'Log' : 'Chat & Log'}
               </span>
             )}
           </>

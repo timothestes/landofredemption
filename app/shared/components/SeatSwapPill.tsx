@@ -13,12 +13,16 @@ export function SeatSwapPill({ deckName, onSwap }: { deckName: string; onSwap: (
     <button
       type="button"
       aria-label="Swap seat"
-      title="Swap seat (W)"
+      title={`${deckName} in hand · Swap seat (W)`}
       onClick={onSwap}
-      className="inline-flex h-11 min-w-11 shrink-0 items-center gap-2 rounded-full border border-border bg-card/95 px-3 text-sm text-card-foreground hover:bg-muted"
+      // The play table's own palette (GameToolbar / its collapsed trigger),
+      // not site tokens, which turn white over the dark table in light mode.
+      className="inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-[var(--gf-border)] bg-[rgba(30,22,16,0.92)] px-3 text-sm text-[var(--gf-text)] transition-colors hover:bg-[var(--gf-hover)] hover:text-[var(--gf-text-bright)]"
     >
       <ArrowLeftRight className="size-4 shrink-0" aria-hidden="true" />
-      <span className="max-w-[8rem] truncate">{deckName}</span>
+      {/* Icon-only below sm so the portrait phone toolbar fits; the title
+          and aria-label still name the action. */}
+      <span className="hidden max-w-[8rem] truncate sm:inline">{deckName}</span>
     </button>
   );
 }

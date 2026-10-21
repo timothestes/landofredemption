@@ -1789,7 +1789,7 @@ export default function ChatPanel({
           ================================================================ */}
       <button
         onClick={togglePanel}
-        aria-label={isOpen ? 'Close chat panel' : 'Open chat panel'}
+        aria-label={`${isOpen ? 'Close' : 'Open'} ${hideChat ? 'log' : 'chat'} panel`}
         style={{
           width: '100%',
           padding: '8px 12px',
@@ -1824,7 +1824,8 @@ export default function ChatPanel({
         >
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
-        Chat
+        {/* Solo hides the chat tabs, so the header names what is left. */}
+        {hideChat ? 'Log' : 'Chat'}
         {/* Unread badge */}
         {unreadCount > 0 && (
           <span
