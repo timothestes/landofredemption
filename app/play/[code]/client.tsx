@@ -48,6 +48,13 @@ import { finishedGameToReuseOnCreate } from '@/app/play/lib/gameEntryDecision';
 import { loadForgeDeckForGame, getForgePlayResolver, authorizeForgeSeat } from '@/app/forge/lib/playDecks';
 import { mergeForgeDeckData, resolveCardImageUrl, forgeRenderWarmUrls, type ForgeResolverMap } from '@/app/play/utils/forgeResolver';
 import { warmForgeRenders } from '@/app/play/utils/warmForgeRenders';
+import {
+  writeSoloGameParams, writeHostGameParams, stdbFormatFor, DECIDED_KEY, type BracketGameParams,
+} from '@/app/play/lib/bracketGameParams';
+import { resolveWinnerSeat, soulsBySeat } from '@/app/play/lib/bracketResult';
+import { loadBracketSeatDeckAction, recordBracketGameResultAction, startBracketGameAction } from '@/app/brackets/actions';
+import BracketGameOverOverlay, { type BracketSeriesOutcome } from '@/app/play/components/BracketGameOverOverlay';
+import { BracketRecoveryScreen, type BracketRecoveryReason } from '@/app/play/components/BracketRecoveryScreen';
 
 // Konva requires browser APIs — lazy-load to avoid SSR issues
 const MultiplayerCanvas = dynamic(
@@ -61,7 +68,7 @@ const MultiplayerCanvas = dynamic(
 const SESSION_KEY_PREFIX = 'stdb_game_params_';
 
 interface GameParams {
-  role: 'create' | 'join';
+  role: 'create' | 'join' | 'solo';
   deckId: string;
   displayName: string;
   supabaseUserId: string;
@@ -71,6 +78,12 @@ interface GameParams {
   isPublic?: boolean;
   lobbyMessage?: string;
   isForge?: boolean;
+  /** Solo (one human, both seats): deck B; `deckId` is deck A. */
+  soloDeckBId?: string;
+  /** Solo: which seat (0 = deck A) takes the first turn. */
+  firstSeat?: 0 | 1;
+  /** Set when the game was launched from a deck bracket. */
+  bracket?: BracketGameParams;
 }
 
 // ---------------------------------------------------------------------------
@@ -306,6 +319,13 @@ function GameInner({ code, isConnected }: GameInnerProps) {
   // call + goldfish practice-while-waiting.
   const [deckData, setDeckData] = useState<string | null>(null);
   const [deckLoadError, setDeckLoadError] = useState<string | null>(null);
+  // Solo only: deck B's serialized cards, and each deck's paragon (from the deck rows).
+  const [deckDataB, setDeckDataB] = useState<string | null>(null);
+  const [soloParagons, setSoloParagons] = useState<{ a: string; b: string }>({ a: '', b: '' });
+  // Online bracket games: the seat deck's paragon, read from the deck row (the
+  // bracket's session params carry none). Format stays gameParams.format so both
+  // seats send the bracket's format.
+  const [bracketParagon, setBracketParagon] = useState<string | null>(null);
 
   // Forge state — declared before `gameState`/`isForge` so the deck-load
   // effect below (which branches on gameParams.isForge) and useGameState
@@ -330,10 +350,40 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           if (cancelled) return;
           setDeckLoadError(err instanceof Error ? err.message : 'Failed to load deck.');
         });
+    } else if (gameParams.role === 'solo') {
+      if (!gameParams.soloDeckBId) {
+        setDeckLoadError('Missing the second deck for this game. Return to the bracket and start it again.');
+        return;
+      }
+      Promise.all([loadDeckForGame(gameParams.deckId), loadDeckForGame(gameParams.soloDeckBId)])
+        .then(([a, b]) => {
+          if (cancelled) return;
+          setSoloParagons({ a: a.deck.paragon ?? '', b: b.deck.paragon ?? '' });
+          setDeckDataB(JSON.stringify(b.deckData));
+          setDeckData(JSON.stringify(a.deckData));
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setDeckLoadError(err instanceof Error ? err.message : 'Failed to load deck.');
+        });
+    } else if (gameParams.role === 'join' && gameParams.bracket) {
+      // The invited friend plays the bracket owner's deck B, which may be private.
+      loadBracketSeatDeckAction(gameParams.bracket.gameId)
+        .then((r) => {
+          if (cancelled) return;
+          if (r.ok === false) { setDeckLoadError(r.error); return; }
+          setBracketParagon(r.data.deck.paragon ?? '');
+          setDeckData(JSON.stringify(r.data.deckData));
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setDeckLoadError(err instanceof Error ? err.message : 'Failed to load deck.');
+        });
     } else {
       loadDeckForGame(gameParams.deckId)
         .then((result) => {
           if (cancelled) return;
+          if (gameParams.bracket) setBracketParagon(result.deck.paragon ?? '');
           setDeckData(JSON.stringify(result.deckData));
         })
         .catch((err) => {
@@ -736,6 +786,24 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     onUndo: handleUndo,
   });
 
+  // Solo (Deck Bracket): W swaps the seat in hand. A separate listener, not
+  // useGameHotkeys, so goldfish and two-human games are untouched.
+  const isSoloGame = gameState.isSolo;
+  const swapSeat = gameState.swapSeat;
+  useEffect(() => {
+    if (!isSoloGame || lifecycle !== 'playing') return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'w' && e.key !== 'W') return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+      e.preventDefault();
+      swapSeat();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isSoloGame, lifecycle, swapSeat]);
+
   // Once subscription data is ready, call the appropriate reducer once.
   // Gate on BOTH Game and Player subscriptions being applied. Game alone isn't
   // enough — the reconnect branch below reads `allPlayers` to decide whether
@@ -766,6 +834,10 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     // dispatching create/join.
     if (gameParams.isForge && !gameState.identityHex) return;
 
+    // Solo needs both decks, and the identity for the reconnect check below
+    // (a solo game whose Player rows aren't ours was started on another device).
+    if (gameParams.role === 'solo' && (deckDataB === null || !gameState.identityHex)) return;
+
     didCallReducer.current = true;
 
     // Reconnect scenario: if the game already exists and we already have a
@@ -786,6 +858,12 @@ function GameInner({ code, isConnected }: GameInnerProps) {
         setGameId(existingGame.id);
         return; // lifecycle sync effect handles the rest
       }
+      if (gameParams.role === 'solo') {
+        // Another identity's game under this code: never create over it. The
+        // render shows the bracket recovery screen.
+        setGameId(existingGame.id);
+        return;
+      }
     }
 
     // Guard against re-creating a duplicate after the game has already
@@ -794,7 +872,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     // games, so without this we'd call createGame again and spawn a duplicate
     // under the same code (the 'Z6NJ' incident). Reuse the finished row instead.
     const reuseFinishedId = finishedGameToReuseOnCreate(
-      gameParams.role,
+      gameParams.role === 'solo' ? 'create' : gameParams.role, // solo creates too
       (gameState.allGames || []) as any,
       code
     );
@@ -802,6 +880,37 @@ function GameInner({ code, isConnected }: GameInnerProps) {
       console.log('[game-debug] create replayed after finish — reusing finished game:', String(reuseFinishedId));
       setGameId(reuseFinishedId);
       return; // lifecycle sync effect shows the ended state
+    }
+
+    if (gameParams.role === 'solo') {
+      const bracket = gameParams.bracket;
+      if (!bracket || !gameParams.soloDeckBId || deckDataB === null) {
+        setErrorMessage('Missing bracket game parameters. Return to the bracket and start the game again.');
+        setLifecycle('error');
+        return;
+      }
+      console.log('[game-debug] calling createSoloGame reducer for code:', code);
+      setLifecycle('creating');
+      // Status goes straight to 'playing' (no pregame); the lifecycle sync
+      // effect picks it up when the Game row arrives.
+      conn.reducers.createSoloGame({
+        code,
+        format: gameParams.format ?? 'Type 1',
+        supabaseUserId: gameParams.supabaseUserId,
+        displayNameA: bracket.deckAName,
+        deckIdA: gameParams.deckId,
+        deckDataA: deckData,
+        paragonA: soloParagons.a || gameParams.paragon || '',
+        displayNameB: bracket.deckBName,
+        deckIdB: gameParams.soloDeckBId,
+        deckDataB,
+        paragonB: soloParagons.b,
+        firstSeat: BigInt(gameParams.firstSeat ?? 0),
+      }).catch((e: unknown) => {
+        setErrorMessage(e instanceof Error ? e.message : 'Could not start the game.');
+        setLifecycle('error');
+      });
+      return;
     }
 
     if (gameParams.isForge) {
@@ -867,7 +976,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           code,
           deckId: gameParams.deckId,
           displayName: gameParams.displayName,
-          paragon: gameParams.paragon || '',
+          paragon: bracketParagon ?? gameParams.paragon ?? '',
           format: gameParams.format ?? 'standard',
           supabaseUserId: gameParams.supabaseUserId,
           deckData,
@@ -906,7 +1015,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           code,
           deckId: gameParams.deckId,
           displayName: gameParams.displayName,
-          paragon: gameParams.paragon || '',
+          paragon: bracketParagon ?? gameParams.paragon ?? '',
           format: gameParams.format ?? 'Type 1',
           supabaseUserId: gameParams.supabaseUserId,
           deckData,
@@ -926,7 +1035,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
       setErrorMessage(e instanceof Error ? e.message : 'Failed to initialize game');
       setLifecycle('error');
     }
-  }, [gameState.isGamesReady, gameState.isPlayersReady, conn, code, gameParams, deckData, gameState.identityHex, forgeDeckMeta]);
+  }, [gameState.isGamesReady, gameState.isPlayersReady, conn, code, gameParams, deckData, gameState.identityHex, forgeDeckMeta, deckDataB, soloParagons, bracketParagon]);
 
   // Also get raw game list to find our game by code before we know the ID
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1160,6 +1269,96 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     router.replace(isForge ? lobbyPath : `/play?join=${code}`);
   }, [lifecycle, formatMismatch, code, router, isForge, lobbyPath]);
 
+  // ---- Bracket game-over: the host records the result, once per game ----
+  // Host = the solo player, or seat 0 online. The friend (seat 1) only sees
+  // the standard overlay with rematch hidden.
+  const bracket = gameParams?.bracket ?? null;
+  const isBracketHost = !!bracket && (bracket.mode === 'solo' || gameState.myPlayer?.seat === BigInt(0));
+  const bracketWinnerSeat: 0 | 1 | null = (() => {
+    if (!bracket || lifecycle !== 'finished' || gameId === null) return null;
+    if (!gameState.isActionsReady || !gameState.isPlayersReady) return null;
+    const players = gameState.allPlayers.filter((p: any) => p.gameId === gameId);
+    return resolveWinnerSeat(gameState.gameActions, players).winnerSeat;
+  })();
+  const [bracketOutcome, setBracketOutcome] = useState<BracketSeriesOutcome | null>(null);
+  const recordedBracketGameRef = useRef<string | null>(null);
+  const recordBracketResult = () => {
+    if (!bracket || bracketWinnerSeat === null) return;
+    // soulsRescued is relative to myPlayer — in solo that's the seat in hand.
+    const mySeat: 0 | 1 | null = bracket.mode === 'solo'
+      ? gameState.activeSeat
+      : gameState.myPlayer ? (Number(gameState.myPlayer.seat) === 1 ? 1 : 0) : null;
+    const souls = mySeat === null ? null : soulsBySeat(gameState.soulsRescued, mySeat);
+    setBracketOutcome('pending');
+    recordBracketGameResultAction({
+      gameId: bracket.gameId,
+      winnerEntryId: bracketWinnerSeat === 0 ? bracket.entryAId : bracket.entryBId,
+      soulsA: souls?.seat0,
+      soulsB: souls?.seat1,
+    })
+      .then((r) => setBracketOutcome(r.ok ? r.data : 'failed'))
+      .catch(() => setBracketOutcome('failed'));
+  };
+  const recordBracketResultRef = useRef(recordBracketResult);
+  recordBracketResultRef.current = recordBracketResult;
+  useEffect(() => {
+    if (!isBracketHost || !bracket || bracketWinnerSeat === null) return;
+    if (recordedBracketGameRef.current === bracket.gameId) return;
+    recordedBracketGameRef.current = bracket.gameId;
+    recordBracketResultRef.current();
+  }, [isBracketHost, bracket, bracketWinnerSeat]);
+
+  // Start the next bracket game (this match's next game, or the next ready
+  // match) and move the table to its code.
+  const launchingBracketGameRef = useRef(false);
+  // Resolves true once the table is moving to the new code, false on failure
+  // (an `ok: false` or a thrown network error, both toasted).
+  const launchBracketGame = async (matchId: string, mode: 'solo' | 'online'): Promise<boolean> => {
+    if (!bracket || !gameParams || launchingBracketGameRef.current) return false;
+    launchingBracketGameRef.current = true;
+    try {
+      let started: Awaited<ReturnType<typeof startBracketGameAction>>;
+      try {
+        started = await startBracketGameAction(matchId, mode);
+      } catch {
+        started = { ok: false, error: 'Could not start the game. Check your connection and try again.' };
+      }
+      if (started.ok === false) {
+        showGameToast(started.error);
+        return false;
+      }
+      const g = started.data;
+      const next: BracketGameParams = {
+        ...bracket,
+        gameId: g.gameId,
+        bracketId: g.bracketId,
+        matchId,
+        gameNumber: g.gameNumber,
+        bestOf: g.bestOf,
+        mode,
+        entryAId: g.entryAId,
+        entryBId: g.entryBId,
+        deckAName: g.deckAName,
+        deckBName: g.deckBName,
+      };
+      const common = {
+        displayName: gameParams.displayName,
+        supabaseUserId: gameParams.supabaseUserId,
+        format: stdbFormatFor(g.format),
+        bracket: next,
+      };
+      if (mode === 'solo') {
+        writeSoloGameParams(g.code, { ...common, deckAId: g.deckAId, deckBId: g.deckBId, firstSeat: g.firstSeat });
+      } else {
+        writeHostGameParams(g.code, { ...common, deckAId: g.deckAId, deckAName: g.deckAName });
+      }
+      router.replace('/play/' + g.code);
+      return true;
+    } finally {
+      launchingBracketGameRef.current = false;
+    }
+  };
+
   if (isLeaving) {
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black">
@@ -1250,7 +1449,42 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     );
   }
 
-  if (lifecycle === 'creating' || lifecycle === 'joining' || (!isConnected && !isActive)) {
+  // Bracket recovery: (a) finished with no WIN/RESIGN/TIMEOUT, or (b) a solo
+  // game under this code whose Player rows belong to another identity.
+  const bracketRecovery: BracketRecoveryReason | null = (() => {
+    const game = gameState.game;
+    if (!gameParams?.bracket || !game) return null;
+    if (game.status === 'finished') {
+      // An empty action log only means "no result" once both subscriptions applied.
+      if (!gameState.isActionsReady || !gameState.isPlayersReady) return null;
+      const players = gameState.allPlayers.filter((p: any) => p.gameId === game.id);
+      return resolveWinnerSeat(gameState.gameActions, players).kind === 'none' ? 'no-result' : null;
+    }
+    if (gameParams.role === 'solo' && gameState.isPlayersReady && gameState.identityHex) {
+      const mine = gameState.allPlayers.some(
+        (p: any) => p.gameId === game.id && (p.identity as any)?.toHexString?.() === gameState.identityHex
+      );
+      return mine ? null : 'other-device';
+    }
+    return null;
+  })();
+  if (bracketRecovery && gameParams?.bracket) {
+    return (
+      <BracketRecoveryScreen
+        reason={bracketRecovery}
+        bracket={gameParams.bracket}
+        displayName={gameParams.displayName}
+        supabaseUserId={gameParams.supabaseUserId}
+        background={gameBackground}
+      />
+    );
+  }
+
+  // Solo: hold the loading screen until the SoloGame row lands (it can apply a
+  // frame after the Game row) so the table never renders without a seat in hand.
+  const awaitingSolo = gameParams?.role === 'solo' && !gameState.isSolo;
+
+  if (lifecycle === 'creating' || lifecycle === 'joining' || (!isConnected && !isActive) || awaitingSolo) {
     return (
       <>
       <TopNav />
@@ -1496,6 +1730,9 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           conn.reducers.setGamePublic({ gameId, isPublic });
         } : undefined}
         isForge={isForge}
+        inviteUrl={gameParams?.bracket && typeof window !== 'undefined'
+          ? `${window.location.origin}/brackets/${gameParams.bracket.bracketId}/join/${gameParams.bracket.gameId}`
+          : undefined}
         onDeckChanged={(next) => {
           // Mirror the practice-swap bookkeeping: keep gameParams/sessionStorage
           // and the local deckData (which feeds practice goldfish + image
@@ -1537,6 +1774,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
       gameActions={gameState.gameActions}
       myPlayerId={gameState.myPlayer?.id ?? BigInt(0)}
       onSendChat={gameState.sendChat}
+      hideChat={gameState.isSolo}
       playerNames={playerNameMap}
       chatScale={chatScale}
       unreadChatCount={unreadChatCount}
@@ -1575,7 +1813,9 @@ function GameInner({ code, isConnected }: GameInnerProps) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ flexShrink: 0, height: 48 }}>
             <TurnIndicator
+              hideRematch={!!gameParams?.bracket}
               lobbyPath={lobbyPath}
+              isSolo={gameState.isSolo}
               game={gameState.game}
               myPlayer={gameState.myPlayer}
               opponentPlayer={gameState.opponentPlayer}
@@ -1605,14 +1845,16 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                 covering the decision buttons and eating into the budget. */}
             <ImageLoadingGate open={!imagesGateOpen && !isCeremonyPhase} progress={imageLoadProgress} />
             <GameToastContainer />
-            <PauseConsentToast
-              game={gameState.game}
-              myPlayer={gameState.myPlayer}
-              opponentPlayer={gameState.opponentPlayer}
-              onRespondToPause={handleRespondToPause}
-              onRespondToResume={handleRespondToResume}
-            />
-            <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />
+            {!gameState.isSolo && (
+              <PauseConsentToast
+                game={gameState.game}
+                myPlayer={gameState.myPlayer}
+                opponentPlayer={gameState.opponentPlayer}
+                onRespondToPause={handleRespondToPause}
+                onRespondToResume={handleRespondToResume}
+              />
+            )}
+            {!gameState.isSolo && <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />}
             <CardChoicePromptContainer />
           </div>
         </div>
@@ -1632,7 +1874,9 @@ function GameInner({ code, isConnected }: GameInnerProps) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ flexShrink: 0, height: 48 }}>
             <TurnIndicator
+              hideRematch={!!gameParams?.bracket}
               lobbyPath={lobbyPath}
+              isSolo={gameState.isSolo}
               game={gameState.game}
               myPlayer={gameState.myPlayer}
               opponentPlayer={gameState.opponentPlayer}
@@ -1656,14 +1900,16 @@ function GameInner({ code, isConnected }: GameInnerProps) {
             )}
             <ImageLoadingGate open={!imagesGateOpen} progress={imageLoadProgress} />
             <GameToastContainer />
-            <PauseConsentToast
-              game={gameState.game}
-              myPlayer={gameState.myPlayer}
-              opponentPlayer={gameState.opponentPlayer}
-              onRespondToPause={handleRespondToPause}
-              onRespondToResume={handleRespondToResume}
-            />
-            <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />
+            {!gameState.isSolo && (
+              <PauseConsentToast
+                game={gameState.game}
+                myPlayer={gameState.myPlayer}
+                opponentPlayer={gameState.opponentPlayer}
+                onRespondToPause={handleRespondToPause}
+                onRespondToResume={handleRespondToResume}
+              />
+            )}
+            {!gameState.isSolo && <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />}
             <CardChoicePromptContainer />
           </div>
         </div>
@@ -1684,6 +1930,32 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     const opponentDisconnected =
       endLabel === 'Opponent disconnected' || gameState.opponentPlayer?.isConnected === false;
 
+    // Bracket host: the series overlay replaces GameOverOverlay. It renders once
+    // the winner is known (the recovery screen covers "no result").
+    const bracketRecord = typeof bracketOutcome === 'object' ? bracketOutcome : null;
+    const bracketOverlay = isBracketHost && bracket && bracketWinnerSeat !== null ? (
+      <BracketGameOverOverlay
+        bracket={bracket}
+        result={{
+          winnerSeat: bracketWinnerSeat,
+          winnerName: bracketWinnerSeat === 0 ? bracket.deckAName : bracket.deckBName,
+        }}
+        series={bracketOutcome ?? 'pending'}
+        onRetry={() => recordBracketResultRef.current()}
+        onPlayNext={() => void launchBracketGame(bracket.matchId, bracket.mode)}
+        onBack={() => router.push(
+          bracketRecord?.decided ? `${bracket.returnTo}?decided=${bracketRecord.matchId}` : bracket.returnTo,
+        )}
+        onNextMatch={(nextMatchId) => {
+          try { if (bracketRecord) sessionStorage.setItem(DECIDED_KEY, bracketRecord.matchId); } catch { /* storage blocked */ }
+          void launchBracketGame(nextMatchId, 'solo').then((ok) => {
+            // The hand-off only means something if the bracket page is next.
+            if (!ok) { try { sessionStorage.removeItem(DECIDED_KEY); } catch { /* storage blocked */ } }
+          });
+        }}
+      />
+    ) : null;
+
     // Show the overlay over the frozen canvas — always render canvas if gameId is known
     if (gameId !== null) {
       return (
@@ -1691,7 +1963,9 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ flexShrink: 0, height: 48 }}>
               <TurnIndicator
+                hideRematch={!!gameParams?.bracket}
                 lobbyPath={lobbyPath}
+                isSolo={gameState.isSolo}
                 game={gameState.game}
                 myPlayer={gameState.myPlayer}
                 opponentPlayer={gameState.opponentPlayer}
@@ -1753,16 +2027,21 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                 onEndTurn={() => {}}
               />
               <GameToastContainer />
-              <PauseConsentToast
-                game={gameState.game}
-                myPlayer={gameState.myPlayer}
-                opponentPlayer={gameState.opponentPlayer}
-                onRespondToPause={handleRespondToPause}
-                onRespondToResume={handleRespondToResume}
-              />
-              <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />
+              {!gameState.isSolo && (
+                <PauseConsentToast
+                  game={gameState.game}
+                  myPlayer={gameState.myPlayer}
+                  opponentPlayer={gameState.opponentPlayer}
+                  onRespondToPause={handleRespondToPause}
+                  onRespondToResume={handleRespondToResume}
+                />
+              )}
+              {!gameState.isSolo && <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />}
               <CardChoicePromptContainer />
+              {bracketOverlay}
+              {!isBracketHost && (
               <GameOverOverlay
+                hideRematch={!!gameParams?.bracket}
                 game={gameState.game}
                 myPlayer={gameState.myPlayer}
                 opponentPlayer={gameState.opponentPlayer}
@@ -1773,6 +2052,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                 isForge={isForge}
                 myDeckId={gameParams?.deckId}
               />
+              )}
             </div>
           </div>
           {rightPanel}
@@ -1875,7 +2155,9 @@ function GameInner({ code, isConnected }: GameInnerProps) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ flexShrink: 0, height: 48 }}>
             <TurnIndicator
+              hideRematch={!!gameParams?.bracket}
               lobbyPath={lobbyPath}
+              isSolo={gameState.isSolo}
               game={gameState.game}
               myPlayer={gameState.myPlayer}
               opponentPlayer={gameState.opponentPlayer}
@@ -1900,15 +2182,19 @@ function GameInner({ code, isConnected }: GameInnerProps) {
             />
           </div>
           <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-            <GameOverOverlay
-              game={gameState.game}
-              myPlayer={gameState.myPlayer}
-              opponentPlayer={gameState.opponentPlayer}
-              gameActions={gameState.gameActions}
-              gameState={gameState}
-              isForge={isForge}
-              myDeckId={gameParams?.deckId}
-            />
+            {bracketOverlay}
+            {!isBracketHost && (
+              <GameOverOverlay
+                hideRematch={!!gameParams?.bracket}
+                game={gameState.game}
+                myPlayer={gameState.myPlayer}
+                opponentPlayer={gameState.opponentPlayer}
+                gameActions={gameState.gameActions}
+                gameState={gameState}
+                isForge={isForge}
+                myDeckId={gameParams?.deckId}
+              />
+            )}
           </div>
         </div>
         {rightPanel}
@@ -1939,7 +2225,9 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           ? { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, paddingTop: 'env(safe-area-inset-top)' }
           : { flexShrink: 0, height: 48 }}>
           <TurnIndicator
+            hideRematch={!!gameParams?.bracket}
             lobbyPath={lobbyPath}
+            isSolo={gameState.isSolo}
             game={gameState.game}
             myPlayer={gameState.myPlayer}
             opponentPlayer={gameState.opponentPlayer}
@@ -1967,6 +2255,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
             holdPhase={gameState.holdPhase}
             holdDeadlineMicros={gameState.holdDeadlineMicros}
             onToggleStop={gameState.setTurnStop}
+            seatInHandName={gameState.myPlayer?.displayName}
           />
         </div>
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
@@ -2028,17 +2317,22 @@ function GameInner({ code, isConnected }: GameInnerProps) {
               gameState.passInitiative();
             }}
             onSendEmote={(kind) => gameState.sendEmote(kind)}
+            soloSeat={gameState.isSolo
+              ? { deckName: gameState.myPlayer?.displayName ?? '', onSwap: gameState.swapSeat }
+              : undefined}
           />
           <EmoteOverlay emotes={gameState.emotes} myPlayerId={gameState.myPlayer?.id ?? null} />
           <GameToastContainer />
-          <PauseConsentToast
-            game={gameState.game}
-            myPlayer={gameState.myPlayer}
-            opponentPlayer={gameState.opponentPlayer}
-            onRespondToPause={handleRespondToPause}
-            onRespondToResume={handleRespondToResume}
-          />
-          <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />
+          {!gameState.isSolo && (
+            <PauseConsentToast
+              game={gameState.game}
+              myPlayer={gameState.myPlayer}
+              opponentPlayer={gameState.opponentPlayer}
+              onRespondToPause={handleRespondToPause}
+              onRespondToResume={handleRespondToResume}
+            />
+          )}
+          {!gameState.isSolo && <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />}
           <CardChoicePromptContainer />
         </div>
       </div>

@@ -1,10 +1,10 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
-import { findCard } from '@/lib/cards/lookup';
+import { deckToGameData } from './lib/deckToGameData';
 import { requireForge } from '@/app/forge/lib/auth';
 import { stdbHttpBase } from '@/app/forge/lib/stdbHttp';
-import { deckFormatFilterFor } from '@/lib/api/cache';
+import { deckFormatFilterFor, deckFamilyFilterFor } from '@/lib/api/cache';
 import type { DeckOption } from './components/DeckPickerCard';
 import { STARTER_DECKS, hasStarterDecks, orderStarterDecks, type StarterDeck } from '@/app/config/starterDecks';
 
@@ -28,6 +28,7 @@ export interface LoadDeckResult {
     id: string;
     name: string;
     format: string | null;
+    paragon: string | null;
   };
   deckData: GameCardData[];
 }
@@ -47,7 +48,7 @@ export async function loadDeckForGame(deckId: string): Promise<LoadDeckResult> {
   // Try loading as user's own deck first, then fall back to public deck
   const { data: ownDeck } = await supabase
     .from('decks')
-    .select('id, name, format')
+    .select('id, name, format, paragon')
     .eq('id', deckId)
     .eq('user_id', user.id)
     .single();
@@ -56,7 +57,7 @@ export async function loadDeckForGame(deckId: string): Promise<LoadDeckResult> {
   if (!deck) {
     const { data: publicDeck } = await supabase
       .from('decks')
-      .select('id, name, format')
+      .select('id, name, format, paragon')
       .eq('id', deckId)
       .eq('is_public', true)
       .single();
@@ -79,29 +80,7 @@ export async function loadDeckForGame(deckId: string): Promise<LoadDeckResult> {
   }
 
   // Expand quantity > 1 rows into individual card entries
-  const deckData: GameCardData[] = [];
-  for (const card of cards || []) {
-    const quantity = card.quantity || 1;
-    const imgFile = (card.card_img_file || '').replace(/\.jpe?g$/i, '');
-    const enriched = findCard(card.card_name || '', card.card_set || undefined, imgFile);
-
-    for (let i = 0; i < quantity; i++) {
-      deckData.push({
-        cardName: card.card_name || '',
-        cardSet: card.card_set || '',
-        cardImgFile: card.card_img_file || '',
-        cardType: enriched?.type || '',
-        brigade: enriched?.brigade || '',
-        strength: enriched?.strength || '',
-        toughness: enriched?.toughness || '',
-        alignment: enriched?.alignment || '',
-        identifier: enriched?.identifier || '',
-        reference: enriched?.reference || '',
-        specialAbility: enriched?.specialAbility || '',
-        isReserve: card.zone === 'reserve',
-      });
-    }
-  }
+  const deckData = deckToGameData(cards || []);
 
   // Stamp last_played_at if this is the user's own deck
   if (ownDeck) {
@@ -166,6 +145,37 @@ export async function getInviteGameInfo(code: string): Promise<InviteGameInfo> {
 }
 
 /**
+ * Status of the SpacetimeDB game behind an invite code ('waiting', 'playing',
+ * 'finished', …), read over the same HTTP SQL path as getInviteGameInfo.
+ * Prefers a non-finished game (codes can be reused). Returns null when the
+ * code is unknown or the lookup fails, so callers fail open.
+ */
+export async function getInviteGameStatus(code: string): Promise<string | null> {
+  const clean = (code || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{4,8}$/.test(clean)) return null;
+  const token = process.env.SPACETIMEDB_SERVER_TOKEN;
+  const host = process.env.NEXT_PUBLIC_SPACETIMEDB_HOST;
+  const db = process.env.NEXT_PUBLIC_SPACETIMEDB_DB_NAME || 'redemption-multiplayer';
+  if (!token || !host) return null;
+  try {
+    const res = await fetch(`${stdbHttpBase(host)}/v1/database/${db}/sql`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: `SELECT id, status FROM game WHERE code = '${clean}'`,
+      cache: 'no-store',
+    });
+    if (!res.ok) throw new Error(`stdb sql ${res.status}`);
+    const rows: any[][] = (await res.json())?.[0]?.rows ?? [];
+    if (rows.length === 0) return null;
+    const active = rows.find((r) => r[1] !== 'finished') ?? rows[rows.length - 1];
+    return typeof active[1] === 'string' ? active[1] : null;
+  } catch (e) {
+    console.error('[play] getInviteGameStatus failed', e);
+    return null;
+  }
+}
+
+/**
  * Search public community decks by name.
  * Returns up to 20 results ordered by view count.
  */
@@ -214,6 +224,8 @@ export interface LoadUserDecksPagedParams {
   search?: string;
   sort?: 'all' | 'latest' | 'last_played' | 'name';
   format?: string;
+  /** Format family; when present it is applied instead of `format`. */
+  family?: 'T1' | 'T2' | 'Paragon';
 }
 
 export interface LoadUserDecksPagedResult {
@@ -232,7 +244,7 @@ export async function loadUserDecksPaged(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { decks: [], totalCount: 0 };
 
-  const { page = 1, pageSize = 12, search, sort = 'all', format } = params;
+  const { page = 1, pageSize = 12, search, sort = 'all', format, family } = params;
   const offset = (page - 1) * pageSize;
 
   let query = supabase
@@ -247,7 +259,12 @@ export async function loadUserDecksPaged(
     query = query.ilike('name', `%${search.trim()}%`);
   }
 
-  if (format) {
+  if (family) {
+    const filter = deckFamilyFilterFor(family);
+    if (filter.kind === 'or') query = query.or(filter.clause);
+    else if (filter.kind === 'in') query = query.in('format', filter.values);
+    else query = query.eq('format', filter.value);
+  } else if (format) {
     // Shared with lib/api/cache.ts's v1 API and the community filter in
     // app/decklist/actions.ts so every `decks.format` query site applies the
     // exact same PostgREST filter shape (normalizes legacy + canonical ids).

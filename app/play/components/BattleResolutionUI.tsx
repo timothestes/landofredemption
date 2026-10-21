@@ -49,6 +49,8 @@ interface BattleResolutionUIProps {
   /** True for the spectator viewer. Spectators never see resolution buttons or the
    *  awaiting-soul picker — only the waiting pill. */
   isSpectator: boolean;
+  /** Solo game (one human holds both seats): the human is always the chooser. */
+  isSolo?: boolean;
   /** Deck format (normalizeDeckFormat mirror) — drives the awaiting-soul chooser rule
    *  (spec §7 / server surrender_soul: T1 defender picks, T2 & Paragon attacker picks). */
   format: DeckFormat;
@@ -183,6 +185,7 @@ function AwaitingSoulUI({
   opponentSeat,
   attackerSeat,
   isSpectator,
+  isSolo,
   format,
   myPlayerName,
   opponentPlayerName,
@@ -203,6 +206,7 @@ function AwaitingSoulUI({
   opponentSeat: string;
   attackerSeat: string;
   isSpectator: boolean;
+  isSolo?: boolean;
   format: DeckFormat;
   myPlayerName: string;
   opponentPlayerName: string;
@@ -225,7 +229,9 @@ function AwaitingSoulUI({
   // spectator from ever being treated as the chooser.
   const defenderSeat = attackerSeat === mySeat ? opponentSeat : attackerSeat === opponentSeat ? mySeat : '';
   const chooserSeat = format === 'T1' ? defenderSeat : attackerSeat;
-  const isChooser = !isSpectator && mySeat !== '' && mySeat === chooserSeat;
+  // Solo: the one human picks for whichever seat chooses (the server acts as
+  // the chooser seat for surrender_soul in a solo game).
+  const isChooser = isSolo === true ? true : !isSpectator && mySeat !== '' && mySeat === chooserSeat;
   // Tap-safety is an input-mode property, not a viewport-size one: on ANY
   // touch device (tablet included) a missed tap must not fall through to the
   // live Konva stage. The visible scrim stays compact-only.
@@ -245,8 +251,10 @@ function AwaitingSoulUI({
   // One line of context so the picker stands on its own for a chooser who
   // wasn't watching the band (UX review F8): who won, where the soul goes.
   const attackerName = attackerSeat === mySeat ? myPlayerName : opponentPlayerName;
-  const subtitle =
-    chooserSeat === attackerSeat
+  const chooserName = chooserSeat === mySeat ? myPlayerName : opponentPlayerName;
+  const subtitle = isSolo === true
+    ? `Choose a soul for ${chooserName}`
+    : chooserSeat === attackerSeat
       ? 'You won the battle — the soul you pick moves to your Land of Redemption.'
       : `${attackerName} won the battle — the soul you pick goes to their Land of Redemption.`;
 
@@ -487,6 +495,7 @@ export default function BattleResolutionUI({
   opponentSeat,
   attackerSeat,
   isSpectator,
+  isSolo,
   format,
   myPlayerName,
   opponentPlayerName,
@@ -536,6 +545,7 @@ export default function BattleResolutionUI({
         opponentSeat={opponentSeat}
         attackerSeat={attackerSeat}
         isSpectator={isSpectator}
+        isSolo={isSolo}
         format={format}
         myPlayerName={myPlayerName}
         opponentPlayerName={opponentPlayerName}

@@ -18,6 +18,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import type { GameActions } from '../types/gameActions';
+import { SeatSwapPill } from './SeatSwapPill';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -68,6 +69,10 @@ export interface GameToolbarProps {
    *  Disables End Turn for the active player and hides Priority for the
    *  holder — requesting a window you already hold is noise. */
   isTurnHeld?: boolean;
+  /** Solo game only (one human holds both seats): adds the seat-swap pill
+   *  (shortcut W, handled by the page) and drops the "My init" and Priority
+   *  requests, which ask the other human ("Your init" is an instant pass and stays). Goldfish and two-human games omit it. */
+  soloSeat?: { deckName: string; onSwap: () => void };
 }
 
 // ---------------------------------------------------------------------------
@@ -96,6 +101,7 @@ export function GameToolbar({
   onSendEmote,
   isFinished,
   isTurnHeld,
+  soloSeat,
 }: GameToolbarProps) {
   const isMultiplayer = mode === 'multiplayer';
   const disabled = isMultiplayer && !isMyTurn && !isFinished;
@@ -189,7 +195,7 @@ export function GameToolbar({
     // My initiative (request from opponent) — request/approve handshake.
     // Icon shows my current role: book on my turn (I'm attacking), skull
     // on their turn (I'm defending).
-    ...(isMultiplayer && !isFinished ? [{
+    ...(isMultiplayer && !isFinished && !soloSeat ? [{
       icon: isMyTurn ? BookOpen : Skull,
       key: 'my-initiative',
       label: hasPendingInitiative ? 'Pending...' : 'My init',
@@ -216,7 +222,7 @@ export function GameToolbar({
       shortcut: '',
       disabled: !!isTurnHeld,
       pushRight: true,
-    }] : isMultiplayer && !isMyTurn && !isFinished && !isTurnHeld ? [{
+    }] : isMultiplayer && !isMyTurn && !isFinished && !isTurnHeld && !soloSeat ? [{
       icon: Hand,
       key: 'priority',
       label: 'Priority',
@@ -274,6 +280,7 @@ export function GameToolbar({
           // this docks beside it.
           left: 'calc(60px + env(safe-area-inset-left))',
           zIndex: 200,
+          ...(soloSeat ? { display: 'flex', alignItems: 'center', gap: 8 } : {}),
         }}
       >
         <button
@@ -293,6 +300,13 @@ export function GameToolbar({
         >
           <ChevronUp size={22} />
         </button>
+        {/* Solo seat swap, touch: docked beside the collapsed toolbar trigger
+            in the bottom-left control cluster (gear, toolbar, swap). That is
+            the hand band's outer corner, which the centered fan leaves empty
+            at normal hand sizes, and well below the battle band. The right
+            side is taken by the 36px panel rail, the pile rail above the
+            hand and (Paragon) the drawer handle. */}
+        {soloSeat && <SeatSwapPill deckName={soloSeat.deckName} onSwap={soloSeat.onSwap} />}
       </div>
     );
   }
@@ -385,6 +399,14 @@ export function GameToolbar({
           </span>
         </button>
       ))}
+      {/* Solo seat swap, pointer (and expanded touch): the last item of the
+          toolbar row, at the bottom of the hand band and below the battle
+          band. */}
+      {soloSeat && (
+        <div style={{ display: 'flex', alignItems: 'center', marginLeft: 6, paddingLeft: 6, borderLeft: '1px solid var(--gf-border)' }}>
+          <SeatSwapPill deckName={soloSeat.deckName} onSwap={soloSeat.onSwap} />
+        </div>
+      )}
     </div>
   );
 }

@@ -108,6 +108,17 @@ export function deckFormatFilterFor(format: string): DeckFormatFilter {
   return { kind: "or", clause: "format.is.null,format.in.(Type 1,Limited)" };
 }
 
+/**
+ * Format-family filter (Deck Bracket pickers): a 'T1' bracket accepts
+ * Limited, Unlimited and Teams decks, plus null-format decks (Limited in the UI).
+ */
+export function deckFamilyFilterFor(family: "T1" | "T2" | "Paragon"): DeckFormatFilter {
+  if (family === "T1") {
+    return { kind: "or", clause: "format.is.null,format.in.(Type 1,Limited,Unlimited,Classic,Teams)" };
+  }
+  return deckFormatFilterFor(family);
+}
+
 function applyDeckFormatFilter<
   T extends { or(clause: string): T; in(column: string, values: string[]): T; eq(column: string, value: string): T },
 >(query: T, format: string): T {

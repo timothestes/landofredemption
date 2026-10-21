@@ -5,7 +5,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { checkDeck } from "@/utils/deckcheck";
 import type { DeckCheckCard, DeckCheckResult } from "@/utils/deckcheck/types";
 import type { DeckZone } from "./card-search/types/deck";
-import { deckFormatFilterFor } from "@/lib/api/cache";
+import { deckFormatFilterFor, deckFamilyFilterFor } from "@/lib/api/cache";
 import { loadDeckTournamentContext, type DeckTournamentContext } from "./deckTournamentContext";
 
 // Three-state deck visibility. Mirrors the `visibility` column on `decks`.
@@ -1306,6 +1306,8 @@ export interface LoadPublicDecksParams {
   pageSize?: number;
   sort?: "newest" | "most_viewed" | "name";
   format?: string;
+  /** Format family; when present it is applied instead of `format`. */
+  family?: "T1" | "T2" | "Paragon";
   search?: string;
   username?: string;
   tagIds?: string[];
@@ -1321,6 +1323,7 @@ export async function loadPublicDecksAction(params: LoadPublicDecksParams = {}) 
       pageSize = 24,
       sort = "newest",
       format,
+      family,
       search,
       username,
       tagIds,
@@ -1399,7 +1402,12 @@ export async function loadPublicDecksAction(params: LoadPublicDecksParams = {}) 
       query = query.in("id", tournamentDeckIds);
     }
 
-    if (format) {
+    if (family) {
+      const filter = deckFamilyFilterFor(family);
+      if (filter.kind === "or") query = query.or(filter.clause);
+      else if (filter.kind === "in") query = query.in("format", filter.values);
+      else query = query.eq("format", filter.value);
+    } else if (format) {
       // Shared with lib/api/cache.ts's v1 API so both sites apply the exact
       // same PostgREST filter shape — see that file's __tests__/cache.test.ts
       // for the byte-for-byte proof of the raw or() clause's encoding.

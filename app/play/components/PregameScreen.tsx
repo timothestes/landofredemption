@@ -97,6 +97,8 @@ interface PregameScreenProps {
   // Called after a successful pregame deck swap so the owner can keep local
   // deck state (gameParams, sessionStorage, practice goldfish deck) in sync.
   onDeckChanged?: (next: { deckId: string; deckName: string; deckData: string; paragon: string }) => void;
+  // Replaces the default /play?join= invite link (bracket games invite to a designated deck).
+  inviteUrl?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +119,7 @@ export default function PregameScreen({
   onTogglePublic,
   isForge,
   onDeckChanged,
+  inviteUrl,
 }: PregameScreenProps) {
   const { game, myPlayer, opponentPlayer } = gameState;
 
@@ -180,7 +183,7 @@ export default function PregameScreen({
           </div>
 
           {/* Game code header — always visible */}
-          <GameCodeHeader code={code} />
+          <GameCodeHeader code={code} inviteUrl={inviteUrl} />
 
           {/* Player cards */}
           <PlayerCards
@@ -248,11 +251,11 @@ export default function PregameScreen({
 // GameCodeHeader — game code display + copy buttons
 // ---------------------------------------------------------------------------
 
-export function GameCodeHeader({ code }: { code: string }) {
+export function GameCodeHeader({ code, inviteUrl }: { code: string; inviteUrl?: string }) {
   const [copied, setCopied] = useState(false);
 
   const copyInviteLink = () => {
-    const url = typeof window !== 'undefined' ? `${window.location.origin}/play?join=${code}` : code;
+    const url = inviteUrl ?? (typeof window !== 'undefined' ? `${window.location.origin}/play?join=${code}` : code);
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

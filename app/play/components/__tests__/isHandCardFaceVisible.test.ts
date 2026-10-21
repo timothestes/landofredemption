@@ -186,6 +186,13 @@ describe('isHandCardFaceVisible', () => {
     });
   });
 
+  it('revealAll (solo) shows every card, even with no owner or reveal', () => {
+    expect(isHandCardFaceVisible(plainCard(1n), 'opponent', owner(), NOW, true)).toBe(true);
+    expect(isHandCardFaceVisible(plainCard(1n), 'opponent', null, NOW, true)).toBe(true);
+    // Default stays false: two-human games are unchanged.
+    expect(isHandCardFaceVisible(plainCard(1n), 'opponent', owner(), NOW)).toBe(false);
+  });
+
   it('treats a malformed handRevealSnapshot as an empty set', () => {
     expect(
       isHandCardFaceVisible(
@@ -228,6 +235,11 @@ describe('isFaceDownInPlayCardVisible', () => {
         }),
       ).toBe(false);
     });
+  });
+
+  it("revealAll (solo) shows the opponent's face-down card", () => {
+    expect(isFaceDownInPlayCardVisible('player', 'player2', NEITHER, true)).toBe(true);
+    expect(isFaceDownInPlayCardVisible('player', 'player2', NEITHER)).toBe(false);
   });
 
   describe("viewerKind 'spectator'", () => {

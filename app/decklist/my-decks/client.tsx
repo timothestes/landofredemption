@@ -1024,6 +1024,14 @@ export default function MyDecksClient() {
 
               <div className="flex-1" />
 
+              <button
+                onClick={() => router.push("/brackets/new?decks=" + selectedIds.join(","))}
+                disabled={selectedIds.length < 2 || selectedIds.length > 16}
+                className="flex items-center gap-1 px-2.5 md:px-3 py-1.5 rounded-md border border-border bg-card text-xs md:text-sm font-medium hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Start a bracket
+              </button>
+
               <div className="relative" ref={bulkMoveRef}>
                 <button
                   onClick={() => setBulkMoveOpen((o) => !o)}

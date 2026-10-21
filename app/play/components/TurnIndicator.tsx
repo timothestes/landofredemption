@@ -284,6 +284,8 @@ interface TurnIndicatorProps {
   rematchPending?: boolean;
   /** Retract a locally-initiated pending rematch request. */
   onCancelRematch?: () => void;
+  /** Bracket games: no rematch request/cancel controls. */
+  hideRematch?: boolean;
   /** Send a pause request to the opponent. */
   onRequestPause?: () => void;
   /** Send a resume request to the opponent. */
@@ -306,6 +308,11 @@ interface TurnIndicatorProps {
   holdDeadlineMicros?: bigint | null;
   /** Phase Stops: toggle the viewer's gate for a boundary (non-active player only). */
   onToggleStop?: (phase: string, enabled: boolean) => void;
+  /** Solo game (one human holds both seats): hides the two-human chrome —
+   *  stops, hold banner, pause, rematch, claim victory, connection dot. */
+  isSolo?: boolean;
+  /** Solo: the deck name of the seat in hand (concede confirm copy). */
+  seatInHandName?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -337,6 +344,7 @@ export default function TurnIndicator({
   timerVisible = true,
   rematchPending = false,
   onCancelRematch,
+  hideRematch = false,
   onRequestPause,
   onRequestResume,
   onCancelPauseRequest,
@@ -347,6 +355,8 @@ export default function TurnIndicator({
   holdPhase = '',
   holdDeadlineMicros = null,
   onToggleStop,
+  isSolo = false,
+  seatInHandName,
 }: TurnIndicatorProps) {
   const [showConcedeConfirm, setShowConcedeConfirm] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
@@ -370,11 +380,11 @@ export default function TurnIndicator({
   const isLastPhase = currentIdx >= PHASE_ORDER.length - 1;
 
   // ---- Phase Stops ----
-  const isHeld = holdPhase !== '';
+  const isHeld = !isSolo && holdPhase !== '';
   // While held, the active player answers via the center-board priority
   // prompt (MultiplayerCanvas) — the bar only disables movement affordances.
   const heldAgainstMe = isHeld && isMyTurn && !readOnly;
-  const canToggleStops = !isMyTurn && !readOnly && !pregameStep && !isFinished && !!onToggleStop;
+  const canToggleStops = !isSolo && !isMyTurn && !readOnly && !pregameStep && !isFinished && !!onToggleStop;
 
   // Countdown — recomputed from the server deadline each tick (reconnect-safe;
   // ScheduleAt timestamps are objects, micros → ms via Number(x / 1000n)).
@@ -414,7 +424,7 @@ export default function TurnIndicator({
   // - cancel: I have a pending request → offer to cancel it
   // - hidden: opponent has a pending request → toast handles their consent UI
   const pauseButtonMode: 'pause' | 'play' | 'cancel' | 'hidden' =
-    isOpponentRequest ? 'hidden' :
+    isSolo || isOpponentRequest ? 'hidden' :
     isMyRequest ? 'cancel' :
     isServerPaused ? 'play' : 'pause';
 
@@ -689,7 +699,7 @@ export default function TurnIndicator({
               opponent-connection dot in the app, exactly on the portrait
               phones where the opponent silently dropping matters most. Show
               the dot beside the turn number there instead. */}
-          {isBarUltraNarrow && !readOnly && (
+          {isBarUltraNarrow && !readOnly && !isSolo && (
             <span
               title={`Opponent ${opponentConnectionStatus === 'connected' ? 'connected' : opponentConnectionStatus === 'reconnecting' ? 'reconnecting' : 'disconnected'}`}
               style={{
@@ -760,7 +770,7 @@ export default function TurnIndicator({
                   full={rightFull}
                   color={isTouchBar ? 'rgba(122, 165, 216, 0.85)' : 'rgba(74, 122, 181, 0.45)'}
                   accent="#4a7ab5"
-                  trailing={
+                  trailing={isSolo ? undefined : (
                     <span
                       style={{
                         display: 'inline-block',
@@ -772,7 +782,7 @@ export default function TurnIndicator({
                         flexShrink: 0,
                       }}
                     />
-                  }
+                  )}
                 />
               </div>
             </>
@@ -1280,7 +1290,7 @@ export default function TurnIndicator({
         {/* While a rematch request is pending, the button retracts it; otherwise
             it starts a one-tap rematch. The "Waiting for opponent…" copy lives on
             the GameOverOverlay toast, so this slot just offers the action. */}
-        {isFinished && onPlayAgain && rematchPending && (
+        {isFinished && onPlayAgain && !hideRematch && rematchPending && !isSolo && (
           <button
             onClick={onCancelRematch}
             disabled={!onCancelRematch}
@@ -1314,7 +1324,7 @@ export default function TurnIndicator({
             Cancel
           </button>
         )}
-        {isFinished && onPlayAgain && !rematchPending && (
+        {isFinished && onPlayAgain && !hideRematch && !rematchPending && !isSolo && (
           <button
             onClick={onPlayAgain}
             style={{
@@ -1370,7 +1380,7 @@ export default function TurnIndicator({
             Back to Lobby
           </button>
         )}
-        {!isFinished && disconnectTimeoutFired && onClaimVictory && (
+        {!isFinished && disconnectTimeoutFired && onClaimVictory && !isSolo && (
           <button
             onClick={onClaimVictory}
             style={{
@@ -1517,7 +1527,7 @@ export default function TurnIndicator({
               color: '#e8d5a3',
               marginTop: 8,
               textShadow: '0 1px 4px rgba(0,0,0,0.5)',
-            }}>Are you sure?</h2>
+            }}>{isSolo ? `Concede as ${seatInHandName ?? 'this seat'}?` : 'Are you sure?'}</h2>
             <p style={{
               marginTop: 8,
               fontFamily: 'Georgia, serif',
