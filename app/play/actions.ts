@@ -145,6 +145,37 @@ export async function getInviteGameInfo(code: string): Promise<InviteGameInfo> {
 }
 
 /**
+ * Status of the SpacetimeDB game behind an invite code ('waiting', 'playing',
+ * 'finished', …), read over the same HTTP SQL path as getInviteGameInfo.
+ * Prefers a non-finished game (codes can be reused). Returns null when the
+ * code is unknown or the lookup fails, so callers fail open.
+ */
+export async function getInviteGameStatus(code: string): Promise<string | null> {
+  const clean = (code || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{4,8}$/.test(clean)) return null;
+  const token = process.env.SPACETIMEDB_SERVER_TOKEN;
+  const host = process.env.NEXT_PUBLIC_SPACETIMEDB_HOST;
+  const db = process.env.NEXT_PUBLIC_SPACETIMEDB_DB_NAME || 'redemption-multiplayer';
+  if (!token || !host) return null;
+  try {
+    const res = await fetch(`${stdbHttpBase(host)}/v1/database/${db}/sql`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: `SELECT id, status FROM game WHERE code = '${clean}'`,
+      cache: 'no-store',
+    });
+    if (!res.ok) throw new Error(`stdb sql ${res.status}`);
+    const rows: any[][] = (await res.json())?.[0]?.rows ?? [];
+    if (rows.length === 0) return null;
+    const active = rows.find((r) => r[1] !== 'finished') ?? rows[rows.length - 1];
+    return typeof active[1] === 'string' ? active[1] : null;
+  } catch (e) {
+    console.error('[play] getInviteGameStatus failed', e);
+    return null;
+  }
+}
+
+/**
  * Search public community decks by name.
  * Returns up to 20 results ordered by view count.
  */

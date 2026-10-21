@@ -2,6 +2,7 @@ import Link from 'next/link';
 import TopNav from '@/components/top-nav';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/utils/supabase/server';
+import { getInviteGameStatus } from '@/app/play/actions';
 import { roundNames } from '@/lib/bracket';
 import { loadBracketAction } from '../../../actions';
 import { DeckThumb } from '../../../components/DeckThumb';
@@ -82,10 +83,15 @@ export default async function JoinBracketGamePage({ params }: { params: Params }
     return <Notice text="This deck has been deleted, so the game cannot be played." bracketId={bracket.id} />;
   }
 
-  const [{ data: host }, { data: profile }] = await Promise.all([
+  // The Supabase rows cannot tell whether someone already took the seat; the
+  // live game can. A failed lookup (null) falls through to the Join button.
+  const [{ data: host }, { data: profile }, liveStatus] = await Promise.all([
     supabase.from('profiles').select('username').eq('id', ownerId).maybeSingle(),
     supabase.from('profiles').select('username').eq('id', user.id).maybeSingle(),
+    getInviteGameStatus(game.code),
   ]);
+  if (liveStatus === 'finished') return <Notice text="This game has already ended." bracketId={bracket.id} />;
+  if (liveStatus && liveStatus !== 'waiting') return <Notice text="This game is already full." bracketId={bracket.id} />;
   const hostName = host?.username || 'A player';
   const displayName = profile?.username || user.user_metadata?.display_name || user.email?.split('@')[0] || 'Player';
   const roundName = roundNames(bracket.size)[match.round - 1] ?? 'bracket';

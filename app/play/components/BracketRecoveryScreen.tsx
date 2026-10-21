@@ -110,7 +110,9 @@ export function BracketRecoveryScreen({ reason, bracket, displayName, supabaseUs
           </button>
           <button
             type="button"
-            onClick={() => router.push(`${bracket.returnTo}?record=${bracket.gameId}`)}
+            // Once the old game is abandoned its row is gone, so ?record= would
+            // name nothing: open the bracket page alone.
+            onClick={() => router.push(abandonedRef.current ? bracket.returnTo : `${bracket.returnTo}?record=${bracket.gameId}`)}
             disabled={busy}
             className={`${buttonClass} border-amber-200/20 text-amber-200/70 hover:bg-amber-200/10`}
           >
