@@ -434,8 +434,12 @@ export async function recordBracketGameResultAction(input: {
   return applyAndPersist(supabase, bracketId, input.gameId, input.winnerEntryId, { a: input.soulsA, b: input.soulsB });
 }
 
+/**
+ * Records a result by hand. With `gameId` it settles that in-progress game of the
+ * match (keeping its mode and code); without one it inserts a `manual` game.
+ */
 export async function recordManualResultAction(input: {
-  matchId: string; winnerEntryId: string; soulsA?: number; soulsB?: number;
+  matchId: string; winnerEntryId: string; soulsA?: number; soulsB?: number; gameId?: string;
 }): Promise<ActionResult<{ matchId: string; gameId: string }>> {
   const supabase = await createClient();
   const { data: matchRow, error: mErr } = await supabase
@@ -451,6 +455,17 @@ export async function recordManualResultAction(input: {
   const { bracket, matches, games } = loaded.data;
   const match = matches.find(m => m.id === input.matchId);
   if (!match) return fail('Match not found.');
+  const souls = { a: input.soulsA, b: input.soulsB };
+
+  if (input.gameId) {
+    const live = games.find(g => g.id === input.gameId);
+    if (!live || live.matchId !== input.matchId) return fail('Game not found.');
+    if (live.winnerEntryId) return fail('That game already has a result.');
+    const result = await applyAndPersist(supabase, bracketId, live.id, input.winnerEntryId, souls);
+    if (result.ok === false) return result;
+    return { ok: true, data: { matchId: input.matchId, gameId: live.id } };
+  }
+
   const state = matchState(match, games, bracket.bestOf);
   if (state !== 'ready') {
     return fail(state === 'live' ? 'Finish or abandon the game in progress first.' : 'This match is not ready for a result.');
@@ -465,7 +480,7 @@ export async function recordManualResultAction(input: {
   if (gErr || !game) return fail(gErr?.message ?? 'Could not record the result.');
   const gameId = game.id as string;
 
-  const result = await applyAndPersist(supabase, bracketId, gameId, input.winnerEntryId, { a: input.soulsA, b: input.soulsB });
+  const result = await applyAndPersist(supabase, bracketId, gameId, input.winnerEntryId, souls);
   if (result.ok === false) {
     await supabase.from('deck_bracket_games').delete().eq('id', gameId).is('winner_entry_id', null);
     return result;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MoreHorizontal, X } from 'lucide-react';
 import type { BracketGame } from '@/lib/bracket/types';
 import { Button } from '@/components/ui/button';
@@ -32,19 +32,29 @@ const WRITE_IN = 'transition-[color,opacity,border-color] duration-500 [transiti
  * content transparent) with `data-written="false"`, then flips to
  * `data-written="true"` and the transition classes carry it to the final look.
  * It replays whenever `highlight`/`writeInSlot` change to a truthy value.
+ *
+ * `key` is the trigger: truthy means "play". It starts armed when the key is
+ * truthy on the first render, so the server and the hydrating client both
+ * render the "before" look (no flash of the final look, no mismatch). A key
+ * that later changes to a new truthy value re-arms during render, so the
+ * "before" look is what commits. The release happens after mount, in an effect.
  */
-function useWriteIn(active: boolean): boolean {
-  const [armed, setArmed] = useState(false);
-  useLayoutEffect(() => {
-    if (!active) return;
-    setArmed(true);
+export function useWriteIn(key: string | boolean | null | undefined): boolean {
+  const [armed, setArmed] = useState(() => !!key);
+  const [prevKey, setPrevKey] = useState(key);
+  if (key !== prevKey) {
+    setPrevKey(key);
+    if (key) setArmed(true);
+  }
+  useEffect(() => {
+    if (!armed) return;
     // Two frames: let the browser paint the "before" look, then release it.
     let inner = 0;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => setArmed(false));
     });
     return () => { cancelAnimationFrame(outer); cancelAnimationFrame(inner); };
-  }, [active]);
+  }, [armed]);
   return armed;
 }
 

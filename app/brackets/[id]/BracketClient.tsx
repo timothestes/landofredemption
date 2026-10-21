@@ -45,7 +45,8 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
   const views = useMemo(() => buildMatchViews(data), [data]);
   const viewById = useMemo(() => new Map(views.flat().map(v => [v.match.id, v])), [views]);
 
-  const [decidedMatchId, setDecidedMatchId] = useState<string | null>(null);
+  // Seeded from ?decided= so the server renders the write-in's "before" look.
+  const [decidedMatchId, setDecidedMatchId] = useState<string | null>(searchParams.decided);
   const [recordMatchId, setRecordMatchId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -66,7 +67,8 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
     if (decided) setDecidedMatchId(decided);
     if (searchParams.record) {
       const game = games.find(g => g.id === searchParams.record);
-      if (game && isOwner) setRecordMatchId(game.matchId);
+      // Only an unfinished game can be recorded; the dialog records on the match's live game.
+      if (game && !game.winnerEntryId && isOwner) setRecordMatchId(game.matchId);
     }
 
     if (window.innerWidth < 768) {

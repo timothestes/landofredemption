@@ -4,7 +4,7 @@ import type { BracketSize } from '@/lib/bracket/types';
 import { nextSlot, roundNames } from '@/lib/bracket';
 import { cn } from '@/lib/utils';
 import type { MatchView } from '../lib/view';
-import { MatchBlock, type MatchCallbacks } from './MatchBlock';
+import { MatchBlock, useWriteIn, type MatchCallbacks } from './MatchBlock';
 
 const LABEL = 'text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground';
 
@@ -48,6 +48,8 @@ export function BracketView(props: MatchCallbacks & {
 
   const decided = views.flat().find(v => v.match.id === decidedMatchId);
   const fed = decided && decided.match.round <= last ? nextSlot(decided.match.round, decided.match.position) : null;
+  // The connectors hold their un-accented look until the write-in releases, in step with MatchBlock.
+  const connectorArmed = useWriteIn(decidedMatchId);
 
   const block = (view: MatchView) => (
     <MatchBlock
@@ -72,8 +74,8 @@ export function BracketView(props: MatchCallbacks & {
                 {round.map(view => (
                   <div
                     key={view.match.id}
-                    data-decided={view.match.id === decidedMatchId ? 'true' : undefined}
-                    data-fed={fed && view.match.round === fed.round && view.match.position === fed.position ? 'true' : undefined}
+                    data-decided={!connectorArmed && view.match.id === decidedMatchId ? 'true' : undefined}
+                    data-fed={!connectorArmed && fed && view.match.round === fed.round && view.match.position === fed.position ? 'true' : undefined}
                     className={cn(
                       'relative flex flex-1 flex-col justify-center py-2',
                       CONNECTOR_FILL,

@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { abandonBracketGameAction, recordManualResultAction } from '../actions';
+import { recordManualResultAction } from '../actions';
 import { DeckThumb } from '../components/DeckThumb';
 import type { MatchView } from '../lib/view';
 
@@ -44,13 +44,10 @@ export function RecordResultDialog({ view, onClose, onSaved }: {
     if (!winner || saving) return;
     setSaving(true);
     setError(null);
-    // A game in progress has to go before a result can be recorded in its place.
-    if (live) {
-      const abandoned = await abandonBracketGameAction(live.id);
-      if (abandoned.ok === false) { setError(abandoned.error); setSaving(false); return; }
-    }
+    // A game in progress gets its result recorded on it rather than on a new row.
     const res = await recordManualResultAction({
       matchId: view.match.id,
+      gameId: live?.id,
       winnerEntryId: winner,
       soulsA: parseSouls(souls.a),
       soulsB: parseSouls(souls.b),
@@ -106,9 +103,6 @@ export function RecordResultDialog({ view, onClose, onSaved }: {
           <p className="text-sm text-muted-foreground">Pick the winner.</p>
           {side('a')}
           {side('b')}
-          {live && (
-            <p className="text-xs text-muted-foreground">Saving ends game {live.gameNumber} in progress.</p>
-          )}
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         </DialogBody>
         <DialogFooter>
