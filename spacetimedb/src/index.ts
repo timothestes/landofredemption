@@ -2388,6 +2388,9 @@ export const handle_disconnect_timeout = spacetimedb.reducer(
   (ctx, { arg }) => {
     const player = ctx.db.Player.id.find(arg.playerId);
     if (!player) return;
+    // Solo: both rows are the one human — nobody is left to claim, and a
+    // refresh revives them. Never arm the claim or end the game.
+    if (soloGameRow(ctx, arg.gameId)) return;
 
     // Only act if player is still disconnected
     if (!player.isConnected) {
@@ -2437,6 +2440,7 @@ export const claim_timeout_victory = spacetimedb.reducer(
     const game = ctx.db.Game.id.find(gameId);
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'playing') throw new SenderError('Game is not in playing state');
+    if (soloGameRow(ctx, gameId)) throw new SenderError('Not available in a solo game');
     if (!game.disconnectTimeoutFired) throw new SenderError('Disconnect timeout has not fired');
 
     const player = findPlayerBySender(ctx, gameId);
@@ -2855,8 +2859,8 @@ export const set_turn_stop = spacetimedb.reducer(
 export const release_turn_stop = spacetimedb.reducer(
   { gameId: t.u64(), denied: t.bool() },
   (ctx, { gameId, denied }) => {
-    const player = findPlayerBySender(ctx, gameId);
     const game = ctx.db.Game.id.find(gameId);
+    const player = findPlayerBySender(ctx, gameId, game ? { seat: game.currentTurn } : undefined);
     if (!game) throw new SenderError('Game not found');
     const stopRow = ctx.db.TurnStop.gameId.find(gameId);
     if (!stopRow || stopRow.holdPhase === '') {
@@ -3047,8 +3051,8 @@ export const set_phase = spacetimedb.reducer(
     phase: t.string(),
   },
   (ctx, { gameId, phase }) => {
-    const player = findPlayerBySender(ctx, gameId);
     let game = ctx.db.Game.id.find(gameId);
+    const player = findPlayerBySender(ctx, gameId, game ? { seat: game.currentTurn } : undefined);
     if (!game) throw new SenderError('Game not found');
 
     // The REG Pre-Game Phase runs with status:'playing', so turn machinery has
@@ -3084,8 +3088,8 @@ export const end_turn = spacetimedb.reducer(
     gameId: t.u64(),
   },
   (ctx, { gameId }) => {
-    const player = findPlayerBySender(ctx, gameId);
     let game = ctx.db.Game.id.find(gameId);
+    const player = findPlayerBySender(ctx, gameId, game ? { seat: game.currentTurn } : undefined);
     if (!game) throw new SenderError('Game not found');
 
     // The REG Pre-Game Phase runs with status:'playing', so turn machinery has
@@ -3389,7 +3393,7 @@ export const end_battle = spacetimedb.reducer(
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'playing') throw new SenderError('Game is not in playing state');
     if (game.battleState === '') throw new SenderError('No battle in progress');
-    const player = findPlayerBySender(ctx, gameId); // either player; also blocks spectators
+    const player = findPlayerBySender(ctx, gameId, { seat: game.currentTurn }); // either player; also blocks spectators
     assertTurnNotHeld(ctx, gameId);
     const isTurnPlayer = player.seat === game.currentTurn;
     const wasBattlePhase = game.currentPhase === 'battle';
@@ -3517,7 +3521,7 @@ export const enter_battle = spacetimedb.reducer(
     posY: t.string(),
   },
   (ctx, { gameId, cardInstanceId, posX, posY }) => {
-    const player = findPlayerBySender(ctx, gameId);
+    const player = findPlayerBySender(ctx, gameId, { cardId: cardInstanceId });
     const game = ctx.db.Game.id.find(gameId);
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'playing') throw new SenderError('Game is not in playing state');
@@ -3665,9 +3669,9 @@ function battleStakesLobLostSouls(ctx: any, gameId: bigint, format: 'T1' | 'T2' 
 export const resolve_battle = spacetimedb.reducer(
   { gameId: t.u64() },
   (ctx, { gameId }) => {
-    const player = findPlayerBySender(ctx, gameId);
-    assertTurnNotHeld(ctx, gameId);
     const game = ctx.db.Game.id.find(gameId);
+    const player = findPlayerBySender(ctx, gameId, game ? { seat: game.currentTurn } : undefined);
+    assertTurnNotHeld(ctx, gameId);
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'playing') throw new SenderError('Game is not in playing state');
     if (game.battleState !== 'active') throw new SenderError('No battle in progress');
@@ -3713,9 +3717,16 @@ export const surrender_soul = spacetimedb.reducer(
     cardInstanceId: t.u64(),
   },
   (ctx, { gameId, cardInstanceId }) => {
-    const player = findPlayerBySender(ctx, gameId);
-    assertTurnNotHeld(ctx, gameId);
     const game = ctx.db.Game.id.find(gameId);
+    // Solo: act as the seat that chooses the soul — the defender in T1, the
+    // attacker otherwise (the format check below).
+    let chooserSeat: bigint | undefined;
+    if (game && game.battleAttackerSeat !== '') {
+      const attackerSeat = BigInt(game.battleAttackerSeat);
+      chooserSeat = normalizeFormat(game.format) === 'T1' ? (attackerSeat === 0n ? 1n : 0n) : attackerSeat;
+    }
+    const player = findPlayerBySender(ctx, gameId, chooserSeat !== undefined ? { seat: chooserSeat } : undefined);
+    assertTurnNotHeld(ctx, gameId);
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'playing') throw new SenderError('Game is not in playing state');
     if (game.battleState !== 'awaiting-soul') throw new SenderError('No soul surrender is pending');
@@ -6280,7 +6291,7 @@ export const surrender_lost_soul = spacetimedb.reducer(
     cardInstanceId: t.u64(),
   },
   (ctx, { gameId, cardInstanceId }) => {
-    const player = findPlayerBySender(ctx, gameId);
+    const player = findPlayerBySender(ctx, gameId, { cardId: cardInstanceId });
 
     const card = ctx.db.CardInstance.id.find(cardInstanceId);
     if (!card) throw new SenderError('Card not found');
@@ -6333,9 +6344,13 @@ export const rescue_lost_soul = spacetimedb.reducer(
     cardInstanceId: t.u64(),
   },
   (ctx, { gameId, cardInstanceId }) => {
-    const player = findPlayerBySender(ctx, gameId);
-
     const card = ctx.db.CardInstance.id.find(cardInstanceId);
+    // Solo: rescue as the seat opposite the soul's owner (shared soul: no hint).
+    const soulOwner = card && card.ownerId !== 0n ? ctx.db.Player.id.find(card.ownerId) : undefined;
+    const player = findPlayerBySender(
+      ctx, gameId, soulOwner ? { seat: soulOwner.seat === 0n ? 1n : 0n } : undefined,
+    );
+
     if (!card) throw new SenderError('Card not found');
     if (card.gameId !== gameId) throw new SenderError('Card not in this game');
 
@@ -6388,7 +6403,7 @@ export const attach_card = spacetimedb.reducer(
     warriorInstanceId: t.u64(),
   },
   (ctx, { gameId, weaponInstanceId, warriorInstanceId }) => {
-    const player = findPlayerBySender(ctx, gameId);
+    const player = findPlayerBySender(ctx, gameId, { cardId: weaponInstanceId });
     const game = ctx.db.Game.id.find(gameId);
     if (!game) throw new SenderError('Game not found');
 
@@ -6564,7 +6579,7 @@ export const detach_card = spacetimedb.reducer(
     posY: t.string(),
   },
   (ctx, { gameId, weaponInstanceId, posX, posY }) => {
-    const player = findPlayerBySender(ctx, gameId);
+    const player = findPlayerBySender(ctx, gameId, { cardId: weaponInstanceId });
 
     const weapon = ctx.db.CardInstance.id.find(weaponInstanceId);
     if (!weapon) throw new SenderError('Card not found');
@@ -6589,11 +6604,10 @@ export const reorder_hand = spacetimedb.reducer(
     cardIds: t.string(), // JSON array of card instance IDs as strings, in desired order
   },
   (ctx, { gameId, cardIds }) => {
-    const player = findPlayerBySender(ctx, gameId);
+    const ids: string[] = JSON.parse(cardIds);
+    const player = findPlayerBySender(ctx, gameId, ids.length > 0 ? { cardId: BigInt(ids[0]) } : undefined);
     const game = ctx.db.Game.id.find(gameId);
     if (!game) throw new SenderError('Game not found');
-
-    const ids: string[] = JSON.parse(cardIds);
 
     for (let i = 0; i < ids.length; i++) {
       const cardId = BigInt(ids[i]);
@@ -6617,11 +6631,10 @@ export const reorder_lob = spacetimedb.reducer(
     cardIds: t.string(), // JSON array of card instance IDs as strings, in desired order
   },
   (ctx, { gameId, cardIds }) => {
-    const player = findPlayerBySender(ctx, gameId);
+    const ids: string[] = JSON.parse(cardIds);
+    const player = findPlayerBySender(ctx, gameId, ids.length > 0 ? { cardId: BigInt(ids[0]) } : undefined);
     const game = ctx.db.Game.id.find(gameId);
     if (!game) throw new SenderError('Game not found');
-
-    const ids: string[] = JSON.parse(cardIds);
 
     for (let i = 0; i < ids.length; i++) {
       const cardId = BigInt(ids[i]);
@@ -6925,9 +6938,8 @@ export const random_opponent_hand_to_zone = spacetimedb.reducer(
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'playing') throw new SenderError('Game is not in progress');
 
-    const player = findPlayerBySender(ctx, gameId);
-
     const req = ctx.db.ZoneSearchRequest.id.find(requestId);
+    const player = findPlayerBySender(ctx, gameId, req ? { playerId: req.requesterId } : undefined);
     if (!req) throw new SenderError('Search request not found');
     if (req.gameId !== gameId) throw new SenderError('Request not in this game');
     if (req.requesterId !== player.id) throw new SenderError('Not your search request');
@@ -7031,9 +7043,8 @@ export const opponent_shuffle_and_draw = spacetimedb.reducer(
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'playing') throw new SenderError('Game is not in progress');
 
-    const player = findPlayerBySender(ctx, gameId);
-
     const req = ctx.db.ZoneSearchRequest.id.find(requestId);
+    const player = findPlayerBySender(ctx, gameId, req ? { playerId: req.requesterId } : undefined);
     if (!req) throw new SenderError('Search request not found');
     if (req.gameId !== gameId) throw new SenderError('Request not in this game');
     if (req.requesterId !== player.id) throw new SenderError('Not your search request');
@@ -7125,9 +7136,8 @@ export const opponent_keep_one_shuffle_draw = spacetimedb.reducer(
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'playing') throw new SenderError('Game is not in progress');
 
-    const player = findPlayerBySender(ctx, gameId);
-
     const req = ctx.db.ZoneSearchRequest.id.find(requestId);
+    const player = findPlayerBySender(ctx, gameId, req ? { playerId: req.targetPlayerId } : undefined);
     if (!req) throw new SenderError('Search request not found');
     if (req.gameId !== gameId) throw new SenderError('Request not in this game');
     if (req.targetPlayerId !== player.id) throw new SenderError('Not your request to answer');
@@ -7160,9 +7170,8 @@ export const three_nails_reset_execute = spacetimedb.reducer(
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'playing') throw new SenderError('Game is not in progress');
 
-    const player = findPlayerBySender(ctx, gameId);
-
     const req = ctx.db.ZoneSearchRequest.id.find(requestId);
+    const player = findPlayerBySender(ctx, gameId, req ? { playerId: req.requesterId } : undefined);
     if (!req) throw new SenderError('Search request not found');
     if (req.gameId !== gameId) throw new SenderError('Request not in this game');
     if (req.requesterId !== player.id) throw new SenderError('Not your search request');
@@ -7297,9 +7306,8 @@ export const discard_reserve_characters_execute = spacetimedb.reducer(
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'playing') throw new SenderError('Game is not in progress');
 
-    const player = findPlayerBySender(ctx, gameId);
-
     const req = ctx.db.ZoneSearchRequest.id.find(requestId);
+    const player = findPlayerBySender(ctx, gameId, req ? { playerId: req.requesterId } : undefined);
     if (!req) throw new SenderError('Search request not found');
     if (req.gameId !== gameId) throw new SenderError('Request not in this game');
     if (req.requesterId !== player.id) throw new SenderError('Not your search request');
@@ -7589,7 +7597,7 @@ export const reveal_card_in_hand = spacetimedb.reducer(
     cardInstanceId: t.u64(),
   },
   (ctx, { gameId, cardInstanceId }) => {
-    const player = findPlayerBySender(ctx, gameId);
+    const player = findPlayerBySender(ctx, gameId, { cardId: cardInstanceId });
 
     const card = ctx.db.CardInstance.id.find(cardInstanceId);
     if (!card) throw new SenderError('Card not found');
@@ -7877,13 +7885,14 @@ export const exchange_from_deck = spacetimedb.reducer(
     replacementMoves: t.string(),  // JSON array of { cardId: string, toZone: string, posX: string, posY: string }
   },
   (ctx, { gameId, exchangeCardIds, replacementMoves }) => {
-    const player = findPlayerBySender(ctx, gameId);
+    const moves: { cardId: string; toZone: string; posX: string; posY: string }[] = JSON.parse(replacementMoves);
+    // Solo: act as the owner of the replacement cards (always the actor's own deck).
+    const player = findPlayerBySender(ctx, gameId, moves.length > 0 ? { cardId: BigInt(moves[0].cardId) } : undefined);
     const game = ctx.db.Game.id.find(gameId);
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'playing') throw new SenderError('Game is not in playing state');
 
     const exchangeIds: string[] = JSON.parse(exchangeCardIds);
-    const moves: { cardId: string; toZone: string; posX: string; posY: string }[] = JSON.parse(replacementMoves);
 
     if (exchangeIds.length === 0) throw new SenderError('No cards to exchange');
     if (moves.length !== exchangeIds.length) throw new SenderError('Must pick same number of replacements as cards being exchanged');
@@ -8656,7 +8665,8 @@ export const request_zone_search = spacetimedb.reducer(
       requesterId: player.id,
       targetPlayerId: opponent.id,
       zone,
-      status: 'pending',
+      // Solo: the one human is both parties — consent is implied.
+      status: soloGameRow(ctx, gameId) ? 'approved' : 'pending',
       createdAt: ctx.timestamp,
       action: '',
       actionParams: '',
@@ -8771,7 +8781,11 @@ export const request_opponent_action = spacetimedb.reducer(
       requesterId: player.id,
       targetPlayerId: opponent.id,
       zone: 'deck',
-      status: 'pending',
+      // Solo: consent is implied, except the two actions where the target makes
+      // a choice — those stay pending and the human answers as the target.
+      status: soloGameRow(ctx, gameId) && action !== 'keep_one_shuffle_draw' && action !== 'three_nails_reset'
+        ? 'approved'
+        : 'pending',
       createdAt: ctx.timestamp,
       action,
       actionParams,
@@ -8790,8 +8804,8 @@ export const approve_zone_search = spacetimedb.reducer(
     requestId: t.u64(),
   },
   (ctx, { gameId, requestId }) => {
-    const player = findPlayerBySender(ctx, gameId);
     const req = ctx.db.ZoneSearchRequest.id.find(requestId);
+    const player = findPlayerBySender(ctx, gameId, req ? { playerId: req.targetPlayerId } : undefined);
     if (!req) throw new SenderError('Request not found');
     if (req.gameId !== gameId) throw new SenderError('Request not in this game');
     if (req.targetPlayerId !== player.id) throw new SenderError('Only the target player can approve');
@@ -8818,8 +8832,8 @@ export const deny_zone_search = spacetimedb.reducer(
     requestId: t.u64(),
   },
   (ctx, { gameId, requestId }) => {
-    const player = findPlayerBySender(ctx, gameId);
     const req = ctx.db.ZoneSearchRequest.id.find(requestId);
+    const player = findPlayerBySender(ctx, gameId, req ? { playerId: req.targetPlayerId } : undefined);
     if (!req) throw new SenderError('Request not found');
     if (req.gameId !== gameId) throw new SenderError('Request not in this game');
     if (req.targetPlayerId !== player.id) throw new SenderError('Only the target player can deny');
@@ -8843,8 +8857,8 @@ export const complete_zone_search = spacetimedb.reducer(
     shuffled: t.bool(),
   },
   (ctx, { gameId, requestId, shuffled }) => {
-    const player = findPlayerBySender(ctx, gameId);
     const req = ctx.db.ZoneSearchRequest.id.find(requestId);
+    const player = findPlayerBySender(ctx, gameId, req ? { playerId: req.requesterId } : undefined);
     if (!req) throw new SenderError('Request not found');
     if (req.gameId !== gameId) throw new SenderError('Request not in this game');
     if (req.requesterId !== player.id) throw new SenderError('Only the requester can complete');
@@ -8938,9 +8952,8 @@ export const move_opponent_card = spacetimedb.reducer(
     const game = ctx.db.Game.id.find(gameId);
     if (!game) throw new SenderError('Game not found');
 
-    const player = findPlayerBySender(ctx, gameId);
-
     const req = ctx.db.ZoneSearchRequest.id.find(requestId);
+    const player = findPlayerBySender(ctx, gameId, req ? { playerId: req.requesterId } : undefined);
     if (!req) throw new SenderError('Search request not found');
     if (req.gameId !== gameId) throw new SenderError('Request not in this game');
     if (req.requesterId !== player.id) throw new SenderError('Not your search request');
@@ -9048,9 +9061,8 @@ export const shuffle_opponent_deck = spacetimedb.reducer(
     const game = ctx.db.Game.id.find(gameId);
     if (!game) throw new SenderError('Game not found');
 
-    const player = findPlayerBySender(ctx, gameId);
-
     const req = ctx.db.ZoneSearchRequest.id.find(requestId);
+    const player = findPlayerBySender(ctx, gameId, req ? { playerId: req.requesterId } : undefined);
     if (!req) throw new SenderError('Search request not found');
     if (req.gameId !== gameId) throw new SenderError('Request not in this game');
     if (req.requesterId !== player.id) throw new SenderError('Not your search request');
