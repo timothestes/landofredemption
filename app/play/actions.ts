@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server';
 import { findCard } from '@/lib/cards/lookup';
 import { requireForge } from '@/app/forge/lib/auth';
 import { stdbHttpBase } from '@/app/forge/lib/stdbHttp';
-import { deckFormatFilterFor } from '@/lib/api/cache';
+import { deckFormatFilterFor, deckFamilyFilterFor } from '@/lib/api/cache';
 import type { DeckOption } from './components/DeckPickerCard';
 import { STARTER_DECKS, hasStarterDecks, orderStarterDecks, type StarterDeck } from '@/app/config/starterDecks';
 
@@ -214,6 +214,8 @@ export interface LoadUserDecksPagedParams {
   search?: string;
   sort?: 'all' | 'latest' | 'last_played' | 'name';
   format?: string;
+  /** Format family; when present it is applied instead of `format`. */
+  family?: 'T1' | 'T2' | 'Paragon';
 }
 
 export interface LoadUserDecksPagedResult {
@@ -232,7 +234,7 @@ export async function loadUserDecksPaged(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { decks: [], totalCount: 0 };
 
-  const { page = 1, pageSize = 12, search, sort = 'all', format } = params;
+  const { page = 1, pageSize = 12, search, sort = 'all', format, family } = params;
   const offset = (page - 1) * pageSize;
 
   let query = supabase
@@ -247,7 +249,12 @@ export async function loadUserDecksPaged(
     query = query.ilike('name', `%${search.trim()}%`);
   }
 
-  if (format) {
+  if (family) {
+    const filter = deckFamilyFilterFor(family);
+    if (filter.kind === 'or') query = query.or(filter.clause);
+    else if (filter.kind === 'in') query = query.in('format', filter.values);
+    else query = query.eq('format', filter.value);
+  } else if (format) {
     // Shared with lib/api/cache.ts's v1 API and the community filter in
     // app/decklist/actions.ts so every `decks.format` query site applies the
     // exact same PostgREST filter shape (normalizes legacy + canonical ids).
