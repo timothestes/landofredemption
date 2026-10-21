@@ -43,12 +43,11 @@ export function DeckPickerCard({ deck, onClick, selected, badge }: DeckPickerCar
     (img1Url && !img1Error) || (img2Url && !img2Error);
 
   return (
-    <div className="relative">
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full text-left rounded-lg border",
+        "relative w-full text-left rounded-lg border",
         selected
           ? "border-primary"
           : "border-border [.jayden_&]:border-primary/30",
@@ -130,8 +129,9 @@ export function DeckPickerCard({ deck, onClick, selected, badge }: DeckPickerCar
           </span>
         )}
       </div>
+      {badge && (
+        <span className="absolute top-1.5 right-1.5 pointer-events-none">{badge}</span>
+      )}
     </button>
-    {badge && <div className="absolute top-1.5 right-1.5 pointer-events-none">{badge}</div>}
-    </div>
   );
 }
