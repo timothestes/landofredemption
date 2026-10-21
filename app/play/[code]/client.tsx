@@ -764,6 +764,24 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     onUndo: handleUndo,
   });
 
+  // Solo (Deck Bracket): W swaps the seat in hand. A separate listener, not
+  // useGameHotkeys, so goldfish and two-human games are untouched.
+  const isSoloGame = gameState.isSolo;
+  const swapSeat = gameState.swapSeat;
+  useEffect(() => {
+    if (!isSoloGame || lifecycle !== 'playing') return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'w' && e.key !== 'W') return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+      e.preventDefault();
+      swapSeat();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isSoloGame, lifecycle, swapSeat]);
+
   // Once subscription data is ready, call the appropriate reducer once.
   // Gate on BOTH Game and Player subscriptions being applied. Game alone isn't
   // enough — the reconnect branch below reads `allPlayers` to decide whether
@@ -1680,6 +1698,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           <div style={{ flexShrink: 0, height: 48 }}>
             <TurnIndicator
               lobbyPath={lobbyPath}
+              isSolo={gameState.isSolo}
               game={gameState.game}
               myPlayer={gameState.myPlayer}
               opponentPlayer={gameState.opponentPlayer}
@@ -1709,14 +1728,16 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                 covering the decision buttons and eating into the budget. */}
             <ImageLoadingGate open={!imagesGateOpen && !isCeremonyPhase} progress={imageLoadProgress} />
             <GameToastContainer />
-            <PauseConsentToast
-              game={gameState.game}
-              myPlayer={gameState.myPlayer}
-              opponentPlayer={gameState.opponentPlayer}
-              onRespondToPause={handleRespondToPause}
-              onRespondToResume={handleRespondToResume}
-            />
-            <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />
+            {!gameState.isSolo && (
+              <PauseConsentToast
+                game={gameState.game}
+                myPlayer={gameState.myPlayer}
+                opponentPlayer={gameState.opponentPlayer}
+                onRespondToPause={handleRespondToPause}
+                onRespondToResume={handleRespondToResume}
+              />
+            )}
+            {!gameState.isSolo && <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />}
             <CardChoicePromptContainer />
           </div>
         </div>
@@ -1737,6 +1758,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           <div style={{ flexShrink: 0, height: 48 }}>
             <TurnIndicator
               lobbyPath={lobbyPath}
+              isSolo={gameState.isSolo}
               game={gameState.game}
               myPlayer={gameState.myPlayer}
               opponentPlayer={gameState.opponentPlayer}
@@ -1760,14 +1782,16 @@ function GameInner({ code, isConnected }: GameInnerProps) {
             )}
             <ImageLoadingGate open={!imagesGateOpen} progress={imageLoadProgress} />
             <GameToastContainer />
-            <PauseConsentToast
-              game={gameState.game}
-              myPlayer={gameState.myPlayer}
-              opponentPlayer={gameState.opponentPlayer}
-              onRespondToPause={handleRespondToPause}
-              onRespondToResume={handleRespondToResume}
-            />
-            <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />
+            {!gameState.isSolo && (
+              <PauseConsentToast
+                game={gameState.game}
+                myPlayer={gameState.myPlayer}
+                opponentPlayer={gameState.opponentPlayer}
+                onRespondToPause={handleRespondToPause}
+                onRespondToResume={handleRespondToResume}
+              />
+            )}
+            {!gameState.isSolo && <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />}
             <CardChoicePromptContainer />
           </div>
         </div>
@@ -1796,6 +1820,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
             <div style={{ flexShrink: 0, height: 48 }}>
               <TurnIndicator
                 lobbyPath={lobbyPath}
+                isSolo={gameState.isSolo}
                 game={gameState.game}
                 myPlayer={gameState.myPlayer}
                 opponentPlayer={gameState.opponentPlayer}
@@ -1857,14 +1882,16 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                 onEndTurn={() => {}}
               />
               <GameToastContainer />
-              <PauseConsentToast
-                game={gameState.game}
-                myPlayer={gameState.myPlayer}
-                opponentPlayer={gameState.opponentPlayer}
-                onRespondToPause={handleRespondToPause}
-                onRespondToResume={handleRespondToResume}
-              />
-              <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />
+              {!gameState.isSolo && (
+                <PauseConsentToast
+                  game={gameState.game}
+                  myPlayer={gameState.myPlayer}
+                  opponentPlayer={gameState.opponentPlayer}
+                  onRespondToPause={handleRespondToPause}
+                  onRespondToResume={handleRespondToResume}
+                />
+              )}
+              {!gameState.isSolo && <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />}
               <CardChoicePromptContainer />
               <GameOverOverlay
                 game={gameState.game}
@@ -1980,6 +2007,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           <div style={{ flexShrink: 0, height: 48 }}>
             <TurnIndicator
               lobbyPath={lobbyPath}
+              isSolo={gameState.isSolo}
               game={gameState.game}
               myPlayer={gameState.myPlayer}
               opponentPlayer={gameState.opponentPlayer}
@@ -2044,6 +2072,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           : { flexShrink: 0, height: 48 }}>
           <TurnIndicator
             lobbyPath={lobbyPath}
+            isSolo={gameState.isSolo}
             game={gameState.game}
             myPlayer={gameState.myPlayer}
             opponentPlayer={gameState.opponentPlayer}
@@ -2071,6 +2100,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
             holdPhase={gameState.holdPhase}
             holdDeadlineMicros={gameState.holdDeadlineMicros}
             onToggleStop={gameState.setTurnStop}
+            seatInHandName={gameState.myPlayer?.displayName}
           />
         </div>
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
@@ -2132,17 +2162,22 @@ function GameInner({ code, isConnected }: GameInnerProps) {
               gameState.passInitiative();
             }}
             onSendEmote={(kind) => gameState.sendEmote(kind)}
+            soloSeat={gameState.isSolo
+              ? { deckName: gameState.myPlayer?.displayName ?? '', onSwap: gameState.swapSeat }
+              : undefined}
           />
           <EmoteOverlay emotes={gameState.emotes} myPlayerId={gameState.myPlayer?.id ?? null} />
           <GameToastContainer />
-          <PauseConsentToast
-            game={gameState.game}
-            myPlayer={gameState.myPlayer}
-            opponentPlayer={gameState.opponentPlayer}
-            onRespondToPause={handleRespondToPause}
-            onRespondToResume={handleRespondToResume}
-          />
-          <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />
+          {!gameState.isSolo && (
+            <PauseConsentToast
+              game={gameState.game}
+              myPlayer={gameState.myPlayer}
+              opponentPlayer={gameState.opponentPlayer}
+              onRespondToPause={handleRespondToPause}
+              onRespondToResume={handleRespondToResume}
+            />
+          )}
+          {!gameState.isSolo && <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />}
           <CardChoicePromptContainer />
         </div>
       </div>

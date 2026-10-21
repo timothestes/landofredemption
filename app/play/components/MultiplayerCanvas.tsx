@@ -343,13 +343,16 @@ type ViewerKind = 'self' | 'opponent' | 'spectator';
  *   OR the card has an active revealExpiresAt (per-card flash).
  * - 'spectator': face-up iff owner.shareHandWithSpectators, OR the card has
  *   an active revealExpiresAt.
+ * - revealAll (solo game: one human holds both seats): always face-up.
  */
 export function isHandCardFaceVisible(
   card: { id: bigint; revealExpiresAt?: { microsSinceUnixEpoch: bigint } | null },
   viewerKind: ViewerKind,
   ownerPlayer: { handRevealed: boolean; handRevealSnapshot: string; shareHandWithSpectators?: boolean } | null | undefined,
   nowMicros: bigint,
+  revealAll = false,
 ): boolean {
+  if (revealAll) return true;
   if (viewerKind === 'self') return true;
   if (!ownerPlayer) return false;
 
@@ -381,12 +384,15 @@ export function isHandCardFaceVisible(
  * - 'player': sees their own face-down cards ('player1'), never the opponent's.
  * - 'spectator': sees neither side's UNLESS that card's owner has opted to share
  *   with spectators (the same consent flag as hand/reserve).
+ * - revealAll (solo game: one human holds both seats): always visible.
  */
 export function isFaceDownInPlayCardVisible(
   viewerKind: 'player' | 'spectator',
   ownerId: string,
   share: { myShareHand: boolean; oppShareHand: boolean },
+  revealAll = false,
 ): boolean {
+  if (revealAll) return true;
   if (viewerKind === 'player') return ownerId === 'player1';
   return ownerId === 'player1' ? share.myShareHand : share.oppShareHand;
 }
@@ -543,6 +549,9 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
   const playerGameState = useGameState(viewerKind === 'spectator' ? 0n : gameId, forgeResolver);
   const spectatorGameState = useSpectatorGameState(viewerKind === 'spectator' ? gameId : null, forgeResolver);
   const gameState = viewerKind === 'spectator' ? spectatorGameState : playerGameState;
+  // Solo (Deck Bracket): one human holds both seats, so nothing is hidden and
+  // every two-human consent prompt is moot. Spectators never get this.
+  const isSolo = viewerKind !== 'spectator' && playerGameState.isSolo;
   const {
     myCards,
     opponentCards,
@@ -1244,9 +1253,9 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
   const oppShareHand = gameState.opponentPlayer?.shareHandWithSpectators ?? false;
   const canViewMyReserve =
     !isSpectator || myShareHand || (gameState.myPlayer?.reserveRevealed ?? false);
-  const canViewOppReserve = isSpectator
+  const canViewOppReserve = isSolo || (isSpectator
     ? (oppShareHand || (gameState.opponentPlayer?.reserveRevealed ?? false))
-    : (gameState.opponentPlayer?.reserveRevealed ?? false);
+    : (gameState.opponentPlayer?.reserveRevealed ?? false));
 
   /** Face visibility for the DOM browse surfaces (zone grids, card reader).
    *  The Konva board gates faces per-node at render time, but the grids render
@@ -1254,6 +1263,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
    *  PRIVATE data, so the same consent rules have to be answered here too.
    *  True = render a card back and never open a reader for it. */
   const isCardFaceHiddenFromViewer = useCallback((card: GameCard): boolean => {
+    if (isSolo) return false;
     const revealedNow = typeof card.revealUntil === 'number' && card.revealUntil > Date.now();
     if (revealedNow) return false;
     if (card.zone === 'hand') {
@@ -1275,7 +1285,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
       card.ownerId,
       { myShareHand, oppShareHand },
     );
-  }, [isSpectator, gameState.myPlayer, gameState.opponentPlayer, myShareHand, oppShareHand, canViewMyReserve, canViewOppReserve]);
+  }, [isSolo, isSpectator, gameState.myPlayer, gameState.opponentPlayer, myShareHand, oppShareHand, canViewMyReserve, canViewOppReserve]);
 
   // ---- Stage ref ----
   const stageRef = useRef<Konva.Stage>(null);
@@ -5903,6 +5913,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
           isSpectator ? 'spectator' : 'player',
           card.ownerId,
           { myShareHand, oppShareHand },
+          isSolo,
         )
       ) {
         setHoveredCard(null);
@@ -5919,7 +5930,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
       setHoverReady(false);
       hoverTimerRef.current = setTimeout(() => setHoverReady(true), 250);
     },
-    [startHoverAnimation, isSpectator, myShareHand, oppShareHand],
+    [startHoverAnimation, isSpectator, myShareHand, oppShareHand, isSolo],
   );
 
   const handleMouseLeave = useCallback(() => {
@@ -6571,7 +6582,10 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
       // surrender_soul rule: T1 the defender picks, T2/Paragon the attacker.
       const defenderSeat = attackerSeat === '0' ? '1' : '0';
       const chooserSeat = normalizedFormat === 'T1' ? defenderSeat : attackerSeat;
-      statusText = `Waiting for ${nameForSeat(chooserSeat)} to choose a soul…`;
+      // Solo: the one human picks for whichever seat chooses.
+      statusText = isSolo
+        ? `Choose a soul for ${nameForSeat(chooserSeat)}`
+        : `Waiting for ${nameForSeat(chooserSeat)} to choose a soul…`;
     }
     const headerText =
       statusText ||
@@ -6732,6 +6746,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     gameState.myPlayer,
     gameState.opponentPlayer,
     scale,
+    isSolo,
   ]);
 
   // Drag-target guidance cue (PR #197 product direction: "if it's the
@@ -9150,7 +9165,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
               : (revealedReserveCard ?? cards[cards.length - 1]);
             const topReserveCardRevealed = !!revealedReserveCard;
             const showFace = ((zoneKey === 'discard' || zoneKey === 'land-of-redemption' || zoneKey === 'banish') && topCard && !topCard.isFlipped)
-              || (zoneKey === 'reserve' && topCard && (oppReserveRevealed || topReserveCardRevealed || (isSpectator && oppShareHand)))
+              || (zoneKey === 'reserve' && topCard && (isSolo || oppReserveRevealed || topReserveCardRevealed || (isSpectator && oppShareHand)))
               || (oppTopDeckRevealed && topCard);
 
             const openOppPileGroupMenu = (pt: { x: number; y: number }) => {
@@ -9417,7 +9432,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                   // but don't render the real card back yet.
                   if (card && oppDealingIds.has(String(card.id))) return null;
                   const nowMicros = BigInt(Date.now()) * 1000n;
-                  if (card && isHandCardFaceVisible(card, oppHandViewerKind, gameState.opponentPlayer, nowMicros)) {
+                  if (card && isHandCardFaceVisible(card, oppHandViewerKind, gameState.opponentPlayer, nowMicros, isSolo)) {
                     const gameCard = adaptCard(card, 'player2');
                     return (
                       <GameCardNode
@@ -9545,7 +9560,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                   if (dealingIds.has(idStr)) return null;
                   if (myHandViewerKind === 'spectator') {
                     const nowMicros = BigInt(Date.now()) * 1000n;
-                    if (!isHandCardFaceVisible(card, 'spectator', gameState.myPlayer, nowMicros)) {
+                    if (!isHandCardFaceVisible(card, 'spectator', gameState.myPlayer, nowMicros, isSolo)) {
                       return (
                         <Group key={`my-hand-${i}`} x={pos.x} y={pos.y}>
                           <CardBackShape width={handCardWidth} height={handCardHeight} />
@@ -10043,6 +10058,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
           opponentSeat={gameState.opponentPlayer ? String(gameState.opponentPlayer.seat) : ''}
           attackerSeat={gameState.battleAttackerSeat}
           isSpectator={isSpectator}
+          isSolo={isSolo}
           format={normalizedFormat}
           myPlayerName={gameState.myPlayer?.displayName || 'Player 1'}
           opponentPlayerName={gameState.opponentPlayer?.displayName || 'Player 2'}
@@ -10356,7 +10372,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             onRandomToDeckBottom={(count) => requestAction('random_hand_to_deck_bottom', count)}
             onShuffleRandomIntoDeck={(count) => requestAction('random_hand_to_deck_shuffle', count)}
             isHandRevealed={gameState.opponentPlayer?.handRevealed ?? false}
-            onRevealHand={() => {
+            onRevealHand={isSolo ? undefined : () => {
               setOpponentHandMenu(null);
               requestZoneSearch('hand-reveal');
               showGameToast('Asking opponent to reveal hand...');
@@ -10382,7 +10398,8 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
       )}
 
       {!isSpectator && opponentReserveMenu && (() => {
-        const oppReserveRevealed = gameState.opponentPlayer?.reserveRevealed ?? false;
+        // Solo: the reserve is already visible, so "look" replaces "ask to reveal".
+        const oppReserveRevealed = isSolo || (gameState.opponentPlayer?.reserveRevealed ?? false);
         const oppReserveCards = opponentCards['reserve'] ?? [];
         const oppId = gameState.opponentPlayer?.id;
         const randomOppReserveToDiscard = (count: number) => {
@@ -10548,7 +10565,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             showGameToast('Waiting for opponent to approve...');
             setOpponentZoneMenu(null);
           }}
-          onRevealHand={opponentZoneMenu.zone === 'hand' ? () => {
+          onRevealHand={opponentZoneMenu.zone === 'hand' && !isSolo ? () => {
             requestZoneSearch('hand-reveal');
             showGameToast('Asking opponent to reveal hand...');
             setOpponentZoneMenu(null);
@@ -10586,7 +10603,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
       })()}
 
       {/* Priority request — floating in center of board between territories */}
-      {incomingSearchRequest && incomingSearchRequest.zone === 'action-priority' && (
+      {!isSolo && incomingSearchRequest && incomingSearchRequest.zone === 'action-priority' && (
         <BoardRequestBanner
           message={
             <>
@@ -10612,7 +10629,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
           was consumed when it tripped, so it won't re-fire); they differ only
           in the courtesy logged to the opponent. The 60s server backstop
           releases on its own if the prompt is ignored. */}
-      {!isSpectator && gameState.holdPhase !== '' && gameState.isMyTurn && (
+      {!isSpectator && !isSolo && gameState.holdPhase !== '' && gameState.isMyTurn && (
         <BoardRequestBanner
           message={
             <>
@@ -10645,7 +10662,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
       )}
 
       {/* Initiative request — floating in center of board between territories */}
-      {incomingSearchRequest && incomingSearchRequest.zone === 'initiative' && (
+      {!isSolo && incomingSearchRequest && incomingSearchRequest.zone === 'initiative' && (
         <BoardRequestBanner
           message={
             <>
@@ -11505,12 +11522,12 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         !(
           gameState.battleState === 'awaiting-soul' &&
           !isSpectator &&
-          isSoulChooserSeat(
+          (isSolo || isSoulChooserSeat(
             gameState.myPlayer ? String(gameState.myPlayer.seat) : '',
             gameState.opponentPlayer ? String(gameState.opponentPlayer.seat) : '',
             gameState.battleAttackerSeat,
             normalizedFormat,
-          )
+          ))
         ) && (
         <TouchControls
           targets={jumpTargets}
