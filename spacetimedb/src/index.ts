@@ -2211,19 +2211,22 @@ export const leave_game = spacetimedb.reducer(
     gameId: t.u64(),
   },
   (ctx, { gameId }) => {
-    // Try to find as player first
-    for (const player of ctx.db.Player.player_game_id.filter(gameId)) {
-      if (player.identity.toHexString() === ctx.sender.toHexString()) {
-        ctx.db.Player.id.update({ ...player, isConnected: false });
-
-        // If the game is still in the lobby (waiting), finish it immediately
-        // so it disappears from the lobby list right away.
-        const game = ctx.db.Game.id.find(gameId);
-        if (game && game.status === 'waiting') {
-          ctx.db.Game.id.update({ ...game, status: 'finished' });
-        }
-        return;
+    // Try to find as player first. Mark EVERY row the sender holds — a solo
+    // game has two.
+    let leftAsPlayer = false;
+    for (const player of [...ctx.db.Player.player_game_id.filter(gameId)]) {
+      if (player.identity.toHexString() !== ctx.sender.toHexString()) continue;
+      leftAsPlayer = true;
+      ctx.db.Player.id.update({ ...player, isConnected: false });
+    }
+    if (leftAsPlayer) {
+      // If the game is still in the lobby (waiting), finish it immediately
+      // so it disappears from the lobby list right away.
+      const game = ctx.db.Game.id.find(gameId);
+      if (game && game.status === 'waiting') {
+        ctx.db.Game.id.update({ ...game, status: 'finished' });
       }
+      return;
     }
 
     // Try to find as spectator
@@ -3860,7 +3863,7 @@ export const matthew_draw_brigades = spacetimedb.reducer(
     brigadeCount: t.u64(),
   },
   (ctx, { gameId, cardInstanceId, brigadeCount }) => {
-    const player = findPlayerBySender(ctx, gameId);
+    const player = findPlayerBySender(ctx, gameId, { cardId: cardInstanceId });
     const source = ctx.db.CardInstance.id.find(cardInstanceId);
     if (!source) throw new SenderError('Card not found');
     if (source.gameId !== gameId) throw new SenderError('Card not in this game');
@@ -5790,7 +5793,7 @@ export const execute_card_ability = spacetimedb.reducer(
   },
   (ctx, { gameId, cardInstanceId, abilityIndex }) => {
     // Phase 1 — validate.
-    const player = findPlayerBySender(ctx, gameId);
+    const player = findPlayerBySender(ctx, gameId, { cardId: cardInstanceId });
 
     const source = ctx.db.CardInstance.id.find(cardInstanceId);
     if (!source) throw new SenderError('Card not found');
@@ -5843,7 +5846,9 @@ export const execute_card_ability = spacetimedb.reducer(
             requesterId: player.id,
             targetPlayerId: opponent.id,
             zone: 'deck',
-            status: 'pending',
+            // Solo: the one human is both sides, so approve straight away
+            // like request_opponent_action does.
+            status: soloGameRow(ctx, gameId) ? 'approved' : 'pending',
             createdAt: ctx.timestamp,
             action: 'shuffle_and_draw',
             actionParams: JSON.stringify({
@@ -5953,7 +5958,7 @@ export const execute_card_ability_with_count = spacetimedb.reducer(
     chosenCount: t.u64(),
   },
   (ctx, { gameId, cardInstanceId, abilityIndex, chosenCount }) => {
-    const player = findPlayerBySender(ctx, gameId);
+    const player = findPlayerBySender(ctx, gameId, { cardId: cardInstanceId });
 
     const source = ctx.db.CardInstance.id.find(cardInstanceId);
     if (!source) throw new SenderError('Card not found');
@@ -6004,7 +6009,7 @@ export const resurrect_heroes = spacetimedb.reducer(
     selectedIdsJson: t.string(),
   },
   (ctx, { gameId, cardInstanceId, abilityIndex, selectedIdsJson }) => {
-    const player = findPlayerBySender(ctx, gameId);
+    const player = findPlayerBySender(ctx, gameId, { cardId: cardInstanceId });
 
     const source = ctx.db.CardInstance.id.find(cardInstanceId);
     if (!source) throw new SenderError('Card not found');
@@ -6110,7 +6115,7 @@ export const imitate_lost_soul = spacetimedb.reducer(
     targetInstanceId: t.u64(),
   },
   (ctx, { gameId, sourceInstanceId, targetInstanceId }) => {
-    const player = findPlayerBySender(ctx, gameId);
+    const player = findPlayerBySender(ctx, gameId, { cardId: sourceInstanceId });
 
     const source = ctx.db.CardInstance.id.find(sourceInstanceId);
     if (!source) throw new SenderError('Source card not found');
@@ -6180,7 +6185,7 @@ export const imitate_lost_soul = spacetimedb.reducer(
 export const stop_imitating_lost_soul = spacetimedb.reducer(
   { gameId: t.u64(), sourceInstanceId: t.u64() },
   (ctx, { gameId, sourceInstanceId }) => {
-    const player = findPlayerBySender(ctx, gameId);
+    const player = findPlayerBySender(ctx, gameId, { cardId: sourceInstanceId });
 
     const source = ctx.db.CardInstance.id.find(sourceInstanceId);
     if (!source) throw new SenderError('Source card not found');
@@ -7080,7 +7085,7 @@ export const keep_one_shuffle_draw = spacetimedb.reducer(
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'playing') throw new SenderError('Game is not in progress');
 
-    const player = findPlayerBySender(ctx, gameId);
+    const player = findPlayerBySender(ctx, gameId, { cardId: sourceInstanceId });
 
     const source = ctx.db.CardInstance.id.find(sourceInstanceId);
     if (!source || source.gameId !== gameId) throw new SenderError('Source card not found');
