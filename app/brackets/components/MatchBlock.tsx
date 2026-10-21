@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { MoreHorizontal, X } from 'lucide-react';
 import type { BracketGame } from '@/lib/bracket/types';
 import { Button } from '@/components/ui/button';
@@ -99,8 +100,25 @@ export function MatchBlock(props: MatchCallbacks & {
       >
         {entry ? (
           <div className={cn('flex min-w-0 flex-1 items-center gap-2', fed && WRITE_IN, fed && armed && 'opacity-0')}>
-            <DeckThumb entry={entry} dimmed={loser} />
-            <span className="min-w-0 flex-1 truncate text-sm font-medium">{entry.deckName}</span>
+            {/* On the bracket page the deck is a link to its page; on the setup
+                screen the row is a remove control instead, so no link there. */}
+            {entry.deckId && !props.onRemoveEntry ? (
+              <Link
+                href={`/decklist/${entry.deckId}`}
+                title={`View ${entry.deckName}`}
+                className="group -my-1 flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-sm py-1 pr-1 transition-colors hover:bg-muted/40"
+              >
+                <DeckThumb entry={entry} dimmed={loser} />
+                <span className="min-w-0 flex-1 truncate text-sm font-medium underline-offset-2 group-hover:underline">
+                  {entry.deckName}
+                </span>
+              </Link>
+            ) : (
+              <>
+                <DeckThumb entry={entry} dimmed={loser} />
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">{entry.deckName}</span>
+              </>
+            )}
             {state !== 'bye' && state !== 'waiting' && (
               <span className="text-sm tabular-nums">{wins}</span>
             )}

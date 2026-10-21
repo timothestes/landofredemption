@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Check, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useInputMode } from "@/app/shared/hooks/useInputMode";
@@ -197,6 +198,16 @@ export function DeckPickerContent({
     };
   }, [fetchCommunity, activeTab]);
 
+  // Manual refresh of the active tab: a deck saved in another tab (or by a
+  // teammate on Community) does not show up until the list is fetched again.
+  // Bypasses the search debounce; the row's own loading flag spins the icon.
+  const refreshing = activeTab === "my" ? myLoading : isSearching;
+  const refreshActiveTab = () => {
+    if (refreshing) return;
+    if (activeTab === "my") void fetchMyDecks();
+    else if (activeTab === "community") void fetchCommunity();
+  };
+
   // Load community on first tab switch
   useEffect(() => {
     if (activeTab === "community" && !hasSearched) {
@@ -348,6 +359,21 @@ export function DeckPickerContent({
             </select>
           </>
         )}
+
+        <button
+          type="button"
+          onClick={refreshActiveTab}
+          disabled={refreshing}
+          aria-label="Refresh decks"
+          title="Refresh decks"
+          className={cn(
+            "shrink-0 inline-flex items-center justify-center rounded-md border border-border bg-background",
+            "text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-60",
+            isTouchPicker ? "h-11 w-11" : "h-9 w-9",
+          )}
+        >
+          <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+        </button>
       </div>
       )}
 

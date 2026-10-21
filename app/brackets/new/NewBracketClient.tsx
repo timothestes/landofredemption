@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,7 @@ import type { BestOf, Bracket, BracketFormat, BracketMatch } from '@/lib/bracket
 import { getFormatDef } from '@/lib/formats';
 import { DeckPickerContent } from '@/app/play/components/DeckPickerContent';
 import type { DeckOption } from '@/app/play/components/DeckPickerCard';
-import { createBracketAction } from '../actions';
+import { createBracketAction, updateBracketAction } from '../actions';
 import { MatchBlock } from '../components/MatchBlock';
 import { DeckThumb } from '../components/DeckThumb';
 import { buildMatchViews } from '../lib/view';
@@ -73,15 +74,18 @@ function ChipRow<T extends string | number>(props: {
   );
 }
 
-export function NewBracketClient({ initialDecks, missingCount = 0, defaultName }: {
+export function NewBracketClient({ initialDecks, missingCount = 0, defaultName, editing }: {
   initialDecks: DraftDeck[];
   missingCount?: number;
   /** Computed on the server so the hydrating client renders the same text. */
   defaultName: string;
+  /** Set when rebuilding an existing bracket (no game played yet): saves in place. */
+  editing?: { id: string; format: BracketFormat; bestOf: BestOf };
 }) {
   const router = useRouter();
   const [initial] = useState(() => {
-    const format: BracketFormat = initialDecks.length > 0 ? getFormatDef(initialDecks[0].format).family : 'T1';
+    const format: BracketFormat = editing?.format
+      ?? (initialDecks.length > 0 ? getFormatDef(initialDecks[0].format).family : 'T1');
     const { kept, dropped } = pruneForFamily(initialDecks, format);
     const notes: string[] = [];
     if (dropped.length > 0) notes.push(removedNote(dropped.length, format));
@@ -91,7 +95,7 @@ export function NewBracketClient({ initialDecks, missingCount = 0, defaultName }
 
   const [name, setName] = useState(defaultName);
   const [format, setFormat] = useState<BracketFormat>(initial.format);
-  const [bestOf, setBestOf] = useState<BestOf>(3);
+  const [bestOf, setBestOf] = useState<BestOf>(editing?.bestOf ?? 3);
   const [picked, setPicked] = useState<DraftDeck[]>(initial.picked);
   const [note, setNote] = useState<{ text: string; key: number } | null>(
     initial.note ? { text: initial.note, key: 0 } : null,
@@ -140,22 +144,36 @@ export function NewBracketClient({ initialDecks, missingCount = 0, defaultName }
   const start = () => {
     setError(null);
     startTransition(async () => {
-      const res = await createBracketAction({ name, format, bestOf, deckIds: picked.map(d => d.id) });
+      const input = { name, format, bestOf, deckIds: picked.map(d => d.id) };
+      const res = editing
+        ? await updateBracketAction({ id: editing.id, ...input })
+        : await createBracketAction(input);
       if (res.ok === false) setError(res.error);
       else router.push('/brackets/' + res.data.id);
     });
   };
 
   const startButton = (
-    <Button className="min-h-11 shrink-0" disabled={!canStart} onClick={start}>
-      {pending ? 'Starting…' : 'Start bracket'}
-    </Button>
+    <div className="flex shrink-0 items-center gap-2">
+      {editing && (
+        <Button variant="outline" className="min-h-11" asChild>
+          <Link href={'/brackets/' + editing.id}>Cancel</Link>
+        </Button>
+      )}
+      <Button className="min-h-11" disabled={!canStart} onClick={start}>
+        {editing
+          ? (pending ? 'Saving…' : 'Save changes')
+          : (pending ? 'Starting…' : 'Start bracket')}
+      </Button>
+    </div>
   );
   const errorLine = error && <p role="alert" className="text-sm text-destructive">{error}</p>;
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-10">
-      <h1 className="font-cinzel text-2xl font-bold tracking-tight sm:text-3xl">New deck bracket</h1>
+      <h1 className="font-cinzel text-2xl font-bold tracking-tight sm:text-3xl">
+        {editing ? 'Edit deck bracket' : 'New deck bracket'}
+      </h1>
 
       <div className="mt-6 flex flex-col gap-4 md:flex-row md:items-end md:gap-6">
         <div className="flex flex-col gap-1.5 md:w-72">

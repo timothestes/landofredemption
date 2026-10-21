@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sizeFor, slotOrder, roundNames, matchLabel, nextSlot, buildBracket, seriesState,
+import { canEditBracket, sizeFor, slotOrder, roundNames, matchLabel, nextSlot, buildBracket, seriesState,
   firstEntryForGame, matchState, canPlayMatch, applyGameResult, resetMatchAllowed, resetMatchUpdates, reconcileUpdates } from '../index';
 import type { BracketMatch, Bracket } from '../types';
 import { entry, entries, ids, match, game } from './fixtures';
@@ -191,5 +191,13 @@ describe('reconcileUpdates', () => {
     ms[0].winnerEntryId = 'e1'; ms[1].winnerEntryId = 'e3';
     ms[0].isBye = true; ms[1].isBye = true;
     expect(reconcileUpdates(bracket, ms, [])).toEqual([{ kind: 'champion', entryId: 'e3' }]);
+  });
+});
+
+describe('canEditBracket', () => {
+  it('is editable until the first game row exists', () => {
+    expect(canEditBracket([])).toBe(true);
+    expect(canEditBracket([game(1, null)])).toBe(false);
+    expect(canEditBracket([game(1, 'e1')])).toBe(false);
   });
 });
