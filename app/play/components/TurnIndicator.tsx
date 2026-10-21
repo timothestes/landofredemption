@@ -1524,7 +1524,7 @@ export default function TurnIndicator({
               color: '#e8d5a3',
               marginTop: 8,
               textShadow: '0 1px 4px rgba(0,0,0,0.5)',
-            }}>{isSolo ? `Concede as ${seatInHandName}?` : 'Are you sure?'}</h2>
+            }}>{isSolo ? `Concede as ${seatInHandName ?? 'this seat'}?` : 'Are you sure?'}</h2>
             <p style={{
               marginTop: 8,
               fontFamily: 'Georgia, serif',

@@ -18,7 +18,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import type { GameActions } from '../types/gameActions';
-import { SeatSwapPill } from '@/app/play/components/SeatSwapPill';
+import { SeatSwapPill } from './SeatSwapPill';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -70,8 +70,8 @@ export interface GameToolbarProps {
    *  holder — requesting a window you already hold is noise. */
   isTurnHeld?: boolean;
   /** Solo game only (one human holds both seats): adds the seat-swap pill
-   *  (shortcut W, handled by the page) and drops the initiative/priority
-   *  buttons, which ask the other human. Goldfish and two-human games omit it. */
+   *  (shortcut W, handled by the page) and drops the "My init" and Priority
+   *  requests, which ask the other human ("Your init" is an instant pass and stays). Goldfish and two-human games omit it. */
   soloSeat?: { deckName: string; onSwap: () => void };
 }
 
@@ -185,7 +185,7 @@ export function GameToolbar({
     // Your initiative (give to opponent) — instant, no handshake. Icon
     // shows the opponent's current role: skull on my turn (they're defending),
     // book on their turn (they're attacking).
-    ...(isMultiplayer && !isFinished && !soloSeat ? [{
+    ...(isMultiplayer && !isFinished ? [{
       icon: isMyTurn ? Skull : BookOpen,
       key: 'your-initiative',
       label: 'Your init',
