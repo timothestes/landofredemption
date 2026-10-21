@@ -24,6 +24,11 @@ const ELBOW_BOTTOM =
   "after:absolute after:-right-4 after:top-0 after:h-1/2 after:w-4 after:border-b after:border-r after:border-border after:content-['']";
 const STUB_IN =
   "before:absolute before:-left-4 before:top-1/2 before:w-4 before:border-t before:border-border before:content-['']";
+// The write-in: the decided match's outgoing connector and the stub into the
+// slot it fed fill to the accent, on the same 500 ms curve as MatchBlock.
+const CONNECTOR_FILL =
+  'after:transition-[border-color] after:duration-500 after:[transition-timing-function:var(--ease-out-quart)] data-[decided=true]:after:border-primary ' +
+  'before:transition-[border-color] before:duration-500 before:[transition-timing-function:var(--ease-out-quart)] data-[fed=true]:before:border-primary';
 const STUB_OUT_TO_CHAMPION =
   "after:absolute after:-right-8 after:top-1/2 after:w-8 after:border-t after:border-border after:content-['']";
 
@@ -67,8 +72,11 @@ export function BracketView(props: MatchCallbacks & {
                 {round.map(view => (
                   <div
                     key={view.match.id}
+                    data-decided={view.match.id === decidedMatchId ? 'true' : undefined}
+                    data-fed={fed && view.match.round === fed.round && view.match.position === fed.position ? 'true' : undefined}
                     className={cn(
                       'relative flex flex-1 flex-col justify-center py-2',
+                      CONNECTOR_FILL,
                       r > 0 && STUB_IN,
                       r < last ? (view.match.position % 2 === 0 ? ELBOW_TOP : ELBOW_BOTTOM) : STUB_OUT_TO_CHAMPION,
                     )}
