@@ -1313,6 +1313,9 @@ export interface LoadPublicDecksParams {
   tagIds?: string[];
   cardNames?: string[];
   tournamentOnly?: boolean;
+  /** Main-deck card count bounds, inclusive (decks.card_count). */
+  minCards?: number;
+  maxCards?: number;
 }
 
 export async function loadPublicDecksAction(params: LoadPublicDecksParams = {}) {
@@ -1329,6 +1332,8 @@ export async function loadPublicDecksAction(params: LoadPublicDecksParams = {}) 
       tagIds,
       cardNames,
       tournamentOnly,
+      minCards,
+      maxCards,
     } = params;
 
     const offset = (page - 1) * pageSize;
@@ -1401,6 +1406,9 @@ export async function loadPublicDecksAction(params: LoadPublicDecksParams = {}) 
     if (tournamentDeckIds) {
       query = query.in("id", tournamentDeckIds);
     }
+
+    if (minCards != null) query = query.gte("card_count", minCards);
+    if (maxCards != null) query = query.lte("card_count", maxCards);
 
     if (family) {
       const filter = deckFamilyFilterFor(family);

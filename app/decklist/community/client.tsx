@@ -13,6 +13,10 @@ import { Card } from "../card-search/utils";
 import { getCardImageUrlOrNull as getCardImageUrl } from '../../shared/utils/cardImageUrl';
 import { normalizeFormat, getFormatDef } from "@/lib/formats";
 import { TrophyIcon, getPlacementLabel } from "@/components/trophy-icon";
+import {
+  parseCardCount, rangeFromDraft, draftFromRange, cardCountLabel, EMPTY_RANGE,
+  CardCountRange, CardCountDraft, CardCountMode,
+} from "./cardCountFilter";
 
 interface DeckTag { id: string; name: string; color: string; }
 
@@ -76,6 +80,10 @@ function timeAgo(dateString: string): string {
 
 const PAGE_SIZE = 24;
 
+// Paragon is exactly 40; 50 is the T1 floor; 57 and 63 are the next Lost Soul
+// breakpoints (every 7 cards adds a soul); 100 is the T2 floor.
+const QUICK_CARD_COUNTS = [40, 50, 57, 63, 100];
+
 function getPageNumbers(current: number, total: number): (number | "…")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
   const pages: (number | "…")[] = [1];
@@ -108,6 +116,8 @@ export default function CommunityClient({ initialDecks, initialCount, currentUse
     searchParams.get("page") ||
     searchParams.get("tags") ||
     searchParams.getAll("card").length > 0 ||
+    searchParams.get("min_cards") ||
+    searchParams.get("max_cards") ||
     searchParams.get("tournament")
   );
 
@@ -142,6 +152,15 @@ export default function CommunityClient({ initialDecks, initialCount, currentUse
   const [cardSearchInput, setCardSearchInput] = useState("");
   const [cardSuggestions, setCardSuggestions] = useState<string[]>([]);
   const cardDropdownRef = useRef<HTMLDivElement>(null);
+  // Main-deck size: the committed range drives the query and URL; the popover
+  // edits a draft that debounces into it (see effect below).
+  const [cardCount, setCardCount] = useState<CardCountRange>(() => ({
+    min: parseCardCount(searchParams.get("min_cards")),
+    max: parseCardCount(searchParams.get("max_cards")),
+  }));
+  const [sizeDraft, setSizeDraft] = useState<CardCountDraft>(() => draftFromRange(cardCount));
+  const [sizeDropdownOpen, setSizeDropdownOpen] = useState(false);
+  const sizeDropdownRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
 
   useEffect(() => {
@@ -167,6 +186,28 @@ export default function CommunityClient({ initialDecks, initialCount, currentUse
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [cardDropdownOpen]);
+
+  useEffect(() => {
+    if (!sizeDropdownOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (sizeDropdownRef.current && !sizeDropdownRef.current.contains(e.target as Node)) {
+        setSizeDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [sizeDropdownOpen]);
+
+  // Typed sizes commit after a pause so "57" doesn't fetch "5" first.
+  useEffect(() => {
+    const next = rangeFromDraft(sizeDraft.mode, sizeDraft.a, sizeDraft.b);
+    if (next.min === cardCount.min && next.max === cardCount.max) return;
+    const timer = setTimeout(() => {
+      setCardCount(next);
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [sizeDraft, cardCount]);
 
   // Debounced card-name autocomplete
   useEffect(() => {
@@ -197,6 +238,19 @@ export default function CommunityClient({ initialDecks, initialCount, currentUse
     setPage(1);
   }
 
+  function pickCardCount(n: number) {
+    const already = cardCount.min === n && cardCount.max === n;
+    setSizeDraft({ mode: "exact", a: already ? "" : String(n), b: "" });
+    setCardCount(already ? EMPTY_RANGE : { min: n, max: n });
+    setPage(1);
+  }
+
+  function clearCardCount() {
+    setSizeDraft({ mode: "exact", a: "", b: "" });
+    setCardCount(EMPTY_RANGE);
+    setPage(1);
+  }
+
   function toggleCardFilter(cardName: string) {
     setCardFilters((prev) =>
       prev.includes(cardName) ? prev.filter((n) => n !== cardName) : [...prev, cardName]
@@ -216,6 +270,8 @@ export default function CommunityClient({ initialDecks, initialCount, currentUse
       tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
       cardNames: cardFilters.length > 0 ? cardFilters : undefined,
       tournamentOnly: tournamentOnly || undefined,
+      minCards: cardCount.min ?? undefined,
+      maxCards: cardCount.max ?? undefined,
     };
     const result = await loadPublicDecksAction(params);
     if (result.success) {
@@ -223,7 +279,7 @@ export default function CommunityClient({ initialDecks, initialCount, currentUse
       setTotalCount(result.totalCount);
     }
     setLoading(false);
-  }, [page, sort, format, search, usernameFilter, selectedTagIds, cardFilters, tournamentOnly]);
+  }, [page, sort, format, search, usernameFilter, selectedTagIds, cardFilters, tournamentOnly, cardCount]);
 
   useEffect(() => {
     // Skip the initial fetch if we already have server-provided data (no URL filters)
@@ -243,6 +299,8 @@ export default function CommunityClient({ initialDecks, initialCount, currentUse
     if (sort !== "newest") qs.set("sort", sort);
     if (selectedTagIds.length > 0) qs.set("tags", selectedTagIds.join(","));
     for (const name of cardFilters) qs.append("card", name);
+    if (cardCount.min != null) qs.set("min_cards", String(cardCount.min));
+    if (cardCount.max != null) qs.set("max_cards", String(cardCount.max));
     if (tournamentOnly) qs.set("tournament", "1");
     if (usernameFilter) qs.set("username", usernameFilter);
     if (page > 1) qs.set("page", String(page));
@@ -250,7 +308,7 @@ export default function CommunityClient({ initialDecks, initialCount, currentUse
     if (next !== searchParams.toString()) {
       router.replace(next ? `/decklist/community?${next}` : "/decklist/community", { scroll: false });
     }
-  }, [search, format, sort, selectedTagIds, cardFilters, tournamentOnly, usernameFilter, page, router, searchParams]);
+  }, [search, format, sort, selectedTagIds, cardFilters, cardCount, tournamentOnly, usernameFilter, page, router, searchParams]);
 
   // Reset to page 1 when filters change
   function handleSortChange(newSort: typeof sort) {
@@ -291,6 +349,7 @@ export default function CommunityClient({ initialDecks, initialCount, currentUse
   }
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const sizeLabel = cardCountLabel(cardCount);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-3 md:px-4 py-4 md:py-8 overflow-x-hidden">
@@ -540,6 +599,107 @@ export default function CommunityClient({ initialDecks, initialCount, currentUse
               </div>
             )}
           </div>
+
+          {/* Size (main-deck card count) dropdown */}
+          <div className="relative" ref={sizeDropdownRef}>
+            <button
+              onClick={() => setSizeDropdownOpen((o) => !o)}
+              className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg text-sm transition-colors ${
+                sizeLabel
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card text-foreground hover:bg-muted"
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18" />
+              </svg>
+              {sizeLabel ?? "Size"}
+              <svg className={`w-3.5 h-3.5 transition-transform ${sizeDropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {sizeDropdownOpen && (
+              <div className="absolute z-50 top-full mt-1.5 left-0 w-80 max-w-[calc(100vw-2rem)] bg-background border border-border rounded-xl shadow-xl">
+                {/* Mode + number(s) */}
+                <div className="px-3 pt-3 pb-2 flex items-center gap-2">
+                  <select
+                    value={sizeDraft.mode}
+                    onChange={(e) => setSizeDraft((d) => ({ ...d, mode: e.target.value as CardCountMode }))}
+                    className="px-2 py-1.5 text-sm rounded-lg border border-border bg-card"
+                  >
+                    <option value="exact">Exactly</option>
+                    <option value="min">At least</option>
+                    <option value="max">At most</option>
+                    <option value="between">Between</option>
+                  </select>
+                  <input
+                    autoFocus
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="57"
+                    aria-label={sizeDraft.mode === "between" ? "Minimum cards" : "Cards"}
+                    value={sizeDraft.a}
+                    onChange={(e) => setSizeDraft((d) => ({ ...d, a: e.target.value }))}
+                    onKeyDown={(e) => e.key === "Enter" && setSizeDropdownOpen(false)}
+                    className="w-16 px-2 py-1.5 text-sm rounded-lg border border-border bg-card focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                  {sizeDraft.mode === "between" ? (
+                    <>
+                      <span className="text-xs text-muted-foreground">–</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="63"
+                        aria-label="Maximum cards"
+                        value={sizeDraft.b}
+                        onChange={(e) => setSizeDraft((d) => ({ ...d, b: e.target.value }))}
+                        onKeyDown={(e) => e.key === "Enter" && setSizeDropdownOpen(false)}
+                        className="w-16 px-2 py-1.5 text-sm rounded-lg border border-border bg-card focus:outline-none focus:border-primary/50 transition-colors"
+                      />
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">cards</span>
+                  )}
+                </div>
+
+                {/* Quick picks */}
+                <div className="px-3 pb-3 flex items-center gap-1.5 flex-wrap">
+                  <span className="text-xs text-muted-foreground mr-0.5">Quick:</span>
+                  {QUICK_CARD_COUNTS.map((n) => {
+                    const active = cardCount.min === n && cardCount.max === n;
+                    return (
+                      <button
+                        key={n}
+                        onClick={() => pickCardCount(n)}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                          active
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Footer: clear */}
+                {sizeLabel && (
+                  <div className="border-t border-border">
+                    <button
+                      onClick={clearCardCount}
+                      className="w-full px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-left"
+                    >
+                      Clear size
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>{/* end Row 2 */}
       </div>{/* end Controls */}
 
@@ -602,6 +762,7 @@ export default function CommunityClient({ initialDecks, initialCount, currentUse
           {format && ` in ${format}`}
           {selectedTagIds.length > 0 && ` · ${selectedTagIds.length} tag${selectedTagIds.length > 1 ? "s" : ""} selected`}
           {cardFilters.length > 0 && ` · ${cardFilters.length} card${cardFilters.length > 1 ? "s" : ""} selected`}
+          {sizeLabel && ` · ${sizeLabel}`}
           {tournamentOnly && " · tournament decks"}
         </p>
       )}
