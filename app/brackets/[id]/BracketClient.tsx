@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { MoreHorizontal, Share2 } from 'lucide-react';
-import { currentRoundName, nextSlot, resetMatchAllowed, roundCount } from '@/lib/bracket';
+import Link from 'next/link';
+import { MoreHorizontal, Pencil, Share2 } from 'lucide-react';
+import { currentRoundName, nextSlot, resetMatchAllowed, roundCount, canEditBracket } from '@/lib/bracket';
 import type { BracketGame } from '@/lib/bracket/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -262,6 +263,14 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
           <p className="mt-1 text-sm text-muted-foreground tabular-nums">{meta}</p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          {isOwner && canEditBracket(games) && (
+            <Button variant="outline" className="min-h-11" asChild>
+              <Link href={`/brackets/${bracket.id}/edit`}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </Link>
+            </Button>
+          )}
           <Button variant="outline" className="min-h-11" onClick={share}>
             <Share2 className="mr-2 h-4 w-4" />
             Share

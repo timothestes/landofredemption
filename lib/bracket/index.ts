@@ -210,3 +210,8 @@ export function reconcileUpdates(bracket: Bracket, matches: BracketMatch[], game
   }
   return updates;
 }
+
+/** A bracket can be rebuilt (decks, format, series) until its first game row exists. */
+export function canEditBracket(games: BracketGame[]): boolean {
+  return games.length === 0;
+}

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import TopNav from '@/components/top-nav';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/utils/supabase/server';
-import type { DraftDeck } from '../lib/draft';
+import { loadDraftDecks } from '../lib/loadDraftDecks';
 import { NewBracketClient } from './NewBracketClient';
 
 export const metadata = {
@@ -36,32 +36,15 @@ export default async function NewBracketPage({ searchParams }: { searchParams: P
     );
   }
 
-  const ids = Array.from(new Set((params.decks ?? '').split(',').map(s => s.trim()).filter(Boolean))).slice(0, 16);
-  let initialDecks: DraftDeck[] = [];
-  if (ids.length > 0) {
-    const { data } = await supabase
-      .from('decks')
-      .select('id, name, format, preview_card_1, preview_card_2, paragon, user_id, is_public')
-      .in('id', ids);
-    const usable = new Map(
-      (data ?? [])
-        .filter(d => d.user_id === user.id || d.is_public)
-        .map(d => [d.id as string, d]),
-    );
-    initialDecks = ids.flatMap(id => {
-      const d = usable.get(id);
-      return d
-        ? [{ id: d.id, name: d.name, format: d.format, preview_card_1: d.preview_card_1, preview_card_2: d.preview_card_2, paragon: d.paragon }]
-        : [];
-    });
-  }
+  const ids = (params.decks ?? '').split(',').map(s => s.trim()).filter(Boolean);
+  const { decks: initialDecks, missing } = await loadDraftDecks(supabase, user.id, ids);
 
   return (
     <>
       <TopNav />
       <NewBracketClient
         initialDecks={initialDecks}
-        missingCount={ids.length - initialDecks.length}
+        missingCount={missing}
         defaultName={`Deck Bracket · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
       />
     </>

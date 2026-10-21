@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { getFormatDef } from '@/lib/formats';
 import {
-  applyGameResult, buildBracket, canPlayMatch, currentRoundName, firstEntryForGame,
+  applyGameResult, buildBracket, canEditBracket, canPlayMatch, currentRoundName, firstEntryForGame,
   matchState, reconcileUpdates, resetMatchAllowed, resetMatchUpdates, roundNames, seriesState, sizeFor,
 } from '@/lib/bracket';
 import type {
@@ -83,13 +83,17 @@ async function loadAll(supabase: Supabase, bracketId: string): Promise<ActionRes
   };
 }
 
-export async function createBracketAction(input: {
-  name: string; format: BracketFormat; bestOf: BestOf; deckIds: string[];
-}): Promise<ActionResult<{ id: string }>> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return fail('Sign in to create a bracket.');
+interface BracketInput { name: string; format: BracketFormat; bestOf: BestOf; deckIds: string[] }
+type DeckRow = {
+  id: string; name: string; format: string | null; preview_card_1: string | null;
+  preview_card_2: string | null; paragon: string | null; user_id: string; is_public: boolean;
+};
 
+// Validates the settings and resolves the chosen decks (the caller's own or
+// public, all of the bracket's family). Shared by create and update.
+async function resolveBracketInput(
+  supabase: Supabase, userId: string, input: BracketInput,
+): Promise<ActionResult<{ name: string; decks: DeckRow[]; size: number }>> {
   const name = (input.name ?? '').trim();
   if (!name) return fail('Give the bracket a name.');
   if (!FORMATS.includes(input.format)) return fail('Choose a format.');
@@ -104,9 +108,9 @@ export async function createBracketAction(input: {
     .in('id', deckIds);
   if (deckErr) return fail(deckErr.message);
   const usable = new Map(
-    (deckRows ?? [])
-      .filter(d => d.user_id === user.id || d.is_public)
-      .map(d => [d.id as string, d]),
+    ((deckRows ?? []) as DeckRow[])
+      .filter(d => d.user_id === userId || d.is_public)
+      .map(d => [d.id, d]),
   );
   const decks = deckIds.map(id => usable.get(id));
   if (decks.some(d => !d)) return fail('One or more decks could not be found.');
@@ -115,43 +119,38 @@ export async function createBracketAction(input: {
       return fail(`Every deck must be a ${input.format} deck.`);
     }
   }
+  try {
+    return { ok: true, data: { name, decks: decks as DeckRow[], size: sizeFor(deckIds.length) } };
+  } catch (e) {
+    return fail(message(e));
+  }
+}
 
-  let size;
-  try { size = sizeFor(deckIds.length); } catch (e) { return fail(message(e)); }
-
-  const { data: bracketRow, error: bErr } = await supabase
-    .from('deck_brackets')
-    .insert({ owner_id: user.id, name, format: input.format, size, best_of: input.bestOf })
-    .select('id')
-    .single();
-  if (bErr || !bracketRow) return fail(bErr?.message ?? 'Could not create the bracket.');
-  const bracketId = bracketRow.id as string;
-
-  const rollback = async (msg: string) => {
-    await supabase.from('deck_brackets').delete().eq('id', bracketId);
-    return fail(msg);
-  };
-
+// Seats the decks (seed = pick order) and writes every round's match rows,
+// byes already decided.
+async function insertEntriesAndMatches(
+  supabase: Supabase, bracketId: string, decks: DeckRow[],
+): Promise<ActionResult<null>> {
   const { data: entryRows, error: eErr } = await supabase
     .from('deck_bracket_entries')
     .insert(decks.map((d, i) => ({
       bracket_id: bracketId,
       seed: i + 1,
-      deck_id: d!.id,
-      deck_name: d!.name,
-      deck_format: getFormatDef(d!.format).id,
-      preview_card_1: d!.preview_card_1,
-      preview_card_2: d!.preview_card_2,
-      paragon: d!.paragon,
+      deck_id: d.id,
+      deck_name: d.name,
+      deck_format: getFormatDef(d.format).id,
+      preview_card_1: d.preview_card_1,
+      preview_card_2: d.preview_card_2,
+      paragon: d.paragon,
     })))
     .select('*');
-  if (eErr || !entryRows) return rollback(eErr?.message ?? 'Could not add the decks.');
+  if (eErr || !entryRows) return fail(eErr?.message ?? 'Could not add the decks.');
 
   let matches: BracketMatch[];
   try {
     matches = buildBracket((entryRows as DeckBracketEntryRow[]).map(toEntry), () => crypto.randomUUID());
   } catch (e) {
-    return rollback(message(e));
+    return fail(message(e));
   }
 
   const { error: mErr } = await supabase.from('deck_bracket_matches').insert(
@@ -166,9 +165,70 @@ export async function createBracketAction(input: {
       is_bye: m.isBye,
     })),
   );
-  if (mErr) return rollback(mErr.message);
+  if (mErr) return fail(mErr.message);
+  return { ok: true, data: null };
+}
 
+export async function createBracketAction(input: BracketInput): Promise<ActionResult<{ id: string }>> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return fail('Sign in to create a bracket.');
+
+  const resolved = await resolveBracketInput(supabase, user.id, input);
+  if (resolved.ok === false) return resolved;
+  const { name, decks, size } = resolved.data;
+
+  const { data: bracketRow, error: bErr } = await supabase
+    .from('deck_brackets')
+    .insert({ owner_id: user.id, name, format: input.format, size, best_of: input.bestOf })
+    .select('id')
+    .single();
+  if (bErr || !bracketRow) return fail(bErr?.message ?? 'Could not create the bracket.');
+  const bracketId = bracketRow.id as string;
+
+  const seated = await insertEntriesAndMatches(supabase, bracketId, decks);
+  if (seated.ok === false) {
+    await supabase.from('deck_brackets').delete().eq('id', bracketId);
+    return seated;
+  }
   return { ok: true, data: { id: bracketId } };
+}
+
+// Rebuilds a bracket's decks, format and series in place. Allowed only while
+// no game row exists (byes have none), so no result is ever thrown away.
+export async function updateBracketAction(input: BracketInput & { id: string }): Promise<ActionResult<{ id: string }>> {
+  const supabase = await createClient();
+  const owner = await requireBracketOwner(supabase, input.id);
+  if (owner.ok === false) return owner;
+
+  const loaded = await loadAll(supabase, input.id);
+  if (loaded.ok === false) return loaded;
+  if (!canEditBracket(loaded.data.games)) {
+    return fail('This bracket already has results, so its decks can no longer be changed.');
+  }
+
+  const resolved = await resolveBracketInput(supabase, owner.userId, input);
+  if (resolved.ok === false) return resolved;
+  const { name, decks, size } = resolved.data;
+
+  // Matches reference entries, so they go first; the champion pointer is
+  // cleared with the bracket row before the entries it points at disappear.
+  const { error: bErr } = await supabase
+    .from('deck_brackets')
+    .update({
+      name, format: input.format, size, best_of: input.bestOf,
+      status: 'active', champion_entry_id: null, completed_at: null,
+    })
+    .eq('id', input.id);
+  if (bErr) return fail(bErr.message);
+  const { error: mErr } = await supabase.from('deck_bracket_matches').delete().eq('bracket_id', input.id);
+  if (mErr) return fail(mErr.message);
+  const { error: eErr } = await supabase.from('deck_bracket_entries').delete().eq('bracket_id', input.id);
+  if (eErr) return fail(eErr.message);
+
+  const seated = await insertEntriesAndMatches(supabase, input.id, decks);
+  if (seated.ok === false) return seated;
+  return { ok: true, data: { id: input.id } };
 }
 
 export async function listMyBracketsAction(): Promise<ActionResult<Array<{
