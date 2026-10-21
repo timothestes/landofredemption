@@ -527,8 +527,9 @@ describe('buildMatchViews', () => {
     expect(views[0][0].firstToPlayName).toBeNull();
   });
   it('names the first player from game 2 on', () => {
+    // slotOrder(4) seats e1 v e3 in SF1 and e2 v e4 in SF2; e3 lost game 1, so e3 goes first
     const data = fourDeckBo3([game(1, 'e1', { matchId: sf1Id })]);
-    expect(buildMatchViews(data)[0][0].firstToPlayName).toBe('Deck 2');
+    expect(buildMatchViews(data)[0][0].firstToPlayName).toBe('Deck 3');
   });
   it('marks a bye block', () => {
     const views = buildMatchViews(threeDeck());
