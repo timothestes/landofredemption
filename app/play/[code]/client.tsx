@@ -1659,6 +1659,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
       gameActions={gameState.gameActions}
       myPlayerId={gameState.myPlayer?.id ?? BigInt(0)}
       onSendChat={gameState.sendChat}
+      hideChat={gameState.isSolo}
       playerNames={playerNameMap}
       chatScale={chatScale}
       unreadChatCount={unreadChatCount}

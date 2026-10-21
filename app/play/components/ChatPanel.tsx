@@ -43,6 +43,8 @@ interface ChatPanelProps {
   chatScale?: number;
   /** When true, the chat input is disabled (read-only). Defaults to false. */
   chatDisabled?: boolean;
+  /** Solo game: drop the Chat and All tabs (both carry the message box). */
+  hideChat?: boolean;
   // ---- Spectator-controls subsection (player-mode only) ----
   /** Spectators in the current game. When provided, the Spectators tab renders. */
   spectators?: Array<{ id: bigint; identity: { toHexString: () => string }; displayName: string }>;
@@ -1415,6 +1417,7 @@ export default function ChatPanel({
   onActiveTabChange,
   chatScale = 1,
   chatDisabled = false,
+  hideChat = false,
   spectators,
   myIdentityHex,
   shareHandWithSpectators,
@@ -1931,7 +1934,9 @@ export default function ChatPanel({
             <div style={{ display: 'flex', gap: 4, flex: '1 1 0', minWidth: 0, overflowX: 'auto' }}>
               {((showSpectatorsTab
                 ? (['all', 'chat', 'log', 'spectators'] as const)
-                : (['all', 'chat', 'log'] as const)) as readonly TabKey[]).map((tab) => {
+                : (['all', 'chat', 'log'] as const)) as readonly TabKey[])
+                .filter((tab) => !hideChat || (tab !== 'chat' && tab !== 'all'))
+                .map((tab) => {
                 const isActive = activeTab === tab;
                 const label =
                   tab === 'chat' ? 'Chat'

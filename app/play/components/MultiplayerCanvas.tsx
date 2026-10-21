@@ -10357,7 +10357,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
           const params = JSON.stringify({ count });
           requestOpponentAction(action, params);
           setOpponentHandMenu(null);
-          showGameToast('Waiting for opponent to approve...');
+          if (!isSolo) showGameToast('Waiting for opponent to approve...');
         };
         return (
           <HandContextMenu
@@ -10375,7 +10375,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             onRevealHand={isSolo ? undefined : () => {
               setOpponentHandMenu(null);
               requestZoneSearch('hand-reveal');
-              showGameToast('Asking opponent to reveal hand...');
+              if (!isSolo) showGameToast('Asking opponent to reveal hand...');
             }}
           />
         );
@@ -10424,7 +10424,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             onLookAtReserve={oppReserveRevealed ? () => { setOpponentReserveMenu(null); setBrowseOpponentZone('reserve'); } : undefined}
             onSearchRequest={!oppReserveRevealed ? () => {
               requestZoneSearch('reserve');
-              showGameToast('Waiting for opponent to approve...');
+              if (!isSolo) showGameToast('Waiting for opponent to approve...');
               setOpponentReserveMenu(null);
             } : undefined}
             onRandomToDiscard={(count) => { setOpponentReserveMenu(null); randomOppReserveToDiscard(count); }}
@@ -10438,7 +10438,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
           const params = count != null ? JSON.stringify({ count }) : '';
           requestOpponentAction(action, params);
           setOpponentDeckMenu(null);
-          showGameToast('Waiting for opponent to approve...');
+          if (!isSolo) showGameToast('Waiting for opponent to approve...');
         };
         return (
           <DeckContextMenu
@@ -10450,7 +10450,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             onSearchDeck={() => {
               setOpponentDeckMenu(null);
               requestZoneSearch('deck');
-              showGameToast('Waiting for opponent to approve...');
+              if (!isSolo) showGameToast('Waiting for opponent to approve...');
             }}
             onShuffleDeck={() => requestAction('shuffle_deck')}
             onLookAtTop={(n) => requestAction('look_deck_top', n)}
@@ -10562,12 +10562,12 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
           zoneName={opponentZoneMenu.zoneName}
           onSearch={() => {
             requestZoneSearch(opponentZoneMenu.zone);
-            showGameToast('Waiting for opponent to approve...');
+            if (!isSolo) showGameToast('Waiting for opponent to approve...');
             setOpponentZoneMenu(null);
           }}
           onRevealHand={opponentZoneMenu.zone === 'hand' && !isSolo ? () => {
             requestZoneSearch('hand-reveal');
-            showGameToast('Asking opponent to reveal hand...');
+            if (!isSolo) showGameToast('Asking opponent to reveal hand...');
             setOpponentZoneMenu(null);
           } : undefined}
           onClose={() => setOpponentZoneMenu(null)}

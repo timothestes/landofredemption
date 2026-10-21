@@ -39,6 +39,9 @@ interface RightPanelProps {
   unreadChatCount?: number;
   /** When true, chat input is disabled (read-only chat). Used by spectators. */
   chatDisabled?: boolean;
+  /** Solo game: no one to chat with — the chat surfaces (Chat and All tabs,
+   *  both of which carry the message box) are hidden and the panel shows Log. */
+  hideChat?: boolean;
   // ---- Spectator-controls subsection (player-mode only) ----
   spectators?: Array<{ id: bigint; identity: { toHexString: () => string }; displayName: string }>;
   myIdentityHex?: string;
@@ -70,6 +73,7 @@ export default function RightPanel({
   chatScale,
   unreadChatCount = 0,
   chatDisabled = false,
+  hideChat = false,
   spectators,
   myIdentityHex,
   shareHandWithSpectators,
@@ -79,7 +83,10 @@ export default function RightPanel({
   onSetGamePrivate,
 }: RightPanelProps) {
   const { isLoupeVisible, toggleLoupe, previewCard, isPreviewFlipped } = useCardPreview();
-  const [chatTab, setChatTab] = useState<'chat' | 'log' | 'all' | 'spectators'>('all');
+  const [chatTab, setChatTab] = useState<'chat' | 'log' | 'all' | 'spectators'>(hideChat ? 'log' : 'all');
+  useEffect(() => {
+    if (hideChat && (chatTab === 'chat' || chatTab === 'all')) setChatTab('log');
+  }, [hideChat, chatTab]);
   // Opening the panel clears the unread badge (client.tsx), so it must land
   // on a tab that actually SHOWS the messages. The tab is remembered across
   // opens, and reopening on Spectators/Log silently swallowed the unread
@@ -89,10 +96,10 @@ export default function RightPanel({
   useEffect(() => {
     const justOpened = isLoupeVisible && !wasOpenRef.current;
     wasOpenRef.current = isLoupeVisible;
-    if (justOpened && unreadChatCount > 0 && (chatTab === 'spectators' || chatTab === 'log')) {
+    if (!hideChat && justOpened && unreadChatCount > 0 && (chatTab === 'spectators' || chatTab === 'log')) {
       setChatTab('all');
     }
-  }, [isLoupeVisible, unreadChatCount, chatTab]);
+  }, [isLoupeVisible, unreadChatCount, chatTab, hideChat]);
   // The draft lives here, not in ChatPanel: collapsing the panel unmounts
   // ChatPanel, and on a phone collapsing is the ONLY way to see the board, so
   // a half-typed message was destroyed every time a player checked their
@@ -314,6 +321,7 @@ export default function RightPanel({
               onActiveTabChange={setChatTab}
               chatScale={chatScale}
               chatDisabled={chatDisabled}
+              hideChat={hideChat}
               spectators={spectators}
               myIdentityHex={myIdentityHex}
               shareHandWithSpectators={shareHandWithSpectators}
