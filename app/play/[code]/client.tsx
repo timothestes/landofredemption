@@ -1311,41 +1311,52 @@ function GameInner({ code, isConnected }: GameInnerProps) {
   // Start the next bracket game (this match's next game, or the next ready
   // match) and move the table to its code.
   const launchingBracketGameRef = useRef(false);
-  const launchBracketGame = async (matchId: string, mode: 'solo' | 'online') => {
-    if (!bracket || !gameParams || launchingBracketGameRef.current) return;
+  // Resolves true once the table is moving to the new code, false on failure
+  // (an `ok: false` or a thrown network error, both toasted).
+  const launchBracketGame = async (matchId: string, mode: 'solo' | 'online'): Promise<boolean> => {
+    if (!bracket || !gameParams || launchingBracketGameRef.current) return false;
     launchingBracketGameRef.current = true;
-    const started = await startBracketGameAction(matchId, mode);
-    if (started.ok === false) {
+    try {
+      let started: Awaited<ReturnType<typeof startBracketGameAction>>;
+      try {
+        started = await startBracketGameAction(matchId, mode);
+      } catch {
+        started = { ok: false, error: 'Could not start the game. Check your connection and try again.' };
+      }
+      if (started.ok === false) {
+        showGameToast(started.error);
+        return false;
+      }
+      const g = started.data;
+      const next: BracketGameParams = {
+        ...bracket,
+        gameId: g.gameId,
+        bracketId: g.bracketId,
+        matchId,
+        gameNumber: g.gameNumber,
+        bestOf: g.bestOf,
+        mode,
+        entryAId: g.entryAId,
+        entryBId: g.entryBId,
+        deckAName: g.deckAName,
+        deckBName: g.deckBName,
+      };
+      const common = {
+        displayName: gameParams.displayName,
+        supabaseUserId: gameParams.supabaseUserId,
+        format: stdbFormatFor(g.format),
+        bracket: next,
+      };
+      if (mode === 'solo') {
+        writeSoloGameParams(g.code, { ...common, deckAId: g.deckAId, deckBId: g.deckBId, firstSeat: g.firstSeat });
+      } else {
+        writeHostGameParams(g.code, { ...common, deckAId: g.deckAId, deckAName: g.deckAName });
+      }
+      router.replace('/play/' + g.code);
+      return true;
+    } finally {
       launchingBracketGameRef.current = false;
-      showGameToast(started.error);
-      return;
     }
-    const g = started.data;
-    const next: BracketGameParams = {
-      ...bracket,
-      gameId: g.gameId,
-      bracketId: g.bracketId,
-      matchId,
-      gameNumber: g.gameNumber,
-      bestOf: g.bestOf,
-      mode,
-      entryAId: g.entryAId,
-      entryBId: g.entryBId,
-      deckAName: g.deckAName,
-      deckBName: g.deckBName,
-    };
-    const common = {
-      displayName: gameParams.displayName,
-      supabaseUserId: gameParams.supabaseUserId,
-      format: stdbFormatFor(g.format),
-      bracket: next,
-    };
-    if (mode === 'solo') {
-      writeSoloGameParams(g.code, { ...common, deckAId: g.deckAId, deckBId: g.deckBId, firstSeat: g.firstSeat });
-    } else {
-      writeHostGameParams(g.code, { ...common, deckAId: g.deckAId, deckAName: g.deckAName });
-    }
-    router.replace('/play/' + g.code);
   };
 
   if (isLeaving) {
@@ -1936,8 +1947,11 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           bracketRecord?.decided ? `${bracket.returnTo}?decided=${bracketRecord.matchId}` : bracket.returnTo,
         )}
         onNextMatch={(nextMatchId) => {
-          if (bracketRecord) sessionStorage.setItem(DECIDED_KEY, bracketRecord.matchId);
-          void launchBracketGame(nextMatchId, 'solo');
+          try { if (bracketRecord) sessionStorage.setItem(DECIDED_KEY, bracketRecord.matchId); } catch { /* storage blocked */ }
+          void launchBracketGame(nextMatchId, 'solo').then((ok) => {
+            // The hand-off only means something if the bracket page is next.
+            if (!ok) { try { sessionStorage.removeItem(DECIDED_KEY); } catch { /* storage blocked */ } }
+          });
         }}
       />
     ) : null;

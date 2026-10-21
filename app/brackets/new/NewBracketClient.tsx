@@ -73,7 +73,12 @@ function ChipRow<T extends string | number>(props: {
   );
 }
 
-export function NewBracketClient({ initialDecks, missingCount = 0 }: { initialDecks: DraftDeck[]; missingCount?: number }) {
+export function NewBracketClient({ initialDecks, missingCount = 0, defaultName }: {
+  initialDecks: DraftDeck[];
+  missingCount?: number;
+  /** Computed on the server so the hydrating client renders the same text. */
+  defaultName: string;
+}) {
   const router = useRouter();
   const [initial] = useState(() => {
     const format: BracketFormat = initialDecks.length > 0 ? getFormatDef(initialDecks[0].format).family : 'T1';
@@ -84,9 +89,7 @@ export function NewBracketClient({ initialDecks, missingCount = 0 }: { initialDe
     return { format, picked: kept, note: notes.length > 0 ? notes.join(' ') : null };
   });
 
-  const [name, setName] = useState(
-    () => `Deck Bracket · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
-  );
+  const [name, setName] = useState(defaultName);
   const [format, setFormat] = useState<BracketFormat>(initial.format);
   const [bestOf, setBestOf] = useState<BestOf>(3);
   const [picked, setPicked] = useState<DraftDeck[]>(initial.picked);

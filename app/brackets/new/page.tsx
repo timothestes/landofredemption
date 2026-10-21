@@ -59,7 +59,11 @@ export default async function NewBracketPage({ searchParams }: { searchParams: P
   return (
     <>
       <TopNav />
-      <NewBracketClient initialDecks={initialDecks} missingCount={ids.length - initialDecks.length} />
+      <NewBracketClient
+        initialDecks={initialDecks}
+        missingCount={ids.length - initialDecks.length}
+        defaultName={`Deck Bracket · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+      />
     </>
   );
 }
