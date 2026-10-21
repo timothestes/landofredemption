@@ -48,6 +48,9 @@ import { finishedGameToReuseOnCreate } from '@/app/play/lib/gameEntryDecision';
 import { loadForgeDeckForGame, getForgePlayResolver, authorizeForgeSeat } from '@/app/forge/lib/playDecks';
 import { mergeForgeDeckData, resolveCardImageUrl, forgeRenderWarmUrls, type ForgeResolverMap } from '@/app/play/utils/forgeResolver';
 import { warmForgeRenders } from '@/app/play/utils/warmForgeRenders';
+import type { BracketGameParams } from '@/app/play/lib/bracketGameParams';
+import { resolveWinnerSeat } from '@/app/play/lib/bracketResult';
+import { BracketRecoveryScreen, type BracketRecoveryReason } from '@/app/play/components/BracketRecoveryScreen';
 
 // Konva requires browser APIs — lazy-load to avoid SSR issues
 const MultiplayerCanvas = dynamic(
@@ -61,7 +64,7 @@ const MultiplayerCanvas = dynamic(
 const SESSION_KEY_PREFIX = 'stdb_game_params_';
 
 interface GameParams {
-  role: 'create' | 'join';
+  role: 'create' | 'join' | 'solo';
   deckId: string;
   displayName: string;
   supabaseUserId: string;
@@ -71,6 +74,12 @@ interface GameParams {
   isPublic?: boolean;
   lobbyMessage?: string;
   isForge?: boolean;
+  /** Solo (one human, both seats): deck B; `deckId` is deck A. */
+  soloDeckBId?: string;
+  /** Solo: which seat (0 = deck A) takes the first turn. */
+  firstSeat?: 0 | 1;
+  /** Set when the game was launched from a deck bracket. */
+  bracket?: BracketGameParams;
 }
 
 // ---------------------------------------------------------------------------
@@ -306,6 +315,9 @@ function GameInner({ code, isConnected }: GameInnerProps) {
   // call + goldfish practice-while-waiting.
   const [deckData, setDeckData] = useState<string | null>(null);
   const [deckLoadError, setDeckLoadError] = useState<string | null>(null);
+  // Solo only: deck B's serialized cards, and each deck's paragon (from the deck rows).
+  const [deckDataB, setDeckDataB] = useState<string | null>(null);
+  const [soloParagons, setSoloParagons] = useState<{ a: string; b: string }>({ a: '', b: '' });
 
   // Forge state — declared before `gameState`/`isForge` so the deck-load
   // effect below (which branches on gameParams.isForge) and useGameState
@@ -325,6 +337,22 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           // for the reducer args (never gameParams.paragon on the forge path).
           setForgeDeckMeta({ paragon: r.deck.paragon, format: r.deck.format || 'Type 1' });
           setDeckData(JSON.stringify(r.deckData));
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setDeckLoadError(err instanceof Error ? err.message : 'Failed to load deck.');
+        });
+    } else if (gameParams.role === 'solo') {
+      if (!gameParams.soloDeckBId) {
+        setDeckLoadError('Missing the second deck for this game. Return to the bracket and start it again.');
+        return;
+      }
+      Promise.all([loadDeckForGame(gameParams.deckId), loadDeckForGame(gameParams.soloDeckBId)])
+        .then(([a, b]) => {
+          if (cancelled) return;
+          setSoloParagons({ a: a.deck.paragon ?? '', b: b.deck.paragon ?? '' });
+          setDeckDataB(JSON.stringify(b.deckData));
+          setDeckData(JSON.stringify(a.deckData));
         })
         .catch((err) => {
           if (cancelled) return;
@@ -766,6 +794,10 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     // dispatching create/join.
     if (gameParams.isForge && !gameState.identityHex) return;
 
+    // Solo needs both decks, and the identity for the reconnect check below
+    // (a solo game whose Player rows aren't ours was started on another device).
+    if (gameParams.role === 'solo' && (deckDataB === null || !gameState.identityHex)) return;
+
     didCallReducer.current = true;
 
     // Reconnect scenario: if the game already exists and we already have a
@@ -786,6 +818,12 @@ function GameInner({ code, isConnected }: GameInnerProps) {
         setGameId(existingGame.id);
         return; // lifecycle sync effect handles the rest
       }
+      if (gameParams.role === 'solo') {
+        // Another identity's game under this code: never create over it. The
+        // render shows the bracket recovery screen.
+        setGameId(existingGame.id);
+        return;
+      }
     }
 
     // Guard against re-creating a duplicate after the game has already
@@ -794,7 +832,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     // games, so without this we'd call createGame again and spawn a duplicate
     // under the same code (the 'Z6NJ' incident). Reuse the finished row instead.
     const reuseFinishedId = finishedGameToReuseOnCreate(
-      gameParams.role,
+      gameParams.role === 'solo' ? 'create' : gameParams.role, // solo creates too
       (gameState.allGames || []) as any,
       code
     );
@@ -802,6 +840,37 @@ function GameInner({ code, isConnected }: GameInnerProps) {
       console.log('[game-debug] create replayed after finish — reusing finished game:', String(reuseFinishedId));
       setGameId(reuseFinishedId);
       return; // lifecycle sync effect shows the ended state
+    }
+
+    if (gameParams.role === 'solo') {
+      const bracket = gameParams.bracket;
+      if (!bracket || !gameParams.soloDeckBId || deckDataB === null) {
+        setErrorMessage('Missing bracket game parameters. Return to the bracket and start the game again.');
+        setLifecycle('error');
+        return;
+      }
+      console.log('[game-debug] calling createSoloGame reducer for code:', code);
+      setLifecycle('creating');
+      // Status goes straight to 'playing' (no pregame); the lifecycle sync
+      // effect picks it up when the Game row arrives.
+      conn.reducers.createSoloGame({
+        code,
+        format: gameParams.format ?? 'Type 1',
+        supabaseUserId: gameParams.supabaseUserId,
+        displayNameA: bracket.deckAName,
+        deckIdA: gameParams.deckId,
+        deckDataA: deckData,
+        paragonA: soloParagons.a || gameParams.paragon || '',
+        displayNameB: bracket.deckBName,
+        deckIdB: gameParams.soloDeckBId,
+        deckDataB,
+        paragonB: soloParagons.b,
+        firstSeat: BigInt(gameParams.firstSeat ?? 0),
+      }).catch((e: unknown) => {
+        setErrorMessage(e instanceof Error ? e.message : 'Could not start the game.');
+        setLifecycle('error');
+      });
+      return;
     }
 
     if (gameParams.isForge) {
@@ -926,7 +995,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
       setErrorMessage(e instanceof Error ? e.message : 'Failed to initialize game');
       setLifecycle('error');
     }
-  }, [gameState.isGamesReady, gameState.isPlayersReady, conn, code, gameParams, deckData, gameState.identityHex, forgeDeckMeta]);
+  }, [gameState.isGamesReady, gameState.isPlayersReady, conn, code, gameParams, deckData, gameState.identityHex, forgeDeckMeta, deckDataB, soloParagons]);
 
   // Also get raw game list to find our game by code before we know the ID
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1250,7 +1319,40 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     );
   }
 
-  if (lifecycle === 'creating' || lifecycle === 'joining' || (!isConnected && !isActive)) {
+  // Bracket recovery: (a) finished with no WIN/RESIGN/TIMEOUT, or (b) a solo
+  // game under this code whose Player rows belong to another identity.
+  const bracketRecovery: BracketRecoveryReason | null = (() => {
+    const game = gameState.game;
+    if (!gameParams?.bracket || !game) return null;
+    if (game.status === 'finished') {
+      const players = gameState.allPlayers.filter((p: any) => p.gameId === game.id);
+      return resolveWinnerSeat(gameState.gameActions, players).kind === 'none' ? 'no-result' : null;
+    }
+    if (gameParams.role === 'solo' && gameState.isPlayersReady && gameState.identityHex) {
+      const mine = gameState.allPlayers.some(
+        (p: any) => p.gameId === game.id && (p.identity as any)?.toHexString?.() === gameState.identityHex
+      );
+      return mine ? null : 'other-device';
+    }
+    return null;
+  })();
+  if (bracketRecovery && gameParams?.bracket) {
+    return (
+      <BracketRecoveryScreen
+        reason={bracketRecovery}
+        bracket={gameParams.bracket}
+        displayName={gameParams.displayName}
+        supabaseUserId={gameParams.supabaseUserId}
+        background={gameBackground}
+      />
+    );
+  }
+
+  // Solo: hold the loading screen until the SoloGame row lands (it can apply a
+  // frame after the Game row) so the table never renders without a seat in hand.
+  const awaitingSolo = gameParams?.role === 'solo' && !gameState.isSolo;
+
+  if (lifecycle === 'creating' || lifecycle === 'joining' || (!isConnected && !isActive) || awaitingSolo) {
     return (
       <>
       <TopNav />

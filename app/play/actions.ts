@@ -28,6 +28,7 @@ export interface LoadDeckResult {
     id: string;
     name: string;
     format: string | null;
+    paragon: string | null;
   };
   deckData: GameCardData[];
 }
@@ -47,7 +48,7 @@ export async function loadDeckForGame(deckId: string): Promise<LoadDeckResult> {
   // Try loading as user's own deck first, then fall back to public deck
   const { data: ownDeck } = await supabase
     .from('decks')
-    .select('id, name, format')
+    .select('id, name, format, paragon')
     .eq('id', deckId)
     .eq('user_id', user.id)
     .single();
@@ -56,7 +57,7 @@ export async function loadDeckForGame(deckId: string): Promise<LoadDeckResult> {
   if (!deck) {
     const { data: publicDeck } = await supabase
       .from('decks')
-      .select('id, name, format')
+      .select('id, name, format, paragon')
       .eq('id', deckId)
       .eq('is_public', true)
       .single();
