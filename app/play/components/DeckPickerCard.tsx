@@ -22,13 +22,15 @@ interface DeckPickerCardProps {
   deck: DeckOption;
   onClick: () => void;
   selected?: boolean;
+  /** Overlay shown top-right of the image header (e.g. a multi-select check). */
+  badge?: React.ReactNode;
 }
 
 function formatDeckType(format: string | null): string {
   return getFormatDef(format).id;
 }
 
-export function DeckPickerCard({ deck, onClick, selected }: DeckPickerCardProps) {
+export function DeckPickerCard({ deck, onClick, selected, badge }: DeckPickerCardProps) {
   const [img1Error, setImg1Error] = useState(false);
   const [img2Error, setImg2Error] = useState(false);
 
@@ -41,6 +43,7 @@ export function DeckPickerCard({ deck, onClick, selected }: DeckPickerCardProps)
     (img1Url && !img1Error) || (img2Url && !img2Error);
 
   return (
+    <div className="relative">
     <button
       type="button"
       onClick={onClick}
@@ -128,5 +131,7 @@ export function DeckPickerCard({ deck, onClick, selected }: DeckPickerCardProps)
         )}
       </div>
     </button>
+    {badge && <div className="absolute top-1.5 right-1.5 pointer-events-none">{badge}</div>}
+    </div>
   );
 }
