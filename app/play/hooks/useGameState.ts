@@ -94,6 +94,11 @@ export interface GameState {
   emotes: EmoteRow[];
   /** True when this game has a matching ForgeGame row (private Forge playtest game). */
   isForgeGame: boolean;
+  /** True when a SoloGame row exists: one human plays both seats. */
+  isSolo: boolean;
+  /** Solo only: the seat currently in hand (null otherwise). */
+  activeSeat: 0 | 1 | null;
+  swapSeat: () => void;
 
   // Loading state
   isLoading: boolean;
@@ -276,6 +281,9 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
   const [forgeGameRows] = useTable(
     tables.ForgeGame.where(r => r.gameId.eq(gameId)),
   ) as [ForgeGameRow[], boolean];
+  const [soloRows] = useTable(
+    tables.SoloGame.where(r => r.gameId.eq(gameId)),
+  ) as [any[], boolean];
   const [pregameStateRows] = useTable(
     tables.PregameState.where(r => r.gameId.eq(gameId)),
   ) as [PregameStateRow[], boolean];
@@ -294,6 +302,10 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
   const isLoading = !(gamesLoading && playersLoading && cardsLoading);
 
   const isForgeGame = forgeGameRows.length > 0;
+
+  const soloRow = soloRows[0] ?? null;
+  const isSolo = soloRow !== null;
+  const activeSeat = soloRow ? (Number(soloRow.activeSeat) as 0 | 1) : null;
 
   // One PregameState row per game (gameId is unique), so the first row is it.
   const pregameState = pregameStateRows[0] ?? null;
@@ -317,25 +329,24 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
     [allPlayers, gameId],
   );
 
-  const myPlayer = useMemo(
-    () =>
-      identityHex
-        ? gamePlayers.find((p) => (p.identity as any)?.toHexString?.() === identityHex)
-        : undefined,
-    [gamePlayers, identityHex],
-  );
+  const myPlayer = useMemo(() => {
+    if (isSolo) return gamePlayers.find((p) => p.seat === BigInt(activeSeat as number));
+    return identityHex
+      ? gamePlayers.find((p) => (p.identity as any)?.toHexString?.() === identityHex)
+      : undefined;
+  }, [gamePlayers, identityHex, isSolo, activeSeat]);
 
-  const opponentPlayer = useMemo(
-    () =>
-      identityHex
-        ? gamePlayers.find((p) => (p.identity as any)?.toHexString?.() !== identityHex)
-        : undefined,
-    [gamePlayers, identityHex],
-  );
+  const opponentPlayer = useMemo(() => {
+    if (isSolo) return gamePlayers.find((p) => p.seat !== BigInt(activeSeat as number));
+    return identityHex
+      ? gamePlayers.find((p) => (p.identity as any)?.toHexString?.() !== identityHex)
+      : undefined;
+  }, [gamePlayers, identityHex, isSolo, activeSeat]);
 
   const disconnectTimeoutFired = game?.disconnectTimeoutFired ?? false;
 
   const opponentConnectionStatus = useMemo((): 'connected' | 'reconnecting' | 'disconnected' => {
+    if (isSolo) return 'connected';
     if (!opponentPlayer) return 'connected';
     if (opponentPlayer.isConnected) return 'connected';
     const hasPendingTimeout = allDisconnectTimeouts.some(
@@ -348,11 +359,11 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
     //    where clientConnected cancelled the timeout but isConnected wasn't restored.
     //    Default to 'connected' to avoid false-alarm red dots.
     return disconnectTimeoutFired ? 'disconnected' : 'connected';
-  }, [opponentPlayer, allDisconnectTimeouts, disconnectTimeoutFired]);
+  }, [isSolo, opponentPlayer, allDisconnectTimeouts, disconnectTimeoutFired]);
 
   const isMyTurn = useMemo(
-    () => (game && myPlayer ? game.currentTurn === myPlayer.seat : false),
-    [game, myPlayer],
+    () => (isSolo ? true : game && myPlayer ? game.currentTurn === myPlayer.seat : false),
+    [isSolo, game, myPlayer],
   );
 
   // ---- Phase Stops (opponent-turn priority stops) ----
@@ -477,17 +488,29 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
 
   const incomingSearchRequest = useMemo(() => {
     if (!myPlayer) return null;
+    if (isSolo) {
+      const mine = new Set(gamePlayers.map((p) => p.id));
+      return zoneSearchRequests.find((r: any) => mine.has(r.targetPlayerId) && r.status === 'pending') ?? null;
+    }
     return zoneSearchRequests.find((r: any) => r.targetPlayerId === myPlayer.id && r.status === 'pending') ?? null;
-  }, [zoneSearchRequests, myPlayer]);
+  }, [zoneSearchRequests, myPlayer, isSolo, gamePlayers]);
 
   const approvedSearchRequest = useMemo(() => {
     if (!myPlayer) return null;
+    if (isSolo) {
+      const mine = new Set(gamePlayers.map((p) => p.id));
+      return zoneSearchRequests.find((r: any) => mine.has(r.requesterId) && r.status === 'approved') ?? null;
+    }
     return zoneSearchRequests.find((r: any) => r.requesterId === myPlayer.id && r.status === 'approved') ?? null;
-  }, [zoneSearchRequests, myPlayer]);
+  }, [zoneSearchRequests, myPlayer, isSolo, gamePlayers]);
 
   // ---------------------------------------------------------------------------
   // Action methods — each wraps a SpacetimeDB reducer call using object syntax
   // ---------------------------------------------------------------------------
+
+  const swapSeat = useCallback(() => {
+    conn?.reducers.soloSwapSeat({ gameId });
+  }, [conn, gameId]);
 
   const drawCard = useCallback(() => {
     conn?.reducers.drawCard({ gameId });
@@ -1209,6 +1232,9 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
     reorderHand,
     reorderLob,
     isForgeGame,
+    isSolo,
+    activeSeat,
+    swapSeat,
 
     // Phase Stops
     myStops,
