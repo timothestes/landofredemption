@@ -6,5 +6,5 @@ interface Props {
 
 export default async function GamePage({ params }: Props) {
   const { code } = await params;
-  return <GameClient code={code} />;
+  return <GameClient key={code} code={code} />;
 }
