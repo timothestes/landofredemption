@@ -15,6 +15,10 @@ import { deleteBracketAction, listMyBracketsAction } from "@/app/brackets/action
 type BracketSummary = Extract<Awaited<ReturnType<typeof listMyBracketsAction>>, { ok: true }>["data"][number];
 
 const dateFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
+const shortDateFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+
+const statusText = (b: BracketSummary) =>
+  b.status === "complete" ? `Champion: ${b.championName ?? "—"}` : b.currentRound;
 
 export default function MyBracketsSection() {
   const [brackets, setBrackets] = useState<BracketSummary[] | null>(null);
@@ -96,13 +100,15 @@ export default function MyBracketsSection() {
                   <span className="block truncate font-medium text-foreground">{b.name}</span>
                   <span className="block text-xs text-muted-foreground">
                     {b.format} · {b.entryCount} decks · Bo{b.bestOf}
+                    <span className="sm:hidden"> · {statusText(b)}</span>
                   </span>
                 </span>
                 <span className="hidden truncate text-sm text-muted-foreground sm:block">
-                  {b.status === "complete" ? `Champion: ${b.championName ?? "—"}` : b.currentRound}
+                  {statusText(b)}
                 </span>
-                <span className="w-28 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-                  {dateFmt.format(new Date(b.createdAt))}
+                <span className="w-14 shrink-0 text-right text-xs tabular-nums text-muted-foreground sm:w-28">
+                  <span className="sm:hidden">{shortDateFmt.format(new Date(b.createdAt))}</span>
+                  <span className="hidden sm:inline">{dateFmt.format(new Date(b.createdAt))}</span>
                 </span>
               </Link>
               <DropdownMenu>
