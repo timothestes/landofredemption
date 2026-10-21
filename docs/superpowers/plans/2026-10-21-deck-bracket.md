@@ -160,9 +160,10 @@ describe('buildBracket', () => {
     expect(ms[0].entryAId).toBe('e1'); expect(ms[0].entryBId).toBe('e2');
   });
   it('three decks has one bye', () => {
+    // slotOrder(4) = a0, a1, b0, b1 → e1 v e3 in match 0, e2 v bye in match 1
     const ms = buildBracket(entries(3), ids);
     expect(ms.filter(m => m.isBye)).toHaveLength(1);
-    expect(ms.find(m => m.round === 2)!.entryBId).toBe('e3');
+    expect(ms.find(m => m.round === 2)!.entryBId).toBe('e2');
   });
 });
 
@@ -537,8 +538,8 @@ describe('buildMatchViews', () => {
 });
 describe('championPath', () => {
   it('lists one line per won round, byes excluded', () => {
-    // 3-deck Bo3: e3 has a bye, beats e1 2–0 in the final
-    expect(championPath(threeDeckWon(), 'e3')).toEqual(['Beat Deck 1 2–0']);
+    // 3-deck Bo3: e2 has the bye (match 1); e1 beats e3 in SF1; e2 beats e1 2–0 in the final
+    expect(championPath(threeDeckWon(), 'e2')).toEqual(['Beat Deck 1 2–0']);
   });
 });
 describe('firstActionableMatchId', () => {
