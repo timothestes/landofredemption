@@ -88,8 +88,11 @@ export function MatchBlock(props: MatchCallbacks & {
     return (
       <div
         className={cn(
-          'flex min-h-11 items-center gap-2 border-l-2 border-transparent pl-2.5 pr-3',
-          accented && 'border-primary text-primary',
+          // Own hairline on row B rather than divide-y on the parent: a divide
+          // colour outranks border-l-transparent and greyed row B's left edge.
+          'flex min-h-11 items-center gap-2 border-l-2 border-l-transparent pl-2.5 pr-3',
+          side === 'b' && 'border-t border-t-border/60',
+          accented && 'border-l-primary text-primary',
           loser && 'text-muted-foreground',
           winner && highlight === 'write-in' && WRITE_IN,
         )}
@@ -153,6 +156,30 @@ export function MatchBlock(props: MatchCallbacks & {
     }
   }
 
+  const menu = items.length > 0 && (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          // In the label row (no primary button) the negative margins keep the
+          // 44px target from growing the row.
+          className={cn('min-h-11 min-w-11', !primary && '-my-3 -mr-2')}
+          aria-label={`More actions for ${view.label}`}
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {items.map(item => (
+          <DropdownMenuItem key={item.label} className="min-h-11" onSelect={item.run}>
+            {item.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div
       data-written={writeIn ? String(!armed) : undefined}
@@ -160,9 +187,14 @@ export function MatchBlock(props: MatchCallbacks & {
     >
       <div className="flex items-center justify-between gap-2 px-3 py-1.5">
         <span className={LABEL}>{view.label}</span>
-        {status && <span className={cn(LABEL, 'tabular-nums')}>{status}</span>}
+        {(status || (!primary && menu)) && (
+          <span className="flex items-center gap-2">
+            {status && <span className={cn(LABEL, 'tabular-nums')}>{status}</span>}
+            {!primary && menu}
+          </span>
+        )}
       </div>
-      <div className="divide-y divide-border/60 border-t border-border/60">
+      <div className="border-t border-border/60">
         {row('a')}
         {row('b')}
       </div>
@@ -171,25 +203,10 @@ export function MatchBlock(props: MatchCallbacks & {
           {view.firstToPlayName} goes first
         </p>
       )}
-      {(primary || items.length > 0) && (
+      {primary && (
         <div className="flex items-center gap-2 border-t border-border/60 px-3 py-2">
-          {primary ?? <span className="flex-1" />}
-          {items.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="min-h-11 min-w-11" aria-label={`More actions for ${view.label}`}>
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {items.map(item => (
-                  <DropdownMenuItem key={item.label} className="min-h-11" onSelect={item.run}>
-                    {item.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          {primary}
+          {menu}
         </div>
       )}
     </div>
