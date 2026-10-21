@@ -139,7 +139,7 @@ export async function createBracketAction(input: {
       seed: i + 1,
       deck_id: d!.id,
       deck_name: d!.name,
-      deck_format: d!.format,
+      deck_format: getFormatDef(d!.format).id,
       preview_card_1: d!.preview_card_1,
       preview_card_2: d!.preview_card_2,
       paragon: d!.paragon,
@@ -320,9 +320,14 @@ function summarise(loaded: Loaded, matchId: string): RecordData {
   const decided = !!match.winnerEntryId;
   const champion = decided && bracket.championEntryId !== null && match.round === roundNames(bracket.size).length;
   const nameOf = (id: string | null) => entries.find(e => e.id === id)?.deckName ?? '';
+  const entriesById = new Map(entries.map(e => [e.id, e]));
   const next = [...matches]
     .sort((a, b) => a.round - b.round || a.position - b.position)
-    .find(m => m.id !== matchId && matchState(m, games, bracket.bestOf) === 'ready');
+    .find(m => {
+      if (m.id === matchId) return false;
+      const st = matchState(m, games, bracket.bestOf);
+      return st === 'ready' && canPlayMatch(m, entriesById, st);
+    });
   return {
     series,
     matchId,
@@ -606,7 +611,7 @@ export async function loadBracketSeatDeckAction(gameId: string): Promise<ActionR
   let admin;
   try { admin = createAdminClient(); } catch (e) { return fail(message(e)); }
   const [d, c] = await Promise.all([
-    admin.from('decks').select('id, name, format, paragon').eq('id', entryB.deck_id).maybeSingle(),
+    admin.from('decks').select('id, name, format, paragon, user_id, is_public').eq('id', entryB.deck_id).maybeSingle(),
     // Maybeboard rows are excluded, matching loadDeckForGame.
     admin.from('deck_cards')
       .select('card_name, card_set, card_img_file, quantity, zone')
@@ -615,6 +620,9 @@ export async function loadBracketSeatDeckAction(gameId: string): Promise<ActionR
   ]);
   if (d.error) return fail(d.error.message);
   if (!d.data) return fail('This deck has been deleted, so the game cannot be played.');
+  // entries.deck_id is owner-writable, so never trust it: the service-role read
+  // may only hand out the bracket owner's own deck or a public one.
+  if (d.data.user_id !== bracketRow.owner_id && !d.data.is_public) return fail('Deck not available.');
   if (c.error) return fail('Failed to load deck cards.');
 
   return {
