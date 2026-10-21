@@ -26,6 +26,9 @@ interface GameOverOverlayProps {
   // authorized deck is reused automatically (see handleOneTapRematch below).
   isForge?: boolean;
   myDeckId?: string;
+  /** Bracket games: no rematch request/accept/cancel/change-deck and no
+   *  rematch status line — the series decides what comes next. */
+  hideRematch?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -78,6 +81,7 @@ export default function GameOverOverlay({
   onPlayAgainHandled,
   isForge,
   myDeckId,
+  hideRematch = false,
 }: GameOverOverlayProps) {
   const { isLoupeVisible } = useCardPreview();
   // Touch: interactive buttons get the 44px minimum target (min-height grows
@@ -116,14 +120,14 @@ export default function GameOverOverlay({
   // If the opponent has already requested a rematch, "play again" means
   // accept it — requesting on top of theirs is a server error.
   useEffect(() => {
-    if (!playAgainTriggered) return;
+    if (!playAgainTriggered || hideRematch) return;
     if (!rematchRequestedBy) {
       void handleOneTapRematch('request');
     } else if (opponentRequested && !rematchResponse) {
       void handleOneTapRematch('respond');
     }
     onPlayAgainHandled?.();
-  }, [playAgainTriggered, rematchRequestedBy, onPlayAgainHandled, isForge]);
+  }, [playAgainTriggered, rematchRequestedBy, onPlayAgainHandled, isForge, hideRematch]);
 
   // Deck picker state
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -210,11 +214,11 @@ export default function GameOverOverlay({
   // elementFromPoint returned the backdrop. While the modal is showing, the
   // request is surfaced inside it instead (Accept Rematch).
   const showRematchBanner =
-    opponentRequested && !rematchResponse && !pickerOpen && (modalDismissed || !showResultModal);
+    !hideRematch && opponentRequested && !rematchResponse && !pickerOpen && (modalDismissed || !showResultModal);
   // Show waiting status
-  const showWaitingStatus = iRequested && !rematchResponse;
+  const showWaitingStatus = !hideRematch && iRequested && !rematchResponse;
   // Show rematch result
-  const showRematchResult = rematchResponse === 'declined' || rematchResponse === 'accepted';
+  const showRematchResult = !hideRematch && (rematchResponse === 'declined' || rematchResponse === 'accepted');
 
   return (
     <>
@@ -224,18 +228,18 @@ export default function GameOverOverlay({
           didWin={didWin}
           label={label}
           oppName={oppName}
-          opponentRequested={opponentRequested && !rematchResponse}
+          opponentRequested={!hideRematch && opponentRequested && !rematchResponse}
           isLoupeVisible={isLoupeVisible}
           // If the opponent already requested a rematch while this modal was
           // up, "play again" / "change deck" must RESPOND to their request —
           // firing a second request is a server error.
-          onPlayAgain={() => {
+          onPlayAgain={hideRematch ? undefined : () => {
             setModalDismissed(true);
             void handleOneTapRematch(opponentRequested ? 'respond' : 'request');
           }}
           // Normal games can swap decks between rematches; Forge decks are
           // seat-locked, so the escape hatch is hidden there.
-          onChangeDeck={isForge ? undefined : () => {
+          onChangeDeck={isForge || hideRematch ? undefined : () => {
             setModalDismissed(true);
             handleChangeDeck(opponentRequested ? 'respond' : 'request');
           }}
@@ -420,22 +424,24 @@ function GameOverModal({
   /** The opponent already asked for a rematch — Play Again becomes Accept. */
   opponentRequested?: boolean;
   isLoupeVisible: boolean;
-  onPlayAgain: () => void;
+  /** Omitted for bracket games: Dismiss is the only option. */
+  onPlayAgain?: () => void;
   /** Normal games only — open the deck picker instead of one-tap reuse. */
   onChangeDeck?: () => void;
   onDismiss: () => void;
 }) {
   const isTouch = useInputMode() === 'touch';
+  const dismissIndex = onPlayAgain ? 1 : 0;
   const { focusedIndex, setFocusedIndex } = useToastKeyboardNav({
-    count: 2,
-    defaultIndex: 1, // Dismiss
+    count: dismissIndex + 1,
+    defaultIndex: dismissIndex, // Dismiss
     priority: 2,
-    onSelect: idx => (idx === 0 ? onPlayAgain() : onDismiss()),
+    onSelect: idx => (idx === dismissIndex ? onDismiss() : onPlayAgain?.()),
     onCancel: onDismiss,
   });
 
-  const playAgainFocused = focusedIndex === 0;
-  const dismissFocused = focusedIndex === 1;
+  const playAgainFocused = !!onPlayAgain && focusedIndex === 0;
+  const dismissFocused = focusedIndex === dismissIndex;
 
   const eyebrow = didWin ? 'Victory' : 'Defeat';
   const title = didWin
@@ -516,6 +522,7 @@ function GameOverModal({
         )}
 
         <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+          {onPlayAgain && (
           <button
             onClick={onPlayAgain}
             onMouseEnter={() => setFocusedIndex(0)}
@@ -539,9 +546,10 @@ function GameOverModal({
           >
             {opponentRequested ? 'Accept Rematch' : 'Play Again'}
           </button>
+          )}
           <button
             onClick={onDismiss}
-            onMouseEnter={() => setFocusedIndex(1)}
+            onMouseEnter={() => setFocusedIndex(dismissIndex)}
             style={{
               flex: 1,
               padding: '10px 16px',

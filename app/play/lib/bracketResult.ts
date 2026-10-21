@@ -24,3 +24,16 @@ export function resolveWinnerSeat(
   }
   return { kind: 'none', winnerSeat: null };
 }
+
+/**
+ * Maps viewer-relative soul counts to seats. `mySeat` is the seat whose view
+ * `me` is (in solo, the seat in hand).
+ */
+export function soulsBySeat(
+  souls: { me: number; opponent: number },
+  mySeat: 0 | 1,
+): { seat0: number; seat1: number } {
+  return mySeat === 0
+    ? { seat0: souls.me, seat1: souls.opponent }
+    : { seat0: souls.opponent, seat1: souls.me };
+}

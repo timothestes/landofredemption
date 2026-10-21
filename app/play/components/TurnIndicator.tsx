@@ -284,6 +284,8 @@ interface TurnIndicatorProps {
   rematchPending?: boolean;
   /** Retract a locally-initiated pending rematch request. */
   onCancelRematch?: () => void;
+  /** Bracket games: no rematch request/cancel controls. */
+  hideRematch?: boolean;
   /** Send a pause request to the opponent. */
   onRequestPause?: () => void;
   /** Send a resume request to the opponent. */
@@ -342,6 +344,7 @@ export default function TurnIndicator({
   timerVisible = true,
   rematchPending = false,
   onCancelRematch,
+  hideRematch = false,
   onRequestPause,
   onRequestResume,
   onCancelPauseRequest,
@@ -1287,7 +1290,7 @@ export default function TurnIndicator({
         {/* While a rematch request is pending, the button retracts it; otherwise
             it starts a one-tap rematch. The "Waiting for opponent…" copy lives on
             the GameOverOverlay toast, so this slot just offers the action. */}
-        {isFinished && onPlayAgain && rematchPending && !isSolo && (
+        {isFinished && onPlayAgain && !hideRematch && rematchPending && !isSolo && (
           <button
             onClick={onCancelRematch}
             disabled={!onCancelRematch}
@@ -1321,7 +1324,7 @@ export default function TurnIndicator({
             Cancel
           </button>
         )}
-        {isFinished && onPlayAgain && !rematchPending && !isSolo && (
+        {isFinished && onPlayAgain && !hideRematch && !rematchPending && !isSolo && (
           <button
             onClick={onPlayAgain}
             style={{

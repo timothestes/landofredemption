@@ -2,3 +2,4 @@
 // brackets feature so the dependency direction (play ← brackets) stays visible.
 export type { BracketGameParams } from '@/app/brackets/lib/gameParams';
 export { writeSoloGameParams, stdbFormatFor } from '@/app/brackets/lib/gameParams';
+export { writeHostGameParams, DECIDED_KEY } from '@/app/brackets/lib/gameParams';

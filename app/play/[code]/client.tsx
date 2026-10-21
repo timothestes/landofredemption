@@ -48,8 +48,12 @@ import { finishedGameToReuseOnCreate } from '@/app/play/lib/gameEntryDecision';
 import { loadForgeDeckForGame, getForgePlayResolver, authorizeForgeSeat } from '@/app/forge/lib/playDecks';
 import { mergeForgeDeckData, resolveCardImageUrl, forgeRenderWarmUrls, type ForgeResolverMap } from '@/app/play/utils/forgeResolver';
 import { warmForgeRenders } from '@/app/play/utils/warmForgeRenders';
-import type { BracketGameParams } from '@/app/play/lib/bracketGameParams';
-import { resolveWinnerSeat } from '@/app/play/lib/bracketResult';
+import {
+  writeSoloGameParams, writeHostGameParams, stdbFormatFor, DECIDED_KEY, type BracketGameParams,
+} from '@/app/play/lib/bracketGameParams';
+import { resolveWinnerSeat, soulsBySeat } from '@/app/play/lib/bracketResult';
+import { recordBracketGameResultAction, startBracketGameAction } from '@/app/brackets/actions';
+import BracketGameOverOverlay, { type BracketSeriesOutcome } from '@/app/play/components/BracketGameOverOverlay';
 import { BracketRecoveryScreen, type BracketRecoveryReason } from '@/app/play/components/BracketRecoveryScreen';
 
 // Konva requires browser APIs — lazy-load to avoid SSR issues
@@ -1247,6 +1251,85 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     router.replace(isForge ? lobbyPath : `/play?join=${code}`);
   }, [lifecycle, formatMismatch, code, router, isForge, lobbyPath]);
 
+  // ---- Bracket game-over: the host records the result, once per game ----
+  // Host = the solo player, or seat 0 online. The friend (seat 1) only sees
+  // the standard overlay with rematch hidden.
+  const bracket = gameParams?.bracket ?? null;
+  const isBracketHost = !!bracket && (bracket.mode === 'solo' || gameState.myPlayer?.seat === BigInt(0));
+  const bracketWinnerSeat: 0 | 1 | null = (() => {
+    if (!bracket || lifecycle !== 'finished' || gameId === null) return null;
+    if (!gameState.isActionsReady || !gameState.isPlayersReady) return null;
+    const players = gameState.allPlayers.filter((p: any) => p.gameId === gameId);
+    return resolveWinnerSeat(gameState.gameActions, players).winnerSeat;
+  })();
+  const [bracketOutcome, setBracketOutcome] = useState<BracketSeriesOutcome | null>(null);
+  const recordedBracketGameRef = useRef<string | null>(null);
+  const recordBracketResult = () => {
+    if (!bracket || bracketWinnerSeat === null) return;
+    // soulsRescued is relative to myPlayer — in solo that's the seat in hand.
+    const mySeat: 0 | 1 | null = bracket.mode === 'solo'
+      ? gameState.activeSeat
+      : gameState.myPlayer ? (Number(gameState.myPlayer.seat) === 1 ? 1 : 0) : null;
+    const souls = mySeat === null ? null : soulsBySeat(gameState.soulsRescued, mySeat);
+    setBracketOutcome('pending');
+    recordBracketGameResultAction({
+      gameId: bracket.gameId,
+      winnerEntryId: bracketWinnerSeat === 0 ? bracket.entryAId : bracket.entryBId,
+      soulsA: souls?.seat0,
+      soulsB: souls?.seat1,
+    })
+      .then((r) => setBracketOutcome(r.ok ? r.data : 'failed'))
+      .catch(() => setBracketOutcome('failed'));
+  };
+  const recordBracketResultRef = useRef(recordBracketResult);
+  recordBracketResultRef.current = recordBracketResult;
+  useEffect(() => {
+    if (!isBracketHost || !bracket || bracketWinnerSeat === null) return;
+    if (recordedBracketGameRef.current === bracket.gameId) return;
+    recordedBracketGameRef.current = bracket.gameId;
+    recordBracketResultRef.current();
+  }, [isBracketHost, bracket, bracketWinnerSeat]);
+
+  // Start the next bracket game (this match's next game, or the next ready
+  // match) and move the table to its code.
+  const launchingBracketGameRef = useRef(false);
+  const launchBracketGame = async (matchId: string, mode: 'solo' | 'online') => {
+    if (!bracket || !gameParams || launchingBracketGameRef.current) return;
+    launchingBracketGameRef.current = true;
+    const started = await startBracketGameAction(matchId, mode);
+    if (started.ok === false) {
+      launchingBracketGameRef.current = false;
+      showGameToast(started.error);
+      return;
+    }
+    const g = started.data;
+    const next: BracketGameParams = {
+      ...bracket,
+      gameId: g.gameId,
+      bracketId: g.bracketId,
+      matchId,
+      gameNumber: g.gameNumber,
+      bestOf: g.bestOf,
+      mode,
+      entryAId: g.entryAId,
+      entryBId: g.entryBId,
+      deckAName: g.deckAName,
+      deckBName: g.deckBName,
+    };
+    const common = {
+      displayName: gameParams.displayName,
+      supabaseUserId: gameParams.supabaseUserId,
+      format: stdbFormatFor(g.format),
+      bracket: next,
+    };
+    if (mode === 'solo') {
+      writeSoloGameParams(g.code, { ...common, deckAId: g.deckAId, deckBId: g.deckBId, firstSeat: g.firstSeat });
+    } else {
+      writeHostGameParams(g.code, { ...common, deckAId: g.deckAId, deckAName: g.deckAName });
+    }
+    router.replace('/play/' + g.code);
+  };
+
   if (isLeaving) {
     return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black">
@@ -1698,6 +1781,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ flexShrink: 0, height: 48 }}>
             <TurnIndicator
+              hideRematch={!!gameParams?.bracket}
               lobbyPath={lobbyPath}
               isSolo={gameState.isSolo}
               game={gameState.game}
@@ -1758,6 +1842,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ flexShrink: 0, height: 48 }}>
             <TurnIndicator
+              hideRematch={!!gameParams?.bracket}
               lobbyPath={lobbyPath}
               isSolo={gameState.isSolo}
               game={gameState.game}
@@ -1813,6 +1898,29 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     const opponentDisconnected =
       endLabel === 'Opponent disconnected' || gameState.opponentPlayer?.isConnected === false;
 
+    // Bracket host: the series overlay replaces GameOverOverlay. It renders once
+    // the winner is known (the recovery screen covers "no result").
+    const bracketRecord = typeof bracketOutcome === 'object' ? bracketOutcome : null;
+    const bracketOverlay = isBracketHost && bracket && bracketWinnerSeat !== null ? (
+      <BracketGameOverOverlay
+        bracket={bracket}
+        result={{
+          winnerSeat: bracketWinnerSeat,
+          winnerName: bracketWinnerSeat === 0 ? bracket.deckAName : bracket.deckBName,
+        }}
+        series={bracketOutcome ?? 'pending'}
+        onRetry={() => recordBracketResultRef.current()}
+        onPlayNext={() => void launchBracketGame(bracket.matchId, bracket.mode)}
+        onBack={() => router.push(
+          bracketRecord?.decided ? `${bracket.returnTo}?decided=${bracketRecord.matchId}` : bracket.returnTo,
+        )}
+        onNextMatch={(nextMatchId) => {
+          if (bracketRecord) sessionStorage.setItem(DECIDED_KEY, bracketRecord.matchId);
+          void launchBracketGame(nextMatchId, 'solo');
+        }}
+      />
+    ) : null;
+
     // Show the overlay over the frozen canvas — always render canvas if gameId is known
     if (gameId !== null) {
       return (
@@ -1820,6 +1928,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ flexShrink: 0, height: 48 }}>
               <TurnIndicator
+                hideRematch={!!gameParams?.bracket}
                 lobbyPath={lobbyPath}
                 isSolo={gameState.isSolo}
                 game={gameState.game}
@@ -1894,7 +2003,10 @@ function GameInner({ code, isConnected }: GameInnerProps) {
               )}
               {!gameState.isSolo && <SpectatorHandRequestBanner gameId={gameId} myPlayer={gameState.myPlayer ?? null} />}
               <CardChoicePromptContainer />
+              {bracketOverlay}
+              {!isBracketHost && (
               <GameOverOverlay
+                hideRematch={!!gameParams?.bracket}
                 game={gameState.game}
                 myPlayer={gameState.myPlayer}
                 opponentPlayer={gameState.opponentPlayer}
@@ -1905,6 +2017,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                 isForge={isForge}
                 myDeckId={gameParams?.deckId}
               />
+              )}
             </div>
           </div>
           {rightPanel}
@@ -2007,6 +2120,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ flexShrink: 0, height: 48 }}>
             <TurnIndicator
+              hideRematch={!!gameParams?.bracket}
               lobbyPath={lobbyPath}
               isSolo={gameState.isSolo}
               game={gameState.game}
@@ -2033,15 +2147,19 @@ function GameInner({ code, isConnected }: GameInnerProps) {
             />
           </div>
           <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-            <GameOverOverlay
-              game={gameState.game}
-              myPlayer={gameState.myPlayer}
-              opponentPlayer={gameState.opponentPlayer}
-              gameActions={gameState.gameActions}
-              gameState={gameState}
-              isForge={isForge}
-              myDeckId={gameParams?.deckId}
-            />
+            {bracketOverlay}
+            {!isBracketHost && (
+              <GameOverOverlay
+                hideRematch={!!gameParams?.bracket}
+                game={gameState.game}
+                myPlayer={gameState.myPlayer}
+                opponentPlayer={gameState.opponentPlayer}
+                gameActions={gameState.gameActions}
+                gameState={gameState}
+                isForge={isForge}
+                myDeckId={gameParams?.deckId}
+              />
+            )}
           </div>
         </div>
         {rightPanel}
@@ -2072,6 +2190,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           ? { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, paddingTop: 'env(safe-area-inset-top)' }
           : { flexShrink: 0, height: 48 }}>
           <TurnIndicator
+            hideRematch={!!gameParams?.bracket}
             lobbyPath={lobbyPath}
             isSolo={gameState.isSolo}
             game={gameState.game}
