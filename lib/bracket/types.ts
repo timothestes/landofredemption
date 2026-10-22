@@ -35,6 +35,8 @@ export interface BracketGame {
   winnerEntryId: string | null;
   soulsA: number | null;
   soulsB: number | null;
+  startedAt: string;
+  finishedAt: string | null;
 }
 
 export interface Bracket {

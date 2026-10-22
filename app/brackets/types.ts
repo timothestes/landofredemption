@@ -110,4 +110,6 @@ export const toGame = (r: DeckBracketGameRow): BracketGame => ({
   winnerEntryId: r.winner_entry_id,
   soulsA: r.souls_a,
   soulsB: r.souls_b,
+  startedAt: r.started_at,
+  finishedAt: r.finished_at,
 });

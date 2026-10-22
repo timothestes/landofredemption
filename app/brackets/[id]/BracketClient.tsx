@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MoreHorizontal, Pencil, Share2 } from 'lucide-react';
-import { currentRoundName, nextSlot, resetMatchAllowed, roundCount, canEditBracket } from '@/lib/bracket';
+import { nextSlot, resetMatchAllowed, roundCount, canEditBracket } from '@/lib/bracket';
 import type { BracketGame } from '@/lib/bracket/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,10 +17,11 @@ import ToastNotification from '@/components/ui/toast-notification';
 import {
   abandonBracketGameAction, deleteBracketAction, resetMatchAction, startBracketGameAction,
 } from '../actions';
+import { BracketTabs } from '../components/BracketTabs';
 import { BracketView } from '../components/BracketView';
 import { ChampionPanel } from '../components/ChampionPanel';
 import { DECIDED_KEY, stdbFormatFor, writeHostGameParams, writeSoloGameParams } from '../lib/gameParams';
-import { buildMatchViews, championPath, firstActionableMatchId, type MatchView } from '../lib/view';
+import { bracketMeta, buildMatchViews, championPath, firstActionableMatchId, type MatchView } from '../lib/view';
 import type { BracketPageData } from '../types';
 import { RecordResultDialog } from './RecordResultDialog';
 
@@ -245,15 +246,11 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
       entry={champion}
       path={championPath(data, champion.id)}
       animate={!!decidedView && decidedView.match.round === roundCount(bracket.size)}
+      breakdownHref={`/brackets/${bracket.id}/breakdown`}
     />
   ) : undefined;
 
-  const meta = [
-    bracket.format,
-    `${entries.length} decks`,
-    `Best of ${bracket.bestOf}`,
-    currentRoundName(bracket, matches, games),
-  ].join(' · ');
+  const meta = bracketMeta(data);
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-10">
@@ -291,6 +288,8 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
           )}
         </div>
       </header>
+
+      <BracketTabs bracketId={bracket.id} active="bracket" />
 
       <BracketView
         views={views}

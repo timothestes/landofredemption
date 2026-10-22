@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { BracketEntry } from '@/lib/bracket/types';
 import { getCardImageUrlOrNull } from '@/app/shared/utils/cardImageUrl';
@@ -7,7 +8,13 @@ import { deckCoverUrl } from './DeckThumb';
 
 const EASE_OUT_QUART = [0.25, 1, 0.5, 1] as const;
 
-export function ChampionPanel({ entry, path, animate }: { entry: BracketEntry; path: string[]; animate: boolean }) {
+export function ChampionPanel({ entry, path, animate, breakdownHref }: {
+  entry: BracketEntry;
+  path: string[];
+  animate: boolean;
+  /** The breakdown page: where the whole bracket's story lives. */
+  breakdownHref?: string;
+}) {
   // Paragon decks lead with the paragon, then preview card 1; others show both preview cards.
   const images = (entry.paragon
     ? [deckCoverUrl(entry), getCardImageUrlOrNull(entry.previewCard1)]
@@ -30,6 +37,14 @@ export function ChampionPanel({ entry, path, animate }: { entry: BracketEntry; p
         <ul className="mt-2 space-y-0.5 text-sm text-muted-foreground tabular-nums">
           {path.map((line, i) => <li key={i}>{line}</li>)}
         </ul>
+      )}
+      {breakdownHref && (
+        <Link
+          href={breakdownHref}
+          className="mt-3 inline-flex min-h-11 items-center text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+        >
+          See the breakdown
+        </Link>
       )}
     </>
   );
