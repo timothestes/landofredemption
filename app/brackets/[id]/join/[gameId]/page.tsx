@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { createClient } from '@/utils/supabase/server';
 import { getInviteGameStatus } from '@/app/play/actions';
 import { roundNames } from '@/lib/bracket';
+import type { BracketEntry } from '@/lib/bracket/types';
+import { cn } from '@/lib/utils';
 import { loadBracketAction } from '../../../actions';
 import { DeckThumb } from '../../../components/DeckThumb';
 import { stdbFormatFor, type BracketGameParams } from '../../../lib/gameParams';
@@ -37,6 +39,18 @@ function Notice({ text, bracketId, linkLabel }: { text: string; bracketId?: stri
         </Button>
       )}
     </Shell>
+  );
+}
+
+function PlayerDeck({ label, entry, emphasized }: { label: string; entry: BracketEntry; emphasized?: boolean }) {
+  return (
+    <div className={cn('flex items-center gap-3 rounded-md border p-3', emphasized ? 'border-foreground/40 bg-muted/60' : 'border-border')}>
+      <DeckThumb entry={entry} size={64} />
+      <div className="min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="break-words text-base font-semibold leading-snug">{entry.deckName}</p>
+      </div>
+    </div>
   );
 }
 
@@ -113,16 +127,14 @@ export default async function JoinBracketGamePage({ params }: { params: Params }
   return (
     <Shell>
       <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
-        <div className="mb-4 flex items-center gap-3">
-          <DeckThumb entry={entryB} size={64} />
-          <span className="text-sm text-muted-foreground">vs</span>
-          <DeckThumb entry={entryA} size={64} />
-        </div>
-        <p className="text-base">
-          {hostName} invited you to play <strong>{entryB.deckName}</strong> against{' '}
-          <strong>{entryA.deckName}</strong>
-          <span className="text-muted-foreground"> · Game {game.gameNumber} of the {roundName} in {bracket.name}</span>
+        <p className="mb-4 text-sm text-muted-foreground">
+          {hostName} invited you to Game {game.gameNumber} of the {roundName} in {bracket.name}.
         </p>
+        <div className="grid items-stretch gap-3 sm:grid-cols-[1fr_auto_1fr]">
+          <PlayerDeck label="You play" entry={entryB} emphasized />
+          <span className="self-center text-center text-sm text-muted-foreground">vs</span>
+          <PlayerDeck label={`${hostName} plays`} entry={entryA} />
+        </div>
         <JoinBracketGameClient
           code={game.code}
           deckBId={entryB.deckId}
