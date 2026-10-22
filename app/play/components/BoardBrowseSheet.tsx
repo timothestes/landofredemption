@@ -118,7 +118,7 @@ export function BoardBrowseSheet({ entries, onPick, onClose, ownerLabels }: Boar
               padding: '0 16px',
               background: 'transparent',
               border: 'none',
-              borderBottom: '1px solid rgba(107,78,39,0.25)',
+              borderBottom: '1px solid rgba(var(--gf-border-rgb), 0.25)',
               color: e.count === 0
                 ? 'var(--gf-text-dim, rgba(232,213,163,0.35))'
                 : 'var(--gf-text, #e8d5a3)',
@@ -132,6 +132,7 @@ export function BoardBrowseSheet({ entries, onPick, onClose, ownerLabels }: Boar
                 <>
                   <span
                     style={{
+                      // Identity colour (amber = mine, blue = theirs): never themed.
                       color: e.owner === 'my' ? '#c4955a' : 'rgba(232,213,163,0.55)',
                       // Seat names can be long — keep the zone label readable.
                       display: 'inline-block',

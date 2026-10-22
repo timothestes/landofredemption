@@ -239,6 +239,9 @@ button:focus-visible,
   --gf-text-dim: #8b6532;
   --gf-accent: #c4955a;
   --gf-gold: #f0c060;
+  /* Near-black panel interior (chat body, right panel) and log-line text. */
+  --gf-deep: #0a0805;
+  --gf-text-log: #c8b882;
   --gf-hover: rgba(196, 149, 90, 0.15);
   --gf-hover-strong: rgba(196, 149, 90, 0.25);
   /* Channel triplets for alpha variants: rgba(var(--gf-accent-rgb), 0.45). */
@@ -247,6 +250,9 @@ button:focus-visible,
   --gf-panel-rgb: 30, 22, 16;
   --gf-border-rgb: 107, 78, 39;
   --gf-text-bright-rgb: 232, 213, 163;
+  --gf-bg-rgb: 42, 31, 18;
+  --gf-bg-dark-rgb: 13, 9, 5;
+  --gf-deep-rgb: 10, 8, 5;
   /* All of the above are overridden on <html> while a player's custom
      background is up, to match its color (useGameBackground). */
 }
@@ -758,7 +764,7 @@ html[data-input-mode='touch'] [data-game-toolbar] button svg {
     min-width: 0 !important;
     z-index: 300 !important;
     border-left: none !important;
-    background: rgba(10, 8, 5, 0.97) !important;
+    background: rgba(var(--gf-deep-rgb), 0.97) !important;
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
     padding-bottom: env(safe-area-inset-bottom);

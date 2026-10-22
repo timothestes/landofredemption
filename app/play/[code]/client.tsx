@@ -107,18 +107,18 @@ function ForgeSwapErrorDialog({ error, onClose }: { error: string | null; onClos
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
     }}>
       <div style={{
-        background: 'rgba(14, 10, 6, 0.97)',
-        border: '1px solid rgba(107, 78, 39, 0.3)',
+        background: 'rgba(var(--gf-bg-dark-rgb), 0.97)',
+        border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
         borderRadius: 8,
         padding: '20px 28px',
         maxWidth: 340,
         width: '100%',
         textAlign: 'center',
-        boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(196, 149, 90, 0.08)',
+        boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--gf-accent-rgb), 0.08)',
       }}>
         <p style={{
           fontFamily: 'Georgia, serif',
-          color: '#e8d5a3',
+          color: 'var(--gf-text-bright)',
           fontSize: 13,
           lineHeight: 1.5,
         }}>
@@ -129,10 +129,10 @@ function ForgeSwapErrorDialog({ error, onClose }: { error: string | null; onClos
           style={{
             marginTop: 18,
             padding: '7px 18px',
-            background: 'rgba(196, 149, 90, 0.15)',
-            border: '1px solid rgba(196, 149, 90, 0.45)',
+            background: 'rgba(var(--gf-accent-rgb), 0.15)',
+            border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
             borderRadius: 4,
-            color: '#e8d5a3',
+            color: 'var(--gf-text-bright)',
             cursor: 'pointer',
             fontSize: 12,
             fontFamily: 'Georgia, serif',
@@ -1414,7 +1414,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
             </p>
             <a
               href={lobbyPath}
-              className="mt-6 inline-block rounded border border-[#c4955a]/45 bg-[#c4955a]/15 px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-wider text-amber-200/90 hover:bg-[#c4955a]/25 transition-colors"
+              className="mt-6 inline-block rounded border border-[rgba(var(--gf-accent-rgb),0.45)] bg-[rgba(var(--gf-accent-rgb),0.15)] px-5 py-2.5 font-cinzel text-xs font-bold uppercase tracking-wider text-amber-200/90 hover:bg-[rgba(var(--gf-accent-rgb),0.25)] transition-colors"
             >
               Back to Lobby
             </a>
@@ -1629,24 +1629,24 @@ function GameInner({ code, isConnected }: GameInnerProps) {
               display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
             }}>
               <div style={{
-                background: 'rgba(14, 10, 6, 0.97)',
-                border: '1px solid rgba(107, 78, 39, 0.3)',
+                background: 'rgba(var(--gf-bg-dark-rgb), 0.97)',
+                border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
                 borderRadius: 8,
                 padding: '20px 28px',
                 maxWidth: 340,
                 width: '100%',
                 textAlign: 'center',
-                boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(196, 149, 90, 0.08)',
+                boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--gf-accent-rgb), 0.08)',
               }}>
                 <p style={{
                   fontFamily: 'Georgia, serif',
-                  color: '#e8d5a3',
+                  color: 'var(--gf-text-bright)',
                   fontSize: 13,
                   lineHeight: 1.5,
                 }}>
                   Change your game deck to <strong>{practiceDeckConfirm.deckName}</strong>?
                   <br />
-                  <span style={{ fontSize: 11, color: 'rgba(196, 149, 90, 0.7)' }}>
+                  <span style={{ fontSize: 11, color: 'rgba(var(--gf-accent-rgb), 0.7)' }}>
                     Your practice game will reset and your opponent will see the new deck once they join.
                   </span>
                 </p>
@@ -1656,9 +1656,9 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                     style={{
                       padding: '7px 18px',
                       background: 'transparent',
-                      border: '1px solid rgba(107, 78, 39, 0.3)',
+                      border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
                       borderRadius: 4,
-                      color: 'rgba(196, 149, 90, 0.6)',
+                      color: 'rgba(var(--gf-accent-rgb), 0.6)',
                       cursor: 'pointer',
                       fontSize: 12,
                       fontFamily: 'Georgia, serif',
@@ -1695,10 +1695,10 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                     }}
                     style={{
                       padding: '7px 18px',
-                      background: 'rgba(196, 149, 90, 0.15)',
-                      border: '1px solid rgba(196, 149, 90, 0.45)',
+                      background: 'rgba(var(--gf-accent-rgb), 0.15)',
+                      border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
                       borderRadius: 4,
-                      color: '#e8d5a3',
+                      color: 'var(--gf-text-bright)',
                       cursor: 'pointer',
                       fontSize: 12,
                       fontFamily: 'Georgia, serif',
@@ -2108,18 +2108,18 @@ function GameInner({ code, isConnected }: GameInnerProps) {
               display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
             }}>
               <div style={{
-                background: 'rgba(14, 10, 6, 0.97)',
-                border: '1px solid rgba(107, 78, 39, 0.3)',
+                background: 'rgba(var(--gf-bg-dark-rgb), 0.97)',
+                border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
                 borderRadius: 8,
                 padding: '20px 28px',
                 maxWidth: 320,
                 width: '100%',
                 textAlign: 'center',
-                boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(196, 149, 90, 0.08)',
+                boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--gf-accent-rgb), 0.08)',
               }}>
                 <p style={{
                   fontFamily: 'Georgia, serif',
-                  color: '#e8d5a3',
+                  color: 'var(--gf-text-bright)',
                   fontSize: 13,
                   lineHeight: 1.5,
                 }}>
@@ -2131,9 +2131,9 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                     style={{
                       padding: '7px 18px',
                       background: 'transparent',
-                      border: '1px solid rgba(107, 78, 39, 0.3)',
+                      border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
                       borderRadius: 4,
-                      color: 'rgba(196, 149, 90, 0.6)',
+                      color: 'rgba(var(--gf-accent-rgb), 0.6)',
                       cursor: 'pointer',
                       fontSize: 12,
                       fontFamily: 'Georgia, serif',
@@ -2149,10 +2149,10 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                     }}
                     style={{
                       padding: '7px 18px',
-                      background: 'rgba(196, 149, 90, 0.15)',
-                      border: '1px solid rgba(196, 149, 90, 0.45)',
+                      background: 'rgba(var(--gf-accent-rgb), 0.15)',
+                      border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
                       borderRadius: 4,
-                      color: '#e8d5a3',
+                      color: 'var(--gf-text-bright)',
                       cursor: 'pointer',
                       fontSize: 12,
                       fontFamily: 'Georgia, serif',
@@ -2391,18 +2391,18 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
         }}>
           <div style={{
-            background: 'rgba(14, 10, 6, 0.97)',
-            border: '1px solid rgba(107, 78, 39, 0.3)',
+            background: 'rgba(var(--gf-bg-dark-rgb), 0.97)',
+            border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
             borderRadius: 8,
             padding: '20px 28px',
             maxWidth: 320,
             width: '100%',
             textAlign: 'center',
-            boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(196, 149, 90, 0.08)',
+            boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--gf-accent-rgb), 0.08)',
           }}>
             <p style={{
               fontFamily: 'Georgia, serif',
-              color: '#e8d5a3',
+              color: 'var(--gf-text-bright)',
               fontSize: 13,
               lineHeight: 1.5,
             }}>
@@ -2414,9 +2414,9 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                 style={{
                   padding: '7px 18px',
                   background: 'transparent',
-                  border: '1px solid rgba(107, 78, 39, 0.3)',
+                  border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
                   borderRadius: 4,
-                  color: 'rgba(196, 149, 90, 0.6)',
+                  color: 'rgba(var(--gf-accent-rgb), 0.6)',
                   cursor: 'pointer',
                   fontSize: 12,
                   fontFamily: 'Georgia, serif',
@@ -2432,10 +2432,10 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                 }}
                 style={{
                   padding: '7px 18px',
-                  background: 'rgba(196, 149, 90, 0.15)',
-                  border: '1px solid rgba(196, 149, 90, 0.45)',
+                  background: 'rgba(var(--gf-accent-rgb), 0.15)',
+                  border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
                   borderRadius: 4,
-                  color: '#e8d5a3',
+                  color: 'var(--gf-text-bright)',
                   cursor: 'pointer',
                   fontSize: 12,
                   fontFamily: 'Georgia, serif',
@@ -2464,19 +2464,19 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: 'rgba(14, 10, 6, 0.97)',
-              border: '1px solid rgba(107, 78, 39, 0.3)',
+              background: 'rgba(var(--gf-bg-dark-rgb), 0.97)',
+              border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
               borderRadius: 8,
               padding: '20px 28px',
               maxWidth: 320,
               width: '100%',
               textAlign: 'center',
-              boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(196, 149, 90, 0.08)',
+              boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--gf-accent-rgb), 0.08)',
             }}
           >
             <p style={{
               fontFamily: 'Georgia, serif',
-              color: '#e8d5a3',
+              color: 'var(--gf-text-bright)',
               fontSize: 13,
               lineHeight: 1.5,
             }}>
@@ -2488,9 +2488,9 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                 style={{
                   padding: '7px 18px',
                   background: 'transparent',
-                  border: '1px solid rgba(107, 78, 39, 0.3)',
+                  border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
                   borderRadius: 4,
-                  color: 'rgba(196, 149, 90, 0.6)',
+                  color: 'rgba(var(--gf-accent-rgb), 0.6)',
                   cursor: 'pointer',
                   fontSize: 12,
                   fontFamily: 'Georgia, serif',
@@ -2506,10 +2506,10 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                 }}
                 style={{
                   padding: '7px 18px',
-                  background: 'rgba(196, 149, 90, 0.15)',
-                  border: '1px solid rgba(196, 149, 90, 0.45)',
+                  background: 'rgba(var(--gf-accent-rgb), 0.15)',
+                  border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
                   borderRadius: 4,
-                  color: '#e8d5a3',
+                  color: 'var(--gf-text-bright)',
                   cursor: 'pointer',
                   fontSize: 12,
                   fontFamily: 'Georgia, serif',

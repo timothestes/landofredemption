@@ -98,7 +98,7 @@ export function ImageLoadingGate({ open, progress, message }: ImageLoadingGatePr
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(10, 8, 5, 0.68)',
+        background: 'rgba(var(--gf-deep-rgb), 0.68)',
         backdropFilter: 'blur(8px) saturate(0.85)',
         WebkitBackdropFilter: 'blur(8px) saturate(0.85)',
         pointerEvents: 'all',
@@ -114,7 +114,7 @@ export function ImageLoadingGate({ open, progress, message }: ImageLoadingGatePr
           textTransform: 'uppercase',
           color: '#e8d5a3',
           marginBottom: 18,
-          textShadow: '0 0 12px rgba(196, 149, 90, 0.4)',
+          textShadow: '0 0 12px rgba(var(--gf-accent-rgb), 0.4)',
         }}
       >
         Loading Cards
@@ -127,7 +127,7 @@ export function ImageLoadingGate({ open, progress, message }: ImageLoadingGatePr
           background: 'rgba(40, 30, 20, 0.85)',
           borderRadius: 999,
           overflow: 'hidden',
-          border: '1px solid rgba(107, 78, 39, 0.5)',
+          border: '1px solid rgba(var(--gf-border-rgb), 0.5)',
           boxShadow: '0 0 18px rgba(0, 0, 0, 0.6) inset',
         }}
       >
@@ -135,7 +135,7 @@ export function ImageLoadingGate({ open, progress, message }: ImageLoadingGatePr
           style={{
             width: `${pct}%`,
             height: '100%',
-            background: 'linear-gradient(90deg, rgba(196, 149, 90, 0.7) 0%, #e8b86a 60%, #f4d89e 100%)',
+            background: 'linear-gradient(90deg, rgba(var(--gf-accent-rgb), 0.7) 0%, #e8b86a 60%, #f4d89e 100%)',
             boxShadow: '0 0 10px rgba(232, 184, 106, 0.6)',
             transition: 'width 180ms ease-out',
           }}
@@ -148,7 +148,7 @@ export function ImageLoadingGate({ open, progress, message }: ImageLoadingGatePr
           fontSize: 12,
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
-          color: 'rgba(232, 213, 163, 0.6)',
+          color: 'rgba(var(--gf-text-bright-rgb), 0.6)',
           fontFamily: 'var(--font-cinzel), Georgia, serif',
         }}
       >

@@ -9844,8 +9844,8 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             alignItems: 'flex-start',
             gap: 3,
             padding: '6px 12px',
-            background: 'rgba(10, 8, 5, 0.85)',
-            border: '1px solid rgba(107, 78, 39, 0.4)',
+            background: 'rgba(var(--gf-deep-rgb), 0.85)',
+            border: '1px solid rgba(var(--gf-border-rgb), 0.4)',
             borderRadius: 6,
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.4)',
           }}
@@ -9856,12 +9856,12 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
               fontSize: 'clamp(11px, 0.45vw + 7px, 13px)',
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
-              color: 'rgba(232, 213, 163, 0.55)',
+              color: 'rgba(var(--gf-text-bright-rgb), 0.55)',
               lineHeight: 1,
             }}
           >
             Turn{' '}
-            <span style={{ color: '#e8d5a3', fontSize: 'clamp(13px, 0.5vw + 9px, 15px)', fontWeight: 700 }}>
+            <span style={{ color: 'var(--gf-text-bright)', fontSize: 'clamp(13px, 0.5vw + 9px, 15px)', fontWeight: 700 }}>
               {Number(gameState.game.turnNumber ?? 1)}
             </span>
           </span>
@@ -9871,6 +9871,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
               fontSize: 'clamp(10px, 0.4vw + 7px, 12px)',
               letterSpacing: '0.06em',
               textTransform: 'uppercase',
+              // Identity colour (amber = mine, blue = theirs): never themed.
               color: gameState.isMyTurn ? '#c4955a' : '#4a7ab5',
               lineHeight: 1,
             }}
@@ -9922,7 +9923,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                     const db = toDbPos(derived.x, derived.y, zone, 'my', { cardWidth, cardHeight });
                     gameState.detachCard(accessory.id, String(db.x), String(db.y));
                   }}
-                  className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#1a1510] p-1.5 text-[#c4955a] shadow-md ring-1 ring-[#c4955a]/40 transition hover:bg-[#2a1f14] hover:ring-[#c4955a]"
+                  className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-[rgb(var(--gf-panel-rgb))] p-1.5 text-[var(--gf-accent)] shadow-md ring-1 ring-[rgba(var(--gf-accent-rgb),0.4)] transition hover:bg-[var(--gf-bg)] hover:ring-[var(--gf-accent)]"
                   style={{ left: `${seam.x}px`, top: `${seam.y}px` }}
                   title="Detach"
                   aria-label="Detach accessory"
@@ -9979,6 +9980,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             if (key === sourceKey) return null;
 
             const isHovered = dragHoverZone === key;
+            // Identity colour (amber = mine, blue = theirs): never themed.
             // Shared Paragon zones use the same warm tone as own zones so the
             // shared LoB glows the same way as per-seat zones during drag.
             const warm = owner === 'my' || owner === 'shared';
@@ -10586,10 +10588,10 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             maxWidth={460}
             message={
               <>
-                <strong style={{ color: '#c4955a' }}>
+                <strong style={{ color: 'var(--gf-accent)' }}>
                   {gameState.opponentPlayer?.displayName ?? 'Opponent'}
                 </strong>{' '}
-                is activating <strong style={{ color: '#c4955a' }}>{resetCardName}</strong> — shuffles all hands, territories, and lands of bondage; each player draws 8.
+                is activating <strong style={{ color: 'var(--gf-accent)' }}>{resetCardName}</strong> — shuffles all hands, territories, and lands of bondage; each player draws 8.
               </>
             }
             affirmLabel="Approve"
@@ -10607,7 +10609,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         <BoardRequestBanner
           message={
             <>
-              <strong style={{ color: '#c4955a' }}>
+              <strong style={{ color: 'var(--gf-accent)' }}>
                 {gameState.opponentPlayer?.displayName ?? 'Opponent'}
               </strong>{' '}
               requests action priority
@@ -10633,7 +10635,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         <BoardRequestBanner
           message={
             <>
-              <strong style={{ color: '#c4955a' }}>
+              <strong style={{ color: 'var(--gf-accent)' }}>
                 {gameState.opponentPlayer?.displayName ?? 'Opponent'}
               </strong>{' '}
               requests action priority before you{' '}
@@ -10642,7 +10644,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
               ) : (
                 <>
                   move to{' '}
-                  <strong style={{ color: '#c4955a' }}>
+                  <strong style={{ color: 'var(--gf-accent)' }}>
                     {STOP_GATE_LABELS[gameState.holdPhase] ?? gameState.holdPhase}
                   </strong>
                 </>
@@ -10666,7 +10668,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         <BoardRequestBanner
           message={
             <>
-              <strong style={{ color: '#c4955a' }}>
+              <strong style={{ color: 'var(--gf-accent)' }}>
                 {gameState.opponentPlayer?.displayName ?? 'Opponent'}
               </strong>{' '}
               requests initiative
@@ -11103,7 +11105,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                 top: -8,
                 right: -8,
                 background: 'var(--gf-accent)',
-                color: '#1e1610',
+                color: 'rgb(var(--gf-panel-rgb))',
                 borderRadius: '50%',
                 width: 22,
                 height: 22,
@@ -11186,7 +11188,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                 top: -8,
                 right: -8,
                 background: 'var(--gf-accent)',
-                color: '#1e1610',
+                color: 'rgb(var(--gf-panel-rgb))',
                 borderRadius: '50%',
                 width: 22,
                 height: 22,
@@ -11389,7 +11391,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                   right: 12,
                   bottom: 14,
                   background: 'rgba(0, 0, 0, 0.88)',
-                  border: '1px solid #c4955a',
+                  border: '1px solid var(--gf-accent)',
                   borderRadius: 999,
                   padding: '6px 12px',
                   color: '#f0d9a8',

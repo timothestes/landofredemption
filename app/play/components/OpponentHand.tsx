@@ -23,8 +23,8 @@ export default function OpponentHand({ cardCount, displayName }: OpponentHandPro
         left: 0,
         right: 0,
         minHeight: 64,
-        background: 'rgba(10, 8, 5, 0.94)',
-        borderBottom: '1px solid rgba(107, 78, 39, 0.4)',
+        background: 'rgba(var(--gf-deep-rgb), 0.94)',
+        borderBottom: '1px solid rgba(var(--gf-border-rgb), 0.4)',
         display: 'flex',
         alignItems: 'center',
         paddingLeft: 'calc(12px + env(safe-area-inset-left, 0px))',
@@ -52,7 +52,7 @@ export default function OpponentHand({ cardCount, displayName }: OpponentHandPro
             fontSize: 9,
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
-            color: 'rgba(232, 213, 163, 0.5)',
+            color: 'rgba(var(--gf-text-bright-rgb), 0.5)',
             lineHeight: 1,
           }}
         >
@@ -90,7 +90,7 @@ export default function OpponentHand({ cardCount, displayName }: OpponentHandPro
               fontSize: 9,
               letterSpacing: '0.06em',
               textTransform: 'uppercase',
-              color: 'rgba(196, 149, 90, 0.7)',
+              color: 'rgba(var(--gf-accent-rgb), 0.7)',
               lineHeight: 1,
             }}
           >
@@ -103,8 +103,8 @@ export default function OpponentHand({ cardCount, displayName }: OpponentHandPro
               justifyContent: 'center',
               minWidth: 18,
               height: 18,
-              background: 'rgba(196, 149, 90, 0.15)',
-              border: '1px solid rgba(196, 149, 90, 0.4)',
+              background: 'rgba(var(--gf-accent-rgb), 0.15)',
+              border: '1px solid rgba(var(--gf-accent-rgb), 0.4)',
               borderRadius: 9,
               fontFamily: 'var(--font-cinzel), Georgia, serif',
               fontSize: 10,
@@ -140,7 +140,7 @@ export default function OpponentHand({ cardCount, displayName }: OpponentHandPro
               fontFamily: 'var(--font-cinzel), Georgia, serif',
               fontSize: 10,
               letterSpacing: '0.06em',
-              color: 'rgba(232, 213, 163, 0.3)',
+              color: 'rgba(var(--gf-text-bright-rgb), 0.3)',
               fontStyle: 'italic',
             }}
           >
@@ -170,8 +170,8 @@ function CardBack({ width, height }: { width: number; height: number }) {
         flexShrink: 0,
         borderRadius: 3,
         background: 'linear-gradient(145deg, #1a1208 0%, #0d0a04 100%)',
-        border: '1px solid rgba(107, 78, 39, 0.55)',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(196, 149, 90, 0.08)',
+        border: '1px solid rgba(var(--gf-border-rgb), 0.55)',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(var(--gf-accent-rgb), 0.08)',
         position: 'relative',
         overflow: 'hidden',
         display: 'flex',

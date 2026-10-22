@@ -62,7 +62,7 @@ function NameHint({
             left: '50%',
             transform: 'translateX(-50%)',
             padding: '3px 8px',
-            background: 'rgba(10, 8, 5, 0.95)',
+            background: 'rgba(var(--gf-deep-rgb), 0.95)',
             border: `1px solid ${accent}`,
             borderRadius: 4,
             color: 'var(--gf-text-bright)',
@@ -599,7 +599,7 @@ export default function TurnIndicator({
         paddingBottom: isTouchBar ? 1 : 0,
         // Touch overlays the bar on the canvas — fully opaque so canvas
         // labels can't ghost through. Pointer keeps the original alpha.
-        background: isTouchBar ? '#0a0805' : 'rgba(10, 8, 5, 0.96)',
+        background: isTouchBar ? 'var(--gf-deep)' : 'rgba(var(--gf-deep-rgb), 0.96)',
         borderBottom: '1px solid rgba(var(--gf-border-rgb), 0.5)',
         // Three columns: left cluster | center cluster | right cluster.
         // `1fr auto 1fr` keeps the center anchored to the bar's geometric
@@ -759,7 +759,7 @@ export default function TurnIndicator({
                 <NameHint
                   label={leftLabel}
                   full={leftFull}
-                  color={isTouchBar ? 'rgba(196, 149, 90, 0.8)' : 'rgba(196, 149, 90, 0.45)'}
+                  color={isTouchBar ? 'rgba(var(--gf-accent-rgb), 0.8)' : 'rgba(var(--gf-accent-rgb), 0.45)'}
                   accent="#c4955a"
                 />
               </div>

@@ -103,12 +103,12 @@ export function CardReaderOverlay({ card, imageUrl, onClose }: CardReaderOverlay
             ...(isPortrait ? { width: '100%', maxHeight: '64%' } : { height: '100%' }),
             aspectRatio: '5 / 7',
             borderRadius: 8,
-            border: '1px solid rgba(107,78,39,0.5)',
-            background: 'rgba(30,22,16,0.9)',
+            border: '1px solid rgba(var(--gf-border-rgb), 0.5)',
+            background: 'rgba(var(--gf-panel-rgb), 0.9)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'rgba(232,213,163,0.5)',
+            color: 'rgba(var(--gf-text-bright-rgb), 0.5)',
             fontSize: 12,
             flexShrink: 0,
           }}
@@ -127,7 +127,7 @@ export function CardReaderOverlay({ card, imageUrl, onClose }: CardReaderOverlay
           maxHeight: '100%',
           overflowY: 'auto',
           WebkitOverflowScrolling: 'touch',
-          color: '#e8d5a3',
+          color: 'var(--gf-text-bright)',
         }}
       >
         <div style={{
@@ -145,7 +145,7 @@ export function CardReaderOverlay({ card, imageUrl, onClose }: CardReaderOverlay
           gap: '4px 10px',
           marginTop: 6,
           fontSize: 12,
-          color: 'rgba(232,213,163,0.65)',
+          color: 'rgba(var(--gf-text-bright-rgb), 0.65)',
         }}>
           {card.type && <span>{card.type}</span>}
           {card.brigade && <span style={{ color: 'rgba(212,168,103,0.85)' }}>{card.brigade}</span>}
@@ -157,7 +157,7 @@ export function CardReaderOverlay({ card, imageUrl, onClose }: CardReaderOverlay
             marginTop: 10,
             fontSize: 13,
             lineHeight: 1.45,
-            color: 'rgba(232,213,163,0.92)',
+            color: 'rgba(var(--gf-text-bright-rgb), 0.92)',
             whiteSpace: 'pre-wrap',
           }}>
             {card.specialAbility}
@@ -168,7 +168,7 @@ export function CardReaderOverlay({ card, imageUrl, onClose }: CardReaderOverlay
             marginTop: 8,
             fontSize: 11,
             fontStyle: 'italic',
-            color: 'rgba(232,213,163,0.55)',
+            color: 'rgba(var(--gf-text-bright-rgb), 0.55)',
           }}>
             {card.reference}
           </p>
@@ -178,8 +178,8 @@ export function CardReaderOverlay({ card, imageUrl, onClose }: CardReaderOverlay
             marginTop: 10,
             fontSize: 12,
             lineHeight: 1.4,
-            color: '#c4955a',
-            borderTop: '1px solid rgba(107,78,39,0.5)',
+            color: 'var(--gf-accent)',
+            borderTop: '1px solid rgba(var(--gf-border-rgb), 0.5)',
             paddingTop: 8,
           }}>
             {card.notes}
@@ -202,9 +202,9 @@ export function CardReaderOverlay({ card, imageUrl, onClose }: CardReaderOverlay
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: 8,
-          border: '1px solid rgba(107,78,39,0.6)',
-          background: 'rgba(14,10,6,0.9)',
-          color: '#e8d5a3',
+          border: '1px solid rgba(var(--gf-border-rgb), 0.6)',
+          background: 'rgba(var(--gf-bg-dark-rgb), 0.9)',
+          color: 'var(--gf-text-bright)',
         }}
       >
         <X size={20} />

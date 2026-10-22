@@ -484,7 +484,7 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
         transition={{ opacity: { duration: 0.2 } }}
         onPointerDown={handleContentPointerDown}
         style={{
-          background: '#1e1610',
+          background: 'rgb(var(--gf-panel-rgb))',
           border: '1px solid var(--gf-border)',
           borderRadius: 8,
           padding: 20,
@@ -561,8 +561,8 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
                   width: 18,
                   height: 18,
                   borderRadius: 3,
-                  border: keepOpen ? '1.5px solid #c4955a' : '1.5px solid var(--gf-border)',
-                  background: keepOpen ? 'rgba(196, 149, 90, 0.25)' : 'transparent',
+                  border: keepOpen ? '1.5px solid var(--gf-accent)' : '1.5px solid var(--gf-border)',
+                  background: keepOpen ? 'rgba(var(--gf-accent-rgb), 0.25)' : 'transparent',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -631,7 +631,7 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
                   {(() => {
                     const isHoveredCard = hoveredCardId === card.instanceId && !isSelected;
                     const glowStyle = isHoveredCard ? getHoverGlowStyle(hoverProgress) : undefined;
-                    const selectedShadow = isSelected ? '0 0 8px rgba(196,149,90,0.4)' : 'none';
+                    const selectedShadow = isSelected ? '0 0 8px rgba(var(--gf-accent-rgb), 0.4)' : 'none';
                     return imageUrl ? (
                       <img
                         src={imageUrl}
@@ -681,7 +681,7 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
                   width: lassoRect.w,
                   height: lassoRect.h,
                   border: '1px dashed var(--gf-accent)',
-                  background: 'rgba(196,149,90,0.12)',
+                  background: 'rgba(var(--gf-accent-rgb), 0.12)',
                   borderRadius: 2,
                   pointerEvents: 'none',
                   zIndex: 10,

@@ -85,8 +85,8 @@ function PauseConsentBody({
         left: '50%',
         transform: 'translate(-50%, -50%)',
         zIndex: 800,
-        background: 'rgba(14, 10, 6, 0.95)',
-        border: '1px solid rgba(196, 149, 90, 0.4)',
+        background: 'rgba(var(--gf-bg-dark-rgb), 0.95)',
+        border: '1px solid rgba(var(--gf-accent-rgb), 0.4)',
         borderRadius: 8,
         padding: '12px 20px',
         display: 'flex',
@@ -99,7 +99,7 @@ function PauseConsentBody({
         style={{
           fontFamily: 'Georgia, serif',
           fontSize: 14,
-          color: '#e8d5a3',
+          color: 'var(--gf-text-bright)',
           whiteSpace: 'nowrap',
           margin: 0,
         }}
@@ -113,9 +113,9 @@ function PauseConsentBody({
           padding: '8px 16px',
           minHeight: isTouch ? 44 : undefined,
           borderRadius: 4,
-          border: '1px solid rgba(196, 149, 90, 0.45)',
-          background: acceptFocused ? 'rgba(196, 149, 90, 0.30)' : 'rgba(196, 149, 90, 0.15)',
-          color: '#e8d5a3',
+          border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
+          background: acceptFocused ? 'rgba(var(--gf-accent-rgb), 0.30)' : 'rgba(var(--gf-accent-rgb), 0.15)',
+          color: 'var(--gf-text-bright)',
           fontFamily: 'var(--font-cinzel), Georgia, serif',
           fontSize: 12,
           fontWeight: 700,
@@ -123,7 +123,7 @@ function PauseConsentBody({
           textTransform: 'uppercase',
           cursor: 'pointer',
           whiteSpace: 'nowrap',
-          boxShadow: acceptFocused ? toastFocusShadow('rgba(196, 149, 90, 0.85)', 'rgba(196, 149, 90, 0.4)') : 'none',
+          boxShadow: acceptFocused ? toastFocusShadow('rgba(var(--gf-accent-rgb), 0.85)', 'rgba(var(--gf-accent-rgb), 0.4)') : 'none',
           transition: 'background 0.14s, box-shadow 0.14s, color 0.14s, border-color 0.14s',
         }}
       >
@@ -136,9 +136,9 @@ function PauseConsentBody({
           padding: '8px 16px',
           minHeight: isTouch ? 44 : undefined,
           borderRadius: 4,
-          border: `1px solid ${declineFocused ? 'rgba(196, 149, 90, 0.4)' : 'rgba(107, 78, 39, 0.3)'}`,
-          background: declineFocused ? 'rgba(196, 149, 90, 0.12)' : 'transparent',
-          color: declineFocused ? 'rgba(196, 149, 90, 0.85)' : 'rgba(196, 149, 90, 0.5)',
+          border: `1px solid ${declineFocused ? 'rgba(var(--gf-accent-rgb), 0.4)' : 'rgba(var(--gf-border-rgb), 0.3)'}`,
+          background: declineFocused ? 'rgba(var(--gf-accent-rgb), 0.12)' : 'transparent',
+          color: declineFocused ? 'rgba(var(--gf-accent-rgb), 0.85)' : 'rgba(var(--gf-accent-rgb), 0.5)',
           fontFamily: 'var(--font-cinzel), Georgia, serif',
           fontSize: 12,
           fontWeight: 700,
@@ -146,7 +146,7 @@ function PauseConsentBody({
           textTransform: 'uppercase',
           cursor: 'pointer',
           whiteSpace: 'nowrap',
-          boxShadow: declineFocused ? toastFocusShadow('rgba(196, 149, 90, 0.5)', 'rgba(196, 149, 90, 0.22)') : 'none',
+          boxShadow: declineFocused ? toastFocusShadow('rgba(var(--gf-accent-rgb), 0.5)', 'rgba(var(--gf-accent-rgb), 0.22)') : 'none',
           transition: 'background 0.14s, box-shadow 0.14s, color 0.14s, border-color 0.14s',
         }}
       >

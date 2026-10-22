@@ -80,7 +80,7 @@ function GoldfishGameArea({ deck, onLoadDeck }: { deck: DeckDataForGoldfish; onL
         width: '100vw',
         height: '100vh',
         overflow: 'hidden',
-        background: '#0d0905',
+        background: 'var(--gf-bg-dark)',
         cursor: 'default',
         display: 'flex',
         flexDirection: 'row',
@@ -172,17 +172,17 @@ export default function GoldfishClient({ deck, username }: GoldfishClientProps) 
         >
           <div
             style={{
-              background: 'rgba(14, 10, 6, 0.97)',
-              border: '1px solid rgba(107, 78, 39, 0.3)',
+              background: 'rgba(var(--gf-bg-dark-rgb), 0.97)',
+              border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
               borderRadius: 8,
               padding: '20px 28px',
               maxWidth: 320,
               width: '100%',
               textAlign: 'center',
-              boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(196, 149, 90, 0.08)',
+              boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--gf-accent-rgb), 0.08)',
             }}
           >
-            <p style={{ fontFamily: 'Georgia, serif', color: '#e8d5a3', fontSize: 13, lineHeight: 1.5 }}>
+            <p style={{ fontFamily: 'Georgia, serif', color: 'var(--gf-text-bright)', fontSize: 13, lineHeight: 1.5 }}>
               Clear the current game and load <strong>{pendingDeck.name}</strong>?
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 18 }}>
@@ -191,9 +191,9 @@ export default function GoldfishClient({ deck, username }: GoldfishClientProps) 
                 style={{
                   padding: '7px 18px',
                   background: 'transparent',
-                  border: '1px solid rgba(107, 78, 39, 0.3)',
+                  border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
                   borderRadius: 4,
-                  color: 'rgba(196, 149, 90, 0.6)',
+                  color: 'rgba(var(--gf-accent-rgb), 0.6)',
                   cursor: 'pointer',
                   fontSize: 12,
                   fontFamily: 'Georgia, serif',
@@ -209,10 +209,10 @@ export default function GoldfishClient({ deck, username }: GoldfishClientProps) 
                 }}
                 style={{
                   padding: '7px 18px',
-                  background: 'rgba(196, 149, 90, 0.15)',
-                  border: '1px solid rgba(196, 149, 90, 0.5)',
+                  background: 'rgba(var(--gf-accent-rgb), 0.15)',
+                  border: '1px solid rgba(var(--gf-accent-rgb), 0.5)',
                   borderRadius: 4,
-                  color: '#e8d5a3',
+                  color: 'var(--gf-text-bright)',
                   cursor: 'pointer',
                   fontSize: 12,
                   fontFamily: 'Georgia, serif',
