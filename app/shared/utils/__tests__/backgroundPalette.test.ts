@@ -85,6 +85,8 @@ describe('paletteFromColor', () => {
         expect(contrastRatio(hex(p!['--gf-text']), bg)).toBeGreaterThanOrEqual(4.5);
         expect(contrastRatio(hex(p!['--gf-accent']), bg)).toBeGreaterThanOrEqual(3);
         expect(contrastRatio(hex(p!['--gf-text-dim']), bg)).toBeGreaterThanOrEqual(3);
+        expect(contrastRatio(hex(p!['--gf-border']), bg)).toBeGreaterThanOrEqual(2);
+        expect(contrastRatio(hex(p!['--gf-border-dim']), bg)).toBeGreaterThanOrEqual(1.35);
       }
     }
   });

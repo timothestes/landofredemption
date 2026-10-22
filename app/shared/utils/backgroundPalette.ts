@@ -39,6 +39,10 @@ const MIN_CONTRAST: Partial<Record<Token, number>> = {
   '--gf-accent': 3,
   '--gf-gold': 3,
   '--gf-text-dim': 3,
+  // Panel edges: at least the default theme's own separation (2.11 / 1.40),
+  // which blue/violet hues otherwise drop toward 1.2-1.4.
+  '--gf-border': 2,
+  '--gf-border-dim': 1.35,
 };
 
 /** Every property `paletteFromColor` sets — the hook removes exactly these. */
@@ -49,6 +53,7 @@ export const THEME_PROPERTIES = [
   '--gf-accent-rgb',
   '--gf-panel-rgb',
   '--gf-border-rgb',
+  '--gf-text-bright-rgb',
 ] as const;
 
 // ---- colour math ----
@@ -178,5 +183,6 @@ export function paletteFromColor(color: Hsl): Record<string, string> | null {
   props['--gf-accent-rgb'] = accent;
   props['--gf-panel-rgb'] = out['--gf-panel'].join(', ');
   props['--gf-border-rgb'] = out['--gf-border'].join(', ');
+  props['--gf-text-bright-rgb'] = out['--gf-text-bright'].join(', ');
   return props;
 }

@@ -152,7 +152,7 @@ export function PhaseBar({ hideBackButton = false }: { hideBackButton?: boolean 
               border: 'none',
               background: 'transparent',
               cursor: 'pointer',
-              color: 'rgba(232, 213, 163, 0.35)',
+              color: 'rgba(var(--gf-text-bright-rgb), 0.35)',
               transition: 'color 0.15s, background 0.15s',
             }}
             onMouseEnter={(e) => {
@@ -160,7 +160,7 @@ export function PhaseBar({ hideBackButton = false }: { hideBackButton?: boolean 
               e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.1)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'rgba(232, 213, 163, 0.35)';
+              e.currentTarget.style.color = 'rgba(var(--gf-text-bright-rgb), 0.35)';
               e.currentTarget.style.background = 'transparent';
             }}
           >

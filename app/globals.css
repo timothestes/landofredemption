@@ -246,6 +246,7 @@ button:focus-visible,
   /* Floating panel fill (gear menu, chat, toolbars) — #1e1610. */
   --gf-panel-rgb: 30, 22, 16;
   --gf-border-rgb: 107, 78, 39;
+  --gf-text-bright-rgb: 232, 213, 163;
   /* All of the above are overridden on <html> while a player's custom
      background is up, to match its color (useGameBackground). */
 }

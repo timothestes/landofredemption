@@ -51,7 +51,7 @@ export function CardLoupePanel() {
           justifyContent: isLoupeVisible ? 'flex-start' : 'center',
           gap: 6,
           padding: isLoupeVisible ? '0 12px' : '0',
-          color: 'var(--gf-text-dim, rgba(232,213,163,0.5))',
+          color: 'var(--gf-text-dim, rgba(var(--gf-text-bright-rgb), 0.5))',
           transition: 'color 0.15s, background 0.15s',
           flexShrink: 0,
         }}
@@ -60,7 +60,7 @@ export function CardLoupePanel() {
           e.currentTarget.style.background = 'var(--gf-hover, rgba(42,31,18,0.95))';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.color = 'var(--gf-text-dim, rgba(232,213,163,0.5))';
+          e.currentTarget.style.color = 'var(--gf-text-dim, rgba(var(--gf-text-bright-rgb), 0.5))';
           e.currentTarget.style.background = 'var(--gf-bg, rgba(30,22,16,0.92))';
         }}
       >

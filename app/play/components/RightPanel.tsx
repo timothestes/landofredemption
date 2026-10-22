@@ -156,7 +156,7 @@ export default function RightPanel({
           justifyContent: isLoupeVisible ? 'flex-start' : 'center',
           gap: isRail ? 14 : 6,
           padding: isLoupeVisible ? '0 12px' : '0',
-          color: 'rgba(232, 213, 163, 0.5)',
+          color: 'rgba(var(--gf-text-bright-rgb), 0.5)',
           flexShrink: 0,
         }}
       >

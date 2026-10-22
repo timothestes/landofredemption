@@ -319,7 +319,7 @@ function LogCardReader({ card, onClose }: { card: { name: string; img: string };
         style={{ maxHeight: '78%', maxWidth: '100%', objectFit: 'contain', borderRadius: 8 }}
       />
       <div style={{ color: 'var(--gf-text-bright)', fontSize: 15, textAlign: 'center', wordBreak: 'break-word' }}>{card.name}</div>
-      <div style={{ color: 'rgba(232, 213, 163, 0.5)', fontSize: 12 }}>Tap anywhere to close</div>
+      <div style={{ color: 'rgba(var(--gf-text-bright-rgb), 0.5)', fontSize: 12 }}>Tap anywhere to close</div>
     </div>
   );
 }
@@ -454,7 +454,7 @@ export function formatActionType(actionType: string, payload?: string, playerNam
           return (
             <>
               {countText}: <CardNameList cards={data.cards} />
-              <span style={{ fontSize: 'calc(9px * var(--chat-fs, 1))', fontStyle: 'italic', color: 'rgba(232, 213, 163, 0.35)', marginLeft: 4 }}>
+              <span style={{ fontSize: 'calc(9px * var(--chat-fs, 1))', fontStyle: 'italic', color: 'rgba(var(--gf-text-bright-rgb), 0.35)', marginLeft: 4 }}>
                 (only visible to you)
               </span>
             </>
@@ -479,7 +479,7 @@ export function formatActionType(actionType: string, payload?: string, playerNam
         return (
           <>
             {drewText} via {sourceNode}: <CardNameList cards={data.cards} />
-            <span style={{ fontSize: 'calc(9px * var(--chat-fs, 1))', fontStyle: 'italic', color: 'rgba(232, 213, 163, 0.35)', marginLeft: 4 }}>
+            <span style={{ fontSize: 'calc(9px * var(--chat-fs, 1))', fontStyle: 'italic', color: 'rgba(var(--gf-text-bright-rgb), 0.35)', marginLeft: 4 }}>
               (only visible to you)
             </span>
           </>
@@ -571,7 +571,7 @@ export function formatActionType(actionType: string, payload?: string, playerNam
           {isViewer && cards.length > 0 ? (
             <>
               : <CardNameList cards={cards} />
-              <span style={{ fontSize: 'calc(9px * var(--chat-fs, 1))', fontStyle: 'italic', color: 'rgba(232, 213, 163, 0.35)', marginLeft: 4 }}>
+              <span style={{ fontSize: 'calc(9px * var(--chat-fs, 1))', fontStyle: 'italic', color: 'rgba(var(--gf-text-bright-rgb), 0.35)', marginLeft: 4 }}>
                 (only visible to you)
               </span>
             </>
@@ -1126,7 +1126,7 @@ export function formatActionType(actionType: string, payload?: string, playerNam
           } else if (targetName) {
             parts.push(<span key="hand">moved <CardNameList cards={data.cards} /> to {targetName}&apos;s hand{explicitFromSuffix}</span>);
           } else if (isDrawFromDeck) {
-            parts.push(<span key="hand">drew <CardNameList cards={data.cards} />{explicitFromSuffix}{isViewer && fromHiddenDeck ? <span style={{ fontSize: 'calc(9px * var(--chat-fs, 1))', fontStyle: 'italic', color: 'rgba(232, 213, 163, 0.35)', marginLeft: 4 }}>(only visible to you)</span> : null}</span>);
+            parts.push(<span key="hand">drew <CardNameList cards={data.cards} />{explicitFromSuffix}{isViewer && fromHiddenDeck ? <span style={{ fontSize: 'calc(9px * var(--chat-fs, 1))', fontStyle: 'italic', color: 'rgba(var(--gf-text-bright-rgb), 0.35)', marginLeft: 4 }}>(only visible to you)</span> : null}</span>);
           } else {
             parts.push(<span key="hand">moved <CardNameList cards={data.cards} /> to hand{sharedFromSuffix}</span>);
           }
@@ -1373,7 +1373,7 @@ export function formatActionType(actionType: string, payload?: string, playerNam
         return (
           <>
             {verb}: <CardNameList cards={rawCards} />
-            <span style={{ fontSize: 'calc(9px * var(--chat-fs, 1))', fontStyle: 'italic', color: 'rgba(232, 213, 163, 0.35)', marginLeft: 4 }}>
+            <span style={{ fontSize: 'calc(9px * var(--chat-fs, 1))', fontStyle: 'italic', color: 'rgba(var(--gf-text-bright-rgb), 0.35)', marginLeft: 4 }}>
               (only visible to you)
             </span>
           </>
@@ -1957,7 +1957,7 @@ export default function ChatPanel({
                       fontSize: 'calc(10px * var(--chat-fs, 1))',
                       letterSpacing: '0.07em',
                       textTransform: 'uppercase',
-                      color: isActive ? 'var(--gf-text-bright)' : 'rgba(232, 213, 163, 0.4)',
+                      color: isActive ? 'var(--gf-text-bright)' : 'rgba(var(--gf-text-bright-rgb), 0.4)',
                       fontFamily: 'inherit',
                       transition: 'color 0.15s, background 0.15s, border-color 0.15s',
                     }}
@@ -2009,7 +2009,7 @@ export default function ChatPanel({
                   border: `1px solid ${searchOpen ? 'rgba(var(--gf-accent-rgb), 0.45)' : 'transparent'}`,
                   borderRadius: 4,
                   cursor: 'pointer',
-                  color: searchOpen ? 'var(--gf-text-bright)' : 'rgba(232, 213, 163, 0.55)',
+                  color: searchOpen ? 'var(--gf-text-bright)' : 'rgba(var(--gf-text-bright-rgb), 0.55)',
                   transition: 'color 0.15s, background 0.15s, border-color 0.15s',
                 }}
               >
@@ -2075,7 +2075,7 @@ export default function ChatPanel({
               <span
                 style={{
                   fontSize: 'calc(10px * var(--chat-fs, 1))',
-                  color: 'rgba(232, 213, 163, 0.45)',
+                  color: 'rgba(var(--gf-text-bright-rgb), 0.45)',
                   fontVariantNumeric: 'tabular-nums',
                   whiteSpace: 'nowrap',
                   minWidth: 56,
@@ -2107,7 +2107,7 @@ export default function ChatPanel({
                 {userChat.length === 0 && (
                   <p
                     style={{
-                      color: 'rgba(232, 213, 163, 0.3)',
+                      color: 'rgba(var(--gf-text-bright-rgb), 0.3)',
                       fontSize: 'calc(11px * var(--chat-fs, 1))',
                       textAlign: 'center',
                       marginTop: 16,
@@ -2164,7 +2164,7 @@ export default function ChatPanel({
                           style={{
                             fontWeight: 700,
                             fontSize: 'calc(10px * var(--chat-fs, 1))',
-                            color: isMe ? 'var(--gf-accent)' : '#4a7ab5',
+                            color: isMe ? '#c4955a' : '#4a7ab5',
                             letterSpacing: '0.02em',
                           }}
                         >
@@ -2173,7 +2173,7 @@ export default function ChatPanel({
                         <span
                           style={{
                             fontSize: 'calc(9px * var(--chat-fs, 1))',
-                            color: 'rgba(232, 213, 163, 0.3)',
+                            color: 'rgba(var(--gf-text-bright-rgb), 0.3)',
                             fontVariantNumeric: 'tabular-nums',
                           }}
                         >
@@ -2253,7 +2253,7 @@ export default function ChatPanel({
                         : 'rgba(255, 255, 255, 0.04)',
                     border: `1px solid ${inputText.trim() ? 'rgba(var(--gf-accent-rgb), 0.5)' : 'rgba(var(--gf-border-rgb), 0.2)'}`,
                     borderRadius: 4,
-                    color: inputText.trim() ? 'var(--gf-text-bright)' : 'rgba(232, 213, 163, 0.3)',
+                    color: inputText.trim() ? 'var(--gf-text-bright)' : 'rgba(var(--gf-text-bright-rgb), 0.3)',
                     cursor: inputText.trim() ? 'pointer' : 'default',
                     fontSize: 'calc(10px * var(--chat-fs, 1))',
                     letterSpacing: '0.06em',
@@ -2287,7 +2287,7 @@ export default function ChatPanel({
               {filteredActions.length === 0 && systemChat.length === 0 && (
                 <p
                   style={{
-                    color: 'rgba(232, 213, 163, 0.3)',
+                    color: 'rgba(var(--gf-text-bright-rgb), 0.3)',
                     fontSize: 'calc(11px * var(--chat-fs, 1))',
                     textAlign: 'center',
                     marginTop: 16,
@@ -2356,7 +2356,7 @@ export default function ChatPanel({
                       <span
                         style={{
                           fontSize: 'calc(9px * var(--chat-fs, 1))',
-                          color: 'rgba(232, 213, 163, 0.3)',
+                          color: 'rgba(var(--gf-text-bright-rgb), 0.3)',
                           fontVariantNumeric: 'tabular-nums',
                         }}
                       >
@@ -2389,7 +2389,7 @@ export default function ChatPanel({
                 {filteredChat.length === 0 && filteredActions.length === 0 && (
                   <p
                     style={{
-                      color: 'rgba(232, 213, 163, 0.3)',
+                      color: 'rgba(var(--gf-text-bright-rgb), 0.3)',
                       fontSize: 'calc(11px * var(--chat-fs, 1))',
                       textAlign: 'center',
                       marginTop: 16,
@@ -2452,7 +2452,7 @@ export default function ChatPanel({
                             height="11"
                             viewBox="0 0 24 24"
                             fill="none"
-                            stroke={isMe ? 'var(--gf-accent)' : '#4a7ab5'}
+                            stroke={isMe ? '#c4955a' : '#4a7ab5'}
                             strokeWidth="2"
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -2467,7 +2467,7 @@ export default function ChatPanel({
                                 style={{
                                   fontWeight: 700,
                                   fontSize: 'calc(10px * var(--chat-fs, 1))',
-                                  color: isMe ? 'var(--gf-accent)' : '#4a7ab5',
+                                  color: isMe ? '#c4955a' : '#4a7ab5',
                                   letterSpacing: '0.02em',
                                 }}
                               >
@@ -2476,7 +2476,7 @@ export default function ChatPanel({
                               <span
                                 style={{
                                   fontSize: 'calc(9px * var(--chat-fs, 1))',
-                                  color: 'rgba(232, 213, 163, 0.3)',
+                                  color: 'rgba(var(--gf-text-bright-rgb), 0.3)',
                                   fontVariantNumeric: 'tabular-nums',
                                 }}
                               >
@@ -2534,7 +2534,7 @@ export default function ChatPanel({
                           <span
                             style={{
                               fontSize: 'calc(9px * var(--chat-fs, 1))',
-                              color: 'rgba(232, 213, 163, 0.25)',
+                              color: 'rgba(var(--gf-text-bright-rgb), 0.25)',
                               fontVariantNumeric: 'tabular-nums',
                             }}
                           >
@@ -2594,7 +2594,7 @@ export default function ChatPanel({
                         : 'rgba(255, 255, 255, 0.04)',
                     border: `1px solid ${inputText.trim() ? 'rgba(var(--gf-accent-rgb), 0.5)' : 'rgba(var(--gf-border-rgb), 0.2)'}`,
                     borderRadius: 4,
-                    color: inputText.trim() ? 'var(--gf-text-bright)' : 'rgba(232, 213, 163, 0.3)',
+                    color: inputText.trim() ? 'var(--gf-text-bright)' : 'rgba(var(--gf-text-bright-rgb), 0.3)',
                     cursor: inputText.trim() ? 'pointer' : 'default',
                     fontSize: 'calc(10px * var(--chat-fs, 1))',
                     letterSpacing: '0.06em',
@@ -2617,7 +2617,7 @@ export default function ChatPanel({
               fontSize: 'calc(10px * var(--chat-fs, 1))',
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
-              color: 'rgba(232, 213, 163, 0.55)',
+              color: 'rgba(var(--gf-text-bright-rgb), 0.55)',
               marginBottom: 8,
             };
             const checkboxRowStyle: CSSProperties = {
@@ -2700,7 +2700,7 @@ export default function ChatPanel({
                       style={{
                         fontFamily: 'var(--font-cinzel), Georgia, serif',
                         fontSize: 'calc(11px * var(--chat-fs, 1))',
-                        color: 'rgba(232, 213, 163, 0.3)',
+                        color: 'rgba(var(--gf-text-bright-rgb), 0.3)',
                         fontStyle: 'italic',
                         margin: 0,
                         textAlign: 'center',

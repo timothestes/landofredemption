@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useSyncExternalStore } from 'react';
 import { upload } from '@vercel/blob/client';
 import {
   getGameBackground,
@@ -132,15 +132,22 @@ function applyRow(row: GameBackgroundRow | null) {
   set({ row });
   if (row.url === state.displayUrl) return;
   const img = new Image();
-  img.onload = async () => {
-    // Image and theme swap together, so the chrome never lags the table.
-    const palette = await samplePalette(row.url);
-    if (state.row?.url === row.url && state.row.enabled) set({ displayUrl: row.url, palette, error: null });
+  img.onload = () => {
+    if (state.row?.url !== row.url || !state.row.enabled) return;
+    // Paint the image now; the theme follows its (usually cached) sample.
+    set({ displayUrl: row.url, palette: null, error: null });
+    if (state.matchUi) void loadPalette(row.url);
   };
   img.onerror = () => {
     if (state.row?.url === row.url) set({ error: 'Your background image could not be loaded' });
   };
   img.src = row.url;
+}
+
+/** Sample `url` and adopt its palette if it is still the image on screen. */
+async function loadPalette(url: string) {
+  const palette = await samplePalette(url);
+  if (state.displayUrl === url && state.matchUi) set({ palette });
 }
 
 function switchUser(userId: string | null) {
@@ -187,11 +194,23 @@ function refresh() {
 
 /** CSS `background-image` for the table: the viewer's own image when enabled, else the default art. */
 export function useGameBackground(isForge?: boolean): string {
-  useEffect(() => {
+  // Layout effect: the theme lands before the first paint of a table, so a
+  // soft navigation back never flashes the default brown for a frame.
+  useLayoutEffect(() => {
     mountedSurfaces++;
     refresh();
     syncTheme();
+    // Another tab may have signed out or switched accounts while this table
+    // stayed open; re-check when the player comes back to it.
+    const onReturn = () => {
+      if (document.visibilityState === 'visible') refresh();
+      syncTheme();
+    };
+    document.addEventListener('visibilitychange', onReturn);
+    window.addEventListener('focus', onReturn);
     return () => {
+      document.removeEventListener('visibilitychange', onReturn);
+      window.removeEventListener('focus', onReturn);
       mountedSurfaces--;
       syncTheme();
     };
@@ -256,7 +275,8 @@ export function useGameBackgroundSettings() {
     } catch {
       // Private mode etc.: the choice just lasts for this page.
     }
-    set({ matchUi });
+    set({ matchUi, palette: matchUi ? state.palette : null });
+    if (matchUi && state.displayUrl && !state.palette) void loadPalette(state.displayUrl);
   }, []);
 
   return { ...s, uploadFile, setEnabled, remove, setMatchUi };
