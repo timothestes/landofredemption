@@ -297,6 +297,7 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
         isOwner={isOwner}
         decidedMatchId={decidedMatchId}
         champion={championPanel}
+        bracketId={bracket.id}
         canReset={matchId => resetMatchAllowed(matches, games, matchId)}
         {...(isOwner ? { onPlay, onPlayOnline, onResume, onRecord: setRecordMatchId, onAbandon, onReset } : {})}
       />

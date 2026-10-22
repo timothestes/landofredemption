@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MoreHorizontal, X } from 'lucide-react';
+import { ChevronRight, MoreHorizontal, Swords, X } from 'lucide-react';
 import type { BracketGame } from '@/lib/bracket/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -66,9 +66,14 @@ export function MatchBlock(props: MatchCallbacks & {
   /** Set on the block in the next round whose slot the decided match fed. */
   writeInSlot?: 'a' | 'b' | null;
   canReset?: boolean;
+  /** Bracket page only: with both decks seated, a row links to the matchup preview. */
+  bracketId?: string;
 }) {
-  const { view, isOwner, highlight, writeInSlot, canReset } = props;
+  const { view, isOwner, highlight, writeInSlot, canReset, bracketId } = props;
   const { match, state, series } = view;
+  const previewHref = bracketId && view.a && view.b && !match.isBye
+    ? `/brackets/${bracketId}/matchup/${match.id}`
+    : null;
   const writeIn = highlight === 'write-in' || !!writeInSlot;
   const armed = useWriteIn(writeIn);
   const bestOfOne = series.needed === 1;
@@ -220,6 +225,16 @@ export function MatchBlock(props: MatchCallbacks & {
         <p className="border-t border-border/60 px-3 py-1.5 text-xs text-muted-foreground">
           {view.firstToPlayName} goes first
         </p>
+      )}
+      {previewHref && (
+        <Link
+          href={previewHref}
+          className="flex min-h-11 items-center gap-2 border-t border-border/60 px-3 text-sm text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground"
+        >
+          <Swords className="h-4 w-4" aria-hidden />
+          <span className="flex-1">Preview matchup</span>
+          <ChevronRight className="h-4 w-4" aria-hidden />
+        </Link>
       )}
       {primary && (
         <div className="flex items-center gap-2 border-t border-border/60 px-3 py-2">

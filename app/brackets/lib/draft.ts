@@ -57,5 +57,6 @@ export function draftEntries(picked: DraftDeck[]): BracketEntry[] {
     previewCard1: d.preview_card_1,
     previewCard2: d.preview_card_2,
     paragon: d.paragon,
+    keyCards: [],
   }));
 }

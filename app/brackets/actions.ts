@@ -616,6 +616,32 @@ export async function resetMatchAction(matchId: string): Promise<ActionResult<nu
   return { ok: true, data: null };
 }
 
+const MAX_KEY_CARDS = 12;
+
+/**
+ * Replaces an entry's key cards (the matchup preview's starred cards). Keys
+ * are catalog keys `name|set|imgFile`; the whole list is saved on every tap.
+ */
+export async function setKeyCardsAction(entryId: string, keys: string[]): Promise<ActionResult<{ keyCards: string[] }>> {
+  const supabase = await createClient();
+  const { data: entryRow, error: eErr } = await supabase
+    .from('deck_bracket_entries').select('bracket_id').eq('id', entryId).maybeSingle();
+  if (eErr) return fail(eErr.message);
+  if (!entryRow) return fail('Deck not found.');
+  const owner = await requireBracketOwner(supabase, entryRow.bracket_id as string);
+  if (owner.ok === false) return owner;
+
+  if (!Array.isArray(keys) || keys.some(k => typeof k !== 'string' || k.length === 0 || k.length > 200)) {
+    return fail('Could not save the key cards.');
+  }
+  const unique = [...new Set(keys)];
+  if (unique.length > MAX_KEY_CARDS) return fail(`Up to ${MAX_KEY_CARDS} key cards per deck.`);
+
+  const { error } = await supabase.from('deck_bracket_entries').update({ key_cards: unique }).eq('id', entryId);
+  if (error) return fail(error.message);
+  return { ok: true, data: { keyCards: unique } };
+}
+
 export async function deleteBracketAction(id: string): Promise<ActionResult<null>> {
   const supabase = await createClient();
   const owner = await requireBracketOwner(supabase, id);

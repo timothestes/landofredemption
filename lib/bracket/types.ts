@@ -11,6 +11,8 @@ export interface BracketEntry {
   previewCard1: string | null;
   previewCard2: string | null;
   paragon: string | null;
+  /** Catalog keys (`name|set|imgFile`) of the cards the owner starred for the matchup preview. */
+  keyCards: string[];
 }
 
 export interface BracketMatch {
