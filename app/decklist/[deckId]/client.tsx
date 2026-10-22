@@ -24,6 +24,7 @@ import { compareCardsByType, compareCardsDefault, compareTypeGroups, type Sortab
 import { prettifyTypeName, getGroupKey, getGroupDisplayName } from "@/lib/decks/typeGroups";
 import { getFormatDef } from "@/lib/formats";
 import { TrophyIcon, getPlacementLabel } from "@/components/trophy-icon";
+import BrigadeBar from "@/components/decks/BrigadeBar";
 import type { DeckTournamentContext } from "../deckTournamentContext";
 import type { EnrichedCard } from "./enrichDeckCards";
 import type { ArticleRefs } from "@/app/articles/lib/refTypes";
@@ -1470,6 +1471,12 @@ export default function PublicDeckClient({ deck, descriptionRefs, isOwner, isLog
                 })()}
               </div>
             </div>
+          </div>
+
+          {/* Brigades — the deck's colour mix across the full width */}
+          <div className="mt-6 border-t border-border pt-4">
+            <h3 className="font-semibold text-foreground mb-3">Brigades</h3>
+            <BrigadeBar cards={enrichedCards} />
           </div>
         </div>
       )}
