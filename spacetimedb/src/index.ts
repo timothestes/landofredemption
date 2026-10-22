@@ -7210,8 +7210,9 @@ export const opponent_keep_one_shuffle_draw = spacetimedb.reducer(
 // Reducer: undo_keep_one_shuffle_draw
 // Takes back the SENDER's half of Philip's Daughters: the shuffled-away cards
 // return to hand in their old order, the drawn cards (and any auto-routed Lost
-// Souls) go back into the deck, and the deck's pre-shuffle order is restored.
-// Mirrors the forward flow — each player ran their own half, so each player
+// Souls) go back into the deck, and the deck is then reshuffled — the player
+// has seen what they drew, so restoring the old order would let them know
+// where those cards sit. Mirrors the forward flow — each player ran their own half, so each player
 // undoes their own half; the caster's undo also withdraws the opponent's
 // request if they haven't answered it yet. Refused once a card the effect
 // moved has been played (see planKeepOneUndo). Snapshots expire at the turn
@@ -7259,6 +7260,22 @@ export const undo_keep_one_shuffle_draw = spacetimedb.reducer(
     }
     // Auto-routed souls leaving the Land of Bondage leave a gap behind.
     compactLobIndices(ctx, gameId, player.id);
+
+    // Reshuffle the deck. The plan put it back in its pre-effect order, but the
+    // player knows the cards that just went back in, so a random order is the
+    // only fair one. Same seeded pass as shuffleAndDrawForPlayerImpl.
+    const gameForShuffle = ctx.db.Game.id.find(gameId);
+    if (!gameForShuffle) throw new SenderError('Game disappeared mid-reducer');
+    const rngCounter = gameForShuffle.rngCounter + 1n;
+    ctx.db.Game.id.update({ ...gameForShuffle, rngCounter });
+    const deckCards = [...ctx.db.CardInstance.card_instance_game_id.filter(gameId)].filter(
+      (c: any) => c.ownerId === player.id && c.zone === 'deck'
+    );
+    const shuffleIndices = deckCards.map((_: any, idx: number) => idx);
+    seededShuffle(shuffleIndices, makeSeed(ctx.timestamp.microsSinceUnixEpoch, gameId, player.id, rngCounter));
+    for (let i = 0; i < deckCards.length; i++) {
+      ctx.db.CardInstance.id.update({ ...deckCards[i], zoneIndex: BigInt(shuffleIndices[i]) });
+    }
 
     // Withdraw the opponent's half if they haven't done it yet. Their picker,
     // if open, closes itself when this row disappears.

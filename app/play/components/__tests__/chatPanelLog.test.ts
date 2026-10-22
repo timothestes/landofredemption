@@ -125,6 +125,9 @@ describe("formatActionType — Philip's Daughters", () => {
     const out = asText(formatActionType('UNDO_KEEP_ONE_SHUFFLE_DRAW', JSON.stringify({ shuffled: 2, drawn: 2 })));
     expect(out).toContain('undid Philip’s Daughters');
     expect(out).toContain('2 cards back in hand');
+    // The undo reshuffles rather than restoring the old order — say so.
+    expect(out).toContain('deck shuffled');
+    expect(out).not.toContain('order restored');
     expect(asText(formatActionType('UNDO_KEEP_ONE_SHUFFLE_DRAW'))).not.toBe('undo keep one shuffle draw');
   });
 });
