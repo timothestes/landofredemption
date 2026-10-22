@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useSyncExternalStore } from 'react';
 import { upload } from '@vercel/blob/client';
 import {
   getGameBackground,
@@ -12,6 +12,7 @@ import {
 import { createClient } from '@/utils/supabase/client';
 import { backgroundPathname, gameBackgroundCss } from '../utils/gameBackground';
 import { encodeGameBackground } from '../utils/encodeGameBackground';
+import { THEME_PROPERTIES, dominantColor, paletteFromColor } from '../utils/backgroundPalette';
 
 /**
  * One module-level store shared by every table surface (goldfish, multiplayer,
@@ -21,6 +22,11 @@ import { encodeGameBackground } from '../utils/encodeGameBackground';
  * store would show the previous account's image to the next one. A custom
  * image is swapped in only after it has fully loaded, so the table never shows
  * a blank or broken background; a failed load keeps what was there.
+ *
+ * While a table surface is mounted and the custom image is up, the `--gf-*`
+ * theme on <html> is retinted to the image's colour (unless the player turned
+ * "Match UI Colors" off); it is removed again on unmount, so nothing outside
+ * the table ever sees it.
  */
 interface State {
   loaded: boolean;
@@ -30,17 +36,80 @@ interface State {
   row: GameBackgroundRow | null;
   /** The custom URL to paint, set only once that image has loaded. */
   displayUrl: string | null;
+  /** `--gf-*` overrides derived from displayUrl's image; null = keep the default theme. */
+  palette: Record<string, string> | null;
+  /** Player preference (localStorage, default on): retint the UI to the image. */
+  matchUi: boolean;
   busy: boolean;
   error: string | null;
 }
 
-let state: State = { loaded: false, signedIn: false, userId: null, row: null, displayUrl: null, busy: false, error: null };
+const MATCH_UI_STORAGE_KEY = 'redemption-match-ui-to-background';
+
+function readMatchUi(): boolean {
+  try {
+    return typeof window === 'undefined' || localStorage.getItem(MATCH_UI_STORAGE_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
+
+let state: State = {
+  loaded: false, signedIn: false, userId: null, row: null, displayUrl: null,
+  palette: null, matchUi: true, busy: false, error: null,
+};
 let loading: Promise<void> | null = null;
 const listeners = new Set<() => void>();
+/** Table surfaces currently mounted; the theme is only applied while > 0. */
+let mountedSurfaces = 0;
+/** Serialized overrides currently on <html>, '' when none. */
+let appliedTheme = '';
 
 function set(patch: Partial<State>) {
   state = { ...state, ...patch };
+  syncTheme();
   listeners.forEach((l) => l());
+}
+
+/** Put the derived palette on <html> exactly when it should be visible, else remove it. */
+function syncTheme() {
+  if (typeof document === 'undefined') return;
+  const on = mountedSurfaces > 0 && state.matchUi && state.displayUrl !== null
+    && state.palette !== null && cookieUserId() === state.userId;
+  const next = on ? JSON.stringify(state.palette) : '';
+  if (next === appliedTheme) return;
+  const style = document.documentElement.style;
+  for (const prop of THEME_PROPERTIES) style.removeProperty(prop);
+  if (on) for (const [prop, value] of Object.entries(state.palette!)) style.setProperty(prop, value);
+  appliedTheme = next;
+}
+
+/**
+ * Sample the loaded image small and derive the theme. A separate CORS-mode
+ * load (Blob serves `access-control-allow-origin: *`), so the canvas is not
+ * tainted; any failure just leaves the default theme.
+ */
+function samplePalette(url: string): Promise<Record<string, string> | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 48;
+        canvas.height = 48;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) return resolve(null);
+        ctx.drawImage(img, 0, 0, 48, 48);
+        const color = dominantColor(ctx.getImageData(0, 0, 48, 48).data);
+        resolve(color ? paletteFromColor(color) : null);
+      } catch {
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
 }
 
 function subscribe(l: () => void) {
@@ -57,14 +126,17 @@ const SERVER_STATE = state;
  */
 function applyRow(row: GameBackgroundRow | null) {
   if (!row?.enabled) {
-    set({ row, displayUrl: null });
+    set({ row, displayUrl: null, palette: null });
     return;
   }
   set({ row });
   if (row.url === state.displayUrl) return;
   const img = new Image();
   img.onload = () => {
-    if (state.row?.url === row.url && state.row.enabled) set({ displayUrl: row.url, error: null });
+    if (state.row?.url !== row.url || !state.row.enabled) return;
+    // Paint the image now; the theme follows its (usually cached) sample.
+    set({ displayUrl: row.url, palette: null, error: null });
+    if (state.matchUi) void loadPalette(row.url);
   };
   img.onerror = () => {
     if (state.row?.url === row.url) set({ error: 'Your background image could not be loaded' });
@@ -72,8 +144,14 @@ function applyRow(row: GameBackgroundRow | null) {
   img.src = row.url;
 }
 
+/** Sample `url` and adopt its palette if it is still the image on screen. */
+async function loadPalette(url: string) {
+  const palette = await samplePalette(url);
+  if (state.displayUrl === url && state.matchUi) set({ palette });
+}
+
 function switchUser(userId: string | null) {
-  if (userId !== state.userId) set({ userId, row: null, displayUrl: null, error: null });
+  if (userId !== state.userId) set({ userId, row: null, displayUrl: null, palette: null, error: null });
 }
 
 /**
@@ -101,6 +179,7 @@ function cookieUserId(): string | null {
 
 function refresh() {
   if (loading || typeof window === 'undefined') return;
+  if (readMatchUi() !== state.matchUi) set({ matchUi: !state.matchUi });
   switchUser(cookieUserId());
   loading = getGameBackground()
     .then(({ userId, row }) => {
@@ -115,7 +194,27 @@ function refresh() {
 
 /** CSS `background-image` for the table: the viewer's own image when enabled, else the default art. */
 export function useGameBackground(isForge?: boolean): string {
-  useEffect(refresh, []);
+  // Layout effect: the theme lands before the first paint of a table, so a
+  // soft navigation back never flashes the default brown for a frame.
+  useLayoutEffect(() => {
+    mountedSurfaces++;
+    refresh();
+    syncTheme();
+    // Another tab may have signed out or switched accounts while this table
+    // stayed open; re-check when the player comes back to it.
+    const onReturn = () => {
+      if (document.visibilityState === 'visible') refresh();
+      syncTheme();
+    };
+    document.addEventListener('visibilitychange', onReturn);
+    window.addEventListener('focus', onReturn);
+    return () => {
+      document.removeEventListener('visibilitychange', onReturn);
+      window.removeEventListener('focus', onReturn);
+      mountedSurfaces--;
+      syncTheme();
+    };
+  }, []);
   const displayUrl = useSyncExternalStore(
     subscribe,
     () => (state.displayUrl && cookieUserId() === state.userId ? state.displayUrl : null),
@@ -170,7 +269,17 @@ export function useGameBackgroundSettings() {
     applyRow(null);
   }), [run]);
 
-  return { ...s, uploadFile, setEnabled, remove };
+  const setMatchUi = useCallback((matchUi: boolean) => {
+    try {
+      localStorage.setItem(MATCH_UI_STORAGE_KEY, matchUi ? '1' : '0');
+    } catch {
+      // Private mode etc.: the choice just lasts for this page.
+    }
+    set({ matchUi, palette: matchUi ? state.palette : null });
+    if (matchUi && state.displayUrl && !state.palette) void loadPalette(state.displayUrl);
+  }, []);
+
+  return { ...s, uploadFile, setEnabled, remove, setMatchUi };
 }
 
 function randomNonce(): string {

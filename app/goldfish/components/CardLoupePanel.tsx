@@ -24,7 +24,7 @@ export function CardLoupePanel() {
         minWidth: totalWidth,
         height: isLoupeVisible ? '100%' : 'auto',
         background: isLoupeVisible ? 'rgba(13, 9, 5, 0.6)' : 'transparent',
-        borderLeft: isLoupeVisible ? '1px solid rgba(107, 78, 39, 0.35)' : 'none',
+        borderLeft: isLoupeVisible ? '1px solid rgba(var(--gf-border-rgb), 0.35)' : 'none',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
@@ -42,16 +42,16 @@ export function CardLoupePanel() {
           height: HEADER_HEIGHT,
           minHeight: HEADER_HEIGHT,
           background: 'var(--gf-bg, rgba(30,22,16,0.92))',
-          borderBottom: '1px solid var(--gf-border, rgba(107,78,39,0.4))',
+          borderBottom: '1px solid var(--gf-border, rgba(var(--gf-border-rgb), 0.4))',
           border: 'none',
-          borderBlockEnd: '1px solid var(--gf-border, rgba(107,78,39,0.4))',
+          borderBlockEnd: '1px solid var(--gf-border, rgba(var(--gf-border-rgb), 0.4))',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: isLoupeVisible ? 'flex-start' : 'center',
           gap: 6,
           padding: isLoupeVisible ? '0 12px' : '0',
-          color: 'var(--gf-text-dim, rgba(232,213,163,0.5))',
+          color: 'var(--gf-text-dim, rgba(var(--gf-text-bright-rgb), 0.5))',
           transition: 'color 0.15s, background 0.15s',
           flexShrink: 0,
         }}
@@ -60,7 +60,7 @@ export function CardLoupePanel() {
           e.currentTarget.style.background = 'var(--gf-hover, rgba(42,31,18,0.95))';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.color = 'var(--gf-text-dim, rgba(232,213,163,0.5))';
+          e.currentTarget.style.color = 'var(--gf-text-dim, rgba(var(--gf-text-bright-rgb), 0.5))';
           e.currentTarget.style.background = 'var(--gf-bg, rgba(30,22,16,0.92))';
         }}
       >
@@ -140,7 +140,7 @@ export function CardLoupePanel() {
                       right: 8,
                       bottom: 10,
                       background: 'rgba(0, 0, 0, 0.88)',
-                      border: '1px solid #c4955a',
+                      border: '1px solid var(--gf-accent)',
                       borderRadius: 999,
                       padding: '5px 10px',
                       color: '#f0d9a8',
@@ -160,7 +160,7 @@ export function CardLoupePanel() {
                 style={{
                   fontFamily: 'var(--font-cinzel), Georgia, serif',
                   fontSize: 12,
-                  color: '#e8d5a3',
+                  color: 'var(--gf-text-bright)',
                   textAlign: 'center',
                   letterSpacing: '0.05em',
                   lineHeight: 1.3,
@@ -190,7 +190,7 @@ export function CardLoupePanel() {
                   width: PANEL_WIDTH - 24,
                   height: (PANEL_WIDTH - 24) * 1.4,
                   borderRadius: 6,
-                  border: '1px dashed rgba(107, 78, 39, 0.5)',
+                  border: '1px dashed rgba(var(--gf-border-rgb), 0.5)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -214,7 +214,7 @@ export function CardLoupePanel() {
                 style={{
                   fontFamily: 'var(--font-cinzel), Georgia, serif',
                   fontSize: 11,
-                  color: '#e8d5a3',
+                  color: 'var(--gf-text-bright)',
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
                 }}
