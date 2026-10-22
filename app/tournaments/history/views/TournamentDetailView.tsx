@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, type ReactNode } from "react";
+import Link from "next/link";
 import type { ViewId } from "../NavTabs";
 import { useSeed } from "../seed-context";
 import type { MatchEntry } from "@/lib/nationals/types";
@@ -257,6 +258,14 @@ export function TournamentDetailView({
   const key = buildKey(tournament.year, selectedFormat);
   const results = (seed.results[key] ?? []).slice().sort((a, b) => a.placement - b.placement);
 
+  // Years published through the tracker link out to the app: each row's
+  // published decklist, plus the format's results page (card breakdown).
+  const resultsId = tournament.resultsIds?.[selectedFormat];
+  const hasDeckLinks = results.some((r) => r.deckId);
+  // The Deck column is desktop-only while it's just archetype text, but a
+  // column of decklist links earns its space on a phone.
+  const deckColClass = hasDeckLinks ? "" : " hidden sm:table-cell";
+
   const matches: MatchEntry[] = seed.matches[key] ?? [];
   const hasMatchData = tournament.year >= MATCH_DATA_START_YEAR;
   const derivedRecords = recordsForKey(matches, selectedFormat);
@@ -429,10 +438,20 @@ export function TournamentDetailView({
 
       {/* ── Standings ───────────────────────────────────────────────────── */}
       <div>
-        <SectionTitle
-          title="Standings"
-          sub={`${results.length} ${results.length === 1 ? "entry" : "entries"}`}
-        />
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+          <SectionTitle
+            title="Standings"
+            sub={`${results.length} ${results.length === 1 ? "entry" : "entries"}`}
+          />
+          {resultsId && (
+            <Link
+              href={`/tournaments/results/${resultsId}`}
+              className="mb-4 text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              Decklists &amp; card breakdown <span aria-hidden>›</span>
+            </Link>
+          )}
+        </div>
         {results.length ? (
           <div className="rounded-lg border border-border bg-card overflow-hidden">
             <table className="w-full text-sm">
@@ -444,7 +463,9 @@ export function TournamentDetailView({
                   <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     Player
                   </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide hidden sm:table-cell">
+                  <th
+                    className={`text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide${deckColClass}`}
+                  >
                     Deck
                   </th>
                   <th className="text-left px-4 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide hidden md:table-cell">
@@ -467,8 +488,17 @@ export function TournamentDetailView({
                     <td className="px-4 py-2.5 font-medium">
                       <PlayerLink name={r.playerName} setView={setView} />
                     </td>
-                    <td className="px-4 py-2.5 text-muted-foreground hidden sm:table-cell">
-                      {r.deck || "—"}
+                    <td className={`px-4 py-2.5 text-muted-foreground${deckColClass}`}>
+                      {r.deckId ? (
+                        <Link
+                          href={`/decklist/${r.deckId}`}
+                          className="text-foreground underline underline-offset-2 hover:text-primary transition-colors"
+                        >
+                          View
+                        </Link>
+                      ) : (
+                        r.deck || "—"
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground hidden md:table-cell">
                       {r.record || derivedRecords[r.playerName] || "—"}

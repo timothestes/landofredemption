@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import Link from "next/link";
 import type { ViewId } from "../NavTabs";
 import { useSeed } from "../seed-context";
 import { playerProfile } from "@/lib/nationals/selectors";
@@ -668,7 +669,16 @@ export function PlayerProfileView({
                       {h.fieldPct != null ? `${h.fieldPct.toFixed(1)}%` : "—"}
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground hidden sm:table-cell">
-                      {h.deck || "—"}
+                      {h.deckId ? (
+                        <Link
+                          href={`/decklist/${h.deckId}`}
+                          className="text-foreground underline underline-offset-2 hover:text-primary transition-colors"
+                        >
+                          View
+                        </Link>
+                      ) : (
+                        h.deck || "—"
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground hidden md:table-cell">
                       {h.matchRecord || h.record || "—"}
