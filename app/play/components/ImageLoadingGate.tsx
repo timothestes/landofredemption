@@ -135,7 +135,7 @@ export function ImageLoadingGate({ open, progress, message }: ImageLoadingGatePr
           style={{
             width: `${pct}%`,
             height: '100%',
-            background: 'linear-gradient(90deg, rgba(var(--gf-accent-rgb), 0.7) 0%, #e8b86a 60%, #f4d89e 100%)',
+            background: 'linear-gradient(90deg, rgba(196, 149, 90, 0.7) 0%, #e8b86a 60%, #f4d89e 100%)',
             boxShadow: '0 0 10px rgba(232, 184, 106, 0.6)',
             transition: 'width 180ms ease-out',
           }}
