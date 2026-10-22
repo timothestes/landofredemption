@@ -240,19 +240,15 @@ export function useGameBackgroundSettings() {
     }
   }, []);
 
-  const uploadFile = useCallback((file: File) => run(async () => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Sign in to set a background');
-    const encoded = await encodeGameBackground(file);
-    const blob = await upload(backgroundPathname(user.id, encoded.type, randomNonce()), encoded, {
-      access: 'public',
-      handleUploadUrl: '/api/game-background/upload',
-      contentType: encoded.type,
-    });
-    const saved = await saveGameBackground(blob.url);
-    if (saved.ok === false) throw new Error(saved.error);
-    applyRow(saved.value);
+  const uploadFile = useCallback((file: File) => run(() => encodeAndSave(file)), [run]);
+
+  /** Mirror the saved image left-to-right: re-encoded and saved like a Replace. */
+  const flip = useCallback(() => run(async () => {
+    const url = state.row?.url;
+    if (!url) return;
+    const res = await fetch(url, { mode: 'cors', cache: 'force-cache' });
+    if (!res.ok) throw new Error('Could not load your background to flip it');
+    await encodeAndSave(await res.blob(), { mirror: true });
   }), [run]);
 
   const setEnabled = useCallback((enabled: boolean) => run(async () => {
@@ -279,7 +275,22 @@ export function useGameBackgroundSettings() {
     if (matchUi && state.displayUrl && !state.palette) void loadPalette(state.displayUrl);
   }, []);
 
-  return { ...s, uploadFile, setEnabled, remove, setMatchUi };
+  return { ...s, uploadFile, flip, setEnabled, remove, setMatchUi };
+}
+
+async function encodeAndSave(file: Blob, opts?: { mirror?: boolean }) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Sign in to set a background');
+  const encoded = await encodeGameBackground(file, opts);
+  const blob = await upload(backgroundPathname(user.id, encoded.type, randomNonce()), encoded, {
+    access: 'public',
+    handleUploadUrl: '/api/game-background/upload',
+    contentType: encoded.type,
+  });
+  const saved = await saveGameBackground(blob.url);
+  if (saved.ok === false) throw new Error(saved.error);
+  applyRow(saved.value);
 }
 
 function randomNonce(): string {

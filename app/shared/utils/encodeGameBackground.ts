@@ -9,9 +9,9 @@ import {
  * Browser-only: decode a picked image, shrink it to GAME_BACKGROUND_MAX_EDGE
  * and re-encode as WebP (JPEG where the browser cannot encode WebP — older
  * Safari silently hands back PNG). Re-encoding also strips EXIF/GPS and any
- * animation. Throws with a user-facing message.
+ * animation. `mirror` flips it left-to-right. Throws with a user-facing message.
  */
-export async function encodeGameBackground(file: File): Promise<Blob> {
+export async function encodeGameBackground(file: Blob, { mirror = false }: { mirror?: boolean } = {}): Promise<Blob> {
   // An empty type is common for .heic on desktop; let the decoder decide.
   if ((file.type && !file.type.startsWith('image/')) || file.type === 'image/svg+xml') {
     throw new Error('Pick a JPEG, PNG or WebP image');
@@ -27,6 +27,10 @@ export async function encodeGameBackground(file: File): Promise<Blob> {
   canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Could not process that image');
+  if (mirror) {
+    ctx.translate(width, 0);
+    ctx.scale(-1, 1);
+  }
   ctx.drawImage(source.image, 0, 0, width, height);
   source.close();
 
@@ -44,7 +48,7 @@ interface Decoded {
   close: () => void;
 }
 
-async function decode(file: File): Promise<Decoded> {
+async function decode(file: Blob): Promise<Decoded> {
   try {
     const bitmap = await createImageBitmap(file);
     return { image: bitmap, width: bitmap.width, height: bitmap.height, close: () => bitmap.close() };
