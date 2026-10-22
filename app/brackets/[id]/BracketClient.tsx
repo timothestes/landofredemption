@@ -215,7 +215,7 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
     run: async () => {
       const res = await deleteBracketAction(bracket.id);
       if (res.ok === false) return { ok: false, error: res.error };
-      router.push('/tracker/tournaments');
+      router.push('/brackets');
       return { ok: true, navigated: true };
     },
   });

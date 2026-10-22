@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { HiOutlineViewList, HiDotsVertical } from "react-icons/hi";
+import { HiDotsVertical } from "react-icons/hi";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -20,7 +20,7 @@ const shortDateFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "nu
 const statusText = (b: BracketSummary) =>
   b.status === "complete" ? `Champion: ${b.championName ?? "—"}` : b.currentRound;
 
-export default function MyBracketsSection() {
+export default function MyBracketsList() {
   const [brackets, setBrackets] = useState<BracketSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<BracketSummary | null>(null);
@@ -55,21 +55,8 @@ export default function MyBracketsSection() {
     }
   };
 
-  const newButton = (
-    <Button variant="outline" className="flex items-center gap-2" asChild>
-      <Link href="/brackets/new">
-        <HiOutlineViewList className="w-4 h-4" />
-        <span>New deck bracket</span>
-      </Link>
-    </Button>
-  );
-
   return (
-    <section className="mt-10 mb-10">
-      <h2 className="border-b border-border/60 pb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-        Deck brackets
-      </h2>
-
+    <section>
       {error ? (
         <p className="py-3 text-sm text-muted-foreground">{error}</p>
       ) : brackets === null ? (
@@ -82,14 +69,11 @@ export default function MyBracketsSection() {
           ))}
         </div>
       ) : brackets.length === 0 ? (
-        <div className="space-y-3 py-4">
-          <p className="text-sm text-muted-foreground">
-            Seat your own decks in a bracket and play every match yourself.
-          </p>
-          {newButton}
-        </div>
+        <p className="border-t border-border/60 py-4 text-sm text-muted-foreground">
+          No gauntlets yet. Start one to see which of your decks comes out on top.
+        </p>
       ) : (
-        <ul className="divide-y divide-border/60">
+        <ul className="divide-y divide-border/60 border-y border-border/60">
           {brackets.map(b => (
             <li key={b.id} className="flex min-h-11 items-center hover:bg-muted/40">
               <Link
@@ -140,7 +124,7 @@ export default function MyBracketsSection() {
       <Dialog open={pendingDelete !== null} onOpenChange={open => { if (!open && !deleting) setPendingDelete(null); }}>
         <DialogContent size="sm">
           <DialogHeader>
-            <DialogTitle>Delete this bracket?</DialogTitle>
+            <DialogTitle>Delete this gauntlet?</DialogTitle>
           </DialogHeader>
           <DialogBody>
             <p className="text-sm text-muted-foreground">
