@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import CardTile from '@/components/ui/CardTile';
 import { DeckThumb } from '../../../components/DeckThumb';
-import { cardKey, groupDeck } from '../../../lib/matchup';
+import { cardKey, groupDeck, RESERVE_ROW } from '../../../lib/matchup';
 
 export interface MatchupSide {
   entry: BracketEntry;
@@ -47,9 +47,15 @@ function Tile({ card, isKey, onClick }: { card: EnrichedCard; isKey: boolean; on
  * owner can switch the column into choose mode, where tapping a tile stars
  * or unstars it and the whole list is saved at once.
  */
-export function DeckColumn({ side, isOwner, onOpenCard, onSaveKeyCards, onError, className }: {
+export function DeckColumn({ side, isOwner, rows, onOpenCard, onSaveKeyCards, onError, className }: {
   side: MatchupSide;
   isOwner: boolean;
+  /**
+   * Row keys shared with the other column (see sharedRows). On wide screens the
+   * column joins the parent's grid through subgrid and puts each bucket in its
+   * row, so the same category sits level across both decks.
+   */
+  rows?: string[];
   onOpenCard: (card: Card, list: Card[]) => void;
   onSaveKeyCards: (entryId: string, keys: string[]) => Promise<{ ok: boolean; error?: string }>;
   onError: (message: string) => void;
@@ -96,14 +102,26 @@ export function DeckColumn({ side, isOwner, onOpenCard, onSaveKeyCards, onError,
     />
   );
 
+  // Row 1 header, row 2 key cards, row 3 the unreadable-deck note, then one row per shared key.
+  const rowStyle = (n: number): React.CSSProperties | undefined => (rows ? { gridRow: n } : undefined);
+  const bucketStyle = (key: string) => rowStyle(4 + Math.max(0, rows?.indexOf(key) ?? 0));
+
   const formatId = getFormatDef(deck?.format ?? entry.deckFormat).id;
   const paragon = deck?.paragon ?? entry.paragon;
   const showKeyStrip = status === 'ok' && (isOwner || keyCards.length > 0);
 
   return (
-    <section className={cn('min-w-0', className)} aria-label={entry.deckName}>
-      <header className="flex items-start gap-3 border-b border-border/60 pb-3">
-        <DeckThumb entry={entry} size={56} />
+    <section
+      className={cn(
+        'min-w-0',
+        rows && 'max-lg:flex max-lg:flex-col max-lg:gap-4 lg:grid lg:[grid-row:span_var(--rows)] lg:[grid-template-rows:subgrid]',
+        className,
+      )}
+      style={rows ? ({ '--rows': 3 + rows.length } as React.CSSProperties) : undefined}
+      aria-label={entry.deckName}
+    >
+      <header style={rowStyle(1)} className="flex items-start gap-3 border-b border-border/60 pb-3">
+        <DeckThumb entry={entry} size={96} portrait />
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-lg font-semibold leading-tight">
             {status === 'ok' && deck ? (
@@ -124,14 +142,14 @@ export function DeckColumn({ side, isOwner, onOpenCard, onSaveKeyCards, onError,
       </header>
 
       {status === 'deleted' && (
-        <p className="py-6 text-sm text-muted-foreground">This deck was deleted. The bracket keeps its name and art, but the cards are gone.</p>
+        <p style={rowStyle(3)} className="py-6 text-sm text-muted-foreground">This deck was deleted. The bracket keeps its name and art, but the cards are gone.</p>
       )}
       {status === 'private' && (
-        <p className="py-6 text-sm text-muted-foreground">This deck is private. Only its owner can see the cards.</p>
+        <p style={rowStyle(3)} className="py-6 text-sm text-muted-foreground">This deck is private. Only its owner can see the cards.</p>
       )}
 
       {showKeyStrip && (
-        <div className="mt-4">
+        <div style={rowStyle(2)} className={cn(!rows && 'mt-4')}>
           <div className="mb-1.5 flex items-center justify-between gap-2 border-b border-border/60 pb-1">
             <h3 className={LABEL}>
               Key cards{keyCards.length > 0 && <span className="ml-1.5 font-normal tabular-nums">({keyCards.length})</span>}
@@ -160,9 +178,9 @@ export function DeckColumn({ side, isOwner, onOpenCard, onSaveKeyCards, onError,
       )}
 
       {status === 'ok' && (
-        <div className="mt-4 space-y-4">
+        <div className={rows ? 'contents' : 'mt-4 space-y-4'}>
           {main.map(group => (
-            <div key={group.key}>
+            <div key={group.key} style={bucketStyle(group.key)}>
               <h3 className={cn(LABEL, 'mb-1.5 border-b border-border/60 pb-1')}>
                 {group.name}<span className="ml-1.5 font-normal tabular-nums">({group.count})</span>
               </h3>
@@ -170,7 +188,7 @@ export function DeckColumn({ side, isOwner, onOpenCard, onSaveKeyCards, onError,
             </div>
           ))}
           {reserve.length > 0 && (
-            <div>
+            <div style={bucketStyle(RESERVE_ROW)}>
               <h3 className={cn(LABEL, 'mb-1.5 border-b border-border/60 pb-1')}>
                 Reserve<span className="ml-1.5 font-normal tabular-nums">({reserveCount})</span>
               </h3>
@@ -178,7 +196,7 @@ export function DeckColumn({ side, isOwner, onOpenCard, onSaveKeyCards, onError,
             </div>
           )}
           {main.length === 0 && reserve.length === 0 && (
-            <p className="py-6 text-sm text-muted-foreground">This deck has no cards.</p>
+            <p style={rowStyle(3)} className="py-6 text-sm text-muted-foreground">This deck has no cards.</p>
           )}
         </div>
       )}

@@ -83,6 +83,24 @@ export function groupDeck<T extends MatchupCard>(cards: T[]): { main: DeckGroup<
   return { main, reserve };
 }
 
+/** Reserve's row key in {@link sharedRows}; type buckets use their own group keys. */
+export const RESERVE_ROW = 'reserve';
+
+/**
+ * The type buckets either deck has, in canonical order, then the reserve when
+ * either deck has one. Both columns place a bucket in the same row, so the
+ * same category lines up across the two decks.
+ */
+export function sharedRows(a: MatchupCard[], b: MatchupCard[]): string[] {
+  const keys = new Set<string>();
+  let reserve = false;
+  for (const side of [groupDeck(a), groupDeck(b)]) {
+    side.main.forEach(g => keys.add(g.key));
+    if (side.reserve.length > 0) reserve = true;
+  }
+  return [...[...keys].sort(compareTypeGroups), ...(reserve ? [RESERVE_ROW] : [])];
+}
+
 const GOOD = new Set<string>(GOOD_BRIGADES);
 const EVIL = new Set<string>(EVIL_BRIGADES);
 

@@ -19,7 +19,7 @@ describe('FaceOffTable', () => {
     expect(html).toContain('Beta');
     for (const label of ['Main deck', 'Dominants', 'Heroes', 'Evil Characters']) expect(html).toContain(label);
     // Main deck 4 vs 1: the "1" recedes, the "4" does not.
-    const cells = [...html.matchAll(/<span class="(text-sm font-medium tabular-nums[^"]*)">(\d+|—)<\/span>/g)]
+    const cells = [...html.matchAll(/<span class="([^"]*tabular-nums[^"]*)">(\d+|—)<\/span>/g)]
       .map(m => ({ cls: m[1], text: m[2] }));
     const main = cells.slice(0, 2);
     expect(main[0].text).toBe('4');
