@@ -1,6 +1,7 @@
 'use client';
 
 import { useGameBackground } from '@/app/shared/hooks/useGameBackground';
+import { WaitingBackgroundControl } from './WaitingBackgroundControl';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeftRight } from 'lucide-react';
@@ -688,6 +689,9 @@ function WaitingActions({
           </span>
         </div>
       )}
+
+      {/* Your own table background — previews on the backdrop behind this card */}
+      <WaitingBackgroundControl />
 
       {/* Practice */}
       {goldfishDeck && (

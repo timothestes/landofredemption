@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, type ReactNode } from 'react';
-import { ImagePlus, Image as ImageIcon, ImageOff, Palette, Trash2 } from 'lucide-react';
+import { FlipHorizontal2, ImagePlus, Image as ImageIcon, ImageOff, Palette, Trash2 } from 'lucide-react';
 import { useGameBackgroundSettings } from '@/app/shared/hooks/useGameBackground';
 
 /**
@@ -10,7 +10,7 @@ import { useGameBackgroundSettings } from '@/app/shared/hooks/useGameBackground'
  * Hidden when signed out, since the image is stored per account.
  */
 export function GameBackgroundSetting() {
-  const { loaded, signedIn, row, busy, error, matchUi, uploadFile, setEnabled, remove, setMatchUi } = useGameBackgroundSettings();
+  const { loaded, signedIn, row, busy, error, matchUi, uploadFile, flip, setEnabled, remove, setMatchUi } = useGameBackgroundSettings();
   const inputRef = useRef<HTMLInputElement>(null);
 
   if (!loaded || !signedIn) return null;
@@ -55,6 +55,12 @@ export function GameBackgroundSetting() {
               <ImagePlus size={14} />
               {busy ? 'Working…' : 'Replace'}
             </MenuButton>
+            {row.enabled && (
+              <MenuButton onClick={flip} disabled={busy} title="Mirror your background left-to-right">
+                <FlipHorizontal2 size={14} />
+                Flip
+              </MenuButton>
+            )}
             <MenuButton onClick={remove} disabled={busy} title="Delete your background image">
               <Trash2 size={14} />
               Remove
