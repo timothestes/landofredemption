@@ -47,6 +47,14 @@ export interface BreakdownDeckInput {
   cards: BreakdownCardInput[];
 }
 
+/** One brigade's share of a single deck. */
+export interface DeckBrigadeSlice {
+  label: string;
+  /** Distinct cards of this brigade in the deck. */
+  cards: number;
+  copies: number;
+}
+
 export interface BreakdownDeck {
   deckId: string;
   participantId: string;
@@ -61,6 +69,12 @@ export interface BreakdownDeck {
   uniqueCards: number;
   /** Share of the deck's distinct cards that are unique to it, 0–1. */
   spice: number;
+  /**
+   * The deck's own cards by brigade, most copies first. A multi-brigade card
+   * counts toward each brigade it names; brigadeless cards (Lost Souls, most
+   * Dominants) are left out.
+   */
+  brigades: DeckBrigadeSlice[];
   /** Closest decks by Jaccard overlap on distinct cards, nearest first. */
   neighbors: {
     deckId: string;
@@ -207,6 +221,7 @@ export function buildBreakdown(input: BreakdownDeckInput[]): TournamentBreakdown
   const byKey = new Map<string, Accumulator>();
   const deckCardKeys: Set<string>[] = [];
   const deckStats = decksInput.map(() => ({ mainSize: 0, reserveSize: 0, lostSouls: 0 }));
+  const deckBrigades = decksInput.map(() => new Map<string, { cards: Set<string>; copies: number }>());
 
   decksInput.forEach((deck, deckIndex) => {
     const keysInDeck = new Set<string>();
@@ -224,6 +239,16 @@ export function buildBreakdown(input: BreakdownDeckInput[]): TournamentBreakdown
         deckStats[deckIndex].mainSize += row.quantity;
       }
       if (isLostSoul(type)) deckStats[deckIndex].lostSouls += row.quantity;
+
+      for (const brigade of splitBrigades(representative?.brigade)) {
+        let slice = deckBrigades[deckIndex].get(brigade);
+        if (!slice) {
+          slice = { cards: new Set<string>(), copies: 0 };
+          deckBrigades[deckIndex].set(brigade, slice);
+        }
+        slice.cards.add(key);
+        slice.copies += row.quantity;
+      }
 
       let entry = byKey.get(key);
       if (!entry) {
@@ -325,6 +350,9 @@ export function buildBreakdown(input: BreakdownDeckInput[]): TournamentBreakdown
       distinctCards: keys.size,
       uniqueCards,
       spice: keys.size === 0 ? 0 : uniqueCards / keys.size,
+      brigades: [...deckBrigades[index].entries()]
+        .map(([label, slice]) => ({ label, cards: slice.cards.size, copies: slice.copies }))
+        .sort((a, b) => b.copies - a.copies || a.label.localeCompare(b.label)),
       neighbors,
     };
   });

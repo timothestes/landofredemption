@@ -87,7 +87,7 @@ export function DeckLists({ data, entries, rows, isOwner }: {
         <SharedCore breakdown={breakdown} partial={partial} />
         <Signatures breakdown={breakdown} entries={entries} rows={rows} editedEntryIds={data.editedEntryIds} partial={partial} />
         <TwinsAndLoners breakdown={breakdown} rows={rows} />
-        <Brigades breakdown={breakdown} partial={partial} />
+        <Brigades breakdown={breakdown} entries={entries} rows={rows} partial={partial} />
       </div>
     </section>
   );
@@ -294,47 +294,96 @@ function TwinsAndLoners({ breakdown, rows }: { breakdown: DeckListsData['breakdo
   );
 }
 
-function Brigades({ breakdown, partial }: { breakdown: DeckListsData['breakdown'] & {}; partial: boolean }) {
-  const brigades = useMemo(
-    () => [...breakdown.brigades].sort((a, b) => b.decks - a.decks || brigadeRank(a.label) - brigadeRank(b.label)),
+function Brigades({ breakdown, entries, rows, partial }: {
+  breakdown: DeckListsData['breakdown'] & {};
+  entries: BracketEntry[];
+  rows: StandingRow[];
+  partial: boolean;
+}) {
+  const entryById = useMemo(() => new Map(entries.map(e => [e.id, e])), [entries]);
+  const deckById = useMemo(() => new Map(breakdown.decks.map(d => [d.participantId, d])), [breakdown.decks]);
+  // Standings order. Segments and the printed counts share one order (good
+  // brigades, then neutral, then evil), so the bar is a mnemonic and the text
+  // beside it is the reading: nothing depends on telling two hues apart.
+  const perDeck = useMemo(
+    () => rows.flatMap(row => {
+      const deck = deckById.get(row.entry.id);
+      if (!deck) return [];
+      const slices = [...deck.brigades].sort((a, b) => brigadeRank(a.label) - brigadeRank(b.label));
+      return [{ entry: entryById.get(row.entry.id) ?? null, deck, slices, total: slices.reduce((n, s) => n + s.copies, 0) }];
+    }),
+    [rows, deckById, entryById],
+  );
+  const field = useMemo(
+    () => [...breakdown.brigades].sort((a, b) => b.copies - a.copies || brigadeRank(a.label) - brigadeRank(b.label)),
     [breakdown.brigades],
   );
+  const maxCopies = Math.max(...field.map(s => s.copies), 1);
   const unplayed = useMemo(() => unplayedBrigades(breakdown), [breakdown]);
 
   return (
     <Group
       title="Brigades"
-      blurb="Decks running at least one card of each brigade. A multi-brigade card counts toward every brigade it names."
+      blurb="Each deck's cards by brigade, good brigades first. A multi-brigade card counts toward every brigade it names; Lost Souls and other brigadeless cards are left out."
     >
-      {brigades.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No brigade cards found.</p>
+      <ol className="divide-y divide-border/60 border-y border-border/60">
+        {perDeck.map(({ entry, deck, slices, total }) => (
+          <li key={deck.participantId} className="flex items-start gap-3 py-2.5">
+            <DeckThumb entry={entry} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="truncate text-sm font-medium">{deck.playerName}</span>
+                <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{total} cards</span>
+              </div>
+              {slices.length === 0 ? (
+                <p className="mt-1.5 text-xs text-muted-foreground">No brigade cards.</p>
+              ) : (
+                <>
+                  <span aria-hidden className="mt-1.5 flex h-2.5 w-full gap-px overflow-hidden rounded-full bg-foreground/[0.06]">
+                    {slices.map(slice => (
+                      <Swatch
+                        key={slice.label}
+                        label={slice.label}
+                        title={`${slice.label} · ${slice.copies} cards`}
+                        className="block h-full min-w-[3px]"
+                        style={{ flex: `${slice.copies} 1 0%` }}
+                      />
+                    ))}
+                  </span>
+                  <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                    {slices.map(slice => `${slice.label} ${slice.copies}`).join(' · ')}
+                  </p>
+                </>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <h4 className={cn(LABEL, 'mt-6')}>Across the field</h4>
+      {field.length === 0 ? (
+        <p className="mt-2 text-sm text-muted-foreground">No brigade cards found.</p>
       ) : (
-        <ul className="space-y-2">
-          {brigades.map(slice => {
-            const swatch = brigadeSwatch(slice.label);
-            return (
-              <li key={slice.label} className="grid grid-cols-[7rem_1fr_auto] items-center gap-3 sm:grid-cols-[9rem_1fr_auto]">
-                <span className="flex items-center gap-2 truncate text-xs" title={slice.label}>
-                  <span
-                    aria-hidden
-                    className="brigade-dot inline-block h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={{ '--dot-light': swatch.light, '--dot-dark': swatch.dark } as React.CSSProperties}
-                  />
-                  <span className="truncate">{slice.label}</span>
-                </span>
-                <span className="h-2.5 w-full overflow-hidden rounded-full bg-foreground/[0.06]">
-                  <span
-                    className="block h-full rounded-full bg-foreground/50"
-                    style={{ width: `${Math.max((slice.decks / breakdown.deckCount) * 100, 1)}%` }}
-                  />
-                </span>
-                <span className="w-16 shrink-0 text-right text-xs tabular-nums">
-                  <span className="font-semibold text-foreground">{slice.decks}</span>
-                  <span className="text-muted-foreground"> of {breakdown.deckCount}</span>
-                </span>
-              </li>
-            );
-          })}
+        <ul className="mt-2 space-y-2">
+          {field.map(slice => (
+            <li key={slice.label} className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-3 sm:grid-cols-[9rem_1fr_auto]">
+              <span className="flex items-center gap-2 truncate text-xs" title={slice.label}>
+                <Swatch label={slice.label} className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" />
+                <span className="truncate">{slice.label}</span>
+              </span>
+              <span className="h-2 w-full overflow-hidden rounded-full bg-foreground/[0.06]">
+                <Swatch
+                  label={slice.label}
+                  className="block h-full rounded-full"
+                  style={{ width: `${Math.max((slice.copies / maxCopies) * 100, 1)}%` }}
+                />
+              </span>
+              <span className="w-28 shrink-0 text-right text-xs tabular-nums">
+                <span className="font-semibold text-foreground">{slice.copies}</span>
+                <span className="text-muted-foreground"> · {slice.decks} of {breakdown.deckCount} decks</span>
+              </span>
+            </li>
+          ))}
         </ul>
       )}
       {unplayed.length > 0 && (
@@ -342,15 +391,35 @@ function Brigades({ breakdown, partial }: { breakdown: DeckListsData['breakdown'
           Not in any {partial ? 'visible list' : 'deck'}: {unplayed.join(', ')}.
         </p>
       )}
-      <style jsx>{`
-        .brigade-dot {
-          background-color: var(--dot-light);
+      {/* Global rather than scoped: styled-jsx scopes to the component that renders the
+          tag, and the swatches render in a child. The class name is namespaced instead. */}
+      <style jsx global>{`
+        .bracket-brigade-swatch {
+          background-color: var(--swatch-light);
         }
-        :global(.dark) .brigade-dot,
-        :global(.jayden) .brigade-dot {
-          background-color: var(--dot-dark);
+        .dark .bracket-brigade-swatch,
+        .jayden .bracket-brigade-swatch {
+          background-color: var(--swatch-dark);
         }
       `}</style>
     </Group>
+  );
+}
+
+/** A brigade's own colour, stepped per theme: a mnemonic beside a printed value, never the reading. */
+function Swatch({ label, className, style, title }: {
+  label: string;
+  className?: string;
+  style?: React.CSSProperties;
+  title?: string;
+}) {
+  const swatch = brigadeSwatch(label);
+  return (
+    <span
+      aria-hidden
+      title={title}
+      className={cn('bracket-brigade-swatch', className)}
+      style={{ ...style, '--swatch-light': swatch.light, '--swatch-dark': swatch.dark } as React.CSSProperties}
+    />
   );
 }

@@ -246,6 +246,19 @@ describe('buildBreakdown', () => {
     }
   });
 
+  it('tallies each deck\'s own cards by brigade', () => {
+    const result = buildBreakdown([
+      deck('a', 1, [['A Royal Priesthood', 'main', 2], ['Angel of the Lord (J)', 'main', 1]]),
+      deck('b', 2, [['Angel of the Lord (J)', 'main', 1]]),
+    ]);
+    expect(result.decks[0].brigades).toEqual([
+      { label: 'Green', cards: 1, copies: 2 },
+      { label: 'Purple', cards: 1, copies: 2 },
+      { label: 'Teal', cards: 1, copies: 2 },
+    ]);
+    expect(result.decks[1].brigades).toEqual([]);
+  });
+
   it('leaves a brigade-less Dominant out of the brigade tally', () => {
     const result = buildBreakdown([deck('a', 1, [['Angel of the Lord (J)', 'main', 1]])]);
     expect(result.brigades).toEqual([]);

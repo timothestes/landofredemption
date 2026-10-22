@@ -10,7 +10,7 @@ const card = (name: string, deckIndexes: number[], over: Partial<BreakdownCard> 
 
 const deck = (id: string, neighbors: { participantId: string; similarity: number }[]): BreakdownDeck => ({
   deckId: id, participantId: id, playerName: id, place: null, event: null,
-  mainSize: 50, reserveSize: 0, lostSouls: 7, distinctCards: 10, uniqueCards: 0, spice: 0,
+  mainSize: 50, reserveSize: 0, lostSouls: 7, distinctCards: 10, uniqueCards: 0, spice: 0, brigades: [],
   neighbors: neighbors.map(n => ({ deckId: n.participantId, participantId: n.participantId, playerName: n.participantId, eventName: null, similarity: n.similarity })),
 });
 
