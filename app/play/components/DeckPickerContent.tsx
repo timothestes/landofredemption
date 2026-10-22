@@ -263,6 +263,13 @@ export function DeckPickerContent({
 
   const searchValue = activeTab === "my" ? mySearch : communitySearch;
   const setSearchValue = activeTab === "my" ? setMySearch : setCommunitySearch;
+  // Each tile also opens its deck in a new tab: the player's own decks go to
+  // the builder, anyone else's to the deck page.
+  const deckLink = (deck: DeckOption, own: boolean) =>
+    own
+      ? { href: `/decklist/card-search?deckId=${deck.id}`, label: `Edit ${deck.name}`, kind: "edit" as const }
+      : { href: `/decklist/${deck.id}`, label: `View ${deck.name}`, kind: "view" as const };
+
   const tabClass = (tab: PickerTab) =>
     `px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
       activeTab === tab
@@ -399,6 +406,7 @@ export function DeckPickerContent({
                   onClick={() => onSelect(deck)}
                   selected={isSelected(deck)}
                   badge={badgeFor(deck)}
+                  link={deckLink(deck, false)}
                 />
               ))}
             </div>
@@ -438,6 +446,7 @@ export function DeckPickerContent({
                   onClick={() => onSelect(deck)}
                   selected={isSelected(deck)}
                   badge={badgeFor(deck)}
+                  link={deckLink(deck, true)}
                 />
               ))}
             </div>
@@ -462,6 +471,7 @@ export function DeckPickerContent({
                   onClick={() => onSelect(deck)}
                   selected={isSelected(deck)}
                   badge={badgeFor(deck)}
+                  link={deckLink(deck, false)}
                 />
               ))}
             </div>
