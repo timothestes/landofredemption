@@ -14,6 +14,7 @@ import { useVirtualCanvas } from '@/app/shared/layout/virtualCanvas';
 import { DeckPickerModal } from '@/app/play/components/DeckPickerModal';
 import type { DeckOption } from '@/app/play/components/DeckPickerCard';
 import { ParagonDrawer } from '@/app/shared/components/ParagonDrawer';
+import { useGameBackground } from '@/app/shared/hooks/useGameBackground';
 import { buildParagonEntries } from '@/app/shared/utils/paragonEntries';
 
 const GoldfishCanvas = dynamic(() => import('../components/GoldfishCanvas'), { ssr: false });
@@ -42,10 +43,9 @@ function GoldfishGameArea({ deck, onLoadDeck }: { deck: DeckDataForGoldfish; onL
 
   const { isReady, progress } = useImagePreloader(imageUrls);
 
-  // Forge decks play against the forge background; everything else the cave.
-  const backgroundImage = deck.isForge
-    ? 'url(/gameplay/forge_background.png)'
-    : 'url(/gameplay/cave_background.png)';
+  // The player's own uploaded image when they have one on; otherwise Forge
+  // decks play against the forge background and everything else the cave.
+  const backgroundImage = useGameBackground(deck.isForge);
 
   // Warm the canvas chunk while the loading screen is up — GoldfishCanvas is
   // dynamically imported, and without this it only starts downloading after

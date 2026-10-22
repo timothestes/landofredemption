@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Settings, RotateCcw, RefreshCw, Clock, EyeOff, Link, Unlink, LayoutGrid, Layers } from 'lucide-react';
 import { useInputMode } from '@/app/shared/hooks/useInputMode';
+import { GameBackgroundSetting } from './GameBackgroundSetting';
 
 interface CardScaleControlProps {
   cardScale: number;
@@ -493,6 +494,8 @@ export function CardScaleControl({
               </button>
             </>
           )}
+
+          <GameBackgroundSetting />
 
         </div>
       )}

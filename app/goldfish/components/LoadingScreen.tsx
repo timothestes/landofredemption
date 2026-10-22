@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { LOADING_MESSAGES } from '@/app/shared/constants/loadingMessages';
+import { useGameBackground } from '@/app/shared/hooks/useGameBackground';
 
 export function LoadingScreen({ progress, isForge }: { progress: number; isForge?: boolean }) {
+  const backgroundImage = useGameBackground(isForge);
   // Randomize only after mount: picking during render runs on the server too,
   // and a different pick on the client is a hydration text mismatch.
   const [message, setMessage] = useState(LOADING_MESSAGES[0]);
@@ -32,7 +34,7 @@ export function LoadingScreen({ progress, isForge }: { progress: number; isForge
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: `url(/gameplay/${isForge ? 'forge_background' : 'cave_background'}.png)`,
+          backgroundImage,
           backgroundSize: 'cover',
           backgroundPosition: 'center 70%',
           backgroundRepeat: 'no-repeat',

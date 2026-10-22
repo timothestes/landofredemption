@@ -1,5 +1,6 @@
 'use client';
 
+import { useGameBackground } from '@/app/shared/hooks/useGameBackground';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeftRight } from 'lucide-react';
@@ -134,6 +135,7 @@ export default function PregameScreen({
   inviteUrl,
 }: PregameScreenProps) {
   const { game, myPlayer, opponentPlayer } = gameState;
+  const backgroundImage = useGameBackground(isForge);
 
   const phase = game?.pregamePhase ?? '';
   const isWaiting = lifecycle === 'waiting';
@@ -173,7 +175,7 @@ export default function PregameScreen({
         {/* Board backdrop — Forge playtest games get a distinct background. */}
         <div
           className="absolute inset-0 bg-cover bg-no-repeat opacity-40"
-          style={{ backgroundImage: `url(/gameplay/${isForge ? 'forge_background' : 'cave_background'}.png)`, backgroundPosition: 'center 70%' }}
+          style={{ backgroundImage, backgroundPosition: 'center 70%' }}
         />
         <div
           className="absolute inset-0 pointer-events-none"

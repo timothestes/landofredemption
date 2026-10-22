@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useGameBackground } from '@/app/shared/hooks/useGameBackground';
 import dynamic from 'next/dynamic';
 import { useSpacetimeConnection } from '@/app/play/hooks/useSpacetimeConnection';
 import { SpacetimeConnectionResetWrapper } from '@/app/play/components/SpacetimeConnectionResetWrapper';
@@ -422,8 +423,9 @@ function GameInner({ code, isConnected }: GameInnerProps) {
 
   const isForge = gameParams?.isForge === true || gameState.isForgeGame;
 
-  // Board backdrop — Forge playtest games get a distinct background.
-  const gameBackground = `url(/gameplay/${isForge ? 'forge_background' : 'cave_background'}.png)`;
+  // Board backdrop — the player's own uploaded image when they have one on,
+  // else the default art (Forge playtest games get a distinct background).
+  const gameBackground = useGameBackground(isForge);
 
   // ---- Touch shell ----
   const shellInputMode = useInputMode();
