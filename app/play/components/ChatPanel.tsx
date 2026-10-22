@@ -318,7 +318,7 @@ function LogCardReader({ card, onClose }: { card: { name: string; img: string };
         alt={card.name}
         style={{ maxHeight: '78%', maxWidth: '100%', objectFit: 'contain', borderRadius: 8 }}
       />
-      <div style={{ color: '#e8d5a3', fontSize: 15, textAlign: 'center', wordBreak: 'break-word' }}>{card.name}</div>
+      <div style={{ color: 'var(--gf-text-bright)', fontSize: 15, textAlign: 'center', wordBreak: 'break-word' }}>{card.name}</div>
       <div style={{ color: 'rgba(232, 213, 163, 0.5)', fontSize: 12 }}>Tap anywhere to close</div>
     </div>
   );
@@ -1796,10 +1796,10 @@ export default function ChatPanel({
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          background: isOpen ? 'rgba(196, 149, 90, 0.08)' : 'transparent',
+          background: isOpen ? 'rgba(var(--gf-accent-rgb), 0.08)' : 'transparent',
           border: 'none',
-          borderBottom: '1px solid rgba(107, 78, 39, 0.2)',
-          color: '#e8d5a3',
+          borderBottom: '1px solid rgba(var(--gf-border-rgb), 0.2)',
+          color: 'var(--gf-text-bright)',
           cursor: 'pointer',
           fontSize: 'calc(11px * var(--chat-fs, 1))',
           letterSpacing: '0.08em',
@@ -1831,7 +1831,7 @@ export default function ChatPanel({
           <span
             aria-label={`${unreadCount} unread messages`}
             style={{
-              background: '#c4955a',
+              background: 'var(--gf-accent)',
               color: '#0a0805',
               borderRadius: '50%',
               fontSize: 'calc(9px * var(--chat-fs, 1))',
@@ -1902,9 +1902,9 @@ export default function ChatPanel({
                 zIndex: 2,
                 padding: '8px 14px',
                 borderRadius: 999,
-                border: '1px solid rgba(196, 149, 90, 0.55)',
+                border: '1px solid rgba(var(--gf-accent-rgb), 0.55)',
                 background: 'rgba(28, 20, 12, 0.96)',
-                color: '#e8d5a3',
+                color: 'var(--gf-text-bright)',
                 fontFamily: 'inherit',
                 fontSize: 'calc(11px * var(--chat-fs, 1))',
                 letterSpacing: '0.04em',
@@ -1927,7 +1927,7 @@ export default function ChatPanel({
               alignItems: 'center',
               gap: 4,
               padding: '6px 8px',
-              borderBottom: '1px solid rgba(107, 78, 39, 0.3)',
+              borderBottom: '1px solid rgba(var(--gf-border-rgb), 0.3)',
               flexShrink: 0,
             }}
           >
@@ -1950,14 +1950,14 @@ export default function ChatPanel({
                     onClick={() => setActiveTab(tab)}
                     style={{
                       padding: '3px 10px',
-                      background: isActive ? 'rgba(196, 149, 90, 0.12)' : 'transparent',
-                      border: `1px solid ${isActive ? 'rgba(196, 149, 90, 0.45)' : 'transparent'}`,
+                      background: isActive ? 'rgba(var(--gf-accent-rgb), 0.12)' : 'transparent',
+                      border: `1px solid ${isActive ? 'rgba(var(--gf-accent-rgb), 0.45)' : 'transparent'}`,
                       borderRadius: 20,
                       cursor: 'pointer',
                       fontSize: 'calc(10px * var(--chat-fs, 1))',
                       letterSpacing: '0.07em',
                       textTransform: 'uppercase',
-                      color: isActive ? '#e8d5a3' : 'rgba(232, 213, 163, 0.4)',
+                      color: isActive ? 'var(--gf-text-bright)' : 'rgba(232, 213, 163, 0.4)',
                       fontFamily: 'inherit',
                       transition: 'color 0.15s, background 0.15s, border-color 0.15s',
                     }}
@@ -1974,8 +1974,8 @@ export default function ChatPanel({
                               width: 6,
                               height: 6,
                               borderRadius: '50%',
-                              background: '#c4955a',
-                              boxShadow: '0 0 4px rgba(196, 149, 90, 0.6)',
+                              background: 'var(--gf-accent)',
+                              boxShadow: '0 0 4px rgba(var(--gf-accent-rgb), 0.6)',
                             }}
                           />
                         )}
@@ -2005,11 +2005,11 @@ export default function ChatPanel({
                   width: 24,
                   height: 24,
                   padding: 0,
-                  background: searchOpen ? 'rgba(196, 149, 90, 0.18)' : 'transparent',
-                  border: `1px solid ${searchOpen ? 'rgba(196, 149, 90, 0.45)' : 'transparent'}`,
+                  background: searchOpen ? 'rgba(var(--gf-accent-rgb), 0.18)' : 'transparent',
+                  border: `1px solid ${searchOpen ? 'rgba(var(--gf-accent-rgb), 0.45)' : 'transparent'}`,
                   borderRadius: 4,
                   cursor: 'pointer',
-                  color: searchOpen ? '#e8d5a3' : 'rgba(232, 213, 163, 0.55)',
+                  color: searchOpen ? 'var(--gf-text-bright)' : 'rgba(232, 213, 163, 0.55)',
                   transition: 'color 0.15s, background 0.15s, border-color 0.15s',
                 }}
               >
@@ -2040,8 +2040,8 @@ export default function ChatPanel({
                 alignItems: 'center',
                 gap: 6,
                 padding: '6px 8px',
-                borderBottom: '1px solid rgba(107, 78, 39, 0.3)',
-                background: 'rgba(196, 149, 90, 0.04)',
+                borderBottom: '1px solid rgba(var(--gf-border-rgb), 0.3)',
+                background: 'rgba(var(--gf-accent-rgb), 0.04)',
                 flexShrink: 0,
               }}
             >
@@ -2062,10 +2062,10 @@ export default function ChatPanel({
                   flex: 1,
                   minWidth: 0,
                   background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid rgba(107, 78, 39, 0.35)',
+                  border: '1px solid rgba(var(--gf-border-rgb), 0.35)',
                   borderRadius: 4,
                   padding: '4px 8px',
-                  color: '#e8d5a3',
+                  color: 'var(--gf-text-bright)',
                   fontSize: 'calc(11px * var(--chat-fs, 1))',
                   fontFamily: 'inherit',
                   outline: 'none',
@@ -2164,7 +2164,7 @@ export default function ChatPanel({
                           style={{
                             fontWeight: 700,
                             fontSize: 'calc(10px * var(--chat-fs, 1))',
-                            color: isMe ? '#c4955a' : '#4a7ab5',
+                            color: isMe ? 'var(--gf-accent)' : '#4a7ab5',
                             letterSpacing: '0.02em',
                           }}
                         >
@@ -2188,13 +2188,13 @@ export default function ChatPanel({
                           padding: '4px 8px',
                           borderRadius: isMe ? '10px 10px 3px 10px' : '10px 10px 10px 3px',
                           background: isMe
-                            ? 'rgba(196, 149, 90, 0.14)'
+                            ? 'rgba(var(--gf-accent-rgb), 0.14)'
                             : 'rgba(255, 255, 255, 0.06)',
                           border: isMe
-                            ? '1px solid rgba(196, 149, 90, 0.3)'
+                            ? '1px solid rgba(var(--gf-accent-rgb), 0.3)'
                             : '1px solid rgba(255, 255, 255, 0.08)',
                           fontSize: 'calc(12px * var(--chat-fs, 1))',
-                          color: '#e8d5a3',
+                          color: 'var(--gf-text-bright)',
                           lineHeight: 1.4,
                           wordBreak: 'break-word',
                         }}
@@ -2210,7 +2210,7 @@ export default function ChatPanel({
               <div
                 style={{
                   padding: '6px 8px',
-                  borderTop: '1px solid rgba(107, 78, 39, 0.3)',
+                  borderTop: '1px solid rgba(var(--gf-border-rgb), 0.3)',
                   display: 'flex',
                   gap: 4,
                   flexShrink: 0,
@@ -2229,10 +2229,10 @@ export default function ChatPanel({
                     flex: 1,
                     minWidth: 0,
                     background: 'rgba(255, 255, 255, 0.06)',
-                    border: '1px solid rgba(107, 78, 39, 0.35)',
+                    border: '1px solid rgba(var(--gf-border-rgb), 0.35)',
                     borderRadius: 4,
                     padding: '5px 8px',
-                    color: '#e8d5a3',
+                    color: 'var(--gf-text-bright)',
                     fontSize: 'calc(12px * var(--chat-fs, 1))',
                     fontFamily: 'inherit',
                     outline: 'none',
@@ -2249,11 +2249,11 @@ export default function ChatPanel({
                     padding: '5px 8px',
                     background:
                       inputText.trim()
-                        ? 'rgba(196, 149, 90, 0.18)'
+                        ? 'rgba(var(--gf-accent-rgb), 0.18)'
                         : 'rgba(255, 255, 255, 0.04)',
-                    border: `1px solid ${inputText.trim() ? 'rgba(196, 149, 90, 0.5)' : 'rgba(107, 78, 39, 0.2)'}`,
+                    border: `1px solid ${inputText.trim() ? 'rgba(var(--gf-accent-rgb), 0.5)' : 'rgba(var(--gf-border-rgb), 0.2)'}`,
                     borderRadius: 4,
-                    color: inputText.trim() ? '#e8d5a3' : 'rgba(232, 213, 163, 0.3)',
+                    color: inputText.trim() ? 'var(--gf-text-bright)' : 'rgba(232, 213, 163, 0.3)',
                     cursor: inputText.trim() ? 'pointer' : 'default',
                     fontSize: 'calc(10px * var(--chat-fs, 1))',
                     letterSpacing: '0.06em',
@@ -2320,7 +2320,7 @@ export default function ChatPanel({
                           fontStyle: 'italic',
                           opacity: 0.6,
                           fontSize: 'calc(11px * var(--chat-fs, 1))',
-                          color: '#e8d5a3',
+                          color: 'var(--gf-text-bright)',
                           margin: '4px 0',
                           padding: '0 8px',
                         }}
@@ -2346,11 +2346,11 @@ export default function ChatPanel({
                         padding: '4px 6px',
                         background: 'rgba(255, 255, 255, 0.03)',
                         borderRadius: 4,
-                        borderLeft: '2px solid rgba(107, 78, 39, 0.3)',
+                        borderLeft: '2px solid rgba(var(--gf-border-rgb), 0.3)',
                       }}
                     >
                       <span style={{ fontSize: 'calc(11px * var(--chat-fs, 1))', color: '#c8b882', lineHeight: 1.35 }}>
-                        <strong style={{ color: '#e8d5a3' }}>{playerName}</strong>{' '}
+                        <strong style={{ color: 'var(--gf-text-bright)' }}>{playerName}</strong>{' '}
                         {verb}
                       </span>
                       <span
@@ -2452,7 +2452,7 @@ export default function ChatPanel({
                             height="11"
                             viewBox="0 0 24 24"
                             fill="none"
-                            stroke={isMe ? '#c4955a' : '#4a7ab5'}
+                            stroke={isMe ? 'var(--gf-accent)' : '#4a7ab5'}
                             strokeWidth="2"
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -2467,7 +2467,7 @@ export default function ChatPanel({
                                 style={{
                                   fontWeight: 700,
                                   fontSize: 'calc(10px * var(--chat-fs, 1))',
-                                  color: isMe ? '#c4955a' : '#4a7ab5',
+                                  color: isMe ? 'var(--gf-accent)' : '#4a7ab5',
                                   letterSpacing: '0.02em',
                                 }}
                               >
@@ -2489,13 +2489,13 @@ export default function ChatPanel({
                                 padding: '3px 7px',
                                 borderRadius: '8px 8px 8px 3px',
                                 background: isMe
-                                  ? 'rgba(196, 149, 90, 0.10)'
+                                  ? 'rgba(var(--gf-accent-rgb), 0.10)'
                                   : 'rgba(255, 255, 255, 0.05)',
                                 border: isMe
-                                  ? '1px solid rgba(196, 149, 90, 0.22)'
+                                  ? '1px solid rgba(var(--gf-accent-rgb), 0.22)'
                                   : '1px solid rgba(255, 255, 255, 0.07)',
                                 fontSize: 'calc(12px * var(--chat-fs, 1))',
-                                color: '#e8d5a3',
+                                color: 'var(--gf-text-bright)',
                                 lineHeight: 1.4,
                                 wordBreak: 'break-word',
                                 maxWidth: '95%',
@@ -2523,12 +2523,12 @@ export default function ChatPanel({
                             flexDirection: 'column',
                             gap: 1,
                             padding: '3px 6px',
-                            borderLeft: '2px solid rgba(107, 78, 39, 0.25)',
+                            borderLeft: '2px solid rgba(var(--gf-border-rgb), 0.25)',
                             opacity: 0.8,
                           }}
                         >
                           <span style={{ fontSize: 'calc(10px * var(--chat-fs, 1))', color: '#c8b882', lineHeight: 1.35 }}>
-                            <strong style={{ color: '#e8d5a3' }}>{playerName}</strong>{' '}
+                            <strong style={{ color: 'var(--gf-text-bright)' }}>{playerName}</strong>{' '}
                             {verb}
                           </span>
                           <span
@@ -2551,7 +2551,7 @@ export default function ChatPanel({
               <div
                 style={{
                   padding: '6px 8px',
-                  borderTop: '1px solid rgba(107, 78, 39, 0.3)',
+                  borderTop: '1px solid rgba(var(--gf-border-rgb), 0.3)',
                   display: 'flex',
                   gap: 4,
                   flexShrink: 0,
@@ -2570,10 +2570,10 @@ export default function ChatPanel({
                     flex: 1,
                     minWidth: 0,
                     background: 'rgba(255, 255, 255, 0.06)',
-                    border: '1px solid rgba(107, 78, 39, 0.35)',
+                    border: '1px solid rgba(var(--gf-border-rgb), 0.35)',
                     borderRadius: 4,
                     padding: '5px 8px',
-                    color: '#e8d5a3',
+                    color: 'var(--gf-text-bright)',
                     fontSize: 'calc(12px * var(--chat-fs, 1))',
                     fontFamily: 'inherit',
                     outline: 'none',
@@ -2590,11 +2590,11 @@ export default function ChatPanel({
                     padding: '5px 8px',
                     background:
                       inputText.trim()
-                        ? 'rgba(196, 149, 90, 0.18)'
+                        ? 'rgba(var(--gf-accent-rgb), 0.18)'
                         : 'rgba(255, 255, 255, 0.04)',
-                    border: `1px solid ${inputText.trim() ? 'rgba(196, 149, 90, 0.5)' : 'rgba(107, 78, 39, 0.2)'}`,
+                    border: `1px solid ${inputText.trim() ? 'rgba(var(--gf-accent-rgb), 0.5)' : 'rgba(var(--gf-border-rgb), 0.2)'}`,
                     borderRadius: 4,
-                    color: inputText.trim() ? '#e8d5a3' : 'rgba(232, 213, 163, 0.3)',
+                    color: inputText.trim() ? 'var(--gf-text-bright)' : 'rgba(232, 213, 163, 0.3)',
                     cursor: inputText.trim() ? 'pointer' : 'default',
                     fontSize: 'calc(10px * var(--chat-fs, 1))',
                     letterSpacing: '0.06em',
@@ -2627,16 +2627,16 @@ export default function ChatPanel({
               cursor: 'pointer',
               padding: '6px 8px',
               borderRadius: 4,
-              border: '1px solid rgba(107, 78, 39, 0.3)',
-              background: 'rgba(196, 149, 90, 0.04)',
+              border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
+              background: 'rgba(var(--gf-accent-rgb), 0.04)',
               fontFamily: 'var(--font-cinzel), Georgia, serif',
               fontSize: 'calc(11px * var(--chat-fs, 1))',
               letterSpacing: '0.04em',
-              color: '#e8d5a3',
+              color: 'var(--gf-text-bright)',
               transition: 'background 0.15s, border-color 0.15s',
             };
             const checkboxStyle: CSSProperties = {
-              accentColor: '#c4955a',
+              accentColor: 'var(--gf-accent)',
               width: 14,
               height: 14,
               cursor: 'pointer',
@@ -2644,7 +2644,7 @@ export default function ChatPanel({
             };
             const dividerStyle: CSSProperties = {
               height: 1,
-              background: 'rgba(107, 78, 39, 0.3)',
+              background: 'rgba(var(--gf-border-rgb), 0.3)',
               margin: '4px 0',
             };
             const watchersList = spectators!.filter(
@@ -2720,8 +2720,8 @@ export default function ChatPanel({
                             alignItems: 'center',
                             padding: '6px 8px',
                             borderRadius: 4,
-                            border: '1px solid rgba(107, 78, 39, 0.3)',
-                            background: 'rgba(196, 149, 90, 0.04)',
+                            border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
+                            background: 'rgba(var(--gf-accent-rgb), 0.04)',
                           }}
                         >
                           <span
@@ -2729,7 +2729,7 @@ export default function ChatPanel({
                               fontFamily: 'var(--font-cinzel), Georgia, serif',
                               fontSize: 'calc(11px * var(--chat-fs, 1))',
                               letterSpacing: '0.03em',
-                              color: '#e8d5a3',
+                              color: 'var(--gf-text-bright)',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',

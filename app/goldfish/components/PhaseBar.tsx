@@ -156,8 +156,8 @@ export function PhaseBar({ hideBackButton = false }: { hideBackButton?: boolean 
               transition: 'color 0.15s, background 0.15s',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#e8d5a3';
-              e.currentTarget.style.background = 'rgba(196, 149, 90, 0.1)';
+              e.currentTarget.style.color = 'var(--gf-text-bright)';
+              e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.1)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.color = 'rgba(232, 213, 163, 0.35)';
@@ -284,7 +284,7 @@ export function PhaseBar({ hideBackButton = false }: { hideBackButton?: boolean 
                       height: 2,
                       background: 'var(--gf-accent)',
                       borderRadius: 1,
-                      boxShadow: '0 0 8px rgba(196,149,90,0.5)',
+                      boxShadow: '0 0 8px rgba(var(--gf-accent-rgb),0.5)',
                     }}
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   />
@@ -359,7 +359,7 @@ export function PhaseBar({ hideBackButton = false }: { hideBackButton?: boolean 
       {/* Arrow indicators between phases */}
       <style jsx>{`
         button:hover:not(:disabled) {
-          color: #e8d5a3 !important;
+          color: var(--gf-text-bright) !important;
         }
         .gf-phase-strip {
           scrollbar-width: none;

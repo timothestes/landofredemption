@@ -127,7 +127,7 @@ export default function RightPanel({
       // strip of raw background art down the whole right screen edge while
       // every neighboring surface is darkened.
       background: isLoupeVisible ? 'rgba(10, 8, 5, 0.97)' : 'rgba(10, 8, 5, 0.55)',
-      borderLeft: '1px solid rgba(107, 78, 39, 0.3)',
+      borderLeft: '1px solid rgba(var(--gf-border-rgb), 0.3)',
       overflow: 'hidden',
       transition: 'width 0.2s ease',
     }}>
@@ -148,7 +148,7 @@ export default function RightPanel({
           borderTop: 'none',
           borderLeft: 'none',
           borderRight: 'none',
-          borderBottom: isRail ? 'none' : '1px solid rgba(107, 78, 39, 0.5)',
+          borderBottom: isRail ? 'none' : '1px solid rgba(var(--gf-border-rgb), 0.5)',
           cursor: 'pointer',
           display: 'flex',
           flexDirection: isRail ? 'column' : 'row',
@@ -192,14 +192,14 @@ export default function RightPanel({
                     height: 17,
                     padding: '0 4px',
                     borderRadius: 999,
-                    background: '#c4955a',
+                    background: 'var(--gf-accent)',
                     color: '#1a1206',
                     fontFamily: 'var(--font-geist-sans, system-ui, sans-serif)',
                     fontSize: 10,
                     fontWeight: 700,
                     lineHeight: '17px',
                     textAlign: 'center',
-                    boxShadow: '0 0 6px rgba(196, 149, 90, 0.7)',
+                    boxShadow: '0 0 6px rgba(var(--gf-accent-rgb), 0.7)',
                     animation: 'unread-pulse 2s ease-in-out infinite',
                   }}
                 >
@@ -275,7 +275,7 @@ export default function RightPanel({
                     right: 8,
                     bottom: 10,
                     background: 'rgba(0, 0, 0, 0.88)',
-                    border: '1px solid #c4955a',
+                    border: '1px solid var(--gf-accent)',
                     borderRadius: 999,
                     padding: '5px 10px',
                     color: '#f0d9a8',
@@ -295,7 +295,7 @@ export default function RightPanel({
                 width: '100%',
                 aspectRatio: '1 / 1.4',
                 borderRadius: 6,
-                border: '1px dashed rgba(107, 78, 39, 0.5)',
+                border: '1px dashed rgba(var(--gf-border-rgb), 0.5)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -310,7 +310,7 @@ export default function RightPanel({
               </div>
             )}
           </div>
-          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderTop: '1px solid rgba(107, 78, 39, 0.3)' }}>
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderTop: '1px solid rgba(var(--gf-border-rgb), 0.3)' }}>
             <ChatPanel
               chatMessages={chatMessages}
               gameActions={gameActions}

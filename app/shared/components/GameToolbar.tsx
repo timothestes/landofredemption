@@ -291,7 +291,7 @@ export function GameToolbar({
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: 44, height: 44,
-            background: 'rgba(30,22,16,0.92)',
+            background: 'rgba(var(--gf-panel-rgb),0.92)',
             border: '1px solid var(--gf-border)',
             borderRadius: 8,
             color: 'var(--gf-text)',
@@ -326,7 +326,7 @@ export function GameToolbar({
         alignItems: 'stretch',
         gap: 0,
         padding: '3px 6px',
-        background: 'rgba(30,22,16,0.92)',
+        background: 'rgba(var(--gf-panel-rgb),0.92)',
         border: '1px solid var(--gf-border)',
         borderRadius: 8,
         zIndex: 200,

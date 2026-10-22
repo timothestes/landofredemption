@@ -65,7 +65,7 @@ function NameHint({
             background: 'rgba(10, 8, 5, 0.95)',
             border: `1px solid ${accent}`,
             borderRadius: 4,
-            color: '#e8d5a3',
+            color: 'var(--gf-text-bright)',
             fontFamily: 'var(--font-cinzel), Georgia, serif',
             fontSize: FZ.caption,
             letterSpacing: '0.04em',
@@ -183,13 +183,13 @@ function PhaseGate({
     barGlow = '0 0 8px rgba(245, 158, 11, 0.85)';
     barAnimation = 'stopHoldPulse 1s ease-in-out infinite';
   } else if (hasStop) {
-    barColor = '#c4955a';
-    barGlow = '0 0 6px rgba(196, 149, 90, 0.6)';
+    barColor = 'var(--gf-accent)';
+    barGlow = '0 0 6px rgba(var(--gf-accent-rgb), 0.6)';
   } else if (canToggle) {
     // Discoverability affordance: faintly visible whenever toggling is
     // possible, even with no stop armed yet. Quiet — no animation, just a
     // small hover brighten (matches the rest of the bar's hover language).
-    barColor = hovered ? 'rgba(196, 149, 90, 0.55)' : 'rgba(196, 149, 90, 0.28)';
+    barColor = hovered ? 'rgba(var(--gf-accent-rgb), 0.55)' : 'rgba(var(--gf-accent-rgb), 0.28)';
   }
   const isVisible = isHeldPhase || hasStop || canToggle;
   const isInteractive = canToggle;
@@ -550,27 +550,27 @@ export default function TurnIndicator({
       style={{
         marginLeft: isTouchBar ? 0 : 10,
         padding: isTouchBar ? '5px 8px' : '5px 12px',
-        background: isMyTurn && !heldAgainstMe ? 'rgba(196, 149, 90, 0.15)' : 'transparent',
-        border: `1px solid ${isMyTurn && !heldAgainstMe ? 'rgba(196, 149, 90, 0.45)' : 'rgba(107, 78, 39, 0.25)'}`,
+        background: isMyTurn && !heldAgainstMe ? 'rgba(var(--gf-accent-rgb), 0.15)' : 'transparent',
+        border: `1px solid ${isMyTurn && !heldAgainstMe ? 'rgba(var(--gf-accent-rgb), 0.45)' : 'rgba(var(--gf-border-rgb), 0.25)'}`,
         borderRadius: 4,
         cursor: isMyTurn && !heldAgainstMe ? 'pointer' : 'default',
         fontFamily: 'var(--font-cinzel), Georgia, serif',
         fontSize: FZ.ui,
         letterSpacing: '0.07em',
         textTransform: 'uppercase',
-        color: isMyTurn && !heldAgainstMe ? '#e8d5a3' : 'rgba(196, 149, 90, 0.3)',
+        color: isMyTurn && !heldAgainstMe ? 'var(--gf-text-bright)' : 'rgba(var(--gf-accent-rgb), 0.3)',
         transition: 'background 0.15s, border-color 0.15s, color 0.15s',
         whiteSpace: 'nowrap',
       }}
       onMouseEnter={(e) => {
         if (!isMyTurn || heldAgainstMe) return;
-        e.currentTarget.style.background = 'rgba(196, 149, 90, 0.28)';
-        e.currentTarget.style.borderColor = 'rgba(196, 149, 90, 0.75)';
+        e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.28)';
+        e.currentTarget.style.borderColor = 'rgba(var(--gf-accent-rgb), 0.75)';
       }}
       onMouseLeave={(e) => {
         if (!isMyTurn || heldAgainstMe) return;
-        e.currentTarget.style.background = 'rgba(196, 149, 90, 0.15)';
-        e.currentTarget.style.borderColor = 'rgba(196, 149, 90, 0.45)';
+        e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.15)';
+        e.currentTarget.style.borderColor = 'rgba(var(--gf-accent-rgb), 0.45)';
       }}
     >
       End Turn
@@ -600,7 +600,7 @@ export default function TurnIndicator({
         // Touch overlays the bar on the canvas — fully opaque so canvas
         // labels can't ghost through. Pointer keeps the original alpha.
         background: isTouchBar ? '#0a0805' : 'rgba(10, 8, 5, 0.96)',
-        borderBottom: '1px solid rgba(107, 78, 39, 0.5)',
+        borderBottom: '1px solid rgba(var(--gf-border-rgb), 0.5)',
         // Three columns: left cluster | center cluster | right cluster.
         // `1fr auto 1fr` keeps the center anchored to the bar's geometric
         // midpoint while the side `1fr` tracks share the remaining space.
@@ -661,8 +661,8 @@ export default function TurnIndicator({
           transition: 'color 0.15s, background 0.15s',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.color = '#e8d5a3';
-          e.currentTarget.style.background = 'rgba(196, 149, 90, 0.1)';
+          e.currentTarget.style.color = 'var(--gf-text-bright)';
+          e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.1)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.color = 'rgba(232, 213, 163, 0.35)';
@@ -690,7 +690,7 @@ export default function TurnIndicator({
             fontWeight: 700,
             letterSpacing: '0.06em',
             lineHeight: 1,
-            color: isMyTurn ? '#c4955a' : '#4a7ab5',
+            color: isMyTurn ? 'var(--gf-accent)' : '#4a7ab5',
             flexShrink: 0,
           }}
         >
@@ -754,12 +754,12 @@ export default function TurnIndicator({
           return (
             <>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{ color: isTouchBar ? '#e0b070' : '#c4955a', fontSize: FZ.score, fontWeight: 700, lineHeight: 1 }}>{myScore}</span>
+                <span style={{ color: isTouchBar ? '#e0b070' : 'var(--gf-accent)', fontSize: FZ.score, fontWeight: 700, lineHeight: 1 }}>{myScore}</span>
                 <NameHint
                   label={leftLabel}
                   full={leftFull}
-                  color={isTouchBar ? 'rgba(196, 149, 90, 0.8)' : 'rgba(196, 149, 90, 0.45)'}
-                  accent="#c4955a"
+                  color={isTouchBar ? 'rgba(var(--gf-accent-rgb), 0.8)' : 'rgba(var(--gf-accent-rgb), 0.45)'}
+                  accent="var(--gf-accent)"
                 />
               </div>
               <span style={{ color: 'rgba(232, 213, 163, 0.2)', fontSize: FZ.ui, fontWeight: 400 }}>vs</span>
@@ -1017,14 +1017,14 @@ export default function TurnIndicator({
             background: 'transparent',
             border: 'none',
             cursor: readOnly || !isMyTurn || isFirstPhase || heldAgainstMe ? 'default' : 'pointer',
-            color: !isMyTurn || isFirstPhase || heldAgainstMe ? 'rgba(107, 78, 39, 0.3)' : 'rgba(232, 213, 163, 0.45)',
+            color: !isMyTurn || isFirstPhase || heldAgainstMe ? 'rgba(var(--gf-border-rgb), 0.3)' : 'rgba(232, 213, 163, 0.45)',
             fontSize: FZ.headline,
             fontFamily: 'serif',
             padding: '2px 6px',
             transition: 'color 0.2s',
             lineHeight: 1,
           }}
-          onMouseEnter={(e) => { if (isMyTurn && !isFirstPhase && !heldAgainstMe) e.currentTarget.style.color = '#e8d5a3'; }}
+          onMouseEnter={(e) => { if (isMyTurn && !isFirstPhase && !heldAgainstMe) e.currentTarget.style.color = 'var(--gf-text-bright)'; }}
           onMouseLeave={(e) => { if (isMyTurn && !isFirstPhase && !heldAgainstMe) e.currentTarget.style.color = 'rgba(232, 213, 163, 0.45)'; }}
         >
           &#x276E;
@@ -1054,8 +1054,8 @@ export default function TurnIndicator({
               left: 0,
               width: activeBounds.width,
               transform: `translateX(${activeBounds.left}px)`,
-              background: 'rgba(196, 149, 90, 0.15)',
-              border: '1px solid rgba(196, 149, 90, 0.45)',
+              background: 'rgba(var(--gf-accent-rgb), 0.15)',
+              border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
               borderRadius: 20,
               boxSizing: 'border-box',
               opacity: hasMeasuredRef.current && activeBounds.width > 12 ? 1 : 0,
@@ -1075,9 +1075,9 @@ export default function TurnIndicator({
               height: 2,
               width: activeBounds.width * 0.7,
               transform: `translateX(${activeBounds.left + activeBounds.width * 0.15}px)`,
-              background: '#c4955a',
+              background: 'var(--gf-accent)',
               borderRadius: 1,
-              boxShadow: '0 0 6px rgba(196, 149, 90, 0.5)',
+              boxShadow: '0 0 6px rgba(var(--gf-accent-rgb), 0.5)',
               opacity: hasMeasuredRef.current && activeBounds.width > 12 ? 1 : 0,
               transition: 'transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), width 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s',
               pointerEvents: 'none',
@@ -1127,7 +1127,7 @@ export default function TurnIndicator({
                       fontSize: FZ.ui,
                       letterSpacing: '0.07em',
                       textTransform: 'uppercase',
-                      color: isActive ? '#e8d5a3' : 'rgba(232, 213, 163, 0.35)',
+                      color: isActive ? 'var(--gf-text-bright)' : 'rgba(232, 213, 163, 0.35)',
                       transition: 'color 0.24s ease-out',
                       whiteSpace: 'nowrap',
                       zIndex: 1,
@@ -1185,7 +1185,7 @@ export default function TurnIndicator({
                     color: isHeldPhase
                       ? '#fbbf24'
                       : isActive
-                      ? '#e8d5a3'
+                      ? 'var(--gf-text-bright)'
                       : isMyTurn
                       ? (isTouchBar ? 'rgba(232, 213, 163, 0.62)' : 'rgba(232, 213, 163, 0.45)')
                       : (isTouchBar ? 'rgba(196, 186, 168, 0.55)' : 'rgba(150, 150, 160, 0.35)'),
@@ -1194,7 +1194,7 @@ export default function TurnIndicator({
                     zIndex: 1,
                   }}
                   onMouseEnter={(e) => {
-                    if (canClick) e.currentTarget.style.color = '#e8d5a3';
+                    if (canClick) e.currentTarget.style.color = 'var(--gf-text-bright)';
                   }}
                   onMouseLeave={(e) => {
                     if (canClick) e.currentTarget.style.color = 'rgba(232, 213, 163, 0.45)';
@@ -1230,14 +1230,14 @@ export default function TurnIndicator({
             background: 'transparent',
             border: 'none',
             cursor: readOnly || !isMyTurn || heldAgainstMe ? 'default' : 'pointer',
-            color: !isMyTurn || heldAgainstMe ? 'rgba(107, 78, 39, 0.3)' : 'rgba(232, 213, 163, 0.45)',
+            color: !isMyTurn || heldAgainstMe ? 'rgba(var(--gf-border-rgb), 0.3)' : 'rgba(232, 213, 163, 0.45)',
             fontSize: FZ.headline,
             fontFamily: 'serif',
             padding: '2px 6px',
             transition: 'color 0.2s',
             lineHeight: 1,
           }}
-          onMouseEnter={(e) => { if (isMyTurn && !heldAgainstMe) e.currentTarget.style.color = '#e8d5a3'; }}
+          onMouseEnter={(e) => { if (isMyTurn && !heldAgainstMe) e.currentTarget.style.color = 'var(--gf-text-bright)'; }}
           onMouseLeave={(e) => { if (isMyTurn && !heldAgainstMe) e.currentTarget.style.color = 'rgba(232, 213, 163, 0.45)'; }}
         >
           &#x276F;
@@ -1298,27 +1298,27 @@ export default function TurnIndicator({
             style={{
               padding: '5px 12px',
               background: 'transparent',
-              border: '1px solid rgba(107, 78, 39, 0.4)',
+              border: '1px solid rgba(var(--gf-border-rgb), 0.4)',
               borderRadius: 4,
               cursor: onCancelRematch ? 'pointer' : 'default',
               fontFamily: 'var(--font-cinzel), Georgia, serif',
               fontSize: FZ.ui,
               letterSpacing: '0.07em',
               textTransform: 'uppercase',
-              color: 'rgba(196, 149, 90, 0.6)',
+              color: 'rgba(var(--gf-accent-rgb), 0.6)',
               transition: 'background 0.15s, border-color 0.15s, color 0.15s',
             }}
             onMouseEnter={(e) => {
               if (!onCancelRematch) return;
-              e.currentTarget.style.background = 'rgba(196, 149, 90, 0.12)';
-              e.currentTarget.style.borderColor = 'rgba(196, 149, 90, 0.4)';
-              e.currentTarget.style.color = 'rgba(196, 149, 90, 0.85)';
+              e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.12)';
+              e.currentTarget.style.borderColor = 'rgba(var(--gf-accent-rgb), 0.4)';
+              e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.85)';
             }}
             onMouseLeave={(e) => {
               if (!onCancelRematch) return;
               e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.borderColor = 'rgba(107, 78, 39, 0.4)';
-              e.currentTarget.style.color = 'rgba(196, 149, 90, 0.6)';
+              e.currentTarget.style.borderColor = 'rgba(var(--gf-border-rgb), 0.4)';
+              e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.6)';
             }}
           >
             Cancel
@@ -1329,24 +1329,24 @@ export default function TurnIndicator({
             onClick={onPlayAgain}
             style={{
               padding: '5px 12px',
-              background: 'rgba(196, 149, 90, 0.15)',
-              border: '1px solid rgba(196, 149, 90, 0.45)',
+              background: 'rgba(var(--gf-accent-rgb), 0.15)',
+              border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
               borderRadius: 4,
               cursor: 'pointer',
               fontFamily: 'var(--font-cinzel), Georgia, serif',
               fontSize: FZ.ui,
               letterSpacing: '0.07em',
               textTransform: 'uppercase',
-              color: '#e8d5a3',
+              color: 'var(--gf-text-bright)',
               transition: 'background 0.15s, border-color 0.15s, color 0.15s',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(196, 149, 90, 0.28)';
-              e.currentTarget.style.borderColor = 'rgba(196, 149, 90, 0.75)';
+              e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.28)';
+              e.currentTarget.style.borderColor = 'rgba(var(--gf-accent-rgb), 0.75)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(196, 149, 90, 0.15)';
-              e.currentTarget.style.borderColor = 'rgba(196, 149, 90, 0.45)';
+              e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.15)';
+              e.currentTarget.style.borderColor = 'rgba(var(--gf-accent-rgb), 0.45)';
             }}
           >
             Play Again
@@ -1357,24 +1357,24 @@ export default function TurnIndicator({
             onClick={onBackToLobby}
             style={{
               padding: '5px 12px',
-              background: 'rgba(196, 149, 90, 0.15)',
-              border: '1px solid rgba(196, 149, 90, 0.45)',
+              background: 'rgba(var(--gf-accent-rgb), 0.15)',
+              border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
               borderRadius: 4,
               cursor: 'pointer',
               fontFamily: 'var(--font-cinzel), Georgia, serif',
               fontSize: FZ.ui,
               letterSpacing: '0.07em',
               textTransform: 'uppercase',
-              color: '#e8d5a3',
+              color: 'var(--gf-text-bright)',
               transition: 'background 0.15s, border-color 0.15s, color 0.15s',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(196, 149, 90, 0.28)';
-              e.currentTarget.style.borderColor = 'rgba(196, 149, 90, 0.75)';
+              e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.28)';
+              e.currentTarget.style.borderColor = 'rgba(var(--gf-accent-rgb), 0.75)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(196, 149, 90, 0.15)';
-              e.currentTarget.style.borderColor = 'rgba(196, 149, 90, 0.45)';
+              e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.15)';
+              e.currentTarget.style.borderColor = 'rgba(var(--gf-accent-rgb), 0.45)';
             }}
           >
             Back to Lobby
@@ -1452,26 +1452,26 @@ export default function TurnIndicator({
             style={{
               padding: '5px 12px',
               background: 'transparent',
-              border: '1px solid rgba(196, 149, 90, 0.45)',
+              border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
               borderRadius: 4,
               cursor: handRevealOnCooldown ? 'default' : 'pointer',
               fontFamily: 'var(--font-cinzel), Georgia, serif',
               fontSize: FZ.ui,
               letterSpacing: '0.07em',
               textTransform: 'uppercase',
-              color: '#e8d5a3',
+              color: 'var(--gf-text-bright)',
               opacity: handRevealOnCooldown ? 0.5 : 1,
               transition: 'background 0.15s, border-color 0.15s, color 0.15s',
             }}
             onMouseEnter={(e) => {
               if (handRevealOnCooldown) return;
-              e.currentTarget.style.background = 'rgba(196, 149, 90, 0.18)';
-              e.currentTarget.style.borderColor = 'rgba(196, 149, 90, 0.75)';
+              e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.18)';
+              e.currentTarget.style.borderColor = 'rgba(var(--gf-accent-rgb), 0.75)';
             }}
             onMouseLeave={(e) => {
               if (handRevealOnCooldown) return;
               e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.borderColor = 'rgba(196, 149, 90, 0.45)';
+              e.currentTarget.style.borderColor = 'rgba(var(--gf-accent-rgb), 0.45)';
             }}
           >
             {handRevealOnCooldown ? 'Request Sent' : 'Request Hands'}
@@ -1524,7 +1524,7 @@ export default function TurnIndicator({
               fontFamily: 'var(--font-cinzel), Georgia, serif',
               fontSize: FZ.headline,
               fontWeight: 700,
-              color: '#e8d5a3',
+              color: 'var(--gf-text-bright)',
               marginTop: 8,
               textShadow: '0 1px 4px rgba(0,0,0,0.5)',
             }}>{isSolo ? `Concede as ${seatInHandName ?? 'this seat'}?` : 'Are you sure?'}</h2>
@@ -1532,7 +1532,7 @@ export default function TurnIndicator({
               marginTop: 8,
               fontFamily: 'Georgia, serif',
               fontSize: FZ.bodyLg,
-              color: 'rgba(196, 149, 90, 0.5)',
+              color: 'rgba(var(--gf-accent-rgb), 0.5)',
             }}>This will end the game and count as a loss.</p>
 
             <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
@@ -1542,9 +1542,9 @@ export default function TurnIndicator({
                   flex: 1,
                   padding: '10px 16px',
                   borderRadius: 4,
-                  border: '1px solid rgba(107, 78, 39, 0.3)',
+                  border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
                   background: 'transparent',
-                  color: 'rgba(196, 149, 90, 0.6)',
+                  color: 'rgba(var(--gf-accent-rgb), 0.6)',
                   fontFamily: 'var(--font-cinzel), Georgia, serif',
                   fontSize: FZ.body,
                   fontWeight: 700,
@@ -1605,13 +1605,13 @@ export default function TurnIndicator({
             onClick={(e) => e.stopPropagation()}
             style={{
               background: 'rgba(14, 10, 6, 0.97)',
-              border: '1px solid rgba(107, 78, 39, 0.3)',
+              border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
               borderRadius: 10,
               padding: '32px 36px',
               textAlign: 'center',
               maxWidth: 340,
               width: '100%',
-              boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(196, 149, 90, 0.08)',
+              boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--gf-accent-rgb), 0.08)',
             }}
           >
             <p style={{
@@ -1619,13 +1619,13 @@ export default function TurnIndicator({
               fontSize: FZ.ui,
               letterSpacing: '0.18em',
               textTransform: 'uppercase',
-              color: 'rgba(196, 149, 90, 0.5)',
+              color: 'rgba(var(--gf-accent-rgb), 0.5)',
             }}>Leave Game</p>
             <h2 style={{
               fontFamily: 'var(--font-cinzel), Georgia, serif',
               fontSize: FZ.headline,
               fontWeight: 700,
-              color: '#e8d5a3',
+              color: 'var(--gf-text-bright)',
               marginTop: 8,
               textShadow: '0 1px 4px rgba(0,0,0,0.5)',
             }}>Return to lobby?</h2>
@@ -1633,7 +1633,7 @@ export default function TurnIndicator({
               marginTop: 8,
               fontFamily: 'Georgia, serif',
               fontSize: FZ.bodyLg,
-              color: 'rgba(196, 149, 90, 0.5)',
+              color: 'rgba(var(--gf-accent-rgb), 0.5)',
             }}>{readOnly
               ? 'You will stop spectating. The game will continue.'
               : 'This will end the game and count as a resignation.'}</p>
@@ -1645,9 +1645,9 @@ export default function TurnIndicator({
                   flex: 1,
                   padding: '10px 16px',
                   borderRadius: 4,
-                  border: '1px solid rgba(107, 78, 39, 0.3)',
+                  border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
                   background: 'transparent',
-                  color: 'rgba(196, 149, 90, 0.6)',
+                  color: 'rgba(var(--gf-accent-rgb), 0.6)',
                   fontFamily: 'var(--font-cinzel), Georgia, serif',
                   fontSize: FZ.body,
                   fontWeight: 700,

@@ -112,7 +112,7 @@ export function CardScaleControl({
           justifyContent: 'center',
           width: isTouch ? 44 : 36,
           height: isTouch ? 44 : 36,
-          background: 'rgba(30,22,16,0.92)',
+          background: 'rgba(var(--gf-panel-rgb),0.92)',
           border: '1px solid var(--gf-border, #3d2e1f)',
           borderRadius: 8,
           cursor: 'pointer',
@@ -124,7 +124,7 @@ export function CardScaleControl({
           e.currentTarget.style.color = 'var(--gf-text-bright, #fff)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(30,22,16,0.92)';
+          e.currentTarget.style.background = 'rgba(var(--gf-panel-rgb),0.92)';
           e.currentTarget.style.color = 'var(--gf-text, #e8d5a3)';
         }}
       >
@@ -138,7 +138,7 @@ export function CardScaleControl({
             position: 'absolute',
             bottom: 44,
             left: 0,
-            background: 'rgba(30,22,16,0.96)',
+            background: 'rgba(var(--gf-panel-rgb),0.96)',
             border: '1px solid var(--gf-border, #3d2e1f)',
             borderRadius: 8,
             padding: '12px 16px',
@@ -188,7 +188,7 @@ export function CardScaleControl({
             }}
             style={{
               width: '100%',
-              accentColor: '#c4955a',
+              accentColor: 'var(--gf-accent)',
               cursor: 'pointer',
             }}
           />
@@ -277,7 +277,7 @@ export function CardScaleControl({
                 }}
                 style={{
                   width: '100%',
-                  accentColor: '#c4955a',
+                  accentColor: 'var(--gf-accent)',
                   cursor: 'pointer',
                 }}
               />

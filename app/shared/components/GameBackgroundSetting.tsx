@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, type ReactNode } from 'react';
-import { ImagePlus, Image as ImageIcon, ImageOff, Trash2 } from 'lucide-react';
+import { ImagePlus, Image as ImageIcon, ImageOff, Palette, Trash2 } from 'lucide-react';
 import { useGameBackgroundSettings } from '@/app/shared/hooks/useGameBackground';
 
 /**
@@ -10,7 +10,7 @@ import { useGameBackgroundSettings } from '@/app/shared/hooks/useGameBackground'
  * Hidden when signed out, since the image is stored per account.
  */
 export function GameBackgroundSetting() {
-  const { loaded, signedIn, row, busy, error, uploadFile, setEnabled, remove } = useGameBackgroundSettings();
+  const { loaded, signedIn, row, busy, error, matchUi, uploadFile, setEnabled, remove, setMatchUi } = useGameBackgroundSettings();
   const inputRef = useRef<HTMLInputElement>(null);
 
   if (!loaded || !signedIn) return null;
@@ -40,6 +40,16 @@ export function GameBackgroundSetting() {
             {row.enabled ? <ImageIcon size={14} /> : <ImageOff size={14} />}
             {row.enabled ? 'My Background On' : 'My Background Off'}
           </MenuButton>
+          {row.enabled && (
+            <MenuButton
+              onClick={() => setMatchUi(!matchUi)}
+              pressed={matchUi}
+              title="Tint the menus and panels to match your background. Only you see it."
+            >
+              <Palette size={14} />
+              {matchUi ? 'Match UI Colors On' : 'Match UI Colors Off'}
+            </MenuButton>
+          )}
           <div style={{ display: 'flex', gap: 4 }}>
             <MenuButton onClick={() => inputRef.current?.click()} disabled={busy} title="Upload a different image">
               <ImagePlus size={14} />
