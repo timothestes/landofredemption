@@ -5,6 +5,9 @@ import {
   gameBackgroundCss,
   isAllowedBackgroundUrl,
   isOwnBackgroundPathname,
+  parseBackgroundHint,
+  serializeBackgroundHint,
+  GAME_BACKGROUND_PENDING_CSS,
 } from '../gameBackground';
 
 const UID = '0b9a2f4c-1d2e-4f3a-9b8c-7d6e5f4a3b2c';
@@ -94,5 +97,47 @@ describe('fitWithin', () => {
   it('scales the longest side to the cap', () => {
     expect(fitWithin(4032, 3024, 2560)).toEqual({ width: 2560, height: 1920 });
     expect(fitWithin(3024, 4032, 2560)).toEqual({ width: 1920, height: 2560 });
+  });
+});
+
+describe('background hint', () => {
+  const palette = { '--gf-bg': '#1a1410', '--gf-accent-rgb': '196, 149, 90' };
+
+  it('round-trips an image and its palette for the same user', () => {
+    const raw = serializeBackgroundHint(UID, { url: good, palette });
+    expect(parseBackgroundHint(raw, UID)).toEqual({ url: good, palette });
+  });
+
+  it('round-trips "no custom background"', () => {
+    const raw = serializeBackgroundHint(UID, { url: null, palette: null });
+    expect(parseBackgroundHint(raw, UID)).toEqual({ url: null, palette: null });
+  });
+
+  it('ignores a hint stored for another account', () => {
+    expect(parseBackgroundHint(serializeBackgroundHint(OTHER, { url: null, palette: null }), UID)).toBeNull();
+  });
+
+  it('rejects a url outside the owner folder or our store', () => {
+    const raw = JSON.stringify({ userId: UID, url: 'https://evil.example/x.webp', palette: null });
+    expect(parseBackgroundHint(raw, UID)).toBeNull();
+    expect(parseBackgroundHint(serializeBackgroundHint(UID, { url: good, palette: null }), OTHER)).toBeNull();
+  });
+
+  it('drops a palette with unexpected keys or values but keeps the image', () => {
+    const raw = JSON.stringify({ userId: UID, url: good, palette: { color: 'red' } });
+    expect(parseBackgroundHint(raw, UID)).toEqual({ url: good, palette: null });
+    const raw2 = JSON.stringify({ userId: UID, url: good, palette: { '--gf-bg': 'url(x)};' } });
+    expect(parseBackgroundHint(raw2, UID)).toEqual({ url: good, palette: null });
+  });
+
+  it('returns null for missing or corrupt storage', () => {
+    expect(parseBackgroundHint(null, UID)).toBeNull();
+    expect(parseBackgroundHint('{nope', UID)).toBeNull();
+  });
+});
+
+describe('gameBackgroundCss pending', () => {
+  it('shows the neutral fill, never the default art, while pending', () => {
+    expect(gameBackgroundCss(false, null, true)).toBe(GAME_BACKGROUND_PENDING_CSS);
   });
 });

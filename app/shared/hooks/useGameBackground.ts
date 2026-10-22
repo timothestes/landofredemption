@@ -10,7 +10,13 @@ import {
   type GameBackgroundRow,
 } from '@/app/play/backgroundActions';
 import { createClient } from '@/utils/supabase/client';
-import { backgroundPathname, gameBackgroundCss } from '../utils/gameBackground';
+import {
+  GAME_BACKGROUND_HINT_KEY,
+  backgroundPathname,
+  gameBackgroundCss,
+  parseBackgroundHint,
+  serializeBackgroundHint,
+} from '../utils/gameBackground';
 import { encodeGameBackground } from '../utils/encodeGameBackground';
 import { THEME_PROPERTIES, dominantColor, paletteFromColor } from '../utils/backgroundPalette';
 
@@ -30,6 +36,12 @@ import { THEME_PROPERTIES, dominantColor, paletteFromColor } from '../utils/back
  */
 interface State {
   loaded: boolean;
+  /**
+   * The current user's background is known (lookup done and the image loaded or
+   * failed, or the device hint said "none"). Until then a signed-in table shows
+   * a neutral fill rather than the default art. Reset on a user change.
+   */
+  settled: boolean;
   signedIn: boolean;
   /** Whose row this is; a different id on refetch wipes everything. */
   userId: string | null;
@@ -55,7 +67,7 @@ function readMatchUi(): boolean {
 }
 
 let state: State = {
-  loaded: false, signedIn: false, userId: null, row: null, displayUrl: null,
+  loaded: false, settled: false, signedIn: false, userId: null, row: null, displayUrl: null,
   palette: null, matchUi: true, busy: false, error: null,
 };
 let loading: Promise<void> | null = null;
@@ -68,7 +80,35 @@ let appliedTheme = '';
 function set(patch: Partial<State>) {
   state = { ...state, ...patch };
   syncTheme();
+  persistHint();
   listeners.forEach((l) => l());
+}
+
+/** Last value written to localStorage, to skip redundant writes. */
+let persistedHint = '';
+
+/**
+ * Remember what this device resolved to, so the next table mount can paint it
+ * on its first frame instead of the default art. Only written once settled.
+ */
+function persistHint() {
+  if (!state.settled || !state.userId || state.busy) return;
+  const next = serializeBackgroundHint(state.userId, { url: state.displayUrl, palette: state.palette });
+  if (next === persistedHint) return;
+  persistedHint = next;
+  try { localStorage.setItem(GAME_BACKGROUND_HINT_KEY, next); } catch { /* private mode: no hint */ }
+}
+
+/** On the first mount for a user, adopt the device hint so their image paints before the lookup returns. */
+function seedFromHint(userId: string) {
+  if (state.settled || state.displayUrl !== null) return;
+  let raw: string | null = null;
+  try { raw = localStorage.getItem(GAME_BACKGROUND_HINT_KEY); } catch { /* no hint */ }
+  const hint = parseBackgroundHint(raw, userId);
+  if (!hint) return;
+  persistedHint = raw!;
+  if (!hint.url) set({ settled: true });
+  else set({ displayUrl: hint.url, palette: state.matchUi ? hint.palette : null });
 }
 
 /** Put the derived palette on <html> exactly when it should be visible, else remove it. */
@@ -126,20 +166,23 @@ const SERVER_STATE = state;
  */
 function applyRow(row: GameBackgroundRow | null) {
   if (!row?.enabled) {
-    set({ row, displayUrl: null, palette: null });
+    set({ row, displayUrl: null, palette: null, settled: true });
     return;
   }
   set({ row });
-  if (row.url === state.displayUrl) return;
+  if (row.url === state.displayUrl) {
+    set({ settled: true });
+    return;
+  }
   const img = new Image();
   img.onload = () => {
     if (state.row?.url !== row.url || !state.row.enabled) return;
     // Paint the image now; the theme follows its (usually cached) sample.
-    set({ displayUrl: row.url, palette: null, error: null });
+    set({ displayUrl: row.url, palette: null, error: null, settled: true });
     if (state.matchUi) void loadPalette(row.url);
   };
   img.onerror = () => {
-    if (state.row?.url === row.url) set({ error: 'Your background image could not be loaded' });
+    if (state.row?.url === row.url) set({ error: 'Your background image could not be loaded', settled: true });
   };
   img.src = row.url;
 }
@@ -151,7 +194,7 @@ async function loadPalette(url: string) {
 }
 
 function switchUser(userId: string | null) {
-  if (userId !== state.userId) set({ userId, row: null, displayUrl: null, palette: null, error: null });
+  if (userId !== state.userId) set({ userId, row: null, displayUrl: null, palette: null, error: null, settled: false });
 }
 
 /**
@@ -180,17 +223,22 @@ function cookieUserId(): string | null {
 function refresh() {
   if (loading || typeof window === 'undefined') return;
   if (readMatchUi() !== state.matchUi) set({ matchUi: !state.matchUi });
-  switchUser(cookieUserId());
+  const cookieId = cookieUserId();
+  switchUser(cookieId);
+  if (cookieId) seedFromHint(cookieId);
   loading = getGameBackground()
     .then(({ userId, row }) => {
       switchUser(userId);
       set({ loaded: true, signedIn: userId !== null });
       // An upload/toggle that started meanwhile has the newer row.
       if (!state.busy) applyRow(row);
+      else set({ settled: true });
     })
-    .catch(() => set({ loaded: true }))
+    .catch(() => set({ loaded: true, settled: true }))
     .finally(() => { loading = null; });
 }
+
+const PENDING = 'pending';
 
 /** CSS `background-image` for the table: the viewer's own image when enabled, else the default art. */
 export function useGameBackground(isForge?: boolean): string {
@@ -215,12 +263,18 @@ export function useGameBackground(isForge?: boolean): string {
       syncTheme();
     };
   }, []);
-  const displayUrl = useSyncExternalStore(
+  // The snapshot is a string so one subscription covers both answers: the
+  // image to paint, or PENDING while a signed-in player's background is unknown.
+  const snapshot = useSyncExternalStore(
     subscribe,
-    () => (state.displayUrl && cookieUserId() === state.userId ? state.displayUrl : null),
+    () => {
+      const uid = cookieUserId();
+      if (state.displayUrl && uid === state.userId) return state.displayUrl;
+      return uid && !(uid === state.userId && state.settled) ? PENDING : null;
+    },
     () => SERVER_STATE.displayUrl,
   );
-  return gameBackgroundCss(isForge, displayUrl);
+  return gameBackgroundCss(isForge, snapshot === PENDING ? null : snapshot, snapshot === PENDING);
 }
 
 /** State + actions for the gear-menu background setting. */

@@ -58,6 +58,50 @@ export function isOwnBackgroundPathname(pathname: string, userId: string): boole
   return pathname.startsWith(prefix) && FILE_RE.test(pathname.slice(prefix.length));
 }
 
+/** localStorage key for the last resolved background, so a table can paint it on the first frame. */
+export const GAME_BACKGROUND_HINT_KEY = 'redemption-game-background-hint';
+
+/** What the last lookup resolved to on this device: an image (+ its theme), or none. */
+export interface BackgroundHint {
+  url: string | null;
+  palette: Record<string, string> | null;
+}
+
+const PALETTE_KEY_RE = /^--gf-[a-z-]+$/;
+const PALETTE_VALUE_RE = /^[#0-9a-zA-Z,.\s%()-]{1,64}$/;
+
+export function serializeBackgroundHint(userId: string, hint: BackgroundHint): string {
+  return JSON.stringify({ userId: userId.toLowerCase(), ...hint });
+}
+
+/**
+ * Read a stored hint back. Null unless it is for `userId` and every field
+ * passes the same gates as live data (the URL ends up in a stylesheet, the
+ * palette on <html>), so a hand-edited or other-account entry is ignored.
+ */
+export function parseBackgroundHint(raw: string | null, userId: string): BackgroundHint | null {
+  if (!raw) return null;
+  try {
+    const v = JSON.parse(raw) as { userId?: unknown; url?: unknown; palette?: unknown };
+    if (typeof v.userId !== 'string' || v.userId !== userId.toLowerCase()) return null;
+    if (v.url === null) return { url: null, palette: null };
+    if (!isAllowedBackgroundUrl(v.url, userId)) return null;
+    let palette: Record<string, string> | null = null;
+    if (v.palette && typeof v.palette === 'object') {
+      const entries = Object.entries(v.palette as Record<string, unknown>);
+      if (entries.every(([k, val]) => PALETTE_KEY_RE.test(k) && typeof val === 'string' && PALETTE_VALUE_RE.test(val))) {
+        palette = Object.fromEntries(entries) as Record<string, string>;
+      }
+    }
+    return { url: v.url, palette };
+  } catch {
+    return null;
+  }
+}
+
+/** Fill shown while a signed-in player's background is still unknown, so the default art never flashes first. */
+export const GAME_BACKGROUND_PENDING_CSS = 'linear-gradient(rgb(30,22,16), rgb(30,22,16))';
+
 /** The built-in table art: Forge decks get the forge, everything else the cave. */
 export function defaultBackgroundUrl(isForge?: boolean): string {
   return `/gameplay/${isForge ? 'forge_background' : 'cave_background'}.png`;
@@ -68,7 +112,12 @@ export function defaultBackgroundUrl(isForge?: boolean): string {
  * passes the gate — anything else (including a hand-edited row) falls back to
  * the default art rather than reaching the stylesheet.
  */
-export function gameBackgroundCss(isForge: boolean | undefined, customUrl: string | null | undefined): string {
+export function gameBackgroundCss(
+  isForge: boolean | undefined,
+  customUrl: string | null | undefined,
+  pending = false,
+): string {
+  if (pending) return GAME_BACKGROUND_PENDING_CSS;
   if (isAllowedBackgroundUrl(customUrl)) return `${GAME_BACKGROUND_DIM}, url("${customUrl}")`;
   return `url(${defaultBackgroundUrl(isForge)})`;
 }
