@@ -60,7 +60,7 @@ export function MatchupClient({ bracket, label, score, winnerName, a, b, isOwner
       onOpenCard={open}
       onSaveKeyCards={save}
       onError={fail}
-      className={cn(active !== key && 'hidden lg:block')}
+      className={cn(active !== key && 'max-lg:hidden')}
     />
   );
 
