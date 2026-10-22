@@ -53,6 +53,11 @@ export interface Tournament {
   fantasyDraft?: FantasyDraft;
   topCut?: number | null;
   topCutFormats?: string[];
+  /**
+   * Tracker tournament id per format (`/tournaments/results/<id>`), for years
+   * whose standings and decklists were published through the app.
+   */
+  resultsIds?: Record<string, string>;
 }
 
 // ── Player ──────────────────────────────────────────────────────────────────
@@ -74,6 +79,8 @@ export interface ResultEntry {
   deck: string;
   record: string;
   notes: string;
+  /** Published decklist in the app (`/decklist/<deckId>`), when the event's decklists were published through the tracker. */
+  deckId?: string;
 }
 
 /** Key: "<year>_<format>", value: array of result rows */

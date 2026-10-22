@@ -104,6 +104,8 @@ export interface CareerHistoryEntry {
   deck: string;
   record: string;
   notes: string;
+  /** Published decklist id, when the event's decklists live in the app. */
+  deckId?: string;
   /** Distinct players who played Round 1 that year+format, or null if no match data exists for that key. */
   fieldSize: number | null;
   /** (fieldSize - placement) / (fieldSize - 1) * 100, clamped 0-100; null if fieldSize is unknown or 1. */
