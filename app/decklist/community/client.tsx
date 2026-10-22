@@ -80,9 +80,9 @@ function timeAgo(dateString: string): string {
 
 const PAGE_SIZE = 24;
 
-// Paragon is exactly 40; 50 is the T1 floor; 57 and 63 are the next Lost Soul
-// breakpoints (every 7 cards adds a soul); 100 is the T2 floor.
-const QUICK_CARD_COUNTS = [40, 50, 57, 63, 100];
+// 50 is the T1 floor; 57 and 63 are the next Lost Soul breakpoints (every
+// 7 cards adds a soul); 100 is the T2 floor.
+const QUICK_CARD_COUNTS = [50, 57, 63, 100];
 
 function getPageNumbers(current: number, total: number): (number | "…")[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
