@@ -79,6 +79,14 @@ export function OpponentJoinedToast({ name }: { name: string }) {
 // Props
 // ---------------------------------------------------------------------------
 
+export type BracketSwap = {
+  hostSide: 'a' | 'b';
+  otherDeckName: string;
+  onSwap: (side: 'a' | 'b') => Promise<
+    { ok: true; deck: { id: string; name: string; paragon: string } } | { ok: false; error: string }
+  >;
+};
+
 interface PregameScreenProps {
   code: string;
   lifecycle: 'waiting' | 'pregame';
@@ -97,6 +105,9 @@ interface PregameScreenProps {
   // Called after a successful pregame deck swap so the owner can keep local
   // deck state (gameParams, sessionStorage, practice goldfish deck) in sync.
   onDeckChanged?: (next: { deckId: string; deckName: string; deckData: string; paragon: string }) => void;
+  // Bracket host only: swap which of the match's two decks the host plays before
+  // the friend joins. onSwap persists the choice and returns the host's new deck.
+  bracketSwap?: BracketSwap;
   // Replaces the default /play?join= invite link (bracket games invite to a designated deck).
   inviteUrl?: string;
 }
@@ -119,6 +130,7 @@ export default function PregameScreen({
   onTogglePublic,
   isForge,
   onDeckChanged,
+  bracketSwap,
   inviteUrl,
 }: PregameScreenProps) {
   const { game, myPlayer, opponentPlayer } = gameState;
@@ -201,6 +213,7 @@ export default function PregameScreen({
             showDice={phase === 'rolling' || phase === 'choosing' || phase === 'revealing'}
             isForge={isForge}
             onDeckChanged={onDeckChanged}
+            bracketSwap={bracketSwap}
           />
 
           {/* Action area — contextual */}
@@ -317,6 +330,7 @@ function PlayerCards({
   showDice,
   isForge,
   onDeckChanged,
+  bracketSwap,
 }: {
   isWaiting: boolean;
   phase: string;
@@ -332,6 +346,7 @@ function PlayerCards({
   showDice: boolean;
   isForge?: boolean;
   onDeckChanged?: (next: { deckId: string; deckName: string; deckData: string; paragon: string }) => void;
+  bracketSwap?: BracketSwap;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [isChangingDeck, setIsChangingDeck] = useState(false);
@@ -350,6 +365,31 @@ function PlayerCards({
     } catch (e) {
       console.error('Failed to change deck:', e);
       setChangeError('Failed to load deck.');
+    } finally {
+      setIsChangingDeck(false);
+    }
+  };
+
+  // Bracket swap: persist first (the invite page follows the saved side), then
+  // load the new deck into the lobby; if loading fails, put the saved side back.
+  const handleBracketSwap = async () => {
+    if (!bracketSwap) return;
+    const toSide = bracketSwap.hostSide === 'a' ? 'b' : 'a';
+    setIsChangingDeck(true);
+    setChangeError(null);
+    try {
+      const r = await bracketSwap.onSwap(toSide);
+      if (r.ok === false) { setChangeError(r.error); return; }
+      try {
+        const result = await loadDeckForGame(r.deck.id);
+        const deckData = JSON.stringify(result.deckData);
+        gameState.pregameChangeDeck(r.deck.id, deckData, r.deck.paragon);
+        onDeckChanged?.({ deckId: r.deck.id, deckName: r.deck.name, deckData, paragon: r.deck.paragon });
+      } catch (e) {
+        console.error('Failed to swap decks:', e);
+        await bracketSwap.onSwap(bracketSwap.hostSide);
+        setChangeError('Failed to load deck.');
+      }
     } finally {
       setIsChangingDeck(false);
     }
@@ -398,6 +438,21 @@ function PlayerCards({
               <p className="text-[10px] text-amber-200/40 truncate max-w-full" title={myDeckName}>
                 {myDeckName || 'Deck selected'}
               </p>
+              {bracketSwap && !hasOpponent && (
+                <>
+                  <p className="text-[10px] text-amber-200/40 truncate max-w-full" title={bracketSwap.otherDeckName}>
+                    Friend plays: <span className="text-amber-200/70">{bracketSwap.otherDeckName}</span>
+                  </p>
+                  <button
+                    onClick={handleBracketSwap}
+                    disabled={isChangingDeck}
+                    className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded border border-amber-200/20 text-[11px] text-amber-200/70 hover:bg-amber-200/5 hover:text-amber-200/90 transition-colors disabled:opacity-50"
+                  >
+                    <ArrowLeftRight className="h-3 w-3" />
+                    {isChangingDeck ? 'Swapping…' : 'Swap decks'}
+                  </button>
+                </>
+              )}
               <button
                 onClick={() => setPickerOpen(true)}
                 disabled={isChangingDeck}

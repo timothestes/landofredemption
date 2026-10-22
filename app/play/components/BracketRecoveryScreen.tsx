@@ -57,6 +57,7 @@ export function BracketRecoveryScreen({ reason, bracket, displayName, supabaseUs
       entryBId: g.entryBId,
       deckAName: g.deckAName,
       deckBName: g.deckBName,
+      hostSide: 'a',
     };
     if (bracket.mode === 'online') {
       // The host lands in the new waiting room; the friend needs the new invite link.

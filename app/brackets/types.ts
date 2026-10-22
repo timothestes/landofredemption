@@ -57,6 +57,7 @@ export interface DeckBracketGameRow {
   winner_entry_id: string | null;
   souls_a: number | null;
   souls_b: number | null;
+  host_side: 'a' | 'b';
   started_at: string;
   finished_at: string | null;
 }
@@ -112,6 +113,7 @@ export const toGame = (r: DeckBracketGameRow): BracketGame => ({
   winnerEntryId: r.winner_entry_id,
   soulsA: r.souls_a,
   soulsB: r.souls_b,
+  hostSide: r.host_side,
   startedAt: r.started_at,
   finishedAt: r.finished_at,
 });

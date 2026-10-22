@@ -49,10 +49,11 @@ import { loadForgeDeckForGame, getForgePlayResolver, authorizeForgeSeat } from '
 import { mergeForgeDeckData, resolveCardImageUrl, forgeRenderWarmUrls, type ForgeResolverMap } from '@/app/play/utils/forgeResolver';
 import { warmForgeRenders } from '@/app/play/utils/warmForgeRenders';
 import {
-  writeSoloGameParams, writeHostGameParams, stdbFormatFor, DECIDED_KEY, type BracketGameParams,
+  writeSoloGameParams, writeHostGameParams, stdbFormatFor, DECIDED_KEY, seatEntryId, seatDeckName, soulsForEntries,
+  type BracketGameParams,
 } from '@/app/play/lib/bracketGameParams';
 import { resolveWinnerSeat, soulsBySeat } from '@/app/play/lib/bracketResult';
-import { loadBracketSeatDeckAction, recordBracketGameResultAction, startBracketGameAction } from '@/app/brackets/actions';
+import { loadBracketSeatDeckAction, recordBracketGameResultAction, setBracketGameHostSideAction, startBracketGameAction } from '@/app/brackets/actions';
 import BracketGameOverOverlay, { type BracketSeriesOutcome } from '@/app/play/components/BracketGameOverOverlay';
 import { BracketRecoveryScreen, type BracketRecoveryReason } from '@/app/play/components/BracketRecoveryScreen';
 
@@ -1292,9 +1293,8 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     setBracketOutcome('pending');
     recordBracketGameResultAction({
       gameId: bracket.gameId,
-      winnerEntryId: bracketWinnerSeat === 0 ? bracket.entryAId : bracket.entryBId,
-      soulsA: souls?.seat0,
-      soulsB: souls?.seat1,
+      winnerEntryId: seatEntryId(bracket, bracketWinnerSeat),
+      ...(souls ? soulsForEntries(bracket, souls) : {}),
     })
       .then((r) => setBracketOutcome(r.ok ? r.data : 'failed'))
       .catch(() => setBracketOutcome('failed'));
@@ -1340,6 +1340,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
         entryBId: g.entryBId,
         deckAName: g.deckAName,
         deckBName: g.deckBName,
+        hostSide: 'a',
       };
       const common = {
         displayName: gameParams.displayName,
@@ -1730,6 +1731,23 @@ function GameInner({ code, isConnected }: GameInnerProps) {
           conn.reducers.setGamePublic({ gameId, isPublic });
         } : undefined}
         isForge={isForge}
+        bracketSwap={bracket && bracket.mode === 'online' && gameParams?.role === 'create' ? {
+          hostSide: bracket.hostSide ?? 'a',
+          otherDeckName: seatDeckName(bracket, 1),
+          onSwap: async (side) => {
+            const r = await setBracketGameHostSideAction(bracket.gameId, side);
+            if (r.ok === false) return r;
+            setGameParams((prev) => {
+              if (!prev?.bracket) return prev;
+              const updated = { ...prev, bracket: { ...prev.bracket, hostSide: r.data.hostSide } };
+              try {
+                sessionStorage.setItem(`${SESSION_KEY_PREFIX}${code}`, JSON.stringify(updated));
+              } catch {}
+              return updated;
+            });
+            return { ok: true, deck: { id: r.data.deckId, name: r.data.deckName, paragon: r.data.paragon } };
+          },
+        } : undefined}
         inviteUrl={gameParams?.bracket && typeof window !== 'undefined'
           ? `${window.location.origin}/brackets/${gameParams.bracket.bracketId}/join/${gameParams.bracket.gameId}`
           : undefined}
@@ -1938,7 +1956,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
         bracket={bracket}
         result={{
           winnerSeat: bracketWinnerSeat,
-          winnerName: bracketWinnerSeat === 0 ? bracket.deckAName : bracket.deckBName,
+          winnerName: seatDeckName(bracket, bracketWinnerSeat),
         }}
         series={bracketOutcome ?? 'pending'}
         onRetry={() => recordBracketResultRef.current()}
