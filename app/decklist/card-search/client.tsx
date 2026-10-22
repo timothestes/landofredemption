@@ -34,6 +34,7 @@ import { MobileBottomNav } from "./components/MobileBottomNav";
 import { useCardPrices } from "./hooks/useCardPrices";
 import { useHoverPreview } from "./hooks/useHoverPreview";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { cn } from "@/lib/utils";
 
 const supabase = createClient();
 
@@ -1854,7 +1855,7 @@ export default function CardSearchClient({
     <div ref={containerRef} className="flex w-full h-[calc(100dvh-4rem-1px)] overflow-hidden bg-background jayden-gradient-bg">
       {/* Left panel: Card search */}
       {showSearch && (
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <div className={cn("flex-1 flex flex-col overflow-hidden min-w-0", !showDeckBuilder && "md:pr-6")}>
         <div className="bg-background text-foreground transition-colors duration-200 flex-1 flex flex-col overflow-y-auto overflow-x-hidden md:overflow-hidden">
           <div className="p-1.5 md:p-2 flex flex-col items-center md:sticky md:top-0 z-40 bg-background text-foreground border-b border-border shadow-sm">
         <div className="relative w-full px-1 md:px-2 flex flex-col items-center justify-center gap-1.5 md:gap-2">
@@ -2870,33 +2871,33 @@ export default function CardSearchClient({
       {!showSearch && (
         <button
           onClick={() => setShowSearch(true)}
-          className="hidden md:flex fixed left-0 top-1/2 -translate-y-1/2 z-50 flex-col items-center gap-2 px-2 py-4 bg-primary rounded-r-xl shadow-2xl hover:shadow-primary/50 transition-all hover:pl-3 text-primary-foreground font-medium group border-r-4 border-primary/60"
+          className="hidden md:flex fixed left-0 top-1/2 -translate-y-1/2 z-50 w-6 flex-col items-center gap-2 py-3 bg-card border border-l-0 border-border rounded-r-md text-muted-foreground hover:text-primary hover:border-primary transition-colors group"
           title="Show search panel"
         >
-          <svg className="w-4 h-4 group-hover:scale-105 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          <span className="text-xs font-semibold whitespace-nowrap [writing-mode:vertical-lr] rotate-180 tracking-wider">SEARCH</span>
+          <span className="hidden group-hover:block text-[11px] font-medium whitespace-nowrap [writing-mode:vertical-lr] rotate-180 tracking-wider">Search</span>
         </button>
       )}
       
       {!showDeckBuilder && (
         <button
           onClick={() => setShowDeckBuilder(true)}
-          className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-50 flex-col items-center gap-3 px-4 py-8 bg-accent rounded-l-2xl shadow-2xl hover:shadow-accent/50 transition-all hover:pr-6 text-accent-foreground font-medium group border-l-4 border-accent/60"
+          className="hidden md:flex fixed right-0 top-1/2 -translate-y-1/2 z-50 w-6 flex-col items-center gap-2 py-3 bg-card border border-r-0 border-border rounded-l-md text-muted-foreground hover:text-primary hover:border-primary transition-colors group"
           title="Show deck builder"
         >
-          <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
-          <span className="text-xs font-semibold whitespace-nowrap [writing-mode:vertical-lr] rotate-180 tracking-wider">DECK</span>
+          <span className="hidden group-hover:block text-[11px] font-medium whitespace-nowrap [writing-mode:vertical-lr] rotate-180 tracking-wider">Deck</span>
         </button>
       )}
       
       {/* Right panel: Deck builder (hidden on mobile, toggleable on desktop) */}
       {showDeckBuilder && (
         <div
-          className="hidden md:flex flex-col overflow-visible flex-shrink-0 min-h-0"
+          className={cn("hidden md:flex flex-col overflow-visible flex-shrink-0 min-h-0", !showSearch && "md:pl-6")}
           style={{ width: showSearch ? `${deckPanelWidth}%` : '100%' }}
         >
           {isSpotlight ? (
