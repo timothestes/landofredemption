@@ -28,6 +28,10 @@ export const DEFAULT_THEME = {
   '--gf-accent': '#c4955a',
   '--gf-gold': '#f0c060',
   '--gf-panel': '#1e1610',
+  /** Near-black panel interior (chat body, right panel, touch top bar). */
+  '--gf-deep': '#0a0805',
+  /** Game-log line text. */
+  '--gf-text-log': '#c8b882',
 } as const;
 
 type Token = keyof typeof DEFAULT_THEME;
@@ -39,6 +43,7 @@ const MIN_CONTRAST: Partial<Record<Token, number>> = {
   '--gf-accent': 3,
   '--gf-gold': 3,
   '--gf-text-dim': 3,
+  '--gf-text-log': 4.5,
   // Panel edges: at least the default theme's own separation (2.11 / 1.40),
   // which blue/violet hues otherwise drop toward 1.2-1.4.
   '--gf-border': 2,
@@ -54,6 +59,9 @@ export const THEME_PROPERTIES = [
   '--gf-panel-rgb',
   '--gf-border-rgb',
   '--gf-text-bright-rgb',
+  '--gf-bg-rgb',
+  '--gf-bg-dark-rgb',
+  '--gf-deep-rgb',
 ] as const;
 
 // ---- colour math ----
@@ -184,5 +192,8 @@ export function paletteFromColor(color: Hsl): Record<string, string> | null {
   props['--gf-panel-rgb'] = out['--gf-panel'].join(', ');
   props['--gf-border-rgb'] = out['--gf-border'].join(', ');
   props['--gf-text-bright-rgb'] = out['--gf-text-bright'].join(', ');
+  props['--gf-bg-rgb'] = out['--gf-bg'].join(', ');
+  props['--gf-bg-dark-rgb'] = out['--gf-bg-dark'].join(', ');
+  props['--gf-deep-rgb'] = out['--gf-deep'].join(', ');
   return props;
 }

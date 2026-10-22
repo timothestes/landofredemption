@@ -126,10 +126,10 @@ export function ParagonDrawer({ paragons }: ParagonDrawerProps) {
           width: HANDLE_WIDTH,
           height: HANDLE_HEIGHT,
           padding: '0 12px 0 4px',
-          background: 'rgba(14, 10, 6, 0.96)',
-          border: '1px solid rgba(196, 149, 90, 0.5)',
+          background: 'rgba(var(--gf-bg-dark-rgb), 0.96)',
+          border: '1px solid rgba(var(--gf-accent-rgb), 0.5)',
           borderRadius: 6,
-          color: '#e8d5a3',
+          color: 'var(--gf-text-bright)',
           fontFamily: 'Cinzel, Georgia, serif',
           fontSize: 11,
           letterSpacing: 1.5,
@@ -149,7 +149,7 @@ export function ParagonDrawer({ paragons }: ParagonDrawerProps) {
             height: 27,
             objectFit: 'cover',
             borderRadius: 2,
-            border: '1px solid rgba(196, 149, 90, 0.3)',
+            border: '1px solid rgba(var(--gf-accent-rgb), 0.3)',
             flexShrink: 0,
           }}
           onError={(e) => {
@@ -189,8 +189,8 @@ export function ParagonDrawer({ paragons }: ParagonDrawerProps) {
       >
         <div
           style={{
-            background: 'rgba(14, 10, 6, 0.98)',
-            border: '1px solid rgba(196, 149, 90, 0.5)',
+            background: 'rgba(var(--gf-bg-dark-rgb), 0.98)',
+            border: '1px solid rgba(var(--gf-accent-rgb), 0.5)',
             borderBottom: 'none',
             borderTopLeftRadius: 10,
             borderTopRightRadius: 10,
@@ -207,7 +207,7 @@ export function ParagonDrawer({ paragons }: ParagonDrawerProps) {
               alignItems: 'center',
               justifyContent: 'space-between',
               paddingBottom: 8,
-              borderBottom: '1px solid rgba(196, 149, 90, 0.15)',
+              borderBottom: '1px solid rgba(var(--gf-accent-rgb), 0.15)',
             }}
           >
             <span
@@ -215,7 +215,7 @@ export function ParagonDrawer({ paragons }: ParagonDrawerProps) {
                 fontFamily: 'Cinzel, Georgia, serif',
                 fontSize: 12,
                 letterSpacing: 1.5,
-                color: '#e8d5a3',
+                color: 'var(--gf-text-bright)',
               }}
             >
               PARAGON
@@ -233,7 +233,7 @@ export function ParagonDrawer({ paragons }: ParagonDrawerProps) {
                 padding: '0 6px',
                 background: 'transparent',
                 border: 'none',
-                color: 'rgba(196, 149, 90, 0.75)',
+                color: 'rgba(var(--gf-accent-rgb), 0.75)',
                 cursor: 'pointer',
                 fontFamily: 'Georgia, serif',
                 lineHeight: 1,
@@ -261,7 +261,7 @@ export function ParagonDrawer({ paragons }: ParagonDrawerProps) {
                 alignItems: 'center',
                 gap: 8,
                 justifyContent: 'center',
-                borderBottom: '1px solid rgba(196, 149, 90, 0.2)',
+                borderBottom: '1px solid rgba(var(--gf-accent-rgb), 0.2)',
                 paddingBottom: 8,
               }}
             >
@@ -275,9 +275,9 @@ export function ParagonDrawer({ paragons }: ParagonDrawerProps) {
                   height: 26,
                   padding: 0,
                   background: 'transparent',
-                  border: '1px solid rgba(196, 149, 90, 0.35)',
+                  border: '1px solid rgba(var(--gf-accent-rgb), 0.35)',
                   borderRadius: 3,
-                  color: 'rgba(196, 149, 90, 0.8)',
+                  color: 'rgba(var(--gf-accent-rgb), 0.8)',
                   fontSize: 14,
                   lineHeight: 1,
                   cursor: 'pointer',
@@ -303,10 +303,10 @@ export function ParagonDrawer({ paragons }: ParagonDrawerProps) {
                       onClick={() => setActiveId(p.playerId)}
                       style={{
                         padding: '5px 12px',
-                        background: active ? 'rgba(196, 149, 90, 0.25)' : 'transparent',
-                        border: '1px solid rgba(196, 149, 90, 0.4)',
+                        background: active ? 'rgba(var(--gf-accent-rgb), 0.25)' : 'transparent',
+                        border: '1px solid rgba(var(--gf-accent-rgb), 0.4)',
                         borderRadius: 3,
-                        color: active ? '#f3e2b4' : 'rgba(196, 149, 90, 0.7)',
+                        color: active ? '#f3e2b4' : 'rgba(var(--gf-accent-rgb), 0.7)',
                         fontFamily: 'Cinzel, Georgia, serif',
                         fontSize: 11,
                         letterSpacing: 1,
@@ -328,9 +328,9 @@ export function ParagonDrawer({ paragons }: ParagonDrawerProps) {
                   height: 26,
                   padding: 0,
                   background: 'transparent',
-                  border: '1px solid rgba(196, 149, 90, 0.35)',
+                  border: '1px solid rgba(var(--gf-accent-rgb), 0.35)',
                   borderRadius: 3,
-                  color: 'rgba(196, 149, 90, 0.8)',
+                  color: 'rgba(var(--gf-accent-rgb), 0.8)',
                   fontSize: 14,
                   lineHeight: 1,
                   cursor: 'pointer',

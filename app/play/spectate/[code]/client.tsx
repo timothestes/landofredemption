@@ -615,12 +615,12 @@ function SpectatorInner({ code, isConnected, displayName }: SpectatorInnerProps)
                     justifyContent: 'center',
                     gap: 8,
                     padding: '3px 8px',
-                    background: 'rgba(13, 9, 5, 0.92)',
+                    background: 'rgba(var(--gf-bg-dark-rgb), 0.92)',
                     borderBottom: '1px solid var(--gf-border, rgba(107,78,39,0.4))',
                     fontFamily: 'var(--font-cinzel), Georgia, serif',
                     fontSize: 11,
                     letterSpacing: '0.04em',
-                    color: 'rgba(232, 213, 163, 0.85)',
+                    color: 'rgba(var(--gf-text-bright-rgb), 0.85)',
                     minWidth: 0,
                   }}
                 >
@@ -652,12 +652,12 @@ function SpectatorInner({ code, isConnected, displayName }: SpectatorInnerProps)
                             whiteSpace: 'nowrap',
                             maxWidth: 92,
                             fontWeight: isActiveTurn ? 700 : 400,
-                            color: isActiveTurn ? '#e8d5a3' : 'inherit',
+                            color: isActiveTurn ? 'var(--gf-text-bright)' : 'inherit',
                           }}
                         >
                           {side.p?.displayName ?? (i === 0 ? 'Player 1' : 'Player 2')}
                         </span>
-                        <span style={{ color: '#e8d5a3', fontWeight: 700 }}>{side.score}</span>
+                        <span style={{ color: 'var(--gf-text-bright)', fontWeight: 700 }}>{side.score}</span>
                       </span>
                     );
                   })}

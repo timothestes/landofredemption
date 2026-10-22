@@ -62,7 +62,7 @@ function NameHint({
             left: '50%',
             transform: 'translateX(-50%)',
             padding: '3px 8px',
-            background: 'rgba(10, 8, 5, 0.95)',
+            background: 'rgba(var(--gf-deep-rgb), 0.95)',
             border: `1px solid ${accent}`,
             borderRadius: 4,
             color: 'var(--gf-text-bright)',
@@ -599,7 +599,7 @@ export default function TurnIndicator({
         paddingBottom: isTouchBar ? 1 : 0,
         // Touch overlays the bar on the canvas — fully opaque so canvas
         // labels can't ghost through. Pointer keeps the original alpha.
-        background: isTouchBar ? '#0a0805' : 'rgba(10, 8, 5, 0.96)',
+        background: isTouchBar ? 'var(--gf-deep)' : 'rgba(var(--gf-deep-rgb), 0.96)',
         borderBottom: '1px solid rgba(var(--gf-border-rgb), 0.5)',
         // Three columns: left cluster | center cluster | right cluster.
         // `1fr auto 1fr` keeps the center anchored to the bar's geometric
@@ -759,6 +759,7 @@ export default function TurnIndicator({
                 <NameHint
                   label={leftLabel}
                   full={leftFull}
+                  // Identity colour (amber = mine, blue = theirs): never themed.
                   color={isTouchBar ? 'rgba(196, 149, 90, 0.8)' : 'rgba(196, 149, 90, 0.45)'}
                   accent="#c4955a"
                 />
@@ -1598,14 +1599,14 @@ export default function TurnIndicator({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'rgba(6, 4, 2, 0.7)',
+            background: 'rgba(var(--gf-deep-rgb), 0.7)',
             backdropFilter: 'blur(3px)',
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: 'rgba(14, 10, 6, 0.97)',
+              background: 'rgba(var(--gf-bg-dark-rgb), 0.97)',
               border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
               borderRadius: 10,
               padding: '32px 36px',

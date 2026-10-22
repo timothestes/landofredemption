@@ -255,7 +255,7 @@ export default function GameOverOverlay({
           ? { border: 'rgba(80, 180, 100, 0.55)', color: 'rgba(160, 230, 170, 0.95)' }
           : isLoss
             ? { border: 'rgba(200, 80, 80, 0.55)', color: 'rgba(240, 160, 160, 0.95)' }
-            : { border: 'rgba(107, 78, 39, 0.5)', color: '#e8d5a3' };
+            : { border: 'rgba(var(--gf-border-rgb), 0.5)', color: 'var(--gf-text-bright)' };
         return (
           <div style={{
             position: 'absolute',
@@ -263,7 +263,7 @@ export default function GameOverOverlay({
             left: '50%',
             transform: 'translate(-50%, -50%)',
             zIndex: 800,
-            background: 'rgba(14, 10, 6, 0.95)',
+            background: 'rgba(var(--gf-bg-dark-rgb), 0.95)',
             border: `1px solid ${accent.border}`,
             borderRadius: 8,
             padding: '14px 28px',
@@ -307,8 +307,8 @@ export default function GameOverOverlay({
           transform: 'translateX(-50%)',
           zIndex: 800,
           maxWidth: 'calc(100vw - 24px)',
-          background: 'rgba(14, 10, 6, 0.95)',
-          border: `1px solid ${rematchResponse === 'declined' ? 'rgba(180, 60, 60, 0.3)' : 'rgba(107, 78, 39, 0.4)'}`,
+          background: 'rgba(var(--gf-bg-dark-rgb), 0.95)',
+          border: `1px solid ${rematchResponse === 'declined' ? 'rgba(180, 60, 60, 0.3)' : 'rgba(var(--gf-border-rgb), 0.4)'}`,
           borderRadius: 8,
           padding: '10px 20px',
           display: 'flex',
@@ -324,8 +324,8 @@ export default function GameOverOverlay({
             color: rematchResponse === 'declined'
               ? 'rgba(220, 120, 120, 0.6)'
               : rematchResponse === 'accepted'
-                ? 'rgba(196, 149, 90, 0.7)'
-                : 'rgba(196, 149, 90, 0.5)',
+                ? 'rgba(var(--gf-accent-rgb), 0.7)'
+                : 'rgba(var(--gf-accent-rgb), 0.5)',
           }}>
             {rematchResponse === 'declined'
               ? (iRequested ? 'Opponent declined.' : 'You declined.')
@@ -340,9 +340,9 @@ export default function GameOverOverlay({
                 padding: '5px 12px',
                 minHeight: isTouch ? 44 : undefined,
                 borderRadius: 4,
-                border: '1px solid rgba(107, 78, 39, 0.4)',
+                border: '1px solid rgba(var(--gf-border-rgb), 0.4)',
                 background: 'transparent',
-                color: 'rgba(196, 149, 90, 0.6)',
+                color: 'rgba(var(--gf-accent-rgb), 0.6)',
                 fontFamily: 'var(--font-cinzel), Georgia, serif',
                 fontSize: 11,
                 fontWeight: 700,
@@ -353,14 +353,14 @@ export default function GameOverOverlay({
                 transition: 'background 0.14s, color 0.14s, border-color 0.14s',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(196, 149, 90, 0.12)';
-                e.currentTarget.style.color = 'rgba(196, 149, 90, 0.85)';
-                e.currentTarget.style.borderColor = 'rgba(196, 149, 90, 0.4)';
+                e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.12)';
+                e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.85)';
+                e.currentTarget.style.borderColor = 'rgba(var(--gf-accent-rgb), 0.4)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = 'rgba(196, 149, 90, 0.6)';
-                e.currentTarget.style.borderColor = 'rgba(107, 78, 39, 0.4)';
+                e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.6)';
+                e.currentTarget.style.borderColor = 'rgba(var(--gf-border-rgb), 0.4)';
               }}
             >
               Cancel
@@ -474,32 +474,32 @@ function GameOverModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(6, 4, 2, 0.7)',
+        background: 'rgba(var(--gf-deep-rgb), 0.7)',
         backdropFilter: 'blur(3px)',
       }}
     >
       <div style={{
-        background: 'rgba(14, 10, 6, 0.97)',
-        border: `1px solid ${didWin ? 'rgba(196, 149, 90, 0.4)' : 'rgba(107, 78, 39, 0.3)'}`,
+        background: 'rgba(var(--gf-bg-dark-rgb), 0.97)',
+        border: `1px solid ${didWin ? 'rgba(var(--gf-accent-rgb), 0.4)' : 'rgba(var(--gf-border-rgb), 0.3)'}`,
         borderRadius: 10,
         padding: '32px 36px',
         textAlign: 'center',
         maxWidth: 340,
         width: '100%',
-        boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(196, 149, 90, 0.08)',
+        boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--gf-accent-rgb), 0.08)',
       }}>
         <p style={{
           fontFamily: 'var(--font-cinzel), Georgia, serif',
           fontSize: 10,
           letterSpacing: '0.18em',
           textTransform: 'uppercase',
-          color: didWin ? 'rgba(196, 149, 90, 0.7)' : 'rgba(196, 149, 90, 0.5)',
+          color: didWin ? 'rgba(var(--gf-accent-rgb), 0.7)' : 'rgba(var(--gf-accent-rgb), 0.5)',
         }}>{eyebrow}</p>
         <h2 style={{
           fontFamily: 'var(--font-cinzel), Georgia, serif',
           fontSize: 18,
           fontWeight: 700,
-          color: '#e8d5a3',
+          color: 'var(--gf-text-bright)',
           marginTop: 8,
           textShadow: '0 1px 4px rgba(0,0,0,0.5)',
         }}>{title}</h2>
@@ -507,7 +507,7 @@ function GameOverModal({
           marginTop: 8,
           fontFamily: 'Georgia, serif',
           fontSize: 13,
-          color: 'rgba(196, 149, 90, 0.5)',
+          color: 'rgba(var(--gf-accent-rgb), 0.5)',
         }}>{subtitle}</p>
 
         {opponentRequested && (
@@ -515,7 +515,7 @@ function GameOverModal({
             marginTop: 12,
             fontFamily: 'Georgia, serif',
             fontSize: 13,
-            color: '#e8d5a3',
+            color: 'var(--gf-text-bright)',
           }}>
             {oppName} wants to play again
           </p>
@@ -531,16 +531,16 @@ function GameOverModal({
               padding: '10px 16px',
               minHeight: isTouch ? 44 : undefined,
               borderRadius: 4,
-              border: '1px solid rgba(196, 149, 90, 0.45)',
-              background: playAgainFocused ? 'rgba(196, 149, 90, 0.30)' : 'rgba(196, 149, 90, 0.15)',
-              color: '#e8d5a3',
+              border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
+              background: playAgainFocused ? 'rgba(var(--gf-accent-rgb), 0.30)' : 'rgba(var(--gf-accent-rgb), 0.15)',
+              color: 'var(--gf-text-bright)',
               fontFamily: 'var(--font-cinzel), Georgia, serif',
               fontSize: 12,
               fontWeight: 700,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
               cursor: 'pointer',
-              boxShadow: playAgainFocused ? toastFocusShadow('rgba(196, 149, 90, 0.85)', 'rgba(196, 149, 90, 0.4)') : 'none',
+              boxShadow: playAgainFocused ? toastFocusShadow('rgba(var(--gf-accent-rgb), 0.85)', 'rgba(var(--gf-accent-rgb), 0.4)') : 'none',
               transition: 'background 0.14s, box-shadow 0.14s, color 0.14s, border-color 0.14s',
             }}
           >
@@ -555,16 +555,16 @@ function GameOverModal({
               padding: '10px 16px',
               minHeight: isTouch ? 44 : undefined,
               borderRadius: 4,
-              border: '1px solid rgba(196, 149, 90, 0.45)',
-              background: dismissFocused ? 'rgba(196, 149, 90, 0.30)' : 'rgba(196, 149, 90, 0.15)',
-              color: '#e8d5a3',
+              border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
+              background: dismissFocused ? 'rgba(var(--gf-accent-rgb), 0.30)' : 'rgba(var(--gf-accent-rgb), 0.15)',
+              color: 'var(--gf-text-bright)',
               fontFamily: 'var(--font-cinzel), Georgia, serif',
               fontSize: 12,
               fontWeight: 700,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
               cursor: 'pointer',
-              boxShadow: dismissFocused ? toastFocusShadow('rgba(196, 149, 90, 0.85)', 'rgba(196, 149, 90, 0.4)') : 'none',
+              boxShadow: dismissFocused ? toastFocusShadow('rgba(var(--gf-accent-rgb), 0.85)', 'rgba(var(--gf-accent-rgb), 0.4)') : 'none',
               transition: 'background 0.14s, box-shadow 0.14s, color 0.14s, border-color 0.14s',
             }}
           >
@@ -582,7 +582,7 @@ function GameOverModal({
               border: 'none',
               padding: 0,
               minHeight: isTouch ? 44 : undefined,
-              color: 'rgba(196, 149, 90, 0.5)',
+              color: 'rgba(var(--gf-accent-rgb), 0.5)',
               fontFamily: 'Georgia, serif',
               fontSize: 12,
               letterSpacing: '0.04em',
@@ -591,8 +591,8 @@ function GameOverModal({
               cursor: 'pointer',
               transition: 'color 0.14s',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(196, 149, 90, 0.85)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(196, 149, 90, 0.5)'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.85)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.5)'; }}
           >
             Change deck
           </button>
@@ -644,8 +644,8 @@ function RematchRequestBanner({
       // clipped the name off the left edge and "Change deck" entirely off the
       // right (the parent is overflow:hidden). Cap and wrap instead.
       maxWidth: 'calc(100vw - 24px)',
-      background: 'rgba(14, 10, 6, 0.95)',
-      border: '1px solid rgba(196, 149, 90, 0.4)',
+      background: 'rgba(var(--gf-bg-dark-rgb), 0.95)',
+      border: '1px solid rgba(var(--gf-accent-rgb), 0.4)',
       borderRadius: 8,
       padding: '12px 20px',
       display: 'flex',
@@ -658,7 +658,7 @@ function RematchRequestBanner({
       <p style={{
         fontFamily: 'Georgia, serif',
         fontSize: 14,
-        color: '#e8d5a3',
+        color: 'var(--gf-text-bright)',
         textAlign: 'center',
       }}>
         {oppName} wants to play again
@@ -671,9 +671,9 @@ function RematchRequestBanner({
           padding: '8px 16px',
           minHeight: isTouch ? 44 : undefined,
           borderRadius: 4,
-          border: '1px solid rgba(196, 149, 90, 0.45)',
-          background: acceptFocused ? 'rgba(196, 149, 90, 0.30)' : 'rgba(196, 149, 90, 0.15)',
-          color: '#e8d5a3',
+          border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
+          background: acceptFocused ? 'rgba(var(--gf-accent-rgb), 0.30)' : 'rgba(var(--gf-accent-rgb), 0.15)',
+          color: 'var(--gf-text-bright)',
           fontFamily: 'var(--font-cinzel), Georgia, serif',
           fontSize: 12,
           fontWeight: 700,
@@ -681,7 +681,7 @@ function RematchRequestBanner({
           textTransform: 'uppercase',
           cursor: 'pointer',
           whiteSpace: 'nowrap',
-          boxShadow: acceptFocused ? toastFocusShadow('rgba(196, 149, 90, 0.85)', 'rgba(196, 149, 90, 0.4)') : 'none',
+          boxShadow: acceptFocused ? toastFocusShadow('rgba(var(--gf-accent-rgb), 0.85)', 'rgba(var(--gf-accent-rgb), 0.4)') : 'none',
           transition: 'background 0.14s, box-shadow 0.14s, color 0.14s, border-color 0.14s',
         }}
       >
@@ -694,9 +694,9 @@ function RematchRequestBanner({
           padding: '8px 16px',
           minHeight: isTouch ? 44 : undefined,
           borderRadius: 4,
-          border: `1px solid ${declineFocused ? 'rgba(196, 149, 90, 0.4)' : 'rgba(107, 78, 39, 0.3)'}`,
-          background: declineFocused ? 'rgba(196, 149, 90, 0.12)' : 'transparent',
-          color: declineFocused ? 'rgba(196, 149, 90, 0.85)' : 'rgba(196, 149, 90, 0.5)',
+          border: `1px solid ${declineFocused ? 'rgba(var(--gf-accent-rgb), 0.4)' : 'rgba(var(--gf-border-rgb), 0.3)'}`,
+          background: declineFocused ? 'rgba(var(--gf-accent-rgb), 0.12)' : 'transparent',
+          color: declineFocused ? 'rgba(var(--gf-accent-rgb), 0.85)' : 'rgba(var(--gf-accent-rgb), 0.5)',
           fontFamily: 'var(--font-cinzel), Georgia, serif',
           fontSize: 12,
           fontWeight: 700,
@@ -704,7 +704,7 @@ function RematchRequestBanner({
           textTransform: 'uppercase',
           cursor: 'pointer',
           whiteSpace: 'nowrap',
-          boxShadow: declineFocused ? toastFocusShadow('rgba(196, 149, 90, 0.5)', 'rgba(196, 149, 90, 0.22)') : 'none',
+          boxShadow: declineFocused ? toastFocusShadow('rgba(var(--gf-accent-rgb), 0.5)', 'rgba(var(--gf-accent-rgb), 0.22)') : 'none',
           transition: 'background 0.14s, box-shadow 0.14s, color 0.14s, border-color 0.14s',
         }}
       >
@@ -720,7 +720,7 @@ function RematchRequestBanner({
             border: 'none',
             padding: 0,
             minHeight: isTouch ? 44 : undefined,
-            color: 'rgba(196, 149, 90, 0.5)',
+            color: 'rgba(var(--gf-accent-rgb), 0.5)',
             fontFamily: 'Georgia, serif',
             fontSize: 12,
             letterSpacing: '0.04em',
@@ -730,8 +730,8 @@ function RematchRequestBanner({
             whiteSpace: 'nowrap',
             transition: 'color 0.14s',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(196, 149, 90, 0.85)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(196, 149, 90, 0.5)'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.85)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.5)'; }}
         >
           Change deck
         </button>

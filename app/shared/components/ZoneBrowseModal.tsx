@@ -606,8 +606,8 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
                   width: 18,
                   height: 18,
                   borderRadius: 3,
-                  border: leaveOpen ? '1.5px solid #c4955a' : '1.5px solid var(--gf-border)',
-                  background: leaveOpen ? 'rgba(196, 149, 90, 0.25)' : 'transparent',
+                  border: leaveOpen ? '1.5px solid var(--gf-accent)' : '1.5px solid var(--gf-border)',
+                  background: leaveOpen ? 'rgba(var(--gf-accent-rgb), 0.25)' : 'transparent',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -709,7 +709,7 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
                   {(() => {
                     const isHoveredCard = hoveredCardId === card.instanceId && !isSelected;
                     const glowStyle = isHoveredCard ? getHoverGlowStyle(hoverProgress) : undefined;
-                    const selectedShadow = isSelected ? '0 0 8px rgba(196,149,90,0.4)' : 'none';
+                    const selectedShadow = isSelected ? '0 0 8px rgba(var(--gf-accent-rgb), 0.4)' : 'none';
                     return imageUrl ? (
                       <img
                         src={imageUrl}
@@ -729,7 +729,7 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
                         style={{
                           width: '100%',
                           aspectRatio: '1/1.4',
-                          background: '#1e1610',
+                          background: 'rgb(var(--gf-panel-rgb))',
                           border: isSelected ? '2px solid var(--gf-accent)' : '1px solid var(--gf-border)',
                           boxShadow: glowStyle?.boxShadow ?? selectedShadow,
                           borderRadius: 4,
@@ -757,6 +757,7 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
                         fontWeight: 600,
                         letterSpacing: '0.04em',
                         pointerEvents: 'none',
+                        // Identity colour (amber = mine, blue = theirs): never themed.
                         background: ownerBadge === 'Yours' ? 'rgba(60, 42, 16, 0.92)' : 'rgba(16, 32, 60, 0.92)',
                         border: `1px solid ${ownerBadge === 'Yours' ? 'rgba(196, 149, 90, 0.7)' : 'rgba(100, 149, 237, 0.7)'}`,
                         color: ownerBadge === 'Yours' ? '#e8d5a3' : '#a3c5e8',
@@ -779,7 +780,7 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
                   width: lassoRect.w,
                   height: lassoRect.h,
                   border: '2px dashed var(--gf-accent)',
-                  background: 'rgba(196,149,90,0.15)',
+                  background: 'rgba(var(--gf-accent-rgb), 0.15)',
                   borderRadius: 2,
                   pointerEvents: 'none',
                   zIndex: 100,

@@ -125,8 +125,8 @@ function SpectatorRequestBanner({
   return (
     <div
       style={{
-        background: 'rgba(14, 10, 6, 0.95)',
-        border: '1px solid rgba(196, 149, 90, 0.4)',
+        background: 'rgba(var(--gf-bg-dark-rgb), 0.95)',
+        border: '1px solid rgba(var(--gf-accent-rgb), 0.4)',
         borderRadius: 8,
         padding: '14px 20px',
         display: 'flex',
@@ -144,7 +144,7 @@ function SpectatorRequestBanner({
           alignItems: 'center',
           gap: 8,
           paddingBottom: 8,
-          borderBottom: '1px solid rgba(107, 78, 39, 0.3)',
+          borderBottom: '1px solid rgba(var(--gf-border-rgb), 0.3)',
         }}
       >
         {/* Eye icon makes it visually clear this is from a spectator */}
@@ -153,7 +153,7 @@ function SpectatorRequestBanner({
           height="14"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="rgba(196, 149, 90, 0.85)"
+          style={{ stroke: 'rgba(var(--gf-accent-rgb), 0.85)' }}
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -169,7 +169,7 @@ function SpectatorRequestBanner({
             fontWeight: 700,
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
-            color: 'rgba(196, 149, 90, 0.85)',
+            color: 'rgba(var(--gf-accent-rgb), 0.85)',
           }}
         >
           Spectator request
@@ -181,7 +181,7 @@ function SpectatorRequestBanner({
         style={{
           fontFamily: 'Georgia, serif',
           fontSize: 14,
-          color: '#e8d5a3',
+          color: 'var(--gf-text-bright)',
           margin: 0,
           lineHeight: 1.4,
         }}
@@ -199,9 +199,9 @@ function SpectatorRequestBanner({
             padding: '8px 16px',
             minHeight: isTouch ? 44 : undefined,
             borderRadius: 4,
-            border: `1px solid ${dismissFocused ? 'rgba(196, 149, 90, 0.4)' : 'rgba(107, 78, 39, 0.3)'}`,
-            background: dismissFocused ? 'rgba(196, 149, 90, 0.12)' : 'transparent',
-            color: dismissFocused ? 'rgba(196, 149, 90, 0.95)' : 'rgba(196, 149, 90, 0.7)',
+            border: `1px solid ${dismissFocused ? 'rgba(var(--gf-accent-rgb), 0.4)' : 'rgba(var(--gf-border-rgb), 0.3)'}`,
+            background: dismissFocused ? 'rgba(var(--gf-accent-rgb), 0.12)' : 'transparent',
+            color: dismissFocused ? 'rgba(var(--gf-accent-rgb), 0.95)' : 'rgba(var(--gf-accent-rgb), 0.7)',
             fontFamily: 'var(--font-cinzel), Georgia, serif',
             fontSize: 12,
             fontWeight: 700,
@@ -209,7 +209,7 @@ function SpectatorRequestBanner({
             textTransform: 'uppercase',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
-            boxShadow: dismissFocused ? toastFocusShadow('rgba(196, 149, 90, 0.5)', 'rgba(196, 149, 90, 0.22)') : 'none',
+            boxShadow: dismissFocused ? toastFocusShadow('rgba(var(--gf-accent-rgb), 0.5)', 'rgba(var(--gf-accent-rgb), 0.22)') : 'none',
             transition: 'background 0.14s, box-shadow 0.14s, color 0.14s, border-color 0.14s',
           }}
         >
@@ -222,9 +222,9 @@ function SpectatorRequestBanner({
             padding: '8px 16px',
             minHeight: isTouch ? 44 : undefined,
             borderRadius: 4,
-            border: '1px solid rgba(196, 149, 90, 0.45)',
-            background: shareFocused ? 'rgba(196, 149, 90, 0.30)' : 'rgba(196, 149, 90, 0.15)',
-            color: '#e8d5a3',
+            border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
+            background: shareFocused ? 'rgba(var(--gf-accent-rgb), 0.30)' : 'rgba(var(--gf-accent-rgb), 0.15)',
+            color: 'var(--gf-text-bright)',
             fontFamily: 'var(--font-cinzel), Georgia, serif',
             fontSize: 12,
             fontWeight: 700,
@@ -232,7 +232,7 @@ function SpectatorRequestBanner({
             textTransform: 'uppercase',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
-            boxShadow: shareFocused ? toastFocusShadow('rgba(196, 149, 90, 0.85)', 'rgba(196, 149, 90, 0.4)') : 'none',
+            boxShadow: shareFocused ? toastFocusShadow('rgba(var(--gf-accent-rgb), 0.85)', 'rgba(var(--gf-accent-rgb), 0.4)') : 'none',
             transition: 'background 0.14s, box-shadow 0.14s, color 0.14s, border-color 0.14s',
           }}
         >

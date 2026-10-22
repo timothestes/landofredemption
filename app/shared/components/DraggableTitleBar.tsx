@@ -46,7 +46,7 @@ export function DraggableTitleBar({
         boxSizing: 'border-box',
         margin: `-${parentPadding}px -${parentPadding}px ${bottomGap}px -${parentPadding}px`,
         padding: '8px 10px 8px 8px',
-        background: 'rgba(15,10,5,0.55)',
+        background: 'rgba(var(--gf-bg-dark-rgb), 0.55)',
         borderBottom: '1px solid var(--gf-border)',
         borderTopLeftRadius: 7,
         borderTopRightRadius: 7,
@@ -110,7 +110,7 @@ export function DraggableTitleBar({
             transition: 'background 0.15s, color 0.15s',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(196, 149, 90, 0.15)';
+            e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.15)';
             e.currentTarget.style.color = 'var(--gf-text-bright)';
           }}
           onMouseLeave={(e) => {

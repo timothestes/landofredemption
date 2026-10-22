@@ -79,7 +79,7 @@ export function DestinationRail({
       {state.kind === 'armed' && (
         <motion.div
           className={`pointer-events-auto absolute inset-x-0 z-[300] flex items-center gap-2
-                     border-y border-[#6b4e27]/60 bg-[#0e0a06]/95 px-2 py-1 backdrop-blur
+                     border-y border-[rgba(var(--gf-border-rgb),0.6)] bg-[rgba(var(--gf-bg-dark-rgb),0.95)] px-2 py-1 backdrop-blur
                      ${wrap ? 'flex-wrap' : ''}`}
           style={{ bottom: handBandHeight }}
           initial={{ y: '100%', opacity: 0 }}
@@ -95,7 +95,7 @@ export function DestinationRail({
             <span
               data-testid="destination-rail-card-name"
               className="pointer-events-none absolute -top-[22px] left-2 max-w-[60%] truncate
-                         rounded-t-md border border-b-0 border-[#6b4e27]/60 bg-[#0e0a06]/95
+                         rounded-t-md border border-b-0 border-[rgba(var(--gf-border-rgb),0.6)] bg-[rgba(var(--gf-bg-dark-rgb),0.95)]
                          px-2 py-0.5 text-[11px] font-medium text-amber-200/90"
             >
               {/* "Moving" makes the tab self-explanatory — a bare card name
@@ -113,7 +113,7 @@ export function DestinationRail({
           <div
             role="group"
             aria-label="Whose side"
-            className="flex shrink-0 overflow-hidden rounded-lg border border-[#6b4e27]"
+            className="flex shrink-0 overflow-hidden rounded-lg border border-[color:var(--gf-border)]"
           >
             {sides.map((s, i) => (
               <button
@@ -124,10 +124,10 @@ export function DestinationRail({
                 aria-pressed={side === s}
                 className={
                   `min-h-[44px] px-3 text-[12px] font-semibold ${CINZEL} ` +
-                  (i > 0 ? 'border-l border-[#6b4e27] ' : '') +
+                  (i > 0 ? 'border-l border-[color:var(--gf-border)] ' : '') +
                   (side === s
-                    ? 'bg-[#c4955a] text-[#1a1108]'
-                    : 'bg-[#14100a] text-[#e8d5a3]/85 active:bg-[#2a1f12]')
+                    ? 'bg-[var(--gf-accent)] text-[#1a1108]'
+                    : 'bg-[#14100a] text-[rgba(var(--gf-text-bright-rgb),0.85)] active:bg-[var(--gf-bg)]')
                 }
               >
                 {s === 'my' ? 'Mine' : s === 'opponent' ? 'Theirs' : 'Shared'}
@@ -152,9 +152,9 @@ export function DestinationRail({
                 type="button"
                 onClick={() => onPick(d.zone, d.owner)}
                 data-testid={`destination-${d.owner}-${d.zone}`}
-                className={`min-h-[44px] shrink-0 rounded-lg border border-[#6b4e27]/80
+                className={`min-h-[44px] shrink-0 rounded-lg border border-[rgba(var(--gf-border-rgb),0.8)]
                            bg-[#221809] px-4 text-[13px] font-medium uppercase tracking-wide
-                           text-[#e8d5a3] active:bg-[#3a2a14] ${CINZEL}`}
+                           text-[color:var(--gf-text-bright)] active:bg-[#3a2a14] ${CINZEL}`}
               >
                 {label(d.zone)}
               </button>

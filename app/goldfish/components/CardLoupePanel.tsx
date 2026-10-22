@@ -23,7 +23,7 @@ export function CardLoupePanel() {
         width: totalWidth,
         minWidth: totalWidth,
         height: isLoupeVisible ? '100%' : 'auto',
-        background: isLoupeVisible ? 'rgba(13, 9, 5, 0.6)' : 'transparent',
+        background: isLoupeVisible ? 'rgba(var(--gf-bg-dark-rgb), 0.6)' : 'transparent',
         borderLeft: isLoupeVisible ? '1px solid rgba(var(--gf-border-rgb), 0.35)' : 'none',
         display: 'flex',
         flexDirection: 'column',
@@ -41,7 +41,7 @@ export function CardLoupePanel() {
           width: '100%',
           height: HEADER_HEIGHT,
           minHeight: HEADER_HEIGHT,
-          background: 'var(--gf-bg, rgba(30,22,16,0.92))',
+          background: 'var(--gf-bg, rgba(var(--gf-panel-rgb), 0.92))',
           borderBottom: '1px solid var(--gf-border, rgba(var(--gf-border-rgb), 0.4))',
           border: 'none',
           borderBlockEnd: '1px solid var(--gf-border, rgba(var(--gf-border-rgb), 0.4))',
@@ -57,11 +57,11 @@ export function CardLoupePanel() {
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.color = 'var(--gf-text-bright, #e8d5a3)';
-          e.currentTarget.style.background = 'var(--gf-hover, rgba(42,31,18,0.95))';
+          e.currentTarget.style.background = 'var(--gf-hover, rgba(var(--gf-bg-rgb), 0.95))';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.color = 'var(--gf-text-dim, rgba(var(--gf-text-bright-rgb), 0.5))';
-          e.currentTarget.style.background = 'var(--gf-bg, rgba(30,22,16,0.92))';
+          e.currentTarget.style.background = 'var(--gf-bg, rgba(var(--gf-panel-rgb), 0.92))';
         }}
       >
         {isLoupeVisible ? (

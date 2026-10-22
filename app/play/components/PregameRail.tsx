@@ -40,11 +40,11 @@ const PANEL: React.CSSProperties = {
   // The panel body itself stays click-through — only its chips and buttons opt
   // back in.
   pointerEvents: 'none',
-  background: 'rgba(14, 10, 6, 0.97)',
-  border: '1px solid rgba(107, 78, 39, 0.3)',
+  background: 'rgba(var(--gf-bg-dark-rgb), 0.97)',
+  border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
   borderRadius: 10,
   boxShadow: '0 4px 24px rgba(0, 0, 0, 0.5)',
-  color: '#e8d5a3',
+  color: 'var(--gf-text-bright)',
   fontFamily: 'var(--font-cinzel), Georgia, serif',
   padding: '20px 24px',
   textAlign: 'center',
@@ -65,7 +65,7 @@ const BODY: React.CSSProperties = {
   fontFamily: 'Georgia, serif',
   fontSize: 14,
   lineHeight: 1.5,
-  color: 'rgba(232, 213, 163, 0.92)',
+  color: 'rgba(var(--gf-text-bright-rgb), 0.92)',
   textWrap: 'balance',
 };
 
@@ -104,9 +104,9 @@ const CHIP = (selected: boolean): React.CSSProperties => ({
   borderRadius: 12,
   fontSize: 11,
   whiteSpace: 'nowrap',
-  border: `1px solid ${selected ? '#c4955a' : 'rgba(196, 149, 90, 0.35)'}`,
-  background: selected ? 'rgba(196, 149, 90, 0.22)' : 'transparent',
-  color: selected ? '#e8d5a3' : 'rgba(232, 213, 163, 0.6)',
+  border: `1px solid ${selected ? 'var(--gf-accent)' : 'rgba(var(--gf-accent-rgb), 0.35)'}`,
+  background: selected ? 'rgba(var(--gf-accent-rgb), 0.22)' : 'transparent',
+  color: selected ? 'var(--gf-text-bright)' : 'rgba(var(--gf-text-bright-rgb), 0.6)',
 });
 
 const ACTION: React.CSSProperties = {
@@ -117,9 +117,9 @@ const ACTION: React.CSSProperties = {
   fontSize: 11,
   letterSpacing: '0.06em',
   textTransform: 'uppercase',
-  border: '1px solid #c4955a',
-  background: 'rgba(196, 149, 90, 0.18)',
-  color: '#e8d5a3',
+  border: '1px solid var(--gf-accent)',
+  background: 'rgba(var(--gf-accent-rgb), 0.18)',
+  color: 'var(--gf-text-bright)',
 };
 
 interface PregameRailProps {
@@ -251,7 +251,7 @@ export default function PregameRail({
     <div style={{ display: 'flex', alignItems: 'center', gap: 8,
                   fontSize: 17, fontWeight: 600, letterSpacing: '0.08em',
                   textTransform: 'uppercase', lineHeight: 1.2,
-                  color: '#e8d5a3' }}>
+                  color: 'var(--gf-text-bright)' }}>
       {star && <StarOfDavidIcon size={18} />}
       {text}
     </div>
@@ -327,7 +327,7 @@ export default function PregameRail({
           <button style={ACTION} onClick={() => submitStars([])}>No stars</button>
         </div>
         {secondsLeft !== null && (
-          <div style={{ ...BODY, fontSize: 11, color: 'rgba(232, 213, 163, 0.75)' }}>
+          <div style={{ ...BODY, fontSize: 11, color: 'rgba(var(--gf-text-bright-rgb), 0.75)' }}>
             Continuing automatically in {secondsLeft}s
           </div>
         )}
@@ -353,7 +353,7 @@ export default function PregameRail({
           dwarfed the panel, and the player is holding the card — they can read
           it there, or hover it. It stays a step above the heading: the heading
           says where you are, this says what you're resolving. */}
-      <div style={{ fontSize: 20, color: '#e8d5a3', lineHeight: 1.3 }}>
+      <div style={{ fontSize: 20, color: 'var(--gf-text-bright)', lineHeight: 1.3 }}>
         {current.cardName}
       </div>
       {abilities.length > 0 && (
@@ -378,7 +378,7 @@ export default function PregameRail({
       )}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <button style={ACTION} onClick={() => onResolveStar(current.starId)}>Resolved →</button>
-        <span style={{ fontSize: 10, color: 'rgba(232, 213, 163, 0.5)' }}>
+        <span style={{ fontSize: 10, color: 'rgba(var(--gf-text-bright-rgb), 0.5)' }}>
           {queue.filter((s) => s.resolved).length + 1} of {queue.length}
         </span>
       </div>

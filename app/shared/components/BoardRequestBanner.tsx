@@ -67,22 +67,22 @@ export function BoardRequestBanner({
     >
       <div
         style={{
-          background: 'rgba(14, 10, 6, 0.95)',
-          border: '1px solid rgba(196, 149, 90, 0.35)',
+          background: 'rgba(var(--gf-bg-dark-rgb), 0.95)',
+          border: '1px solid rgba(var(--gf-accent-rgb), 0.35)',
           borderRadius: 10,
           padding: isTouch ? '10px 14px' : '16px 24px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           gap: isTouch ? 8 : 12,
-          boxShadow: '0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(196, 149, 90, 0.08)',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(var(--gf-accent-rgb), 0.08)',
           ...(maxWidth ? { maxWidth } : null),
         }}
       >
         <div
           style={{
             fontSize: isTouch ? 13 : 15,
-            color: '#e8d5a3',
+            color: 'var(--gf-text-bright)',
             fontFamily: 'var(--font-cinzel), Georgia, serif',
             letterSpacing: '0.06em',
             textAlign: 'center',

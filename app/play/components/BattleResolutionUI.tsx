@@ -112,9 +112,9 @@ const BUTTON_COPY: Record<ResolutionAction, { label: string; compactLabel: strin
 type Tone = 'gold' | 'red' | 'neutral';
 
 const TONE_STYLE: Record<Tone, { border: string; bg: string; bgHover: string; color: string }> = {
-  gold: { border: 'rgba(196, 149, 90, 0.5)', bg: 'rgba(196, 149, 90, 0.15)', bgHover: 'rgba(196, 149, 90, 0.3)', color: '#e8d5a3' },
+  gold: { border: 'rgba(var(--gf-accent-rgb), 0.5)', bg: 'rgba(var(--gf-accent-rgb), 0.15)', bgHover: 'rgba(var(--gf-accent-rgb), 0.3)', color: 'var(--gf-text-bright)' },
   red: { border: 'rgba(180, 60, 60, 0.5)', bg: 'rgba(60, 10, 10, 0.35)', bgHover: 'rgba(60, 10, 10, 0.55)', color: '#dc7878' },
-  neutral: { border: 'rgba(196, 149, 90, 0.45)', bg: 'rgba(14, 10, 6, 0.6)', bgHover: 'rgba(107, 78, 39, 0.35)', color: '#e8d5a3' },
+  neutral: { border: 'rgba(var(--gf-accent-rgb), 0.45)', bg: 'rgba(var(--gf-bg-dark-rgb), 0.6)', bgHover: 'rgba(var(--gf-border-rgb), 0.35)', color: 'var(--gf-text-bright)' },
 };
 
 function ResolutionButton({
@@ -289,8 +289,8 @@ function AwaitingSoulUI({
           top: '50%',
           transform: 'translate(-50%, -50%)',
           pointerEvents: 'auto',
-          background: 'rgba(14, 10, 6, 0.97)',
-          border: '1px solid rgba(107, 78, 39, 0.3)',
+          background: 'rgba(var(--gf-bg-dark-rgb), 0.97)',
+          border: '1px solid rgba(var(--gf-border-rgb), 0.3)',
           borderRadius: 10,
           padding: '20px 24px',
           textAlign: 'center',
@@ -299,7 +299,7 @@ function AwaitingSoulUI({
           maxHeight: '60vh',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(196, 149, 90, 0.08)',
+          boxShadow: '0 8px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--gf-accent-rgb), 0.08)',
         }}
       >
         <h2
@@ -307,7 +307,7 @@ function AwaitingSoulUI({
             fontFamily: 'var(--font-cinzel), Georgia, serif',
             fontSize: 18,
             fontWeight: 700,
-            color: '#e8d5a3',
+            color: 'var(--gf-text-bright)',
             textShadow: '0 1px 4px rgba(0,0,0,0.5)',
             flexShrink: 0,
           }}
@@ -319,7 +319,7 @@ function AwaitingSoulUI({
             margin: '6px 0 0',
             fontFamily: 'Georgia, serif',
             fontSize: 12.5,
-            color: 'rgba(196, 149, 90, 0.75)',
+            color: 'rgba(var(--gf-accent-rgb), 0.75)',
             flexShrink: 0,
           }}
         >
@@ -333,7 +333,7 @@ function AwaitingSoulUI({
                 marginTop: 16,
                 fontFamily: 'Georgia, serif',
                 fontSize: 13,
-                color: 'rgba(196, 149, 90, 0.75)',
+                color: 'rgba(var(--gf-accent-rgb), 0.75)',
               }}
             >
               No Lost Souls remain to surrender.
@@ -345,9 +345,9 @@ function AwaitingSoulUI({
                 alignSelf: 'center',
                 padding: '10px 16px',
                 borderRadius: 4,
-                border: '1px solid rgba(107, 78, 39, 0.4)',
-                background: 'rgba(107, 78, 39, 0.15)',
-                color: 'rgba(196, 149, 90, 0.9)',
+                border: '1px solid rgba(var(--gf-border-rgb), 0.4)',
+                background: 'rgba(var(--gf-border-rgb), 0.15)',
+                color: 'rgba(var(--gf-accent-rgb), 0.9)',
                 fontFamily: 'var(--font-cinzel), Georgia, serif',
                 fontSize: 12,
                 fontWeight: 700,
@@ -389,7 +389,7 @@ function AwaitingSoulUI({
                     style={{
                       position: 'relative',
                       padding: 0,
-                      border: pendingSoulId === soul.id ? '2px solid rgba(196, 149, 90, 0.8)' : '1px solid rgba(107, 78, 39, 0.4)',
+                      border: pendingSoulId === soul.id ? '2px solid rgba(var(--gf-accent-rgb), 0.8)' : '1px solid rgba(var(--gf-border-rgb), 0.4)',
                       borderRadius: 4,
                       background: 'transparent',
                       cursor: disabled ? 'default' : 'pointer',
@@ -410,11 +410,11 @@ function AwaitingSoulUI({
                         style={{
                           width: '100%',
                           aspectRatio: '1/1.4',
-                          background: '#1e1610',
+                          background: 'rgb(var(--gf-panel-rgb))',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: 'rgba(196, 149, 90, 0.6)',
+                          color: 'rgba(var(--gf-accent-rgb), 0.6)',
                           fontSize: 9,
                           padding: 4,
                           textAlign: 'center',
@@ -431,10 +431,10 @@ function AwaitingSoulUI({
                           left: 2,
                           right: 2,
                           padding: '1px 3px',
-                          background: 'rgba(6, 4, 2, 0.85)',
-                          border: '1px solid rgba(196, 149, 90, 0.5)',
+                          background: 'rgba(var(--gf-deep-rgb), 0.85)',
+                          border: '1px solid rgba(var(--gf-accent-rgb), 0.5)',
                           borderRadius: 3,
-                          color: '#e8d5a3',
+                          color: 'var(--gf-text-bright)',
                           fontSize: 8,
                           fontWeight: 700,
                           letterSpacing: '0.03em',
@@ -464,9 +464,9 @@ function AwaitingSoulUI({
                 flexShrink: 0,
                 padding: '6px 14px',
                 borderRadius: 4,
-                border: '1px solid rgba(107, 78, 39, 0.4)',
+                border: '1px solid rgba(var(--gf-border-rgb), 0.4)',
                 background: 'transparent',
-                color: 'rgba(196, 149, 90, 0.7)',
+                color: 'rgba(var(--gf-accent-rgb), 0.7)',
                 fontFamily: 'var(--font-cinzel), Georgia, serif',
                 fontSize: 11,
                 fontWeight: 700,

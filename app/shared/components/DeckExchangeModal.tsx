@@ -332,7 +332,7 @@ export function DeckExchangeModal({
             alignItems: 'center',
             gap: 8,
             padding: '8px 12px',
-            background: 'rgba(196, 149, 90, 0.1)',
+            background: 'rgba(var(--gf-accent-rgb), 0.1)',
             border: '1px solid var(--gf-hover-strong)',
             borderRadius: 6,
             marginBottom: 12,
@@ -367,7 +367,7 @@ export function DeckExchangeModal({
                   appearance: 'none',
                   WebkitAppearance: 'none',
                   padding: '8px 28px 8px 10px',
-                  background: '#1e1610',
+                  background: 'rgb(var(--gf-panel-rgb))',
                   border: '1px solid var(--gf-border)',
                   borderRadius: 4,
                   color: 'var(--gf-text)',
@@ -415,7 +415,7 @@ export function DeckExchangeModal({
                 style={{
                   width: '100%',
                   padding: '8px 30px 8px 30px',
-                  background: '#1e1610',
+                  background: 'rgb(var(--gf-panel-rgb))',
                   border: '1px solid var(--gf-border)',
                   borderRadius: 4,
                   color: 'var(--gf-text)',
@@ -484,7 +484,7 @@ export function DeckExchangeModal({
                       {(() => {
                         const isHoveredCard = hoveredCardId === card.instanceId && !isSelected;
                         const glowStyle = isHoveredCard ? getHoverGlowStyle(hoverProgress) : undefined;
-                        const selectedShadow = isSelected ? '0 0 8px rgba(196,149,90,0.4)' : 'none';
+                        const selectedShadow = isSelected ? '0 0 8px rgba(var(--gf-accent-rgb), 0.4)' : 'none';
                         return imageUrl ? (
                           <img
                             src={imageUrl}
@@ -503,7 +503,7 @@ export function DeckExchangeModal({
                             style={{
                               width: '100%',
                               aspectRatio: '1/1.4',
-                              background: '#1e1610',
+                              background: 'rgb(var(--gf-panel-rgb))',
                               border: isSelected ? '2px solid var(--gf-accent)' : '1px solid var(--gf-border)',
                               boxShadow: glowStyle?.boxShadow ?? selectedShadow,
                               borderRadius: 4,
@@ -547,7 +547,7 @@ export function DeckExchangeModal({
             gap: 10,
             marginTop: 12,
             paddingTop: 12,
-            borderTop: '1px solid rgba(107, 78, 39, 0.3)',
+            borderTop: '1px solid rgba(var(--gf-border-rgb), 0.3)',
           }}>
             <button
               onClick={onCancel}
@@ -569,7 +569,7 @@ export function DeckExchangeModal({
               disabled={selectedIds.size !== needCount}
               style={{
                 padding: '8px 20px',
-                background: selectedIds.size === needCount ? 'var(--gf-hover-strong)' : 'rgba(107, 78, 39, 0.15)',
+                background: selectedIds.size === needCount ? 'var(--gf-hover-strong)' : 'rgba(var(--gf-border-rgb), 0.15)',
                 border: `1px solid ${selectedIds.size === needCount ? 'var(--gf-accent)' : 'var(--gf-border)'}`,
                 borderRadius: 6,
                 color: selectedIds.size === needCount ? 'var(--gf-text-bright)' : 'var(--gf-border)',

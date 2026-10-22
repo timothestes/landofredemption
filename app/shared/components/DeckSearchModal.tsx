@@ -631,7 +631,7 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
                 appearance: 'none',
                 WebkitAppearance: 'none',
                 padding: '8px 28px 8px 10px',
-                background: '#1e1610',
+                background: 'rgb(var(--gf-panel-rgb))',
                 border: '1px solid var(--gf-border)',
                 borderRadius: 4,
                 color: 'var(--gf-text)',
@@ -682,7 +682,7 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
               style={{
                 width: '100%',
                 padding: '8px 30px 8px 30px',
-                background: '#1e1610',
+                background: 'rgb(var(--gf-panel-rgb))',
                 border: '1px solid var(--gf-border)',
                 borderRadius: 4,
                 color: 'var(--gf-text)',
@@ -724,7 +724,7 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
                   padding: '0 4px',
                   borderRadius: 3,
                   border: '1px solid var(--gf-border)',
-                  background: '#1e1610',
+                  background: 'rgb(var(--gf-panel-rgb))',
                   color: 'var(--gf-text-dim)',
                   fontSize: 10,
                   lineHeight: '14px',
@@ -762,8 +762,8 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
                   width: 18,
                   height: 18,
                   borderRadius: 3,
-                  border: leaveOpen ? '1.5px solid #c4955a' : '1.5px solid var(--gf-border)',
-                  background: leaveOpen ? 'rgba(196, 149, 90, 0.25)' : 'transparent',
+                  border: leaveOpen ? '1.5px solid var(--gf-accent)' : '1.5px solid var(--gf-border)',
+                  background: leaveOpen ? 'rgba(var(--gf-accent-rgb), 0.25)' : 'transparent',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -800,8 +800,8 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
                   width: 18,
                   height: 18,
                   borderRadius: 3,
-                  border: autoShuffle ? '1.5px solid #c4955a' : '1.5px solid var(--gf-border)',
-                  background: autoShuffle ? 'rgba(196, 149, 90, 0.25)' : 'transparent',
+                  border: autoShuffle ? '1.5px solid var(--gf-accent)' : '1.5px solid var(--gf-border)',
+                  background: autoShuffle ? 'rgba(var(--gf-accent-rgb), 0.25)' : 'transparent',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -879,7 +879,7 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
                     {(() => {
                       const isHoveredCard = hoveredCardId === card.instanceId && !isSelected;
                       const glowStyle = isHoveredCard ? getHoverGlowStyle(hoverProgress) : undefined;
-                      const selectedShadow = isSelected ? '0 0 8px rgba(196,149,90,0.4)' : 'none';
+                      const selectedShadow = isSelected ? '0 0 8px rgba(var(--gf-accent-rgb), 0.4)' : 'none';
                       return imageUrl ? (
                         <img
                           src={imageUrl}
@@ -903,7 +903,7 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
                             width: '100%',
                             ...(isTouch ? { height: '100%' } : null),
                             aspectRatio: '1/1.4',
-                            background: '#1e1610',
+                            background: 'rgb(var(--gf-panel-rgb))',
                             border: isSelected ? '2px solid var(--gf-accent)' : '1px solid var(--gf-border)',
                             boxShadow: glowStyle?.boxShadow ?? selectedShadow,
                             borderRadius: 4,
@@ -935,7 +935,7 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
                     width: lassoRect.w,
                     height: lassoRect.h,
                     border: '2px dashed var(--gf-accent)',
-                    background: 'rgba(196,149,90,0.15)',
+                    background: 'rgba(var(--gf-accent-rgb), 0.15)',
                     borderRadius: 2,
                     pointerEvents: 'none',
                     zIndex: 100,

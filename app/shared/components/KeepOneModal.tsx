@@ -130,7 +130,7 @@ export function KeepOneModal({
                           width: '100%',
                           borderRadius: 4,
                           border: isSelected ? '2px solid var(--gf-accent)' : '1px solid var(--gf-border)',
-                          boxShadow: isSelected ? '0 0 8px rgba(196,149,90,0.5)' : 'none',
+                          boxShadow: isSelected ? '0 0 8px rgba(var(--gf-accent-rgb), 0.5)' : 'none',
                           opacity: isSelected ? 1 : 0.85,
                           transition: 'border 0.1s ease, opacity 0.1s ease',
                           pointerEvents: 'none',

@@ -126,7 +126,7 @@ export default function RightPanel({
       // Collapsed rail gets a scrim too — transparent, it showed a bright
       // strip of raw background art down the whole right screen edge while
       // every neighboring surface is darkened.
-      background: isLoupeVisible ? 'rgba(10, 8, 5, 0.97)' : 'rgba(10, 8, 5, 0.55)',
+      background: isLoupeVisible ? 'rgba(var(--gf-deep-rgb), 0.97)' : 'rgba(var(--gf-deep-rgb), 0.55)',
       borderLeft: '1px solid rgba(var(--gf-border-rgb), 0.3)',
       overflow: 'hidden',
       transition: 'width 0.2s ease',
@@ -144,7 +144,7 @@ export default function RightPanel({
           // time isRail flips (dev error overlay on every game).
           flexGrow: isRail ? 1 : 0,
           flexBasis: isRail ? '0%' : 'auto',
-          background: isRail ? 'transparent' : 'rgba(10, 8, 5, 0.96)',
+          background: isRail ? 'transparent' : 'rgba(var(--gf-deep-rgb), 0.96)',
           borderTop: 'none',
           borderLeft: 'none',
           borderRight: 'none',

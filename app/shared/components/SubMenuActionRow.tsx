@@ -69,7 +69,7 @@ export const QUICK_COUNT_STYLE: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(196,149,90,0.12)',
+  background: 'rgba(var(--gf-accent-rgb), 0.12)',
   border: '1px solid var(--gf-border)',
   borderRadius: 4,
   color: 'var(--gf-text)',
@@ -134,11 +134,11 @@ export function SubMenuActionRow({
           style={{ ...QUICK_COUNT_STYLE, marginLeft: 2 }}
           onClick={() => onAction(1)}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(196,149,90,0.35)';
+            e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.35)';
             e.currentTarget.style.borderColor = 'var(--gf-accent)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(196,149,90,0.12)';
+            e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.12)';
             e.currentTarget.style.borderColor = 'var(--gf-border)';
           }}
           title={`${label} 1`}
@@ -150,11 +150,11 @@ export function SubMenuActionRow({
             style={{ ...QUICK_COUNT_STYLE, marginLeft: 2 }}
             onClick={() => onAction(6)}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(196,149,90,0.35)';
+              e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.35)';
               e.currentTarget.style.borderColor = 'var(--gf-accent)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(196,149,90,0.12)';
+              e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.12)';
               e.currentTarget.style.borderColor = 'var(--gf-border)';
             }}
             title={`${label} 6`}
@@ -165,18 +165,18 @@ export function SubMenuActionRow({
         <button
           onClick={toggleExpanded}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(196,149,90,0.35)';
+            e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.35)';
             e.currentTarget.style.borderColor = 'var(--gf-accent)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = expanded ? 'var(--gf-hover-strong)' : 'rgba(196,149,90,0.12)';
+            e.currentTarget.style.background = expanded ? 'var(--gf-hover-strong)' : 'rgba(var(--gf-accent-rgb), 0.12)';
             e.currentTarget.style.borderColor = 'var(--gf-border)';
           }}
           style={{
             ...QUICK_COUNT_STYLE,
             marginLeft: 2,
             marginRight: 10,
-            background: expanded ? 'var(--gf-hover-strong)' : 'rgba(196,149,90,0.12)',
+            background: expanded ? 'var(--gf-hover-strong)' : 'rgba(var(--gf-accent-rgb), 0.12)',
             letterSpacing: '0.05em',
           }}
           title={`${label} custom amount...`}

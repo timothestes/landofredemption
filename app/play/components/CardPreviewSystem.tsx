@@ -78,7 +78,7 @@ function FallbackImage({ src, alt, imgStyle, width, height }: FallbackImageProps
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'rgba(13, 9, 5, 0.6)',
+            background: 'rgba(var(--gf-bg-dark-rgb), 0.6)',
             pointerEvents: 'none',
           }}
         >
@@ -98,7 +98,7 @@ function FallbackImage({ src, alt, imgStyle, width, height }: FallbackImageProps
               style={{
                 fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
                 fontSize: 10,
-                color: 'rgba(232,213,163,0.55)',
+                color: 'rgba(var(--gf-text-bright-rgb), 0.55)',
                 letterSpacing: '0.05em',
               }}
             >
@@ -152,8 +152,8 @@ function HoverPreview({ card, getImage }: HoverPreviewProps) {
         zIndex: 1000,
         pointerEvents: 'none',
         borderRadius: 6,
-        background: 'rgba(13, 9, 5, 0.92)',
-        border: '1px solid rgba(107, 78, 39, 0.4)',
+        background: 'rgba(var(--gf-bg-dark-rgb), 0.92)',
+        border: '1px solid rgba(var(--gf-border-rgb), 0.4)',
         boxShadow: '0 8px 32px rgba(0,0,0,0.8), 0 0 12px rgba(212,168,103,0.2)',
         overflow: 'hidden',
         animation: 'cardPreviewFadeIn 0.12s ease-out',
@@ -182,7 +182,7 @@ function HoverPreview({ card, getImage }: HoverPreviewProps) {
           style={{
             width: PREVIEW_WIDTH,
             height: PREVIEW_HEIGHT,
-            background: 'rgba(30,22,16,0.6)',
+            background: 'rgba(var(--gf-panel-rgb), 0.6)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -202,15 +202,15 @@ function HoverPreview({ card, getImage }: HoverPreviewProps) {
       <div
         style={{
           padding: '6px 8px',
-          background: 'rgba(13, 9, 5, 0.95)',
-          borderTop: '1px solid rgba(107, 78, 39, 0.3)',
+          background: 'rgba(var(--gf-bg-dark-rgb), 0.95)',
+          borderTop: '1px solid rgba(var(--gf-border-rgb), 0.3)',
         }}
       >
         <div
           style={{
             fontFamily: 'var(--font-cinzel), Georgia, serif',
             fontSize: 11,
-            color: '#e8d5a3',
+            color: 'var(--gf-text-bright)',
             letterSpacing: '0.04em',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
@@ -225,7 +225,7 @@ function HoverPreview({ card, getImage }: HoverPreviewProps) {
             display: 'flex',
             gap: 8,
             fontSize: 10,
-            color: 'rgba(232,213,163,0.6)',
+            color: 'rgba(var(--gf-text-bright-rgb), 0.6)',
             fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
           }}
         >
@@ -340,8 +340,8 @@ function ZoomModal({ card, onClose, getImage }: ZoomModalProps) {
         {/* Card details */}
         <div
           style={{
-            background: 'rgba(13, 9, 5, 0.95)',
-            border: '1px solid rgba(107, 78, 39, 0.4)',
+            background: 'rgba(var(--gf-bg-dark-rgb), 0.95)',
+            border: '1px solid rgba(var(--gf-border-rgb), 0.4)',
             borderRadius: 8,
             padding: '12px 16px',
             width: 'min(400px, 85vw)',
@@ -357,7 +357,7 @@ function ZoomModal({ card, onClose, getImage }: ZoomModalProps) {
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
-              color: 'rgba(232,213,163,0.5)',
+              color: 'rgba(var(--gf-text-bright-rgb), 0.5)',
               padding: 2,
               lineHeight: 1,
             }}
@@ -369,7 +369,7 @@ function ZoomModal({ card, onClose, getImage }: ZoomModalProps) {
             style={{
               fontFamily: 'var(--font-cinzel), Georgia, serif',
               fontSize: 14,
-              color: '#e8d5a3',
+              color: 'var(--gf-text-bright)',
               marginBottom: 8,
               paddingRight: 20,
               letterSpacing: '0.04em',
@@ -383,7 +383,7 @@ function ZoomModal({ card, onClose, getImage }: ZoomModalProps) {
               style={{
                 fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
                 fontSize: 11,
-                color: 'rgba(232,213,163,0.7)',
+                color: 'rgba(var(--gf-text-bright-rgb), 0.7)',
                 lineHeight: 1.55,
                 margin: 0,
               }}
@@ -396,7 +396,7 @@ function ZoomModal({ card, onClose, getImage }: ZoomModalProps) {
         <span
           style={{
             fontSize: 10,
-            color: 'rgba(232,213,163,0.35)',
+            color: 'rgba(var(--gf-text-bright-rgb), 0.35)',
             fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
             letterSpacing: '0.05em',
           }}

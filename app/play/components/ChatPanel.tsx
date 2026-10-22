@@ -1832,7 +1832,7 @@ export default function ChatPanel({
             aria-label={`${unreadCount} unread messages`}
             style={{
               background: 'var(--gf-accent)',
-              color: '#0a0805',
+              color: 'var(--gf-deep)',
               borderRadius: '50%',
               fontSize: 'calc(9px * var(--chat-fs, 1))',
               fontWeight: 700,
@@ -1884,7 +1884,7 @@ export default function ChatPanel({
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            background: 'rgba(10, 8, 5, 0.97)',
+            background: 'rgba(var(--gf-deep-rgb), 0.97)',
             // Anchors the jump-to-latest pill below.
             position: 'relative',
           }}
@@ -1903,7 +1903,7 @@ export default function ChatPanel({
                 padding: '8px 14px',
                 borderRadius: 999,
                 border: '1px solid rgba(var(--gf-accent-rgb), 0.55)',
-                background: 'rgba(28, 20, 12, 0.96)',
+                background: 'rgba(var(--gf-panel-rgb), 0.96)',
                 color: 'var(--gf-text-bright)',
                 fontFamily: 'inherit',
                 fontSize: 'calc(11px * var(--chat-fs, 1))',
@@ -2349,7 +2349,7 @@ export default function ChatPanel({
                         borderLeft: '2px solid rgba(var(--gf-border-rgb), 0.3)',
                       }}
                     >
-                      <span style={{ fontSize: 'calc(11px * var(--chat-fs, 1))', color: '#c8b882', lineHeight: 1.35 }}>
+                      <span style={{ fontSize: 'calc(11px * var(--chat-fs, 1))', color: 'var(--gf-text-log)', lineHeight: 1.35 }}>
                         <strong style={{ color: 'var(--gf-text-bright)' }}>{playerName}</strong>{' '}
                         {verb}
                       </span>
@@ -2527,7 +2527,7 @@ export default function ChatPanel({
                             opacity: 0.8,
                           }}
                         >
-                          <span style={{ fontSize: 'calc(10px * var(--chat-fs, 1))', color: '#c8b882', lineHeight: 1.35 }}>
+                          <span style={{ fontSize: 'calc(10px * var(--chat-fs, 1))', color: 'var(--gf-text-log)', lineHeight: 1.35 }}>
                             <strong style={{ color: 'var(--gf-text-bright)' }}>{playerName}</strong>{' '}
                             {verb}
                           </span>

@@ -2789,7 +2789,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
                 key={weapon.instanceId}
                 type="button"
                 onClick={() => detachCard(weapon.instanceId, derived.x, derived.y)}
-                className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#1a1510] p-1.5 text-[#c4955a] shadow-md ring-1 ring-[#c4955a]/40 transition hover:bg-[#2a1f14] hover:ring-[#c4955a]"
+                className="pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-[rgb(var(--gf-panel-rgb))] p-1.5 text-[var(--gf-accent)] shadow-md ring-1 ring-[rgba(var(--gf-accent-rgb),0.4)] transition hover:bg-[var(--gf-bg)] hover:ring-[var(--gf-accent)]"
                 style={{ left: `${seam.x}px`, top: `${seam.y}px` }}
                 title="Unequip"
                 aria-label={warrior ? `Unequip ${weapon.cardName} from ${warrior.cardName}` : 'Unequip'}
@@ -3248,8 +3248,8 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
                   top: screenTopLeft.y,
                   width: screenBottomRight.x - screenTopLeft.x,
                   height: screenBottomRight.y - screenTopLeft.y,
-                  border: isHovered ? '1px solid rgba(196,149,90,0.6)' : '1px solid var(--gf-hover)',
-                  background: isHovered ? 'rgba(196,149,90,0.12)' : 'transparent',
+                  border: isHovered ? '1px solid rgba(var(--gf-accent-rgb), 0.6)' : '1px solid var(--gf-hover)',
+                  background: isHovered ? 'rgba(var(--gf-accent-rgb), 0.12)' : 'transparent',
                   borderRadius: 4,
                   display: 'flex',
                   alignItems: 'center',
@@ -3258,7 +3258,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
                 }}
               >
                 <span style={{
-                  color: isHovered ? 'rgba(232,213,163,0.7)' : 'rgba(232,213,163,0.3)',
+                  color: isHovered ? 'rgba(var(--gf-text-bright-rgb), 0.7)' : 'rgba(var(--gf-text-bright-rgb), 0.3)',
                   fontSize: 12,
                   fontFamily: 'var(--font-cinzel), Georgia, serif',
                   textTransform: 'uppercase',
@@ -3322,7 +3322,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
                 top: -8,
                 right: -8,
                 background: 'var(--gf-accent)',
-                color: '#1e1610',
+                color: 'rgb(var(--gf-panel-rgb))',
                 borderRadius: '50%',
                 width: 22,
                 height: 22,
