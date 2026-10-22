@@ -133,8 +133,10 @@ export interface GameState {
   randomReserveToZone: (count: number, toZone: string, deckPosition: string) => void;
   randomOpponentHandToZone: (requestId: bigint, count: number, toZone: string, deckPosition: string) => void;
   opponentShuffleAndDraw: (requestId: bigint, shuffleCount: number, drawCount: number) => void;
-  keepOneShuffleDraw: (sourceInstanceId: bigint, keepInstanceId: bigint) => void;
-  opponentKeepOneShuffleDraw: (requestId: bigint, keepInstanceId: bigint) => void;
+  keepOneShuffleDraw: (sourceInstanceId: bigint, keepInstanceId: bigint, draw: boolean) => void;
+  opponentKeepOneShuffleDraw: (requestId: bigint, keepInstanceId: bigint, draw: boolean) => void;
+  /** Take back the local player's own half of Philip's Daughters. */
+  undoKeepOneShuffleDraw: () => void;
   threeNailsResetExecute: (requestId: bigint) => void;
   discardReserveCharactersExecute: (requestId: bigint) => void;
   meekCard: (cardInstanceId: bigint) => void;
@@ -636,8 +638,8 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
   // Philip's Daughters — caster half. Fired after the caster picks their
   // keeper; the server opens the opponent's request as part of the same call.
   const keepOneShuffleDraw = useCallback(
-    (sourceInstanceId: bigint, keepInstanceId: bigint) => {
-      conn?.reducers.keepOneShuffleDraw({ gameId, sourceInstanceId, keepInstanceId });
+    (sourceInstanceId: bigint, keepInstanceId: bigint, draw: boolean) => {
+      conn?.reducers.keepOneShuffleDraw({ gameId, sourceInstanceId, keepInstanceId, draw });
     },
     [conn, gameId],
   );
@@ -645,11 +647,17 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
   // Philip's Daughters — target half. Unlike opponentShuffleAndDraw this is
   // fired by the TARGET, since only they can pick their own keeper.
   const opponentKeepOneShuffleDraw = useCallback(
-    (requestId: bigint, keepInstanceId: bigint) => {
-      conn?.reducers.opponentKeepOneShuffleDraw({ gameId, requestId, keepInstanceId });
+    (requestId: bigint, keepInstanceId: bigint, draw: boolean) => {
+      conn?.reducers.opponentKeepOneShuffleDraw({ gameId, requestId, keepInstanceId, draw });
     },
     [conn, gameId],
   );
+
+  // Philip's Daughters — undo the sender's own half. The server holds the
+  // snapshot (Player.keepOneUndo) and refuses once a moved card has been played.
+  const undoKeepOneShuffleDraw = useCallback(() => {
+    conn?.reducers.undoKeepOneShuffleDraw({ gameId });
+  }, [conn, gameId]);
 
   const threeNailsResetExecute = useCallback(
     (requestId: bigint) => {
@@ -1165,6 +1173,7 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
     opponentShuffleAndDraw,
     keepOneShuffleDraw,
     opponentKeepOneShuffleDraw,
+    undoKeepOneShuffleDraw,
     threeNailsResetExecute,
     discardReserveCharactersExecute,
     reloadDeck,
@@ -1533,8 +1542,9 @@ export function useSpectatorGameState(gameId: bigint | null, forgeResolver?: For
     randomReserveToZone: useCallback((_count: number, _toZone: string, _deckPosition: string) => {}, []),
     randomOpponentHandToZone: useCallback((_requestId: bigint, _count: number, _toZone: string, _deckPosition: string) => {}, []),
     opponentShuffleAndDraw: useCallback((_requestId: bigint, _shuffleCount: number, _drawCount: number) => {}, []),
-    keepOneShuffleDraw: useCallback((_sourceInstanceId: bigint, _keepInstanceId: bigint) => {}, []),
-    opponentKeepOneShuffleDraw: useCallback((_requestId: bigint, _keepInstanceId: bigint) => {}, []),
+    keepOneShuffleDraw: useCallback((_sourceInstanceId: bigint, _keepInstanceId: bigint, _draw: boolean) => {}, []),
+    opponentKeepOneShuffleDraw: useCallback((_requestId: bigint, _keepInstanceId: bigint, _draw: boolean) => {}, []),
+    undoKeepOneShuffleDraw: noop,
     threeNailsResetExecute: noopBigint,
     discardReserveCharactersExecute: noopBigint,
     meekCard: noopBigint,

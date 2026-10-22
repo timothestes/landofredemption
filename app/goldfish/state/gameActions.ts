@@ -144,8 +144,8 @@ export const actions = {
     return createAction('RESURRECT_HEROES', { cardInstanceIds });
   },
 
-  keepOneShuffleDraw(keepInstanceId: string): GameAction {
-    return createAction('KEEP_ONE_SHUFFLE_DRAW', { keepInstanceId });
+  keepOneShuffleDraw(keepInstanceId: string, draw: boolean = true): GameAction {
+    return createAction('KEEP_ONE_SHUFFLE_DRAW', { keepInstanceId, ...(draw ? {} : { skipDraw: true }) });
   },
 
   imitateLostSoul(sourceInstanceId: string, targetInstanceId: string): GameAction {

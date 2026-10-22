@@ -87,6 +87,11 @@ export const Player = table(
     handRevealSnapshot: t.string().default('[]'), // JSON array of card IDs visible during reveal — cards drawn after reveal stay hidden
     shareHandWithSpectators: t.bool().default(false),
     topDeckRevealed: t.bool().default(false), // When true, this player's top deck card renders face up for everyone (The Foretelling Angel's toggle_top_deck_reveal)
+    // JSON KeepOneSnapshot (see keepOneUndo.ts) while this player's half of
+    // Philip's Daughters can still be taken back; '' otherwise. Cleared by
+    // undo_keep_one_shuffle_draw and at the turn flip. New columns go LAST —
+    // a mid-list insert aborts the publish with "requires a manual migration".
+    keepOneUndo: t.string().default(''),
   }
 );
 

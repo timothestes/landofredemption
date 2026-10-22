@@ -176,6 +176,9 @@ export interface GameAction {
     /** Hand card kept by KEEP_ONE_SHUFFLE_DRAW; the rest of that hand is
      *  shuffled into the deck and redrawn. */
     keepInstanceId?: string;
+    /** KEEP_ONE_SHUFFLE_DRAW: true = shuffle the rest but draw nothing (the
+     *  draw half was prevented). */
+    skipDraw?: boolean;
   };
 }
 

@@ -101,3 +101,30 @@ describe('nodeToText — what search can actually find', () => {
     expect(out).toContain('Angel Chariots (Wa)');
   });
 });
+
+describe("formatActionType — Philip's Daughters", () => {
+  it('reads the counts off a keep-one shuffle and draw', () => {
+    const out = asText(
+      formatActionType('KEEP_ONE_SHUFFLE_DRAW', JSON.stringify({ shuffled: 4, requestedShuffle: 4, drawn: 4, requestedDraw: 4 })),
+    );
+    expect(out).toContain('kept 1 card');
+    expect(out).toContain('shuffled 4');
+    expect(out).toContain('drew 4');
+  });
+
+  it('says why nothing was drawn on the shuffle-only variant', () => {
+    const out = asText(
+      formatActionType('KEEP_ONE_SHUFFLE_DRAW', JSON.stringify({ shuffled: 3, requestedShuffle: 3, drawn: 0, requestedDraw: 0, drawSkipped: true })),
+    );
+    expect(out).toContain('shuffled 3');
+    expect(out).toContain('draw prevented');
+    expect(out).not.toContain('drew 0');
+  });
+
+  it('describes the undo as a restore, never as bare snake case', () => {
+    const out = asText(formatActionType('UNDO_KEEP_ONE_SHUFFLE_DRAW', JSON.stringify({ shuffled: 2, drawn: 2 })));
+    expect(out).toContain('undid Philip’s Daughters');
+    expect(out).toContain('2 cards back in hand');
+    expect(asText(formatActionType('UNDO_KEEP_ONE_SHUFFLE_DRAW'))).not.toBe('undo keep one shuffle draw');
+  });
+});

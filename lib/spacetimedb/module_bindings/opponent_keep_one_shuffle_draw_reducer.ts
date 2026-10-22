@@ -14,4 +14,5 @@ export default {
   gameId: __t.u64(),
   requestId: __t.u64(),
   keepInstanceId: __t.u64(),
+  draw: __t.bool(),
 };

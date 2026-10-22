@@ -12,7 +12,9 @@ interface KeepOneModalProps {
   /** True when this is the opponent answering the caster's request, which
    *  changes the framing from "you played it" to "you have to respond". */
   isResponding?: boolean;
-  onConfirm: (keepInstanceId: string) => void;
+  /** `draw` is false when the player ticked "my draw is prevented": the rest
+   *  of the hand still shuffles in, but nothing comes back out. */
+  onConfirm: (keepInstanceId: string, draw: boolean) => void;
   onCancel: () => void;
 }
 
@@ -32,6 +34,9 @@ export function KeepOneModal({
   onCancel,
 }: KeepOneModalProps) {
   const [selected, setSelected] = useState<string | null>(null);
+  // "Shuffle the rest to draw X" is one ability, but a prevent effect can stop
+  // the draw half on its own. Each player ticks this for their own hand.
+  const [skipDraw, setSkipDraw] = useState(false);
 
   // Esc closes.
   useEffect(() => {
@@ -88,7 +93,9 @@ export function KeepOneModal({
             : 'Pick the card you keep. '}
           {hand.length === 0
             ? 'Your hand is empty, so nothing happens.'
-            : `The other ${shuffleCount} shuffle${shuffleCount === 1 ? 's' : ''} into your deck and you draw ${shuffleCount}.`}
+            : skipDraw
+              ? `The other ${shuffleCount} shuffle${shuffleCount === 1 ? 's' : ''} into your deck and you draw nothing.`
+              : `The other ${shuffleCount} shuffle${shuffleCount === 1 ? 's' : ''} into your deck and you draw ${shuffleCount}.`}
         </div>
 
         <div style={{ overflowY: 'auto', flex: 1, marginBottom: 16 }}>
@@ -164,10 +171,32 @@ export function KeepOneModal({
           )}
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {hand.length > 0 && (
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 12,
+                color: 'var(--gf-text-dim)',
+                cursor: 'pointer',
+                marginRight: 'auto',
+                minHeight: 44,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={skipDraw}
+                onChange={(e) => setSkipDraw(e.target.checked)}
+                style={{ accentColor: 'var(--gf-accent)' }}
+              />
+              My draw is prevented — shuffle only
+            </label>
+          )}
           <button
             onClick={onCancel}
-            style={btnStyle('ghost', false)}
+            style={{ ...btnStyle('ghost', false), marginLeft: hand.length > 0 ? undefined : 'auto' }}
             onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--gf-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
           >
@@ -176,11 +205,11 @@ export function KeepOneModal({
           <button
             // An empty hand still confirms — it's a legitimate no-op, and the
             // opponent's half of the effect shouldn't be blocked by it.
-            onClick={() => onConfirm(selected ?? '')}
+            onClick={() => onConfirm(selected ?? '', !skipDraw)}
             disabled={hand.length > 0 && selected === null}
             style={btnStyle('primary', hand.length > 0 && selected === null)}
           >
-            {hand.length === 0 ? 'Continue' : 'Keep this card'}
+            {hand.length === 0 ? 'Continue' : skipDraw ? 'Keep this card, shuffle the rest' : 'Keep this card'}
           </button>
         </div>
       </div>

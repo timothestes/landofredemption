@@ -1,7 +1,7 @@
 'use client';
 
 import { useContext, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Search, Shuffle, Eye, Sparkles, Trash2, Archive, ChevronRight, Play } from 'lucide-react';
+import { Search, Shuffle, Eye, Sparkles, Trash2, Archive, ChevronRight, Play, Undo2 } from 'lucide-react';
 import { useInputMode } from '@/app/shared/hooks/useInputMode';
 import {
   SubMenuActionRow,
@@ -45,6 +45,11 @@ interface DeckContextMenuProps {
    *  "Add <name> to hand" item above Search Deck that fires onDrawTop(1);
    *  omitted = no item. */
   revealedTopCardName?: string;
+  /** Philip's Daughters: present while the local player's half can still be
+   *  taken back. Renders an "Undo Philip's Daughters" item at the top — the
+   *  responder never right-clicks the caster's card, so their own deck is
+   *  where they'd look. Omitted = no item. */
+  onUndoKeepOne?: () => void;
   /** When true, hides all draw-related actions (for opponent's deck) */
   hideDrawActions?: boolean;
   /** When true, hides the Discard row inside each Top/Bottom/Random submenu */
@@ -210,6 +215,7 @@ export function DeckContextMenu({
   onLookAtBottom,
   onLookAtRandom,
   revealedTopCardName,
+  onUndoKeepOne,
   hideDrawActions,
   hideDiscardActions,
   hideReserveActions,
@@ -271,6 +277,15 @@ export function DeckContextMenu({
         visibility: pos.ready ? 'visible' : 'hidden',
       }}
     >
+      {onUndoKeepOne && (
+        <>
+          <button style={ITEM_STYLE} onClick={onUndoKeepOne} onMouseEnter={hoverEnter} onMouseLeave={hoverLeave}>
+            <Undo2 size={14} />
+            Undo Philip’s Daughters
+          </button>
+          <div style={SEPARATOR_STYLE} />
+        </>
+      )}
       {revealedTopCardName && !hideDrawActions && (
         <>
           <button style={ITEM_STYLE} onClick={() => onDrawTop(1)} onMouseEnter={hoverEnter} onMouseLeave={hoverLeave}>
