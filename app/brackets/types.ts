@@ -33,6 +33,7 @@ export interface DeckBracketEntryRow {
   preview_card_1: string | null;
   preview_card_2: string | null;
   paragon: string | null;
+  key_cards: string[] | null;
 }
 
 export interface DeckBracketMatchRow {
@@ -88,6 +89,7 @@ export const toEntry = (r: DeckBracketEntryRow): BracketEntry => ({
   previewCard1: r.preview_card_1,
   previewCard2: r.preview_card_2,
   paragon: r.paragon,
+  keyCards: r.key_cards ?? [],
 });
 
 export const toMatch = (r: DeckBracketMatchRow): BracketMatch => ({

@@ -1,7 +1,7 @@
 import type { BracketEntry, BracketMatch, BracketGame } from '../types';
 
 export const entry = (i: number, deckId: string | null = `d${i}`): BracketEntry =>
-  ({ id: `e${i}`, seed: i, deckId, deckName: `Deck ${i}`, deckFormat: 'Limited', previewCard1: null, previewCard2: null, paragon: null });
+  ({ id: `e${i}`, seed: i, deckId, deckName: `Deck ${i}`, deckFormat: 'Limited', previewCard1: null, previewCard2: null, paragon: null, keyCards: [] });
 export const entries = (n: number) => Array.from({ length: n }, (_, i) => entry(i + 1));
 let counter = 0;
 export const ids = () => `m${++counter}`;

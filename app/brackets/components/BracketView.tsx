@@ -41,8 +41,10 @@ export function BracketView(props: MatchCallbacks & {
   canReset?: (matchId: string) => boolean;
   /** Drawn in the Champion column on desktop and above round 1 on phones. */
   champion?: React.ReactNode;
+  /** Set on the bracket page so seated matches link to their matchup preview. */
+  bracketId?: string;
 }) {
-  const { views, size, isOwner, decidedMatchId, canReset, champion, ...callbacks } = props;
+  const { views, size, isOwner, decidedMatchId, canReset, champion, bracketId, ...callbacks } = props;
   const names = roundNames(size);
   const last = views.length - 1;
 
@@ -58,6 +60,7 @@ export function BracketView(props: MatchCallbacks & {
       highlight={view.match.id === decidedMatchId ? 'write-in' : null}
       writeInSlot={fed && view.match.round === fed.round && view.match.position === fed.position ? fed.side : null}
       canReset={canReset?.(view.match.id) ?? false}
+      bracketId={bracketId}
       {...callbacks}
     />
   );

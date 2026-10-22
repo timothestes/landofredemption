@@ -7,7 +7,7 @@ import { MatchBlock } from '../MatchBlock';
 
 const entry = (id: string, deckName: string): BracketEntry => ({
   id, seed: 1, deckId: 'd-' + id, deckName, deckFormat: 'Limited',
-  previewCard1: null, previewCard2: null, paragon: null,
+  previewCard1: null, previewCard2: null, paragon: null, keyCards: [],
 });
 
 const doneView: MatchView = {
@@ -21,6 +21,13 @@ const doneView: MatchView = {
   placeholderB: '',
   firstToPlayName: null,
   canPlay: true,
+};
+
+const readyView: MatchView = {
+  ...doneView,
+  match: { ...doneView.match, winnerEntryId: null },
+  state: 'ready',
+  series: { winsA: 0, winsB: 0, needed: 2, decided: false, winner: null, nextGameNumber: 1, inProgress: null },
 };
 
 const rows = (html: string) => [...html.matchAll(/<div class="(flex min-h-11 items-center[^"]*)"/g)].map(m => m[1]);
@@ -41,6 +48,25 @@ describe('MatchBlock', () => {
     expect(b).toContain('border-l-transparent');
     expect(b).not.toContain('border-l-primary');
     expect(html).not.toContain('divide-');
+  });
+
+  it('links a seated match to its matchup preview, for owner and viewer alike', () => {
+    for (const isOwner of [true, false]) {
+      const html = renderToStaticMarkup(createElement(MatchBlock, { view: readyView, isOwner, bracketId: 'b1' }));
+      expect(html).toContain('href="/brackets/b1/matchup/m1"');
+      expect(html).toContain('Preview matchup');
+    }
+  });
+
+  it('has no preview row without a bracket id (the setup screen) or with an empty slot', () => {
+    const setup = renderToStaticMarkup(createElement(MatchBlock, { view: readyView, isOwner: false, onRemoveEntry: () => {} }));
+    expect(setup).not.toContain('Preview matchup');
+    const waiting: MatchView = {
+      ...readyView, state: 'waiting', b: null, placeholderB: 'Winner of QF2',
+      match: { ...readyView.match, entryBId: null },
+    };
+    const html = renderToStaticMarkup(createElement(MatchBlock, { view: waiting, isOwner: true, bracketId: 'b1' }));
+    expect(html).not.toContain('Preview matchup');
   });
 
   it('a done match with only the overflow menu has no footer row', () => {
