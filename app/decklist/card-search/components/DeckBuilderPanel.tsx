@@ -61,6 +61,7 @@ import type { DeckCheckResult } from "@/utils/deckcheck/types";
 import { useBudgetPricing } from '../hooks/useBudgetPricing';
 import type { BudgetCard } from '@/lib/pricing/budgetPricing';
 import { useExternalDropTarget, useIsExternalDragActive, combineRefs, type SearchDragPayload } from '../hooks/useExternalDropTarget';
+import BrigadeBar from '@/components/decks/BrigadeBar';
 
 function getTagContrastColor(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -3520,6 +3521,9 @@ export default function DeckBuilderPanel({
                 <div className="border-t border-border my-2 pt-2">
                   <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
                     Brigades
+                  </div>
+                  <div className="mb-2">
+                    <BrigadeBar cards={deck.cards.map((c) => ({ brigade: c.card.brigade, alignment: c.card.alignment, quantity: c.quantity, zone: c.zone }))} />
                   </div>
                   <div className="space-y-0.5">
                     {(() => {
