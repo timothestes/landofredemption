@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useGameBackground } from '@/app/shared/hooks/useGameBackground';
 import dynamic from 'next/dynamic';
 import { useSpacetimeConnection } from '@/app/play/hooks/useSpacetimeConnection';
 import { SpacetimeConnectionResetWrapper } from '@/app/play/components/SpacetimeConnectionResetWrapper';
@@ -155,8 +156,9 @@ function SpectatorInner({ code, isConnected, displayName }: SpectatorInnerProps)
   const [allForgeGames] = useTable(tables.ForgeGame) as [ForgeGame[], boolean];
   const isForgeGame = gameId !== null && allForgeGames.some((f) => f.gameId === gameId);
 
-  // Board backdrop — Forge playtest games get a distinct background.
-  const gameBackground = `url(/gameplay/${isForgeGame ? 'forge_background' : 'cave_background'}.png)`;
+  // Board backdrop — the spectator's OWN uploaded image when they have one on
+  // (never a player's), else the default art.
+  const gameBackground = useGameBackground(isForgeGame);
 
   // Resolve gameId by scanning the unfiltered `allGames` subscription — the
   // filtered `game` field is keyed by gameId, which we don't have yet.

@@ -2,6 +2,7 @@
 
 import { useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import { useGameBackground } from '@/app/shared/hooks/useGameBackground';
 import { CardPreviewProvider } from '@/app/goldfish/state/CardPreviewContext';
 import { GameProvider } from '@/app/goldfish/state/GameContext';
 import { CardLoupePanel } from '@/app/goldfish/components/CardLoupePanel';
@@ -26,6 +27,7 @@ interface WaitingRoomGoldfishProps {
 }
 
 function GoldfishArea({ deck, onLoadDeck }: { deck: DeckDataForGoldfish; onLoadDeck?: () => void }) {
+  const backgroundImage = useGameBackground();
   const containerRef = useRef<HTMLDivElement>(null);
   const { scale, offsetX, offsetY, containerWidth, containerHeight, virtualWidth } = useVirtualCanvas(containerRef);
 
@@ -55,12 +57,12 @@ function GoldfishArea({ deck, onLoadDeck }: { deck: DeckDataForGoldfish; onLoadD
         flexDirection: 'row',
       }}
     >
-      {/* Cave background */}
+      {/* Cave background (or the player's own image) */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundImage: 'url(/gameplay/cave_background.png)',
+          backgroundImage,
           backgroundSize: 'cover',
           backgroundPosition: 'center 70%',
           backgroundRepeat: 'no-repeat',
