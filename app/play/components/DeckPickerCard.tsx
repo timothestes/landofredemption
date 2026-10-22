@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { ExternalLink, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useInputMode } from "@/app/shared/hooks/useInputMode";
 import { cn } from "@/lib/utils";
 import { getCardImageUrl } from "@/lib/card-images";
 import { getFormatDef } from "@/lib/formats";
@@ -24,13 +26,20 @@ interface DeckPickerCardProps {
   selected?: boolean;
   /** Overlay shown top-right of the image header (e.g. a multi-select check). */
   badge?: React.ReactNode;
+  /**
+   * A secondary "open this deck" control at the tile's bottom-right. Opens in a
+   * new tab: the pickers that show it (bracket setup, the play lobby) hold
+   * unsaved state the player would lose by navigating away.
+   */
+  link?: { href: string; label: string; kind: "edit" | "view" };
 }
 
 function formatDeckType(format: string | null): string {
   return getFormatDef(format).id;
 }
 
-export function DeckPickerCard({ deck, onClick, selected, badge }: DeckPickerCardProps) {
+export function DeckPickerCard({ deck, onClick, selected, badge, link }: DeckPickerCardProps) {
+  const isTouch = useInputMode() === "touch";
   const [img1Error, setImg1Error] = useState(false);
   const [img2Error, setImg2Error] = useState(false);
 
@@ -42,12 +51,12 @@ export function DeckPickerCard({ deck, onClick, selected, badge }: DeckPickerCar
   const hasPreviewImages =
     (img1Url && !img1Error) || (img2Url && !img2Error);
 
-  return (
+  const card = (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "relative w-full text-left rounded-lg border",
+        "relative h-full w-full text-left rounded-lg border",
         selected
           ? "border-primary"
           : "border-border [.jayden_&]:border-primary/30",
@@ -107,8 +116,8 @@ export function DeckPickerCard({ deck, onClick, selected, badge }: DeckPickerCar
         </div>
       )}
 
-      {/* Body */}
-      <div className="px-3 py-2 flex flex-col gap-0.5 min-w-0">
+      {/* Body — right padding keeps the text clear of the link control. */}
+      <div className={cn("px-3 py-2 flex flex-col gap-0.5 min-w-0", link && (isTouch ? "pr-12" : "pr-10"))}>
         <span className="text-sm font-medium text-foreground truncate">
           {deck.name}
         </span>
@@ -133,5 +142,31 @@ export function DeckPickerCard({ deck, onClick, selected, badge }: DeckPickerCar
         <span className="absolute top-1.5 right-1.5 pointer-events-none">{badge}</span>
       )}
     </button>
+  );
+
+  if (!link) return card;
+
+  // The link is a sibling of the button (an anchor cannot live inside a
+  // button). The wrapper and the button are both h-full so the tile still
+  // stretches to the grid row like the plain card does.
+  const Icon = link.kind === "edit" ? Pencil : ExternalLink;
+  return (
+    <div className="relative h-full">
+      {card}
+      <a
+        href={link.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={link.label}
+        title={`${link.label} (opens in a new tab)`}
+        className={cn(
+          "absolute bottom-1.5 right-1.5 inline-flex items-center justify-center rounded-md",
+          "text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
+          isTouch ? "h-11 w-11" : "h-9 w-9",
+        )}
+      >
+        <Icon className="h-4 w-4" />
+      </a>
+    </div>
   );
 }
