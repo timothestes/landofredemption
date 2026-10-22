@@ -42,7 +42,7 @@ export default async function BracketsIndexPage() {
           <div>
             <h1 className="font-cinzel text-2xl font-bold tracking-tight sm:text-3xl">Gauntlets</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Seat your own decks in a single-elimination bracket and play every match yourself.
+              Seat decks in a single-elimination bracket. Last deck standing wins. Play by yourself or with a friend.
             </p>
           </div>
           <Button asChild className="flex items-center gap-2">
