@@ -172,7 +172,7 @@ export function NewBracketClient({ initialDecks, missingCount = 0, defaultName, 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-10">
       <h1 className="font-cinzel text-2xl font-bold tracking-tight sm:text-3xl">
-        {editing ? 'Edit deck bracket' : 'New deck bracket'}
+        {editing ? 'Edit gauntlet' : 'New gauntlet'}
       </h1>
 
       <div className="mt-6 flex flex-col gap-4 md:flex-row md:items-end md:gap-6">

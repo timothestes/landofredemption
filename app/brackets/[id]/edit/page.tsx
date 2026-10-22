@@ -9,7 +9,7 @@ import { NewBracketClient } from '../../new/NewBracketClient';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Edit Deck Bracket',
+  title: 'Edit Gauntlet',
   description: 'Change the decks, format or series of a bracket before any game is played',
 };
 

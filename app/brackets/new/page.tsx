@@ -6,8 +6,8 @@ import { loadDraftDecks } from '../lib/loadDraftDecks';
 import { NewBracketClient } from './NewBracketClient';
 
 export const metadata = {
-  title: 'New Deck Bracket',
-  description: 'Build a single-elimination bracket of your decks',
+  title: 'New Gauntlet',
+  description: 'Pit your decks against each other in a single-elimination bracket',
 };
 
 export default async function NewBracketPage({ searchParams }: { searchParams: Promise<{ decks?: string }> }) {
@@ -21,8 +21,8 @@ export default async function NewBracketPage({ searchParams }: { searchParams: P
       <>
         <TopNav />
         <div className="mx-auto w-full max-w-md px-4 py-16 text-center">
-          <h1 className="mb-3 font-cinzel text-2xl font-bold tracking-tight sm:text-3xl">New deck bracket</h1>
-          <p className="mb-6 text-muted-foreground">Sign in to build a bracket of your decks.</p>
+          <h1 className="mb-3 font-cinzel text-2xl font-bold tracking-tight sm:text-3xl">New gauntlet</h1>
+          <p className="mb-6 text-muted-foreground">Sign in to run a gauntlet of your decks.</p>
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild size="lg">
               <Link href={`/sign-in?redirectTo=${encodeURIComponent(returnPath)}`}>Sign in</Link>
@@ -45,7 +45,7 @@ export default async function NewBracketPage({ searchParams }: { searchParams: P
       <NewBracketClient
         initialDecks={initialDecks}
         missingCount={missing}
-        defaultName={`Deck Bracket · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+        defaultName={`Gauntlet · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
       />
     </>
   );

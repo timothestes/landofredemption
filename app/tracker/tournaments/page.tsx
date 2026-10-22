@@ -6,9 +6,7 @@ import { createClient } from "../../../utils/supabase/client";
 import { getUserSafe } from "../../../utils/supabase/getUserSafe";
 import ToastNotification from "../../../components/ui/toast-notification";
 import { Button } from "../../../components/ui/button";
-import { HiPencil, HiTrash, HiPlus, HiOutlineDesktopComputer, HiOutlineLogin, HiOutlineViewList } from "react-icons/hi";
-import Link from "next/link";
-import MyBracketsSection from "./MyBracketsSection";
+import { HiPencil, HiTrash, HiPlus, HiOutlineDesktopComputer, HiOutlineLogin } from "react-icons/hi";
 import { useRouter, useSearchParams } from "next/navigation";
 import TournamentFormModal from "../../../components/ui/tournament-form-modal";
 import JoinCodeDialog from "../../../components/ui/JoinCodeDialog";
@@ -334,12 +332,6 @@ function TournamentsPageInner() {
               <HiOutlineLogin className="w-4 h-4" />
               <span>Join a Tournament</span>
             </Button>
-            <Button variant="outline" className="flex items-center gap-2" asChild>
-              <Link href="/brackets/new">
-                <HiOutlineViewList className="w-4 h-4" />
-                <span>New deck bracket</span>
-              </Link>
-            </Button>
             <Button
               onClick={() => setisAddTournamentModalOpen(true)}
               className="flex items-center gap-3 bg-primary text-primary-foreground hover:bg-primary/90"
@@ -431,7 +423,6 @@ function TournamentsPageInner() {
             )}
           </div>
         )}
-        {!sessionError && <MyBracketsSection />}
         <ToastNotification
           message="Tournament deleted successfully!"
           show={showDeleteToast}
