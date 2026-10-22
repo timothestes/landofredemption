@@ -17,7 +17,30 @@ export interface BracketGameParams {
   entryBId: string;
   deckAName: string;
   deckBName: string;
+  /** Which match side the host plays online (seat 0). Absent = 'a'. */
+  hostSide?: 'a' | 'b';
   returnTo: string;
+}
+
+/** The entry sitting at a seat: seat 0 is the host, seat 1 the invited friend (or solo's second hand). */
+export function seatEntryId(b: BracketGameParams, seat: 0 | 1): string {
+  const hostIsA = (b.hostSide ?? 'a') === 'a';
+  return (seat === 0) === hostIsA ? b.entryAId : b.entryBId;
+}
+
+export function seatDeckName(b: BracketGameParams, seat: 0 | 1): string {
+  const hostIsA = (b.hostSide ?? 'a') === 'a';
+  return (seat === 0) === hostIsA ? b.deckAName : b.deckBName;
+}
+
+/** Per-seat soul counts as the match's A/B counts that the result action stores. */
+export function soulsForEntries(
+  b: BracketGameParams,
+  seats: { seat0: number; seat1: number },
+): { soulsA: number; soulsB: number } {
+  return (b.hostSide ?? 'a') === 'a'
+    ? { soulsA: seats.seat0, soulsB: seats.seat1 }
+    : { soulsA: seats.seat1, soulsB: seats.seat0 };
 }
 
 function write(code: string, params: Record<string, unknown>) {

@@ -37,6 +37,8 @@ export interface BracketGame {
   winnerEntryId: string | null;
   soulsA: number | null;
   soulsB: number | null;
+  /** Which match side the host plays in an online game; the invited friend plays the other. */
+  hostSide: 'a' | 'b';
   startedAt: string;
   finishedAt: string | null;
 }

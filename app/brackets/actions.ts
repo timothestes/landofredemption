@@ -696,16 +696,18 @@ export async function loadBracketSeatDeckAction(gameId: string): Promise<ActionR
   const entryA = entries.find(e => e.id === match.entry_a_id);
   const entryB = entries.find(e => e.id === match.entry_b_id);
   if (!entryA || !entryB) return fail('This match is not ready to play.');
-  if (!entryB.deck_id) return fail('This deck has been deleted, so the game cannot be played.');
+  // The friend plays the side the host is not on.
+  const seat = game.host_side === 'b' ? entryA : entryB;
+  if (!seat.deck_id) return fail('This deck has been deleted, so the game cannot be played.');
 
   let admin;
   try { admin = createAdminClient(); } catch (e) { return fail(message(e)); }
   const [d, c] = await Promise.all([
-    admin.from('decks').select('id, name, format, paragon, user_id, is_public').eq('id', entryB.deck_id).maybeSingle(),
+    admin.from('decks').select('id, name, format, paragon, user_id, is_public').eq('id', seat.deck_id).maybeSingle(),
     // Maybeboard rows are excluded, matching loadDeckForGame.
     admin.from('deck_cards')
       .select('card_name, card_set, card_img_file, quantity, zone')
-      .eq('deck_id', entryB.deck_id)
+      .eq('deck_id', seat.deck_id)
       .in('zone', ['main', 'reserve']),
   ]);
   if (d.error) return fail(d.error.message);
@@ -721,7 +723,7 @@ export async function loadBracketSeatDeckAction(gameId: string): Promise<ActionR
       deck: {
         id: d.data.id as string,
         name: d.data.name as string,
-        format: (d.data.format as string | null) ?? entryB.deck_format,
+        format: (d.data.format as string | null) ?? seat.deck_format,
         paragon: (d.data.paragon as string | null) ?? null,
       },
       deckData: deckToGameData(c.data ?? []),
@@ -737,8 +739,60 @@ export async function loadBracketSeatDeckAction(gameId: string): Promise<ActionR
         entryBId: entryB.id,
         deckAName: entryA.deck_name,
         deckBName: entryB.deck_name,
+        hostSide: game.host_side,
         returnTo: '/brackets/' + bracketRow.id,
       },
     },
   };
+}
+
+/**
+ * The host swaps which deck they play in an online game nobody has joined yet.
+ * The invited friend always takes the other side, so the invite page and the
+ * friend's deck load follow this column. Returns the host's new deck.
+ */
+export async function setBracketGameHostSideAction(gameId: string, side: 'a' | 'b'): Promise<ActionResult<{
+  hostSide: 'a' | 'b'; deckId: string; deckName: string; paragon: string;
+}>> {
+  if (side !== 'a' && side !== 'b') return fail('Unknown side.');
+  const supabase = await createClient();
+  const { data: gRow, error: gErr } = await supabase
+    .from('deck_bracket_games').select('*').eq('id', gameId).maybeSingle();
+  if (gErr) return fail(gErr.message);
+  if (!gRow) return fail('Game not found.');
+  const game = gRow as DeckBracketGameRow;
+  const { data: mRow, error: mErr } = await supabase
+    .from('deck_bracket_matches').select('*').eq('id', game.match_id).maybeSingle();
+  if (mErr) return fail(mErr.message);
+  if (!mRow) return fail('Match not found.');
+  const match = mRow as DeckBracketMatchRow;
+
+  const owner = await requireBracketOwner(supabase, match.bracket_id);
+  if (owner.ok === false) return owner;
+  if (game.mode !== 'online') return fail('Only an online game can swap decks.');
+  if (game.winner_entry_id) return fail('This game is already finished.');
+
+  const entryId = side === 'a' ? match.entry_a_id : match.entry_b_id;
+  if (!entryId) return fail('This match is not ready to play.');
+  const { data: eRow, error: eErr } = await supabase
+    .from('deck_bracket_entries').select('*').eq('id', entryId).maybeSingle();
+  if (eErr) return fail(eErr.message);
+  const entry = eRow as DeckBracketEntryRow | null;
+  if (!entry) return fail('Deck not found.');
+  if (!entry.deck_id) return fail('This deck has been deleted, so the game cannot be played.');
+
+  const { error: uErr } = await supabase
+    .from('deck_bracket_games').update({ host_side: side }).eq('id', gameId).is('winner_entry_id', null);
+  if (uErr) return fail(uErr.message);
+  return {
+    ok: true,
+    data: { hostSide: side, deckId: entry.deck_id, deckName: entry.deck_name, paragon: entry.paragon ?? '' },
+  };
+}
+
+/** The invite page's staleness check: which side the host plays right now (public read). */
+export async function getBracketGameHostSideAction(gameId: string): Promise<'a' | 'b' | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from('deck_bracket_games').select('host_side').eq('id', gameId).maybeSingle();
+  return (data?.host_side as 'a' | 'b' | undefined) ?? null;
 }

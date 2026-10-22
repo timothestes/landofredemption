@@ -93,7 +93,10 @@ export default async function JoinBracketGamePage({ params }: { params: Params }
   if (game.mode !== 'online' || !game.code || !match || !entryA || !entryB) {
     return <Notice text="This game is not open to join." bracketId={bracket.id} />;
   }
-  if (!entryB.deckId) {
+  // The host may have swapped sides; the friend always plays the other one.
+  const hostEntry = game.hostSide === 'a' ? entryA : entryB;
+  const friendEntry = game.hostSide === 'a' ? entryB : entryA;
+  if (!friendEntry.deckId) {
     return <Notice text="This deck has been deleted, so the game cannot be played." bracketId={bracket.id} />;
   }
 
@@ -121,6 +124,7 @@ export default async function JoinBracketGamePage({ params }: { params: Params }
     entryBId: entryB.id,
     deckAName: entryA.deckName,
     deckBName: entryB.deckName,
+    hostSide: game.hostSide,
     returnTo: `/brackets/${bracket.id}`,
   };
 
@@ -131,14 +135,15 @@ export default async function JoinBracketGamePage({ params }: { params: Params }
           {hostName} invited you to Game {game.gameNumber} of the {roundName} in {bracket.name}.
         </p>
         <div className="grid items-stretch gap-3 sm:grid-cols-[1fr_auto_1fr]">
-          <PlayerDeck label="You play" entry={entryB} emphasized />
+          <PlayerDeck label="You play" entry={friendEntry} emphasized />
           <span className="self-center text-center text-sm text-muted-foreground">vs</span>
-          <PlayerDeck label={`${hostName} plays`} entry={entryA} />
+          <PlayerDeck label={`${hostName} plays`} entry={hostEntry} />
         </div>
         <JoinBracketGameClient
           code={game.code}
-          deckBId={entryB.deckId}
-          deckBName={entryB.deckName}
+          gameId={game.id}
+          deckBId={friendEntry.deckId}
+          deckBName={friendEntry.deckName}
           displayName={displayName}
           supabaseUserId={user.id}
           format={stdbFormatFor(bracket.format)}

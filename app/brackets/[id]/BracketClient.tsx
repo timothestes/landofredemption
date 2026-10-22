@@ -150,13 +150,15 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
     if (!viewer || !view || !game.code || !view.a?.deckId || !view.b?.deckId) return;
     if (game.mode === 'online') {
       // The host resumes their own waiting room; the friend rejoins from the invite link.
+      const hostEntry = game.hostSide === 'b' ? view.b : view.a;
+      if (!hostEntry?.deckId) return;
       writeHostGameParams(game.code, {
-        deckAId: view.a.deckId,
-        deckAName: view.a.deckName,
+        deckAId: hostEntry.deckId,
+        deckAName: hostEntry.deckName,
         displayName: viewer.displayName,
         supabaseUserId: viewer.id,
         format: stdbFormatFor(bracket.format),
-        bracket: bracketParams(view, { id: game.id, gameNumber: game.gameNumber, mode: 'online' }),
+        bracket: { ...bracketParams(view, { id: game.id, gameNumber: game.gameNumber, mode: 'online' }), hostSide: game.hostSide },
       });
       router.push('/play/' + game.code);
       return;
