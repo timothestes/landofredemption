@@ -33,17 +33,26 @@ export async function POST(request: Request) {
           .select("url")
           .eq("user_id", user.id)
           .maybeSingle();
-        const { blobs } = await list({ prefix: `${GAME_BACKGROUND_PREFIX}/${user.id}/`, token: process.env.BLOB_READ_WRITE_TOKEN });
-        const stale = blobs.map((b) => b.url).filter((u) => u !== row?.url);
-        if (stale.length) await del(stale, { token: process.env.BLOB_READ_WRITE_TOKEN });
+        const token = process.env.BLOB_READ_WRITE_TOKEN;
+        let cursor: string | undefined;
+        do {
+          const page = await list({ prefix: `${GAME_BACKGROUND_PREFIX}/${user.id}/`, cursor, token });
+          const stale = page.blobs.map((b) => b.url).filter((u) => u !== row?.url);
+          if (stale.length) await del(stale, { token });
+          cursor = page.hasMore ? page.cursor : undefined;
+        } while (cursor);
 
+        // One token = one blob: a short life, the exact (random) pathname the
+        // browser chose, no suffix and no overwrite, so a token cannot be
+        // replayed into a pile of files the next sweep never sees.
         return {
           allowedContentTypes: [...GAME_BACKGROUND_TYPES],
           maximumSizeInBytes: GAME_BACKGROUND_MAX_BYTES,
-          addRandomSuffix: true,
+          addRandomSuffix: false,
+          allowOverwrite: false,
+          validUntil: Date.now() + 60_000,
         };
       },
-      onUploadCompleted: async () => {},
     });
     return NextResponse.json(json);
   } catch (e) {

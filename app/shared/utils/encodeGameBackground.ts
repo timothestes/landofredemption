@@ -12,7 +12,8 @@ import {
  * animation. Throws with a user-facing message.
  */
 export async function encodeGameBackground(file: File): Promise<Blob> {
-  if (!file.type.startsWith('image/') || file.type === 'image/svg+xml') {
+  // An empty type is common for .heic on desktop; let the decoder decide.
+  if ((file.type && !file.type.startsWith('image/')) || file.type === 'image/svg+xml') {
     throw new Error('Pick a JPEG, PNG or WebP image');
   }
   if (file.size > GAME_BACKGROUND_MAX_INPUT_BYTES) {

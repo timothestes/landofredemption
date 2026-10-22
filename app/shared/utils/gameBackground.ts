@@ -21,13 +21,15 @@ export const GAME_BACKGROUND_MAX_EDGE = 2560;
 export const GAME_BACKGROUND_DIM = 'linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45))';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** File name the browser picks: random, so each token targets one fresh path. */
+const FILE_RE = /^background-[A-Za-z0-9]{16,64}\.(webp|jpg)$/;
 
 // Strict on purpose: the URL is interpolated into a CSS `url("…")`, so the
 // allowed alphabet can never contain a quote, paren, backslash or whitespace,
 // and only our own public Blob store is accepted (no third-party hosts that
-// could log the viewer's IP). Mirrored by the CHECK in migration 117.
+// could log the viewer's IP). Mirrored by the CHECK in migrations 117/118.
 const URL_RE =
-  /^https:\/\/[a-z0-9]+\.public\.blob\.vercel-storage\.com\/game-backgrounds\/([0-9a-f-]{36})\/[A-Za-z0-9_-]+\.(webp|jpg)$/;
+  /^https:\/\/qrpnuz0u6exnvyt8\.public\.blob\.vercel-storage\.com\/game-backgrounds\/([0-9a-f-]{36})\/[A-Za-z0-9_-]+\.(webp|jpg)$/;
 
 /** True when `url` is a background upload belonging to `userId` (any user when omitted). */
 export function isAllowedBackgroundUrl(url: unknown, userId?: string): url is string {
@@ -37,17 +39,23 @@ export function isAllowedBackgroundUrl(url: unknown, userId?: string): url is st
   return userId === undefined || m[1] === userId.toLowerCase();
 }
 
-/** The pathname the browser uploads to; the token route requires this shape. */
-export function backgroundPathname(userId: string, contentType: string): string {
+/**
+ * The pathname the browser uploads to. `nonce` is random (16+ alphanumerics):
+ * the token route issues tokens with no random suffix and no overwrite, so one
+ * token can create exactly one blob.
+ */
+export function backgroundPathname(userId: string, contentType: string, nonce: string): string {
   if (!UUID_RE.test(userId)) throw new Error('Bad user id');
   const ext = contentType === 'image/webp' ? 'webp' : 'jpg';
-  return `${GAME_BACKGROUND_PREFIX}/${userId.toLowerCase()}/background.${ext}`;
+  const file = `background-${nonce}.${ext}`;
+  if (!FILE_RE.test(file)) throw new Error('Bad file name');
+  return `${GAME_BACKGROUND_PREFIX}/${userId.toLowerCase()}/${file}`;
 }
 
 /** True when `pathname` is a valid upload target for `userId`. */
 export function isOwnBackgroundPathname(pathname: string, userId: string): boolean {
-  return /^game-backgrounds\/[0-9a-f-]{36}\/background\.(webp|jpg)$/.test(pathname)
-    && pathname.startsWith(`${GAME_BACKGROUND_PREFIX}/${userId.toLowerCase()}/`);
+  const prefix = `${GAME_BACKGROUND_PREFIX}/${userId.toLowerCase()}/`;
+  return pathname.startsWith(prefix) && FILE_RE.test(pathname.slice(prefix.length));
 }
 
 /** The built-in table art: Forge decks get the forge, everything else the cave. */

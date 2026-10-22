@@ -27,17 +27,17 @@ async function deleteBlob(url: string | null | undefined) {
   }
 }
 
-/** The caller's saved background (null when they have none) and whether they are signed in. */
-export async function getGameBackground(): Promise<{ signedIn: boolean; row: GameBackgroundRow | null }> {
+/** The caller's id (null when signed out) and saved background (null when they have none). */
+export async function getGameBackground(): Promise<{ userId: string | null; row: GameBackgroundRow | null }> {
   const { supabase, user } = await currentUser();
-  if (!user) return { signedIn: false, row: null };
+  if (!user) return { userId: null, row: null };
   const { data } = await supabase
     .from('game_backgrounds')
     .select('url, enabled')
     .eq('user_id', user.id)
     .maybeSingle();
   const row = data && isAllowedBackgroundUrl(data.url, user.id) ? { url: data.url, enabled: data.enabled } : null;
-  return { signedIn: true, row };
+  return { userId: user.id, row };
 }
 
 /** Save a freshly uploaded image as the caller's background (turns it on). */
@@ -63,11 +63,14 @@ export async function saveGameBackground(url: string): Promise<Result<GameBackgr
 export async function setGameBackgroundEnabled(enabled: boolean): Promise<Result<null>> {
   const { supabase, user } = await currentUser();
   if (!user) return { ok: false, error: 'Sign in to set a background' };
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('game_backgrounds')
     .update({ enabled })
-    .eq('user_id', user.id);
-  return error ? { ok: false, error: 'Could not update the background' } : { ok: true, value: null };
+    .eq('user_id', user.id)
+    .select('user_id');
+  if (error) return { ok: false, error: 'Could not update the background' };
+  if (!data?.length) return { ok: false, error: 'No background saved' };
+  return { ok: true, value: null };
 }
 
 /** Delete the caller's background row and its image. */
