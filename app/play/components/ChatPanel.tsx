@@ -575,7 +575,7 @@ export function formatActionType(actionType: string, payload?: string, playerNam
       const data = JSON.parse(payload);
       const shuffled = Number(data.shuffled ?? 0);
       const drawn = Number(data.drawn ?? 0);
-      return `undid Philip’s Daughters — ${shuffled} card${shuffled === 1 ? '' : 's'} back in hand, ${drawn} drawn card${drawn === 1 ? '' : 's'} back in deck, deck order restored`;
+      return `undid Philip’s Daughters — ${shuffled} card${shuffled === 1 ? '' : 's'} back in hand, ${drawn} drawn card${drawn === 1 ? '' : 's'} back in deck, deck shuffled`;
     } catch { /* fall through */ }
   }
   if (actionType === 'DRAW_BOTTOM_OF_DECK' && payload) {
