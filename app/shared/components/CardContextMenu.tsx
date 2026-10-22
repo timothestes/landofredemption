@@ -60,6 +60,9 @@ interface CardContextMenuProps {
    *  toggle is active — the toggle_top_deck_reveal menu item flips its label
    *  to the turn-off wording. Defaults to false. */
   topDeckRevealed?: boolean;
+  /** True while the server still holds the local player's Philip's Daughters
+   *  undo snapshot. Adds an "Undo" item under that card's ability. */
+  keepOneUndoAvailable?: boolean;
   /** Opens the full-screen card reader. On touch the sheet's header becomes the
    *  button for it: hover previews and the right panel's loupe are both
    *  hover-fed and disabled on touch, so this is the only route a phone player
@@ -69,7 +72,7 @@ interface CardContextMenuProps {
   cardImageUrl?: string;
 }
 
-export function CardContextMenu({ card: initialCard, x, y, actions, onClose, onExchange, onDetach, onEditNote, onSurrender, onRescue, zones, isHandRevealed, opponentHandRevealed, topDeckRevealed, onViewCard, cardImageUrl }: CardContextMenuProps) {
+export function CardContextMenu({ card: initialCard, x, y, actions, onClose, onExchange, onDetach, onEditNote, onSurrender, onRescue, zones, isHandRevealed, opponentHandRevealed, topDeckRevealed, keepOneUndoAvailable, onViewCard, cardImageUrl }: CardContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number; ready: boolean }>({ left: x, top: y, ready: false });
   // Touch renders this menu as a bottom sheet (globals.css [data-context-menu]).
@@ -509,6 +512,24 @@ export function CardContextMenu({ card: initialCard, x, y, actions, onClose, onE
               </button>
             );
           })}
+          {/* Philip's Daughters undo — your own half only (the opponent undoes
+              theirs the same way). Not zone-gated: the card may well have left
+              play by the time a negate gets sorted out. */}
+          {keepOneUndoAvailable
+            && typeof actions.undoKeepOneShuffleDraw === 'function'
+            && abilities.some((a) => a.type === 'all_players_keep_one_shuffle_draw') && (
+            <button
+              style={itemStyle}
+              onClick={() => {
+                actions.undoKeepOneShuffleDraw?.();
+                onClose();
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--gf-hover)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              Undo Philip’s Daughters (restore your hand and deck)
+            </button>
+          )}
           {(card.imitatingName ?? '') !== '' && (
             <button
               style={itemStyle}

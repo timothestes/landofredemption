@@ -1530,6 +1530,22 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     | { mode: 'responder'; requestId: string; sourceCardName?: string }
     | null
   >(null);
+  // Live view of the server-held Philip's Daughters snapshot, read inside the
+  // undo-stack reverse closure (which outlives the render that pushed it).
+  const keepOneUndoRef = useRef('');
+  keepOneUndoRef.current = gameState.myPlayer?.keepOneUndo ?? '';
+  // Responder picker closes itself if the caster undoes their half (which
+  // withdraws the request row) before this side has answered.
+  useEffect(() => {
+    if (keepOneReq?.mode !== 'responder') return;
+    const stillOpen = (gameState.zoneSearchRequests ?? []).some(
+      (r: any) => String(r.id) === keepOneReq.requestId,
+    );
+    if (!stillOpen) {
+      setKeepOneReq(null);
+      showGameToast('Philip’s Daughters was taken back — nothing to answer');
+    }
+  }, [keepOneReq, gameState.zoneSearchRequests]);
   const [multiCardContextMenu, setMultiCardContextMenu] = useState<{ x: number; y: number } | null>(null);
   const [notePopover, setNotePopover] = useState<{
     cardIds: string[];
@@ -2463,6 +2479,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     beginCountPrompt: (req) => setCountPrompt(req),
     beginResurrectPrompt: (sourceInstanceId, abilityIndex) => setResurrectReq({ sourceInstanceId, abilityIndex }),
     beginKeepOnePrompt: (sourceInstanceId) => setKeepOneReq({ mode: 'caster', sourceInstanceId }),
+    undoKeepOneShuffleDraw: () => gameState.undoKeepOneShuffleDraw(),
   }), [gameState, findAnyCardById, checkReserveProtection, checkReserveBatchProtection, undoStack, opponentHandRevealed, opponentHandBrigadeCounts, isMyFirstTurn, isOpponentFirstTurn, hasOpponent]);
 
   // ---- ModalGameProvider value (for shared deck modals) ----
@@ -10134,6 +10151,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
           isHandRevealed={gameState.myPlayer?.handRevealed ?? false}
           opponentHandRevealed={opponentHandRevealed}
           topDeckRevealed={gameState.myPlayer?.topDeckRevealed ?? false}
+          keepOneUndoAvailable={(gameState.myPlayer?.keepOneUndo ?? '') !== ''}
           // Touch only: hover previews and the loupe are both hover-fed, so the
           // sheet header is a phone player's only route to a card's text.
           onViewCard={isTouch ? (c) => { setContextMenu(null); setReaderCard(c); } : undefined}
@@ -10274,6 +10292,11 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             const top = (myCards['deck'] ?? [])[0];
             return top && isDanielCard(top.cardName ?? '', top.reference ?? '') ? top.cardName : undefined;
           })()}
+          onUndoKeepOne={
+            (gameState.myPlayer?.keepOneUndo ?? '') !== ''
+              ? () => { gameState.undoKeepOneShuffleDraw(); setDeckMenu(null); }
+              : undefined
+          }
           onClose={() => setDeckMenu(null)}
           onSearchDeck={() => { logSearchDeck(); setDeckMenu(null); setShowDeckSearch(true); }}
           onLookAtTop={(n) => { logLookAtTop(n, undefined, 'top'); setDeckMenu(null); setLookState({ count: n, position: 'top' }); }}
@@ -11485,7 +11508,20 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             hand={hand}
             isResponding={keepOneReq.mode === 'responder'}
             sourceCardName={keepOneReq.mode === 'responder' ? keepOneReq.sourceCardName : undefined}
-            onConfirm={(keepInstanceId) => {
+            onConfirm={(keepInstanceId, draw) => {
+              // Ctrl+Z path. Pushed BEFORE the forward action like every other
+              // entry; the reverse reads the live snapshot, so an undo fired
+              // before the server has written it simply refuses.
+              if (undoStack && keepInstanceId) {
+                undoStack.push({
+                  description: 'Philip’s Daughters (your hand and deck restored)',
+                  reverseAction: () => {
+                    if (keepOneUndoRef.current === '') return false;
+                    gameState.undoKeepOneShuffleDraw();
+                    return true;
+                  },
+                });
+              }
               // An empty hand confirms with '' — skip the caster's reducer
               // (nothing to shuffle) but still answer the responder request so
               // it doesn't sit open forever.
@@ -11494,12 +11530,14 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                   gameState.keepOneShuffleDraw(
                     BigInt(keepOneReq.sourceInstanceId),
                     BigInt(keepInstanceId),
+                    draw,
                   );
                 }
               } else {
                 gameState.opponentKeepOneShuffleDraw(
                   BigInt(keepOneReq.requestId),
                   keepInstanceId ? BigInt(keepInstanceId) : 0n,
+                  draw,
                 );
               }
               setKeepOneReq(null);

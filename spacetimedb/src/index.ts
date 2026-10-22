@@ -7,6 +7,7 @@ import { makeSeed, seededShuffle, seededDiceRoll, xorshift64, generateGameCode }
 import { isLeavingPlayField } from './playField';
 import { makeFreeSpotAllocator, bandRowSlots, BAND_ROW_Y } from './battlePlacement';
 import { resolveDestinationOwnerId, resolveHomeOwnerId, type OwnerRouting } from './cardOwnership';
+import { captureKeepOneSnapshot, finishKeepOneSnapshot, planKeepOneUndo, type KeepOneSnapshot } from './keepOneUndo';
 import {
   getAbilitiesForCard,
   getEffectiveAbilities,
@@ -778,6 +779,7 @@ function createGameCore(
     revealedCards: '',
     shareHandWithSpectators: false,
     topDeckRevealed: false,
+    keepOneUndo: '',
   });
 
   logAction(ctx, game.id, player.id, 'GAME_CREATED', JSON.stringify({ code }), 0n, 'draw');
@@ -850,6 +852,7 @@ function joinGameCore(
     revealedCards: '',
     shareHandWithSpectators: false,
     topDeckRevealed: false,
+    keepOneUndo: '',
   });
 
   // Log join
@@ -1028,6 +1031,7 @@ export const create_solo_game = spacetimedb.reducer(
       revealedCards: '',
       shareHandWithSpectators: false,
       topDeckRevealed: false,
+      keepOneUndo: '',
     }));
 
     logAction(ctx, game.id, players[0].id, 'GAME_CREATED', JSON.stringify({ code }), 0n, 'draw');
@@ -1845,6 +1849,7 @@ export const respond_rematch = spacetimedb.reducer(
           reserveRevealed: false,
           revealedCards: '',
           topDeckRevealed: false,
+          keepOneUndo: '',
         });
 
         // 3. Insert new cards, shuffle, draw opening hand
@@ -3022,6 +3027,9 @@ function performTurnFlip(ctx: any, gameId: bigint, actingPlayer: any): void {
   // Solo: the seat in hand follows the turn.
   const solo = soloGameRow(ctx, gameId);
   if (solo) ctx.db.SoloGame.gameId.update({ ...solo, activeSeat: nextSeat });
+
+  // Philip's Daughters undo is a same-turn affair, like the client undo stack.
+  clearKeepOneUndo(ctx, gameId);
 
   // Find the new active player
   let newActivePlayer: any = null;
@@ -5067,6 +5075,9 @@ function shuffleAndDrawForPlayerImpl(
   // hand card except this one", with the draw matching however many that turns
   // out to be. shuffleCount/drawCount are ignored in that mode.
   keepInstanceId?: bigint,
+  // Keep mode only: false skips the draw half ("shuffle the rest to draw X"
+  // still shuffles when a prevent effect stops the draw).
+  keepDraw: boolean = true,
 ): { shuffled: number; drawn: number } {
   const keepMode = keepInstanceId !== undefined;
   if (!keepMode && (shuffleCount < 0 || drawCount < 0)) {
@@ -5076,10 +5087,15 @@ function shuffleAndDrawForPlayerImpl(
   const game = ctx.db.Game.id.find(gameId);
   if (!game) throw new SenderError('Game not found');
 
-  // Collect target's hand
-  const handCards = [...ctx.db.CardInstance.card_instance_game_id.filter(gameId)].filter(
-    (c: any) => c.ownerId === targetPlayer.id && c.zone === 'hand'
+  const targetCardsBefore = [...ctx.db.CardInstance.card_instance_game_id.filter(gameId)].filter(
+    (c: any) => c.ownerId === targetPlayer.id
   );
+  // Keep mode is undoable: remember the hand and deck order before anything
+  // moves. Finished (and written to the Player row) after the draw below.
+  const undoPartial = keepMode ? captureKeepOneSnapshot(targetCardsBefore) : null;
+
+  // Collect target's hand
+  const handCards = targetCardsBefore.filter((c: any) => c.zone === 'hand');
 
   let pickedCards: any[];
   if (keepMode) {
@@ -5110,8 +5126,9 @@ function shuffleAndDrawForPlayerImpl(
     pickedCards = indices.slice(indices.length - picks).map((i: number) => handCards[i]);
   }
   const actualShuffle = pickedCards.length;
-  // Keep mode draws back exactly what it shuffled away.
-  const actualDraw = keepMode ? actualShuffle : drawCount;
+  // Keep mode draws back exactly what it shuffled away — unless the draw was
+  // prevented, in which case it draws nothing.
+  const actualDraw = keepMode ? (keepDraw ? actualShuffle : 0) : drawCount;
 
   // Move picked hand cards to deck (temporary zoneIndex — will be overwritten
   // by the reshuffle pass below).
@@ -5158,12 +5175,37 @@ function shuffleAndDrawForPlayerImpl(
         requestedShuffle: keepMode ? actualShuffle : shuffleCount,
         drawn: drawResult.drawn,
         requestedDraw: actualDraw,
+        ...(keepMode && !keepDraw ? { drawSkipped: true } : {}),
       }),
       finalGame.turnNumber, finalGame.currentPhase,
     );
   }
 
+  // Keep mode: store the undo snapshot on the Player row. An empty hand is a
+  // no-op with nothing to take back, so it leaves any older snapshot alone.
+  if (undoPartial && actualShuffle > 0) {
+    const targetCardsAfter = [...ctx.db.CardInstance.card_instance_game_id.filter(gameId)].filter(
+      (c: any) => c.ownerId === targetPlayer.id
+    );
+    const snapshot = finishKeepOneSnapshot(undoPartial, targetCardsAfter, actualShuffle, drawResult.drawn);
+    const latestPlayer = ctx.db.Player.id.find(targetPlayer.id);
+    if (latestPlayer) {
+      ctx.db.Player.id.update({ ...latestPlayer, keepOneUndo: JSON.stringify(snapshot) });
+    }
+  }
+
   return { shuffled: actualShuffle, drawn: drawResult.drawn };
+}
+
+// ---------------------------------------------------------------------------
+// Helper: clearKeepOneUndo
+// Drops every player's Philip's Daughters undo snapshot for a game. Called at
+// the turn flip so a stale snapshot can't be "undone" turns later.
+// ---------------------------------------------------------------------------
+function clearKeepOneUndo(ctx: any, gameId: bigint) {
+  for (const p of [...ctx.db.Player.player_game_id.filter(gameId)]) {
+    if (p.keepOneUndo !== '') ctx.db.Player.id.update({ ...p, keepOneUndo: '' });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -7079,8 +7121,10 @@ export const keep_one_shuffle_draw = spacetimedb.reducer(
     gameId: t.u64(),
     sourceInstanceId: t.u64(),
     keepInstanceId: t.u64(),
+    // false = shuffle only; the caster's draw is prevented.
+    draw: t.bool(),
   },
-  (ctx, { gameId, sourceInstanceId, keepInstanceId }) => {
+  (ctx, { gameId, sourceInstanceId, keepInstanceId, draw }) => {
     const game = ctx.db.Game.id.find(gameId);
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'playing') throw new SenderError('Game is not in progress');
@@ -7106,7 +7150,7 @@ export const keep_one_shuffle_draw = spacetimedb.reducer(
       }
     }
 
-    shuffleAndDrawForPlayerImpl(ctx, gameId, player, 0, 0, keepInstanceId);
+    shuffleAndDrawForPlayerImpl(ctx, gameId, player, 0, 0, keepInstanceId, draw);
 
     if (opponent) {
       ctx.db.ZoneSearchRequest.insert({
@@ -7135,8 +7179,11 @@ export const opponent_keep_one_shuffle_draw = spacetimedb.reducer(
     gameId: t.u64(),
     requestId: t.u64(),
     keepInstanceId: t.u64(),
+    // false = shuffle only; the responder's own draw is prevented. Each player
+    // decides for their own half — prevent effects are usually one-sided.
+    draw: t.bool(),
   },
-  (ctx, { gameId, requestId, keepInstanceId }) => {
+  (ctx, { gameId, requestId, keepInstanceId, draw }) => {
     const game = ctx.db.Game.id.find(gameId);
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'playing') throw new SenderError('Game is not in progress');
@@ -7149,9 +7196,82 @@ export const opponent_keep_one_shuffle_draw = spacetimedb.reducer(
     if (req.status !== 'approved') throw new SenderError('Search request not approved');
     if (req.action !== 'keep_one_shuffle_draw') throw new SenderError('Wrong action type');
 
-    shuffleAndDrawForPlayerImpl(ctx, gameId, player, 0, 0, keepInstanceId);
+    shuffleAndDrawForPlayerImpl(ctx, gameId, player, 0, 0, keepInstanceId, draw);
 
     ctx.db.ZoneSearchRequest.id.delete(requestId);
+  }
+);
+
+// ---------------------------------------------------------------------------
+// Reducer: undo_keep_one_shuffle_draw
+// Takes back the SENDER's half of Philip's Daughters: the shuffled-away cards
+// return to hand in their old order, the drawn cards (and any auto-routed Lost
+// Souls) go back into the deck, and the deck's pre-shuffle order is restored.
+// Mirrors the forward flow — each player ran their own half, so each player
+// undoes their own half; the caster's undo also withdraws the opponent's
+// request if they haven't answered it yet. Refused once a card the effect
+// moved has been played (see planKeepOneUndo). Snapshots expire at the turn
+// flip.
+// ---------------------------------------------------------------------------
+export const undo_keep_one_shuffle_draw = spacetimedb.reducer(
+  {
+    gameId: t.u64(),
+  },
+  (ctx, { gameId }) => {
+    const game = ctx.db.Game.id.find(gameId);
+    if (!game) throw new SenderError('Game not found');
+    if (game.status !== 'playing') throw new SenderError('Game is not in progress');
+
+    // No hint: in solo the seat in hand undoes its own half.
+    const player = findPlayerBySender(ctx, gameId);
+    if (player.keepOneUndo === '') throw new SenderError("Nothing from Philip's Daughters to undo");
+
+    let snapshot: KeepOneSnapshot;
+    try {
+      snapshot = JSON.parse(player.keepOneUndo);
+    } catch {
+      throw new SenderError('Undo snapshot is unreadable');
+    }
+
+    const myCards = [...ctx.db.CardInstance.card_instance_game_id.filter(gameId)].filter(
+      (c: any) => c.ownerId === player.id
+    );
+    const plan = planKeepOneUndo(snapshot, myCards);
+    if (!plan.ok) {
+      throw new SenderError(`Can't undo Philip's Daughters — ${plan.reason}`);
+    }
+
+    for (const u of plan.updates) {
+      const row = ctx.db.CardInstance.id.find(BigInt(u.id));
+      if (!row) continue;
+      ctx.db.CardInstance.id.update({
+        ...row,
+        zone: u.zone,
+        zoneIndex: BigInt(u.zoneIndex),
+        isFlipped: u.isFlipped,
+        posX: '',
+        posY: '',
+      });
+    }
+    // Auto-routed souls leaving the Land of Bondage leave a gap behind.
+    compactLobIndices(ctx, gameId, player.id);
+
+    // Withdraw the opponent's half if they haven't done it yet. Their picker,
+    // if open, closes itself when this row disappears.
+    for (const req of [...ctx.db.ZoneSearchRequest.zone_search_request_game_id.filter(gameId)]) {
+      if (req.requesterId === player.id && req.action === 'keep_one_shuffle_draw' && req.status !== 'denied') {
+        ctx.db.ZoneSearchRequest.id.delete(req.id);
+      }
+    }
+
+    const latestPlayer = ctx.db.Player.id.find(player.id);
+    if (latestPlayer) ctx.db.Player.id.update({ ...latestPlayer, keepOneUndo: '' });
+
+    logAction(
+      ctx, gameId, player.id, 'UNDO_KEEP_ONE_SHUFFLE_DRAW',
+      JSON.stringify({ shuffled: snapshot.shuffled, drawn: snapshot.drawn }),
+      game.turnNumber, game.currentPhase,
+    );
   }
 );
 

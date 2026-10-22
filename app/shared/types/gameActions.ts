@@ -113,4 +113,9 @@ export interface GameActions {
   // neither ever sees the other's choice before making it.
   beginKeepOnePrompt?(sourceInstanceId: string, abilityIndex: number): void;
   keepOneShuffleDraw?(sourceInstanceId: string, abilityIndex: number, keepInstanceId: string): void;
+  // Takes back the local player's own half of Philip's Daughters (hand and
+  // deck restored). Multiplayer only — goldfish has whole-state undo. Offered
+  // on the card's menu and the deck menu while the server still holds the
+  // snapshot (CardContextMenu's keepOneUndoAvailable).
+  undoKeepOneShuffleDraw?(): void;
 }

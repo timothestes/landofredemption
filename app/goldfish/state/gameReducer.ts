@@ -372,6 +372,8 @@ function shuffleAndDrawInState(
   // becomes "every hand card except this one" and the draw matches whatever
   // that count turns out to be. shuffleCount/drawCount are ignored.
   keepInstanceId?: string,
+  // Keep mode only: true shuffles the rest but draws nothing (draw prevented).
+  skipDraw: boolean = false,
 ): GameState {
   const keepMode = keepInstanceId !== undefined;
 
@@ -416,8 +418,9 @@ function shuffleAndDrawInState(
   zones.deck = shuffleArray(mergedDeck);
 
   // Phase 3 — draw, respecting auto-route Lost Souls and hand limit. Keep mode
-  // draws back exactly what it shuffled away. Short-deck draws what it can.
-  const actualDraw = keepMode ? picked.length : drawCount;
+  // draws back exactly what it shuffled away (nothing when the draw was
+  // prevented). Short-deck draws what it can.
+  const actualDraw = keepMode ? (skipDraw ? 0 : picked.length) : drawCount;
   for (let i = 0; i < actualDraw; i++) {
     if (zones.deck.length === 0) break;
     if (zones.hand.length >= HAND_LIMIT && !state.options.autoRouteLostSouls) break;
@@ -1698,9 +1701,9 @@ function reduceGame(state: GameState, action: GameAction): GameState {
     case 'KEEP_ONE_SHUFFLE_DRAW': {
       // Goldfish is single-seat, so only the source's owner is affected — the
       // same convention all_players_shuffle_and_draw follows here.
-      const { keepInstanceId } = action.payload;
+      const { keepInstanceId, skipDraw } = action.payload;
       if (!keepInstanceId) return state;
-      return shuffleAndDrawInState(state, 'player1', 0, 0, history, keepInstanceId);
+      return shuffleAndDrawInState(state, 'player1', 0, 0, history, keepInstanceId, skipDraw === true);
     }
 
     case 'IMITATE_LOST_SOUL': {

@@ -207,6 +207,7 @@ const ACTION_TYPE_LABELS: Record<string, string> = {
   SHUFFLE_OPPONENT_DECK: "shuffled their opponent's deck",
   SHUFFLE_SOUL_DECK: 'shuffled the soul deck',
   KEEP_ONE_SHUFFLE_DRAW: 'shuffled a card back and drew',
+  UNDO_KEEP_ONE_SHUFFLE_DRAW: 'undid Philip’s Daughters',
   RANDOM_OPPONENT_HAND_TO_ZONE: "took a card at random from their opponent's hand",
   RANDOM_RESERVE_TO_ZONE: 'moved a card at random out of reserve',
   REORDER_LOB: 'reordered the Land of Bondage',
@@ -554,6 +555,27 @@ export function formatActionType(actionType: string, payload?: string, playerNam
       const shuffled = Number(data.shuffled ?? 0);
       const drawn = Number(data.drawn ?? 0);
       return `shuffled ${shuffled} from hand into deck and drew ${drawn}`;
+    } catch { /* fall through */ }
+  }
+  // Philip's Daughters. `drawSkipped` marks the shuffle-only variant (the
+  // player's draw was prevented), so the log says why nothing came back.
+  if (actionType === 'KEEP_ONE_SHUFFLE_DRAW' && payload) {
+    try {
+      const data = JSON.parse(payload);
+      const shuffled = Number(data.shuffled ?? 0);
+      const drawn = Number(data.drawn ?? 0);
+      if (data.drawSkipped) {
+        return `kept 1 card and shuffled ${shuffled} from hand into deck — draw prevented, drew none`;
+      }
+      return `kept 1 card, shuffled ${shuffled} from hand into deck and drew ${drawn}`;
+    } catch { /* fall through */ }
+  }
+  if (actionType === 'UNDO_KEEP_ONE_SHUFFLE_DRAW' && payload) {
+    try {
+      const data = JSON.parse(payload);
+      const shuffled = Number(data.shuffled ?? 0);
+      const drawn = Number(data.drawn ?? 0);
+      return `undid Philip’s Daughters — ${shuffled} card${shuffled === 1 ? '' : 's'} back in hand, ${drawn} drawn card${drawn === 1 ? '' : 's'} back in deck, deck order restored`;
     } catch { /* fall through */ }
   }
   if (actionType === 'DRAW_BOTTOM_OF_DECK' && payload) {

@@ -635,6 +635,17 @@ describe("KEEP_ONE_SHUFFLE_DRAW (Philip's Daughters)", () => {
     expect(gameReducer(state, gameActions.keepOneShuffleDraw(''))).toBe(state);
   });
 
+  it('shuffles the rest but draws nothing when the draw is prevented', () => {
+    const state = setup(['keep', 'a', 'b', 'c'], ['d1', 'd2']);
+
+    const next = gameReducer(state, gameActions.keepOneShuffleDraw('keep', false));
+
+    expect(next.zones.hand.map(c => c.instanceId)).toEqual(['keep']);
+    // Three shuffled in, none drawn back out.
+    expect(next.zones.deck).toHaveLength(5);
+    for (const c of next.zones.deck) expect(c.isFlipped).toBe(true);
+  });
+
   it("Philip's Daughters is registered with the keep-one variant", () => {
     expect(getEffectiveAbilities({ cardName: 'Philip’s Daughters [RR2]' }))
       .toEqual([{ type: 'all_players_keep_one_shuffle_draw' }]);

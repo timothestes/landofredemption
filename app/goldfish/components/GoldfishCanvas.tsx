@@ -3524,10 +3524,10 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
       {keepOneReq && (
         <KeepOneModal
           hand={state.zones.hand}
-          onConfirm={(keepInstanceId) => {
+          onConfirm={(keepInstanceId, draw) => {
             // Empty hand confirms with '' — the reducer treats a missing
             // keeper as a no-op rather than shuffling the whole hand away.
-            if (keepInstanceId) dispatch(gameActionCreators.keepOneShuffleDraw(keepInstanceId));
+            if (keepInstanceId) dispatch(gameActionCreators.keepOneShuffleDraw(keepInstanceId, draw));
             setKeepOneReq(null);
           }}
           onCancel={() => setKeepOneReq(null)}
