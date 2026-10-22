@@ -36,6 +36,8 @@ export function WaitingBackgroundControl() {
       />
       {row ? (
         <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1">
+          {/* Switch + label never wrap apart; the label holds its width while busy. */}
+          <span className="inline-flex items-center gap-2.5">
           <button
             role="switch"
             aria-checked={row.enabled}
@@ -52,17 +54,20 @@ export function WaitingBackgroundControl() {
               }`}
             />
           </button>
-          <span className="text-[11px] text-amber-200/40">
+          <span className="min-w-[104px] text-left text-[11px] text-amber-200/40">
             {busy ? 'Saving…' : row.enabled ? 'My background on' : 'My background off'}
+          </span>
           </span>
           <button onClick={pick} disabled={busy} className={linkClass} title="Upload a different image">
             <ImagePlus className="h-3 w-3" />
             Replace
           </button>
-          <button onClick={flip} disabled={busy} className={linkClass} title="Mirror your background left-to-right">
-            <FlipHorizontal2 className="h-3 w-3" />
-            Flip
-          </button>
+          {row.enabled && (
+            <button onClick={flip} disabled={busy} className={linkClass} title="Mirror your background left-to-right">
+              <FlipHorizontal2 className="h-3 w-3" />
+              Flip
+            </button>
+          )}
           <button onClick={remove} disabled={busy} className={linkClass} title="Delete your background image">
             <Trash2 className="h-3 w-3" />
             Remove

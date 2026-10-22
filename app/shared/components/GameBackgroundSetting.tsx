@@ -55,10 +55,12 @@ export function GameBackgroundSetting() {
               <ImagePlus size={14} />
               {busy ? 'Working…' : 'Replace'}
             </MenuButton>
-            <MenuButton onClick={flip} disabled={busy} title="Mirror your background left-to-right">
-              <FlipHorizontal2 size={14} />
-              Flip
-            </MenuButton>
+            {row.enabled && (
+              <MenuButton onClick={flip} disabled={busy} title="Mirror your background left-to-right">
+                <FlipHorizontal2 size={14} />
+                Flip
+              </MenuButton>
+            )}
             <MenuButton onClick={remove} disabled={busy} title="Delete your background image">
               <Trash2 size={14} />
               Remove

@@ -244,10 +244,15 @@ export function useGameBackgroundSettings() {
 
   /** Mirror the saved image left-to-right: re-encoded and saved like a Replace. */
   const flip = useCallback(() => run(async () => {
-    const url = state.row?.url;
+    const url = state.row?.enabled ? state.row.url : null;
     if (!url) return;
-    const res = await fetch(url, { mode: 'cors', cache: 'force-cache' });
-    if (!res.ok) throw new Error('Could not load your background to flip it');
+    let res: Response;
+    try {
+      res = await fetch(url, { mode: 'cors' });
+    } catch {
+      res = null;
+    }
+    if (!res?.ok) throw new Error('Could not load your background to flip it');
     await encodeAndSave(await res.blob(), { mirror: true });
   }), [run]);
 
