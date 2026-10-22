@@ -7159,10 +7159,14 @@ export const keep_one_shuffle_draw = spacetimedb.reducer(
         requesterId: player.id,
         targetPlayerId: opponent.id,
         zone: 'deck',
-        status: 'pending',
+        // Solo: the one human is both seats, so approve straight away like
+        // all_players_shuffle_and_draw does; the client then opens the
+        // picker over the other seat's hand.
+        status: soloGameRow(ctx, gameId) ? 'approved' : 'pending',
         createdAt: ctx.timestamp,
         action: 'keep_one_shuffle_draw',
-        actionParams: '{}',
+        // The caster's draw/no-draw choice applies to both halves.
+        actionParams: JSON.stringify({ draw }),
       });
     }
   }

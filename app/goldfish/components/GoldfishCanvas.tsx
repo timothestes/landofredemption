@@ -207,7 +207,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
   const [targeting, setTargeting] = useState<TargetingRequest | null>(null);
   const [countPrompt, setCountPrompt] = useState<CountPromptRequest | null>(null);
   const [resurrectReq, setResurrectReq] = useState<{ sourceInstanceId: string; abilityIndex: number } | null>(null);
-  const [keepOneReq, setKeepOneReq] = useState<{ sourceInstanceId: string; abilityIndex: number } | null>(null);
+  const [keepOneReq, setKeepOneReq] = useState<{ sourceInstanceId: string; abilityIndex: number; draw: boolean } | null>(null);
 
   // Opens the "look at / reveal top N" peek modal for an own-deck inspection
   // ability. Shared by the fixed-count path (look_at_own_deck / reveal_own_deck)
@@ -321,7 +321,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
     },
     beginCountPrompt: (req) => setCountPrompt(req),
     beginResurrectPrompt: (sourceInstanceId, abilityIndex) => setResurrectReq({ sourceInstanceId, abilityIndex }),
-    beginKeepOnePrompt: (sourceInstanceId, abilityIndex) => setKeepOneReq({ sourceInstanceId, abilityIndex }),
+    beginKeepOnePrompt: (sourceInstanceId, abilityIndex, opts) => setKeepOneReq({ sourceInstanceId, abilityIndex, draw: opts?.draw ?? true }),
   }), [moveCard, moveCardsBatch, flipCard, revealCardInHand, meekCard, unmeekCard, addCounter, removeCounter, shuffleCardIntoDeck, shuffleDeck, addNote, drawCard, drawMultiple, moveCardToTopOfDeck, moveCardToBottomOfDeck, removeOpponentToken, executeCardAbility, openOwnDeckPeek, state.zones, dispatch]);
 
   // Bridge goldfish game state into the shared ModalGameContext for shared modal components
@@ -3524,10 +3524,11 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
       {keepOneReq && (
         <KeepOneModal
           hand={state.zones.hand}
-          onConfirm={(keepInstanceId, draw) => {
+          draw={keepOneReq.draw}
+          onConfirm={(keepInstanceId) => {
             // Empty hand confirms with '' — the reducer treats a missing
             // keeper as a no-op rather than shuffling the whole hand away.
-            if (keepInstanceId) dispatch(gameActionCreators.keepOneShuffleDraw(keepInstanceId, draw));
+            if (keepInstanceId) dispatch(gameActionCreators.keepOneShuffleDraw(keepInstanceId, keepOneReq.draw));
             setKeepOneReq(null);
           }}
           onCancel={() => setKeepOneReq(null)}
