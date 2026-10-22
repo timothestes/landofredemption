@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  brigadeCounts, cardKey, deckBreakdown, faceOffRows, groupDeck, type MatchupCard,
+  brigadeCounts, cardKey, deckBreakdown, faceOffRows, groupDeck, sharedRows, type MatchupCard,
 } from '../matchup';
 
 const card = (
@@ -145,5 +145,21 @@ describe('faceOffRows', () => {
       { label: 'Heroes', a: 2, b: null },
     ]);
     expect(faceOffRows(null, null)).toEqual([]);
+  });
+});
+
+describe('sharedRows', () => {
+  it('is the union of both decks\' buckets in canonical order, reserve last, with no duplicates', () => {
+    const a = [card('Abram', 'Hero'), card('Son of God', 'Dominant')];
+    const b = [card('Herod', 'Evil Character', { alignment: 'Evil' }), card('Abram', 'Hero'), card('Spare', 'Hero', { zone: 'reserve' })];
+    const rows = sharedRows(a, b);
+    expect(rows.length).toBe(new Set(rows).size);
+    expect(rows[rows.length - 1]).toBe('reserve');
+    expect(rows).toEqual(expect.arrayContaining(groupDeck(a).main.map(g => g.key)));
+    expect(rows).toEqual(expect.arrayContaining(groupDeck(b).main.map(g => g.key)));
+  });
+
+  it('omits the reserve row when neither deck has one', () => {
+    expect(sharedRows([card('Abram', 'Hero')], [card('Herod', 'Evil Character')])).not.toContain('reserve');
   });
 });

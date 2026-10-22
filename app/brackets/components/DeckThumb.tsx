@@ -8,9 +8,13 @@ export function deckCoverUrl(entry: BracketEntry): string | null {
   return getCardImageUrlOrNull(entry.previewCard1);
 }
 
-export function DeckThumb({ entry, size = 40, dimmed }: { entry: BracketEntry | null; size?: number; dimmed?: boolean }) {
+/**
+ * `portrait` shows the whole card at its own proportions (card 5:7, Paragon art 7:5; `size` tall)
+ * instead of the default square crop, which cuts a card down to a sliver of art.
+ */
+export function DeckThumb({ entry, size = 40, dimmed, portrait }: { entry: BracketEntry | null; size?: number; dimmed?: boolean; portrait?: boolean }) {
   const url = entry ? deckCoverUrl(entry) : null;
-  const box = { width: size, height: size };
+  const box = { width: portrait ? Math.round(entry?.paragon ? (size * 7) / 5 : (size * 5) / 7) : size, height: size };
   if (!url) {
     return <div aria-hidden className={cn('shrink-0 rounded-sm bg-muted', dimmed && 'opacity-60')} style={box} />;
   }
@@ -20,8 +24,8 @@ export function DeckThumb({ entry, size = 40, dimmed }: { entry: BracketEntry | 
       src={url}
       alt=""
       loading="lazy"
-      width={size}
-      height={size}
+      width={box.width}
+      height={box.height}
       className={cn('shrink-0 rounded-sm bg-muted object-cover object-[50%_30%]', dimmed && 'opacity-60')}
       style={box}
     />

@@ -9,7 +9,7 @@ import type { BestOf } from '@/lib/bracket/types';
 import { cn } from '@/lib/utils';
 import ToastNotification from '@/components/ui/toast-notification';
 import { setKeyCardsAction } from '../../../actions';
-import { deckBreakdown } from '../../../lib/matchup';
+import { deckBreakdown, sharedRows } from '../../../lib/matchup';
 import { DeckColumn, type MatchupSide } from './DeckColumn';
 import { FaceOffTable } from './FaceOffTable';
 
@@ -40,6 +40,8 @@ export function MatchupClient({ bracket, label, score, winnerName, a, b, isOwner
   const breakdownA = useMemo(() => (a.status === 'ok' ? deckBreakdown(a.cards) : null), [a]);
   const breakdownB = useMemo(() => (b.status === 'ok' ? deckBreakdown(b.cards) : null), [b]);
 
+  const rows = useMemo(() => sharedRows(a.cards, b.cards), [a.cards, b.cards]);
+
   const save = useCallback((entryId: string, keys: string[]) => setKeyCardsAction(entryId, keys), []);
   const open = useCallback((card: Card, list: Card[]) => setModal({ card, list }), []);
 
@@ -54,6 +56,7 @@ export function MatchupClient({ bracket, label, score, winnerName, a, b, isOwner
     <DeckColumn
       side={side}
       isOwner={isOwner}
+      rows={rows}
       onOpenCard={open}
       onSaveKeyCards={save}
       onError={fail}
@@ -103,7 +106,7 @@ export function MatchupClient({ bracket, label, score, winnerName, a, b, isOwner
         </div>
       </div>
 
-      <div className="mt-6 grid gap-8 lg:mt-8 lg:grid-cols-2 lg:gap-10">
+      <div className="mt-6 grid lg:mt-8 lg:grid-cols-2 lg:gap-x-10 lg:gap-y-4">
         {column(a, 'a')}
         {column(b, 'b')}
       </div>
