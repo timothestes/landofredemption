@@ -111,7 +111,9 @@ export interface GameActions {
   // player draws that many back. In multiplayer the opponent is then asked to
   // do the same on their own hand — each player picks their own keeper, so
   // neither ever sees the other's choice before making it.
-  beginKeepOnePrompt?(sourceInstanceId: string, abilityIndex: number): void;
+  // `draw: false` = the "Draw prevented" menu item: shuffle the rest, nobody
+  // draws. Carried to the opponent's half through the request.
+  beginKeepOnePrompt?(sourceInstanceId: string, abilityIndex: number, opts?: { draw: boolean }): void;
   keepOneShuffleDraw?(sourceInstanceId: string, abilityIndex: number, keepInstanceId: string): void;
   // Takes back the local player's own half of Philip's Daughters (hand and
   // deck restored). Multiplayer only — goldfish has whole-state undo. Offered

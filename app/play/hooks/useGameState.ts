@@ -639,7 +639,7 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
   // keeper; the server opens the opponent's request as part of the same call.
   const keepOneShuffleDraw = useCallback(
     (sourceInstanceId: bigint, keepInstanceId: bigint, draw: boolean) => {
-      conn?.reducers.keepOneShuffleDraw({ gameId, sourceInstanceId, keepInstanceId, draw });
+      conn?.reducers.keepOneShuffleDraw({ gameId, sourceInstanceId, keepInstanceId, draw }).catch(toastReducerError);
     },
     [conn, gameId],
   );
@@ -648,7 +648,10 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
   // fired by the TARGET, since only they can pick their own keeper.
   const opponentKeepOneShuffleDraw = useCallback(
     (requestId: bigint, keepInstanceId: bigint, draw: boolean) => {
-      conn?.reducers.opponentKeepOneShuffleDraw({ gameId, requestId, keepInstanceId, draw });
+      // A refusal here ("Search request not found", "Kept card is not in your
+      // hand") used to vanish as an unhandled rejection — the picker closed
+      // and nothing happened. Surface it.
+      conn?.reducers.opponentKeepOneShuffleDraw({ gameId, requestId, keepInstanceId, draw }).catch(toastReducerError);
     },
     [conn, gameId],
   );
@@ -656,7 +659,9 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
   // Philip's Daughters — undo the sender's own half. The server holds the
   // snapshot (Player.keepOneUndo) and refuses once a moved card has been played.
   const undoKeepOneShuffleDraw = useCallback(() => {
-    conn?.reducers.undoKeepOneShuffleDraw({ gameId });
+    // The server's refusal text ("Can't undo … a card the effect moved has
+    // since left its place") is the user-facing explanation — toast it.
+    conn?.reducers.undoKeepOneShuffleDraw({ gameId }).catch(toastReducerError);
   }, [conn, gameId]);
 
   const threeNailsResetExecute = useCallback(

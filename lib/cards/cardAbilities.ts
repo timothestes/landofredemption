@@ -36,7 +36,7 @@ export type CardAbility = AbilityBase & (
   // all_players_shuffle_and_draw the counts aren't printed — they're whatever
   // each hand happens to hold — so both sides pick their keeper in a modal
   // before anything moves.
-  | { type: 'all_players_keep_one_shuffle_draw' }
+  | { type: 'all_players_keep_one_shuffle_draw'; skipDraw?: boolean }
   | { type: 'reveal_own_deck'; position: 'top' | 'bottom' | 'random'; count: number }
   | { type: 'look_at_own_deck'; position: 'top' | 'bottom' | 'random'; count: number }
   // Player-chosen-count variant of look_at_own_deck (e.g. Angel of the Harvest's
@@ -304,7 +304,7 @@ export const CARD_ABILITIES: Record<string, CardAbility[]> = {
   // "Each player must select a card from hand and shuffle the rest to draw X."
   // X is the shuffled count, so it's Mayhem with a keep-one step and a dynamic
   // draw instead of Mayhem's fixed 6/6.
-  'Philip’s Daughters [RR2]':                            [{ type: 'all_players_keep_one_shuffle_draw' }],
+  'Philip’s Daughters [RR2]':                            [{ type: 'all_players_keep_one_shuffle_draw' }, { type: 'all_players_keep_one_shuffle_draw', skipDraw: true }],
   // "If attacking, banish this card: Shuffle all cards and all hands. End the
   // battle. Each player must draw 8." Same board reset as Three Nails (GoC)
   // and A New Beginning (FoM) above — but this printing is a Good Enhancement
@@ -836,7 +836,12 @@ export function abilityLabel(a: CardAbility): string {
     case 'all_players_shuffle_and_draw':
       return `All players shuffle ${a.shuffleCount} from hand, draw ${a.drawCount}`;
     case 'all_players_keep_one_shuffle_draw':
-      return 'All players keep 1 from hand, shuffle the rest, draw that many…';
+      // Registered twice on Philip's Daughters: the printed effect, and the
+      // same shuffle with the draw half prevented. Both players follow the
+      // caster's pick.
+      return a.skipDraw
+        ? 'Draw prevented: all players keep 1 from hand, shuffle the rest, no draw…'
+        : 'All players keep 1 from hand, shuffle the rest, draw that many…';
     case 'reveal_own_deck': {
       const where = a.position === 'random' ? `${a.count} random` : `${a.position} ${a.count}`;
       return `Reveal ${where} card${a.count === 1 ? '' : 's'} of deck`;

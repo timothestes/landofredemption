@@ -493,7 +493,8 @@ export function CardContextMenu({ card: initialCard, x, y, actions, onClose, onE
                   } else if (ability.type === 'all_players_keep_one_shuffle_draw') {
                     // The canvas shows KeepOneModal over the local hand; the
                     // opponent is asked separately so each picks their own.
-                    actions.beginKeepOnePrompt?.(card.instanceId, index);
+                    // The menu item decides whether anyone draws afterwards.
+                    actions.beginKeepOnePrompt?.(card.instanceId, index, { draw: !ability.skipDraw });
                   } else if (ability.type === 'resurrect_heroes') {
                     // The canvas builds the per-player discard pages from its
                     // own state and shows ResurrectHeroesModal.

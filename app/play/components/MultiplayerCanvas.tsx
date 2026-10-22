@@ -285,7 +285,10 @@ function describeOpponentAction(action: string, paramsJson: string): string {
     case 'random_hand_to_deck_bottom': return `send ${count} random card${plural} from your hand to the bottom of your deck`;
     case 'random_hand_to_deck_shuffle': return `shuffle ${count} random card${plural} from your hand into your deck`;
     case 'discard_reserve_characters': return 'discard all characters from your reserve';
-    case 'keep_one_shuffle_draw': return 'keep 1 card of your choice, shuffle the rest of your hand into your deck, and draw that many';
+    case 'keep_one_shuffle_draw':
+      return parsed.draw === false
+        ? 'keep 1 card of your choice and shuffle the rest of your hand into your deck — draw prevented, no draw'
+        : 'keep 1 card of your choice, shuffle the rest of your hand into your deck, and draw that many';
     default: return 'perform an action on your deck';
   }
 }
@@ -325,7 +328,10 @@ function describeRequesterAction(action: string, paramsJson: string): string {
     case 'random_hand_to_deck_bottom': return `send ${count} random from opponent's hand to bottom of deck`;
     case 'random_hand_to_deck_shuffle': return `shuffle ${count} random from opponent's hand into deck`;
     case 'discard_reserve_characters': return "discard all characters from opponent's reserve";
-    case 'keep_one_shuffle_draw': return 'opponent keeps 1, shuffles the rest of their hand, and draws that many';
+    case 'keep_one_shuffle_draw':
+      return parsed.draw === false
+        ? 'opponent keeps 1 and shuffles the rest of their hand — draw prevented'
+        : 'opponent keeps 1, shuffles the rest of their hand, and draws that many';
     default: return 'action';
   }
 }
@@ -1525,9 +1531,13 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
   const [resurrectReq, setResurrectReq] = useState<{ sourceInstanceId: string; abilityIndex: number } | null>(null);
   // Philip's Daughters. The caster's picker carries the source card; the
   // responder's carries the request id it has to answer. Only one is ever set.
+  // `draw` is the caster's menu choice (false = "Draw prevented" item) and
+  // rides along to the responder in the request params. `forOtherSeat` is the
+  // solo case: one human answers for the other seat, so the picker shows THAT
+  // seat's hand.
   const [keepOneReq, setKeepOneReq] = useState<
-    | { mode: 'caster'; sourceInstanceId: string }
-    | { mode: 'responder'; requestId: string; sourceCardName?: string }
+    | { mode: 'caster'; sourceInstanceId: string; draw: boolean }
+    | { mode: 'responder'; requestId: string; draw: boolean; sourceCardName?: string; forOtherSeat?: boolean }
     | null
   >(null);
   // Live view of the server-held Philip's Daughters snapshot, read inside the
@@ -2478,7 +2488,8 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     },
     beginCountPrompt: (req) => setCountPrompt(req),
     beginResurrectPrompt: (sourceInstanceId, abilityIndex) => setResurrectReq({ sourceInstanceId, abilityIndex }),
-    beginKeepOnePrompt: (sourceInstanceId) => setKeepOneReq({ mode: 'caster', sourceInstanceId }),
+    beginKeepOnePrompt: (sourceInstanceId, _abilityIndex, opts) =>
+      setKeepOneReq({ mode: 'caster', sourceInstanceId, draw: opts?.draw ?? true }),
     undoKeepOneShuffleDraw: () => gameState.undoKeepOneShuffleDraw(),
   }), [gameState, findAnyCardById, checkReserveProtection, checkReserveBatchProtection, undoStack, opponentHandRevealed, opponentHandBrigadeCounts, isMyFirstTurn, isOpponentFirstTurn, hasOpponent]);
 
@@ -3476,7 +3487,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     dispatchedActionRef.current = reqId;
 
     const { action, actionParams } = approvedSearchRequest;
-    let params: { count?: number; shuffleCount?: number; drawCount?: number; sourceInstanceId?: string } = {};
+    let params: { count?: number; shuffleCount?: number; drawCount?: number; sourceInstanceId?: string; draw?: boolean } = {};
     try { params = actionParams ? JSON.parse(actionParams) : {}; } catch {}
     const count = params.count ?? 0;
     const reqIdBig = BigInt(approvedSearchRequest.id);
@@ -3572,6 +3583,24 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         gameState.opponentShuffleAndDraw(reqIdBig, params.shuffleCount ?? 0, params.drawCount ?? 0);
         complete();
         break;
+      case 'keep_one_shuffle_draw':
+        // Philip's Daughters: the TARGET fires the follow-up reducer after
+        // picking their own keeper, and that reducer deletes the row itself.
+        // This used to fall into `default` and complete() the request the
+        // moment the opponent pressed Allow — their picker then had nothing
+        // to answer and the opponent half silently never happened.
+        // Solo: the request arrives pre-approved, so open the picker over
+        // the other seat's hand right away.
+        if (isSolo) {
+          setKeepOneReq({
+            mode: 'responder',
+            requestId: reqId,
+            draw: params.draw ?? true,
+            forOtherSeat: true,
+            sourceCardName: 'The other seat',
+          });
+        }
+        break;
       case 'three_nails_reset':
         // sourceInstanceId is encoded in actionParams and re-parsed server-side
         // by three_nails_reset_execute; the client only needs to fire the reducer.
@@ -3590,7 +3619,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         complete();
         console.warn('Unknown opponent action:', action);
     }
-  }, [approvedSearchRequest, completeZoneSearch, shuffleOpponentDeck, moveOpponentDeckCardsToZone, gameState]);
+  }, [approvedSearchRequest, completeZoneSearch, shuffleOpponentDeck, moveOpponentDeckCardsToZone, gameState, isSolo]);
 
   // Track opponent hand reveal — show/hide countdown bar
   const oppHandRevealed = gameState.opponentPlayer?.handRevealed ?? false;
@@ -10732,10 +10761,14 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
               if (incomingSearchRequest.action === 'keep_one_shuffle_draw') {
                 // Philip's Daughters — we approve, then pick our OWN keeper and
                 // fire the target-half reducer ourselves. The caster can't do
-                // it for us: they can't see this hand.
+                // it for us: they can't see this hand. Their draw/no-draw
+                // choice arrives in the params.
+                let draw = true;
+                try { draw = JSON.parse(incomingSearchRequest.actionParams || '{}').draw !== false; } catch {}
                 setKeepOneReq({
                   mode: 'responder',
                   requestId: String(incomingSearchRequest.id),
+                  draw,
                   sourceCardName: gameState.opponentPlayer?.displayName
                     ? `${gameState.opponentPlayer.displayName} played Philip’s Daughters`
                     : undefined,
@@ -11499,20 +11532,28 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
       })()}
 
       {keepOneReq && (() => {
-        // Always the LOCAL hand, in both modes — each player picks their own
-        // keeper and never sees the other's.
+        // The LOCAL hand in both modes — each player picks their own keeper
+        // and never sees the other's. Solo is the exception: the one human
+        // answers for the other seat, so show that seat's hand.
+        const forOtherSeat = keepOneReq.mode === 'responder' && keepOneReq.forOtherSeat === true;
         const myZones = modalGameValue.zones as Record<string, GameCard[]>;
-        const hand = myZones['hand'] ?? [];
+        const hand = forOtherSeat
+          ? (opponentCards['hand'] ?? []).map(c => adaptCard(c, 'player2'))
+          : (myZones['hand'] ?? []);
+        const draw = keepOneReq.draw;
         return (
           <KeepOneModal
             hand={hand}
+            draw={draw}
             isResponding={keepOneReq.mode === 'responder'}
             sourceCardName={keepOneReq.mode === 'responder' ? keepOneReq.sourceCardName : undefined}
-            onConfirm={(keepInstanceId, draw) => {
+            onConfirm={(keepInstanceId) => {
               // Ctrl+Z path. Pushed BEFORE the forward action like every other
               // entry; the reverse reads the live snapshot, so an undo fired
-              // before the server has written it simply refuses.
-              if (undoStack && keepInstanceId) {
+              // before the server has written it simply refuses. Not for the
+              // other seat's half in solo — that snapshot isn't the active
+              // seat's.
+              if (undoStack && keepInstanceId && !forOtherSeat) {
                 undoStack.push({
                   description: 'Philip’s Daughters (your hand and deck restored)',
                   reverseAction: () => {

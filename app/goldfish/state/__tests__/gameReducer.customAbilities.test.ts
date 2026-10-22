@@ -647,8 +647,13 @@ describe("KEEP_ONE_SHUFFLE_DRAW (Philip's Daughters)", () => {
   });
 
   it("Philip's Daughters is registered with the keep-one variant", () => {
+    // Two menu items: the printed effect, and the same shuffle with the draw
+    // half prevented.
     expect(getEffectiveAbilities({ cardName: 'Philip’s Daughters [RR2]' }))
-      .toEqual([{ type: 'all_players_keep_one_shuffle_draw' }]);
+      .toEqual([
+        { type: 'all_players_keep_one_shuffle_draw' },
+        { type: 'all_players_keep_one_shuffle_draw', skipDraw: true },
+      ]);
   });
 });
 
