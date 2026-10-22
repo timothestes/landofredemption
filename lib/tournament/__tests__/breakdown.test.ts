@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   buildBreakdown,
   splitBrigades,
+  cardBrigades,
   type BreakdownDeckInput,
 } from '../breakdown';
 import { topCutSize, cutIndexesByEvent, rankedDeckCount } from '../topCut';
@@ -146,7 +147,32 @@ describe('cutIndexesByEvent', () => {
   });
 });
 
+describe('cardBrigades', () => {
+  it('tells Gold apart by the card\'s alignment', () => {
+    expect(cardBrigades('Gold', 'Good')).toEqual(['Good Gold']);
+    expect(cardBrigades('Gold', 'Evil')).toEqual(['Evil Gold']);
+    expect(cardBrigades('Crimson/Gold', 'Evil').sort()).toEqual(['Crimson', 'Evil Gold']);
+    expect(cardBrigades('Gold/Red', 'Good').sort()).toEqual(['Good Gold', 'Red']);
+  });
+
+  it('leaves neutral Gold, and every other brigade, as printed', () => {
+    expect(cardBrigades('Gold', 'Neutral')).toEqual(['Gold']);
+    expect(cardBrigades('Gold', undefined)).toEqual(['Gold']);
+    expect(cardBrigades('Green', 'Good')).toEqual(['Green']);
+  });
+});
+
 describe('buildBreakdown', () => {
+  it('splits Gold into good and evil in both the field and per-deck tallies', () => {
+    const result = buildBreakdown([
+      deck('a', 1, [['Abdon', 'main', 2], ['Abusive Taskmasters', 'main', 1], ['Chorazin', 'main', 1]]),
+    ]);
+    expect(result.brigades.map((b) => [b.label, b.copies]).sort()).toEqual([
+      ['Evil Gold', 1], ['Gold', 1], ['Good Gold', 2],
+    ]);
+    expect(result.decks[0].brigades.map((b) => b.label).sort()).toEqual(['Evil Gold', 'Gold', 'Good Gold']);
+  });
+
   it('counts a deck once per card however many copies it runs', () => {
     const result = buildBreakdown([
       deck('a', 1, [['Angel of the Lord (J)', 'main', 3]]),

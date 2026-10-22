@@ -89,12 +89,13 @@ describe('twinsAndLoners', () => {
 describe('unplayedBrigades', () => {
   it('lists the brigades nobody brought, good before evil, without Multi', () => {
     const unplayed = unplayedBrigades(breakdown(threeDecks, [], [
-      { label: 'Gold', decks: 3, copies: 30 }, { label: 'Crimson', decks: 1, copies: 4 }, { label: 'Multi', decks: 1, copies: 1 },
+      { label: 'Good Gold', decks: 3, copies: 30 }, { label: 'Crimson', decks: 1, copies: 4 }, { label: 'Multi', decks: 1, copies: 1 },
     ]));
     expect(unplayed).toEqual([
       'Blue', 'Clay', 'Green', 'Purple', 'Red', 'Silver', 'Teal', 'White',
-      'Black', 'Brown', 'Gray', 'Orange', 'Pale Green',
+      'Black', 'Brown', 'Evil Gold', 'Gray', 'Orange', 'Pale Green',
     ]);
     expect(unplayed).not.toContain('Multi');
+    expect(unplayed).not.toContain('Gold');
   });
 });

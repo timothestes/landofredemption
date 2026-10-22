@@ -76,10 +76,10 @@ export function twinsAndLoners(breakdown: TournamentBreakdown): Twins {
   return { pair, loner };
 }
 
-/** Brigades no deck in the bracket plays, in reading order. "Multi" is not a brigade. */
+/** Brigades no deck in the bracket plays, in reading order. "Multi" is not a brigade, and plain "Gold" is only neutral sites. */
 export function unplayedBrigades(breakdown: TournamentBreakdown): string[] {
   const played = new Set(breakdown.brigades.map(slice => slice.label));
   return Object.keys(BRIGADE_SWATCHES)
-    .filter(label => label !== 'Multi' && !played.has(label))
+    .filter(label => label !== 'Multi' && label !== 'Gold' && !played.has(label))
     .sort((a, b) => brigadeRank(a) - brigadeRank(b));
 }

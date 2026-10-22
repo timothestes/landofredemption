@@ -183,6 +183,23 @@ export function splitBrigades(raw: string | undefined): string[] {
   return [...seen];
 }
 
+/**
+ * A card's brigades with Gold told apart by side.
+ *
+ * Gold is the one brigade printed for both good and evil cards (219 good, 201
+ * evil, 8 neutral sites among plain "Gold"), and a Gold hero and a Gold evil
+ * character are not the same half of a deck. The card's alignment is the
+ * reliable signal: the printed "Good Gold" appears on only a handful of cards.
+ * Neutral Gold, in practice sites, keeps the plain label.
+ */
+export function cardBrigades(raw: string | undefined, alignment: string | undefined): string[] {
+  const side = (alignment ?? '').trim().toLowerCase();
+  return splitBrigades(raw).map((brigade) => {
+    if (brigade !== 'Gold') return brigade;
+    return side === 'good' ? 'Good Gold' : side === 'evil' ? 'Evil Gold' : 'Gold';
+  });
+}
+
 function median(values: number[]): number {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((a, b) => a - b);
@@ -240,7 +257,7 @@ export function buildBreakdown(input: BreakdownDeckInput[]): TournamentBreakdown
       }
       if (isLostSoul(type)) deckStats[deckIndex].lostSouls += row.quantity;
 
-      for (const brigade of splitBrigades(representative?.brigade)) {
+      for (const brigade of cardBrigades(representative?.brigade, representative?.alignment)) {
         let slice = deckBrigades[deckIndex].get(brigade);
         if (!slice) {
           slice = { cards: new Set<string>(), copies: 0 };
@@ -376,7 +393,7 @@ export function buildBreakdown(input: BreakdownDeckInput[]): TournamentBreakdown
   };
 
   for (const card of cards) {
-    for (const brigade of splitBrigades(card.brigade)) tally(brigadeTally, brigade, card);
+    for (const brigade of cardBrigades(card.brigade, card.alignment)) tally(brigadeTally, brigade, card);
     if (card.type) tally(typeTally, card.type, card);
     const alignment = card.alignment.trim();
     if (alignment) tally(alignmentTally, alignment, card);

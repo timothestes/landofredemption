@@ -32,6 +32,10 @@ export interface BrigadeSwatch {
 export const BRIGADE_SWATCHES: Record<string, BrigadeSwatch> = {
   Blue: { light: '#2a6fd6', dark: '#4f92e8', alignment: 'good' },
   Clay: { light: '#a8632c', dark: '#c58a56', alignment: 'good' },
+  // Gold is printed for both sides; the breakdown labels it by the card's alignment
+  // (see cardBrigades). Plain Gold is the neutral remainder, in practice sites.
+  'Good Gold': { light: '#b8860b', dark: '#dfae37', alignment: 'good' },
+  'Evil Gold': { light: '#8a6a1a', dark: '#b89a45', alignment: 'evil' },
   Gold: { light: '#b8860b', dark: '#dfae37', alignment: 'neutral' },
   Green: { light: '#1a8f4c', dark: '#34b46a', alignment: 'good' },
   Purple: { light: '#7038c8', dark: '#a17ae8', alignment: 'good' },
@@ -62,9 +66,9 @@ export function brigadeSwatch(label: string): BrigadeSwatch {
 
 /** Display order: good brigades, then neutral, then evil — as decks are read. */
 const ORDER = [
-  'Blue', 'Clay', 'Green', 'Purple', 'Red', 'Silver', 'Teal', 'White',
+  'Blue', 'Clay', 'Green', 'Purple', 'Red', 'Silver', 'Teal', 'White', 'Good Gold',
   'Gold', 'Multi',
-  'Black', 'Brown', 'Crimson', 'Gray', 'Orange', 'Pale Green',
+  'Black', 'Brown', 'Crimson', 'Evil Gold', 'Gray', 'Orange', 'Pale Green',
 ];
 
 export function brigadeRank(label: string): number {
