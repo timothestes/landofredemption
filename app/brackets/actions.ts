@@ -401,7 +401,7 @@ function summarise(loaded: Loaded, matchId: string): RecordData {
 const ALREADY_RECORDED = 'already-recorded';
 
 async function persistUpdates(
-  supabase: Supabase, bracketId: string, updates: RowUpdate[], souls?: { a?: number; b?: number },
+  supabase: Supabase, bracketId: string, updates: RowUpdate[], souls?: { a?: number; b?: number }, byHand = false,
 ): Promise<string | null> {
   for (const u of updates) {
     let error: { message: string } | null = null;
@@ -413,6 +413,9 @@ async function persistUpdates(
         souls_a: souls?.a ?? null,
         souls_b: souls?.b ?? null,
         finished_at: new Date().toISOString(),
+        // A result written in by hand says nothing about who went first or how
+        // long the table was open, so the row stops claiming either.
+        ...(byHand ? { mode: 'manual', first_entry_id: null } : {}),
       }).eq('id', u.gameId).is('winner_entry_id', null).select('id');
       error = res.error;
       if (!error && (res.data ?? []).length === 0) return ALREADY_RECORDED;
@@ -455,7 +458,7 @@ async function reconcileAndLoad(supabase: Supabase, bracketId: string): Promise<
 
 async function applyAndPersist(
   supabase: Supabase, bracketId: string, gameId: string, winnerEntryId: string,
-  souls?: { a?: number; b?: number },
+  souls?: { a?: number; b?: number }, byHand = false,
 ): Promise<ActionResult<RecordData>> {
   const loaded = await loadAll(supabase, bracketId);
   if (loaded.ok === false) return loaded;
@@ -474,7 +477,7 @@ async function applyAndPersist(
     } catch (e) {
       return fail(message(e));
     }
-    const err = await persistUpdates(supabase, bracketId, updates, souls);
+    const err = await persistUpdates(supabase, bracketId, updates, souls, byHand);
     if (err && err !== ALREADY_RECORDED) return fail(err);
   }
 
@@ -505,7 +508,8 @@ export async function recordBracketGameResultAction(input: {
 
 /**
  * Records a result by hand. With `gameId` it settles that in-progress game of the
- * match (keeping its mode and code); without one it inserts a `manual` game.
+ * match, which becomes a `manual` game (its code is kept so the table's own
+ * late write-back still finds the row); without one it inserts a `manual` game.
  */
 export async function recordManualResultAction(input: {
   matchId: string; winnerEntryId: string; soulsA?: number; soulsB?: number; gameId?: string;
@@ -530,7 +534,7 @@ export async function recordManualResultAction(input: {
     const live = games.find(g => g.id === input.gameId);
     if (!live || live.matchId !== input.matchId) return fail('Game not found.');
     if (live.winnerEntryId) return fail('That game already has a result.');
-    const result = await applyAndPersist(supabase, bracketId, live.id, input.winnerEntryId, souls);
+    const result = await applyAndPersist(supabase, bracketId, live.id, input.winnerEntryId, souls, true);
     if (result.ok === false) return result;
     return { ok: true, data: { matchId: input.matchId, gameId: live.id } };
   }

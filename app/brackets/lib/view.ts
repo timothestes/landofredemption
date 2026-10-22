@@ -1,5 +1,5 @@
 import {
-  canPlayMatch, firstEntryForGame, matchLabel, matchState, roundCount, seriesState,
+  canPlayMatch, currentRoundName, firstEntryForGame, matchLabel, matchState, roundCount, seriesState,
 } from '@/lib/bracket';
 import type {
   Bracket, BracketEntry, BracketGame, BracketMatch, MatchState, SeriesState,
@@ -87,4 +87,14 @@ export function championPath(data: BracketData, championEntryId: string): string
 export function firstActionableMatchId(views: MatchView[][]): string | null {
   const flat = views.flat();
   return (flat.find(v => v.state === 'live') ?? flat.find(v => v.state === 'ready'))?.match.id ?? null;
+}
+
+/** The header's second line, shared by the bracket and breakdown pages: 'T1 · 8 decks · Best of 3 · Quarterfinals'. */
+export function bracketMeta(data: BracketData): string {
+  return [
+    data.bracket.format,
+    `${data.entries.length} decks`,
+    `Best of ${data.bracket.bestOf}`,
+    currentRoundName(data.bracket, data.matches, data.games),
+  ].join(' · ');
 }
