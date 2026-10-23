@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "spacetimedb": "^2.3.0"
+    "spacetimedb": "^2.13.0"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
