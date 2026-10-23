@@ -46,7 +46,7 @@
     "remark-gfm": "^4.0.1",
     "resend": "^6.7.0",
     "sharp": "^0.35.4",
-    "spacetimedb": "^2.5.0",
+    "spacetimedb": "^2.13.0",
     "topojson-client": "^3.1.0",
     "use-sound": "^5.0.0"
   },

@@ -28,13 +28,16 @@ calling new or modified reducers until both steps are complete.
 | Config file              | `spacetime.json` (repo root) — locked to production db |
 | Client bindings output   | `lib/spacetimedb/module_bindings/`         |
 | Env vars                 | `.env.local` — `NEXT_PUBLIC_SPACETIMEDB_HOST`, `NEXT_PUBLIC_SPACETIMEDB_DB_NAME` |
-| CLI version              | ≥ 2.8.1 (`spacetime version list` / `spacetime version use 2.8.1`) |
+| CLI version              | ≥ 2.13.0 (`spacetime version list` / `spacetime version use 2.13.0`) |
 
-**Important:** the CLI must be at least 2.8.1 to run `spacetime generate` against this
-module — the `spacetimedb` npm SDK the module depends on emits schema bsatn that CLI
-2.3.0 cannot parse (`unknown tag 0xd for sum type RawModuleDefV10Section`). 2.8.1 also
-renamed the generated `tables` accessor keys to camelCase; a back-compat alias shim keeps
-the existing PascalCase names (`tables.Game`, `tables.PregameState`, …) working.
+**Important:** the CLI must be at least 2.13.0 to run `spacetime generate` or `publish`
+against this module — the module depends on `spacetimedb` npm SDK 2.13, which imports
+`spacetime:sys@2.2`; an older CLI fails with `Could not import "spacetime:sys@2.2" …
+that version is not supported by the database` / `could not extract schema`. (Older
+history: 2.3.0 failed with `unknown tag 0xd for sum type RawModuleDefV10Section`;
+2.8.1 renamed the generated `tables` accessor keys to camelCase, with a back-compat
+alias shim keeping the PascalCase names `tables.Game`, `tables.PregameState`, … working.)
+Keep the SDK version in `spacetimedb/package.json` and root `package.json` in step.
 
 **Important:** `.env.local` sets `NEXT_PUBLIC_SPACETIMEDB_DB_NAME=redemption-multiplayer-dev`,
 so the local dev server connects to the **dev** database. Check which database the client
