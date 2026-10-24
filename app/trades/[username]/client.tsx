@@ -3,10 +3,17 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import CardImage from "../../decklist/card-search/components/CardImage";
-import { keyOfItem, splitTradeItems, totalCopies, type TradeItem } from "../lib/tradeList";
+import TradeListToolbar from "../components/TradeListToolbar";
+import {
+  DEFAULT_TRADE_FILTERS,
+  filterTradeItems,
+  keyOfItem,
+  splitTradeItems,
+  totalCopies,
+  type DisplayTradeItem,
+  type TradeFilters,
+} from "../lib/tradeList";
 import { readPreviewItems } from "../lib/previewStore";
-
-export type DisplayTradeItem = TradeItem & { setName: string };
 
 interface TradeListViewProps {
   username: string;
@@ -29,18 +36,19 @@ export default function TradeListView({
 }: TradeListViewProps) {
   const [items, setItems] = useState(initialItems);
   const [enlarged, setEnlarged] = useState<DisplayTradeItem | null>(null);
+  const [filters, setFilters] = useState<TradeFilters>(DEFAULT_TRADE_FILTERS);
 
   // PREVIEW-ONLY: the owner sees their own browser-saved list instead of samples.
   useEffect(() => {
     if (!previewMode || !isOwner) return;
     const saved = readPreviewItems();
-    if (saved?.length) setItems(saved.map((i) => ({ ...i, setName: i.cardSet })));
+    if (saved?.length) setItems(saved.map((i) => ({ ...i, setName: i.setName ?? i.cardSet, rarity: i.rarity ?? "" })));
   }, [previewMode, isOwner]);
 
-  const { wants, haves } = splitTradeItems(items) as {
-    wants: DisplayTradeItem[];
-    haves: DisplayTradeItem[];
-  };
+  const all = splitTradeItems(items);
+  const visible = filterTradeItems(items, filters);
+  const isFiltered = visible.length !== items.length;
+  const { priorityWants, wants, haves } = splitTradeItems(visible, filters.sort);
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-10">
@@ -65,7 +73,7 @@ export default function TradeListView({
       <p className={LABEL}>Trade list</p>
       <h1 className="font-cinzel text-3xl font-bold tracking-tight sm:text-4xl mt-1">{username}</h1>
       <p className="mt-2 text-sm text-muted-foreground tabular-nums">
-        {totalCopies(wants)} wanted · {totalCopies(haves)} for trade
+        {totalCopies(all.priorityWants) + totalCopies(all.wants)} wanted · {totalCopies(all.haves)} for trade
         {updatedAt && (
           <>
             {" "}
@@ -79,8 +87,38 @@ export default function TradeListView({
         )}
       </p>
 
-      <TradeGrid title="Wants" items={wants} onEnlarge={setEnlarged} emptyText={`${username} hasn't listed any Wants.`} />
-      <TradeGrid title="Haves" items={haves} onEnlarge={setEnlarged} emptyText={`${username} hasn't listed any Haves.`} />
+      {items.length > 0 && (
+        <div className="mt-6">
+          <TradeListToolbar items={items} filters={filters} onChange={setFilters} />
+          {isFiltered && (
+            <p className="mt-2 text-xs text-muted-foreground tabular-nums">
+              Showing {visible.length} of {items.length} cards
+            </p>
+          )}
+        </div>
+      )}
+
+      {priorityWants.length > 0 && (
+        <TradeGrid title="Priority wants" highlight items={priorityWants} onEnlarge={setEnlarged} emptyText="" />
+      )}
+      <TradeGrid
+        title="Wants"
+        items={wants}
+        onEnlarge={setEnlarged}
+        emptyText={
+          isFiltered
+            ? "No Wants match."
+            : all.priorityWants.length
+              ? "Nothing else wanted right now."
+              : `${username} hasn't listed any Wants.`
+        }
+      />
+      <TradeGrid
+        title="Haves"
+        items={haves}
+        onEnlarge={setEnlarged}
+        emptyText={isFiltered ? "No Haves match." : `${username} hasn't listed any Haves.`}
+      />
 
       <p className="mt-12 border-t border-border/60 pt-4 text-sm text-muted-foreground">
         Track your own cards and share a trade list from{" "}
@@ -103,7 +141,9 @@ export default function TradeListView({
                 <span className="text-muted-foreground font-normal tabular-nums"> ×{enlarged.quantity}</span>
               </p>
               <p className="text-xs text-muted-foreground">
+                {enlarged.priority && <span className="font-medium text-primary">★ Priority · </span>}
                 {enlarged.anyVersion ? "Any printing" : enlarged.setName}
+                {enlarged.rarity && ` · ${enlarged.rarity}`}
               </p>
               {enlarged.note && <p className="text-sm mt-1">{enlarged.note}</p>}
             </div>
@@ -116,20 +156,30 @@ export default function TradeListView({
 
 function TradeGrid({
   title,
+  highlight = false,
   items,
   onEnlarge,
   emptyText,
 }: {
   title: string;
+  highlight?: boolean;
   items: DisplayTradeItem[];
   onEnlarge: (item: DisplayTradeItem) => void;
   emptyText: string;
 }) {
   return (
     <section className="mt-8">
-      <h2 className="text-xl font-semibold border-b border-border/60 pb-2 mb-4">
+      <h2
+        className={`text-xl font-semibold border-b pb-2 mb-4 ${
+          highlight ? "border-primary/60" : "border-border/60"
+        }`}
+      >
+        {highlight && <span className="text-primary">★ </span>}
         {title} <span className="text-muted-foreground font-normal tabular-nums">· {totalCopies(items)}</span>
       </h2>
+      {highlight && (
+        <p className="-mt-2 mb-4 text-sm text-muted-foreground">Top of the list — most wanted right now.</p>
+      )}
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">{emptyText}</p>
       ) : (

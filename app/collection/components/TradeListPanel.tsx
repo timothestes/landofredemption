@@ -1,15 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import CardImage from "../../decklist/card-search/components/CardImage";
-import { CARD_BY_FULL_KEY } from "../../decklist/card-search/data/cardIndex";
 import UsernameModal from "../../decklist/my-decks/UsernameModal";
+import TradeListToolbar from "../../trades/components/TradeListToolbar";
+import { withCardInfo } from "../../trades/lib/cardInfo";
 import {
+  DEFAULT_TRADE_FILTERS,
+  filterTradeItems,
   haveShortfall,
   keyOfItem,
   splitTradeItems,
   totalCopies,
   MAX_TRADE_NOTE_LENGTH,
+  type DisplayTradeItem,
+  type TradeFilters,
   type TradeItem,
 } from "../../trades/lib/tradeList";
 import type { useTradeListState } from "../hooks/useTradeListState";
@@ -27,8 +32,12 @@ export default function TradeListPanel({ tradeList, quantities, onBrowseCards }:
   const { items, isLoading, previewMode, isShared, username, setUsername, putItem, setShared } = tradeList;
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [filters, setFilters] = useState<TradeFilters>(DEFAULT_TRADE_FILTERS);
 
-  const { wants, haves } = splitTradeItems(Array.from(items.values()));
+  const allItems = useMemo(() => withCardInfo(Array.from(items.values())), [items]);
+  const visible = filterTradeItems(allItems, filters);
+  const { priorityWants, wants, haves } = splitTradeItems(visible, filters.sort);
+  const isFiltered = visible.length !== allItems.length;
   const shareUrl =
     username && typeof window !== "undefined" ? `${window.location.origin}/trades/${username}` : null;
 
@@ -125,19 +134,37 @@ export default function TradeListPanel({ tradeList, quantities, onBrowseCards }:
         </div>
       ) : (
         <>
+          <div className="mt-4">
+            <TradeListToolbar items={allItems} filters={filters} onChange={setFilters} />
+            {isFiltered && (
+              <p className="mt-2 text-xs text-muted-foreground tabular-nums">
+                Showing {visible.length} of {allItems.length} cards
+              </p>
+            )}
+          </div>
+          {priorityWants.length > 0 && (
+            <TradeSection
+              title="Priority wants"
+              highlight
+              items={priorityWants}
+              quantities={quantities}
+              onChange={putItem}
+              emptyText=""
+            />
+          )}
           <TradeSection
             title="Wants"
             items={wants}
             quantities={quantities}
             onChange={putItem}
-            emptyText="No Wants yet."
+            emptyText={isFiltered ? "No Wants match." : "No Wants yet."}
           />
           <TradeSection
             title="Haves"
             items={haves}
             quantities={quantities}
             onChange={putItem}
-            emptyText="No Haves yet."
+            emptyText={isFiltered ? "No Haves match." : "No Haves yet."}
           />
         </>
       )}
@@ -158,20 +185,27 @@ export default function TradeListPanel({ tradeList, quantities, onBrowseCards }:
 
 function TradeSection({
   title,
+  highlight = false,
   items,
   quantities,
   onChange,
   emptyText,
 }: {
   title: string;
-  items: TradeItem[];
+  highlight?: boolean;
+  items: DisplayTradeItem[];
   quantities: Map<string, number>;
   onChange: (item: TradeItem) => void;
   emptyText: string;
 }) {
   return (
     <section className="mt-6">
-      <h2 className={`${LABEL} border-b border-border/60 pb-1.5`}>
+      <h2
+        className={`${LABEL} border-b pb-1.5 ${
+          highlight ? "text-primary border-primary/50" : "border-border/60"
+        }`}
+      >
+        {highlight && "★ "}
         {title} · <span className="tabular-nums">{totalCopies(items)}</span>
       </h2>
       {items.length === 0 ? (
@@ -197,11 +231,10 @@ function TradeRow({
   owned,
   onChange,
 }: {
-  item: TradeItem;
+  item: DisplayTradeItem;
   owned: number;
   onChange: (item: TradeItem) => void;
 }) {
-  const card = CARD_BY_FULL_KEY.get(`${item.cardName}|${item.cardSet}|${item.cardImgFile}`);
   const shortfall = haveShortfall(item, owned);
   const [note, setNote] = useState(item.note);
 
@@ -214,7 +247,8 @@ function TradeRow({
         <div className="flex flex-wrap items-baseline gap-x-2">
           <p className="text-sm font-medium truncate">{item.cardName}</p>
           <p className="text-xs text-muted-foreground truncate">
-            {item.anyVersion ? "Any printing" : card?.officialSet || item.cardSet}
+            {item.anyVersion ? "Any printing" : item.setName}
+            {item.rarity && ` · ${item.rarity}`}
           </p>
         </div>
         <input
@@ -228,6 +262,17 @@ function TradeRow({
           className="w-full rounded-md border border-border bg-background px-2 py-1 text-sm"
         />
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          {item.kind === "want" && (
+            <button
+              onClick={() => onChange({ ...item, priority: !item.priority })}
+              aria-pressed={item.priority}
+              className={`inline-flex items-center gap-1 text-xs ${
+                item.priority ? "text-primary font-medium" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {item.priority ? "★ Priority" : "☆ Mark priority"}
+            </button>
+          )}
           {item.kind === "want" && (
             <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
               <input

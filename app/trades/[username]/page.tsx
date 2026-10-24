@@ -2,10 +2,10 @@ import { Metadata } from "next";
 import { cache } from "react";
 import { notFound } from "next/navigation";
 import { loadPublicTradeListAction } from "../actions";
-import { CARD_BY_FULL_KEY } from "../../decklist/card-search/data/cardIndex";
-import { splitTradeItems, totalCopies, type TradeItem } from "../lib/tradeList";
+import { splitTradeItems, totalCopies } from "../lib/tradeList";
+import { withCardInfo } from "../lib/cardInfo";
 import { sampleTradeItems } from "../lib/previewSample";
-import TradeListView, { type DisplayTradeItem } from "./client";
+import TradeListView from "./client";
 
 interface PageProps {
   params: Promise<{ username: string }>;
@@ -19,8 +19,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const result = await loadList(decodeURIComponent(username));
   if (!result.found) return { title: "Trade List Not Found" };
 
-  const { wants, haves } = splitTradeItems(result.items || []);
-  const description = `${totalCopies(wants)} wanted · ${totalCopies(haves)} for trade`;
+  const { priorityWants, wants, haves } = splitTradeItems(result.items || []);
+  const description = `${totalCopies(priorityWants) + totalCopies(wants)} wanted · ${totalCopies(haves)} for trade`;
   return {
     title: `${result.username}'s Trade List`,
     description,
@@ -34,16 +34,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-// The catalog lookup happens here so the client page doesn't ship it.
-function withSetNames(items: TradeItem[]): DisplayTradeItem[] {
-  return items.map((item) => ({
-    ...item,
-    setName:
-      CARD_BY_FULL_KEY.get(`${item.cardName}|${item.cardSet}|${item.cardImgFile}`)?.officialSet ||
-      item.cardSet,
-  }));
-}
-
 export default async function TradeListPage({ params }: PageProps) {
   const { username } = await params;
   const result = await loadList(decodeURIComponent(username));
@@ -52,7 +42,8 @@ export default async function TradeListPage({ params }: PageProps) {
   return (
     <TradeListView
       username={result.username}
-      items={withSetNames(result.previewMode ? sampleTradeItems() : result.items || [])}
+      // Catalog join runs here so the client page doesn't ship the catalog.
+      items={withCardInfo(result.previewMode ? sampleTradeItems() : result.items || [])}
       isOwner={result.isOwner ?? false}
       isShared={result.isShared ?? false}
       previewMode={result.previewMode ?? false}

@@ -15,6 +15,7 @@ import {
   type TradeKind,
 } from "../../trades/lib/tradeList";
 import { readPreviewItems, writePreviewItems } from "../../trades/lib/previewStore";
+import { withCardInfo } from "../../trades/lib/cardInfo";
 
 const PERSIST_DEBOUNCE_MS = 600;
 
@@ -66,7 +67,8 @@ export function useTradeListState() {
 
   // Preview mode: mirror every change into this browser's storage.
   useEffect(() => {
-    if (previewMode && !isLoading) writePreviewItems(Array.from(items.values()));
+    // Stored with catalog info so the public page can show set/rarity without the catalog.
+    if (previewMode && !isLoading) writePreviewItems(withCardInfo(Array.from(items.values())));
   }, [previewMode, isLoading, items]);
 
   const persist = useCallback(async (key: string) => {
@@ -124,6 +126,7 @@ export function useTradeListState() {
               cardSet: card.set,
               cardImgFile: card.imgFile,
               anyVersion: false,
+              priority: false,
               quantity: 1,
               note: "",
             }

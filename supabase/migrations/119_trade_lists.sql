@@ -24,6 +24,8 @@ CREATE TABLE trade_list_items (
   card_set text NOT NULL,
   card_img_file text NOT NULL DEFAULT '',
   any_version boolean NOT NULL DEFAULT false,
+  -- Wants only: shown in a highlighted "Priority wants" group.
+  priority boolean NOT NULL DEFAULT false,
   quantity integer NOT NULL DEFAULT 1 CHECK (quantity BETWEEN 1 AND 99),
   note text NOT NULL DEFAULT '' CHECK (char_length(note) <= 120),
   created_at timestamptz NOT NULL DEFAULT now(),

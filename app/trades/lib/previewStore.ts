@@ -4,11 +4,11 @@
 // shows the owner's browser copy, or sample cards for anyone else. It lets the
 // look be reviewed on a Vercel preview without touching the database.
 
-import type { TradeItem } from "./tradeList";
+import type { DisplayTradeItem } from "./tradeList";
 
 const STORAGE_KEY = "lor-trade-list-preview";
 
-export function readPreviewItems(): TradeItem[] | null {
+export function readPreviewItems(): DisplayTradeItem[] | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
@@ -19,7 +19,7 @@ export function readPreviewItems(): TradeItem[] | null {
   }
 }
 
-export function writePreviewItems(items: TradeItem[]): void {
+export function writePreviewItems(items: DisplayTradeItem[]): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   } catch {

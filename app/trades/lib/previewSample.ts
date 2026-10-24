@@ -26,6 +26,7 @@ export function sampleTradeItems(): TradeItem[] {
     cardSet: c.set,
     cardImgFile: c.imgFile,
     anyVersion: i % 2 === 1,
+    priority: i < 2,
     quantity: (i % 3) + 1,
     note: notes[i] ?? "",
   }));
@@ -35,6 +36,7 @@ export function sampleTradeItems(): TradeItem[] {
     cardSet: c.set,
     cardImgFile: c.imgFile,
     anyVersion: false,
+    priority: false,
     quantity: (i % 2) + 1,
     note: notes[(i + 1) % notes.length] ?? "",
   }));

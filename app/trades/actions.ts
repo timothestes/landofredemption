@@ -9,11 +9,12 @@ interface TradeItemRow {
   card_set: string;
   card_img_file: string;
   any_version: boolean;
+  priority: boolean;
   quantity: number;
   note: string;
 }
 
-const ITEM_COLUMNS = "kind, card_name, card_set, card_img_file, any_version, quantity, note";
+const ITEM_COLUMNS = "kind, card_name, card_set, card_img_file, any_version, priority, quantity, note";
 const ITEM_CONFLICT_KEY = "user_id,kind,card_name,card_set,card_img_file";
 
 function rowToItem(row: TradeItemRow): TradeItem {
@@ -23,6 +24,7 @@ function rowToItem(row: TradeItemRow): TradeItem {
     cardSet: row.card_set,
     cardImgFile: row.card_img_file,
     anyVersion: row.any_version,
+    priority: row.priority,
     quantity: row.quantity,
     note: row.note,
   };
@@ -114,6 +116,7 @@ export async function saveTradeItemAction(item: TradeItem) {
           card_set: clean.cardSet,
           card_img_file: clean.cardImgFile,
           any_version: clean.anyVersion,
+          priority: clean.priority,
           quantity: clean.quantity,
           note: clean.note,
         },
