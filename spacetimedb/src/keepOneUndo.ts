@@ -8,6 +8,10 @@
 // we record the player's hand and deck ORDER before anything moves, plus the
 // zone the effect left every one of those cards in. The snapshot is stored as
 // JSON on Player.keepOneUndo until it's undone or the turn flips.
+//
+// The plan restores the hand order for real; the deck order it produces is
+// only a staging order — the undo reducer reshuffles the deck afterwards,
+// because the player has seen the cards that go back in.
 
 export interface SnapshotCard {
   id: bigint;
