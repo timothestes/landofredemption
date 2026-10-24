@@ -1,7 +1,16 @@
 "use server";
 
 import { createClient } from "../../utils/supabase/server";
-import { normalizeTradeItem, type TradeItem, type TradeKind } from "./lib/tradeList";
+import { clampTradeQuantity, normalizeTradeItem, type TradeItem, type TradeKind } from "./lib/tradeList";
+import {
+  applyCollectionDeltas,
+  cleanTradeLogText,
+  collectionDeltas,
+  MAX_PARTNER_LENGTH,
+  MAX_TRADE_LOG_NOTES_LENGTH,
+  type TradeLogCard,
+  type TradeLogEntry,
+} from "./lib/tradeLog";
 
 interface TradeItemRow {
   kind: TradeKind;
@@ -217,5 +226,175 @@ export async function loadPublicTradeListAction(username: string): Promise<{
   } catch (error) {
     console.error("Error in loadPublicTradeListAction:", error);
     return { found: false };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Trade log (private)
+
+const MAX_CARDS_PER_TRADE = 200;
+
+interface TradeLogRow {
+  id: string;
+  traded_on: string;
+  partner: string;
+  notes: string;
+  cards: TradeLogCard[];
+  created_at: string;
+}
+
+function rowToEntry(row: TradeLogRow): TradeLogEntry {
+  return {
+    id: row.id,
+    tradedOn: row.traded_on,
+    partner: row.partner,
+    notes: row.notes,
+    cards: row.cards,
+    createdAt: row.created_at,
+  };
+}
+
+function cleanLogCards(cards: TradeLogCard[]): TradeLogCard[] {
+  return cards
+    .filter((c) => (c.direction === "gave" || c.direction === "received") && c.cardName)
+    .slice(0, MAX_CARDS_PER_TRADE)
+    .map((c) => ({
+      direction: c.direction,
+      cardName: String(c.cardName),
+      cardSet: String(c.cardSet ?? ""),
+      cardImgFile: String(c.cardImgFile ?? ""),
+      quantity: clampTradeQuantity(c.quantity),
+      unitPrice:
+        typeof c.unitPrice === "number" && Number.isFinite(c.unitPrice) && c.unitPrice >= 0
+          ? Math.round(c.unitPrice * 100) / 100
+          : null,
+    }))
+    .filter((c) => c.quantity > 0);
+}
+
+export async function loadTradeLogAction(): Promise<{
+  success: boolean;
+  error?: string;
+  previewMode?: boolean;
+  entries: TradeLogEntry[];
+}> {
+  try {
+    const { supabase, user } = await getAuthedClient();
+    if (!user) return { success: false, error: "You must be logged in", entries: [] };
+    const { data, error } = await supabase
+      .from("trade_log")
+      .select("id, traded_on, partner, notes, cards, created_at")
+      .eq("user_id", user.id)
+      .order("traded_on", { ascending: false })
+      .order("created_at", { ascending: false });
+    if (isMissingTableError(error)) return { success: true, previewMode: true, entries: [] };
+    if (error) throw error;
+    return { success: true, entries: (data || []).map(rowToEntry) };
+  } catch (error) {
+    console.error("Error in loadTradeLogAction:", error);
+    return { success: false, error: "Failed to load trade log", entries: [] };
+  }
+}
+
+/**
+ * Records a trade, then applies it to the collection: received copies are
+ * added, given copies removed (floored at 0). The log row is written first so
+ * a collection failure never loses the record.
+ */
+export async function logTradeAction(input: {
+  tradedOn: string;
+  partner: string;
+  notes: string;
+  cards: TradeLogCard[];
+}): Promise<{ success: boolean; error?: string; entry?: TradeLogEntry }> {
+  try {
+    const { supabase, user } = await getAuthedClient();
+    if (!user) return { success: false, error: "You must be logged in" };
+
+    const cards = cleanLogCards(input.cards);
+    if (cards.length === 0) return { success: false, error: "Add at least one card" };
+    const tradedOn = /^\d{4}-\d{2}-\d{2}$/.test(input.tradedOn) ? input.tradedOn : undefined;
+
+    const { data, error } = await supabase
+      .from("trade_log")
+      .insert({
+        user_id: user.id,
+        ...(tradedOn && { traded_on: tradedOn }),
+        partner: cleanTradeLogText(input.partner, MAX_PARTNER_LENGTH),
+        notes: cleanTradeLogText(input.notes, MAX_TRADE_LOG_NOTES_LENGTH),
+        cards,
+      })
+      .select("id, traded_on, partner, notes, cards, created_at")
+      .single();
+    if (error) throw error;
+    const entry = rowToEntry(data as TradeLogRow);
+
+    const deltas = collectionDeltas(cards);
+    const current = new Map<string, number>();
+    for (const key of deltas.keys()) {
+      const [name, set, imgFile] = key.split("|");
+      const { data: row, error: readError } = await supabase
+        .from("collection_cards")
+        .select("quantity")
+        .eq("user_id", user.id)
+        .eq("card_name", name)
+        .eq("card_set", set)
+        .eq("card_img_file", imgFile)
+        .maybeSingle();
+      if (readError) throw readError;
+      current.set(key, row?.quantity ?? 0);
+    }
+
+    const next = applyCollectionDeltas(current, deltas);
+    for (const [key, quantity] of next) {
+      const [name, set, imgFile] = key.split("|");
+      const { error: writeError } =
+        quantity === 0
+          ? await supabase
+              .from("collection_cards")
+              .delete()
+              .eq("user_id", user.id)
+              .eq("card_name", name)
+              .eq("card_set", set)
+              .eq("card_img_file", imgFile)
+          : await supabase.from("collection_cards").upsert(
+              {
+                user_id: user.id,
+                card_name: name,
+                card_set: set,
+                card_img_file: imgFile,
+                quantity,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "user_id,card_name,card_set,card_img_file" }
+            );
+      if (writeError) {
+        console.error("Trade logged but collection update failed:", writeError);
+        return {
+          success: true,
+          entry,
+          error: "Trade saved, but your collection couldn't be fully updated. Check those cards.",
+        };
+      }
+    }
+
+    return { success: true, entry };
+  } catch (error) {
+    console.error("Error in logTradeAction:", error);
+    return { success: false, error: "Failed to log trade" };
+  }
+}
+
+/** Removes the record only; the collection is left as it is. */
+export async function deleteTradeLogAction(id: string) {
+  try {
+    const { supabase, user } = await getAuthedClient();
+    if (!user) return { success: false, error: "You must be logged in" };
+    const { error } = await supabase.from("trade_log").delete().eq("user_id", user.id).eq("id", id);
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error("Error in deleteTradeLogAction:", error);
+    return { success: false, error: "Failed to delete trade" };
   }
 }

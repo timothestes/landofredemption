@@ -10,7 +10,10 @@ import { useCollectionState, cardFullKey } from "./hooks/useCollectionState";
 import { downloadCollectionTxt } from "./utils/collectionCsv";
 import ImportCsvModal from "./components/ImportCsvModal";
 import TradeListPanel from "./components/TradeListPanel";
+import TradeLogPanel from "./components/TradeLogPanel";
+import LogTradeModal from "./components/LogTradeModal";
 import { useTradeListState } from "./hooks/useTradeListState";
+import { useTradeLogState } from "./hooks/useTradeLogState";
 import { useShowPrices } from "../../hooks/useShowPrices";
 import { compareCardsDefault } from "@/lib/cards/defaultSort";
 import { PARAGON_EXCLUDED_SETS } from "@/lib/formats";
@@ -81,9 +84,12 @@ export default function CollectionClient() {
     adjustQuantity,
     importRows,
     clearCollection,
+    reload: reloadCollection,
   } = useCollectionState();
   const tradeList = useTradeListState();
-  const [view, setView] = useState<"cards" | "trades">("cards");
+  const tradeLog = useTradeLogState();
+  const [view, setView] = useState<"cards" | "trades" | "log">("cards");
+  const [showLogTrade, setShowLogTrade] = useState(false);
   const showCards = view === "cards";
 
   const [search, setSearch] = useState("");
@@ -389,6 +395,7 @@ export default function CollectionClient() {
         {([
           ["cards", "Cards"],
           ["trades", `Trade list${tradeList.items.size ? ` · ${tradeList.items.size}` : ""}`],
+          ["log", "Trade log"],
         ] as const).map(([value, label]) => (
           <button
             key={value}
@@ -413,6 +420,8 @@ export default function CollectionClient() {
           onBrowseCards={() => setView("cards")}
         />
       )}
+
+      {view === "log" && <TradeLogPanel tradeLog={tradeLog} onLogTrade={() => setShowLogTrade(true)} />}
 
       {/* First-run banner — the page is a catalog browser until cards are owned */}
       {showCards && !isLoading && quantities.size === 0 && (
@@ -755,6 +764,25 @@ export default function CollectionClient() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Log a trade */}
+      {showLogTrade && (
+        <LogTradeModal
+          allCards={COLLECTION_CARDS}
+          quantities={quantities}
+          tradeItems={Array.from(tradeList.items.values())}
+          previewMode={tradeLog.previewMode}
+          getPrice={getPrice}
+          onSave={async (trade) => {
+            const result = await tradeLog.logTrade(trade);
+            // The server applied the trade to the collection; pull the new quantities.
+            if (result.success && !tradeLog.previewMode) await reloadCollection();
+            return result;
+          }}
+          onApplyTradeListUpdates={(items) => items.forEach(tradeList.putItem)}
+          onClose={() => setShowLogTrade(false)}
+        />
       )}
 
       {/* Import modal */}
