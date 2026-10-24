@@ -9,6 +9,11 @@ import { useCardPrices } from "../decklist/card-search/hooks/useCardPrices";
 import { useCollectionState, cardFullKey } from "./hooks/useCollectionState";
 import { downloadCollectionTxt } from "./utils/collectionCsv";
 import ImportCsvModal from "./components/ImportCsvModal";
+import TradeListPanel from "./components/TradeListPanel";
+import TradeLogPanel from "./components/TradeLogPanel";
+import LogTradeModal from "./components/LogTradeModal";
+import { useTradeListState } from "./hooks/useTradeListState";
+import { useTradeLogState } from "./hooks/useTradeLogState";
 import { useShowPrices } from "../../hooks/useShowPrices";
 import { compareCardsDefault } from "@/lib/cards/defaultSort";
 import { PARAGON_EXCLUDED_SETS } from "@/lib/formats";
@@ -79,7 +84,19 @@ export default function CollectionClient() {
     adjustQuantity,
     importRows,
     clearCollection,
+    reload: reloadCollection,
   } = useCollectionState();
+  const tradeList = useTradeListState();
+  const tradeLog = useTradeLogState();
+  const [view, setView] = useState<"cards" | "trades" | "log">("cards");
+  const [showLogTrade, setShowLogTrade] = useState(false);
+
+  // Deep link from the deck builder ("View trade list") and elsewhere.
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("view");
+    if (requested === "trades" || requested === "log") setView(requested);
+  }, []);
+  const showCards = view === "cards";
 
   const [search, setSearch] = useState("");
   const [formatMode, setFormatMode] = useState<FormatMode>(DEFAULT_FORMAT);
@@ -314,8 +331,8 @@ export default function CollectionClient() {
           />
         </a>
         <span className="text-xs text-muted-foreground min-w-[80px]">
-          {isSaving ? "Saving…" : syncError ? (
-            <span className="text-red-600 dark:text-red-400">{syncError}</span>
+          {isSaving || tradeList.isSaving ? "Saving…" : syncError || tradeList.syncError ? (
+            <span className="text-red-600 dark:text-red-400">{syncError || tradeList.syncError}</span>
           ) : null}
         </span>
         <div className="flex items-center gap-2 ml-auto">
@@ -326,12 +343,15 @@ export default function CollectionClient() {
           >
             Build a deck
           </a>
-          <button
-            onClick={() => setShowSetStats((v) => !v)}
-            className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted"
-          >
-            Set completion
-          </button>
+          {/* Its panel only renders on the Cards view */}
+          {showCards && (
+            <button
+              onClick={() => setShowSetStats((v) => !v)}
+              className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted"
+            >
+              Set completion
+            </button>
+          )}
           <button
             onClick={() => setShowImport(true)}
             className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted"
@@ -379,8 +399,41 @@ export default function CollectionClient() {
         </div>
       </div>
 
+      {/* Cards / Trade list switch */}
+      <div className="flex items-center gap-2 mb-4" role="tablist">
+        {([
+          ["cards", "Cards"],
+          ["trades", `Trade list${tradeList.items.size ? ` · ${tradeList.items.size}` : ""}`],
+          ["log", "Trade log"],
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            role="tab"
+            aria-selected={view === value}
+            onClick={() => setView(value)}
+            className={`min-h-11 px-4 rounded-full border text-sm transition-colors ${
+              view === value
+                ? "bg-foreground text-background border-foreground"
+                : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === "trades" && (
+        <TradeListPanel
+          tradeList={tradeList}
+          quantities={quantities}
+          onBrowseCards={() => setView("cards")}
+        />
+      )}
+
+      {view === "log" && <TradeLogPanel tradeLog={tradeLog} onLogTrade={() => setShowLogTrade(true)} />}
+
       {/* First-run banner — the page is a catalog browser until cards are owned */}
-      {!isLoading && quantities.size === 0 && (
+      {showCards && !isLoading && quantities.size === 0 && (
         <div className="mb-4 rounded-lg border border-border bg-muted/40 p-4 flex flex-wrap items-center gap-x-6 gap-y-3">
           <div className="flex-1 min-w-[240px]">
             <p className="text-sm font-semibold">Start tracking your collection</p>
@@ -400,7 +453,7 @@ export default function CollectionClient() {
       )}
 
       {/* Set completion panel */}
-      {showSetStats && (
+      {showCards && showSetStats && (
         <div className="mb-4 rounded-lg border border-border p-3 sm:p-4">
           <h2 className="text-sm font-semibold mb-2">Set completion (unique cards)</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1.5 max-h-72 overflow-y-auto">
@@ -423,6 +476,7 @@ export default function CollectionClient() {
       )}
 
       {/* Search + filters */}
+      {showCards && (
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <input
           ref={searchRef}
@@ -533,8 +587,10 @@ export default function CollectionClient() {
           Show prices
         </button>
       </div>
+      )}
 
       {/* Result count */}
+      {showCards && (
       <p className="text-xs text-muted-foreground mb-3">
         {isLoading
           ? "Loading your collection…"
@@ -542,9 +598,10 @@ export default function CollectionClient() {
             ? `${filteredCards.length.toLocaleString()} cards`
             : `${filteredCards.length.toLocaleString()} of ${COLLECTION_CARDS.length.toLocaleString()} cards`}
       </p>
+      )}
 
       {/* Empty states */}
-      {!isLoading && ownershipFilter === "owned" && filteredCards.length === 0 && (
+      {showCards && !isLoading && ownershipFilter === "owned" && filteredCards.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <p className="mb-2 font-medium">No owned cards match these filters.</p>
           <p className="text-sm">
@@ -553,13 +610,14 @@ export default function CollectionClient() {
           </p>
         </div>
       )}
-      {!isLoading && ownershipFilter === "unowned" && filteredCards.length === 0 && (
+      {showCards && !isLoading && ownershipFilter === "unowned" && filteredCards.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <p className="mb-2 font-medium">You own everything matching these filters.</p>
         </div>
       )}
 
       {/* Card grid */}
+      {showCards && (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
         {visibleCards.map((card) => {
           const qty = quantities.get(cardFullKey(card)) || 0;
@@ -575,6 +633,10 @@ export default function CollectionClient() {
                   imgFile={card.imgFile}
                   alt={card.name}
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+                />
+                <TradeBadges
+                  want={!!tradeList.getItem("want", card)}
+                  have={!!tradeList.getItem("have", card)}
                 />
                 {qty > 0 && (
                   <span className="absolute bottom-1 right-1 bg-emerald-500/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded font-bold text-xs shadow-lg ring-1 ring-black/20">
@@ -637,9 +699,10 @@ export default function CollectionClient() {
           );
         })}
       </div>
+      )}
 
       {/* Infinite scroll: sentinel auto-loads the next batch as it nears the viewport */}
-      {visibleCount < filteredCards.length && (
+      {showCards && visibleCount < filteredCards.length && (
         <div ref={sentinelRef} className="py-6 text-center text-xs text-muted-foreground">
           Loading more… ({(filteredCards.length - visibleCount).toLocaleString()} remaining)
         </div>
@@ -687,8 +750,47 @@ export default function CollectionClient() {
                 </button>
               </div>
             </div>
+            {/* Trade list: add this exact printing to Wants or Haves */}
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {(["want", "have"] as const).map((kind) => {
+                const listed = !!tradeList.getItem(kind, modalCard);
+                return (
+                  <button
+                    key={kind}
+                    onClick={() => tradeList.toggleCard(kind, modalCard)}
+                    aria-pressed={listed}
+                    className={`min-h-11 rounded-lg border text-sm font-medium transition-colors ${
+                      listed
+                        ? "bg-foreground text-background border-foreground"
+                        : "bg-background border-border hover:bg-muted"
+                    }`}
+                  >
+                    {listed ? "✓ " : "+ "}
+                    {kind === "want" ? "Want" : "Have"}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
+      )}
+
+      {/* Log a trade */}
+      {showLogTrade && (
+        <LogTradeModal
+          allCards={COLLECTION_CARDS}
+          quantities={quantities}
+          tradeItems={Array.from(tradeList.items.values())}
+          getPrice={getPrice}
+          onSave={async (trade) => {
+            const result = await tradeLog.logTrade(trade);
+            // The server applied the trade to the collection; pull the new quantities.
+            if (result.success) await reloadCollection();
+            return result;
+          }}
+          onApplyTradeListUpdates={(items) => items.forEach(tradeList.putItem)}
+          onClose={() => setShowLogTrade(false)}
+        />
       )}
 
       {/* Import modal */}
@@ -739,6 +841,24 @@ export default function CollectionClient() {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function TradeBadges({ want, have }: { want: boolean; have: boolean }) {
+  if (!want && !have) return null;
+  return (
+    <div className="absolute top-1 left-1 flex gap-1">
+      {want && (
+        <span className="bg-foreground/85 text-background px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide">
+          Want
+        </span>
+      )}
+      {have && (
+        <span className="bg-foreground/85 text-background px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide">
+          Have
+        </span>
       )}
     </div>
   );
