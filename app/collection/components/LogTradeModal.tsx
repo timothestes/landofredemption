@@ -21,7 +21,6 @@ interface LogTradeModalProps {
   /** Owned quantities by name|set|imgFile. */
   quantities: Map<string, number>;
   tradeItems: TradeItem[];
-  previewMode: boolean;
   getPrice: (key: string) => { price: number } | null | undefined;
   onSave: (trade: NewTrade) => Promise<{ success: boolean; error?: string }>;
   /** Applies the trade-list updates the user ticked. */
@@ -45,7 +44,6 @@ export default function LogTradeModal({
   allCards,
   quantities,
   tradeItems,
-  previewMode,
   getPrice,
   onSave,
   onApplyTradeListUpdates,
@@ -93,7 +91,8 @@ export default function LogTradeModal({
   const save = async () => {
     setSaving(true);
     setError(null);
-    const result = await onSave({ tradedOn, partner, notes, cards });
+    // A cleared date field means today, in the user's own time zone.
+    const result = await onSave({ tradedOn: tradedOn || todayLocal(), partner, notes, cards });
     setSaving(false);
     if (!result.success) {
       setError(result.error || "Failed to log trade");
@@ -102,11 +101,6 @@ export default function LogTradeModal({
     onApplyTradeListUpdates(
       suggestions.filter((_, i) => !unchecked.has(i)).map((s) => ({ ...s.item, quantity: s.newQuantity }))
     );
-    if (result.error) {
-      // Saved, but with a partial collection update — keep the dialog open to show it.
-      setError(result.error);
-      return;
-    }
     onClose();
   };
 
@@ -181,7 +175,6 @@ export default function LogTradeModal({
               cards={cards}
               deltas={deltas}
               quantities={quantities}
-              previewMode={previewMode}
               suggestions={suggestions}
               unchecked={unchecked}
               onToggle={(i) =>
@@ -330,11 +323,11 @@ function TradeSide({
                 </p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => onUpdate(index, c.quantity - 1)} className="w-8 h-8 text-sm border border-border rounded-md hover:bg-muted" aria-label={`One fewer ${c.cardName}`}>
+                <button onClick={() => onUpdate(index, c.quantity - 1)} className="w-9 h-9 text-base border border-border rounded-md hover:bg-muted" aria-label={`One fewer ${c.cardName}`}>
                   −
                 </button>
                 <span className="w-6 text-center text-sm font-semibold tabular-nums">{c.quantity}</span>
-                <button onClick={() => onUpdate(index, c.quantity + 1)} className="w-8 h-8 text-sm border border-border rounded-md hover:bg-muted" aria-label={`One more ${c.cardName}`}>
+                <button onClick={() => onUpdate(index, c.quantity + 1)} className="w-9 h-9 text-base border border-border rounded-md hover:bg-muted" aria-label={`One more ${c.cardName}`}>
                   +
                 </button>
               </div>
@@ -350,7 +343,6 @@ function ReviewStep({
   cards,
   deltas,
   quantities,
-  previewMode,
   suggestions,
   unchecked,
   onToggle,
@@ -358,7 +350,6 @@ function ReviewStep({
   cards: TradeLogCard[];
   deltas: Map<string, number>;
   quantities: Map<string, number>;
-  previewMode: boolean;
   suggestions: ReturnType<typeof suggestTradeListUpdates>;
   unchecked: Set<number>;
   onToggle: (index: number) => void;
@@ -368,12 +359,6 @@ function ReviewStep({
     <div className="space-y-6">
       <section>
         <h3 className={`${LABEL} border-b border-border/60 pb-1.5`}>Your collection</h3>
-        {previewMode && (
-          <p className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-            <span className="font-medium">Preview:</span> your collection won&apos;t change. Once trade logs are live,
-            these updates will apply automatically.
-          </p>
-        )}
         {deltas.size === 0 ? (
           <p className="text-sm text-muted-foreground py-2">No change (cards given and received cancel out).</p>
         ) : (

@@ -27,20 +27,13 @@ function copies(cards: TradeLogCard[], direction: TradeLogCard["direction"]): nu
 }
 
 export default function TradeLogPanel({ tradeLog, onLogTrade }: TradeLogPanelProps) {
-  const { entries, isLoading, previewMode, error, deleteEntry } = tradeLog;
+  const { entries, isLoading, error, deleteEntry } = tradeLog;
   const [openId, setOpenId] = useState<string | null>(null);
 
   if (isLoading) return <p className="text-sm text-muted-foreground py-8">Loading your trade log…</p>;
 
   return (
     <div className="max-w-4xl">
-      {previewMode && (
-        <div className="mb-4 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-          <span className="font-medium">Preview mode.</span> Trades are saved in this browser only, and logging one
-          won&apos;t change your collection yet.
-        </div>
-      )}
-
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4">
         <p className="text-sm text-muted-foreground max-w-prose">
           A private record of your trades — only you can see it. Logging a trade adds the cards you received to your
@@ -123,7 +116,7 @@ function TradeLogRow({
           <div className="mt-3">
             {confirmDelete ? (
               <span className="inline-flex items-center gap-3 text-sm">
-                Delete this record? Your collection won&apos;t change.
+                Delete this record? Your collection won&apos;t change, and logging the trade again would apply it again.
                 <button onClick={onDelete} className="font-medium text-red-600 dark:text-red-400 hover:underline">
                   Delete
                 </button>

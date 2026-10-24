@@ -343,12 +343,15 @@ export default function CollectionClient() {
           >
             Build a deck
           </a>
-          <button
-            onClick={() => setShowSetStats((v) => !v)}
-            className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted"
-          >
-            Set completion
-          </button>
+          {/* Its panel only renders on the Cards view */}
+          {showCards && (
+            <button
+              onClick={() => setShowSetStats((v) => !v)}
+              className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted"
+            >
+              Set completion
+            </button>
+          )}
           <button
             onClick={() => setShowImport(true)}
             className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted"
@@ -778,12 +781,11 @@ export default function CollectionClient() {
           allCards={COLLECTION_CARDS}
           quantities={quantities}
           tradeItems={Array.from(tradeList.items.values())}
-          previewMode={tradeLog.previewMode}
           getPrice={getPrice}
           onSave={async (trade) => {
             const result = await tradeLog.logTrade(trade);
             // The server applied the trade to the collection; pull the new quantities.
-            if (result.success && !tradeLog.previewMode) await reloadCollection();
+            if (result.success) await reloadCollection();
             return result;
           }}
           onApplyTradeListUpdates={(items) => items.forEach(tradeList.putItem)}
@@ -854,7 +856,7 @@ function TradeBadges({ want, have }: { want: boolean; have: boolean }) {
         </span>
       )}
       {have && (
-        <span className="bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide">
+        <span className="bg-foreground/85 text-background px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide">
           Have
         </span>
       )}

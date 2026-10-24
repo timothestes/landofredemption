@@ -2,9 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from "react"
 import type { BuyDeckCard } from "./BuyDeckModal";
 import { computeMissingCards } from "../utils/collectionCheck";
 import { addWantsAction } from "../../../trades/actions";
-import { mergeWants, keyOfItem, type TradeItem } from "../../../trades/lib/tradeList";
-import { withCardInfo } from "../../../trades/lib/cardInfo";
-import { readPreviewItems, writePreviewItems } from "../../../trades/lib/previewStore";
+import type { TradeItem } from "../../../trades/lib/tradeList";
 
 interface CollectionCheckModalProps {
   /** Full deck (any zones); only main+reserve are counted. */
@@ -65,16 +63,7 @@ export default function CollectionCheckModal({
       setWantsMessage(result.error || "Couldn't add to your Wants");
       return;
     }
-    let added = result.added ?? 0;
-    if (result.previewMode) {
-      // PREVIEW-ONLY: trade tables aren't live; merge into the browser copy.
-      const current = readPreviewItems() ?? [];
-      const changes = mergeWants(current, incoming);
-      const byKey = new Map(current.map((i) => [keyOfItem(i), i]));
-      for (const c of withCardInfo(changes)) byKey.set(keyOfItem(c), c);
-      writePreviewItems(Array.from(byKey.values()));
-      added = changes.length;
-    }
+    const added = result.added ?? 0;
     setWantsStatus("done");
     setWantsMessage(
       added === 0 ? "Already on your Wants." : `Added ${added} card${added === 1 ? "" : "s"} to your Wants.`

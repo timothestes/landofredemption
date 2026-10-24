@@ -11,7 +11,8 @@
 
 CREATE TABLE trade_lists (
   user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  -- false: owner only. true: anyone with the /trades/<username> link.
+  -- false: owner only. true: public — readable by anyone (RLS below) and
+  -- shown at /trades/<username>.
   is_shared boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -33,8 +34,6 @@ CREATE TABLE trade_list_items (
   updated_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (user_id, kind, card_name, card_set, card_img_file)
 );
-
-CREATE INDEX idx_trade_list_items_user_id ON trade_list_items (user_id);
 
 CREATE TRIGGER update_trade_lists_updated_at
   BEFORE UPDATE ON trade_lists
@@ -75,7 +74,7 @@ CREATE POLICY "Users can delete own trade list items" ON trade_list_items
   FOR DELETE USING (auth.uid() = user_id);
 
 -- Trade log: a private record of completed trades. Owner-only; never shared.
--- Logging a trade also adjusts collection_cards (done by the app, not here).
+-- Logging a trade also adjusts collection_cards (the log_trade RPC in 120).
 -- `cards` is a JSON array of
 --   { direction: 'gave'|'received', cardName, cardSet, cardImgFile,
 --     quantity, unitPrice }

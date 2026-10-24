@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import CardImage from "../../decklist/card-search/components/CardImage";
 import TradeListToolbar from "../components/TradeListToolbar";
@@ -16,21 +16,19 @@ import {
   type TradeFilters,
   type TradeItem,
 } from "../lib/tradeList";
-import { readPreviewItems } from "../lib/previewStore";
 
 interface TradeListViewProps {
   username: string;
   items: DisplayTradeItem[];
   isOwner: boolean;
   isShared: boolean;
-  previewMode: boolean;
-  updatedAt: string | null;
+  /** Pre-formatted on the server so server and client markup agree. */
+  updatedLabel: string | null;
   /** Null for the owner; otherwise what the visitor brings (see loadVisitorMatchDataAction). */
   visitor: {
     signedIn: boolean;
     owned: Record<string, number>;
     wants: TradeItem[];
-    wantsPreview?: boolean;
   } | null;
 }
 
@@ -38,37 +36,22 @@ const LABEL = "text-[11px] font-medium uppercase tracking-[0.1em] text-muted-for
 
 export default function TradeListView({
   username,
-  items: initialItems,
+  items,
   isOwner,
   isShared,
-  previewMode,
-  updatedAt,
+  updatedLabel,
   visitor,
 }: TradeListViewProps) {
-  const [items, setItems] = useState(initialItems);
   const [enlarged, setEnlarged] = useState<DisplayTradeItem | null>(null);
   const [filters, setFilters] = useState<TradeFilters>(DEFAULT_TRADE_FILTERS);
   const [matchesOnly, setMatchesOnly] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [visitorWants, setVisitorWants] = useState<TradeItem[]>(visitor?.wants ?? []);
-
-  // PREVIEW-ONLY: a visitor's Wants live in their browser until the tables exist.
-  useEffect(() => {
-    if (visitor?.wantsPreview) setVisitorWants(readPreviewItems() ?? []);
-  }, [visitor?.wantsPreview]);
 
   const matches = useMemo(
-    () => findTradeMatches(items, new Map(Object.entries(visitor?.owned ?? {})), visitorWants),
-    [items, visitor?.owned, visitorWants]
+    () => findTradeMatches(items, new Map(Object.entries(visitor?.owned ?? {})), visitor?.wants ?? []),
+    [items, visitor]
   );
   const matchCount = matches.youOwn.size + matches.youWant.size;
-
-  // PREVIEW-ONLY: the owner sees their own browser-saved list instead of samples.
-  useEffect(() => {
-    if (!previewMode || !isOwner) return;
-    const saved = readPreviewItems();
-    if (saved?.length) setItems(saved.map((i) => ({ ...i, setName: i.setName ?? i.cardSet, rarity: i.rarity ?? "" })));
-  }, [previewMode, isOwner]);
 
   const all = splitTradeItems(items);
   const visible = filterTradeItems(items, filters).filter(
@@ -89,19 +72,11 @@ export default function TradeListView({
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-10">
-      {previewMode && (
-        <div className="mb-6 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-          <span className="font-medium">Preview.</span>{" "}
-          {isOwner
-            ? "Showing the list saved in this browser (or sample cards if it's empty)."
-            : "Showing sample cards — trade lists aren't live yet."}
-        </div>
-      )}
-      {isOwner && !isShared && !previewMode && (
+      {isOwner && !isShared && (
         <div className="mb-6 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
           Only you can see this page.{" "}
-          <Link href="/collection" className="font-medium text-primary hover:underline">
-            Turn on sharing
+          <Link href="/collection?view=trades" className="font-medium text-primary hover:underline">
+            Make it public
           </Link>{" "}
           in My Collection → Trade list to share the link.
         </div>
@@ -111,17 +86,7 @@ export default function TradeListView({
       <h1 className="font-cinzel text-3xl font-bold tracking-tight sm:text-4xl mt-1">{username}</h1>
       <p className="mt-2 text-sm text-muted-foreground tabular-nums">
         {totalCopies(all.priorityWants) + totalCopies(all.wants)} wanted · {totalCopies(all.haves)} for trade
-        {updatedAt && (
-          <>
-            {" "}
-            · Updated{" "}
-            {new Date(updatedAt).toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </>
-        )}
+        {updatedLabel && <> · Updated {updatedLabel}</>}
       </p>
       {items.length > 0 && (
         <button

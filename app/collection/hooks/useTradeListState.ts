@@ -15,8 +15,6 @@ import {
   type TradeItem,
   type TradeKind,
 } from "../../trades/lib/tradeList";
-import { readPreviewItems, writePreviewItems } from "../../trades/lib/previewStore";
-import { withCardInfo } from "../../trades/lib/cardInfo";
 
 const PERSIST_DEBOUNCE_MS = 600;
 
@@ -24,14 +22,10 @@ const PERSIST_DEBOUNCE_MS = 600;
  * Client state for the user's trade list (Wants + Haves): a Map of
  * kind|fullKey -> item with optimistic updates and per-item debounced
  * persistence, mirroring useCollectionState.
- *
- * `previewMode` is true until the trade tables exist; edits then live in
- * this browser only (see trades/lib/previewStore.ts).
  */
 export function useTradeListState() {
   const [items, setItems] = useState<Map<string, TradeItem>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
-  const [previewMode, setPreviewMode] = useState(false);
   const [isShared, setIsShared] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [pendingSaves, setPendingSaves] = useState(0);
@@ -46,9 +40,7 @@ export function useTradeListState() {
       if (!result.success) {
         setSyncError(result.error || "Failed to load trade list");
       } else {
-        const source = result.previewMode ? readPreviewItems() ?? [] : result.items;
-        setItems(new Map(source.map((i) => [keyOfItem(i), i])));
-        setPreviewMode(!!result.previewMode);
+        setItems(new Map(result.items.map((i) => [keyOfItem(i), i])));
         setIsShared(result.isShared);
         setUsername(result.username);
       }
@@ -65,12 +57,6 @@ export function useTradeListState() {
       for (const timer of timers.values()) clearTimeout(timer);
     };
   }, []);
-
-  // Preview mode: mirror every change into this browser's storage.
-  useEffect(() => {
-    // Stored with catalog info so the public page can show set/rarity without the catalog.
-    if (previewMode && !isLoading) writePreviewItems(withCardInfo(Array.from(items.values())));
-  }, [previewMode, isLoading, items]);
 
   const persist = useCallback(async (key: string) => {
     const item = latestRef.current.get(key);
@@ -93,7 +79,6 @@ export function useTradeListState() {
         else next.set(key, item);
         return next;
       });
-      if (previewMode) return;
       latestRef.current.set(key, item);
       const existing = timersRef.current.get(key);
       if (existing) clearTimeout(existing);
@@ -105,26 +90,23 @@ export function useTradeListState() {
         }, PERSIST_DEBOUNCE_MS)
       );
     },
-    [previewMode, persist]
+    [persist]
   );
 
   /** Bulk add/update (e.g. "Add my spares") in one request. */
-  const putItems = useCallback(
-    async (raw: TradeItem[]) => {
-      const clean = raw.map(normalizeTradeItem).filter((i) => i.quantity > 0);
-      setItems((prev) => {
-        const next = new Map(prev);
-        for (const item of clean) next.set(keyOfItem(item), item);
-        return next;
-      });
-      if (previewMode || clean.length === 0) return;
-      setPendingSaves((n) => n + 1);
-      const result = await saveTradeItemsAction(clean);
-      setPendingSaves((n) => n - 1);
-      if (!result.success) setSyncError(result.error || "Failed to save changes");
-    },
-    [previewMode]
-  );
+  const putItems = useCallback(async (raw: TradeItem[]) => {
+    const clean = raw.map(normalizeTradeItem).filter((i) => i.quantity > 0);
+    setItems((prev) => {
+      const next = new Map(prev);
+      for (const item of clean) next.set(keyOfItem(item), item);
+      return next;
+    });
+    if (clean.length === 0) return;
+    setPendingSaves((n) => n + 1);
+    const result = await saveTradeItemsAction(clean);
+    setPendingSaves((n) => n - 1);
+    if (!result.success) setSyncError(result.error || "Failed to save changes");
+  }, []);
 
   const getItem = useCallback(
     (kind: TradeKind, card: Pick<Card, "name" | "set" | "imgFile">) =>
@@ -155,25 +137,16 @@ export function useTradeListState() {
   );
 
   /** Returns `needsUsername` so the caller can prompt for one. */
-  const setShared = useCallback(
-    async (next: boolean) => {
-      if (previewMode) {
-        if (next && !username) return { needsUsername: true };
-        setIsShared(next);
-        return {};
-      }
-      const result = await setTradeListSharedAction(next);
-      if (result.success) setIsShared(next);
-      else if (!("needsUsername" in result)) setSyncError(result.error || "Failed to update sharing");
-      return { needsUsername: "needsUsername" in result && !!result.needsUsername };
-    },
-    [previewMode, username]
-  );
+  const setShared = useCallback(async (next: boolean) => {
+    const result = await setTradeListSharedAction(next);
+    if (result.success) setIsShared(next);
+    else if (!("needsUsername" in result)) setSyncError(result.error || "Failed to update sharing");
+    return { needsUsername: "needsUsername" in result && !!result.needsUsername };
+  }, []);
 
   return {
     items,
     isLoading,
-    previewMode,
     isShared,
     username,
     setUsername,

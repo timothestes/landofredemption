@@ -98,6 +98,25 @@ describe("mergeWants", () => {
   it("collapses duplicates within the incoming list", () => {
     expect(mergeWants([], [item({ quantity: 1 }), item({ quantity: 2 })])).toEqual([item({ quantity: 2 })]);
   });
+
+  it("merges an any-printing Want into the existing any-printing Want of another printing", () => {
+    const existing = item({ anyVersion: true, note: "keep me" });
+    const fromDeck = item({ anyVersion: true, cardSet: "Pmo", cardImgFile: "sog-promo", quantity: 2 });
+    expect(mergeWants([existing], [fromDeck])).toEqual([{ ...existing, quantity: 2 }]);
+    expect(mergeWants([existing], [item({ anyVersion: true, cardSet: "Pmo", cardImgFile: "sog-promo" })])).toEqual([]);
+  });
+
+  it("keeps an exact-printing Want separate from an any-printing one", () => {
+    const anyPrinting = item({ anyVersion: true });
+    const exactPromo = item({ cardSet: "Pmo", cardImgFile: "sog-promo" });
+    expect(mergeWants([anyPrinting], [exactPromo])).toEqual([exactPromo]);
+  });
+
+  it("collapses any-printing duplicates of one card within the incoming list", () => {
+    const a = item({ anyVersion: true, quantity: 1 });
+    const b = item({ anyVersion: true, cardSet: "Pmo", cardImgFile: "sog-promo", quantity: 3 });
+    expect(mergeWants([], [a, b])).toEqual([{ ...a, quantity: 3 }]);
+  });
 });
 
 describe("tradeListText", () => {
@@ -132,5 +151,9 @@ describe("tradeListText", () => {
 
   it("omits the link and empty sections", () => {
     expect(tradeListText("a", [shown({ kind: "have" })], null)).toBe("a's trade list\n\nHAVES (1)\n1x Son of God (Priests)");
+  });
+
+  it("titles the list 'My trade list' when the owner has no username", () => {
+    expect(tradeListText(null, [shown({ kind: "have" })], null)).toBe("My trade list\n\nHAVES (1)\n1x Son of God (Priests)");
   });
 });

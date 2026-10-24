@@ -31,7 +31,7 @@ interface TradeListPanelProps {
 const LABEL = "text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground";
 
 export default function TradeListPanel({ tradeList, quantities, onBrowseCards }: TradeListPanelProps) {
-  const { items, isLoading, previewMode, isShared, username, setUsername, putItem, putItems, setShared } = tradeList;
+  const { items, isLoading, isShared, username, setUsername, putItem, putItems, setShared } = tradeList;
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [filters, setFilters] = useState<TradeFilters>(DEFAULT_TRADE_FILTERS);
@@ -68,7 +68,7 @@ export default function TradeListPanel({ tradeList, quantities, onBrowseCards }:
 
   const copyText = async () => {
     try {
-      await navigator.clipboard.writeText(tradeListText(username || "My", allItems, isShared ? shareUrl : null));
+      await navigator.clipboard.writeText(tradeListText(username, allItems, isShared ? shareUrl : null));
       setCopiedText(true);
       setTimeout(() => setCopiedText(false), 1500);
     } catch {
@@ -82,13 +82,6 @@ export default function TradeListPanel({ tradeList, quantities, onBrowseCards }:
 
   return (
     <div className="max-w-4xl">
-      {previewMode && (
-        <div className="mb-4 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-          <span className="font-medium">Preview mode.</span> The trade list database isn&apos;t live
-          yet, so changes are saved in this browser only.
-        </div>
-      )}
-
       {/* Sharing */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border/60 pb-4 mb-2">
         <button
@@ -108,7 +101,7 @@ export default function TradeListPanel({ tradeList, quantities, onBrowseCards }:
               }`}
             />
           </span>
-          <span className="font-medium">{isShared ? "Shared by link" : "Private"}</span>
+          <span className="font-medium">{isShared ? "Public" : "Private"}</span>
         </button>
         {isShared && shareUrl ? (
           <>
@@ -132,7 +125,7 @@ export default function TradeListPanel({ tradeList, quantities, onBrowseCards }:
           </>
         ) : (
           <span className="text-sm text-muted-foreground">
-            Turn on sharing to get a link anyone can view.
+            Make it public to get a link anyone can view.
           </span>
         )}
       </div>
@@ -370,7 +363,7 @@ function TradeRow({
         <div className="flex items-stretch gap-1">
           <button
             onClick={() => onChange({ ...item, quantity: item.quantity - 1 })}
-            className="w-8 h-8 text-sm border border-border rounded-md hover:bg-muted"
+            className="w-9 h-9 text-base border border-border rounded-md hover:bg-muted"
             aria-label={`One fewer ${item.cardName}`}
           >
             −
@@ -380,7 +373,7 @@ function TradeRow({
           </span>
           <button
             onClick={() => onChange({ ...item, quantity: item.quantity + 1 })}
-            className="w-8 h-8 text-sm border border-border rounded-md hover:bg-muted"
+            className="w-9 h-9 text-base border border-border rounded-md hover:bg-muted"
             aria-label={`One more ${item.cardName}`}
           >
             +

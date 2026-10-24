@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "../../utils/supabase/server";
+import { pgrestInList } from "@/lib/pricing/helpers";
 import {
   clampTradeQuantity,
   mergeWants,
@@ -9,9 +10,7 @@ import {
   type TradeKind,
 } from "./lib/tradeList";
 import {
-  applyCollectionDeltas,
   cleanTradeLogText,
-  collectionDeltas,
   MAX_PARTNER_LENGTH,
   MAX_TRADE_LOG_NOTES_LENGTH,
   type TradeLogCard,
@@ -45,13 +44,6 @@ function rowToItem(row: TradeItemRow): TradeItem {
   };
 }
 
-// PREVIEW-ONLY: until migration 119 is applied, the trade tables don't exist.
-// Callers fall back to sample/browser data instead of erroring. Remove with
-// the preview fallback once the migration is live.
-function isMissingTableError(error: any): boolean {
-  return error?.code === "42P01" || error?.code === "PGRST205";
-}
-
 async function getAuthedClient() {
   const supabase = await createClient();
   const {
@@ -62,10 +54,36 @@ async function getAuthedClient() {
   return { supabase, user };
 }
 
+// PostgREST caps a select at 1000 rows; "Add my spares" can list more
+// printings than that, so reads page like loadCollectionAction does.
+const PAGE_SIZE = 1000;
+
+async function loadAllItems<T extends TradeItemRow>(
+  supabase: any,
+  userId: string,
+  columns: string = ITEM_COLUMNS
+): Promise<T[]> {
+  let rows: T[] = [];
+  let offset = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const { data: batch, error } = await supabase
+      .from("trade_list_items")
+      .select(columns)
+      .eq("user_id", userId)
+      .order("id")
+      .range(offset, offset + PAGE_SIZE - 1);
+    if (error) throw error;
+    rows = rows.concat(batch || []);
+    hasMore = (batch?.length || 0) === PAGE_SIZE;
+    offset += PAGE_SIZE;
+  }
+  return rows;
+}
+
 export async function loadMyTradeListAction(): Promise<{
   success: boolean;
   error?: string;
-  previewMode?: boolean;
   items: TradeItem[];
   isShared: boolean;
   username: string | null;
@@ -75,29 +93,18 @@ export async function loadMyTradeListAction(): Promise<{
     const { supabase, user } = await getAuthedClient();
     if (!user) return { success: false, error: "You must be logged in", ...empty };
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("username")
-      .eq("id", user.id)
-      .maybeSingle();
-    const username = profile?.username ?? null;
-
-    const [itemsResult, listResult] = await Promise.all([
-      supabase.from("trade_list_items").select(ITEM_COLUMNS).eq("user_id", user.id),
+    const [{ data: profile }, rows, listResult] = await Promise.all([
+      supabase.from("profiles").select("username").eq("id", user.id).maybeSingle(),
+      loadAllItems(supabase, user.id),
       supabase.from("trade_lists").select("is_shared").eq("user_id", user.id).maybeSingle(),
     ]);
-
-    if (isMissingTableError(itemsResult.error) || isMissingTableError(listResult.error)) {
-      return { success: true, previewMode: true, ...empty, username };
-    }
-    if (itemsResult.error) throw itemsResult.error;
     if (listResult.error) throw listResult.error;
 
     return {
       success: true,
-      items: (itemsResult.data || []).map(rowToItem),
+      items: rows.map(rowToItem),
       isShared: listResult.data?.is_shared ?? false,
-      username,
+      username: profile?.username ?? null,
     };
   } catch (error) {
     console.error("Error in loadMyTradeListAction:", error);
@@ -137,6 +144,9 @@ export async function saveTradeItemAction(item: TradeItem) {
 
 const UPSERT_CHUNK_SIZE = 500;
 const NAME_CHUNK_SIZE = 100;
+// Match lookups are bounded by the owner's list in practice; this caps what a
+// caller of the action can ask for directly.
+const MAX_MATCH_NAMES = 5000;
 
 function toRow(userId: string, item: TradeItem) {
   return {
@@ -174,25 +184,15 @@ export async function saveTradeItemsAction(items: TradeItem[]) {
   }
 }
 
-/**
- * Adds Wants (e.g. a deck's missing cards), merged with existing Wants via
- * mergeWants. `previewMode` means the tables don't exist yet and the caller
- * should merge into the browser copy instead.
- */
+/** Adds Wants (e.g. a deck's missing cards), merged with existing Wants via mergeWants. */
 export async function addWantsAction(
   incoming: TradeItem[]
-): Promise<{ success: boolean; error?: string; previewMode?: boolean; added?: number }> {
+): Promise<{ success: boolean; error?: string; added?: number }> {
   try {
     const { supabase, user } = await getAuthedClient();
     if (!user) return { success: false, error: "Sign in to save Wants" };
-    const { data, error } = await supabase
-      .from("trade_list_items")
-      .select(ITEM_COLUMNS)
-      .eq("user_id", user.id)
-      .eq("kind", "want");
-    if (isMissingTableError(error)) return { success: true, previewMode: true };
-    if (error) throw error;
-    const changes = mergeWants((data || []).map(rowToItem), incoming);
+    const existing = (await loadAllItems(supabase, user.id)).map(rowToItem).filter((i) => i.kind === "want");
+    const changes = mergeWants(existing, incoming);
     await upsertItems(supabase, user.id, changes);
     return { success: true, added: changes.length };
   } catch (error) {
@@ -205,8 +205,6 @@ export async function addWantsAction(
  * What a signed-in visitor brings to someone else's list: the visitor's owned
  * printings among the owner's Want names, and the visitor's Wants among the
  * owner's Have names. Restricted by name so the page payload stays small.
- * `wantsPreview` means the visitor's Wants live in their browser (tables not
- * live yet).
  */
 export async function loadVisitorMatchDataAction(names: {
   wantNames: string[];
@@ -215,37 +213,53 @@ export async function loadVisitorMatchDataAction(names: {
   signedIn: boolean;
   owned: Record<string, number>;
   wants: TradeItem[];
-  wantsPreview?: boolean;
 }> {
   const empty = { owned: {}, wants: [] as TradeItem[] };
   try {
     const { supabase, user } = await getAuthedClient();
     if (!user) return { signedIn: false, ...empty };
 
+    // Card names carry quotes and commas; pgrestInList quotes them so
+    // PostgREST's in() parse doesn't silently drop the rest of the list.
+    // Chunks run in parallel: this sits on the public page's request path.
+    const chunksOf = (all: string[]) => {
+      const unique = Array.from(new Set(all)).slice(0, MAX_MATCH_NAMES);
+      const chunks: string[][] = [];
+      for (let i = 0; i < unique.length; i += NAME_CHUNK_SIZE) chunks.push(unique.slice(i, i + NAME_CHUNK_SIZE));
+      return chunks;
+    };
+
+    const [ownedResults, wantResults] = await Promise.all([
+      Promise.all(
+        chunksOf(names.wantNames).map((chunk) =>
+          supabase
+            .from("collection_cards")
+            .select("card_name, card_set, card_img_file, quantity")
+            .eq("user_id", user.id)
+            .filter("card_name", "in", pgrestInList(chunk))
+        )
+      ),
+      Promise.all(
+        chunksOf(names.haveNames).map((chunk) =>
+          supabase
+            .from("trade_list_items")
+            .select(ITEM_COLUMNS)
+            .eq("user_id", user.id)
+            .eq("kind", "want")
+            .filter("card_name", "in", pgrestInList(chunk))
+        )
+      ),
+    ]);
+
     const owned: Record<string, number> = {};
-    const wantNames = Array.from(new Set(names.wantNames));
-    for (let i = 0; i < wantNames.length; i += NAME_CHUNK_SIZE) {
-      const { data, error } = await supabase
-        .from("collection_cards")
-        .select("card_name, card_set, card_img_file, quantity")
-        .eq("user_id", user.id)
-        .in("card_name", wantNames.slice(i, i + NAME_CHUNK_SIZE));
+    for (const { data, error } of ownedResults) {
       if (error) throw error;
       for (const r of data || []) owned[`${r.card_name}|${r.card_set}|${r.card_img_file}`] = r.quantity;
     }
-
     const wants: TradeItem[] = [];
-    const haveNames = Array.from(new Set(names.haveNames));
-    for (let i = 0; i < haveNames.length; i += NAME_CHUNK_SIZE) {
-      const { data, error } = await supabase
-        .from("trade_list_items")
-        .select(ITEM_COLUMNS)
-        .eq("user_id", user.id)
-        .eq("kind", "want")
-        .in("card_name", haveNames.slice(i, i + NAME_CHUNK_SIZE));
-      if (isMissingTableError(error)) return { signedIn: true, owned, wants: [], wantsPreview: true };
+    for (const { data, error } of wantResults) {
       if (error) throw error;
-      wants.push(...(data || []).map(rowToItem));
+      wants.push(...((data || []) as TradeItemRow[]).map(rowToItem));
     }
     return { signedIn: true, owned, wants };
   } catch (error) {
@@ -287,7 +301,6 @@ export async function setTradeListSharedAction(isShared: boolean) {
  */
 export async function loadPublicTradeListAction(username: string): Promise<{
   found: boolean;
-  previewMode?: boolean;
   username?: string;
   items?: TradeItem[];
   isShared?: boolean;
@@ -308,21 +321,15 @@ export async function loadPublicTradeListAction(username: string): Promise<{
     } = await supabase.auth.getUser();
     const isOwner = user?.id === profile.id;
 
-    const [listResult, itemsResult] = await Promise.all([
+    const [listResult, rows] = await Promise.all([
       supabase.from("trade_lists").select("is_shared").eq("user_id", profile.id).maybeSingle(),
-      supabase.from("trade_list_items").select(`${ITEM_COLUMNS}, updated_at`).eq("user_id", profile.id),
+      loadAllItems<TradeItemRow & { updated_at: string }>(supabase, profile.id, `${ITEM_COLUMNS}, updated_at`),
     ]);
-
-    if (isMissingTableError(listResult.error) || isMissingTableError(itemsResult.error)) {
-      return { found: true, previewMode: true, username: profile.username, isOwner, items: [], isShared: false };
-    }
     if (listResult.error) throw listResult.error;
-    if (itemsResult.error) throw itemsResult.error;
 
     const isShared = listResult.data?.is_shared ?? false;
     if (!isShared && !isOwner) return { found: false };
 
-    const rows = (itemsResult.data || []) as (TradeItemRow & { updated_at: string })[];
     // "Last updated" reflects the newest item change, not the sharing toggle.
     const updatedAt = rows.reduce<string | null>(
       (latest, r) => (!latest || r.updated_at > latest ? r.updated_at : latest),
@@ -389,7 +396,6 @@ function cleanLogCards(cards: TradeLogCard[]): TradeLogCard[] {
 export async function loadTradeLogAction(): Promise<{
   success: boolean;
   error?: string;
-  previewMode?: boolean;
   entries: TradeLogEntry[];
 }> {
   try {
@@ -401,7 +407,6 @@ export async function loadTradeLogAction(): Promise<{
       .eq("user_id", user.id)
       .order("traded_on", { ascending: false })
       .order("created_at", { ascending: false });
-    if (isMissingTableError(error)) return { success: true, previewMode: true, entries: [] };
     if (error) throw error;
     return { success: true, entries: (data || []).map(rowToEntry) };
   } catch (error) {
@@ -411,9 +416,9 @@ export async function loadTradeLogAction(): Promise<{
 }
 
 /**
- * Records a trade, then applies it to the collection: received copies are
- * added, given copies removed (floored at 0). The log row is written first so
- * a collection failure never loses the record.
+ * Records a trade and applies it to the collection (received copies added,
+ * given copies removed, floored at 0) in one transaction, via the log_trade
+ * RPC from migration 120.
  */
 export async function logTradeAction(input: {
   tradedOn: string;
@@ -427,72 +432,16 @@ export async function logTradeAction(input: {
 
     const cards = cleanLogCards(input.cards);
     if (cards.length === 0) return { success: false, error: "Add at least one card" };
-    const tradedOn = /^\d{4}-\d{2}-\d{2}$/.test(input.tradedOn) ? input.tradedOn : undefined;
+    const tradedOn = /^\d{4}-\d{2}-\d{2}$/.test(input.tradedOn) ? input.tradedOn : null;
 
-    const { data, error } = await supabase
-      .from("trade_log")
-      .insert({
-        user_id: user.id,
-        ...(tradedOn && { traded_on: tradedOn }),
-        partner: cleanTradeLogText(input.partner, MAX_PARTNER_LENGTH),
-        notes: cleanTradeLogText(input.notes, MAX_TRADE_LOG_NOTES_LENGTH),
-        cards,
-      })
-      .select("id, traded_on, partner, notes, cards, created_at")
-      .single();
+    const { data, error } = await supabase.rpc("log_trade", {
+      p_traded_on: tradedOn,
+      p_partner: cleanTradeLogText(input.partner, MAX_PARTNER_LENGTH),
+      p_notes: cleanTradeLogText(input.notes, MAX_TRADE_LOG_NOTES_LENGTH),
+      p_cards: cards,
+    });
     if (error) throw error;
-    const entry = rowToEntry(data as TradeLogRow);
-
-    const deltas = collectionDeltas(cards);
-    const current = new Map<string, number>();
-    for (const key of deltas.keys()) {
-      const [name, set, imgFile] = key.split("|");
-      const { data: row, error: readError } = await supabase
-        .from("collection_cards")
-        .select("quantity")
-        .eq("user_id", user.id)
-        .eq("card_name", name)
-        .eq("card_set", set)
-        .eq("card_img_file", imgFile)
-        .maybeSingle();
-      if (readError) throw readError;
-      current.set(key, row?.quantity ?? 0);
-    }
-
-    const next = applyCollectionDeltas(current, deltas);
-    for (const [key, quantity] of next) {
-      const [name, set, imgFile] = key.split("|");
-      const { error: writeError } =
-        quantity === 0
-          ? await supabase
-              .from("collection_cards")
-              .delete()
-              .eq("user_id", user.id)
-              .eq("card_name", name)
-              .eq("card_set", set)
-              .eq("card_img_file", imgFile)
-          : await supabase.from("collection_cards").upsert(
-              {
-                user_id: user.id,
-                card_name: name,
-                card_set: set,
-                card_img_file: imgFile,
-                quantity,
-                updated_at: new Date().toISOString(),
-              },
-              { onConflict: "user_id,card_name,card_set,card_img_file" }
-            );
-      if (writeError) {
-        console.error("Trade logged but collection update failed:", writeError);
-        return {
-          success: true,
-          entry,
-          error: "Trade saved, but your collection couldn't be fully updated. Check those cards.",
-        };
-      }
-    }
-
-    return { success: true, entry };
+    return { success: true, entry: rowToEntry(data as TradeLogRow) };
   } catch (error) {
     console.error("Error in logTradeAction:", error);
     return { success: false, error: "Failed to log trade" };

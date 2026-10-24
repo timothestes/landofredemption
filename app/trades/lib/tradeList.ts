@@ -227,18 +227,26 @@ export function spareHaves(
 /**
  * Merges incoming Wants into existing ones. An existing Want of the same
  * printing keeps its note/flags and rises to the larger quantity (so adding
- * the same deck twice doesn't double up). Returns only items that change.
+ * the same deck twice doesn't double up). An incoming any-printing Want also
+ * matches an existing any-printing Want of the same card, whichever printing
+ * holds its image, so a deck built on another printing doesn't list the card
+ * twice. Returns only items that change.
  */
 export function mergeWants(existing: TradeItem[], incoming: TradeItem[]): TradeItem[] {
-  const byKey = new Map(existing.filter((i) => i.kind === "want").map((i) => [keyOfItem(i), i]));
+  const wants = existing.filter((i) => i.kind === "want");
+  const byKey = new Map(wants.map((i) => [keyOfItem(i), i]));
+  const anyByName = new Map(wants.filter((i) => i.anyVersion).map((i) => [i.cardName, i]));
   const changes = new Map<string, TradeItem>();
   for (const raw of incoming) {
     const want = normalizeTradeItem({ ...raw, kind: "want" });
     if (want.quantity === 0) continue;
-    const key = keyOfItem(want);
-    const current = changes.get(key) ?? byKey.get(key);
-    if (!current) changes.set(key, want);
-    else if (want.quantity > current.quantity) changes.set(key, { ...current, quantity: want.quantity });
+    const match = (want.anyVersion ? anyByName.get(want.cardName) : undefined) ?? byKey.get(keyOfItem(want));
+    const key = keyOfItem(match ?? want);
+    const current = changes.get(key) ?? match;
+    const next = !current ? want : want.quantity > current.quantity ? { ...current, quantity: want.quantity } : null;
+    if (!next) continue;
+    changes.set(key, next);
+    if (next.anyVersion) anyByName.set(next.cardName, next);
   }
   return Array.from(changes.values());
 }
@@ -246,7 +254,8 @@ export function mergeWants(existing: TradeItem[], incoming: TradeItem[]): TradeI
 // ---------------------------------------------------------------------------
 // Plain-text export (for Facebook groups, Discord, etc.)
 
-export function tradeListText(username: string, items: DisplayTradeItem[], url: string | null): string {
+/** `username` is null for an owner who hasn't picked one yet. */
+export function tradeListText(username: string | null, items: DisplayTradeItem[], url: string | null): string {
   const { priorityWants, wants, haves } = splitTradeItems(items);
   const line = (i: DisplayTradeItem) =>
     `${i.quantity}x ${i.cardName} (${i.anyVersion ? "any printing" : i.setName})${i.note ? ` — ${i.note}` : ""}`;
@@ -254,7 +263,7 @@ export function tradeListText(username: string, items: DisplayTradeItem[], url: 
     list.length ? [`${title} (${totalCopies(list)})`, ...list.map(line), ""] : [];
 
   return [
-    `${username}'s trade list`,
+    username ? `${username}'s trade list` : "My trade list",
     ...(url ? [url] : []),
     "",
     ...section("★ PRIORITY WANTS", priorityWants),

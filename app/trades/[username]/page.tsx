@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { loadPublicTradeListAction, loadVisitorMatchDataAction } from "../actions";
 import { splitTradeItems, totalCopies } from "../lib/tradeList";
 import { withCardInfo } from "../lib/cardInfo";
-import { sampleTradeItems } from "../lib/previewSample";
 import { getCardImageUrlOrNull } from "../../shared/utils/cardImageUrl";
 import TradeListView from "./client";
 
@@ -13,15 +12,11 @@ interface PageProps {
 }
 
 // Shared by generateMetadata and the page so the list loads once per request.
-const loadList = cache(async (username: string) => {
-  const result = await loadPublicTradeListAction(username);
-  if (!result.found) return result;
-  return { ...result, items: result.previewMode ? sampleTradeItems() : result.items || [] };
-});
+const loadList = cache(loadPublicTradeListAction);
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { username } = await params;
-  const result = await loadList(decodeURIComponent(username));
+  const result = await loadList(username);
   if (!result.found) return { title: "Trade List Not Found" };
 
   const { priorityWants, wants, haves } = splitTradeItems(result.items || []);
@@ -53,7 +48,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function TradeListPage({ params }: PageProps) {
   const { username } = await params;
-  const result = await loadList(decodeURIComponent(username));
+  const result = await loadList(username);
   if (!result.found || !result.username) notFound();
 
   const items = result.items || [];
@@ -72,8 +67,17 @@ export default async function TradeListPage({ params }: PageProps) {
       items={withCardInfo(items)}
       isOwner={isOwner}
       isShared={result.isShared ?? false}
-      previewMode={result.previewMode ?? false}
-      updatedAt={result.updatedAt ?? null}
+      // Fixed locale/zone: a client-side toLocaleDateString would hydrate differently.
+      updatedLabel={
+        result.updatedAt
+          ? new Date(result.updatedAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+              timeZone: "America/New_York",
+            })
+          : null
+      }
       visitor={visitor}
     />
   );
