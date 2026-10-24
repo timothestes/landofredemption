@@ -195,9 +195,10 @@ describe('reconcileUpdates', () => {
 });
 
 describe('canEditBracket', () => {
-  it('is editable until the first game row exists', () => {
+  it('is editable until the first result is recorded', () => {
     expect(canEditBracket([])).toBe(true);
-    expect(canEditBracket([game(1, null)])).toBe(false);
+    expect(canEditBracket([game(1, null)])).toBe(true);
     expect(canEditBracket([game(1, 'e1')])).toBe(false);
+    expect(canEditBracket([game(1, null), game(2, 'e1')])).toBe(false);
   });
 });

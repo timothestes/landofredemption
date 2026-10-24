@@ -195,7 +195,8 @@ export async function createBracketAction(input: BracketInput): Promise<ActionRe
 }
 
 // Rebuilds a bracket's decks, format and series in place. Allowed only while
-// no game row exists (byes have none), so no result is ever thrown away.
+// no game has a winner, so no result is ever thrown away; unfinished game rows
+// go with their matches (cascade).
 export async function updateBracketAction(input: BracketInput & { id: string }): Promise<ActionResult<{ id: string }>> {
   const supabase = await createClient();
   const owner = await requireBracketOwner(supabase, input.id);
