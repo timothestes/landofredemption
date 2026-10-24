@@ -37,7 +37,7 @@ const LOR_UPLOADS =
 export const DOCS = {
   reg: `${LOR_UPLOADS}/2026/03/REG_PDF_11.0.0.pdf`,
   ordir: `${LOR_UPLOADS}/2026/03/ORDIR_PDF_7.0.0.pdf`,
-  deckBuildingRules: `${LOR_UPLOADS}/2026/03/Deck_Building_Rules_1.3.pdf`,
+  deckBuildingRules: `${LOR_UPLOADS}/2026/08/Deck_Building_Rules_2.0.pdf`,
   paragonRules: `${LOR_UPLOADS}/2026/07/Redemption-Paragon-Format-Rules.pdf`,
   paragonCards: `${LOR_UPLOADS}/2025/11/Paragon-Format-Paragons-v1.pdf`,
   paragonLostSoulsColor: `${LOR_UPLOADS}/2025/11/Paragon-Format-Lost-Souls-Color-v1.pdf`,
@@ -100,8 +100,8 @@ export const RESOURCE_SECTIONS: ResourceSection[] = [
         label: "Deck Building Rules",
         description:
           "Deck construction and format-specific rules — deck size, Lost Soul counts, reserve, and card limits.",
-        version: "v1.3.0",
-        published: "March 13, 2026",
+        version: "v2.0.0",
+        published: "August 13, 2026",
         icon: TbCardsFilled,
       },
       {
