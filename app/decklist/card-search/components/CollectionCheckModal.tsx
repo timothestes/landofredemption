@@ -57,7 +57,7 @@ export default function CollectionCheckModal({
     }
     const incoming = Array.from(totals.values());
     setWantsStatus("saving");
-    const result = await addWantsAction(incoming);
+    const result = await addWantsAction(incoming).catch(() => ({ success: false as const, error: undefined, added: 0 }));
     if (!result.success) {
       setWantsStatus("error");
       setWantsMessage(result.error || "Couldn't add to your Wants");
@@ -218,10 +218,10 @@ export default function CollectionCheckModal({
                 </svg>
                 Buy missing on YTG
               </button>
-              {wantsStatus === "done" || wantsStatus === "error" ? (
+              {wantsStatus === "done" ? (
                 <p
                   className={`mt-2 text-sm text-center ${
-                    wantsStatus === "error" ? "text-red-600 dark:text-red-400" : "text-foreground"
+                    "text-foreground"
                   }`}
                 >
                   {wantsMessage}{" "}
@@ -232,13 +232,18 @@ export default function CollectionCheckModal({
                   )}
                 </p>
               ) : (
+                <>
+                {wantsStatus === "error" && (
+                  <p className="mt-2 text-sm text-center text-red-600 dark:text-red-400">{wantsMessage}</p>
+                )}
                 <button
                   onClick={addMissingToWants}
                   disabled={wantsStatus === "saving"}
                   className="mt-2 w-full py-2.5 rounded-lg border border-border hover:bg-muted text-foreground text-sm font-semibold transition-colors disabled:opacity-60"
                 >
-                  {wantsStatus === "saving" ? "Adding…" : "Add missing to my Wants"}
+                  {wantsStatus === "saving" ? "Adding…" : wantsStatus === "error" ? "Try again" : "Add missing to my Wants"}
                 </button>
+                </>
               )}
               <p className="mt-2 text-[11px] text-muted-foreground text-center">
                 Matching by card name only — any printing you own counts as covered.

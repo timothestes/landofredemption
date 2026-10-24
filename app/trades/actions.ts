@@ -215,9 +215,11 @@ export async function loadVisitorMatchDataAction(names: {
   wants: TradeItem[];
 }> {
   const empty = { owned: {}, wants: [] as TradeItem[] };
+  let signedIn = false;
   try {
     const { supabase, user } = await getAuthedClient();
     if (!user) return { signedIn: false, ...empty };
+    signedIn = true;
 
     // Card names carry quotes and commas; pgrestInList quotes them so
     // PostgREST's in() parse doesn't silently drop the rest of the list.
@@ -264,7 +266,8 @@ export async function loadVisitorMatchDataAction(names: {
     return { signedIn: true, owned, wants };
   } catch (error) {
     console.error("Error in loadVisitorMatchDataAction:", error);
-    return { signedIn: false, ...empty };
+    // A failed lookup shows no matches; it must not tell a signed-in visitor to sign in.
+    return { signedIn, ...empty };
   }
 }
 
