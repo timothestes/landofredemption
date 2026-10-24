@@ -211,7 +211,10 @@ export function reconcileUpdates(bracket: Bracket, matches: BracketMatch[], game
   return updates;
 }
 
-/** A bracket can be rebuilt (decks, format, series) until its first game row exists. */
+/**
+ * A bracket can be rebuilt (decks, format, series) until its first result is
+ * recorded. Started-but-unfinished games don't lock it; the rebuild drops them.
+ */
 export function canEditBracket(games: BracketGame[]): boolean {
-  return games.length === 0;
+  return !games.some(g => g.winnerEntryId);
 }

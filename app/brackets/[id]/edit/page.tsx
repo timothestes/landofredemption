@@ -10,11 +10,11 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Edit Gauntlet',
-  description: 'Change the decks, format or series of a bracket before any game is played',
+  description: 'Change the decks, format or series of a bracket before any result is recorded',
 };
 
 // The setup screen again, pre-filled. Only the owner may open it, and only
-// while the bracket has no game rows; everyone else lands on the bracket.
+// while no game has a result; everyone else lands on the bracket.
 export default async function EditBracketPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
