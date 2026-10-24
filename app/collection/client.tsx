@@ -90,6 +90,12 @@ export default function CollectionClient() {
   const tradeLog = useTradeLogState();
   const [view, setView] = useState<"cards" | "trades" | "log">("cards");
   const [showLogTrade, setShowLogTrade] = useState(false);
+
+  // Deep link from the deck builder ("View trade list") and elsewhere.
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("view");
+    if (requested === "trades" || requested === "log") setView(requested);
+  }, []);
   const showCards = view === "cards";
 
   const [search, setSearch] = useState("");

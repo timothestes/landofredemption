@@ -1,6 +1,10 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import type { BuyDeckCard } from "./BuyDeckModal";
 import { computeMissingCards } from "../utils/collectionCheck";
+import { addWantsAction } from "../../../trades/actions";
+import { mergeWants, keyOfItem, type TradeItem } from "../../../trades/lib/tradeList";
+import { withCardInfo } from "../../../trades/lib/cardInfo";
+import { readPreviewItems, writePreviewItems } from "../../../trades/lib/previewStore";
 
 interface CollectionCheckModalProps {
   /** Full deck (any zones); only main+reserve are counted. */
@@ -31,6 +35,51 @@ export default function CollectionCheckModal({
     [cards, ownedByName]
   );
   const missingCount = missing.reduce((sum, c) => sum + c.quantity, 0);
+
+  // "Add missing to my Wants": any printing, since this check matches by name.
+  const [wantsStatus, setWantsStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
+  const [wantsMessage, setWantsMessage] = useState("");
+  const addMissingToWants = async () => {
+    const totals = new Map<string, TradeItem>();
+    for (const c of missing) {
+      const [cardName, cardSet, cardImgFile] = c.card_key.split("|");
+      const existing = totals.get(cardName);
+      if (existing) existing.quantity += c.quantity;
+      else
+        totals.set(cardName, {
+          kind: "want",
+          cardName,
+          cardSet: cardSet ?? "",
+          cardImgFile: cardImgFile ?? "",
+          anyVersion: true,
+          priority: false,
+          quantity: c.quantity,
+          note: "",
+        });
+    }
+    const incoming = Array.from(totals.values());
+    setWantsStatus("saving");
+    const result = await addWantsAction(incoming);
+    if (!result.success) {
+      setWantsStatus("error");
+      setWantsMessage(result.error || "Couldn't add to your Wants");
+      return;
+    }
+    let added = result.added ?? 0;
+    if (result.previewMode) {
+      // PREVIEW-ONLY: trade tables aren't live; merge into the browser copy.
+      const current = readPreviewItems() ?? [];
+      const changes = mergeWants(current, incoming);
+      const byKey = new Map(current.map((i) => [keyOfItem(i), i]));
+      for (const c of withCardInfo(changes)) byKey.set(keyOfItem(c), c);
+      writePreviewItems(Array.from(byKey.values()));
+      added = changes.length;
+    }
+    setWantsStatus("done");
+    setWantsMessage(
+      added === 0 ? "Already on your Wants." : `Added ${added} card${added === 1 ? "" : "s"} to your Wants.`
+    );
+  };
 
   // Group missing entries by zone, preserving main-before-reserve order.
   const groups = useMemo(() => {
@@ -180,6 +229,28 @@ export default function CollectionCheckModal({
                 </svg>
                 Buy missing on YTG
               </button>
+              {wantsStatus === "done" || wantsStatus === "error" ? (
+                <p
+                  className={`mt-2 text-sm text-center ${
+                    wantsStatus === "error" ? "text-red-600 dark:text-red-400" : "text-foreground"
+                  }`}
+                >
+                  {wantsMessage}{" "}
+                  {wantsStatus === "done" && (
+                    <a href="/collection?view=trades" className="font-medium text-primary hover:underline">
+                      View trade list
+                    </a>
+                  )}
+                </p>
+              ) : (
+                <button
+                  onClick={addMissingToWants}
+                  disabled={wantsStatus === "saving"}
+                  className="mt-2 w-full py-2.5 rounded-lg border border-border hover:bg-muted text-foreground text-sm font-semibold transition-colors disabled:opacity-60"
+                >
+                  {wantsStatus === "saving" ? "Adding…" : "Add missing to my Wants"}
+                </button>
+              )}
               <p className="mt-2 text-[11px] text-muted-foreground text-center">
                 Matching by card name only — any printing you own counts as covered.
               </p>

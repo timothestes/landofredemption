@@ -1,7 +1,13 @@
 "use server";
 
 import { createClient } from "../../utils/supabase/server";
-import { clampTradeQuantity, normalizeTradeItem, type TradeItem, type TradeKind } from "./lib/tradeList";
+import {
+  clampTradeQuantity,
+  mergeWants,
+  normalizeTradeItem,
+  type TradeItem,
+  type TradeKind,
+} from "./lib/tradeList";
 import {
   applyCollectionDeltas,
   cleanTradeLogText,
@@ -117,26 +123,134 @@ export async function saveTradeItemAction(item: TradeItem) {
         .eq("card_img_file", clean.cardImgFile);
       if (error) throw error;
     } else {
-      const { error } = await supabase.from("trade_list_items").upsert(
-        {
-          user_id: user.id,
-          kind: clean.kind,
-          card_name: clean.cardName,
-          card_set: clean.cardSet,
-          card_img_file: clean.cardImgFile,
-          any_version: clean.anyVersion,
-          priority: clean.priority,
-          quantity: clean.quantity,
-          note: clean.note,
-        },
-        { onConflict: ITEM_CONFLICT_KEY }
-      );
+      const { error } = await supabase
+        .from("trade_list_items")
+        .upsert(toRow(user.id, clean), { onConflict: ITEM_CONFLICT_KEY });
       if (error) throw error;
     }
     return { success: true };
   } catch (error) {
     console.error("Error in saveTradeItemAction:", error);
     return { success: false, error: "Failed to save trade list" };
+  }
+}
+
+const UPSERT_CHUNK_SIZE = 500;
+const NAME_CHUNK_SIZE = 100;
+
+function toRow(userId: string, item: TradeItem) {
+  return {
+    user_id: userId,
+    kind: item.kind,
+    card_name: item.cardName,
+    card_set: item.cardSet,
+    card_img_file: item.cardImgFile,
+    any_version: item.anyVersion,
+    priority: item.priority,
+    quantity: item.quantity,
+    note: item.note,
+  };
+}
+
+async function upsertItems(supabase: any, userId: string, items: TradeItem[]) {
+  for (let i = 0; i < items.length; i += UPSERT_CHUNK_SIZE) {
+    const chunk = items.slice(i, i + UPSERT_CHUNK_SIZE).map((item) => toRow(userId, item));
+    const { error } = await supabase.from("trade_list_items").upsert(chunk, { onConflict: ITEM_CONFLICT_KEY });
+    if (error) throw error;
+  }
+}
+
+/** Upserts many items at once (bulk adds). Items with quantity 0 are skipped. */
+export async function saveTradeItemsAction(items: TradeItem[]) {
+  try {
+    const { supabase, user } = await getAuthedClient();
+    if (!user) return { success: false, error: "You must be logged in" };
+    const clean = items.map(normalizeTradeItem).filter((i) => i.quantity > 0);
+    await upsertItems(supabase, user.id, clean);
+    return { success: true };
+  } catch (error) {
+    console.error("Error in saveTradeItemsAction:", error);
+    return { success: false, error: "Failed to save trade list" };
+  }
+}
+
+/**
+ * Adds Wants (e.g. a deck's missing cards), merged with existing Wants via
+ * mergeWants. `previewMode` means the tables don't exist yet and the caller
+ * should merge into the browser copy instead.
+ */
+export async function addWantsAction(
+  incoming: TradeItem[]
+): Promise<{ success: boolean; error?: string; previewMode?: boolean; added?: number }> {
+  try {
+    const { supabase, user } = await getAuthedClient();
+    if (!user) return { success: false, error: "Sign in to save Wants" };
+    const { data, error } = await supabase
+      .from("trade_list_items")
+      .select(ITEM_COLUMNS)
+      .eq("user_id", user.id)
+      .eq("kind", "want");
+    if (isMissingTableError(error)) return { success: true, previewMode: true };
+    if (error) throw error;
+    const changes = mergeWants((data || []).map(rowToItem), incoming);
+    await upsertItems(supabase, user.id, changes);
+    return { success: true, added: changes.length };
+  } catch (error) {
+    console.error("Error in addWantsAction:", error);
+    return { success: false, error: "Failed to add Wants" };
+  }
+}
+
+/**
+ * What a signed-in visitor brings to someone else's list: the visitor's owned
+ * printings among the owner's Want names, and the visitor's Wants among the
+ * owner's Have names. Restricted by name so the page payload stays small.
+ * `wantsPreview` means the visitor's Wants live in their browser (tables not
+ * live yet).
+ */
+export async function loadVisitorMatchDataAction(names: {
+  wantNames: string[];
+  haveNames: string[];
+}): Promise<{
+  signedIn: boolean;
+  owned: Record<string, number>;
+  wants: TradeItem[];
+  wantsPreview?: boolean;
+}> {
+  const empty = { owned: {}, wants: [] as TradeItem[] };
+  try {
+    const { supabase, user } = await getAuthedClient();
+    if (!user) return { signedIn: false, ...empty };
+
+    const owned: Record<string, number> = {};
+    const wantNames = Array.from(new Set(names.wantNames));
+    for (let i = 0; i < wantNames.length; i += NAME_CHUNK_SIZE) {
+      const { data, error } = await supabase
+        .from("collection_cards")
+        .select("card_name, card_set, card_img_file, quantity")
+        .eq("user_id", user.id)
+        .in("card_name", wantNames.slice(i, i + NAME_CHUNK_SIZE));
+      if (error) throw error;
+      for (const r of data || []) owned[`${r.card_name}|${r.card_set}|${r.card_img_file}`] = r.quantity;
+    }
+
+    const wants: TradeItem[] = [];
+    const haveNames = Array.from(new Set(names.haveNames));
+    for (let i = 0; i < haveNames.length; i += NAME_CHUNK_SIZE) {
+      const { data, error } = await supabase
+        .from("trade_list_items")
+        .select(ITEM_COLUMNS)
+        .eq("user_id", user.id)
+        .eq("kind", "want")
+        .in("card_name", haveNames.slice(i, i + NAME_CHUNK_SIZE));
+      if (isMissingTableError(error)) return { signedIn: true, owned, wants: [], wantsPreview: true };
+      if (error) throw error;
+      wants.push(...(data || []).map(rowToItem));
+    }
+    return { signedIn: true, owned, wants };
+  } catch (error) {
+    console.error("Error in loadVisitorMatchDataAction:", error);
+    return { signedIn: false, ...empty };
   }
 }
 

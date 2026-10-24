@@ -5,6 +5,7 @@ import type { Card } from "../../decklist/card-search/utils";
 import {
   loadMyTradeListAction,
   saveTradeItemAction,
+  saveTradeItemsAction,
   setTradeListSharedAction,
 } from "../../trades/actions";
 import {
@@ -107,6 +108,24 @@ export function useTradeListState() {
     [previewMode, persist]
   );
 
+  /** Bulk add/update (e.g. "Add my spares") in one request. */
+  const putItems = useCallback(
+    async (raw: TradeItem[]) => {
+      const clean = raw.map(normalizeTradeItem).filter((i) => i.quantity > 0);
+      setItems((prev) => {
+        const next = new Map(prev);
+        for (const item of clean) next.set(keyOfItem(item), item);
+        return next;
+      });
+      if (previewMode || clean.length === 0) return;
+      setPendingSaves((n) => n + 1);
+      const result = await saveTradeItemsAction(clean);
+      setPendingSaves((n) => n - 1);
+      if (!result.success) setSyncError(result.error || "Failed to save changes");
+    },
+    [previewMode]
+  );
+
   const getItem = useCallback(
     (kind: TradeKind, card: Pick<Card, "name" | "set" | "imgFile">) =>
       items.get(tradeItemKey(kind, card)),
@@ -161,6 +180,7 @@ export function useTradeListState() {
     isSaving: pendingSaves > 0,
     syncError,
     putItem,
+    putItems,
     getItem,
     toggleCard,
     setShared,

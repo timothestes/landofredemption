@@ -1,17 +1,20 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import CardImage from "../../decklist/card-search/components/CardImage";
 import TradeListToolbar from "../components/TradeListToolbar";
 import {
   DEFAULT_TRADE_FILTERS,
   filterTradeItems,
+  findTradeMatches,
   keyOfItem,
   splitTradeItems,
   totalCopies,
+  tradeListText,
   type DisplayTradeItem,
   type TradeFilters,
+  type TradeItem,
 } from "../lib/tradeList";
 import { readPreviewItems } from "../lib/previewStore";
 
@@ -22,6 +25,13 @@ interface TradeListViewProps {
   isShared: boolean;
   previewMode: boolean;
   updatedAt: string | null;
+  /** Null for the owner; otherwise what the visitor brings (see loadVisitorMatchDataAction). */
+  visitor: {
+    signedIn: boolean;
+    owned: Record<string, number>;
+    wants: TradeItem[];
+    wantsPreview?: boolean;
+  } | null;
 }
 
 const LABEL = "text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground";
@@ -33,10 +43,25 @@ export default function TradeListView({
   isShared,
   previewMode,
   updatedAt,
+  visitor,
 }: TradeListViewProps) {
   const [items, setItems] = useState(initialItems);
   const [enlarged, setEnlarged] = useState<DisplayTradeItem | null>(null);
   const [filters, setFilters] = useState<TradeFilters>(DEFAULT_TRADE_FILTERS);
+  const [matchesOnly, setMatchesOnly] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [visitorWants, setVisitorWants] = useState<TradeItem[]>(visitor?.wants ?? []);
+
+  // PREVIEW-ONLY: a visitor's Wants live in their browser until the tables exist.
+  useEffect(() => {
+    if (visitor?.wantsPreview) setVisitorWants(readPreviewItems() ?? []);
+  }, [visitor?.wantsPreview]);
+
+  const matches = useMemo(
+    () => findTradeMatches(items, new Map(Object.entries(visitor?.owned ?? {})), visitorWants),
+    [items, visitor?.owned, visitorWants]
+  );
+  const matchCount = matches.youOwn.size + matches.youWant.size;
 
   // PREVIEW-ONLY: the owner sees their own browser-saved list instead of samples.
   useEffect(() => {
@@ -46,9 +71,21 @@ export default function TradeListView({
   }, [previewMode, isOwner]);
 
   const all = splitTradeItems(items);
-  const visible = filterTradeItems(items, filters);
-  const isFiltered = visible.length !== items.length;
+  const visible = filterTradeItems(items, filters).filter(
+    (i) => !matchesOnly || matches.youOwn.has(keyOfItem(i)) || matches.youWant.has(keyOfItem(i))
+  );
+  const isFiltered = filterTradeItems(items, filters).length !== items.length;
   const { priorityWants, wants, haves } = splitTradeItems(visible, filters.sort);
+
+  const copyText = async () => {
+    try {
+      await navigator.clipboard.writeText(tradeListText(username, items, window.location.href));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard blocked.
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-10">
@@ -86,11 +123,62 @@ export default function TradeListView({
           </>
         )}
       </p>
+      {items.length > 0 && (
+        <button
+          onClick={copyText}
+          title="Copy a plain-text list to paste into Facebook, Discord, etc."
+          className="mt-3 px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted"
+        >
+          {copied ? "Copied" : "Copy as text"}
+        </button>
+      )}
+
+      {/* Where the visitor's cards line up with this list */}
+      {visitor?.signedIn && items.length > 0 && (
+        <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-border/60 py-3 text-sm">
+          {matchCount === 0 ? (
+            <span className="text-muted-foreground">
+              No overlap with your collection or Wants yet.
+            </span>
+          ) : (
+            <>
+              <span className="tabular-nums">
+                You own <span className="font-semibold">{matches.youOwn.size}</span> of their Wants
+              </span>
+              <span className="tabular-nums">
+                They have <span className="font-semibold">{matches.youWant.size}</span> of your Wants
+              </span>
+              <button
+                onClick={() => setMatchesOnly((v) => !v)}
+                aria-pressed={matchesOnly}
+                className={`ml-auto min-h-11 px-4 rounded-full border text-sm transition-colors ${
+                  matchesOnly
+                    ? "bg-foreground text-background border-foreground"
+                    : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                Matches only
+              </button>
+            </>
+          )}
+        </div>
+      )}
+      {visitor && !visitor.signedIn && items.length > 0 && (
+        <p className="mt-6 text-sm text-muted-foreground">
+          <Link
+            href={`/sign-in?redirectTo=${encodeURIComponent(`/trades/${username}`)}`}
+            className="font-medium text-primary hover:underline"
+          >
+            Sign in
+          </Link>{" "}
+          to see which of these cards you own or want.
+        </p>
+      )}
 
       {items.length > 0 && (
         <div className="mt-6">
           <TradeListToolbar items={items} filters={filters} onChange={setFilters} />
-          {isFiltered && (
+          {(isFiltered || matchesOnly) && (
             <p className="mt-2 text-xs text-muted-foreground tabular-nums">
               Showing {visible.length} of {items.length} cards
             </p>
@@ -99,14 +187,15 @@ export default function TradeListView({
       )}
 
       {priorityWants.length > 0 && (
-        <TradeGrid title="Priority wants" highlight items={priorityWants} onEnlarge={setEnlarged} emptyText="" />
+        <TradeGrid title="Priority wants" highlight items={priorityWants} matches={matches} onEnlarge={setEnlarged} emptyText="" />
       )}
       <TradeGrid
         title="Wants"
         items={wants}
+        matches={matches}
         onEnlarge={setEnlarged}
         emptyText={
-          isFiltered
+          isFiltered || matchesOnly
             ? "No Wants match."
             : all.priorityWants.length
               ? "Nothing else wanted right now."
@@ -116,8 +205,9 @@ export default function TradeListView({
       <TradeGrid
         title="Haves"
         items={haves}
+        matches={matches}
         onEnlarge={setEnlarged}
-        emptyText={isFiltered ? "No Haves match." : `${username} hasn't listed any Haves.`}
+        emptyText={isFiltered || matchesOnly ? "No Haves match." : `${username} hasn't listed any Haves.`}
       />
 
       <p className="mt-12 border-t border-border/60 pt-4 text-sm text-muted-foreground">
@@ -158,12 +248,14 @@ function TradeGrid({
   title,
   highlight = false,
   items,
+  matches,
   onEnlarge,
   emptyText,
 }: {
   title: string;
   highlight?: boolean;
   items: DisplayTradeItem[];
+  matches: ReturnType<typeof findTradeMatches>;
   onEnlarge: (item: DisplayTradeItem) => void;
   emptyText: string;
 }) {
@@ -199,6 +291,11 @@ function TradeGrid({
                 {item.quantity > 1 && (
                   <span className="absolute bottom-1 right-1 bg-foreground text-background px-1.5 py-0.5 rounded text-xs font-bold tabular-nums">
                     ×{item.quantity}
+                  </span>
+                )}
+                {(matches.youOwn.has(keyOfItem(item)) || matches.youWant.has(keyOfItem(item))) && (
+                  <span className="absolute top-1 left-1 bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide">
+                    {item.kind === "want" ? "You own" : "You want"}
                   </span>
                 )}
               </button>

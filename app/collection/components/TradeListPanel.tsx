@@ -10,7 +10,9 @@ import {
   filterTradeItems,
   haveShortfall,
   keyOfItem,
+  spareHaves,
   splitTradeItems,
+  tradeListText,
   totalCopies,
   MAX_TRADE_NOTE_LENGTH,
   type DisplayTradeItem,
@@ -29,10 +31,17 @@ interface TradeListPanelProps {
 const LABEL = "text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground";
 
 export default function TradeListPanel({ tradeList, quantities, onBrowseCards }: TradeListPanelProps) {
-  const { items, isLoading, previewMode, isShared, username, setUsername, putItem, setShared } = tradeList;
+  const { items, isLoading, previewMode, isShared, username, setUsername, putItem, putItems, setShared } = tradeList;
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [filters, setFilters] = useState<TradeFilters>(DEFAULT_TRADE_FILTERS);
+  const [copiedText, setCopiedText] = useState(false);
+  const [showSpares, setShowSpares] = useState(false);
+  const [keep, setKeep] = useState(1);
+  const spares = useMemo(
+    () => (showSpares ? spareHaves(quantities, keep, Array.from(items.values())) : []),
+    [showSpares, quantities, keep, items]
+  );
 
   const allItems = useMemo(() => withCardInfo(Array.from(items.values())), [items]);
   const visible = filterTradeItems(allItems, filters);
@@ -54,6 +63,16 @@ export default function TradeListPanel({ tradeList, quantities, onBrowseCards }:
       setTimeout(() => setCopied(false), 1500);
     } catch {
       // Clipboard blocked; the link is visible to copy by hand.
+    }
+  };
+
+  const copyText = async () => {
+    try {
+      await navigator.clipboard.writeText(tradeListText(username || "My", allItems, isShared ? shareUrl : null));
+      setCopiedText(true);
+      setTimeout(() => setCopiedText(false), 1500);
+    } catch {
+      // Clipboard blocked.
     }
   };
 
@@ -117,6 +136,62 @@ export default function TradeListPanel({ tradeList, quantities, onBrowseCards }:
           </span>
         )}
       </div>
+
+      {/* Bulk tools */}
+      <div className="flex flex-wrap items-center gap-2 mt-3">
+        <button
+          onClick={() => setShowSpares((v) => !v)}
+          aria-expanded={showSpares}
+          className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted"
+        >
+          Add my spares to Haves
+        </button>
+        <button
+          onClick={copyText}
+          disabled={items.size === 0}
+          title="Copy a plain-text list to paste into Facebook, Discord, etc."
+          className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {copiedText ? "Copied" : "Copy as text"}
+        </button>
+      </div>
+      {showSpares && (
+        <div className="mt-3 rounded-md border border-border bg-muted/40 px-3 py-3 text-sm">
+          <label className="inline-flex flex-wrap items-center gap-2">
+            Add every printing I own more than
+            <input
+              type="number"
+              min={0}
+              max={20}
+              value={keep}
+              onChange={(e) => setKeep(Math.max(0, Math.min(20, parseInt(e.target.value, 10) || 0)))}
+              className="w-14 rounded-md border border-border bg-background px-2 py-1 text-center text-sm"
+              aria-label="Copies to keep"
+            />
+            {keep === 1 ? "copy" : "copies"} of, offering the extras.
+          </label>
+          <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
+            {spares.length === 0
+              ? "No spares found."
+              : `${spares.length} cards (${totalCopies(spares)} copies). Printings already in Haves are skipped.`}
+          </p>
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={() => {
+                putItems(spares);
+                setShowSpares(false);
+              }}
+              disabled={spares.length === 0}
+              className="px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Add {spares.length || ""} to Haves
+            </button>
+            <button onClick={() => setShowSpares(false)} className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {items.size === 0 ? (
         <div className="text-center py-16 text-muted-foreground">

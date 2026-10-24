@@ -146,3 +146,121 @@ export function splitTradeItems<T extends TradeItem>(
 export function totalCopies(items: TradeItem[]): number {
   return items.reduce((sum, i) => sum + i.quantity, 0);
 }
+
+// ---------------------------------------------------------------------------
+// Matching a visitor against a list owner
+
+export interface TradeMatches {
+  /** Keys of the owner's Wants that the visitor owns. */
+  youOwn: Set<string>;
+  /** Keys of the owner's Haves that the visitor wants. */
+  youWant: Set<string>;
+}
+
+/**
+ * Where a visitor's cards line up with someone's trade list. An owner's
+ * any-printing Want is covered by any printing the visitor owns; a visitor's
+ * any-printing Want matches any printing the owner has.
+ */
+export function findTradeMatches(
+  ownerItems: TradeItem[],
+  /** Visitor's owned quantities by name|set|imgFile. */
+  visitorOwned: Map<string, number>,
+  visitorWants: TradeItem[]
+): TradeMatches {
+  const ownedNames = new Set<string>();
+  for (const [key, qty] of visitorOwned) if (qty > 0) ownedNames.add(key.split("|")[0]);
+  const wantKeys = new Set(visitorWants.filter((w) => w.kind === "want").map(keyOfItem));
+  const wantAnyNames = new Set(
+    visitorWants.filter((w) => w.kind === "want" && w.anyVersion).map((w) => w.cardName)
+  );
+
+  const youOwn = new Set<string>();
+  const youWant = new Set<string>();
+  for (const item of ownerItems) {
+    const printing = `${item.cardName}|${item.cardSet}|${item.cardImgFile}`;
+    if (item.kind === "want") {
+      const owns = item.anyVersion ? ownedNames.has(item.cardName) : (visitorOwned.get(printing) || 0) > 0;
+      if (owns) youOwn.add(keyOfItem(item));
+    } else {
+      const asWant = tradeItemKey("want", { name: item.cardName, set: item.cardSet, imgFile: item.cardImgFile });
+      if (wantKeys.has(asWant) || wantAnyNames.has(item.cardName)) youWant.add(keyOfItem(item));
+    }
+  }
+  return { youOwn, youWant };
+}
+
+// ---------------------------------------------------------------------------
+// Bulk adds
+
+/**
+ * Haves for every printing owned beyond `keep` copies, offering the extras.
+ * Printings already listed as Haves are left alone (their notes/quantities
+ * were set by hand).
+ */
+export function spareHaves(
+  owned: Map<string, number>,
+  keep: number,
+  existing: TradeItem[]
+): TradeItem[] {
+  const listed = new Set(existing.filter((i) => i.kind === "have").map(keyOfItem));
+  const result: TradeItem[] = [];
+  for (const [key, qty] of owned) {
+    const spare = qty - Math.max(0, Math.floor(keep));
+    if (spare <= 0) continue;
+    const [cardName, cardSet, cardImgFile] = key.split("|");
+    if (listed.has(tradeItemKey("have", { name: cardName, set: cardSet, imgFile: cardImgFile }))) continue;
+    result.push({
+      kind: "have",
+      cardName,
+      cardSet,
+      cardImgFile,
+      anyVersion: false,
+      priority: false,
+      quantity: clampTradeQuantity(spare),
+      note: "",
+    });
+  }
+  return sortTradeItems(result);
+}
+
+/**
+ * Merges incoming Wants into existing ones. An existing Want of the same
+ * printing keeps its note/flags and rises to the larger quantity (so adding
+ * the same deck twice doesn't double up). Returns only items that change.
+ */
+export function mergeWants(existing: TradeItem[], incoming: TradeItem[]): TradeItem[] {
+  const byKey = new Map(existing.filter((i) => i.kind === "want").map((i) => [keyOfItem(i), i]));
+  const changes = new Map<string, TradeItem>();
+  for (const raw of incoming) {
+    const want = normalizeTradeItem({ ...raw, kind: "want" });
+    if (want.quantity === 0) continue;
+    const key = keyOfItem(want);
+    const current = changes.get(key) ?? byKey.get(key);
+    if (!current) changes.set(key, want);
+    else if (want.quantity > current.quantity) changes.set(key, { ...current, quantity: want.quantity });
+  }
+  return Array.from(changes.values());
+}
+
+// ---------------------------------------------------------------------------
+// Plain-text export (for Facebook groups, Discord, etc.)
+
+export function tradeListText(username: string, items: DisplayTradeItem[], url: string | null): string {
+  const { priorityWants, wants, haves } = splitTradeItems(items);
+  const line = (i: DisplayTradeItem) =>
+    `${i.quantity}x ${i.cardName} (${i.anyVersion ? "any printing" : i.setName})${i.note ? ` — ${i.note}` : ""}`;
+  const section = (title: string, list: DisplayTradeItem[]) =>
+    list.length ? [`${title} (${totalCopies(list)})`, ...list.map(line), ""] : [];
+
+  return [
+    `${username}'s trade list`,
+    ...(url ? [url] : []),
+    "",
+    ...section("★ PRIORITY WANTS", priorityWants),
+    ...section("WANTS", wants),
+    ...section("HAVES", haves),
+  ]
+    .join("\n")
+    .trim();
+}
