@@ -1,5 +1,5 @@
 import {
-  canPlayMatch, currentRoundName, firstEntryForGame, matchLabel, matchState, roundCount, seriesState,
+  canPlayMatch, currentRoundName, matchLabel, matchState, roundCount, seriesState,
 } from '@/lib/bracket';
 import type {
   Bracket, BracketEntry, BracketGame, BracketMatch, MatchState, SeriesState,
@@ -22,8 +22,6 @@ export interface MatchView {
   /** Text for an empty slot: 'Winner of QF2', 'Bye', or '' when the slot is filled or has no feeder. */
   placeholderA: string;
   placeholderB: string;
-  /** Who goes first in the next game; set only for game 2+ of a `ready` match. */
-  firstToPlayName: string | null;
   canPlay: boolean;
 }
 
@@ -48,9 +46,6 @@ export function buildMatchViews(data: BracketData): MatchView[][] {
       .map((match): MatchView => {
         const state = matchState(match, games, bracket.bestOf);
         const series = seriesState(games, match, bracket.bestOf);
-        const first = state === 'ready' && series.nextGameNumber >= 2
-          ? byId.get(firstEntryForGame(games, match, 'a'))?.deckName ?? null
-          : null;
         return {
           match,
           label: matchLabel(bracket.size, match.round, match.position),
@@ -60,7 +55,6 @@ export function buildMatchViews(data: BracketData): MatchView[][] {
           b: match.entryBId ? byId.get(match.entryBId) ?? null : null,
           placeholderA: placeholder(match, 'a'),
           placeholderB: placeholder(match, 'b'),
-          firstToPlayName: first,
           canPlay: canPlayMatch(match, byId, state),
         };
       }),
