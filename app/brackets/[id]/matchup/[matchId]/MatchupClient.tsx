@@ -3,10 +3,13 @@
 import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import type { Card } from '@/app/decklist/card-search/utils';
 import type { BestOf } from '@/lib/bracket/types';
 import { cn } from '@/lib/utils';
+import type { CardTileHover } from '@/components/ui/CardTile';
+import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
+import { prettifyTypeName } from '@/lib/decks/typeGroups';
 import ToastNotification from '@/components/ui/toast-notification';
 import { setKeyCardsAction } from '../../../actions';
 import { deckBreakdown, sharedRows } from '../../../lib/matchup';
@@ -33,6 +36,11 @@ export function MatchupClient({ bracket, label, score, winnerName, a, b, isOwner
 }) {
   const [active, setActive] = useState<'a' | 'b'>('a');
   const [modal, setModal] = useState<{ card: Card; list: Card[] } | null>(null);
+  // Desktop preview sidebar, as on the deck page. Keeps the last card hovered
+  // rather than blanking in the gaps between tiles.
+  const [showPreview, setShowPreview] = useState(true);
+  const [hovered, setHovered] = useState<CardTileHover | null>(null);
+  const hover = useCallback((card: CardTileHover | null) => { if (card) setHovered(card); }, []);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const closeToast = useCallback(() => setToast(null), []);
   const fail = useCallback((message: string) => setToast({ message, type: 'error' }), []);
@@ -58,6 +66,7 @@ export function MatchupClient({ bracket, label, score, winnerName, a, b, isOwner
       isOwner={isOwner}
       rows={rows}
       onOpenCard={open}
+      onHoverCard={hover}
       onSaveKeyCards={save}
       onError={fail}
       className={cn(active !== key && 'max-lg:hidden')}
@@ -65,15 +74,32 @@ export function MatchupClient({ bracket, label, score, winnerName, a, b, isOwner
   );
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-10">
+    <div className={cn('mx-auto w-full max-w-5xl px-4 py-6 sm:py-10 lg:flex lg:gap-8', showPreview && 'lg:max-w-7xl')}>
+      <div className="min-w-0 flex-1">
       <header className="mb-6 sm:mb-8">
-        <Link
-          href={`/brackets/${bracket.id}`}
-          className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          <span className="truncate">{bracket.name}</span>
-        </Link>
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href={`/brackets/${bracket.id}`}
+            className="inline-flex min-h-11 min-w-0 items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            <span className="truncate">{bracket.name}</span>
+          </Link>
+          {/* Preview sidebar toggle — desktop only */}
+          <button
+            type="button"
+            onClick={() => setShowPreview(v => !v)}
+            aria-pressed={showPreview}
+            className={cn(
+              'hidden shrink-0 items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-colors lg:flex',
+              showPreview ? 'border-foreground bg-foreground text-background' : 'border-border text-muted-foreground hover:bg-muted',
+            )}
+            title={showPreview ? 'Hide card preview' : 'Show card preview'}
+          >
+            {showPreview ? <Eye className="h-4 w-4" aria-hidden /> : <EyeOff className="h-4 w-4" aria-hidden />}
+            Preview
+          </button>
+        </div>
         <p className={cn(LABEL, 'mt-2 tabular-nums')}>{kicker}</p>
         <h1 className="mt-1 font-cinzel text-2xl font-bold tracking-tight sm:text-3xl">
           {a.entry.deckName}{' '}
@@ -110,6 +136,30 @@ export function MatchupClient({ bracket, label, score, winnerName, a, b, isOwner
         {column(a, 'a')}
         {column(b, 'b')}
       </div>
+      </div>
+
+      {/* Sticky sidebar card preview — desktop only */}
+      {showPreview && (
+        <aside className="hidden w-72 flex-shrink-0 lg:block" aria-label="Card preview">
+          <div className="sticky top-24">
+            {hovered ? (
+              <>
+                <div className="aspect-[2.5/3.5] overflow-hidden rounded-lg bg-muted shadow-lg">
+                  <img src={getCardImageUrl(hovered.imgFile)} alt={hovered.name} className="h-full w-full object-contain" />
+                </div>
+                <p className="mt-2 text-sm font-semibold text-foreground">{hovered.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {hovered.set}{hovered.type ? ` · ${prettifyTypeName(hovered.type)}` : ''}
+                </p>
+              </>
+            ) : (
+              <div className="flex aspect-[2.5/3.5] items-center justify-center rounded-lg border-2 border-dashed border-border">
+                <p className="px-4 text-center text-sm text-muted-foreground">Hover over a card to preview</p>
+              </div>
+            )}
+          </div>
+        </aside>
+      )}
 
       {modal && (
         <ModalWithClose

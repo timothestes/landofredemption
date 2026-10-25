@@ -9,7 +9,7 @@ import type { BracketEntry } from '@/lib/bracket/types';
 import { getFormatDef } from '@/lib/formats';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import CardTile from '@/components/ui/CardTile';
+import CardTile, { type CardTileHover } from '@/components/ui/CardTile';
 import { DeckThumb } from '../../../components/DeckThumb';
 import { cardKey, groupDeck, RESERVE_ROW } from '../../../lib/matchup';
 
@@ -28,10 +28,10 @@ const GRID = 'grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-
 const KEY_GRID = 'grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4';
 const CHIP = 'inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground';
 
-function Tile({ card, isKey, onClick }: { card: EnrichedCard; isKey: boolean; onClick?: () => void }) {
+function Tile({ card, isKey, onClick, onHover }: { card: EnrichedCard; isKey: boolean; onClick?: () => void; onHover?: (card: CardTileHover | null) => void }) {
   return (
     <div className={cn('relative rounded-md', isKey && 'ring-2 ring-primary ring-offset-2 ring-offset-background')}>
-      <CardTile card={card} compact onClick={onClick} />
+      <CardTile card={card} compact onClick={onClick} onHover={onHover} />
       {isKey && (
         <span aria-label="Key card" className="pointer-events-none absolute left-0.5 top-0.5 rounded bg-black/75 p-0.5 text-white">
           <Star className="h-3 w-3 fill-current" />
@@ -47,7 +47,7 @@ function Tile({ card, isKey, onClick }: { card: EnrichedCard; isKey: boolean; on
  * owner can switch the column into choose mode, where tapping a tile stars
  * or unstars it and the whole list is saved at once.
  */
-export function DeckColumn({ side, isOwner, rows, onOpenCard, onSaveKeyCards, onError, className }: {
+export function DeckColumn({ side, isOwner, rows, onOpenCard, onHoverCard, onSaveKeyCards, onError, className }: {
   side: MatchupSide;
   isOwner: boolean;
   /**
@@ -57,6 +57,8 @@ export function DeckColumn({ side, isOwner, rows, onOpenCard, onSaveKeyCards, on
    */
   rows?: string[];
   onOpenCard: (card: Card, list: Card[]) => void;
+  /** Feeds the desktop preview sidebar; null when the pointer leaves a tile. */
+  onHoverCard?: (card: CardTileHover | null) => void;
   onSaveKeyCards: (entryId: string, keys: string[]) => Promise<{ ok: boolean; error?: string }>;
   onError: (message: string) => void;
   className?: string;
@@ -99,6 +101,7 @@ export function DeckColumn({ side, isOwner, rows, onOpenCard, onSaveKeyCards, on
       card={card}
       isKey={keySet.has(cardKey(card))}
       onClick={choosing ? () => void toggle(card) : card.fullCard ? () => onOpenCard(card.fullCard!, navList) : undefined}
+      onHover={onHoverCard}
     />
   );
 

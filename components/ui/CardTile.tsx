@@ -21,6 +21,8 @@ export interface CardTileCard {
  * Extracted from the public deck view so the host's submission modal renders
  * decks the same way players see them.
  */
+export interface CardTileHover { name: string; imgFile: string; set?: string; type?: string }
+
 export default function CardTile({
   card,
   onClick,
@@ -30,7 +32,7 @@ export default function CardTile({
 }: {
   card: CardTileCard;
   onClick?: () => void;
-  onHover?: (card: { name: string; imgFile: string; set?: string; type?: string } | null) => void;
+  onHover?: (card: CardTileHover | null) => void;
   compact?: boolean;
   /** Above-the-fold tile: eager + high fetch priority so it can be the LCP image. */
   priority?: boolean;
