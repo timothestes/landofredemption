@@ -19,7 +19,6 @@ const doneView: MatchView = {
   b: entry('b', 'Beta'),
   placeholderA: '',
   placeholderB: '',
-  firstToPlayName: null,
   canPlay: true,
 };
 

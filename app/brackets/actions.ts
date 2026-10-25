@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { getFormatDef } from '@/lib/formats';
 import {
-  applyGameResult, buildBracket, canEditBracket, canPlayMatch, currentRoundName, firstEntryForGame,
+  applyGameResult, buildBracket, canEditBracket, canPlayMatch, currentRoundName,
   matchState, reconcileUpdates, resetMatchAllowed, resetMatchUpdates, roundNames, seriesState, sizeFor,
 } from '@/lib/bracket';
 import type {
@@ -328,7 +328,8 @@ export async function startBracketGameAction(matchId: string, mode: 'solo' | 'on
     const entryA = entriesById.get(match.entryAId!)!;
     const entryB = entriesById.get(match.entryBId!)!;
     const series = seriesState(games, match, bracket.bestOf);
-    const firstEntryId = firstEntryForGame(games, match, Math.random() < 0.5 ? 'a' : 'b');
+    // Every game of a series is a fresh coin flip for who goes first.
+    const firstEntryId = Math.random() < 0.5 ? entryA.id : entryB.id;
     const code = generateGameCode();
 
     const { data: game, error: gErr } = await supabase

@@ -32,7 +32,7 @@ export default async function BracketBreakdownPage({ params }: { params: Params 
 
   const rows = computeStandings(data);
   const moments = computeMoments(data);
-  const split = goingFirst(data.games);
+  const first = goingFirst(data.games);
   const placeOf = (entryId: string) => {
     const row = rows.find(r => r.entry.id === entryId);
     return row && row.finish.kind !== 'alive' ? row.finish.place : null;
@@ -62,7 +62,7 @@ export default async function BracketBreakdownPage({ params }: { params: Params 
             visibleEntryIds={deckLists.visibleEntryIds}
           />
           {moments.length > 0 && <Moments moments={moments} />}
-          {split.game1.total >= GOING_FIRST_MIN_GAMES && <GoingFirst split={split} bestOf={data.bracket.bestOf} />}
+          {first.total >= GOING_FIRST_MIN_GAMES && <GoingFirst record={first} />}
           <DeckLists data={deckLists} entries={data.entries} rows={rows} isOwner={isOwner} />
         </div>
       </div>

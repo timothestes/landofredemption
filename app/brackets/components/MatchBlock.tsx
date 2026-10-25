@@ -221,11 +221,6 @@ export function MatchBlock(props: MatchCallbacks & {
         {row('a')}
         {row('b')}
       </div>
-      {view.firstToPlayName && (
-        <p className="border-t border-border/60 px-3 py-1.5 text-xs text-muted-foreground">
-          {view.firstToPlayName} goes first
-        </p>
-      )}
       {previewHref && (
         <Link
           href={previewHref}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { canEditBracket, sizeFor, slotOrder, roundNames, matchLabel, nextSlot, buildBracket, seriesState,
-  firstEntryForGame, matchState, canPlayMatch, applyGameResult, resetMatchAllowed, resetMatchUpdates, reconcileUpdates } from '../index';
+  matchState, canPlayMatch, applyGameResult, resetMatchAllowed, resetMatchUpdates, reconcileUpdates } from '../index';
 import type { BracketMatch, Bracket } from '../types';
 import { entry, entries, ids, match, game } from './fixtures';
 
@@ -82,12 +82,6 @@ describe('seriesState', () => {
     expect(seriesState([game(1, 'e2')], match(), 1)).toMatchObject({ decided: true, winner: 'b' });
     expect(seriesState([game(1, null)], match(), 5).inProgress?.id).toBe('g1');
   });
-});
-
-describe('firstEntryForGame', () => {
-  it('game 1 is the coin flip', () => expect(firstEntryForGame([], match(), 'b')).toBe('e2'));
-  it('later games go to the loser of the previous game', () =>
-    expect(firstEntryForGame([game(1, 'e1')], match(), 'a')).toBe('e2'));
 });
 
 describe('matchState / canPlayMatch', () => {

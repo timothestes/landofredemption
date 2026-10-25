@@ -96,13 +96,6 @@ export function seriesState(games: BracketGame[], match: BracketMatch, bestOf: B
   };
 }
 
-export function firstEntryForGame(games: BracketGame[], match: BracketMatch, coinFlip: 'a' | 'b'): string {
-  const decided = gamesOf(games, match).filter(g => g.winnerEntryId !== null);
-  const last = decided[decided.length - 1];
-  if (!last) return (coinFlip === 'a' ? match.entryAId : match.entryBId)!;
-  return (last.winnerEntryId === match.entryAId ? match.entryBId : match.entryAId)!;
-}
-
 export function matchState(match: BracketMatch, games: BracketGame[], bestOf: BestOf): MatchState {
   if (match.isBye) return 'bye';
   if (match.winnerEntryId) return 'done';

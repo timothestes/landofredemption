@@ -57,12 +57,6 @@ describe('buildMatchViews', () => {
     expect(views[1][0].placeholderA).toBe('Winner of SF1');
     expect(views[1][0].placeholderB).toBe('Winner of SF2');
     expect(views[0][0].state).toBe('ready');
-    expect(views[0][0].firstToPlayName).toBeNull();
-  });
-  it('names the first player from game 2 on', () => {
-    // e1 won game 1 of SF1 (e1 vs e3); the loser of the previous game goes first.
-    const data = fourDeckBo3([game(1, 'e1', { matchId: sf1Id })]);
-    expect(buildMatchViews(data)[0][0].firstToPlayName).toBe('Deck 3');
   });
   it('marks a bye block', () => {
     const views = buildMatchViews(threeDeck());

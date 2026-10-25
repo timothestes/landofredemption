@@ -284,21 +284,16 @@ export function computeMoments(input: StandingsInput): Moment[] {
 /** Below this many games a first-player count is a handful of coin flips. */
 export const GOING_FIRST_MIN_GAMES = 4;
 
-export interface FirstSplit {
-  /** Game 1 of a series: a coin flip. */
-  game1: { firstWon: number; total: number };
-  /** Later games: the loser of the previous game goes first, so it is a different question. */
-  later: { firstWon: number; total: number };
-}
+/** Every game's first player is a coin flip. */
+export interface FirstRecord { firstWon: number; total: number }
 
 /** Hand-recorded games have no first player and are left out. */
-export function goingFirst(games: BracketGame[]): FirstSplit {
-  const split: FirstSplit = { game1: { firstWon: 0, total: 0 }, later: { firstWon: 0, total: 0 } };
+export function goingFirst(games: BracketGame[]): FirstRecord {
+  const record: FirstRecord = { firstWon: 0, total: 0 };
   for (const g of games) {
     if (g.winnerEntryId === null || g.firstEntryId === null) continue;
-    const bucket = g.gameNumber === 1 ? split.game1 : split.later;
-    bucket.total += 1;
-    if (g.winnerEntryId === g.firstEntryId) bucket.firstWon += 1;
+    record.total += 1;
+    if (g.winnerEntryId === g.firstEntryId) record.firstWon += 1;
   }
-  return split;
+  return record;
 }

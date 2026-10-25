@@ -216,11 +216,9 @@ describe('computeMoments', () => {
 });
 
 describe('goingFirst', () => {
-  it('splits game 1 coin flips from later games and ignores hand-recorded games', () => {
-    const split = goingFirst(fourDeckComplete().games);
-    // Game 1s: s1 (e1 first, e3 won), t1 (e4 first, e2 won), f1 (e2 first, e1 won) → 0 of 3.
-    expect(split.game1).toEqual({ firstWon: 0, total: 3 });
-    // Later: s2 (e3 first, e1 won), s3 (e3 first, e1 won), t2 (e2 first, e2 won) → 1 of 3; f2 by hand.
-    expect(split.later).toEqual({ firstWon: 1, total: 3 });
+  it('counts every played game and ignores hand-recorded games', () => {
+    // s1 (e1 first, e3 won), t1 (e4 first, e2 won), f1 (e2 first, e1 won), s2 (e3 first, e1 won),
+    // s3 (e3 first, e1 won), t2 (e2 first, e2 won) → 1 of 6; f2 by hand.
+    expect(goingFirst(fourDeckComplete().games)).toEqual({ firstWon: 1, total: 6 });
   });
 });
