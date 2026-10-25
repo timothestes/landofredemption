@@ -14,6 +14,7 @@ import {
   moveDeckToFolderAction,
   loadDeckByIdAction,
   setDeckVisibilityAction,
+  setDecksVisibilityAction,
   loadGlobalTagsAction,
   updateDeckPreviewCardsAction,
   DeckData,
@@ -134,7 +135,7 @@ export default function MyDecksClient() {
   const [pdfDeckLegal, setPdfDeckLegal] = useState<boolean | null>(null);
   const [imageDeck, setImageDeck] = useState<Deck | null>(null); // For image generation modal
   const [imageDeckLegal, setImageDeckLegal] = useState<boolean | null>(null);
-  const [usernameModalDeckId, setUsernameModalDeckId] = useState<string | null>(null);
+  const [usernameModalDeckIds, setUsernameModalDeckIds] = useState<string[] | null>(null);
   const [shareDeckId, setShareDeckId] = useState<string | null>(null);
   const [coverPickerDeckId, setCoverPickerDeckId] = useState<string | null>(null);
   const [quickLookDeckId, setQuickLookDeckId] = useState<string | null>(null);
@@ -144,6 +145,10 @@ export default function MyDecksClient() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
   const bulkMoveRef = useRef<HTMLDivElement>(null);
+  const [bulkVisibilityOpen, setBulkVisibilityOpen] = useState(false);
+  const bulkVisibilityRef = useRef<HTMLDivElement>(null);
+  // Anchor for shift-click range selection.
+  const lastToggledIdRef = useRef<string | null>(null);
 
   // Drag-to-folder: tracks which drop target is hovered ("uncat" or a folder id).
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
@@ -202,6 +207,17 @@ export default function MyDecksClient() {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [bulkMoveOpen]);
+
+  useEffect(() => {
+    if (!bulkVisibilityOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (bulkVisibilityRef.current && !bulkVisibilityRef.current.contains(e.target as Node)) {
+        setBulkVisibilityOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [bulkVisibilityOpen]);
 
   useEffect(() => {
     loadGlobalTagsAction().then((res) => {
@@ -326,16 +342,56 @@ export default function MyDecksClient() {
   }
 
   // ── Multi-select / bulk actions ────────────────────────────────────────────
-  function toggleSelect(deckId: string) {
-    setSelectedIds((prev) =>
-      prev.includes(deckId) ? prev.filter((id) => id !== deckId) : [...prev, deckId]
-    );
+  // Shift-click selects (or clears) every visible deck between the last
+  // toggled deck and this one, matching this deck's new state.
+  function toggleSelect(deckId: string, shiftKey = false) {
+    const visibleIds = sortedDecks.map((d) => d.id!);
+    const anchor = lastToggledIdRef.current;
+    lastToggledIdRef.current = deckId;
+    setSelectedIds((prev) => {
+      const selecting = !prev.includes(deckId);
+      const from = anchor ? visibleIds.indexOf(anchor) : -1;
+      const to = visibleIds.indexOf(deckId);
+      const range = shiftKey && from !== -1 && to !== -1
+        ? visibleIds.slice(Math.min(from, to), Math.max(from, to) + 1)
+        : [deckId];
+      return selecting
+        ? [...prev, ...range.filter((id) => !prev.includes(id))]
+        : prev.filter((id) => !range.includes(id));
+    });
   }
 
   function exitSelection() {
     setSelectionMode(false);
     setSelectedIds([]);
     setBulkMoveOpen(false);
+    setBulkVisibilityOpen(false);
+    lastToggledIdRef.current = null;
+  }
+
+  async function applyVisibility(ids: string[], visibility: DeckVisibility) {
+    const result = await setDecksVisibilityAction(ids, visibility);
+    if (result.success) {
+      const isPublic = visibility === "unlisted" || visibility === "public";
+      setDecks((prev) => prev.map((d) => (ids.includes(d.id!) ? { ...d, visibility, is_public: isPublic } : d)));
+      return true;
+    }
+    if ((result as any).needsUsername) {
+      setUsernameModalDeckIds(ids);
+    } else {
+      showToast(result.error || "Failed to update deck visibility");
+    }
+    return false;
+  }
+
+  async function handleBulkVisibility(visibility: DeckVisibility) {
+    const ids = selectedIds.slice();
+    if (ids.length === 0) return;
+    setBulkVisibilityOpen(false);
+    if (await applyVisibility(ids, visibility)) {
+      exitSelection();
+      showToast(`Made ${ids.length} deck${ids.length > 1 ? "s" : ""} ${visibility}`, "success");
+    }
   }
 
   async function handleBulkMove(folderId: string | null) {
@@ -415,24 +471,18 @@ export default function MyDecksClient() {
           : d
       ));
     } else if ((result as any).needsUsername) {
-      setUsernameModalDeckId(deckId);
+      setUsernameModalDeckIds([deckId]);
     } else {
       showToast(result.error || "Failed to update deck visibility");
     }
   }
 
   async function handleUsernameSet(_username: string) {
-    const deckId = usernameModalDeckId;
-    setUsernameModalDeckId(null);
-    if (deckId) {
-      const result = await setDeckVisibilityAction(deckId, "public");
-      if (result.success) {
-        setDecks(prev => prev.map(d =>
-          d.id === deckId ? { ...d, visibility: "public", is_public: true } : d
-        ));
-      } else {
-        showToast(result.error || "Failed to update deck visibility");
-      }
+    const ids = usernameModalDeckIds;
+    setUsernameModalDeckIds(null);
+    if (ids && (await applyVisibility(ids, "public")) && selectionMode) {
+      exitSelection();
+      showToast(`Made ${ids.length} deck${ids.length > 1 ? "s" : ""} public`, "success");
     }
   }
 
@@ -1007,7 +1057,7 @@ export default function MyDecksClient() {
 
           {/* Bulk action bar (selection mode) */}
           {selectionMode && (
-            <div className="sticky top-2 z-30 mb-3 flex items-center gap-2 md:gap-3 rounded-lg border border-primary/40 bg-card/95 backdrop-blur px-3 py-2 shadow-sm">
+            <div className="sticky top-2 z-30 mb-3 flex flex-wrap items-center gap-2 md:gap-3 rounded-lg border border-primary/40 bg-card/95 backdrop-blur px-3 py-2 shadow-sm">
               <span className="text-sm font-medium flex-shrink-0">
                 {selectedIds.length} selected
               </span>
@@ -1031,6 +1081,37 @@ export default function MyDecksClient() {
               >
                 Start a gauntlet
               </button>
+
+              <div className="relative" ref={bulkVisibilityRef}>
+                <button
+                  onClick={() => setBulkVisibilityOpen((o) => !o)}
+                  disabled={selectedIds.length === 0}
+                  className="flex items-center gap-1 px-2.5 md:px-3 py-1.5 rounded-md border border-border bg-card text-xs md:text-sm font-medium hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Visibility
+                  <svg className={`w-3.5 h-3.5 transition-transform ${bulkVisibilityOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {bulkVisibilityOpen && selectedIds.length > 0 && (
+                  <div className="absolute right-0 top-full mt-1 w-64 bg-card rounded-md shadow-lg border border-border z-40">
+                    {([
+                      ["private", "Only you can see them"],
+                      ["unlisted", "Anyone with the link"],
+                      ["public", "Listed in community search"],
+                    ] as const).map(([vis, hint]) => (
+                      <button
+                        key={vis}
+                        onClick={() => handleBulkVisibility(vis)}
+                        className="w-full text-left px-4 py-2 hover:bg-muted first:rounded-t-md last:rounded-b-md"
+                      >
+                        <span className="block text-sm">{visibilityBadge(vis).label}</span>
+                        <span className="block text-xs text-muted-foreground">{hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="relative" ref={bulkMoveRef}>
                 <button
@@ -1126,7 +1207,7 @@ export default function MyDecksClient() {
                   folders={folders}
                   selectionMode={selectionMode}
                   selected={selectedIds.includes(deck.id!)}
-                  onToggleSelect={() => toggleSelect(deck.id!)}
+                  onToggleSelect={(shiftKey) => toggleSelect(deck.id!, shiftKey)}
                   onEdit={handleEditDeck}
                   onDelete={(id, name) => setDeckToDelete({ id, name })}
                   onDuplicate={handleDuplicateDeck}
@@ -1149,7 +1230,7 @@ export default function MyDecksClient() {
                   folders={folders}
                   selectionMode={selectionMode}
                   selected={selectedIds.includes(deck.id!)}
-                  onToggleSelect={() => toggleSelect(deck.id!)}
+                  onToggleSelect={(shiftKey) => toggleSelect(deck.id!, shiftKey)}
                   onEdit={handleEditDeck}
                   onDelete={(id, name) => setDeckToDelete({ id, name })}
                   onDuplicate={handleDuplicateDeck}
@@ -1235,10 +1316,10 @@ export default function MyDecksClient() {
       })()}
 
       {/* Username Modal */}
-      {usernameModalDeckId && (
+      {usernameModalDeckIds && (
         <UsernameModal
           onSuccess={handleUsernameSet}
-          onClose={() => setUsernameModalDeckId(null)}
+          onClose={() => setUsernameModalDeckIds(null)}
         />
       )}
 
@@ -1416,7 +1497,7 @@ function DeckCard({
   folders: FolderData[];
   selectionMode: boolean;
   selected: boolean;
-  onToggleSelect: () => void;
+  onToggleSelect: (shiftKey: boolean) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string, name: string) => void;
   onDuplicate: (id: string) => void;
@@ -1430,7 +1511,8 @@ function DeckCard({
 }) {
   const updatedRelative = formatRelativeTime(deck.updated_at!);
   const updatedAbsolute = formatDateTime(deck.updated_at!);
-  const openCard = () => (selectionMode ? onToggleSelect() : onEdit(deck.id!));
+  // In selection mode the click bubbles to the card, which toggles selection.
+  const openCard = () => { if (!selectionMode) onEdit(deck.id!); };
 
   return (
     <div
@@ -1440,7 +1522,7 @@ function DeckCard({
         e.dataTransfer.setData("text/plain", deck.id!);
         e.dataTransfer.effectAllowed = "move";
       }}
-      onClick={selectionMode ? onToggleSelect : undefined}
+      onClick={selectionMode ? (e) => onToggleSelect(e.shiftKey) : undefined}
       className={cn(
         "group relative bg-gradient-to-br from-card to-muted/40 rounded-lg border hover:shadow-lg transition-shadow flex flex-col jayden-gradient-bg",
         selectionMode && "cursor-pointer select-none",
@@ -1489,7 +1571,6 @@ function DeckCard({
       ) : formatDeckType(deck.format) !== "Paragon" ? (
         <div
           className="h-8 group-hover:h-12 rounded-t-lg bg-muted/40 group-hover:bg-muted flex items-center justify-center transition-all"
-          onClick={selectionMode ? onToggleSelect : undefined}
         >
           <button
             onClick={() => { if (!selectionMode) onEditCover(deck.id!); }}
@@ -1603,7 +1684,7 @@ function DeckListItem({
   folders: FolderData[];
   selectionMode: boolean;
   selected: boolean;
-  onToggleSelect: () => void;
+  onToggleSelect: (shiftKey: boolean) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string, name: string) => void;
   onDuplicate: (id: string) => void;
@@ -1625,7 +1706,7 @@ function DeckListItem({
         e.dataTransfer.setData("text/plain", deck.id!);
         e.dataTransfer.effectAllowed = "move";
       }}
-      onClick={selectionMode ? onToggleSelect : undefined}
+      onClick={selectionMode ? (e) => onToggleSelect(e.shiftKey) : undefined}
       className={cn(
         "bg-card rounded-lg border transition-colors",
         selectionMode ? "cursor-pointer select-none" : "hover:bg-muted",

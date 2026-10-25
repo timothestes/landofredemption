@@ -980,6 +980,106 @@ export async function toggleDeckPublicAction(deckId: string, isPublic: boolean) 
 }
 
 /**
+ * Set the visibility of many decks at once (My Decks bulk action). Same rules
+ * as setDeckVisibilityAction: public needs a username, and shared decks get
+ * default preview cards if they have none.
+ */
+export async function setDecksVisibilityAction(
+  deckIds: string[],
+  visibility: DeckVisibility,
+) {
+  try {
+    if (!["private", "unlisted", "public"].includes(visibility)) {
+      return { success: false, error: "Invalid visibility" };
+    }
+    if (deckIds.length === 0) return { success: true, visibility };
+
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return {
+        success: false,
+        error: "You must be logged in to change deck visibility",
+      };
+    }
+
+    if (visibility === "public") {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile?.username) {
+        return { success: false, needsUsername: true };
+      }
+    }
+
+    // Writing `visibility` fires the trigger that mirrors `is_public`.
+    const { error } = await supabase
+      .from("decks")
+      .update({ visibility })
+      .in("id", deckIds)
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Error setting decks visibility:", error);
+      return { success: false, error: "Failed to update deck visibility" };
+    }
+
+    // Shared decks without preview cards get the first two main-deck images,
+    // which power the share-link OG image.
+    if (visibility !== "private") {
+      const { data: bare } = await supabase
+        .from("decks")
+        .select("id")
+        .in("id", deckIds)
+        .eq("user_id", user.id)
+        .is("preview_card_1", null)
+        .is("preview_card_2", null);
+
+      await Promise.all(
+        (bare ?? []).map(async ({ id }) => {
+          const { data: deckCards } = await supabase
+            .from("deck_cards")
+            .select("card_img_file")
+            .eq("deck_id", id)
+            .eq("zone", "main")
+            .not("card_img_file", "is", null)
+            .limit(2);
+          if (!deckCards || deckCards.length === 0) return;
+          await supabase
+            .from("decks")
+            .update({
+              preview_card_1: deckCards[0].card_img_file ?? null,
+              preview_card_2: deckCards[1]?.card_img_file ?? null,
+            })
+            .eq("id", id)
+            .eq("user_id", user.id);
+        }),
+      );
+    }
+
+    revalidatePath("/decklist/my-decks");
+    revalidateTag("public-decks-list");
+    for (const id of deckIds) {
+      revalidatePath(`/decklist/${id}`);
+      revalidateTag(`public-deck:${id}`);
+    }
+
+    return { success: true, visibility };
+  } catch (error) {
+    console.error("Error in setDecksVisibilityAction:", error);
+    return { success: false, error: "An unexpected error occurred" };
+  }
+}
+
+/**
  * Load a public deck by ID (no auth required for public decks)
  */
 export async function loadPublicDeckAction(deckId: string) {
