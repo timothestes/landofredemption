@@ -102,6 +102,11 @@ export type CardAbility = AbilityBase & (
   // The card's "If it's a Daniel card, you may add it to hand" half lives in
   // the deck context menu, gated on this toggle being active (isDanielCard).
   | { type: 'toggle_top_deck_reveal' }
+  // Storehouse (Promo / [IR] / [Fundraiser]): "Each upkeep, you may take an
+  // O.T. Enhancement from Reserve." Client-side picker — the canvas lists the
+  // activator's Reserve Enhancements (O.T. only when `testament` is set) and
+  // moves the chosen one to hand with a plain moveCard. No reducer involved.
+  | { type: 'take_enhancement_from_reserve'; testament?: 'OT' }
   | { type: 'custom'; reducerName: string; label: string }
 );
 
@@ -260,6 +265,11 @@ export const CARD_ABILITIES: Record<string, CardAbility[]> = {
   // discard picker; selected Heroes return to their own owner's Territory.
   'Emptying the Tombs (GoC)':                            [{ type: 'resurrect_heroes' }],
   'Redemption [2025 - National]':                        [{ type: 'resurrect_heroes' }],
+  // "Each upkeep, you may take an O.T. Enhancement from Reserve." Opens a
+  // picker over your Reserve's O.T. Enhancements; the pick goes to hand.
+  'Storehouse (Promo)':                                  [{ type: 'take_enhancement_from_reserve', testament: 'OT' }],
+  'Storehouse [IR]':                                     [{ type: 'take_enhancement_from_reserve', testament: 'OT' }],
+  'Storehouse [Fundraiser]':                             [{ type: 'take_enhancement_from_reserve', testament: 'OT' }],
 
   // ---------------------------------------------------------------------------
   // Roots 2 (RR2)
