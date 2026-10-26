@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { loadPublicDecksAction, loadGlobalTagsAction, loadCardSuggestionsAction, copyPublicDeckAction, loadPublicDeckAction, LoadPublicDecksParams } from "../actions";
+import { loadPublicDecksAction, loadPublicFoldersAction, loadGlobalTagsAction, loadCardSuggestionsAction, copyPublicDeckAction, loadPublicDeckAction, LoadPublicDecksParams, SharedFolder } from "../actions";
 import { GoldfishButton } from "../../goldfish/components/GoldfishButton";
 import GeneratePDFModal from "../card-search/components/GeneratePDFModal";
 import GenerateDeckImageModal from "../card-search/components/GenerateDeckImageModal";
@@ -27,7 +27,7 @@ interface TournamentInfo {
   participant_count: number;
 }
 
-interface PublicDeck {
+export interface PublicDeck {
   id: string;
   name: string;
   description?: string;
@@ -99,11 +99,13 @@ function getPageNumbers(current: number, total: number): (number | "…")[] {
 interface Props {
   initialDecks: PublicDeck[];
   initialCount: number;
+  /** Public shared folders (unfiltered); refetched when a username filter is set. */
+  initialFolders?: SharedFolder[];
   currentUserId?: string;
   showTournamentFilter?: boolean;
 }
 
-export default function CommunityClient({ initialDecks, initialCount, currentUserId, showTournamentFilter }: Props) {
+export default function CommunityClient({ initialDecks, initialCount, initialFolders = [], currentUserId, showTournamentFilter }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialUsername = searchParams.get("username") || "";
@@ -138,6 +140,19 @@ export default function CommunityClient({ initialDecks, initialCount, currentUse
   const [search, setSearch] = useState(searchParams.get("q") || "");
   const [searchInput, setSearchInput] = useState(searchParams.get("q") || "");
   const [usernameFilter, setUsernameFilter] = useState(initialUsername);
+  const [folders, setFolders] = useState<SharedFolder[]>(initialFolders);
+  // The server sent the unfiltered list; a username filter narrows the strip
+  // to that player's folders.
+  const foldersFetchedFor = useRef("");
+  useEffect(() => {
+    if (usernameFilter === "" && foldersFetchedFor.current === "") return;
+    foldersFetchedFor.current = usernameFilter;
+    let cancelled = false;
+    loadPublicFoldersAction({ username: usernameFilter || undefined }).then((r) => {
+      if (!cancelled) setFolders(r.folders);
+    });
+    return () => { cancelled = true; };
+  }, [usernameFilter]);
   const [tournamentOnly, setTournamentOnly] = useState(searchParams.get("tournament") === "1");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(() => {
     const t = searchParams.get("tags");
@@ -739,6 +754,33 @@ export default function CommunityClient({ initialDecks, initialCount, currentUse
         </div>
       )}
 
+      {/* Shared folders strip */}
+      {folders.length > 0 && (
+        <div className="mb-6">
+          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">Shared folders</h2>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {folders.map((f) => (
+              <Link
+                key={f.id}
+                href={`/decklist/folders/${f.id}`}
+                className="flex min-w-[11rem] max-w-[16rem] flex-shrink-0 items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2 hover:bg-muted transition-colors"
+              >
+                <svg className="w-5 h-5 flex-shrink-0 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-foreground">{f.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {f.deck_count} {f.deck_count === 1 ? "deck" : "decks"}
+                    {f.username && ` · ${f.username}`}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Username filter banner */}
       {usernameFilter && (
         <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-primary/10 border border-primary/30 rounded-lg text-sm">
@@ -850,7 +892,7 @@ function getPreviewImages(deck: PublicDeck): [string | null, string | null] {
   return [getCardImageUrl(deck.preview_card_1), getCardImageUrl(deck.preview_card_2)];
 }
 
-function DeckCard({ deck, currentUserId, onUsernameClick }: { deck: PublicDeck; currentUserId?: string; onUsernameClick: (username: string) => void }) {
+export function DeckCard({ deck, currentUserId, onUsernameClick }: { deck: PublicDeck; currentUserId?: string; onUsernameClick: (username: string) => void }) {
   const router = useRouter();
   const [img1, img2] = getPreviewImages(deck);
   const hasPreview = img1 || img2;

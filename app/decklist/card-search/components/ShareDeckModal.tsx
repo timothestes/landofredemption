@@ -12,16 +12,18 @@ import {
 } from "../../../../components/ui/dialog";
 import { DeckVisibility } from "../types/deck";
 
+type ShareKind = "deck" | "folder";
+
 const OPTIONS: {
   value: DeckVisibility;
   label: string;
-  description: string;
+  description: (kind: ShareKind) => string;
   icon: React.ReactNode;
 }[] = [
   {
     value: "private",
     label: "Private",
-    description: "Only you can see this deck.",
+    description: (kind) => `Only you can see this ${kind}.`,
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -31,7 +33,7 @@ const OPTIONS: {
   {
     value: "unlisted",
     label: "Unlisted",
-    description: "Anyone with the link can view. Hidden from community search.",
+    description: () => "Anyone with the link can view. Hidden from community search.",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -41,7 +43,7 @@ const OPTIONS: {
   {
     value: "public",
     label: "Public",
-    description: "Viewable by anyone and listed in community search.",
+    description: () => "Viewable by anyone and listed in community search.",
     icon: (
       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -63,6 +65,10 @@ interface ShareDeckModalProps {
    * updates the `visibility` prop.
    */
   onSetVisibility: (visibility: DeckVisibility) => void | Promise<void>;
+  /** Defaults to "deck". A folder links to /decklist/folders/<id>. */
+  kind?: ShareKind;
+  /** Extra content under the options (e.g. a folder's private-deck notice). */
+  children?: React.ReactNode;
 }
 
 /**
@@ -77,12 +83,15 @@ export default function ShareDeckModal({
   deckName,
   visibility,
   onSetVisibility,
+  kind = "deck",
+  children,
 }: ShareDeckModalProps) {
   const [pending, setPending] = useState<DeckVisibility | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const sharePath = kind === "folder" ? `/decklist/folders/${deckId}` : `/decklist/${deckId}`;
   const shareUrl =
-    typeof window !== "undefined" ? `${window.location.origin}/decklist/${deckId}` : "";
+    typeof window !== "undefined" ? `${window.location.origin}${sharePath}` : "";
   const isShared = visibility === "unlisted" || visibility === "public";
 
   async function select(v: DeckVisibility) {
@@ -112,9 +121,9 @@ export default function ShareDeckModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="md">
         <DialogHeader>
-          <DialogTitle>Share deck</DialogTitle>
+          <DialogTitle>Share {kind}</DialogTitle>
           <DialogDescription>
-            {deckName ? `Choose who can see "${deckName}".` : "Choose who can see this deck."}
+            {deckName ? `Choose who can see "${deckName}".` : `Choose who can see this ${kind}.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -139,7 +148,7 @@ export default function ShareDeckModal({
                 </span>
                 <span className="flex-1 min-w-0">
                   <span className="block font-medium text-foreground">{opt.label}</span>
-                  <span className="block text-xs text-muted-foreground">{opt.description}</span>
+                  <span className="block text-xs text-muted-foreground">{opt.description(kind)}</span>
                 </span>
                 {loading ? (
                   <svg className="w-5 h-5 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
@@ -181,7 +190,7 @@ export default function ShareDeckModal({
                 </p>
               ) : null}
               <a
-                href={`/decklist/${deckId}`}
+                href={sharePath}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
@@ -190,14 +199,16 @@ export default function ShareDeckModal({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                Open deck page
+                Open {kind} page
               </a>
             </div>
           ) : (
             <p className="pt-2 text-sm text-muted-foreground">
-              This deck is private. Switch to Unlisted or Public to get a shareable link.
+              This {kind} is private. Switch to Unlisted or Public to get a shareable link.
             </p>
           )}
+
+          {children}
         </DialogBody>
 
         <DialogFooter className="justify-end">
