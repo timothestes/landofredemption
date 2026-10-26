@@ -12,6 +12,7 @@ import {
   renameFolderAction,
   deleteFolderAction,
   moveDeckToFolderAction,
+  setFolderVisibilityAction,
   loadDeckByIdAction,
   setDeckVisibilityAction,
   setDecksVisibilityAction,
@@ -137,6 +138,9 @@ export default function MyDecksClient() {
   const [imageDeckLegal, setImageDeckLegal] = useState<boolean | null>(null);
   const [usernameModalDeckIds, setUsernameModalDeckIds] = useState<string[] | null>(null);
   const [shareDeckId, setShareDeckId] = useState<string | null>(null);
+  const [shareFolderId, setShareFolderId] = useState<string | null>(null);
+  // A folder waiting on a username before it can go public.
+  const [usernameModalFolderId, setUsernameModalFolderId] = useState<string | null>(null);
   const [coverPickerDeckId, setCoverPickerDeckId] = useState<string | null>(null);
   const [quickLookDeckId, setQuickLookDeckId] = useState<string | null>(null);
 
@@ -477,6 +481,23 @@ export default function MyDecksClient() {
     }
   }
 
+  async function handleSetFolderVisibility(folderId: string, visibility: DeckVisibility) {
+    const result = await setFolderVisibilityAction(folderId, visibility);
+    if (result.success) {
+      setFolders((prev) => prev.map((f) => (f.id === folderId ? { ...f, visibility } : f)));
+    } else if ((result as any).needsUsername) {
+      setUsernameModalFolderId(folderId);
+    } else {
+      showToast(result.error || "Failed to update folder visibility");
+    }
+  }
+
+  async function handleFolderUsernameSet(_username: string) {
+    const folderId = usernameModalFolderId;
+    setUsernameModalFolderId(null);
+    if (folderId) await handleSetFolderVisibility(folderId, "public");
+  }
+
   async function handleUsernameSet(_username: string) {
     const ids = usernameModalDeckIds;
     setUsernameModalDeckIds(null);
@@ -758,6 +779,7 @@ export default function MyDecksClient() {
                   deckCount={decks.filter(d => d.folder_id === folder.id).length}
                   onSelect={() => setSelectedFolder(folder.id!)}
                   onRename={() => setFolderModal({ mode: "rename", folderId: folder.id!, initialName: folder.name })}
+                  onShare={() => setShareFolderId(folder.id!)}
                   onDelete={() => setFolderToDelete({ id: folder.id!, name: folder.name })}
                   onDropDeck={(deckId) => handleDropDeckOnFolder(deckId, folder.id!)}
                 />
@@ -786,6 +808,18 @@ export default function MyDecksClient() {
                 {selectedTagIds.length > 0 && ` · ${selectedTagIds.length} tag${selectedTagIds.length > 1 ? "s" : ""} selected`}
               </p>
             </div>
+            <div className="flex flex-shrink-0 items-center gap-2">
+            {selectedFolder && (
+              <button
+                onClick={() => setShareFolderId(selectedFolder)}
+                className="px-3 md:px-4 py-2 md:py-3 border border-border bg-card hover:bg-muted rounded-lg text-sm md:text-base font-medium transition-colors flex items-center gap-1.5"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                Share
+              </button>
+            )}
             <button
               onClick={handleNewDeck}
               className="flex-shrink-0 px-3 md:px-6 py-2 md:py-3 border-2 border-primary bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-sm md:text-base font-medium transition-colors"
@@ -793,6 +827,7 @@ export default function MyDecksClient() {
               + New
               <span className="hidden md:inline"> Deck</span>
             </button>
+            </div>
           </div>
 
           {/* Search Bar */}
@@ -1315,6 +1350,52 @@ export default function MyDecksClient() {
         ) : null;
       })()}
 
+      {/* Folder share / visibility modal */}
+      {(() => {
+        const shareFolder = folders.find(f => f.id === shareFolderId);
+        if (!shareFolder) return null;
+        const folderVis = shareFolder.visibility ?? "private";
+        const privateIds = decks
+          .filter(d => d.folder_id === shareFolder.id && deckVisibility(d) === "private")
+          .map(d => d.id!);
+        return (
+          <ShareDeckModal
+            open={true}
+            onOpenChange={(open) => { if (!open) setShareFolderId(null); }}
+            kind="folder"
+            deckId={shareFolder.id!}
+            deckName={shareFolder.name}
+            visibility={folderVis}
+            onSetVisibility={(v) => handleSetFolderVisibility(shareFolder.id!, v)}
+          >
+            {folderVis !== "private" && privateIds.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/50 p-3 text-sm">
+                <span className="text-muted-foreground">
+                  {privateIds.length} {privateIds.length === 1 ? "deck is" : "decks are"} private and won&apos;t show.
+                </span>
+                <button
+                  onClick={async () => {
+                    if (await applyVisibility(privateIds, "unlisted")) {
+                      showToast(`Made ${privateIds.length} deck${privateIds.length > 1 ? "s" : ""} unlisted`, "success");
+                    }
+                  }}
+                  className="rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  Make {privateIds.length === 1 ? "it" : "them"} unlisted
+                </button>
+              </div>
+            )}
+          </ShareDeckModal>
+        );
+      })()}
+
+      {usernameModalFolderId && (
+        <UsernameModal
+          onSuccess={handleFolderUsernameSet}
+          onClose={() => setUsernameModalFolderId(null)}
+        />
+      )}
+
       {/* Username Modal */}
       {usernameModalDeckIds && (
         <UsernameModal
@@ -1395,6 +1476,7 @@ function FolderItem({
   deckCount,
   onSelect,
   onRename,
+  onShare,
   onDelete,
   onDropDeck,
 }: {
@@ -1403,6 +1485,7 @@ function FolderItem({
   deckCount: number;
   onSelect: () => void;
   onRename: () => void;
+  onShare: () => void;
   onDelete: () => void;
   onDropDeck: (deckId: string) => void;
 }) {
@@ -1431,6 +1514,12 @@ function FolderItem({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>
         <span className="flex-1 truncate">{folder.name}</span>
+        {folder.visibility && folder.visibility !== "private" && (
+          <svg className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label={`Shared (${folder.visibility})`}>
+            <title>{folder.visibility === "public" ? "Public" : "Unlisted"}</title>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+        )}
         <span className="text-sm text-muted-foreground">{deckCount}</span>
         <button
           onClick={(e) => {
@@ -1458,6 +1547,15 @@ function FolderItem({
               className="w-full text-left px-4 py-2 hover:bg-muted first:rounded-t-md"
             >
               Rename
+            </button>
+            <button
+              onClick={() => {
+                onShare();
+                setShowMenu(false);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-muted"
+            >
+              Share
             </button>
             <button
               onClick={() => {

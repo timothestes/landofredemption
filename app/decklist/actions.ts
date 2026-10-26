@@ -594,6 +594,8 @@ export interface FolderData {
   user_id?: string;
   parent_folder_id?: string | null;
   name: string;
+  /** Same three states as decks; sharing a folder is view-only. */
+  visibility?: DeckVisibility;
   created_at?: string;
 }
 
@@ -858,6 +860,192 @@ export async function deleteFolderAction(folderId: string) {
       success: false,
       error: "An unexpected error occurred",
     };
+  }
+}
+
+/**
+ * Set a folder's visibility. Sharing is view-only: visitors see the folder's
+ * unlisted + public decks at /decklist/folders/<id>. Public (listed) needs a
+ * username, same as decks.
+ */
+export async function setFolderVisibilityAction(folderId: string, visibility: DeckVisibility) {
+  try {
+    if (!["private", "unlisted", "public"].includes(visibility)) {
+      return { success: false, error: "Invalid visibility" };
+    }
+
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "You must be logged in to share a folder" };
+    }
+
+    if (visibility === "public") {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile?.username) {
+        return { success: false, needsUsername: true };
+      }
+    }
+
+    const { error } = await supabase
+      .from("deck_folders")
+      .update({ visibility })
+      .eq("id", folderId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Error setting folder visibility:", error);
+      return { success: false, error: "Failed to update folder visibility" };
+    }
+
+    revalidatePath("/decklist/my-decks");
+    revalidatePath(`/decklist/folders/${folderId}`);
+    revalidatePath("/decklist/community");
+
+    return { success: true, visibility };
+  } catch (error) {
+    console.error("Error in setFolderVisibilityAction:", error);
+    return { success: false, error: "An unexpected error occurred" };
+  }
+}
+
+export interface SharedFolder {
+  id: string;
+  name: string;
+  visibility: DeckVisibility;
+  user_id: string;
+  username: string | null;
+  created_at: string;
+  /** Decks a visitor can see (unlisted + public). */
+  deck_count: number;
+}
+
+/**
+ * Load one folder for its share page. RLS returns it only to the owner or when
+ * it isn't private, so a null folder means "not found" for visitors.
+ * `privateDeckCount` is only filled in for the owner (decks visitors can't see).
+ */
+export async function loadSharedFolderAction(folderId: string) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { data: folder } = await supabase
+      .from("deck_folders")
+      .select("id, name, visibility, user_id, created_at")
+      .eq("id", folderId)
+      .maybeSingle();
+
+    if (!folder) return { success: false as const, error: "Folder not found" };
+
+    const isOwner = user?.id === folder.user_id;
+
+    const [{ data: profile }, { count: deckCount }, privateResult] = await Promise.all([
+      supabase.from("profiles").select("username").eq("id", folder.user_id).maybeSingle(),
+      supabase
+        .from("decks")
+        .select("id", { count: "exact", head: true })
+        .eq("folder_id", folderId)
+        .in("visibility", ["unlisted", "public"]),
+      isOwner
+        ? supabase
+            .from("decks")
+            .select("id", { count: "exact", head: true })
+            .eq("folder_id", folderId)
+            .eq("visibility", "private")
+        : Promise.resolve({ count: 0 }),
+    ]);
+
+    return {
+      success: true as const,
+      folder: {
+        ...folder,
+        username: profile?.username ?? null,
+        deck_count: deckCount ?? 0,
+      } as SharedFolder,
+      isOwner,
+      currentUserId: user?.id,
+      privateDeckCount: privateResult.count ?? 0,
+    };
+  } catch (error) {
+    console.error("Error in loadSharedFolderAction:", error);
+    return { success: false as const, error: "An unexpected error occurred" };
+  }
+}
+
+/**
+ * Public folders for the Community Decks strip and the sitemap, newest first.
+ * Folders with no visible decks are left out.
+ */
+export async function loadPublicFoldersAction(params: { username?: string; limit?: number } = {}) {
+  try {
+    const supabase = await createClient();
+    const { username, limit = 12 } = params;
+
+    let query = supabase
+      .from("deck_folders")
+      .select("id, name, visibility, user_id, created_at")
+      .eq("visibility", "public")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (username && username.trim()) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", username.trim())
+        .maybeSingle();
+      if (!profile) return { success: true, folders: [] as SharedFolder[] };
+      query = query.eq("user_id", profile.id);
+    }
+
+    const { data: folders, error } = await query;
+    if (error) {
+      console.error("Error loading public folders:", error);
+      return { success: false, error: "Failed to load folders", folders: [] as SharedFolder[] };
+    }
+    if (!folders || folders.length === 0) return { success: true, folders: [] as SharedFolder[] };
+
+    const folderIds = folders.map((f) => f.id);
+    const userIds = [...new Set(folders.map((f) => f.user_id))];
+    const [{ data: deckRows }, { data: profiles }] = await Promise.all([
+      supabase
+        .from("decks")
+        .select("folder_id")
+        .in("folder_id", folderIds)
+        .in("visibility", ["unlisted", "public"]),
+      supabase.from("profiles").select("id, username").in("id", userIds),
+    ]);
+
+    const counts = new Map<string, number>();
+    for (const row of deckRows || []) {
+      counts.set(row.folder_id, (counts.get(row.folder_id) || 0) + 1);
+    }
+    const usernameMap = new Map((profiles || []).map((p: any) => [p.id, p.username]));
+
+    return {
+      success: true,
+      folders: folders
+        .map((f) => ({
+          ...f,
+          username: usernameMap.get(f.user_id) ?? null,
+          deck_count: counts.get(f.id) || 0,
+        }))
+        .filter((f) => f.deck_count > 0) as SharedFolder[],
+    };
+  } catch (error) {
+    console.error("Error in loadPublicFoldersAction:", error);
+    return { success: false, error: "An unexpected error occurred", folders: [] as SharedFolder[] };
   }
 }
 
@@ -1416,6 +1604,12 @@ export interface LoadPublicDecksParams {
   /** Main-deck card count bounds, inclusive (decks.card_count). */
   minCards?: number;
   maxCards?: number;
+  /**
+   * A shared folder's decks: unlisted + public decks in that folder instead
+   * of public decks site-wide. Returns nothing unless the folder is readable
+   * (owner, or visibility isn't private).
+   */
+  folderId?: string;
 }
 
 export async function loadPublicDecksAction(params: LoadPublicDecksParams = {}) {
@@ -1434,6 +1628,7 @@ export async function loadPublicDecksAction(params: LoadPublicDecksParams = {}) 
       tournamentOnly,
       minCards,
       maxCards,
+      folderId,
     } = params;
 
     const offset = (page - 1) * pageSize;
@@ -1492,8 +1687,20 @@ export async function loadPublicDecksAction(params: LoadPublicDecksParams = {}) 
 
     let query = supabase
       .from("decks")
-      .select("id, name, description, format, paragon, card_count, view_count, preview_card_1, preview_card_2, user_id, created_at, updated_at, is_legal", { count: "exact" })
-      .eq("visibility", "public");
+      .select("id, name, description, format, paragon, card_count, view_count, preview_card_1, preview_card_2, user_id, created_at, updated_at, is_legal", { count: "exact" });
+
+    if (folderId) {
+      // RLS hides private folders from non-owners, so this is the share gate.
+      const { data: folder } = await supabase
+        .from("deck_folders")
+        .select("id")
+        .eq("id", folderId)
+        .maybeSingle();
+      if (!folder) return { success: true, decks: [], totalCount: 0 };
+      query = query.eq("folder_id", folderId).in("visibility", ["unlisted", "public"]);
+    } else {
+      query = query.eq("visibility", "public");
+    }
 
     if (tagFilteredDeckIds) {
       query = query.in("id", tagFilteredDeckIds);

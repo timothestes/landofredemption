@@ -118,6 +118,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
+  // Public shared deck folders (unlisted folders are excluded)
+  const { data: folders } = await supabase
+    .from("deck_folders")
+    .select("id, created_at")
+    .eq("visibility", "public")
+    .limit(1000);
+
+  const folderRoutes: MetadataRoute.Sitemap = (folders ?? []).map((folder) => ({
+    url: `${baseUrl}/decklist/folders/${folder.id}`,
+    lastModified: folder.created_at,
+    changeFrequency: "weekly" as const,
+    priority: 0.5,
+  }));
+
   // Dynamic routes: public spoiler cards. /spoilers/[id] is keyed by
   // spoilers.id (the old spoiler_sets.id entries all 404ed). Anon RLS already
   // limits this to visible cards whose spoil_date has passed.
@@ -188,6 +202,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...staticRoutes,
     ...deckRoutes,
+    ...folderRoutes,
     ...spoilerRoutes,
     ...resultRoutes,
     ...articleRoutes,
