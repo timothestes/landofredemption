@@ -66,7 +66,7 @@ export function committedCards(events: EventRow[]): Card[] {
   for (const e of events) {
     if (!Array.isArray(e.outcomes) || !Array.isArray(e.detections)) continue;
     for (const det of e.detections) {
-      const o = e.outcomes.find(x => x?.id === det.id);
+      const o = det.id != null ? e.outcomes.find(x => x?.id === det.id) : undefined;
       if (!o || o.removedAs === 'unwanted' || o.unresolved === true) continue;
       const corrected = o.nameChanged === true || o.printingChanged === true || o.removedAs === 'wrong';
       cards.push({ scanId: e.id, det, untouchedMatched: det.status === 'matched' && !corrected });

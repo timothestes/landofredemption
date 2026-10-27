@@ -11,8 +11,8 @@
 --     from the spec's "What is recorded": an array, one entry per committed detection:
 --     { id: '<detection id>', finalKey, printingChanged: bool, nameChanged: bool,
 --       removed: bool, removedAs: 'wrong'|'unwanted'|null, unresolved: bool }
---   If PR C stores a different shape, fix the `outc` CTE below (it is repeated in each
---   correction query) and nothing else.
+--   If PR C stores a different shape, fix the `committed` CTE below (it is repeated in each
+--   outcome query) and nothing else.
 --
 -- The `committed` CTE below is repeated IDENTICALLY in every outcome-based query, so the
 -- correction predicate and the denominator are defined once and all of them agree.
@@ -27,7 +27,7 @@ with committed as (
   select e.created_at, d.value as det, o.value as o,
          (coalesce((o.value ->> 'nameChanged')::boolean, false)
           or coalesce((o.value ->> 'printingChanged')::boolean, false)
-          or o.value ->> 'removedAs' = 'wrong') as corrected,
+          or coalesce(o.value ->> 'removedAs', '') = 'wrong') as corrected,
          coalesce((o.value ->> 'printingChanged')::boolean, false) as printing_changed
   from public.scan_events e
   cross join lateral jsonb_array_elements(coalesce(e.detections, '[]'::jsonb)) d
@@ -71,7 +71,7 @@ with committed as (
   select e.created_at, d.value as det, o.value as o,
          (coalesce((o.value ->> 'nameChanged')::boolean, false)
           or coalesce((o.value ->> 'printingChanged')::boolean, false)
-          or o.value ->> 'removedAs' = 'wrong') as corrected,
+          or coalesce(o.value ->> 'removedAs', '') = 'wrong') as corrected,
          coalesce((o.value ->> 'printingChanged')::boolean, false) as printing_changed
   from public.scan_events e
   cross join lateral jsonb_array_elements(coalesce(e.detections, '[]'::jsonb)) d
@@ -95,7 +95,7 @@ with committed as (
   select e.created_at, d.value as det, o.value as o,
          (coalesce((o.value ->> 'nameChanged')::boolean, false)
           or coalesce((o.value ->> 'printingChanged')::boolean, false)
-          or o.value ->> 'removedAs' = 'wrong') as corrected,
+          or coalesce(o.value ->> 'removedAs', '') = 'wrong') as corrected,
          coalesce((o.value ->> 'printingChanged')::boolean, false) as printing_changed
   from public.scan_events e
   cross join lateral jsonb_array_elements(coalesce(e.detections, '[]'::jsonb)) d
@@ -119,7 +119,7 @@ with committed as (
   select e.created_at, d.value as det, o.value as o,
          (coalesce((o.value ->> 'nameChanged')::boolean, false)
           or coalesce((o.value ->> 'printingChanged')::boolean, false)
-          or o.value ->> 'removedAs' = 'wrong') as corrected,
+          or coalesce(o.value ->> 'removedAs', '') = 'wrong') as corrected,
          coalesce((o.value ->> 'printingChanged')::boolean, false) as printing_changed
   from public.scan_events e
   cross join lateral jsonb_array_elements(coalesce(e.detections, '[]'::jsonb)) d
@@ -202,7 +202,7 @@ with committed as (
   select e.created_at, d.value as det, o.value as o,
          (coalesce((o.value ->> 'nameChanged')::boolean, false)
           or coalesce((o.value ->> 'printingChanged')::boolean, false)
-          or o.value ->> 'removedAs' = 'wrong') as corrected,
+          or coalesce(o.value ->> 'removedAs', '') = 'wrong') as corrected,
          coalesce((o.value ->> 'printingChanged')::boolean, false) as printing_changed
   from public.scan_events e
   cross join lateral jsonb_array_elements(coalesce(e.detections, '[]'::jsonb)) d
@@ -228,7 +228,7 @@ with committed as (
   select e.created_at, d.value as det, o.value as o,
          (coalesce((o.value ->> 'nameChanged')::boolean, false)
           or coalesce((o.value ->> 'printingChanged')::boolean, false)
-          or o.value ->> 'removedAs' = 'wrong') as corrected,
+          or coalesce(o.value ->> 'removedAs', '') = 'wrong') as corrected,
          coalesce((o.value ->> 'printingChanged')::boolean, false) as printing_changed
   from public.scan_events e
   cross join lateral jsonb_array_elements(coalesce(e.detections, '[]'::jsonb)) d
