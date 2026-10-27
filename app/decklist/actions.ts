@@ -58,6 +58,31 @@ export interface SaveDeckParams {
 }
 
 /**
+ * Whether `folderId` is one of `userId`'s own folders.
+ *
+ * decks.folder_id is written by the deck's owner and nothing checks the
+ * folder's owner: the FK only requires the folder to exist, and the decks RLS
+ * policies look at the deck's user_id alone. Since folders became shareable
+ * (migration 121) their ids are public, so a deck could be filed into someone
+ * else's shared folder and render under their name with no way for them to
+ * remove it. The write paths refuse that here; the shared-folder reads also
+ * filter on the folder owner's user_id in case a row gets in another way.
+ */
+async function ownsFolder(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  folderId: string,
+  userId: string,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("deck_folders")
+    .select("id")
+    .eq("id", folderId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return !!data;
+}
+
+/**
  * Save a deck (create new or update existing)
  */
 export async function saveDeckAction(params: SaveDeckParams) {
@@ -78,6 +103,10 @@ export async function saveDeckAction(params: SaveDeckParams) {
     }
 
     const { deckId, name, description, format, paragon, folderId, cards, previewCard1, previewCard2 } = params;
+
+    if (folderId && !(await ownsFolder(supabase, folderId, user.id))) {
+      return { success: false, error: "Folder not found" };
+    }
 
     // Calculate card count (main deck only — reserve and maybeboard excluded)
     const cardCount = cards
@@ -558,7 +587,8 @@ export async function duplicateDeckAction(deckId: string, newName?: string) {
     const saveResult = await saveDeckAction({
       name: newName || `${originalDeck.name} (Copy)`,
       format: originalDeck.format,
-      folderId: originalDeck.folder_id,
+      // A public deck in someone else's folder: the copy is yours, the folder isn't.
+      folderId: originalDeck.user_id === user.id ? originalDeck.folder_id : null,
       cards: originalDeck.cards,
     });
 
@@ -952,16 +982,19 @@ export async function loadSharedFolderAction(folderId: string) {
 
     const [{ data: profile }, { count: deckCount }, privateResult] = await Promise.all([
       supabase.from("profiles").select("username").eq("id", folder.user_id).maybeSingle(),
+      // Only the owner's own decks, like the folder page (see ownsFolder).
       supabase
         .from("decks")
         .select("id", { count: "exact", head: true })
         .eq("folder_id", folderId)
+        .eq("user_id", folder.user_id)
         .in("visibility", ["unlisted", "public"]),
       isOwner
         ? supabase
             .from("decks")
             .select("id", { count: "exact", head: true })
             .eq("folder_id", folderId)
+            .eq("user_id", folder.user_id)
             .eq("visibility", "private")
         : Promise.resolve({ count: 0 }),
     ]);
@@ -1021,14 +1054,17 @@ export async function loadPublicFoldersAction(params: { username?: string; limit
     const [{ data: deckRows }, { data: profiles }] = await Promise.all([
       supabase
         .from("decks")
-        .select("folder_id")
+        .select("folder_id, user_id")
         .in("folder_id", folderIds)
         .in("visibility", ["unlisted", "public"]),
       supabase.from("profiles").select("id, username").in("id", userIds),
     ]);
 
+    const ownerByFolder = new Map(folders.map((f) => [f.id, f.user_id]));
     const counts = new Map<string, number>();
     for (const row of deckRows || []) {
+      // A deck filed into someone else's folder is not theirs to show (see ownsFolder).
+      if (row.user_id !== ownerByFolder.get(row.folder_id)) continue;
       counts.set(row.folder_id, (counts.get(row.folder_id) || 0) + 1);
     }
     const usernameMap = new Map((profiles || []).map((p: any) => [p.id, p.username]));
@@ -1557,6 +1593,10 @@ export async function moveDeckToFolderAction(deckId: string, folderId: string | 
       };
     }
 
+    if (folderId && !(await ownsFolder(supabase, folderId, user.id))) {
+      return { success: false, error: "Folder not found" };
+    }
+
     const { error } = await supabase
       .from("decks")
       .update({ folder_id: folderId })
@@ -1693,11 +1733,15 @@ export async function loadPublicDecksAction(params: LoadPublicDecksParams = {}) 
       // RLS hides private folders from non-owners, so this is the share gate.
       const { data: folder } = await supabase
         .from("deck_folders")
-        .select("id")
+        .select("id, user_id")
         .eq("id", folderId)
         .maybeSingle();
       if (!folder) return { success: true, decks: [], totalCount: 0 };
-      query = query.eq("folder_id", folderId).in("visibility", ["unlisted", "public"]);
+      // Only the owner's own decks (see ownsFolder).
+      query = query
+        .eq("folder_id", folderId)
+        .eq("user_id", folder.user_id)
+        .in("visibility", ["unlisted", "public"]);
     } else {
       query = query.eq("visibility", "public");
     }
