@@ -117,6 +117,62 @@ with check (auth.uid() = (select host_id from tournaments where tournaments.id =
 grant select, insert, update, delete on rounds to authenticated;
 ```
 
+## Card Scanner (migration 122)
+
+Spec: `docs/superpowers/specs/2026-10-26-card-scanner-design.md`. No client
+write access: `authenticated` has SELECT only (own rows, or all for
+`public.is_superuser()`); rows are written by `scan_reserve()` and the
+service-role admin client.
+
+```sql
+scan_commits (
+  commit_id uuid primary key,        -- client-generated; insert-first = idempotent commit
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  deltas jsonb not null,             -- per-key quantities added; undo subtracts these
+  result jsonb                       -- response replayed on a repeat commit
+);
+
+scan_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  status text not null,              -- 'pending' | 'done' | 'failed' | 'rejected'
+  source text not null default 'player',  -- 'player' | 'eval'
+  rejected_cap text,                 -- cap code when status = 'rejected'
+  model text, attempts smallint, latency_ms integer,
+  input_tokens integer, output_tokens integer,
+  cost_usd numeric(8,5),
+  photo_quality text,
+  detections jsonb,                  -- capped read fields, no candidates
+  outcomes jsonb,                    -- set on commit
+  commit_id uuid references scan_commits(commit_id),
+  image_pathname text,               -- unwritten until v1.1
+  image_expires_at timestamptz       -- unwritten until v1.1
+);
+-- indexes: scan_events (user_id, created_at desc), scan_events (created_at),
+--          scan_commits (user_id, created_at desc)
+```
+
+`public.scan_reserve(p_source text default 'player') returns jsonb`
+(SECURITY DEFINER, executable by `authenticated` only) takes one constant
+advisory lock, `hashtext('scan_reserve')`, then checks in order:
+
+| Code | Scope | Window | Limit |
+|------|-------|--------|-------|
+| `cap_user_10m` | caller | 10 minutes | 20 photos |
+| `cap_user_24h` | caller | 24 hours | 150 photos |
+| `cap_global_30d` | everyone | 30 days | 1,500 photos |
+| `cap_global_spend` | everyone | 30 days | $80 summed `cost_usd` |
+
+Counted rows: `status in ('pending','done','failed')` and `source = 'player'`
+(`rejected` rows and eval rows never count). A hit inserts a `rejected` row
+and returns `{ok:false, cap, limit, resets_at}` (`resets_at` = oldest counted
+row in that window + the window length); otherwise it inserts a `pending`
+row and returns `{ok:true, id}`. `p_source = 'eval'` is honored only for a
+superuser (anyone else is treated as `player`); eval rows are inserted but
+skip every cap and every metrics query.
+
 ## SpacetimeDB Multiplayer Schema (Battle Zone)
 
 Live-game state (not Postgres) lives in `spacetimedb/src/schema.ts`. The
