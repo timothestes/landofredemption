@@ -21,9 +21,12 @@ export const MODEL_PRICES: Record<Arm['model'] & string, { input: number; output
   'claude-haiku-5-5': { input: 0.1, output: 0.5 },
 };
 
+/** Why a call failed, for the server log. Never carries request content or the image. */
+export interface FailureDetail { status?: number; errorType?: string; message?: string; stopReason?: string; model?: string }
+
 export type RecognizeResult =
   | { ok: true; output: ScanOutput; model: string; usage: { inputTokens: number; outputTokens: number }; costUsd: number; latencyMs: number; attempts: number }
-  | { ok: false; code: 'upstream_rate_limit' | 'upstream_overloaded' | 'billing_error' | 'recognizer_failed'; retryAfterSeconds?: number; usage?: { inputTokens: number; outputTokens: number }; costUsd?: number; latencyMs: number; attempts: number };
+  | { ok: false; code: 'upstream_rate_limit' | 'upstream_overloaded' | 'billing_error' | 'recognizer_failed'; retryAfterSeconds?: number; detail?: FailureDetail; usage?: { inputTokens: number; outputTokens: number }; costUsd?: number; latencyMs: number; attempts: number };
 
 type Create = (params: unknown) => Promise<unknown>;
 interface Deps { create?: Create; sleep?: (ms: number) => Promise<void> }
@@ -95,6 +98,31 @@ function classify(err: unknown): Classified {
   return { kind: 'fatal' };
 }
 
+const DETAIL_MESSAGE_MAX = 300;
+
+/** The status, error type and API message of a thrown error; the message is truncated. */
+function errorDetail(err: unknown): FailureDetail {
+  const e = (err ?? {}) as { status?: unknown; name?: unknown; error?: { error?: { type?: unknown; message?: unknown } }; message?: unknown };
+  const bodyType = e.error?.error?.type;
+  const apiMessage = e.error?.error?.message;
+  const message = typeof apiMessage === 'string' ? apiMessage : typeof e.message === 'string' ? e.message : undefined;
+  const errorType = typeof bodyType === 'string' ? bodyType : typeof e.name === 'string' ? e.name : undefined;
+  return {
+    ...(typeof e.status === 'number' ? { status: e.status } : {}),
+    ...(errorType ? { errorType } : {}),
+    ...(message ? { message: message.slice(0, DETAIL_MESSAGE_MAX) } : {}),
+  };
+}
+
+/** What a response that came back but could not be used said about itself. */
+function responseDetail(res: { model?: unknown; stop_reason?: unknown }, message?: string): FailureDetail {
+  return {
+    ...(typeof res.stop_reason === 'string' ? { stopReason: res.stop_reason } : {}),
+    ...(typeof res.model === 'string' ? { model: res.model.slice(0, 100) } : {}),
+    ...(message ? { message } : {}),
+  };
+}
+
 interface ResponseShape { model?: unknown; stop_reason?: unknown; content?: unknown; usage?: { input_tokens?: unknown; output_tokens?: unknown } }
 
 export async function recognize(jpeg: Buffer, arm: Required<Arm>, deps: Deps = {}): Promise<RecognizeResult> {
@@ -107,10 +135,11 @@ export async function recognize(jpeg: Buffer, arm: Required<Arm>, deps: Deps = {
   let billed = false; // a response with usage came back, so at least one attempt costs money
   const price = MODEL_PRICES[arm.model];
   const cost = () => (usage.inputTokens * price.input + usage.outputTokens * price.output) / 1_000_000;
-  const fail = (code: Extract<RecognizeResult, { ok: false }>['code'], retryAfterSeconds?: number): RecognizeResult => ({
+  const fail = (code: Extract<RecognizeResult, { ok: false }>['code'], detail: FailureDetail, retryAfterSeconds?: number): RecognizeResult => ({
     ok: false,
     code,
     ...(retryAfterSeconds !== undefined ? { retryAfterSeconds } : {}),
+    detail,
     // Billed failures carry their spend so the 30-day cost cap sees them.
     ...(billed ? { usage: { ...usage }, costUsd: cost() } : {}),
     latencyMs: Date.now() - started,
@@ -126,14 +155,15 @@ export async function recognize(jpeg: Buffer, arm: Required<Arm>, deps: Deps = {
       res = (await create(buildParams(jpeg, arm, maxTokens))) as ResponseShape;
     } catch (err) {
       const c = classify(err);
-      if (c.kind === 'billing') return fail('billing_error');
-      if (c.kind === 'rate_limit') return fail('upstream_rate_limit', c.retryAfterSeconds);
+      const detail = errorDetail(err);
+      if (c.kind === 'billing') return fail('billing_error', detail);
+      if (c.kind === 'rate_limit') return fail('upstream_rate_limit', detail, c.retryAfterSeconds);
       if (c.kind === 'retryable' && canRetry) {
         await sleep(RETRY_DELAY_MS);
         continue;
       }
-      if (c.kind === 'retryable' && c.overloaded) return fail('upstream_overloaded');
-      return fail('recognizer_failed');
+      if (c.kind === 'retryable' && c.overloaded) return fail('upstream_overloaded', detail);
+      return fail('recognizer_failed', detail);
     }
 
     const inT = res.usage?.input_tokens;
@@ -142,17 +172,19 @@ export async function recognize(jpeg: Buffer, arm: Required<Arm>, deps: Deps = {
     usage.inputTokens += typeof inT === 'number' ? inT : 0;
     usage.outputTokens += typeof outT === 'number' ? outT : 0;
 
-    if (typeof res.model !== 'string' || !res.model.startsWith(arm.model)) return fail('recognizer_failed');
-    if (res.stop_reason === 'refusal') return fail('recognizer_failed');
+    if (typeof res.model !== 'string' || !res.model.startsWith(arm.model)) {
+      return fail('recognizer_failed', responseDetail(res, `model mismatch: asked for ${arm.model}`));
+    }
+    if (res.stop_reason === 'refusal') return fail('recognizer_failed', responseDetail(res, 'refusal'));
     if (res.stop_reason === 'max_tokens') {
-      if (!canRetry) return fail('recognizer_failed');
+      if (!canRetry) return fail('recognizer_failed', responseDetail(res, 'max_tokens on the retry'));
       maxTokens = MAX_TOKENS_RETRY;
       continue;
     }
     const blocks = Array.isArray(res.content) ? (res.content as { type?: unknown; text?: unknown }[]) : [];
     const text = blocks.filter((b) => b?.type === 'text' && typeof b.text === 'string').map((b) => b.text as string).join('');
     const output = parseScanOutput(text);
-    if (!output) return fail('recognizer_failed');
+    if (!output) return fail('recognizer_failed', responseDetail(res, 'unparseable output'));
 
     return { ok: true, output, model: res.model, usage: { ...usage }, costUsd: cost(), latencyMs: Date.now() - started, attempts };
   }
