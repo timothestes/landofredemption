@@ -9,6 +9,13 @@ describe('fitToTier', () => {
 });
 describe('encodeForScan', () => {
   it('re-encodes a PNG to JPEG at the tier', async () => { const png = await sharp({ create: { width: 3000, height: 4000, channels: 3, background: '#888' } }).png().toBuffer(); const r = await encodeForScan(png, 'high'); expect(r.imageTokens).toBeLessThanOrEqual(4784); expect(r.jpeg.subarray(0, 2)).toEqual(Buffer.from([0xff, 0xd8])); const m = await sharp(r.jpeg).metadata(); expect([m.width, m.height]).toEqual([r.width, r.height]); });
+  it('rejects formats outside the allowlist (GIF, SVG, TIFF) as undecodable', async () => {
+    const gif = await sharp({ create: { width: 40, height: 40, channels: 3, background: '#888' } }).gif().toBuffer();
+    const tiff = await sharp({ create: { width: 40, height: 40, channels: 3, background: '#888' } }).tiff().toBuffer();
+    const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="red"/></svg>');
+    for (const b of [gif, tiff, svg]) await expect(encodeForScan(b, 'high')).rejects.toMatchObject({ code: 'undecodable' });
+  });
+  it('accepts WebP', async () => { const webp = await sharp({ create: { width: 40, height: 40, channels: 3, background: '#888' } }).webp().toBuffer(); expect((await encodeForScan(webp, 'low')).jpeg.subarray(0, 2)).toEqual(Buffer.from([0xff, 0xd8])); });
   it('rejects garbage as undecodable', async () => { await expect(encodeForScan(Buffer.from('not an image'), 'high')).rejects.toMatchObject({ code: 'undecodable' }); });
   it('rejects a 64 MP image over limitInputPixels as too_large', async () => { const png = await sharp({ create: { width: 8000, height: 8000, channels: 3, background: '#888' } }).png({ compressionLevel: 1 }).toBuffer(); await expect(encodeForScan(png, 'high')).rejects.toMatchObject({ code: 'too_large' }); }, 30_000);
 });

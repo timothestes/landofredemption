@@ -8,6 +8,8 @@ export const TIER_PATCH_CAP: Record<Tier, number> = { high: 4784, low: 1568 };
 
 const PATCH = 28;
 const LIMIT_INPUT_PIXELS = 60_000_000;
+// What a phone camera or photo picker produces. Anything else (GIF, SVG, TIFF, PDF, raw) is refused.
+const ALLOWED_FORMATS = new Set(['jpeg', 'png', 'webp', 'heif', 'avif']);
 
 export class ScanImageError extends Error {
   constructor(readonly code: 'undecodable' | 'too_large') {
@@ -47,7 +49,7 @@ export async function encodeForScan(input: Buffer, tier: Tier): Promise<{ jpeg: 
   } catch (e) {
     throw toScanImageError(e);
   }
-  if (!meta.width || !meta.height) throw new ScanImageError('undecodable');
+  if (!meta.width || !meta.height || !ALLOWED_FORMATS.has(meta.format ?? '')) throw new ScanImageError('undecodable');
   if (meta.width * meta.height > LIMIT_INPUT_PIXELS) throw new ScanImageError('too_large');
   // EXIF-oriented size, so the tier fit matches what .rotate() produces.
   const oriented = meta.autoOrient ?? { width: meta.width, height: meta.height };
