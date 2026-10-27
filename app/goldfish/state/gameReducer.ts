@@ -1655,6 +1655,10 @@ function reduceGame(state: GameState, action: GameAction): GameState {
           // Interactive picker — dispatched via the dedicated RESURRECT_HEROES
           // action which carries the selected card ids. No-op here.
           return state;
+        case 'take_enhancement_from_reserve':
+          // Interactive picker — GoldfishCanvas moves the chosen card to hand
+          // with a plain MOVE_CARD. No-op here.
+          return state;
         case 'all_players_keep_one_shuffle_draw':
           // Interactive picker — dispatched via the dedicated
           // KEEP_ONE_SHUFFLE_DRAW action which carries the kept card. No-op here.

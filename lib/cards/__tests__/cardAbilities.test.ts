@@ -313,6 +313,23 @@ describe('resurrect_heroes registration', () => {
   });
 });
 
+describe('take_enhancement_from_reserve registration', () => {
+  it('every reserve-pulling Storehouse printing takes an O.T. Enhancement', () => {
+    for (const name of ['Storehouse (Promo)', 'Storehouse [IR]', 'Storehouse [Fundraiser]']) {
+      expect(libCardAbilities[name]).toEqual([{ type: 'take_enhancement_from_reserve', testament: 'OT' }]);
+    }
+    // The original Storehouse holds enhancements itself — it doesn't pull from Reserve.
+    expect(libCardAbilities['Storehouse']).toBeUndefined();
+  });
+
+  it('labels the ability', () => {
+    expect(abilityLabel({ type: 'take_enhancement_from_reserve', testament: 'OT' }))
+      .toBe('Take an O.T. Enhancement from Reserve…');
+    expect(abilityLabel({ type: 'take_enhancement_from_reserve' }))
+      .toBe('Take an Enhancement from Reserve…');
+  });
+});
+
 describe("Darius' Decree [T2C]", () => {
   it('is registered with self + opponent Reserve discard abilities', () => {
     const abilities = libCardAbilities["Darius' Decree [T2C]"];

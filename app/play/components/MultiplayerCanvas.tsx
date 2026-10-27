@@ -52,6 +52,7 @@ import type { GameActions, TargetingRequest, CountPromptRequest } from '@/app/sh
 import { CountPromptDialog } from '@/app/shared/components/CountPromptDialog';
 import { ResurrectHeroesModal } from '@/app/shared/components/ResurrectHeroesModal';
 import { KeepOneModal } from '@/app/shared/components/KeepOneModal';
+import { ReserveEnhancementModal, isReserveEnhancement } from '@/app/shared/components/ReserveEnhancementModal';
 import { isHeroCard, hasReferenceBook } from '@/lib/cards/cardAbilities';
 import { ModalGameProvider, type ModalGameContextValue } from '@/app/shared/contexts/ModalGameContext';
 import { DeckSearchModal } from '@/app/shared/components/DeckSearchModal';
@@ -1529,6 +1530,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
   const [targeting, setTargeting] = useState<TargetingRequest | null>(null);
   const [countPrompt, setCountPrompt] = useState<CountPromptRequest | null>(null);
   const [resurrectReq, setResurrectReq] = useState<{ sourceInstanceId: string; abilityIndex: number } | null>(null);
+  const [reserveEnhReq, setReserveEnhReq] = useState<{ sourceInstanceId: string; abilityIndex: number } | null>(null);
   // Philip's Daughters. The caster's picker carries the source card; the
   // responder's carries the request id it has to answer. Only one is ever set.
   // `draw` is the caster's menu choice (false = "Draw prevented" item) and
@@ -2488,6 +2490,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     },
     beginCountPrompt: (req) => setCountPrompt(req),
     beginResurrectPrompt: (sourceInstanceId, abilityIndex) => setResurrectReq({ sourceInstanceId, abilityIndex }),
+    beginReserveEnhancementPrompt: (sourceInstanceId, abilityIndex) => setReserveEnhReq({ sourceInstanceId, abilityIndex }),
     beginKeepOnePrompt: (sourceInstanceId, _abilityIndex, opts) =>
       setKeepOneReq({ mode: 'caster', sourceInstanceId, draw: opts?.draw ?? true }),
     undoKeepOneShuffleDraw: () => gameState.undoKeepOneShuffleDraw(),
@@ -11527,6 +11530,32 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
               setResurrectReq(null);
             }}
             onCancel={() => setResurrectReq(null)}
+          />
+        );
+      })()}
+
+      {reserveEnhReq && (() => {
+        const source = findAnyCardById(reserveEnhReq.sourceInstanceId);
+        const ability = source
+          ? getEffectiveAbilities({
+              cardName: resolveForgeCardName(source, forgeResolver),
+              imitatingName: source.imitatingName,
+            })[reserveEnhReq.abilityIndex]
+          : undefined;
+        const testament = ability?.type === 'take_enhancement_from_reserve' ? ability.testament : undefined;
+        const myZones = modalGameValue.zones as Record<string, GameCard[]>;
+        return (
+          <ReserveEnhancementModal
+            cards={(myZones['reserve'] ?? []).filter(c => isReserveEnhancement(c, testament))}
+            sourceCardName={source?.cardName}
+            kindLabel={testament === 'OT' ? 'O.T. Enhancement' : 'Enhancement'}
+            onConfirm={(id) => {
+              // Through the wrapped moveCard so undo + the Turn 1 reserve
+              // reminder apply exactly as they do for a manual drag.
+              multiplayerActions.moveCard(id, 'hand');
+              setReserveEnhReq(null);
+            }}
+            onCancel={() => setReserveEnhReq(null)}
           />
         );
       })()}

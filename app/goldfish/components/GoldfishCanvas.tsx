@@ -62,6 +62,7 @@ import { compareCardsDefault } from '@/lib/cards/defaultSort';
 import { countRedeemedSouls, getEffectiveAbilities, isDanielCard, isLostSoulCard, isHeroCard, simplifyLostSoulName } from '@/lib/cards/cardAbilities';
 import { ResurrectHeroesModal } from '@/app/shared/components/ResurrectHeroesModal';
 import { KeepOneModal } from '@/app/shared/components/KeepOneModal';
+import { ReserveEnhancementModal, isReserveEnhancement } from '@/app/shared/components/ReserveEnhancementModal';
 import { Link2Off } from 'lucide-react';
 
 import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
@@ -208,6 +209,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
   const [countPrompt, setCountPrompt] = useState<CountPromptRequest | null>(null);
   const [resurrectReq, setResurrectReq] = useState<{ sourceInstanceId: string; abilityIndex: number } | null>(null);
   const [keepOneReq, setKeepOneReq] = useState<{ sourceInstanceId: string; abilityIndex: number; draw: boolean } | null>(null);
+  const [reserveEnhReq, setReserveEnhReq] = useState<{ sourceInstanceId: string; abilityIndex: number } | null>(null);
 
   // Opens the "look at / reveal top N" peek modal for an own-deck inspection
   // ability. Shared by the fixed-count path (look_at_own_deck / reveal_own_deck)
@@ -322,6 +324,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
     beginCountPrompt: (req) => setCountPrompt(req),
     beginResurrectPrompt: (sourceInstanceId, abilityIndex) => setResurrectReq({ sourceInstanceId, abilityIndex }),
     beginKeepOnePrompt: (sourceInstanceId, abilityIndex, opts) => setKeepOneReq({ sourceInstanceId, abilityIndex, draw: opts?.draw ?? true }),
+    beginReserveEnhancementPrompt: (sourceInstanceId, abilityIndex) => setReserveEnhReq({ sourceInstanceId, abilityIndex }),
   }), [moveCard, moveCardsBatch, flipCard, revealCardInHand, meekCard, unmeekCard, addCounter, removeCounter, shuffleCardIntoDeck, shuffleDeck, addNote, drawCard, drawMultiple, moveCardToTopOfDeck, moveCardToBottomOfDeck, removeOpponentToken, executeCardAbility, openOwnDeckPeek, state.zones, dispatch]);
 
   // Bridge goldfish game state into the shared ModalGameContext for shared modal components
@@ -3534,6 +3537,24 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
           onCancel={() => setKeepOneReq(null)}
         />
       )}
+
+      {reserveEnhReq && (() => {
+        const source = [...Object.values(state.zones).flat()].find(c => c.instanceId === reserveEnhReq.sourceInstanceId);
+        const ability = source ? getEffectiveAbilities(source)[reserveEnhReq.abilityIndex] : undefined;
+        const testament = ability?.type === 'take_enhancement_from_reserve' ? ability.testament : undefined;
+        return (
+          <ReserveEnhancementModal
+            cards={state.zones.reserve.filter(c => c.ownerId === 'player1' && isReserveEnhancement(c, testament))}
+            sourceCardName={source?.cardName}
+            kindLabel={testament === 'OT' ? 'O.T. Enhancement' : 'Enhancement'}
+            onConfirm={(id) => {
+              moveCard(id, 'hand');
+              setReserveEnhReq(null);
+            }}
+            onCancel={() => setReserveEnhReq(null)}
+          />
+        );
+      })()}
     </>
   );
 }

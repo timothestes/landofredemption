@@ -102,6 +102,10 @@ export interface GameActions {
   // invokes resurrectHeroes with the chosen card instance ids. Each selected
   // Hero returns to its own owner's Territory (ownerId unchanged).
   beginResurrectPrompt?(sourceInstanceId: string, abilityIndex: number): void;
+  // Storehouse (`take_enhancement_from_reserve`). The canvas lists the local
+  // player's qualifying Reserve Enhancements in ReserveEnhancementModal and
+  // moves the confirmed pick to hand with moveCard.
+  beginReserveEnhancementPrompt?(sourceInstanceId: string, abilityIndex: number): void;
   resurrectHeroes?(sourceInstanceId: string, abilityIndex: number, selectedInstanceIds: string[]): void;
 
   // Philip's Daughters (`all_players_keep_one_shuffle_draw`). CardContextMenu

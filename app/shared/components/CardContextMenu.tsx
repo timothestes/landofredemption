@@ -499,6 +499,8 @@ export function CardContextMenu({ card: initialCard, x, y, actions, onClose, onE
                     // The canvas builds the per-player discard pages from its
                     // own state and shows ResurrectHeroesModal.
                     actions.beginResurrectPrompt?.(card.instanceId, index);
+                  } else if (ability.type === 'take_enhancement_from_reserve') {
+                    actions.beginReserveEnhancementPrompt?.(card.instanceId, index);
                   } else {
                     actions.executeCardAbility?.(card.instanceId, index);
                   }
