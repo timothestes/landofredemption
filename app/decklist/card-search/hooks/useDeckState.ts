@@ -233,27 +233,7 @@ export function useDeckState(
       const result = await persistenceRef.current.loadById(deckId);
 
       if (result.success && result.deck) {
-        const cloudDeck = result.deck;
-        const isOwner = result.isOwner ?? false;
-
-        // Convert database format to Deck format with full card data
-        // If not the owner, clear the ID so saving creates a new copy instead of trying to update
-        const loadedDeck: Deck = {
-          id: isOwner ? cloudDeck.id : undefined,
-          name: isOwner ? cloudDeck.name : `Copy of ${cloudDeck.name}`,
-          description: isOwner ? (cloudDeck.description || "") : "",
-          format: cloudDeck.format,
-          paragon: cloudDeck.paragon,
-          folderId: cloudDeck.folder_id,
-          isPublic: cloudDeck.is_public ?? false,
-          // Non-owners get a fresh copy, so their copy starts private.
-          visibility: isOwner ? (cloudDeck.visibility ?? "private") : "private",
-          previewCard1: cloudDeck.preview_card_1 ?? null,
-          previewCard2: cloudDeck.preview_card_2 ?? null,
-          cards: cloudDeck.cards.map((c: any) => dbCardToDeckCard(c, persistenceRef.current.resolveCard)),
-          createdAt: new Date(cloudDeck.created_at),
-          updatedAt: new Date(cloudDeck.updated_at),
-        };
+        const loadedDeck = deckFromCloud(result.deck, result.isOwner ?? false, persistenceRef.current.resolveCard);
 
         // Set the saved-snapshot baseline so the dirty flag starts clean
         commitSavedSnapshot(snapshotDeck(loadedDeck));
@@ -262,7 +242,7 @@ export function useDeckState(
         setIsInitializing(false);
         setSyncStatus({
           isSaving: false,
-          lastSavedAt: new Date(cloudDeck.updated_at),
+          lastSavedAt: loadedDeck.updatedAt,
           error: null,
         });
         return true;
@@ -785,6 +765,36 @@ export function useDeckState(
     getCardQuantity,
     getDeckStats,
     clearUnsavedChanges,
+  };
+}
+
+type CloudDeck = NonNullable<Awaited<ReturnType<DeckBuilderPersistence["loadById"]>>["deck"]>;
+
+/**
+ * The deck the builder opens for a cloud row: the owner's deck itself, or — for
+ * anyone else — a fresh private "Copy of …" with no id, so saving creates their
+ * own deck. The copy also takes no folder: the folder is the original owner's,
+ * and saveDeckAction refuses a folder the caller doesn't own.
+ */
+export function deckFromCloud(
+  cloudDeck: CloudDeck,
+  isOwner: boolean,
+  resolveCard?: DeckBuilderPersistence["resolveCard"],
+): Deck {
+  return {
+    id: isOwner ? cloudDeck.id : undefined,
+    name: isOwner ? cloudDeck.name : `Copy of ${cloudDeck.name}`,
+    description: isOwner ? (cloudDeck.description || "") : "",
+    format: cloudDeck.format,
+    paragon: cloudDeck.paragon,
+    folderId: isOwner ? cloudDeck.folder_id : undefined,
+    isPublic: cloudDeck.is_public ?? false,
+    visibility: isOwner ? (cloudDeck.visibility ?? "private") : "private",
+    previewCard1: cloudDeck.preview_card_1 ?? null,
+    previewCard2: cloudDeck.preview_card_2 ?? null,
+    cards: cloudDeck.cards.map((c: any) => dbCardToDeckCard(c, resolveCard)),
+    createdAt: new Date(cloudDeck.created_at),
+    updatedAt: new Date(cloudDeck.updated_at),
   };
 }
 
