@@ -1,14 +1,23 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "../../utils/supabase/server";
+import { canScanForSession } from "../../lib/scan/gate";
 import CollectionClient from "./client";
+import { justAddedKeys } from "./justAdded";
 
 export const metadata: Metadata = {
   title: "My Collection",
   description: "Track which Redemption cards you own",
 };
 
-export default async function CollectionPage() {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export default async function CollectionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ format?: string; added?: string }>;
+}) {
+  const { format, added } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -51,5 +60,17 @@ export default async function CollectionPage() {
     );
   }
 
-  return <CollectionClient />;
+  const { allowed: canScan } = await canScanForSession(supabase);
+
+  let addedKeys: string[] = [];
+  if (added) {
+    const ids = added.split(",").filter((id) => UUID_RE.test(id)).slice(0, 50);
+    if (ids.length > 0) {
+      // User client: RLS limits this to the viewer's own scan events.
+      const { data } = await supabase.from("scan_events").select("outcomes").in("id", ids);
+      addedKeys = justAddedKeys((data ?? []).flatMap((row) => (Array.isArray(row.outcomes) ? row.outcomes : [])));
+    }
+  }
+
+  return <CollectionClient canScan={canScan} initialFormat={format} justAddedKeys={addedKeys} />;
 }

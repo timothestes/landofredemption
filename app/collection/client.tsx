@@ -74,7 +74,15 @@ function matchesTypeFilter(cardType: string, filter: string): boolean {
   return cardType.includes(filter);
 }
 
-export default function CollectionClient() {
+export default function CollectionClient({
+  canScan = false,
+  initialFormat,
+  justAddedKeys = [],
+}: {
+  canScan?: boolean;
+  initialFormat?: string;
+  justAddedKeys?: string[];
+}) {
   const {
     quantities,
     isLoading,
@@ -99,7 +107,9 @@ export default function CollectionClient() {
   const showCards = view === "cards";
 
   const [search, setSearch] = useState("");
-  const [formatMode, setFormatMode] = useState<FormatMode>(DEFAULT_FORMAT);
+  const [formatMode, setFormatMode] = useState<FormatMode>(
+    FORMAT_OPTIONS.find((f) => f === initialFormat) ?? DEFAULT_FORMAT,
+  );
   const [typeFilter, setTypeFilter] = useState("");
   const [brigadeFilter, setBrigadeFilter] = useState("");
   const [alignmentFilter, setAlignmentFilter] = useState("");
@@ -271,7 +281,15 @@ export default function CollectionClient() {
     return entries;
   }, [quantities]);
 
-  const visibleCards = filteredCards.slice(0, visibleCount);
+  // Cards from a scan session (?added=) lead the grid; the rest follow unchanged.
+  const justCards = useMemo(
+    () => justAddedKeys.flatMap((k) => CARD_BY_FULL_KEY.get(k) ?? []),
+    [justAddedKeys],
+  );
+  const justSet = new Set(justCards);
+  const visibleCards = justCards.length
+    ? [...justCards, ...filteredCards.filter((c) => !justSet.has(c)).slice(0, visibleCount)]
+    : filteredCards.slice(0, visibleCount);
 
   // Infinite scroll: load the next batch when the sentinel scrolls into view
   useEffect(() => {
@@ -336,10 +354,22 @@ export default function CollectionClient() {
           ) : null}
         </span>
         <div className="flex items-center gap-2 ml-auto">
+          {canScan && (
+            <a
+              href="/collection/scan"
+              className="sm:hidden inline-flex items-center min-h-11 px-4 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+            >
+              Scan cards
+            </a>
+          )}
           {/* Opens the deck builder with its "Cards I own" filter already on. */}
           <a
             href="/decklist/card-search?owned=true"
-            className="px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+            className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
+              canScan
+                ? "border border-border hover:bg-muted sm:border-transparent sm:bg-primary sm:text-primary-foreground sm:hover:bg-primary/90"
+                : "bg-primary text-primary-foreground hover:bg-primary/90"
+            }`}
           >
             Build a deck
           </a>
@@ -347,21 +377,29 @@ export default function CollectionClient() {
           {showCards && (
             <button
               onClick={() => setShowSetStats((v) => !v)}
-              className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted"
+              className={`px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted ${canScan ? "hidden sm:inline-flex" : ""}`}
             >
               Set completion
             </button>
           )}
+          {canScan && (
+            <a
+              href="/collection/scan"
+              className="hidden sm:inline-flex px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted"
+            >
+              Scan cards
+            </a>
+          )}
           <button
             onClick={() => setShowImport(true)}
-            className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted"
+            className={`px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted ${canScan ? "hidden sm:inline-flex" : ""}`}
           >
             Import
           </button>
           <button
             onClick={() => downloadCollectionTxt(ownedEntries)}
             disabled={ownedEntries.length === 0}
-            className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+            className={`px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed ${canScan ? "hidden sm:inline-flex" : ""}`}
           >
             Export
           </button>
@@ -380,6 +418,40 @@ export default function CollectionClient() {
             </button>
             {showSettingsMenu && (
               <div className="absolute right-0 mt-1 w-48 rounded-lg border border-border bg-popover shadow-lg py-1 z-30">
+                {canScan && (
+                  <div className="sm:hidden">
+                    {showCards && (
+                      <button
+                        onClick={() => {
+                          setShowSettingsMenu(false);
+                          setShowSetStats((v) => !v);
+                        }}
+                        className="w-full min-h-11 px-3 text-left text-sm hover:bg-muted"
+                      >
+                        Set completion
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setShowSettingsMenu(false);
+                        setShowImport(true);
+                      }}
+                      className="w-full min-h-11 px-3 text-left text-sm hover:bg-muted"
+                    >
+                      Import
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowSettingsMenu(false);
+                        downloadCollectionTxt(ownedEntries);
+                      }}
+                      disabled={ownedEntries.length === 0}
+                      className="w-full min-h-11 px-3 text-left text-sm hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Export
+                    </button>
+                  </div>
+                )}
                 <button
                   onClick={() => {
                     setShowSettingsMenu(false);
@@ -443,12 +515,29 @@ export default function CollectionClient() {
               binder — or bring in an existing spreadsheet.
             </p>
           </div>
-          <button
-            onClick={() => setShowImport(true)}
-            className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-          >
-            Import CSV
-          </button>
+          {canScan ? (
+            <div className="flex items-center gap-4">
+              <a
+                href="/collection/scan"
+                className="inline-flex items-center min-h-11 px-4 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+              >
+                Scan cards
+              </a>
+              <button
+                onClick={() => setShowImport(true)}
+                className="min-h-11 text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
+              >
+                Import CSV
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowImport(true)}
+              className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+            >
+              Import CSV
+            </button>
+          )}
         </div>
       )}
 
@@ -619,11 +708,17 @@ export default function CollectionClient() {
       {/* Card grid */}
       {showCards && (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-        {visibleCards.map((card) => {
+        {visibleCards.map((card, i) => {
           const qty = quantities.get(cardFullKey(card)) || 0;
           return (
+            <React.Fragment key={card.dataLine}>
+            {i === 0 && justCards.length > 0 && (
+              <h2 className="col-span-full text-sm font-semibold">Just added</h2>
+            )}
+            {i === justCards.length && justCards.length > 0 && (
+              <h2 className="col-span-full text-sm font-semibold mt-2">All cards</h2>
+            )}
             <div
-              key={card.dataLine}
               className={`rounded-lg border p-1.5 flex flex-col gap-1.5 ${
                 qty > 0 ? "border-primary/60" : "border-border"
               }`}
@@ -696,6 +791,7 @@ export default function CollectionClient() {
                 </div>
               )}
             </div>
+            </React.Fragment>
           );
         })}
       </div>
