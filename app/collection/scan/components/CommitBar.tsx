@@ -27,6 +27,8 @@ export default function CommitBar({ state, dispatch, showPrices, onCommitted, on
   const resumed = useRef(false);
   const totals = trayTotals(state);
   const committing = state.phase === 'committing';
+  // A photo still reading is not in the payload yet; committing now would drop its cards.
+  const reading = state.photos.some(p => p.status === 'queued' || p.status === 'reading');
 
   const commit = async () => {
     const commitId = state.pendingCommitId ?? crypto.randomUUID();
@@ -82,7 +84,11 @@ export default function CommitBar({ state, dispatch, showPrices, onCommitted, on
               </span>
             </p>
           )}
-          {warning && <p className="text-xs text-amber-600 dark:text-amber-400">{warning}</p>}
+          {reading ? (
+            <p className="text-xs text-muted-foreground">{COPY.waitingForPhotos}</p>
+          ) : (
+            warning && <p className="text-xs text-amber-600 dark:text-amber-400">{warning}</p>
+          )}
           {error && (
             <p className="text-sm text-destructive">
               {error.text}
@@ -103,7 +109,7 @@ export default function CommitBar({ state, dispatch, showPrices, onCommitted, on
           <Button
             type="button"
             className="min-h-11 flex-1 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-            disabled={totals.cards === 0 || committing || !!error?.final}
+            disabled={totals.cards === 0 || committing || reading || !!error?.final}
             onClick={() => void commit()}
           >
             {committing ? COPY.committing : fill(COPY.commit, { n: totals.cards })}

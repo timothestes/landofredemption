@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
@@ -24,12 +24,13 @@ interface Props {
   onClose: () => void;
 }
 
-const stripIdentity = ({ identity: _identity, ...c }: PickerHit): Candidate => c;
 
 export default function PrintingPicker({ row, mode, quantities, showPrices, getPrice, onPick, onClose }: Props) {
   const trapRef = useRef<HTMLDivElement>(null);
+  // Find card on a not_found row starts from what was read off the card.
+  const initialQuery = mode === 'search' ? (row.detection.read.title ?? '').trim() : '';
   const latestQuery = useRef('');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [hits, setHits] = useState<PickerHit[] | null>(null);
   useFocusTrap(trapRef, true);
 
@@ -44,7 +45,18 @@ export default function PrintingPicker({ row, mode, quantities, showPrices, getP
     }
     const mod = await loadSearch();
     if (latestQuery.current !== value) return;
-    setHits(mod.searchPrintings(value).map(h => ({ ...h, price: getPrice(h.key) })));
+    setHits(mod.searchPrintings(value));
+  };
+
+  useEffect(() => {
+    if (initialQuery) void onSearch(initialQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Hits are priced at render, so they pick up the price map once it finishes loading.
+  const priced = (h: PickerHit): Candidate => {
+    const { identity: _identity, ...c } = h;
+    return { ...c, price: getPrice(h.key) };
   };
 
   const searching = hits !== null;
@@ -52,7 +64,7 @@ export default function PrintingPicker({ row, mode, quantities, showPrices, getP
 
   const pick = (c: Candidate | PickerHit) => {
     if ('identity' in c) {
-      const siblings = (hits ?? []).filter(h => h.identity === c.identity).map(stripIdentity);
+      const siblings = (hits ?? []).filter(h => h.identity === c.identity).map(priced);
       onPick(c.key, 'search', siblings);
     } else {
       onPick(c.key, 'candidates');
@@ -89,13 +101,16 @@ export default function PrintingPicker({ row, mode, quantities, showPrices, getP
             />
           </DialogHeader>
           <DialogBody className="px-2 py-2">
-            {searching && options.length === 0 ? (
-              <p className="px-2 py-6 text-center text-sm text-muted-foreground">{COPY.pickerEmpty}</p>
+            {options.length === 0 ? (
+              <p className="px-2 py-6 text-center text-sm text-muted-foreground">
+                {searching ? COPY.pickerEmpty : COPY.pickerSearch}
+              </p>
             ) : (
               <ul className="space-y-1">
                 {options.map(c => {
                   const current = c.key === row.key;
                   const owned = quantities.get(c.key) ?? 0;
+                  const price = 'identity' in c ? getPrice(c.key) : c.price;
                   return (
                     <li key={c.key}>
                       <button
@@ -127,7 +142,7 @@ export default function PrintingPicker({ row, mode, quantities, showPrices, getP
                         <span className="flex shrink-0 flex-col items-end gap-0.5 text-right">
                           {showPrices && (
                             <span className="text-sm tabular-nums">
-                              {c.price != null ? `$${c.price.toFixed(2)}` : <span className="text-xs text-muted-foreground">{COPY.unpriced}</span>}
+                              {price != null ? `$${price.toFixed(2)}` : <span className="text-xs text-muted-foreground">{COPY.unpriced}</span>}
                             </span>
                           )}
                           {current && <span className="text-xs font-medium text-muted-foreground">{COPY.pickerCurrent}</span>}

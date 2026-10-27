@@ -96,7 +96,15 @@ export function trayReducer(s: TrayState, a: TrayAction): TrayState {
       return patchPhoto(s, a.photoId, { status: 'reading', startedAt: a.at, error: undefined });
     case 'photoDone': {
       if (!s.photos.some(p => p.photoId === a.photoId)) return s;
-      let rows = s.rows.map(r => ({ ...r }));
+      const done = patchPhoto(s, a.photoId, {
+        status: 'done',
+        scanId: a.response.scanId,
+        photoQuality: a.response.photoQuality,
+        error: undefined,
+      });
+      // A read that lands during or after a commit was not in its payload: never show it as added.
+      if (s.phase !== 'editing') return done;
+      const rows = s.rows.map(r => ({ ...r }));
       for (const det of [...a.response.detections].sort(gridOrder)) {
         const same = det.chosenKey
           ? rows.find(r => r.removedAs === null && r.key === det.chosenKey)
@@ -118,12 +126,6 @@ export function trayReducer(s: TrayState, a: TrayAction): TrayState {
           });
         }
       }
-      const done = patchPhoto(s, a.photoId, {
-        status: 'done',
-        scanId: a.response.scanId,
-        photoQuality: a.response.photoQuality,
-        error: undefined,
-      });
       return { ...done, rows };
     }
     case 'photoFailed':

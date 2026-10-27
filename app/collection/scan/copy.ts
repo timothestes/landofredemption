@@ -54,6 +54,7 @@ export const COPY: Record<string, string> = {
   footerTotal: '{total} at YTG · {n} unpriced',
   commit: 'Add {n} to collection',
   committing: 'Adding…',
+  waitingForPhotos: 'Waiting for photos to finish reading…',
   commitFailed: "Couldn't save. Your tray is still here. Try again.",
   alreadyCommitted: 'These cards were already added to your collection.',
   unresolvedWarning: "{n} cards aren't matched and won't be added.",

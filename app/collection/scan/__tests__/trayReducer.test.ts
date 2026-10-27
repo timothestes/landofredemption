@@ -36,6 +36,25 @@ describe('trayReducer', () => {
     expect(s.rows[0].corrected).toBe('none');
   });
 
+  it('photoDone during committing does not change rows', () => {
+    const s = run(initialTray('u'), { type: 'photoAdded', photoId: 'p1' }, { type: 'photoAdded', photoId: 'p2' },
+      { type: 'photoDone', photoId: 'p1', response: resp([det(1, { chosenKey: 'A' })]) },
+      { type: 'commitStarted', commitId: 'c1' });
+    const after = run(s, { type: 'photoDone', photoId: 'p2', response: resp([det(1, { chosenKey: 'B', scan: S2 })], S2) });
+    expect(after.rows).toBe(s.rows);
+    expect(after.photos.find(p => p.photoId === 'p2')?.status).toBe('done');
+  });
+
+  it('photoDone after committed does not change rows', () => {
+    const s = run(initialTray('u'), { type: 'photoAdded', photoId: 'p1' }, { type: 'photoAdded', photoId: 'p2' },
+      { type: 'photoDone', photoId: 'p1', response: resp([det(1, { chosenKey: 'A' })]) },
+      { type: 'commitStarted', commitId: 'c1' },
+      { type: 'commitDone', commitId: 'c1', added: 1, scanIds: ['x'] });
+    const after = run(s, { type: 'photoDone', photoId: 'p2', response: resp([det(1, { chosenKey: 'A', scan: S2 })], S2) });
+    expect(after.rows).toBe(s.rows);
+    expect(after.rows[0].qty).toBe(1);
+  });
+
   it('not_found resolved by search counts and is name-corrected', () => {
     let s = run(initialTray('u'), { type: 'photoAdded', photoId: 'p1' },
       { type: 'photoDone', photoId: 'p1', response: resp([det(1, { chosenKey: null })]) });

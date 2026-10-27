@@ -18,7 +18,8 @@ export default function CaptureButtons({ addFiles, chooseInputRef, disabled = fa
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget;
     const files = input.files ? Array.from(input.files) : [];
-    if (files.length > 0) addFiles(files);
+    // A picker opened before a commit can return after it; those photos must not join a committed tray.
+    if (files.length > 0 && !disabled) addFiles(files);
     input.value = '';
   };
 
