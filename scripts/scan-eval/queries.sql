@@ -158,11 +158,19 @@ order by 1 desc, 2;
 
 
 -- name: failure_rate
--- failures / all. "All" = photos that reached the model (done + failed); rejected rows
--- never called it and pending rows are in flight.
-select count(*) filter (where status = 'failed') as failed,
-       count(*) as done_and_failed,
-       round(100.0 * count(*) filter (where status = 'failed') / nullif(count(*), 0), 1) as failure_pct
+-- Two kinds of failed row, reported apart:
+--   model failures = failed with attempts > 0: the call to Claude was made and failed
+--     (rate limit, overload, billing, bad key/model, refusal, unparseable, mismatch).
+--     Rate = model failures / (done + model failures), i.e. of photos that reached the model.
+--   input failures = failed with attempts = 0: the model was never called (undecodable
+--     photo, pixel limit, missing API key). Reported as a count and share of done + failed.
+-- Rejected rows never called the model and pending rows are in flight; both are excluded.
+select count(*) filter (where status = 'failed' and attempts > 0) as model_failed,
+       count(*) filter (where status = 'done') + count(*) filter (where status = 'failed' and attempts > 0) as reached_model,
+       round(100.0 * count(*) filter (where status = 'failed' and attempts > 0)
+             / nullif(count(*) filter (where status = 'done' or (status = 'failed' and attempts > 0)), 0), 1) as model_failure_pct,
+       count(*) filter (where status = 'failed' and coalesce(attempts, 0) = 0) as input_failed,
+       round(100.0 * count(*) filter (where status = 'failed' and coalesce(attempts, 0) = 0) / nullif(count(*), 0), 1) as input_failure_pct
 from public.scan_events
 where source = 'player' and status in ('done', 'failed');
 
@@ -246,15 +254,19 @@ from committed
 where corrected and created_at >= now() - interval '14 days';
 
 -- name: kill_failure_or_latency_3d
--- KILL: failure rate > 10% or p95 latency > 20 s, trailing 3 days. Action: investigate
--- before anything else ships. No minimum n is specified; read n alongside the flags.
-select count(*) filter (where status in ('done', 'failed')) as done_and_failed,
-       count(*) filter (where status = 'failed') as failed,
-       round(100.0 * count(*) filter (where status = 'failed')
-             / nullif(count(*) filter (where status in ('done', 'failed')), 0), 1) as failure_pct,
+-- KILL: model failure rate > 10% or p95 latency > 20 s, trailing 3 days. Action:
+-- investigate before anything else ships. No minimum n is specified; read n alongside
+-- the flags. Model failure = failed with attempts > 0, over photos that reached the
+-- model (done + model failures); input failures (attempts = 0: undecodable, pixel limit,
+-- missing key) never called the model and are reported beside it, not in the kill.
+select count(*) filter (where status = 'done' or (status = 'failed' and attempts > 0)) as reached_model,
+       count(*) filter (where status = 'failed' and attempts > 0) as model_failed,
+       count(*) filter (where status = 'failed' and coalesce(attempts, 0) = 0) as input_failed,
+       round(100.0 * count(*) filter (where status = 'failed' and attempts > 0)
+             / nullif(count(*) filter (where status = 'done' or (status = 'failed' and attempts > 0)), 0), 1) as model_failure_pct,
        percentile_cont(0.95) within group (order by latency_ms) filter (where status = 'done' and latency_ms is not null) as p95_ms,
-       coalesce(100.0 * count(*) filter (where status = 'failed')
-             / nullif(count(*) filter (where status in ('done', 'failed')), 0) > 10, false) as failure_kill,
+       coalesce(100.0 * count(*) filter (where status = 'failed' and attempts > 0)
+             / nullif(count(*) filter (where status = 'done' or (status = 'failed' and attempts > 0)), 0) > 10, false) as failure_kill,
        coalesce(percentile_cont(0.95) within group (order by latency_ms) filter (where status = 'done' and latency_ms is not null) > 20000, false) as latency_kill
 from public.scan_events
 where source = 'player' and created_at >= now() - interval '3 days';
