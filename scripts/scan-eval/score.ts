@@ -64,6 +64,8 @@ export interface Pair {
   /** Printing level, on correct-identity pairs only. */
   printing?: 'correct' | 'wrong' | 'defensible' | 'not_defensible';
   silentWrongPrice?: boolean;
+  /** A Matched row on another printing with either price missing: the price check is blind to it. */
+  wrongPrintingUnpriced?: boolean;
 }
 
 interface PrintingTally { setVisiblePairs: number; setVisibleCorrect: number; defensible: number; notDefensible: number }
@@ -85,6 +87,7 @@ export interface PhotoScore {
   /** matched_wrong rows: a Matched row naming the wrong card. */
   silentWrong: number;
   silentWrongPrice: number;
+  wrongPrintingUnpriced: number;
   hardFail: boolean;
   printing: PrintingTally;
   grid: { checked: number; matched: number };
@@ -106,6 +109,7 @@ export interface Tally {
   precision: number | null;
   silentWrong: number;
   silentWrongPrice: number;
+  wrongPrintingUnpriced: number;
   hardFails: number;
   noCards: number;
   byClass: Record<PairClass, number>;
@@ -215,7 +219,7 @@ export function scorePhoto(label: LabelPhoto, pred: Prediction | undefined, pric
   const s: PhotoScore = {
     file: label.file, bucket: label.bucket, otherGame: label.otherGame,
     tp: 0, fp: 0, fn: 0, labeledFull: label.cards.filter(c => c.inFrame === 'full').length,
-    byClass: zeroClasses(), pairs: [], silentWrong: 0, silentWrongPrice: 0, hardFail: false,
+    byClass: zeroClasses(), pairs: [], silentWrong: 0, silentWrongPrice: 0, wrongPrintingUnpriced: 0, hardFail: false,
     printing: zeroPrinting(), grid: { checked: 0, matched: 0 },
     photoQuality: pred?.photoQuality, latencyMs: pred?.latencyMs, costUsd: pred?.costUsd,
   };
@@ -299,6 +303,7 @@ export function scorePhoto(label: LabelPhoto, pred: Prediction | undefined, pric
   s.silentWrong = preds.filter(p => !usedP.has(p.i) && p.d.match.status === 'matched' && !present.has(p.id)).length;
   for (const p of s.pairs) {
     if (p.silentWrongPrice) s.silentWrongPrice++;
+    if (p.wrongPrintingUnpriced) s.wrongPrintingUnpriced++;
     if (!p.printing) continue;
     if (p.label!.setVisible) { s.printing.setVisiblePairs++; if (p.printing === 'correct') s.printing.setVisibleCorrect++; }
     else if (p.printing === 'defensible') s.printing.defensible++;
@@ -313,17 +318,20 @@ export function scorePhoto(label: LabelPhoto, pred: Prediction | undefined, pric
  * chose a different printing that the collapse rule would not have merged
  * with the true one (price delta at or above the floor, or another legality).
  * silent_wrong_price: a Matched row whose price differs from the true
- * printing's by the floor or more; unpriced on either side is not flagged.
+ * printing's by the floor or more; unpriced on either side is not flagged
+ * there but counted as wrong_printing_unpriced.
  */
-function printingLevel(c: LabelCard, m: MatchResult, prices: PriceMap): Pick<Pair, 'printing' | 'silentWrongPrice'> {
+function printingLevel(c: LabelCard, m: MatchResult, prices: PriceMap): Pick<Pair, 'printing' | 'silentWrongPrice' | 'wrongPrintingUnpriced'> {
   const chosenKey = m.chosen?.key;
   const truePrice = prices[c.printing], chosenPrice = chosenKey ? prices[chosenKey] : undefined;
-  const silentWrongPrice = m.status === 'matched' && chosenKey !== c.printing
+  const wrongMatched = m.status === 'matched' && chosenKey !== c.printing;
+  const silentWrongPrice = wrongMatched
     && truePrice !== undefined && chosenPrice !== undefined && Math.abs(chosenPrice - truePrice) >= PRICE_DELTA_FLOOR;
-  if (c.setVisible) return { printing: chosenKey === c.printing ? 'correct' : 'wrong', silentWrongPrice };
+  const wrongPrintingUnpriced = wrongMatched && (truePrice === undefined || chosenPrice === undefined);
+  if (c.setVisible) return { printing: chosenKey === c.printing ? 'correct' : 'wrong', silentWrongPrice, wrongPrintingUnpriced };
   const otherLegality = !!chosenKey && cardByKey(chosenKey)?.legality !== cardByKey(c.printing)?.legality;
   const ok = m.status !== 'matched' || chosenKey === c.printing || (silentWrongPrice === false && otherLegality === false);
-  return { printing: ok ? 'defensible' : 'not_defensible', silentWrongPrice };
+  return { printing: ok ? 'defensible' : 'not_defensible', silentWrongPrice, wrongPrintingUnpriced };
 }
 
 // ---------------------------------------------------------------------------
@@ -335,7 +343,7 @@ const ratio = (a: number, b: number) => (b ? a / b : null);
 function tally(scores: PhotoScore[]): Tally {
   const t: Tally = {
     photos: scores.length, scored: 0, errors: 0, truncated: 0, missing: 0, tp: 0, fp: 0, fn: 0, recall: null, precision: null,
-    silentWrong: 0, silentWrongPrice: 0, hardFails: 0, noCards: 0, byClass: zeroClasses(), printing: zeroPrinting(),
+    silentWrong: 0, silentWrongPrice: 0, wrongPrintingUnpriced: 0, hardFails: 0, noCards: 0, byClass: zeroClasses(), printing: zeroPrinting(),
     grid: { checked: 0, matched: 0 }, latency: { n: 0, p50: null, p95: null }, costUsd: 0,
   };
   const lat: number[] = [];
@@ -347,7 +355,7 @@ function tally(scores: PhotoScore[]): Tally {
     t.scored++;
     if (typeof s.latencyMs === 'number') lat.push(s.latencyMs);
     t.tp += s.tp; t.fp += s.fp; t.fn += s.fn;
-    t.silentWrong += s.silentWrong; t.silentWrongPrice += s.silentWrongPrice;
+    t.silentWrong += s.silentWrong; t.silentWrongPrice += s.silentWrongPrice; t.wrongPrintingUnpriced += s.wrongPrintingUnpriced;
     if (s.hardFail) t.hardFails++;
     if (s.photoQuality === 'no_cards') t.noCards++;
     for (const c of PAIR_CLASSES) t.byClass[c] += s.byClass[c];
@@ -494,9 +502,9 @@ const fmtPct = (x: number | null) => (x === null ? '–' : `${(x * 100).toFixed(
 const fmtMs = (x: number | null) => (x === null ? '–' : `${(x / 1000).toFixed(1)}s`);
 
 export function markdown(sum: Summary): string {
-  const head = ['bucket', 'photos', 'scored', 'err', 'trunc', 'missing', 'tp', 'fp', 'fn', 'recall', 'precision', 'silent wrong', 'wrong price', 'hard fail', ...PAIR_CLASSES, 'set-visible correct', 'not defensible', 'grid', 'p50', 'p95', 'cost'];
+  const head = ['bucket', 'photos', 'scored', 'err', 'trunc', 'missing', 'tp', 'fp', 'fn', 'recall', 'precision', 'silent wrong', 'wrong price', 'wrong printing unpriced', 'hard fail', ...PAIR_CLASSES, 'set-visible correct', 'not defensible', 'grid', 'p50', 'p95', 'cost'];
   const row = (name: string, t: Tally) => [
-    name, t.photos, t.scored, t.errors, t.truncated, t.missing, t.tp, t.fp, t.fn, fmtPct(t.recall), fmtPct(t.precision), t.silentWrong, t.silentWrongPrice, t.hardFails,
+    name, t.photos, t.scored, t.errors, t.truncated, t.missing, t.tp, t.fp, t.fn, fmtPct(t.recall), fmtPct(t.precision), t.silentWrong, t.silentWrongPrice, t.wrongPrintingUnpriced, t.hardFails,
     ...PAIR_CLASSES.map(c => t.byClass[c]),
     `${t.printing.setVisibleCorrect}/${t.printing.setVisiblePairs}`, t.printing.notDefensible, `${t.grid.matched}/${t.grid.checked}`,
     fmtMs(t.latency.p50), fmtMs(t.latency.p95), `$${t.costUsd.toFixed(3)}`,

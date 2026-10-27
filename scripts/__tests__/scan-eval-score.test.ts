@@ -95,6 +95,19 @@ describe('printing level', () => {
     expect(below.silentWrongPrice).toBe(0);
     expect(below.printing.defensible).toBe(1);
   });
+  it('a Matched wrong printing with either price missing is wrong_printing_unpriced, not silent_wrong_price', () => {
+    const one = (prices: Record<string, number>) => scorePhoto(photo([full(L, false)]), chose(K), prices);
+    for (const prices of [{}, { [L]: 1 }, { [K]: 50 }]) expect([one(prices).wrongPrintingUnpriced, one(prices).silentWrongPrice], JSON.stringify(prices)).toEqual([1, 0]);
+    expect(one({ [L]: 1, [K]: 50 }).wrongPrintingUnpriced).toBe(0);
+    expect(scorePhoto(photo([full(L, false)]), chose(L), {}).wrongPrintingUnpriced).toBe(0);
+    const check = chose(K); check.detections[0].match.status = 'check';
+    expect(scorePhoto(photo([full(L, false)]), check, {}).wrongPrintingUnpriced).toBe(0);
+    const sum = summarize([one({}), one({ [L]: 1 })]);
+    expect(sum.pooled.wrongPrintingUnpriced).toBe(2);
+    const md = markdown(sum);
+    expect(md.split('\n')[0]).toMatch(/\| wrong printing unpriced \|/);
+    expect(md).toMatch(/\*\*pooled\*\*(?: \| [^|]+){12} \| 2 \|/);
+  });
   it('a Check row never flags silent_wrong_price', () => {
     const p = chose(K);
     p.detections[0].match.status = 'check';
