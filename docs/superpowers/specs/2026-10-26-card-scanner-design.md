@@ -1,7 +1,7 @@
 # Card scanner: photograph cards, add them to your collection, see what they're worth — design
 
-Date: 2026-10-26. Status: **rev 2, after adversarial review** (five
-reviewers; log at the end). Not yet approved.
+Date: 2026-10-27. Status: **rev 3, after two adversarial rounds** (ten
+reviewers in total; log at the end). Not yet approved.
 
 ## Intent
 
@@ -26,61 +26,84 @@ dataset, prices through the existing SKU-level YTG matching, and turns
 every correction into labelled evaluation data for everyone.
 
 The scanner must be a smooth slot-in. It reuses the collection tracker
-and its merge import, the trade list's "Haves", the price cache and
-product links, the card identity module, and the existing card
-components. It adds one page, one API route, one small library, one
-migration, one admin table, one cron and one evaluation script.
+and its merge import, the trade list's Haves, the price cache and
+product links, the card identity module, the Radix dialog, and the
+existing card components. It adds one page, one API route, one small
+library, one migration, one admin table, one cron, one short privacy
+page and one evaluation script.
 
 ## Vocabulary
 
 - **Photo**: one image the player captured or picked; one card or a flat
   spread.
 - **Detection**: one card the recogniser believes is in a photo, with
-  everything it could transcribe: title, scripture reference, opening
-  words of the ability, card type, brigade colour, border style, set
-  marking, position, confidence.
+  everything it could transcribe (fields below).
 - **Stem**: the printed title with the dataset's printing decorations
-  removed. `cardNameStem` in `lib/cards/cardIdentity.ts` already does
-  this: "Son of God (J)", "Son of God [K]" and "Son of God [Fundraiser]"
-  share the stem "Son of God". The dataset has 5,681 distinct names but
-  3,494 stems; 1,465 stems have two or more printings, covering 64% of
-  all printings.
-- **Identity**: the card a player would say they own, regardless of
-  printing: `cardIdentityKey` groups printings by stem plus type,
-  brigade, alignment and class, then unions on ability text or shared
-  scripture reference. Some stems hold several identities ("Aaron" in
-  two sets with different abilities, three different "The Depraved" by
-  brigade).
+  removed. `cardNameStem(name, type)` in `lib/cards/cardIdentity.ts`
+  strips trailing bracketed groups and, except on Lost Souls, a trailing
+  nickname: "Son of God (J)", "Son of God [K]" and "Son of God
+  [Fundraiser]" share the stem "Son of God". It does **not** fold case,
+  quotes or punctuation; the scanner's stem index does.
+- **Identity**: the card a player would say they own regardless of
+  printing. `cardIdentityKey` groups printings by stem plus type,
+  brigade, alignment and class, then unions on ability text or a shared
+  scripture reference. It splits a few true reprints that differ only in
+  `class` spelling (43 pairs); the matcher merges those back.
 - **Printing**: one row of `CARDS`, identified by the app-wide card key
   `name|set|imgFile`, the key `collection_cards` and `card_prices` use.
+  Printings of one identity are enumerated as
+  `CARDS.filter(c => cardIdentityKey(c) === key)`; `printingsForKey`
+  returns names, and twelve names have two rows.
 - **Candidate**: a printing a detection may be.
-- **Tray**: the matched cards accumulated across photos in one session,
-  before anything is written.
+- **Tray**: the matched cards accumulated across photos in one session.
 - **Commit**: writing the tray to the collection.
+
+Dataset numbers behind this design, measured on 2026-10-27 against
+`cardData.json` and the live price map:
+
+| Quantity | Value |
+|---|---|
+| Printings / distinct names / stems / identities | 5,693 / 5,681 / 3,521 (3,452 after normalisation) / 4,769 |
+| Stems with two or more printings | 1,444 (3,616 printings, 63.5%) |
+| Stems with an unsuffixed twin (a plain name plus decorated ones) | 757 (1,706 printings, 30.0%) |
+| Stems holding more than one identity (homonyms, excluding Lost Souls) | 959 (2,569 printings, 45%) |
+| Identities with more than one printing | 795 (1,719 printings, 30.2%) |
+| Identities whose printings differ in price or legality, before any rule | 319 (708 printings, 12.4%) |
+| Same, after the printing filters below | 64 (153 printings, 2.7%) |
+| Identities with both a promo and a standard printing, promo pricier | 62 of 67, median gap $14, max $255 |
+| Lost Soul printings / identities / references shared by more than one identity | 263 / 170 / 32 (69 identities) |
+| Printings whose corner print number is encoded in `imgFile` | 2,529 (2,521 of the 3,190 Rotation-legal) |
+| Stems with another stem at edit distance 1 / 2 | 131 / 389 |
+| Different cards at distance 1 / 2 that type and brigade cannot separate | 9 / 42 |
+| Set codes / official sets / AB pairs / Legacy Rares / UR+ printings | 55 / 49 / 387 / 72 / 12 |
+| Cards with a `reference` value | 5,687 of 5,693 |
 
 ## Goals
 
 1. From the phone camera to a reviewed, committed tray of a dozen cards
    in under a minute.
 2. Name recognition good enough that the player corrects the exception,
-   not the rule: measured, not assumed (see Evaluation).
+   not the rule: measured in E0 as a screen and certified after launch by
+   an audit sample (see Evaluation).
 3. Printing chosen sensibly when the photo does not settle it, marked
    only when the choice matters (price or legality differ), and fixable
    in one tap during and after commit.
 4. Bulk-friendly: many photos per session, many cards per photo, nothing
-   important lost on a page refresh, one commit at the end, undo after.
-5. Every scan and every correction recorded as structured data so quality
-   is observable week over week and the evaluation set grows for free.
-6. Spend bounded by construction: per-user and global caps in Postgres, a
-   dedicated API key, and no path where a burst of requests can exceed
-   the Max plan's monthly credit.
+   important lost on a page refresh, commit whenever, undo after.
+5. Every scan, correction, rejection and abandonment recorded as
+   structured data so quality is observable week over week and the
+   evaluation set grows for free.
+6. Spend bounded by construction: every model call is reserved against
+   per-user and global caps in Postgres before it is made, the scanner
+   has its own API key, and no path can exceed the Max plan's monthly
+   credit.
 
 ## Non-goals
 
 - On-device recognition or offline use.
 - Prices from anyone but YTG.
-- A trade flow. Trade lists exist; the tray can add to Haves (below) and
-  stops there.
+- A trade flow. Trade lists exist; the success state can add committed
+  cards to Haves and stops there.
 - Scanning a deck into the deck builder. Same engine, different flow,
   later.
 - A live viewfinder. The native camera is the viewfinder.
@@ -92,9 +115,9 @@ migration, one admin table, one cron and one evaluation script.
 
 - A scanner that is confidently wrong. A vision model fails differently
   from OCR: OCR produces garbage you can distance-match, a vision model
-  produces a plausible real card name. Every rule below that asks for
-  corroborating fields (reference, ability, type, brigade) exists for
-  this reason.
+  produces a plausible real card name. Every rule below that asks for a
+  corroborating field exists for this reason, and "silent wrong
+  identity on a Matched row" is the one number E0 and E3 gate hardest.
 - A heavy page. Nothing recognition-related ships to the phone.
 - Photos retained without the player saying so.
 - A second collection. The tray is temporary; the durable store is
@@ -111,28 +134,46 @@ migration, one admin table, one cron and one evaluation script.
   scanner gets its **own key in its own workspace** in that org (env
   `SCANNER_ANTHROPIC_API_KEY`) so its spend is visible by itself in the
   Console and revoking the key is an instant, no-deploy kill switch. The
-  listings cron keeps the shared key and is not affected by scanner
-  traffic.
-- **Vercel function bodies are capped at 4.5 MB**, and above it Vercel
-  returns its own non-JSON 413 before the route runs. The client
-  downscales before upload and branches on content type when reading
-  errors.
-- **The Upstash rate limiter is uninstalled.** Nothing new depends on it.
-  Caps are enforced in Postgres per user and globally, which is why
-  scanning requires sign-in. A Vercel WAF rate rule on `POST /api/scan`
-  (about 30 per minute per IP) is added in the dashboard as belt and
-  braces; it is not the control.
+  listings cron keeps the shared key.
+- **Vercel function bodies are capped at 4.5 MB.** Above it Vercel
+  answers before the route runs with a `text/plain` 413 and the header
+  `x-vercel-error: FUNCTION_PAYLOAD_TOO_LARGE`; the client branches on
+  that header.
+- **The Upstash rate limiter is uninstalled.** Caps are enforced in
+  Postgres per user and globally, which is why scanning requires
+  sign-in. A Vercel WAF rate rule on `POST /api/scan` (about 30 per
+  minute per IP; counters are per region) is belt and braces, not the
+  control.
 - **Identity is per printing in storage**, but ownership elsewhere is
   name-level ("Cards I own", "Check my collection" count any printing).
-  A wrong printing therefore does not break those views; it skews set
-  completion and the "to buy at YTG" total on `/collection`.
-- **Printed titles carry no set.** Set membership is an icon, a border
-  style, sometimes a small abbreviation or year. Lost Souls are all
-  titled "Lost Soul"; their identity is the scripture reference, which
-  the `reference` field holds for 5,687 of 5,693 cards.
-- **Blob card images are roughly 344 × 512 JPEGs**, not uniform. Fine for
-  thumbnails and for a later art-similarity index, too small to read set
-  icons from.
+  A wrong printing does not break those views; it skews set completion
+  (which is per `officialSet`) and the "to buy at YTG" total on
+  `/collection`.
+- **Printed titles carry no set.** What a modern card does print: a
+  corner print number with a rarity code ("81 UR", "LR65", "250"), a
+  copyright year, a set icon, a border look that varies by set
+  (Crown of Thorns AB is borderless; Tribulation to Conquest AB is a
+  darker framed border), the scripture reference, strength and
+  toughness, and an identifier badge ("Generic", "Idol"). Lost Souls
+  are all titled "Lost Soul"; modern frames add a nickname badge
+  ("Speed Bump", "Shut Door"). Redemption has no foils.
+- **Dataset vocabulary is not printed vocabulary.** `type` values are
+  codes (`GE`, `EE`, `GE/EE`, `Hero`, `Evil Character`, `Hero/Evil
+  Character`, `Dominant`, `Artifact`, `Fortress`, `Site`, `City`,
+  `Curse`, `Covenant`, `Lost Soul`, slash combinations); `brigade` has
+  257 distinct strings ("Blue (Blue/Red)", "Purple (Clay)"); references
+  use Roman numerals for numbered books ("II Timothy 2:26"). The matcher
+  owns a mapping layer.
+- **Image tokens follow the 28-pixel-patch rule**, `⌈w/28⌉ × ⌈h/28⌉`,
+  capped at 4,784 tokens for the high-resolution tier that Claude Opus
+  5.5, Sonnet 5.5 and Haiku 5.5 all belong to. A 4:3 photo is therefore
+  downscaled to about 2212 × 1659 regardless of what we send; only 16:9
+  keeps a 2576 long edge. The server resizes with the documented
+  reference algorithm so positions map one to one.
+- **On Opus 5.5 thinking is always on and is billed as output**, it is
+  not bounded by effort, and the installed SDK (0.78) cannot separate it
+  from text in `usage`. `max_tokens` is a ceiling on both together.
+- **Blob card images are roughly 344 × 512 JPEGs**, not uniform.
 - **Mobile first**, per CLAUDE.md. Design system:
   `prompt_context/design_system.md`; green is the single accent; amber
   is for warnings only.
@@ -143,94 +184,149 @@ migration, one admin table, one cron and one evaluation script.
 
 ### Stage A (v1): the model transcribes, the app matches
 
-One Claude request per photo returns structured JSON. For each card the
-model can see it transcribes, exactly as printed and without guessing:
+One Claude request per photo returns structured JSON. For each card it
+can see, the model transcribes exactly as printed, with `null` for
+anything it cannot read (schema types are `["string","null"]`; the
+schema has `additionalProperties: false` and `required` on every object
+and no length or numeric bounds, which the API rejects; length caps are
+enforced in code):
 
-- the title;
-- the scripture reference line, if any;
-- the first six words of the special ability text, if legible;
-- the card type as shown in the icon box (Hero, Evil Character,
+- `title`
+- `reference`: the scripture line
+- `nickname`: the Lost Soul badge, if any
+- `abilityStart`: the first six words of the special ability
+- `type`: the icon-box type as printed (Hero, Evil Character,
   Enhancement, Lost Soul, Dominant, Site, Fortress, Artifact, Covenant,
-  Curse, City, Territory-class, unknown);
-- the brigade colour or colours of the frame;
-- the border style: white border, full art, alternate border, foil,
-  promo frame, unknown;
-- any set marking it can read: an abbreviation, a year, a word; plus a
-  one-line description of the set icon (shape and colour) when it can
-  see one but not read it;
-- its position in the spread as a grid cell (row, column in reading
-  order) and, optionally, a normalised bounding box;
-- whether the card is rotated or upside down;
-- a confidence bucket.
+  Curse, City, unknown)
+- `brigade`: colour words of the frame
+- `strength`, `toughness`: the two numbers top-left, if present
+- `identifier`: the small badge text ("Generic", "Idol", "Greek")
+- `printNumber`, `rarityCode`: the corner number and letters ("81",
+  "UR+"; "LR65" is number "65" code "LR")
+- `copyrightYear`
+- `border`: white border, borderless full-bleed, dark framed, unknown
+- `setMarking`: any set abbreviation or word; `setIconNote`: shape and
+  colour of the set icon when seen but not read
+- `grid`: row and column in reading order; `bbox` optional, normalised
+- `orientation`: upright, rotated, upside-down
+- `confidence`: high, medium, low
 
-Plus a photo-quality verdict (`ok`, `blurry`, `dark`, `glare`,
-`too_many_cards`, `no_cards`).
+Plus `photoQuality`: ok, blurry, dark, glare, too_many_cards, no_cards.
 
 The model never sees the card list and never picks a key. The matcher
-(pure, unit-tested, no API) does the rest:
+(`lib/scan/match.ts`, pure, unit-tested, no API) does the rest, in this
+order:
 
-1. **Stem resolution.** Normalise the transcribed title the way
-   `cardNameStem` normalises dataset names (case, curly quotes,
-   punctuation, whitespace). Look it up in a stem index built once from
-   `CARDS`. If absent, score every stem with normalised
-   Damerau-Levenshtein and accept the best when it clears a threshold
-   and leads the runner-up by a margin; both numbers are set from E0
-   outputs. `searchCardNames` is not used here: it is unscored and built
-   for the article picker. It is used for the picker's search box.
-2. **Identity resolution.** If the stem maps to one identity, done. If
-   several, score each identity on the reference (normalised book names
-   and numerals), the ability prefix, the type and the brigade; pick a
-   clear winner, else the row is **Check this** with the identities as
-   candidates.
-3. **Lost Souls.** Title "Lost Soul" skips steps 1 and 2 and resolves by
-   reference against Lost Soul printings; a missing or unmatched
-   reference is **Check this** with the picker scoped to Lost Souls.
-4. **Printing selection** inside the identity (rules below).
-5. **Second look** for **Check this** and **Not found** rows only: a
-   second, small request with the card's crop and the top five
-   candidates (names and thumbnails) asking the model to pick one or
-   none. This is where "the model sees candidates" pays, at pennies, and
-   it is measured in E0 before it is kept.
+1. **Normalise.** Lowercase, straight quotes, punctuation stripped,
+   whitespace collapsed; references with Arabic and Roman book numbers
+   folded together; the transcribed type and brigade mapped to dataset
+   vocabulary by `lib/scan/vocab.ts` ("Enhancement" becomes `GE` or `EE`
+   by alignment; brigades compared as colour-token sets).
+2. **Stem lookup.** A stem index built once from `CARDS` on the
+   normalised stem, with two unions baked in: stems within edit
+   distance 2 that share reference and type (spelling variants such as
+   Wizard/Wizards, Elisabeth/Elizabeth, Judgements/Judgments; 47 stems),
+   and identities under one stem whose normalised reference and full
+   ability text are identical (the 43 class-spelling splits). Exact hit
+   on the index first. Otherwise **fuzzy**: normalised optimal-string-
+   alignment distance over the 3,452 stems, accepted only if the
+   distance is at most 0.20 **and** either the stem is eight or more
+   characters or the transcribed reference agrees with the candidate,
+   **and** the difference is never a digit or Roman numeral (Herod
+   Agrippa I/II, King Jeroboam I/II, Seraphim Isaiah 6:2/6:6), with a
+   margin over the runner-up set in E1. Short names are where fuzzy
+   matching is unsafe (Cage/Rage, Dove/Love, Winds/Wings, Job/Lot,
+   Jude/Luke): 147 of the 170 stems of five characters or fewer have a
+   neighbour within distance 2. No acceptable hit is **Not found**.
+3. **Identity within the stem.** If one identity, done. Otherwise score
+   each identity on fields in this priority: reference, then strength
+   and toughness, then identifier, then brigade, then ability prefix.
+   The ability text is last because it is the least reliably read.
+   Reference plus ability, type and brigade separate 929 of the 959
+   homonym stems; stats and identifier raise that to 947. A clear winner
+   is taken; otherwise the row is **Check this** with
+   `identity_ambiguous` and the identities as candidates.
+4. **Lost Souls.** Title "Lost Soul" skips steps 2 and 3: the normalised
+   reference selects identities; the nickname badge and ability prefix
+   break ties. 32 references are shared by more than one identity; the
+   badge resolves nearly all. No reference read is `reference_missing`;
+   a reference matching several identities after the badge is
+   `reference_ambiguous`; both are **Check this** with the picker scoped
+   to Lost Souls. Known dataset typos (Lost Soul "Blind" is named Job
+   29:15 but carries Job 33:27; "Lawless" AB has Hebrews 12:18 for
+   12:8; "Retribution" Acts 16:22 for 18:22) are fixed in the data, not
+   worked around.
+5. **Printing selection** inside the identity (next section).
+6. **Score fields** on every detection for calibration: `matchScore`,
+   `runnerUpScore`, `agreeingFields` (how many transcribed fields agreed
+   with the chosen candidate).
+
+The **second look** is not part of the matcher. It is one extra request
+per photo, made by the route when the photo has any **Check this** or
+**Not found** rows (at most six per photo; beyond that, none), carrying
+each such row's crop and its top five candidates (names and Blob
+thumbnails), asking the model to pick one or none per row. It reuses the
+photo's reservation and its tokens and cost are added to the same event,
+so a photo costs at most two calls. Rows it resolves carry
+`nameReason: 'second_look'`. Whether it ships is an E0 decision.
 
 ### Printing selection
 
-Among the identity's printings:
+Among the identity's printings (enumerated by identity key), applied as
+**successive filters, then a collapse**:
 
-1. A set marking or icon description that matches exactly one printing
-   (through a set-icon and abbreviation legend the builder maintains
-   beside the `set_aliases` seed, covering the 55 set codes) chooses it:
-   reason `set_hint`.
-2. Border style and frame narrow the set: alternate border, full art,
-   promo frame and foil each exclude printings that cannot look like
-   that. The legend records which sets have which looks.
-3. Among what remains, de-prioritise promos, alternate borders, legacy
-   rares and AB reprints unless a hint supports them (a shoebox is mostly
-   standard prints, and the price of a promo must never be reported for
-   a common card), prefer `legality === 'Rotation'`, then printings with
-   a YTG price, then the newest by a set-order table the builder adds
-   (`lib/cards/setOrder.ts`, with a test that fails when `make
-   update-cards` introduces a set it does not know).
-4. If the surviving candidates all share the same price (or are all
-   unpriced) and the same legality, the choice does not change anything
-   the player sees except set completion: the row is **Matched** with a
-   quiet "3 printings" affordance and reason `equivalent`. If they
-   differ in price or legality, the row is **Check this** with reason
-   `printing_ambiguous` and the candidates listed with their prices.
+1. **Hints.** A corner print number matching one printing's `imgFile`
+   prefix within the identity chooses it (`print_number`): 2,521 of the
+   3,190 Rotation-legal printings carry one, and AB reprints share the
+   number with their original, so the border look or copyright year
+   breaks that pair. A set marking or icon description matching one
+   printing through the legend chooses it (`set_hint`). A border look
+   that only some printings can have narrows the set (`border`). A
+   copyright year is a weak tiebreak only.
+2. **Special classes out.** Unless a hint supports one, remove promo,
+   AB, Legacy Rare and UR+ printings when at least one standard printing
+   remains. Definitions, from the data: promo is `set` starting `Pmo`,
+   or `officialSet` starting `Promo`, or `rarity` in {Promo, National,
+   Seasonal, Regional, State, Local, District, Winner, "National,
+   Winner"}, which also captures the 40 Fundraiser cards and nine promos
+   filed under `GoC`/`LoC` (205 printings); AB is `set` ending `(AB)`
+   (exactly the 387 pairs in `abMap.json`); Legacy Rare is `rarity ===
+   'Legacy Rare'` (72); UR+ is a `rarityCode` of `UR+` or an `imgFile`
+   ending `-UR+` (12, each $15 to $20 above its UR twin). "Alternate
+   border" is AB; there is no separate class, and there are no foils.
+3. **Rotation in.** If any survivor is `legality === 'Rotation'`, keep
+   only those.
+4. **Collapse.** If the survivors all share one price (or are all
+   unpriced) and one legality, the row is **Matched** with
+   `printingReason: 'equivalent'` and a quiet "N printings" line; the
+   default is a priced survivor if any, else the newest by the set-order
+   table. If prices or legality differ, the row is **Check this** with
+   `printing_ambiguous`, the candidates listed with prices, and the
+   newest standard printing as the provisional choice. A single survivor
+   is `only`.
 
-Reason codes on every detection: `exact`, `fuzzy`, `reference`,
-`set_hint`, `border`, `equivalent`, `printing_ambiguous`,
-`identity_ambiguous`, `second_look`, `none`.
+Measured on the data and the live price map: without filters 319 of the
+795 multi-printing identities would be amber; with the class filter 93;
+with Rotation as a filter too, **64 identities, 153 printings, 2.7% of
+all printings**. Identity and reference ambiguity add a few percent on
+top; E0 measures the real amber rate on photos.
+
+Reasons are two fields. `nameReason` ∈ {exact, fuzzy, reference,
+second_look, none}; `printingReason` ∈ {only, print_number, set_hint,
+border, equivalent, printing_ambiguous, identity_ambiguous,
+reference_missing, reference_ambiguous}. Chips key on status and
+`printingReason`; line two shows "Read as 'X'" when `nameReason` is
+`fuzzy`.
 
 ### Stage A2 (v1.1, planned, with a trigger): art-similarity tiebreaker
 
 A server-side descriptor index of all printings' Blob images (the
 community tool uses a 420-byte colour-layout vector per image; ours can
 be that or a small embedding), compared against the card's crop to break
-ties inside an identity when prices differ and no set hint was read.
-Built when E0 or E3 shows printing corrections are the dominant
-correction, which the dataset numbers say is likely (probabilities
-below). It is not in v1 because it depends on crop quality, which E0
-measures first.
+ties inside an identity when prices differ and no hint was read. Built
+when E3's audit shows printing corrections are the dominant correction
+over a trailing fortnight with at least thirty corrections. Not in v1
+because it depends on crop quality, which E0 measures first.
 
 ### Why not the alternatives first
 
@@ -241,156 +337,182 @@ measures first.
   Claude Artifacts runtime and is hidden on the public site.
 - **Fingerprint index alone.** Cannot tell an AB reprint from its
   original (387 pairs share art), is fragile under glare and
-  perspective, and is a week or two before anything works. It is the
-  right tiebreaker, so it is Stage A2, not Stage A.
+  perspective, and is a week or two before anything works. Right as a
+  tiebreaker (Stage A2), wrong as the first pass.
 - **Barcodes.** Redemption cards have none.
 
 ### Model, effort, resolution are evaluation outcomes
 
-Baseline Claude Opus 5.5. E0 (below) sweeps model × effort, and
-resolution × position format on spreads. The shipped choices live in one
-constant each. Costs use Anthropic's rule of thumb (width × height / 750
-image tokens); output includes the JSON and the model's thinking, which
-on Opus 5.5 cannot be turned off and bills as output. These are
-pre-E0 estimates and E0 rewrites this table from measured
-`usage.output_tokens`:
+Baseline Claude Opus 5.5. E0 screens model and effort, then resolution
+and position format on spreads. The shipped choices live in one constant
+each. Pre-E0 cost estimates, replaced by measured `usage` in E0
+(instruction and schema about 900 tokens; output is JSON plus thinking):
 
-| Photo | Long edge | Input tokens | Est. output | Opus 5.5 | Sonnet 5.5 | Haiku 5.5 |
+| Photo | Image tokens | Input total | Est. output | Opus 5.5 | Sonnet 5.5 | Haiku 5.5 |
 |---|---|---|---|---|---|---|
-| Single card | 1568 | ~1,600 | ~600 | ~$0.02 | ~$0.01 | ~$0.0005 |
-| 12-card spread | 1568 | ~2,500 | ~1,500 | ~$0.04 | ~$0.02 | ~$0.001 |
-| 12-card spread | 2576 | ~4,800 | ~1,500 | ~$0.05 | ~$0.025 | ~$0.0013 |
+| Single, low-res arm (4:3 at 1269 × 952) | ~1,550 | ~2,450 | ~800 | ~$0.026 | ~$0.013 | ~$0.0007 |
+| Spread, low-res arm | ~1,550 | ~2,450 | ~2,000 | ~$0.05 | ~$0.025 | ~$0.0013 |
+| Spread, high-res arm (4:3 at 2212 × 1659) | ~4,740 | ~5,640 | ~2,000 | ~$0.063 | ~$0.031 | ~$0.0016 |
+| Second look (crops + 5 thumbnails per row) | ~1,800 | ~2,000 | ~500 | ~$0.02 | ~$0.01 | ~$0.0005 |
 
-At 2576 px a 12-card spread gives each card about 450 px of width, which
-is what makes a set icon or copyright line readable at all; at 1568 px
-each card is about 280 px and set markings will mostly come back null.
-E0 decides whether the extra cost buys printing accuracy.
+On a 4:3 high-res spread each of 12 cards is about 390 px wide; at the
+low-res arm about 240 px, where corner numbers and icons will mostly come
+back null. E0 decides whether the extra tokens buy printing accuracy.
 
 ## The flow
 
 ### Entry points
 
-- `/collection` gets a **Scan cards** button. On phones it is the primary
-  action and **Build a deck** drops to the outline style; on desktop both
-  keep their current weights with Scan beside Import CSV. The first-run
-  banner's call to action becomes Scan cards, with Import CSV as a text
-  link. Signed out, the page shows the existing gate with copy that says
-  what scanning does and `redirectTo=/collection/scan`.
+- `/collection` gets **Scan cards**. Below the `sm` breakpoint the
+  toolbar shows Scan cards (primary) and Build a deck (outline) and folds
+  Set completion, Import and Export into the gear menu; the header
+  already wraps onto two rows at 390 px and cannot take a sixth button.
+  On desktop Scan sits beside Import CSV at the existing weights. The
+  first-run banner's call to action becomes Scan cards with Import CSV as
+  a text link. Signed out, the page shows the existing gate with the
+  scanner's copy and `redirectTo=/collection/scan`.
 - `/collection/scan` is a route, not a modal, because a camera round-trip
   can evict the tab and a route restores cleanly.
 
-Price display follows the existing `useShowPrices` preference. There is
-no mode switch: the same photo always resolves the same way, and the
-footer offers both outcomes.
+Price display follows `useShowPrices`. There is no mode switch: the same
+photo always resolves the same way, and the success state offers the
+other outcomes.
 
 ### Capture
 
 - **Take photo**: a hidden `<input type="file" accept="image/*"
-  capture="environment">`. **Choose from photos**: the same input without
-  `capture`, with `multiple`. iOS ignores `multiple` when `capture` is
-  set and hands back a temporary file that is not saved to the camera
-  roll; if Safari evicts the tab while the camera is open, that photo is
-  gone. The guidance says so and recommends the Camera app plus Choose
-  from photos for batches: "For a stack: take the photos in your camera
-  app first, then choose them here. One card, or up to 12 laid flat
-  with gaps."
-- Client downscale with `createImageBitmap(file, { resizeWidth })` and an
-  `<img>` fallback, never a full-size canvas decode (48 MP photos kill
-  the tab on iOS). Long edge 2576, JPEG 0.82, hard stop 3 MB. If decode
-  fails (Samsung and Pixel HEIF, some HEIC), the photo is not uploaded and
-  the message says: "Your camera saved this in a format the browser can't
-  read. In camera settings choose 'Most compatible' and try again."
-- The photo is posted as `multipart/form-data` to `POST /api/scan`. The
-  original never leaves the phone. At most two uploads are in flight at
-  once; more queue on the client.
+  capture="environment">`. **Choose from photos**: the same without
+  `capture`, with `multiple`. `accept` stays exactly `image/*` (listing
+  HEIC changes what iOS hands over). iOS ignores `multiple` with
+  `capture` and resets `input.files` to one each time, so the page
+  accumulates `File` objects in state. If Safari evicts the tab while
+  the camera is open that photo is lost; the batch tip says to use the
+  Camera app first for stacks.
+- Client decode goes through an `<img>` element, not
+  `createImageBitmap(file)`: WebKit drops EXIF orientation on the latter
+  and a canvas re-encode would then ship sideways iPhone portraits with
+  no tag left for the server to honour. Draw to a canvas at a long edge
+  of at most 2576, JPEG 0.85, hard stop 3 MB; never decode a 48 MP file
+  at full size. A decode failure (Samsung and Pixel HEIF; some HEIC) is
+  not uploaded and gets the HEIF copy.
+- Posted as `multipart/form-data` to `POST /api/scan`. The original never
+  leaves the phone. Two uploads in flight at once; the rest queue.
+  `navigator.onLine` is checked before upload and the offline copy shown.
+- Desktop: the whole page is a drop target (the deck builder's
+  `useExternalDropTarget` pattern), multi-select works, and a progress
+  line reads "12 of 40 photos read".
 
 ### Processing
 
-Each photo is a hairline row group headed by a small thumbnail and a
-state: *Reading…*, *N cards*, or a specific failure: "Too dark",
-"Blurry", "More than about 12 cards. Split it up", "You've scanned 150
-photos today, the daily limit. Scanning opens again at 3:15 pm",
-"Scanner is busy, retrying", "Scanner is paused for today" (global cap),
-"Scanner is resting until next month" (credit exhausted), "Couldn't read
-this photo, try again" (other errors). Several photos process while the
-player keeps taking more.
+Each photo is a hairline row group headed by a small thumbnail (or
+"Photo 3" after a reload, when thumbnails are gone) and a state with
+`role="status"`: *Reading…*, *9 cards*, or one of the failure strings in
+the copy table, each with **Retry** (the file is still in memory) and
+**Remove**, plus **Choose another** on the HEIF failure. Several photos
+process while the player keeps taking more.
 
 ### Review list (the tray)
 
 One row per detection under its photo, in grid order. Identical keys
-within the tray merge into one row with a summed quantity, the way the
-CSV merge import already does.
+within the tray merge into one row with a summed quantity, as the CSV
+merge import does. The set is always shown.
 
-A row holds, left to right: the matched printing's thumbnail (existing
-`CardImage`), then a two-line text block (name and set on line one;
-chip and reason, or price and "you own 2", on line two), then the
-quantity as a tappable "×1" that opens a stepper. No checkboxes: a row
-is in the tray or removed (swipe or the row's remove control). The
-current owned quantity comes from `useCollectionState`, which the deck
-builder already mounts the same way.
+Row at 390 px (content width 358): `[thumb 44] [12] [text 238] [8] [qty
+56]`. Line one: name (truncated) left, price right in `text-sm
+tabular-nums`, or "No YTG listing" linking to the YTG search page. Line
+two, 12 px: `Kings · own 2`, or `Check this · Which printing? Prices
+differ` (truncate the reason, never the chip), or `3 printings`. The
+quantity is a tappable "×1" that opens a stepper. **Remove** is a
+visible 44 px control at the row end (swipe is a shortcut, not the only
+way). The whole thumbnail-plus-name is one 44 px target that opens the
+picker, labelled "Change printing: Son of God, Kings". The current
+owned quantity comes from `useCollectionState`, which the deck builder
+already mounts the same way.
 
 Chips:
 
-- **Matched**: neutral; no chip text when the reason is `exact` or
-  `set_hint`; "3 printings" as a quiet outline when `equivalent`.
-- **Check this**: amber. Reason on line two: "Which printing? Prices
-  differ", "Two cards share this name", "Couldn't read the verse". The
-  row is in the tray with the current best guess; the amber is the ask.
-  Only these rows show the photo crop beside the thumbnail, and only if
-  E0 found crops reliable.
-- **Not found**: amber, with the read title in a search field. Not
-  counted in the total until resolved.
+- **Matched**: no chip for `only`, `print_number`, `set_hint`, `border`;
+  "3 printings" as muted text for `equivalent`.
+- **Check this**: amber; reason on line two; `aria-describedby` points
+  the row at it. The row holds the provisional choice; the amber is the
+  ask. Only these rows show the photo crop (44 to 56 px, `object-cover`,
+  `ring-1 ring-border/60`, never larger than the card thumb), and only
+  if E0 proved crops.
+- **Not found**: amber, with the read title as text and **Find card**,
+  which opens the picker with the search prefilled. Not counted until
+  resolved.
 
-Tap the thumbnail or name to open the **printing picker**: a bottom
-sheet (the pattern `ImportCsvModal` uses) listing the identity's
-printings with image, set, legality and YTG price, the current choice
-marked, and a search field at the top backed by `searchCardNames` for
-changing the name entirely. A change marks the row corrected.
+The **printing picker** is the Radix dialog (`components/ui/dialog.tsx`:
+focus trap, Escape, focus return) styled as a bottom sheet on phones,
+header "Which printing?" or "Which card?", listing the identity's
+printings with image, set, legality, YTG price and "2 in your
+collection", the current one marked, and a search field backed by
+`searchCardNames` (its hits carry no identity key; the builder resolves
+through `findCard` then `cardIdentityKey`). A change marks the row
+corrected.
+
+Above `md` the tray renders as a table: thumb 56 · name and set · status
+· owned · price · qty · remove; rows focusable, Enter opens the picker,
+plus and minus change quantity, Delete removes.
 
 The tray persists in `sessionStorage` keyed by user id: detections,
-chosen keys, quantities, corrections. Not thumbnails and not crops;
-those are in memory and are simply absent after a reload (Safari's
-sessionStorage quota is about 5 MB).
+chosen keys, quantities, corrections, and the previous owned quantities
+needed for undo. Not thumbnails and not crops.
 
 ### Commit
 
-A sticky footer with **Add N to collection** (primary; N is the summed
-quantity of resolved rows) and the running total of priced rows, with
-"from $X" on rows whose equivalent printings differ in price. A secondary
-**Add to Haves** puts the same rows on the player's trade list through
-the existing `putItems`, which is what a player pricing a stack at a
-kitchen table is usually about to do.
+A sticky footer (`pb-[env(safe-area-inset-bottom)]`, `aria-live=
+"polite"` on the total) with two lines: `$84.20 at YTG · 2 unpriced`
+(the same "to buy at YTG, not a resale value" framing and tooltip the
+collection page uses) and **Add 12 to collection**. If unresolved rows
+exist: "3 cards aren't matched and won't be added."
 
 Commit calls the existing merge import (`importRows(rows, "merge")`,
 which wraps `bulkImportCollectionAction` and reloads the collection), then
-`recordScanOutcomesAction(scanId, outcomes)`. The success state keeps
-the committed rows on screen with their new owned totals, each still
-tappable to change printing (which decrements the old key and increments
-the new one), plus **Undo** (restores the previous quantities recorded
-before commit), **Scan more** and **View collection**.
+`recordScanOutcomesAction(outcomesByScanId)`, since one tray spans many
+scan events. The success state keeps the committed rows on screen with
+their new owned totals, each still tappable to change printing (which
+decrements the old key and increments the new one), and offers:
 
-`/collection`'s own card modal gains a **Change printing** control using
-the same picker, so a wrong printing found later is a two-tap fix rather
-than a search, a decrement, a search and an add. This helps CSV imports
-as much as scans.
+- **Undo**: subtracts this commit's per-key deltas; disabled after a
+  post-commit printing change or the next commit; toast "Removed 12
+  cards"; also reverts a Haves write made from this success state.
+- **Add to Haves**: for each committed key, reads the existing Have via
+  the trade list hook and puts `existing + scanned` (`putItems`
+  overwrites, it does not add), with `kind: 'have'`, `anyVersion:
+  false`, `priority: false`, `note: ''`. Haves never exceed owned
+  because this only exists after commit.
+- **Copy priced list**: quantity, name, set, price, total, as text.
+- **Scan more**: clears the tray and stays.
+- **View collection**: `/collection` with the format filter showing all
+  cards (the default Limited filter would hide every non-Rotation card
+  just added) and an `added` param listing the scan ids; the page sorts
+  those keys first under a quiet "Just added" header.
+
+`/collection`'s own card modal gains **Change printing** using the same
+picker, and a Close button while it is being touched.
 
 ### What is recorded
 
 On commit each detection's outcome goes on its scan event: final key,
-printing changed, name changed, removed, left unresolved, and which
-reason code it had. That is the labelled data E3 lives on.
+printing changed, name changed, removed (with `removedAs: 'wrong' |
+'unwanted'`, asked at remove time as a two-option control), left
+unresolved, plus the detection's reasons and scores. Scans with no
+outcomes after 24 hours are abandonment.
 
 ## Data
 
 ### `POST /api/scan`
 
 Request: `multipart/form-data` with `photo` (≤ 3 MB). Session required
-and checked before the body is read. Server-side with `sharp`:
-`rotate()` (EXIF orientation), `resize` inside 2576 × 2576 without
-enlarging, JPEG quality 82, metadata stripped. This bounds pixels and
-cost on the server rather than trusting the client, removes GPS and
-other EXIF before anything reaches Anthropic or Blob, and sniffs the real
-format; a file sharp cannot decode is a 415.
+and checked before the body is read. Server-side with `sharp` (already
+used in several route handlers; pattern in
+`app/forge/lib/imageNormalize.ts`): `rotate()` for any EXIF that
+survived, resize with the documented reference algorithm to the chosen
+tier (high-res 4,784 tokens or low-res about 1,550), JPEG quality 82,
+metadata stripped by default. This bounds pixels and cost on the server,
+removes GPS before anything reaches Anthropic or Blob, and sniffs the
+real format; undecodable is 415.
 
 Response 200:
 
@@ -398,53 +520,64 @@ Response 200:
 {
   scanId, photoQuality,
   detections: [{
-    id, grid: { row, col }, bbox | null, rotated,
-    read: { title, reference, abilityStart, type, brigade, border, setMarking, setIconNote, confidence },
+    id, grid: { row, col }, bbox | null, orientation,
+    read: { title, reference, nickname, abilityStart, type, brigade, strength, toughness,
+            identifier, printNumber, rarityCode, copyrightYear, border, setMarking, setIconNote, confidence },
     status: 'matched' | 'check' | 'not_found',
-    reason, chosenKey | null,
-    candidates: [{ key, name, set, officialSet, imgFile, legality, price | null, shopifyHandle | null }]
+    nameReason, printingReason, chosenKey | null,
+    scores: { matchScore, runnerUpScore, agreeingFields },
+    candidates: [{ key, name, set, officialSet, imgFile, legality, price | null, owned }]
   }],
-  usage: { model, latencyMs }
+  usage: { model, latencyMs, calls }
 }
 ```
 
-Errors, all JSON: 401; 413 (and the client also handles Vercel's own
-non-JSON 413); 415 undecodable; 429 user cap with `resetsAt`; 503 with
-`Retry-After` for the global cap, an Anthropic rate limit, an Anthropic
-overload, or an exhausted credit (`billing_error`), each with a distinct
-`code`; 502 recogniser failure (refusal, invalid JSON) marked retryable
-or not.
+Errors, all JSON from the route: 401; 413 (and the client also handles
+Vercel's own `text/plain` 413 by header); 415; 429 user cap with
+`resetsAt` and which cap; 503 with `Retry-After` and a distinct `code`
+for the global cap, an Anthropic rate limit, an Anthropic overload, and
+an exhausted credit (`billing_error`); 502 recogniser failure (refusal,
+invalid JSON, truncated output after retry).
 
-Prices for candidate keys come from `card_prices` through an RPC taking
-`text[]` (keys contain quotes, which corrupts PostgREST `.in()`); the
-client builds product links with the existing `getProductUrl` from
-`useCardPrices`.
+Prices: the route loads the full `card_prices` table once per request
+through the same paginated loader `/api/prices` uses (PostgREST caps an
+unbounded select at 1,000 rows), attaches `price` to candidates because
+the printing rules need it, and the client builds product links with
+`getProductUrl` from its own price map.
 
 ### Reserve first, then call
 
-A SECURITY DEFINER RPC `scan_reserve()` takes
-`pg_advisory_xact_lock(hashtext(auth.uid()::text))`, counts the caller's
-events in the last hour, day and 30 days **including pending and failed
-rows**, counts everyone's events today and this month, and either inserts
-a `status = 'pending'` row and returns its id or raises with the cap that
-was hit. Only then does the route call the model, and it finishes the
-row (`done` or `failed`, with model, tokens, latency, cost) through the
-admin client. The 2 to 8 second model latency is therefore never a race
-window.
+`scan_reserve()` is a SECURITY DEFINER RPC in the pattern of
+`forge_add_art_candidate` (migration 082: `perform
+pg_advisory_xact_lock(hashtext(auth.uid()::text))`, `auth.uid()` under
+an empty search path), with the grant footer migration 120 uses (`revoke
+all … from public, anon; grant execute … to authenticated`). Under the
+lock it counts the caller's rows in the trailing 10 minutes, 24 hours
+and 30 days and everyone's rows in the trailing 24 hours and 30 days,
+counting `pending`, `done` and `failed` and excluding `rejected`. It
+then either inserts a `pending` row and returns its id, or inserts a
+`rejected` row naming the cap and returns the cap and `resets_at`. Only
+then does the route call the model, and it finishes the row (`done` or
+`failed`, with model, tokens, latency, calls, cost) through the admin
+client. The model latency is never a race window, and cap hits are
+observable.
 
-Caps, as constants in the RPC, changeable by migration:
+Caps, constants in the RPC, all rolling windows:
 
 | Scope | Limit |
 |---|---|
-| Per user, burst | 20 photos per hour |
-| Per user, day | 150 |
+| Per user, 10 minutes | 20 photos |
+| Per user, 24 hours | 150 |
 | Per user, 30 days | 1,500 |
-| Everyone, day | 300 |
-| Everyone, month | 2,000 |
+| Everyone, 24 hours | 250 |
+| Everyone, 30 days | 1,500 |
 
-At Opus spread cost the global monthly cap is about $80 to $100; on
-Sonnet it is half. The global cap is what makes the kill criterion
-enforceable rather than aspirational.
+A photo is at most two model calls. At the Opus high-res estimate with a
+second look on every photo the global monthly cap is about $125 in the
+worst case and about $90 at a realistic second-look rate; on Sonnet it is
+half. E0's measured costs set the final constants so the worst case sits
+under the credit, and the global cap is what makes the kill criterion
+enforceable.
 
 ### Migration `122_scan_events.sql`
 
@@ -453,417 +586,595 @@ scan_events (
   id uuid pk default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   created_at timestamptz not null default now(),
-  status text not null check (status in ('pending','done','failed')),
-  model text, latency_ms integer, input_tokens integer, output_tokens integer,
-  cost_usd numeric(8,5),               -- from a price constant per model
+  status text not null check (status in ('pending','done','failed','rejected')),
+  rejected_cap text,                   -- which cap, on rejected rows
+  model text, calls smallint, latency_ms integer,
+  input_tokens integer, output_tokens integer,
+  cost_usd numeric(8,5),               -- from a per-model price constant
   photo_quality text,
-  detections jsonb,                    -- read fields capped (title 60, reference 40, ability 80, marking 20 chars); stored only when ≥1 detection matched
+  detections jsonb,                    -- always stored; read fields capped in code (title 60, reference 40, nickname 30, ability 80, identifier 40, marking 20, icon note 60)
   outcomes jsonb,                      -- set on commit
   image_pathname text,                 -- private Blob pathname when opted in
   image_expires_at timestamptz
 )
 ```
 
-RLS: `SELECT` own rows, and `is_superuser()` sees all. **No INSERT or
-UPDATE grant to `authenticated`**: every write goes through the
-`scan_reserve()` RPC or the admin client, so a user cannot forge events,
-token counts or detections. `recordScanOutcomesAction` filters by the
-caller's `user_id`, validates the JSON shape against the schema, and
-caps its size. Index on `(user_id, created_at desc)` and on
-`(created_at)` for the global counts.
+RLS: `SELECT` own rows; superuser sees all through the existing
+`is_superuser()` function (migration 062; it is a fixed-uid check, not a
+table). **No INSERT or UPDATE grant to `authenticated`**: writes go
+through `scan_reserve()` or the admin client, so nobody can forge
+events, token counts or detections. `recordScanOutcomesAction` filters by
+the caller's `user_id`, validates the JSON shape, and caps its size.
+Indexes on `(user_id, created_at desc)` and `(created_at)`. A boolean
+`keep_scan_photos` on `profiles`.
 
 ### Photo retention (opt-in)
 
-A toggle on the scan page, off by default, stored as a boolean on
-`profiles`: "Keep my scan photos for 30 days to help improve the
-scanner." When on, the re-encoded photo is written to a **private Blob
-store** at `scans/<user>/<scanId>.jpg`; private access needs a store
-configured for it, and the only one today is Forge's dedicated store
-(`FORGE_BLOB_STORE_ID`, OIDC in prod), so the builder reuses it under the
-`scans/` prefix or Tim provisions a new private store (a dashboard
-action). Private blobs are not browser-loadable, so the admin page reads
-them through `/admin/scans/image/[id]`, which checks `is_superuser()` and
-streams `get(pathname, { access: 'private' })`.
+A toggle on the scan page, off by default: "Keep my scan photos for 30
+days to help improve the scanner." When on, the re-encoded photo is
+written to the **Forge private Blob store** under `scans/<user>/
+<scanId>.jpg` (the only private store today; Forge never lists the
+store, so a `scans/` prefix is safe; the builder spreads the same
+`storeId`/token options `app/forge/lib/art.ts` uses, and never sets a
+global `BLOB_STORE_ID`, which would hijack the public-store calls).
+Private blobs are not browser-loadable, so the admin page reads them
+through `/admin/scans/image/[id]`, which checks `is_superuser()` and
+streams `get(pathname, { access: 'private', ...storeOpts })` as
+`app/forge/api/art/[cardId]/route.ts` does.
 
-A **daily** cron lists the `scans/` prefix and deletes blobs older than
-30 days by `uploadedAt` (paginated, so cascade-deleted accounts do not
-orphan blobs), then nulls the columns; it also purges `detections` on
-events older than 30 days that had no matched card, since those can
-contain whatever text was in a non-card photo. Turning the toggle off
-deletes the player's stored photos immediately. The cron uses the same
-`CRON_SECRET` and alerting as its siblings.
+A **daily** cron lists the `scans/` prefix with a cursor and deletes
+blobs older than 30 days by `uploadedAt`, then nulls the columns; it also
+nulls `detections` on events older than 30 days that had no matched
+card, since those can hold whatever text was in a non-card photo.
+Turning the toggle off calls "Delete my scan photos now", which deletes
+immediately. Same `CRON_SECRET` bearer pattern and failure alert as its
+siblings.
 
-Copy on the gate and beside the toggle: "Photos are sent to Anthropic to
-read the card names. Anthropic may keep them up to 30 days for abuse
-monitoring and does not train on them. We keep nothing unless you turn
-on 'Keep my scan photos'." The privacy policy gets a matching line.
+Copy beside the toggle and on the gate: "Photos are sent to Anthropic to
+read the cards. Anthropic deletes them within 30 days unless its safety
+systems flag them (then up to two years) and does not train on them. We
+keep nothing unless this is on." A short `/privacy` page is added with
+the same facts; the site has none today.
 
 ### Admin view
 
-`/admin/scans`: a table, superuser-only in v1 through the existing
-`admin_users` / `is_superuser()` pattern (the `registration_admin` role
-named in CLAUDE.md was retired by migration 005), linked from the admin
-dropdown in both the desktop and mobile nav like its siblings. Columns
-per day: scans, failures, cost, p50 and p95 latency, correction rate by
-reason code, printing-change rate, accuracy by confidence bucket, and a
-list of the most-corrected read titles. A daily digest email through the
-existing cron alert helper fires when the day's or month-to-date cost
-crosses a threshold.
+`/admin/scans`: a table, superuser-only in v1 through
+`supabase.rpc('is_superuser')` as `app/admin/permissions/lib/auth.ts`
+does, linked from the admin dropdown in both the desktop and mobile nav
+like its siblings. Per day: scans, failures, rejections by cap, cost,
+p50 and p95 latency, abandonment, correction rate split by status and by
+reason code, printing-change rate split by status, uncorrected rate by
+confidence bucket, and the most-corrected read titles. The kill-criteria
+queries below are shown as numbers with their windows. A daily digest
+through `sendEmail` (the cron alert helper only sends failure mails)
+fires when the day's or month-to-date cost crosses a threshold.
 
 ## The Claude call
 
 `lib/scan/recognize.ts`, server only. Client
 `new Anthropic({ apiKey: SCANNER_ANTHROPIC_API_KEY, maxRetries: 0,
-timeout: 30_000 })` (the SDK default of two retries plus ours would reach
-six attempts). One manual retry on 5xx, 529 or timeout, never on a
-refusal. `export const maxDuration = 60` on the route.
+timeout: 25_000 })`; one manual retry on 5xx, 529 or timeout, never on a
+refusal; `export const maxDuration = 90` on the route (two attempts plus
+sharp, the reservation and a possible second look).
 
 - `messages.create` with the image as a base64 block after a fixed
   instruction block. Model from a constant, baseline `claude-opus-5-5`,
   `output_config.effort` from a constant (E0 picks `low` or `medium`),
-  adaptive thinking left at its default, no `temperature` (the current
-  API version rejects it), no `cache_control` in v1 (a short prompt is
-  under Opus 5.5's 512-token caching minimum and the traffic is too
-  sparse for the five-minute window; E0 confirms with
-  `cache_read_input_tokens`).
+  adaptive thinking left at its default, no `temperature` (rejected on
+  these models), no `cache_control` in v1 (the prompt is near Opus 5.5's
+  512-token caching minimum and the traffic is too sparse for the
+  five-minute window; E0 confirms with `cache_read_input_tokens`).
 - Structured output through `output_config.format` with the JSON schema
-  in `lib/scan/schema.ts`; no tools, no forced tool choice.
-- The instruction describes what a Redemption card looks like and where
-  each field is (title band at top, type icon box top-left, brigade in
-  the frame colour, set icon and copyright bottom, reference above or
-  within the ability text), says cards may be sleeved, rotated or upside
-  down, says to transcribe exactly and return `UNREADABLE` fields rather
-  than guesses, and asks for grid positions in reading order. A set-icon
-  legend image is an E0 arm, not a default.
-- `max_tokens` starts at 8,000 and is set from E0's p99 output × 2.
-  `stop_reason === 'max_tokens'` maps to `too_many_cards`, not to a
-  generic failure. Invalid JSON after schema validation is a 502.
-- Usage, latency and `cost_usd` go on the event. Anthropic 429s are
-  distinguished from our caps and surfaced as "busy, retrying" with
-  `Retry-After`. The Console's rate-limit tier for the new workspace is
-  checked before E2.
+  in `lib/scan/schema.ts`; no tools.
+- The instruction describes where each field sits on a Redemption card,
+  says cards may be sleeved, in binder pages, rotated or upside down,
+  says to transcribe exactly and return null rather than guess, asks
+  for grid positions in reading order, and asks the model to assert
+  nothing about which card it is. A set-icon legend image is an E0 arm,
+  not a default.
+- `max_tokens` 16,000. A `max_tokens` stop retries once at 32,000 and
+  then is a 502; it is **not** read as "too many cards", because
+  thinking length is not a card count. `response.model` is asserted
+  against the constant on every call.
+- Usage, latency, calls and `cost_usd` go on the event. Anthropic 429s
+  are distinguished from our caps and surfaced as "Busy, retrying" with
+  `Retry-After`. The scanner workspace's rate-limit tier is checked in
+  the Console before E0 (a fresh workspace may sit at a low tier).
 
-## Evaluation: continuous, with gates
+## Evaluation: continuous, with a screen, an audit and a scoresheet
 
 The recogniser is a probabilistic component inside a deterministic app.
-It is measured at every stage with the same tooling: a folder of photos,
-a labels file, a script that prints a table with confidence intervals.
+E0 is a **screen**: it tells us whether the approach is hopeless and
+which arm to ship. It cannot certify "90%" on seventy photos, and the
+document says so. The 90% claim is certified after launch by an audit
+sample of real photos. Everything is measured with the same tooling: a
+folder of photos, a labels file, a scorer, a table with intervals.
 
-### The photo set (the answer to "do you need loads of pictures")
+### Units, labels, scoring
 
-No. About seventy photos from Tim's own phone, in a mix chosen so the
-gates mean something:
+`scripts/scan-eval/labels.json`, validated against `CARDS` on load:
+
+```
+photo: { file, bucket, tags: ["sleeved","glare","binder","angled","old-frame",...],
+         otherGame: bool,
+         cards: [{ printing: key,          // the card physically in Tim's hand, always
+                   identity, stem,         // derived on load
+                   setVisible: bool,       // a human can name the set from the re-encoded high-res photo
+                   inFrame: "full"|"partial",
+                   grid: { row, col } }] }
+```
+
+Scoring per photo, position-free, at identity level by multiset: `tp =
+min(labelled, predicted)` per identity, `fn` excludes partial cards,
+`fp` counts extras. Each matched pair is classed `matched_correct`,
+`matched_wrong` (the silent harm), `check_top1`, `check_in_candidates`,
+`check_miss`, `not_found_miss` or `hallucination`; wrong-identity
+predictions pair with leftover labels by grid cell when both have one.
+Printing level, only on correct-identity pairs: if `setVisible`, correct
+means `chosenKey === printing`; otherwise the choice is *defensible* when
+it is within the identity and the status obeys the collapse rule, and
+`silent_wrong_price` is flagged when a Matched row's price differs from
+the true printing's price. Other-game photos: any `matched` or `check`
+row is a hard fail; `not_found` rows are the desired path (the model
+*should* transcribe "Lightning Bolt" and the matcher should reject it).
+Grid usefulness is scored as cell match; bbox, if tried, by hand on five
+spreads.
+
+Harness rules: 429, 529, timeouts and unparseable responses go to
+`errors.jsonl` and are never scored as misses; `max_tokens` stops are
+`truncated` and excluded from accuracy; latency is the final successful
+attempt; tokens from `usage`, cost from the row's model; every output
+file stores `model`, prompt hash and `response.model`; the scorer is
+smoke-tested on labels-as-predictions (must score 100%) and on empty
+predictions (must score zero recall).
+
+### The photo set (and the answer to "do you need loads of pictures")
+
+No. About seventy-five photos from Tim's own phone, plus, if five Discord
+players will each send five shoebox photos before E0, a `wild` bucket
+from other phones and rooms:
 
 | Bucket | Count | What's in it |
 |---|---|---|
-| Single, easy | 25 | one card, flat, room light; mix of eras and types including Lost Souls, Sites, Dominants, a card with an unsuffixed twin |
-| Single, hard | 15 | sleeved, glossy glare, foil, angled 20°+, old-frame, promo, alternate border, AB twin, upside down |
+| Single, easy | 25 | one card, flat, room light; mix of eras and types including Lost Souls, Sites, Dominants, a card with an unsuffixed twin, a UR+ |
+| Single, hard | 15 | sleeved, glossy glare, angled 20°+, old-frame, promo, AB, upside down; each photo tagged so the breakdown exists when the set grows |
 | Spread 4–8 | 8 | flat with gaps |
 | Spread 9–12 | 6 | |
+| Binder page | 5 | nine cards touching, in sleeves |
 | Spread 15–20 | 4 | the community tool claims about 30 works; we want the curve |
 | Spread 25–30 | 3 | expected to fail; we want to see how |
-| Not a card | 10 | hands, tables, a booster wrapper, and at least four cards from other games (the real false-positive risk is the model transcribing a Magic title and the fuzzy matcher adopting it) |
+| Not a card | 10 | hands, tables, a booster wrapper, and at least four cards from other games |
 
-Labels (`scripts/scan-eval/labels.json`): per photo, the multiset of
-expected keys (not reading order), and per card `setVisible: true/false`
-and the stem, so name accuracy and printing accuracy are scored
-separately. Every key is validated against the card index when the file
-loads (names contain double spaces and odd parentheses). Photos live in
-`scripts/scan-eval/photos/`, git-ignored, with a copy in the private Blob
-store so a worktree can fetch them. After launch the set grows from
-opted-in photos plus their recorded corrections, which arrive labelled.
+Photos live in `scripts/scan-eval/photos/`, git-ignored, with a copy in
+the private store so a worktree can fetch them. This is a **development
+set**: thresholds tuned on it are fits, not measurements. The first two
+hundred audited real cards after launch are the first test set.
 
-### E0: feasibility gate, before any product code
+### E0: staged screen, before any product code
 
-About a day. `scripts/scan-eval/run.ts` sends every photo to each arm,
-runs the matcher, and prints per arm:
+About a day, most of it labelling. Metrics split in two: **model-only**
+(normalised title equals the label stem; reference equals; print number
+or set marking non-null on `setVisible` cards; per-field agreement),
+which choose model, effort, resolution and position; and **matcher**
+metrics, which belong to E1 and are reported here only as information.
+Stages, each paired on the same photos:
 
-- stem accuracy on singles (top-1), with a Wilson 95% interval;
-- per-card precision and recall on spreads, scored as multisets, with
-  false cards reported as a maximum per photo as well as a rate;
-- printing accuracy on cards with `setVisible`;
-- accuracy by the model's own confidence bucket (if "high" and "low"
-  score alike the chip is theatre and is dropped);
-- grid and bbox usefulness: share of crops that contain the right title;
-- second-look lift on Check this and Not found rows;
-- latency p50 and p95, `usage` tokens, cost per photo, cache reads.
+0. Smoke: five photos through every arm; assert model, stop reason,
+   schema parse; run the scorer's self-tests.
+1. Model screen: Opus 5.5, Sonnet 5.5, Haiku 5.5 at default effort on
+   the 40 singles and the 14 spreads of twelve or fewer. Drop a model
+   that is four or more photos behind the leader on paired singles.
+2. Effort: the leader at the other effort, same 54 photos.
+3. Resolution: the leader, high-res versus low-res, grid only, all
+   spreads including binder pages. Decision: printing-hint lift versus
+   cost.
+4. Position: bbox at the chosen resolution on the spreads, only if crops
+   are wanted; "none" as a control for whether asking for position
+   hurts transcription.
+5. Legend image on the 40 singles, only if print number and set marking
+   are null on more than half of `setVisible` cards.
+6. Second look on the leader's Check this and Not found rows (needs at
+   least twenty rows to mean anything).
+7. Two more repetitions of the final arm on all photos: the noise floor
+   every later comparison is judged against.
 
-Arms: models {Opus 5.5, Sonnet 5.5, Haiku 5.5} × effort {low, medium} on
-all photos; then, on spreads with the best model, long edge {1568, 2576}
-× position {grid, bbox, none}; then the set-icon legend on singles. A
-few dollars in total.
+About 410 requests and a few dollars.
 
-Gates, stated as smoke tests on small samples (the script prints the
-interval and the decision uses the interval's lower bound where it can):
+Pre-registered pass rules (unit, n, pass count), with what each buys
+printed by the script beside the result:
 
-- Single easy: ≥ 90% stem top-1 (23 of 25).
-- Single hard: ≥ 75% (12 of 15).
-- Spreads up to 12: per-card **precision ≥ 97%**, recall ≥ 85%, at most
-  one false card on any photo. Precision outranks recall: a hallucinated
-  card corrupts a collection, a miss costs a rescan.
-- Not a card: zero detections on at least 9 of 10, and never a matched
-  row from another game's card.
-- Crops ship only if ≥ 90% of them contain the right title.
+| Screen | Unit, n | Pass iff | Chance a bad system passes |
+|---|---|---|---|
+| Singles pooled, identity top-1 | photo, 40 | ≥ 34 | a 75% system passes 10% of the time; a 92% system 96% |
+| Spreads ≤ 12 plus binder, false cards | card, ~150 | ≤ 4 in total, and 0 `matched`/`check` rows on other-game photos | |
+| Spreads ≤ 12 plus binder, recall | card, ~150 | ≥ 85% with a cluster bootstrap over photos for the interval | |
+| Silent wrong identity | matched rows, all photos | ≤ 2 | this is the anti-goal and the number that matters most |
+| Non-card | photo, 10 | `no_cards` on ≥ 5 of the 6 true non-card photos; 0 `matched`/`check` on all 10 | |
+| Crops | cell, spreads | ≥ 90% of crops contain the right title, or crops do not ship | |
 
-If names fail: the capture flow changes before building (one card per
-photo, or a title-band crop instruction) and the second look becomes
-mandatory rather than measured. If only printing fails: ship as designed
-and schedule Stage A2. Numbers and the decision go in the review log.
+If the singles screen fails: the capture flow changes before building
+(one card per photo, or a title-band instruction) and the second look
+becomes mandatory. If only printing hints fail: ship with the collapse
+rule and schedule Stage A2. Numbers and decisions go in the review log.
 
 ### E1: during the build
 
-- `lib/scan/match.ts` has golden tests from recorded E0 model outputs
-  per model, so the matcher is tested on real transcriptions without an
-  API call; outputs are re-recorded when the model changes.
-- Any PR touching the prompt, schema or matcher re-runs the script on
-  the saved outputs (free) and, when the prompt changed, live (cents).
+- `lib/scan/match.ts` has golden tests from recorded E0 outputs per
+  model; outputs are re-recorded when the model id, prompt or schema
+  changes and quarterly as a drift check.
+- A prompt change is accepted by a paired run on the same photos, two
+  repetitions each: no screen regresses beyond the stage-7 noise floor,
+  silent-wrong does not rise, cost per photo within +10%, and a sign
+  test on discordant cards favours the change.
+- Any PR touching the prompt, schema or matcher re-runs the scorer on
+  saved outputs (free) and, when the prompt changed, live (cents).
 
 ### E2: before launch
 
-- E0's set through the deployed `/api/scan` on a preview URL, so the
-  downscale, re-encode and upload path is measured too, including five
-  concurrent uploads.
+- E0's photos through the deployed `/api/scan` on a preview URL twice:
+  once as originals and once as the blobs the client's own downscale
+  produces (a Playwright run dumps them), so double-JPEG and the `<img>`
+  decode path are measured; plus five concurrent uploads.
 - Manual pass per the `verify` skill on phone-sized viewports and one
-  real iPhone and one real Android: camera capture, multi-select, a
-  48 MP photo, an HEIF photo, a 10-card spread, a correction through the
-  picker, a refresh mid-tray, commit, undo, change printing after commit,
-  Add to Haves, the 429 copy, the signed-out gate.
+  real iPhone and one real Android: camera capture including a portrait
+  iPhone photo through the client path, multi-select, a 48 MP photo, an
+  HEIF photo, a 10-card spread, a binder page, a correction through the
+  picker, a refresh mid-tray, whether the tray survives a camera-induced
+  tab eviction, commit, undo, change printing after commit, Add to
+  Haves, Copy priced list, each cap's copy, the signed-out gate.
 
 ### E3: after launch, continuously
 
-- The `/admin/scans` table above, checked weekly for a month then
-  monthly, and reconciled against the scanner workspace's spend in the
-  Console.
-- An export script turns events with outcomes (and opted-in photos) into
-  the eval folder format; the eval set grows.
-- A model, effort, resolution or prompt change ships only when it beats
-  the current arm on the full eval set, with the table pasted into the
-  PR.
+Definitions, each one query over `scan_events` shown on `/admin/scans`:
+
+- correction rate = (name changed ∨ printing changed ∨ removed as
+  wrong) ÷ committed detections with outcomes, split by status
+  (`check` rows are prompted; `matched` rows are not, and mixing them
+  hides the silent error).
+- not-found rate = not_found ÷ detections; photos with zero detections
+  reported separately.
+- uncorrected rate by confidence bucket and by reason code (not
+  "accuracy": players fix what they notice).
+- abandonment = done scans with no outcomes after 24 hours ÷ done scans.
+- rejections by cap per day; failures ÷ all; p50 and p95 latency; cost
+  per day over `done` and `failed`.
+
+**Audit**, weekly for the first two months then monthly: `export.ts`
+pulls thirty random opted-in photos, stratified to over-sample untouched
+Matched rows; Tim labels them in the E0 format; the scorer reports true
+accuracy, silent-wrong rate, and the share of cards whose set is visible
+in the wild, which is the number the whole printing story rests on.
+About eighty cards a week gives ±8 points a month.
+
+**Calibration**: a confidence bucket earns its chip only if accuracy
+differs by at least 15 points between high and low with low covering at
+least a tenth of rows; otherwise the chip is dropped and "Check this" is
+driven by matcher margins and `agreeingFields`. A reason code is useful
+only if `fuzzy` scores below `exact`.
+
+A model, effort, resolution or prompt change ships only by the E1
+acceptance rule on the full eval set, with the table pasted into the PR.
 
 ### Kill and pivot criteria
 
-- Spend is bounded by the global cap; the credit being exhausted shows
-  as "resting until next month", not a bill. Revoking the scanner key in
+- Spend is bounded by the global cap; an exhausted credit shows as
+  "resting until next month", not a bill. Revoking the scanner key in
   the Console stops everything in seconds without a deploy.
-- Correction rate above 30% in week two: the Scan button gets a "beta"
-  label (a server-read boolean; the page stays up) and Stage A2 is
-  pulled forward.
-- Printing changes above half of all corrections at any point: Stage A2
-  starts.
+- Correction rate on at least 100 committed detections in days 7 to 14
+  above 30%: the Scan button gets a "Beta" label (a server-read env
+  boolean; the page stays up) and Stage A2 is pulled forward.
+- Printing share of corrections above half over a trailing 14 days with
+  at least 30 corrections: Stage A2 starts.
+- Failure rate above 10% over three days, or p95 latency above 20 s:
+  investigate before anything else ships.
 
-## Probability estimates
+### Scoresheet (dated, resolvable claims)
 
-Pre-E0 estimates for this design in this app; E0 replaces them. The
-dataset numbers behind several of them: 64% of printings share a stem
-with another printing; 31% have an unsuffixed twin; `newest` is
-undefined for 613 stems without a set-order table; 258 Lost Soul
-printings share one title.
+Each claim is scored at its resolution date in the review log; the
+estimate is mine, before E0.
 
-| Claim | Estimate |
+| # | Claim | Resolves | Source | Estimate |
+|---|---|---|---|---|
+| 1 | Best arm passes the pooled singles screen (≥ 34 of 40) | E0 | run.ts | 70% |
+| 2 | Best arm passes the spread false-card and recall screens | E0 | run.ts | 55% |
+| 3 | Silent wrong identity ≤ 2 across all E0 photos on the best arm | E0 | run.ts | 60% |
+| 4 | High-res beats low-res on print-number or set-marking non-null by ≥ 10 points | E0 | run.ts | 65% |
+| 5 | Haiku 5.5 is within 4 photos of the leader on singles | E0 | run.ts | 40% |
+| 6 | Sonnet 5.5 passes every screen Opus 5.5 passes | E0 | run.ts | 60% |
+| 7 | Grid-cell crops contain the right title ≥ 90% of the time | E0 | run.ts | 65% |
+| 8 | The second look lifts check_top1 by ≥ 15 points on ≥ 20 rows | E0 | run.ts | 50% |
+| 9 | Audit accuracy on untouched Matched rows ≥ 90% | launch + 30 d | audit export | 60% |
+| 10 | Abandonment ≤ 25% | launch + 30 d | scan_events | 55% |
+| 11 | At least 10 distinct players commit a scan | launch + 30 d | scan_events | 65% |
+| 12 | Printing share of corrections > 0.5 at n ≥ 30 (Stage A2 trigger) | launch + 60 d | scan_events | 50% |
+| 13 | Any `rejected` row from the 24-hour user cap | launch + 90 d | scan_events | 15% |
+| 14 | Scanner workspace spend under the credit for three months | monthly | Console | 95% |
+| 15 | v1 ships within six agent-days of approval, given the photos | merge | git | 50% |
+
+Expected rates, from the data rather than guesses: Check this from
+printing ambiguity on about 3% of printings after the filters; identity
+and Lost Soul ambiguity add low single digits; E0 measures the total.
+
+## Copy
+
+| Key | String |
 |---|---|
-| Best arm clears the single-easy gate (23 of 25) | 75% |
-| Best arm clears the single-hard gate (12 of 15) | 65% |
-| Best arm clears the 12-card spread gate at 2576 px | 50% |
-| Same at 1568 px | 40% |
-| 15–20 card spreads usable without splitting | 30% |
-| 25–30 card spreads usable | 10% |
-| Printing correct without a visible set marking, by the rules above (icon description, border, priority) | 50% |
-| Same once Stage A2 exists | 75% |
-| Grid-cell crops contain the right title ≥ 90% of the time | 65% |
-| Pixel bounding boxes do | 30% |
-| The second look lifts Check this rows by ≥ 15 points | 60% |
-| Haiku 5.5 alone clears the single-easy gate | 45% |
-| Sonnet 5.5 clears every gate Opus 5.5 clears | 60% |
-| Monthly spend stays under the credit in the first three months (caps make this structural) | 95% |
-| v1 ships within six agent-days after approval, given the photos | 55% |
-| Players use the scanner more than CSV import within a month | 70% |
-| Stage A2 is needed within three months | 70% |
-| An honest player hits the 150-a-day cap (a 3,000-card shoebox at 10 cards a photo is 300 photos) | 20% |
+| Page title | Scan cards |
+| First run | Photograph one card, or up to 12 laid flat with gaps. We read the names and prices; you confirm. |
+| Capture primary | Take photo |
+| Capture secondary | Choose from photos |
+| Batch tip | For a stack, take the photos in your camera app first, then choose them here. |
+| Binder tip | Binder pages work less well. Lay cards flat with gaps when you can. |
+| Empty tray | No cards yet. Take a photo to start. |
+| Reading | Reading… |
+| Done | 9 cards |
+| Progress (desktop) | 12 of 40 photos read |
+| Too dark | Too dark. Retake in better light. |
+| Blurry | Blurry. Hold still and retake. |
+| Glare | Glare hides the text. Tilt away from the light. |
+| No cards | No cards found in this photo. |
+| Too many | Too many cards for one photo. Try 12 or fewer. |
+| HEIF | This photo's format can't be opened here. Turn off HEIF or "high efficiency" in your camera, or share it as a JPEG. |
+| Too large | Photo is too large to upload. |
+| Ten-minute cap | You've hit 20 photos in 10 minutes. Scanning opens again at 3:15 pm. |
+| Daily cap | Daily limit reached (150 photos). Scanning opens again tomorrow at 9:02 am. |
+| Monthly cap | Monthly limit reached. Scanning opens again on 12 November. |
+| Global cap | The scanner has reached today's limit for everyone. Back tomorrow. |
+| Credit out | The scanner's monthly budget is used up. Back on 1 November. |
+| Busy | Busy. Retrying… |
+| Generic | Couldn't read this photo. |
+| Offline | You're offline. Photos will wait here until you reconnect. |
+| Failed-photo actions | Retry · Remove · Choose another |
+| Chip check | Check this |
+| Chip not found | Not found |
+| Reasons | Which printing? Prices differ · Two different cards have this name · Couldn't read the scripture reference · Several Lost Souls share this verse · Read as "Saul" |
+| Printings line | 3 printings |
+| Owned | own 2 |
+| Unpriced | No YTG listing |
+| Not found action | Find card |
+| Picker header | Which printing? |
+| Picker name-change header | Which card? |
+| Picker search | Search by card name |
+| Picker current | Current |
+| Picker owned | 2 in your collection |
+| Picker empty | No cards match. |
+| Quantity label | Quantity |
+| Remove | Remove |
+| Remove reason | Wrong card · Don't want it |
+| Footer total | $84.20 at YTG · 2 unpriced |
+| Commit | Add 12 to collection |
+| Committing | Adding… |
+| Commit failed | Couldn't save. Your tray is still here. Try again. |
+| Unresolved warning | 3 cards aren't matched and won't be added. |
+| Success | Added 12 cards to your collection. |
+| Post-commit actions | Undo · Add to Haves · Copy priced list · Scan more · View collection |
+| Undo done | Removed 12 cards. |
+| Haves done | Added 12 to Haves. |
+| Copied | Copied |
+| Just added header | Just added |
+| Retention toggle | Keep my scan photos for 30 days to help improve the scanner |
+| Retention note | Photos are sent to Anthropic to read the cards. Anthropic deletes them within 30 days unless its safety systems flag them (then up to two years) and does not train on them. We keep nothing unless this is on. |
+| Delete photos | Delete my scan photos now |
+| Gate | Sign in to scan cards, add them to your collection and see YTG prices. |
+| Beta label | Beta |
+
+Accessibility: chips carry text and `aria-describedby`; `role="status"`
+on photo groups; `aria-live="polite"` on the footer total; thumbnail
+button "Change printing: {name}, {set}"; crop `alt="Your photo of this
+card"`; quantity "Quantity 1, change" with "One more {name}" / "One
+fewer {name}" on the stepper as the trade list does; focus order capture
+→ groups → footer; new animations added to the `prefers-reduced-motion`
+list; `CardImage` gets a plain fallback instead of its emoji.
 
 ## Files
 
-- `app/collection/scan/page.tsx`: auth gate with `redirectTo`, metadata,
-  renders the client.
-- `app/collection/scan/client.tsx` and `components/`: `CaptureButtons`,
-  `PhotoGroup`, `DetectionRow`, `PrintingPicker`, `CommitBar`,
-  `RetentionToggle`.
-- `app/collection/scan/hooks/useScanTray.ts`: tray state with
-  `sessionStorage` persistence of detections, keys, quantities.
-- `app/collection/client.tsx`: Scan button weights, first-run banner,
-  Change printing in the card modal.
-- `app/collection/actions.ts`: `recordScanOutcomesAction`; commit reuses
-  `bulkImportCollectionAction` through `importRows`.
-- `app/api/scan/route.ts`: session, `scan_reserve()`, sharp re-encode,
-  recogniser, matcher, prices RPC, finish event; `maxDuration = 60`.
-- `lib/scan/recognize.ts`, `lib/scan/match.ts`, `lib/scan/schema.ts`,
-  `lib/scan/stemIndex.ts`, `lib/scan/__tests__/`.
-- `lib/cards/setOrder.ts` and the set-icon and abbreviation legend, with
-  a coverage test against `CARDS`.
-- `scripts/scan-eval/run.ts`, `labels.json`, `photos/` (git-ignored),
-  `outputs/` (recorded model JSON per model, committed), `export.ts`.
+- `app/collection/scan/page.tsx`, `client.tsx`, `components/`
+  (`CaptureButtons`, `PhotoGroup`, `DetectionRow`, `PrintingPicker`,
+  `CommitBar`, `SuccessPanel`, `RetentionToggle`),
+  `hooks/useScanTray.ts`.
+- `app/collection/client.tsx`: toolbar weights below `sm`, first-run
+  banner, `added` param and "Just added" group, Change printing and
+  Close in the card modal.
+- `app/collection/actions.ts`: `recordScanOutcomesAction`,
+  `setKeepScanPhotosAction`, `deleteMyScanPhotosAction`.
+- `app/api/scan/route.ts`: session, `scan_reserve()`, sharp, recogniser,
+  matcher, second look, prices, finish event; `maxDuration = 90`.
+- `lib/scan/recognize.ts`, `secondLook.ts`, `match.ts`, `stemIndex.ts`,
+  `vocab.ts`, `schema.ts`, `prices.ts` (shared paginated loader with
+  `/api/prices`), `__tests__/`.
+- `lib/cards/setOrder.ts`: the legend keyed on `officialSet` (49
+  values; the six `[Ban]` codes map after stripping), per-set border
+  look, set order, abbreviations (the `set_aliases` seed and
+  `TAG_SET_TO_ABBREV` in `lib/pricing/matching.ts` are inputs), with a
+  coverage test against `CARDS`.
+- `scripts/scan-eval/run.ts`, `score.ts`, `export.ts`, `labels.json`,
+  `photos/` (git-ignored), `outputs/` (recorded model JSON, committed).
 - `supabase/migrations/122_scan_events.sql`: table, RLS, `scan_reserve()`,
-  the prices-by-keys RPC, the `profiles` retention column.
+  the `profiles` column, the three Lost Soul reference fixes if they
+  live in the overlay rather than upstream.
 - `app/admin/scans/page.tsx`, `app/admin/scans/image/[id]/route.ts`, nav
-  links.
+  links in `components/top-nav.tsx` (desktop and mobile).
 - `app/api/cron/purge-scans/route.ts` plus a daily `vercel.json` entry.
+- `app/privacy/page.tsx`.
 
 ## Testing
 
-- `lib/scan/match.ts` and `stemIndex.ts`: stem normalisation (quotes,
-  brackets, case, slash names, double spaces), exact and fuzzy
-  thresholds with margins, identity scoring on reference, ability, type
-  and brigade (Aaron, The Depraved, Captain of the Host), Lost Soul
-  reference matching with inconsistent bracket styles, every printing
-  rule and reason code, promo de-prioritisation, AB-twin default, the
-  `equivalent` collapse, and the golden set. Vitest, node only.
-- `lib/cards/setOrder.ts`: every set code in `CARDS` has an order and a
-  legend entry.
-- `app/api/scan/route.ts`: cap and size checks and error mapping with the
-  recogniser stubbed; `tsc` clean against the baseline.
-- The RPC: a SQL test or a scripted check that two concurrent reserves at
-  the cap yield exactly one row.
-- The eval script is the recogniser's integration test (E0, E1, E2).
+- `lib/scan/match.ts`, `stemIndex.ts`, `vocab.ts`: normalisation
+  (case, curly quotes, double spaces, slash names, Roman numerals), the
+  two index unions, exact and fuzzy rules including the short-name and
+  numeral guards and the nine distance-1 pairs, identity scoring on
+  Abel, Captain of the Host, The Depraved, King Saul, Pharaoh, Lost Soul
+  reference matching with badges and the shared-verse cases, every
+  printing filter and the collapse with price fixtures, the special-
+  class definitions against the counts above (205 / 387 / 72 / 12), type
+  and brigade mapping, reason fields, and the golden set. Vitest, node
+  only.
+- `lib/cards/setOrder.ts`: every set code in `CARDS` has an order, an
+  official set and a border look.
+- `app/api/scan/route.ts`: error mapping and size and format checks
+  with the recogniser stubbed; `tsc` clean against the baseline.
+- The RPC: a scripted check that two concurrent reserves at a cap yield
+  exactly one `pending` and one `rejected` row.
+- The scorer's self-tests; the eval script as the recogniser's
+  integration test (E0, E1, E2).
 - Manual E2 as above.
 
 ## Rollout
 
-1. Tim: create a `scanner` workspace and key in the Max org, add
-   `SCANNER_ANTHROPIC_API_KEY` to Vercel; decide the private Blob store;
-   take the seventy photos; add the WAF rate rule.
+1. Tim: create the `scanner` workspace and key in the Max org and add
+   `SCANNER_ANTHROPIC_API_KEY` to Vercel; confirm reuse of the Forge
+   private store; take the photos (and ask Discord for the wild
+   bucket); add the WAF rate rule; check the workspace's rate tier.
 2. E0; record numbers and decisions in the review log; pick model,
-   effort, resolution, position format; decide whether crops and the
-   second look ship.
+   effort, resolution, position format; decide crops and the second
+   look.
 3. Build. Apply migration 122 before merging the route.
-4. E2 on the preview URL; merge; one What's New line; privacy policy
-   line.
-5. E3 weekly for a month.
+4. E2 on the preview URL; merge; one What's New line; `/privacy` live.
+5. E3 weekly audit for two months.
 
 ## Calls I made (for review)
 
-1. Server-side vision; the model transcribes fields, the app matches on
-   stem, identity and printing. The model never picks a key.
-2. Transcribe reference, ability opening, type, brigade and border, not
-   just the title, so a plausible-but-wrong title is caught by a
-   disagreeing field.
-3. One flow, no modes; price always visible per `useShowPrices`; Add to
-   collection primary, Add to Haves secondary.
-4. Amber only when the choice matters (price or legality differ) or
-   nothing matched; equivalent printings collapse to a quiet count.
-5. Promos, alternate borders, legacy rares and AB reprints are never the
-   default without a hint.
-6. Sign-in required; reserve-first caps in Postgres with per-user and
-   global limits; a dedicated scanner key and workspace.
-7. Server-side sharp re-encode of every upload.
-8. Commit through the existing merge import; undo and post-commit
-   printing change in the success state; Change printing added to the
-   collection card modal.
-9. Tray in `sessionStorage` without images.
-10. Photos not kept unless opted in; private store; daily purge; raw
-    detections of unmatched photos purged at 30 days.
-11. Stage A2 (art tiebreaker) planned with a data trigger, not built in
-    v1.
-12. Baseline Opus 5.5; model, effort, resolution, position format,
-    crops and second look are all E0 outcomes.
-13. Admin view superuser-only in v1, plain table.
+1. Server-side vision; the model transcribes many fields, the app
+   matches on stem, identity and printing. The model never picks a key.
+2. Print number, stats, identifier, nickname, reference and ability are
+   transcribed so a plausible-but-wrong title is caught and a printing
+   can be pinned from the card itself.
+3. One flow, no modes; price always visible; Add to collection primary;
+   Haves, priced list and undo live in the success state.
+4. Printing rules are filters (hints, special classes out, Rotation in)
+   then a collapse; amber only when price or legality differ among
+   survivors.
+5. Fuzzy matching is guarded by length, reference agreement and a
+   numeral rule rather than a bare threshold.
+6. The second look is one capped call per photo under the same
+   reservation, kept only if E0 shows lift.
+7. Sign-in required; reserve-first caps with rejected rows recorded;
+   per-user and global rolling windows; a dedicated scanner key.
+8. Server-side sharp re-encode to the model's own tier.
+9. Client decodes through an image element because WebKit drops EXIF on
+   `createImageBitmap(file)`.
+10. Commit through the existing merge import; undo by delta; Haves by
+    add-to-existing.
+11. Tray in `sessionStorage` without images.
+12. Photos not kept unless opted in; Forge's private store under a
+    prefix; daily purge; unmatched detections purged at 30 days; a
+    `/privacy` page.
+13. Stage A2 planned with a windowed data trigger.
+14. E0 is a pre-registered screen; the 90% claim is certified by the
+    post-launch audit; claims are dated and scored.
+15. Admin view superuser-only in v1, plain table.
 
 ## Left to the builder
 
-- Fuzzy thresholds and margins, identity scoring weights, `max_tokens`,
-  effort, resolution: all from E0 outputs.
-- The set-icon and abbreviation legend contents and the set-order list.
-- Whether Forge's private store is reachable from the main app in prod,
-  or a new store is needed (then Tim provisions it).
+- Fuzzy margin, identity scoring weights, `max_tokens`, effort,
+  resolution: from E0 and E1.
+- Legend contents and the set order (hand-written; the repo has no
+  release years).
 - Component split inside the client as long as the listed pieces exist.
-- Exact copy within the design system's tone.
+- Whether `added` on `/collection` sorts or filters.
+- Exact copy beyond the table, within the design system's tone.
 
 ## Open questions for Tim
 
-1. Create the scanner workspace and key (I cannot create secrets). Reuse
-   Forge's private Blob store, or provision a new one?
-2. The seventy photos in the mix above.
-3. Privacy policy wording: use the copy proposed here, or your own?
+1. Create the scanner workspace and key (I cannot create secrets).
+   Confirm reusing the Forge private store under `scans/`.
+2. The photos per the table, and whether to ask Discord for the wild
+   bucket.
+3. `/privacy` page: the proposed facts, or your own wording.
 
 ## Adversarial review log
 
-Rev 1 was reviewed by five independent agents on 2026-10-26: a study of
-the community tool's source, a recognition and evaluation adversary (with
-measurements over `cardData.json`), a product and slot-in adversary, a
-security, cost and operations adversary, and a builder check.
+### Round 1 (2026-10-26, five reviewers → rev 2)
 
-**Changed in rev 2:**
+Reviewers: a study of the community tool's source; a recognition and
+evaluation adversary with measurements over `cardData.json`; a product
+and slot-in adversary; a security, cost and operations adversary; a
+builder check.
 
-- Matching now works on stems and identity groups through
-  `cardIdentity.ts`, not on `name`; `CARD_BY_NAME_LOWER` is private and
-  single-valued and names embed the printing (builder check, recognition
-  adversary). Lost Souls resolve by scripture reference (all three).
-  The model transcribes reference, ability opening, type, brigade and
-  border (recognition adversary, community-tool study).
-- A real fuzzy matcher over 3,494 stems replaces the unscored
-  `searchCardNames`; a measured second-look call for uncertain rows
-  (recognition adversary, builder check).
-- "Printing guessed" no longer fires on two thirds of rows: equivalent
-  printings collapse to a quiet count, amber only when price or legality
-  differ; promos and alternate borders are never the default; the
-  `newest` rule gains a set-order table (recognition adversary, product
-  adversary, community-tool study).
-- Modes removed; the same photo resolves the same way; price always
-  visible; Add to Haves added now (product adversary).
-- Rows show owned quantity; no checkboxes; merged duplicates; undo and
-  post-commit printing change; Change printing in the collection modal
-  (product adversary).
-- Commit reuses `bulkImportCollectionAction` merge; `outcomes` written
-  by a small action (product adversary, security adversary).
-- Tray persists detections only (product and recognition adversaries).
-- Capture: iOS `capture` ignores `multiple` and loses the photo on tab
-  eviction; HEIF decode failure handled; `createImageBitmap` resize;
-  48 MP in E2 (product adversary).
-- Spreads sent at up to 2576 px with E0 deciding; grid positions instead
-  of pixel boxes by default; crops only if E0 proves them (recognition
-  adversary, community-tool study).
-- Reserve-first `scan_reserve()` RPC with an advisory lock counting
-  pending and failed rows; burst, daily, monthly and global caps; no
-  INSERT or UPDATE for `authenticated`; admin client for writes
-  (security adversary).
-- `registration_admin` replaced by the `admin_users` / `is_superuser()`
-  pattern; nav links (security and product adversaries).
-- Dedicated scanner key and workspace; `billing_error` handling; cost
-  per event; digest alert (security adversary).
-- Server-side sharp re-encode; 415; `maxDuration`; `maxRetries: 0` with
-  one manual retry; distinct 503 codes; no `temperature`; no
-  `cache_control`; `max_tokens` from E0 with `max_tokens` stop mapped to
-  too many cards (security and recognition adversaries).
-- Private Blob store named; admin image proxy; daily prefix-driven purge;
-  detections capped and purged for unmatched photos; copy about
-  Anthropic's handling (security adversary).
-- Prices by keys through a `text[]` RPC; product links through
-  `getProductUrl` (security and product adversaries, builder check).
-- Migration 122 (all reviewers).
-- Eval set grown to about seventy with ten non-card photos including
-  other games' cards; multiset scoring; precision gate; `setVisible`
-  labels; accuracy by confidence bucket; intervals printed; effort and
-  resolution arms (recognition adversary).
-- Cost table rewritten with output and thinking tokens; probabilities
-  revised (recognition adversary, security adversary, builder check).
-- Prior-art paragraph corrected: the community tool's Claude button is
-  wired to the Artifacts runtime and hidden on the public site; its real
-  strength is picture-first matching with a sureness ratio
-  (community-tool study).
+Changed: matching moved from `name` to stems and identities (names embed
+the printing; `CARD_BY_NAME_LOWER` is private and last-wins); Lost Souls
+by reference; the model transcribes corroborating fields; a real fuzzy
+matcher instead of `searchCardNames`; a measured second look; modes
+removed; owned quantity, no checkboxes, merged duplicates, undo,
+post-commit printing change, Change printing in the collection modal;
+commit through the merge import; tray without images; iOS capture
+realities; spreads at higher resolution with grid positions; reserve-
+first caps with a global ceiling; no INSERT/UPDATE for `authenticated`;
+superuser pattern instead of the retired `registration_admin`; dedicated
+scanner key; server-side sharp; private store, admin image proxy, daily
+purge; migration 122; eval set grown with non-card photos, multiset
+scoring, precision gate, intervals; cost table with output tokens; the
+prior-art paragraph corrected (the community tool's Claude button is
+wired to the Artifacts runtime and hidden on the public site).
 
-**Rejected or deferred, with reasons:**
+Rejected or deferred: the art tiebreaker in v1 (depends on unmeasured
+crop quality); a legend image in every prompt (E0 arm only); the
+reviewer's higher global caps (exceed the credit); 20 to 30 card spreads
+as a target (kept as a measured bucket).
 
-- Building the art-similarity tiebreaker in v1 (community-tool study,
-  recognition adversary leaning that way): deferred to Stage A2 with a
-  data trigger, because it depends on crop quality that E0 has not yet
-  measured, and the equivalent-printing collapse removes most of the
-  user-visible pain in the meantime.
-- A set-icon legend image in every prompt (recognition adversary): E0
-  arm only; it costs tokens on every call and may not help.
-- Global caps at the security reviewer's suggested 600 a day and 6,000 a
-  month: set lower (300 and 2,000) because at Opus spread cost 6,000
-  photos exceeds the credit.
-- Treating 20 to 30 card spreads as a target (community-tool study):
-  kept as a measured bucket, not a promise; the per-card pixel budget
-  says they will not read.
+### Round 2 (2026-10-27, five reviewers → rev 3)
+
+Reviewers: a consistency auditor; a data scientist who prototyped the
+matcher against the dataset and the live price map; a product designer
+and accessibility reviewer walking three personas; a platform engineer
+verifying library and browser claims; an evaluation designer.
+
+Changed:
+
+- **Matcher, from the data prototype.** Stem index normalised with
+  spelling-variant and reprint-split unions; fuzzy guarded by length,
+  reference and numerals (131 stems have a neighbour at distance 1; nine
+  distance-1 pairs are different cards type and brigade cannot
+  separate); identity scoring adds strength/toughness and identifier
+  (929 → 947 of 959 homonym stems separable); print number and rarity
+  code transcribed (2,521 of 3,190 Rotation printings carry one); Lost
+  Soul nickname badge; special classes defined from data with UR+ added
+  and "foil" and "alternate border" removed; printing rules restated as
+  filters then collapse (amber 319 → 93 → 64 identities); reasons split
+  into name and printing fields; vocabulary mapping layer; dataset
+  numbers corrected (3,521 stems, 757 twin stems, 30.0%).
+- **Consistency.** Second look moved out of the matcher, capped at one
+  call per photo under the same reservation, costed; detections always
+  stored and purged for unmatched photos; "from $X" removed; printings
+  enumerated by identity key (`printingsForKey` returns non-unique
+  names); `putItems` overwrites, so Haves add to existing; outcomes
+  recorded per scan id; `is_superuser()` described correctly; legend
+  moved to `setOrder.ts` keyed on `officialSet`; rolling windows
+  everywhere with `resets_at`; `maxDuration` 90 with 25 s timeouts;
+  `sendEmail` for digests; `/privacy` page added; type vocabulary fixed.
+- **Platform.** Client decode through `<img>` (WebKit drops EXIF on
+  `createImageBitmap(file)`); `max_tokens` stop no longer read as "too
+  many cards" (thinking is unbounded and the SDK cannot attribute it),
+  cap raised to 16k with one retry; image tokens restated on the 28-px
+  patch rule with the 4,784 cap (4:3 → 2212 × 1659; low-res arm defined
+  by tokens, not "1568"); schema without length bounds; `accept`
+  unchanged; `File` accumulation on iOS; 413 by `x-vercel-error`; the
+  082 definer pattern for the RPC; Anthropic retention copy corrected to
+  30-day deletion with the flagged-content exception.
+- **Product.** Burst cap 20 per 10 minutes; Haves, priced list and undo
+  in the success state; Radix dialog for the picker; View collection
+  with the format filter cleared and a Just added group; price on line
+  one; failed photos get Retry and Remove; toolbar folding below `sm`;
+  Find card instead of an inline input; undo by delta with disable
+  rules; binder-page bucket and tip; desktop drop target, table layout
+  and keyboard; set always shown; "to buy at YTG" framing; the full copy
+  table; accessibility specifics; safe-area footer.
+- **Evaluation.** E0 reframed as a pre-registered screen with pass
+  counts and false-pass odds; label schema and position-free multiset
+  scoring with a silent-wrong class; other-game photos expected to yield
+  `not_found`; model-only versus matcher metrics; staged arms (about
+  410 requests) with two repetitions as a noise floor; harness rules; E2
+  on originals and client-resized blobs; E3 denominators, abandonment,
+  rejected rows, a weekly audit sample, calibration rules, paired
+  acceptance for prompt changes; windowed kill criteria with minimum
+  sizes; the probability table replaced by a dated scoresheet.
+
+Rejected or deferred: "Add to Wants" from the tray and a "Recent scans"
+list (week-one asks; v1.1); dropping prices from candidates (the printing
+rules need them server-side; the loader is shared instead); higher
+global caps; treating Fundraiser as standard (it is filed as promo by
+rarity and filtered like one; the "N printings" line lets a real
+Fundraiser owner fix it).
 
 **Unrelated finding, flagged once:** `scripts/run-claude-matching.ts`
 calls `claude-sonnet-4-20250514`, retired on 2026-06-15; current Sonnet
