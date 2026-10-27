@@ -295,6 +295,23 @@ found, three invented titles, a Lost Soul digit misread. Decisions:
 Sonnet 5.5 `low`, high-res, no thinking parameter. Spend about $6 over
 some 900 requests.
 
+**Second pass, on Tim's review (rev 4.2 → 4.3).** Tim read the review
+page and flagged three photos; all three were real. Nationals promos
+carry their tournament line in the card body, which the prompt did not
+ask for; alt-border cards were booked as originals by rule; the Lost
+Souls Two Liner and Three Liner differ only in the ability's tail. A
+prompt v2 (`promoText`, `abilityEnd`, `border`) ran once on the photos:
+`promoText` read on 103 of 329 cards, seven rows moved to the right promo
+printing (two at $175 and $199), one contradicted placement became Check
+this; `abilityEnd` separated the Lost Souls pair; `border` was wrong on
+every real alt-border card and on twelve others, so it is rejected and
+AB stays with the art tiebreaker. Reference as a printing filter settled
+the Son of God family. The review page now shows the crop, the printing
+mapped to, and every alternative with price.
+
+**Changed in rev 4.3:** Transcription fields; Printing selection;
+Reason fields; E0 preview; outcomes row; call 18.
+
 ## Scoresheet resolutions
 
 To be filled at each resolution date: claim number, outcome, date,

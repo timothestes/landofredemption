@@ -1,10 +1,10 @@
 # Card scanner — design
 
-Date: 2026-10-26; rev 4.2 on 2026-10-27 after four review rounds
+Date: 2026-10-26; rev 4.3 on 2026-10-27 after four review rounds
 (sixteen reviewers; outcomes at the end, full log in
-`2026-10-26-card-scanner-review-log.md`) and a throwaway spike against
-83 real photos and 148 catalog images (E0 preview, under Evaluation).
-Not yet approved.
+`2026-10-26-card-scanner-review-log.md`), a throwaway spike against
+83 real photos and 148 catalog images, and a second pass on Tim's review
+of its output (E0 preview, under Evaluation). Not yet approved.
 
 **Surfaces:** `/collection` (toolbar, first-run banner), the deck
 builder's owned-cards filter and Check my collection modal (entry links),
@@ -275,6 +275,8 @@ numeric bounds (the API rejects them), so caps are enforced in code.
 | `reference` | the scripture line | identity scoring; Lost Soul path; fuzzy guard |
 | `nickname` | the Lost Soul badge | Lost Soul path |
 | `abilityStart` | first six words of the special ability | identity scoring (last) |
+| `abilityEnd` | last four words of the special ability | printing tiebreak where printings of one card differ only in the tail (Lost Souls Two Liner against Three Liner) |
+| `promoText` | any tournament, event, placement or promotional text anywhere on the card, as printed ("25th Annual Redemption National Tournament, Knoxville, TN, August 1-3, 2019", "2nd Place Promo", "Redemption Gift Set") | promo printing hint; placement and year narrow it |
 | `type` | icon-box type as printed (Hero, Evil Character, Enhancement, Lost Soul, Dominant, Site, Fortress, Artifact, Covenant, Curse, City, token, unknown) | identity scoring; Lost Soul routing |
 | `brigade` | frame color words | identity scoring |
 | `strength`, `toughness` | the two numbers top-left | identity scoring |
@@ -283,7 +285,7 @@ numeric bounds (the API rejects them), so caps are enforced in code.
 | `grid` | row and column in reading order | ordering; crops (v1.1) |
 | `orientation` | upright, rotated, upside-down | information |
 | `confidence` | high, medium, low | stored; shown nowhere unless calibration earns it a chip |
-| `setMarking`, `setIconNote`, `border`, `copyrightYear` | **v1.1** | set legend hints |
+| `setMarking`, `setIconNote`, `copyrightYear` | **v1.1** | set legend hints; `border` was tried and rejected (E0 preview) |
 | `bbox` | **v1.1**, normalized | crops |
 
 Plus `photoQuality`: ok, blurry, dark, glare, too_many_cards, no_cards.
@@ -425,10 +427,21 @@ Among the identity's printings, **successive filters, then a collapse**:
    ("L20-", "K13-") stay unparsed; the model reads them into
    `rarityCode` ("K10"). AB reprints share the number with their
    original; in v1.0 the original wins that pair (v1.1's border and
-   copyright fields break it). **Promo text** in `rarityCode` ("Promo",
-   "P", "National", "State", "Regional", "Seasonal", "Winner",
-   "Tournament", "District", "Local") keeps only promo printings when the
-   identity has any (`promo_text`); this was a v1.1 idea until the spike
+   copyright fields break it). **Reference filter:** printings of one
+   card can carry different verses (Son of God's do on purpose), so when
+   the read reference matches a strict subset of the printings, only
+   those stay (`reference`; this alone settled every Son of God promo in
+   the catalog sample). **Ability tail:** when `abilityEnd` matches a
+   strict subset, only those stay (`ability_end`). **Promo text** in
+   `rarityCode` or `promoText` ("Promo", "P", "National", "State",
+   "Regional", "Seasonal", "Winner", "Tournament", "District", "Local",
+   "Gift Set", "Place") keeps only promo printings when the identity has
+   any (`promo_text`); among several, a placement (1st, 2nd, 3rd), a
+   year and event words in the text are scored against each printing's
+   name, rarity and set, and a placement or year that contradicts the
+   only promo printing makes the row Check this rather than a silent
+   pick, because the data may lack that printing. The corner hint was a
+   v1.1 idea until the spike
    showed the model reads that corner reliably and the hint settled 76
    of 341 photo rows and cut catalog silent-wrongs from 8 to 5. **v1.1:**
    `set_hint` from the legend, `border`, `copyright_year` as a weak
@@ -471,7 +484,8 @@ add a few percent; E0 measures the real rate on photos.
 
 `nameReason` ∈ {exact, fuzzy, reference, none; v1.1 adds second_look}.
 `printingReason` ∈ {only, print_number, ur_plus, legacy_rare,
-promo_text, equivalent, printing_ambiguous, identity_ambiguous,
+reference, ability_end, promo_text, equivalent, printing_ambiguous,
+identity_ambiguous,
 reference_missing, reference_ambiguous; v1.1 adds set_hint, border,
 copyright_year, second_look}. Chips key on status and
 `printingReason`; a `fuzzy` name shows "Read as 'X'" on the row.
@@ -1083,6 +1097,31 @@ Sonnet nor Opus emitted thinking; Haiku did, and it cost 4 s a single
 for no accuracy, so any Haiku arm runs thinking-off. The spike spent
 about $6 over some 900 requests.
 
+**Second pass, on Tim's review of the page.** Three photos he flagged
+were all real misses: two 2019 Nationals promos (New Jerusalem, Son of
+God) booked as standard printings because their tournament line sits
+in the card body, not the corner the prompt asked about; three
+alt-border Daniel cards booked as the originals by the v1.0 rule; and a
+Lost Souls pair that differs only in the tail of the ability text. A
+prompt v2 added `promoText`, `abilityEnd` and `border` and ran once on
+the photos (Sonnet 5.5, low, about $1.40). `promoText` came back on 103
+of 329 cards and, with placement and year matching, moved seven rows to
+the right promo printing, among them Nationals promos at $175 and $199
+that the corner text had missed, and turned a contradicted placement
+into Check this. `abilityEnd` came back on 220 cards and separated the
+Lost Souls pair: the cards read "by the same player to count", which
+the data gives to the Three Liner. `border` read "standard" on every
+real alt-border card and "alternate" on twelve that were not, one of
+which sent a $150 promo to a $12 AB printing; it is rejected, and
+alt-border printings stay the art tiebreaker's job (v1.2). Reference as
+a printing filter, added the same pass, settled the Son of God family
+on the catalog (141 Matched / 5 Check this). The two kept fields cost
+about 11% more per photo and 1.5 s at p95 on spreads; with them,
+singles were 33 / 5 / 1 and spreads 196 / 28 / 6 over 230 detections.
+The review page was rebuilt to show, per card, the crop from the photo,
+the printing mapped to, and every other printing of that card with set
+and price; that is also the shape the picker should take.
+
 **What changed because of it:** the step-3 unions, print number in
 identity scoring, title variants, compound references, the LR and promo
 hints (Recognition); the prompt-size and thinking lines (Cost and
@@ -1404,6 +1443,7 @@ in `2026-10-26-card-scanner-review-log.md`.
 | 5 | Spike: reprints with changed text tie on reference and stats; AB and decoration splits are separate identities; dual names and parenthesised subtitles have no stem; compound references miss | Unions; print number in identity scoring; title variants; component references | The matcher |
 | 5 | Spike: promo text in the corner is read reliably; Legacy Rares print "LR"; AB cards print the plain number | `promo_text` and `legacy_rare` hints in v1.0; number parsing | Printing selection |
 | 5 | Spike: instruction and schema are about 1,880 tokens; `low` effort runs without thinking; two more reference typos | Cost lines corrected; typo list; E0 preview | Cost and latency; Dataset numbers; Evaluation |
+| 5 | Tim's review of the page: Nationals promos carry the tournament line in the card body; alt-border cards booked as originals; a Lost Souls pair differs only in the ability tail | `promoText` and `abilityEnd` fields; reference and ability-tail printing filters; placement and year matching; `border` tried and rejected | Transcription fields; Printing selection |
 
 Rejected or deferred: art tiebreaker in v1 (depends on unmeasured crop
 quality); legend image in every prompt (E0 arm only); higher global caps
@@ -1454,3 +1494,6 @@ Unrelated finding, flagged once: `scripts/run-claude-matching.ts` calls
 17. The 148-card catalog sample is the matcher's regression set, and
     the step-3 unions are the scanner's own, layered on
     `cardIdentityKey` without changing it.
+18. `promoText` and `abilityEnd` are v1.0 transcription fields on the
+    second pass's measurement; `border` is rejected on the same
+    measurement, so alt-border printings wait for the art tiebreaker.
