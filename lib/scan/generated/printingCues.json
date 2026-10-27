@@ -2399,6 +2399,16 @@
   "year": null,
   "caption": null
  },
+ "Elisabeth|Wom|Elisabeth_(Wo)": {
+  "illustrator": "Illus. Sue Dawe",
+  "year": null,
+  "caption": null
+ },
+ "Elizabeth (GoC)|GoC|145-Elizabeth": {
+  "illustrator": "Illus. Carl Bloch",
+  "year": null,
+  "caption": null
+ },
  "Emperor Claudius (PC)|TPC|Emperor_Claudius_(PC)": {
   "illustrator": "Illus. C.F. Vos",
   "year": null,
@@ -9082,6 +9092,21 @@
  "Without Touching|T2C|093-Without-Touching-R": {
   "illustrator": "Illus. Cornelis Troost",
   "year": "2025",
+  "caption": null
+ },
+ "Wizard (PC)|TPC|Wizard_(PC)": {
+  "illustrator": "Illus. Salvator Rosa",
+  "year": null,
+  "caption": null
+ },
+ "Wizards [RR2]|RR2|442-Wizards": {
+  "illustrator": "Illus. Elizabeth Whelan",
+  "year": "2026",
+  "caption": null
+ },
+ "Wizards|Prp|Wizards_(Pr)": {
+  "illustrator": "Illus. Elizabeth Whelan",
+  "year": null,
   "caption": null
  },
  "Women of Israel (1st Print - L)|L1P|L51-1P-Women-of-Israel": {
