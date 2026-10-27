@@ -59,11 +59,11 @@ create policy scan_commits_select on public.scan_commits
   for select to authenticated
   using (user_id = auth.uid() or public.is_superuser());
 
--- No write policies; also revoke the grants Supabase gives by default.
-revoke insert, update, delete on public.scan_events from authenticated, anon;
-revoke insert, update, delete on public.scan_commits from authenticated, anon;
-revoke select on public.scan_events from anon;
-revoke select on public.scan_commits from anon;
+-- No write policies. Supabase's default privileges also hand anon and
+-- authenticated TRUNCATE/TRIGGER/REFERENCES, so strip everything and
+-- re-grant SELECT only (RLS still filters rows to own/superuser).
+revoke all on public.scan_events, public.scan_commits from anon, authenticated;
+grant select on public.scan_events, public.scan_commits to authenticated;
 
 create or replace function public.scan_reserve(p_source text default 'player')
 returns jsonb language plpgsql security definer set search_path = '' as $$
