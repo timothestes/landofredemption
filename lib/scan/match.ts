@@ -105,7 +105,8 @@ const rank = (ids: ScanIdentity[], det: ScanDetection) => ids.map(i => scoreIden
 // Printing filters. Each returns the survivors it supports (or the input
 // unchanged) and, when exactly one remains by its own decision, that reason.
 
-interface Step { cards: CardData[]; decided?: PrintingReason; provisional?: CardData }
+/** `provisional`: Check this with that card as the provisional choice; `ambiguous`: Check this among `cards`, cheapest priced provisional. */
+interface Step { cards: CardData[]; decided?: PrintingReason; provisional?: CardData; ambiguous?: boolean }
 
 /** True when every dropped card is the AB twin of a kept one: the filter would only split one card from its twin. */
 function onlySplitsAbTwins(kept: CardData[], dropped: CardData[]): boolean {
@@ -123,7 +124,8 @@ function narrow(cards: CardData[], hits: CardData[], reason: PrintingReason): St
 function filterUrPlus(cards: CardData[], det: ScanDetection): Step {
   if (!/UR\+/.test(det.rarityCode ?? '')) return { cards };
   const hits = cards.filter(isUrPlus);
-  return hits.length === 1 ? { cards: hits, decided: 'ur_plus' } : { cards };
+  if (hits.length === 1) return { cards: hits, decided: 'ur_plus' };
+  return hits.length > 1 ? { cards: hits } : { cards };
 }
 
 function filterLegacyRare(cards: CardData[], det: ScanDetection): Step {
@@ -221,9 +223,11 @@ function promoScore(c: CardData, t: string): number {
   return sc;
 }
 
+/** A strict top wins; a tie at a positive top keeps the tied top; otherwise every promo stays. */
 function byPromoScore(promos: CardData[], t: string): CardData[] {
   const scored = promos.map(c => ({ c, sc: promoScore(c, t) })).sort((a, b) => b.sc - a.sc);
-  return scored[0].sc > scored[1].sc ? [scored[0].c] : promos;
+  if (scored[0].sc > scored[1].sc) return [scored[0].c];
+  return scored[0].sc > 0 ? scored.filter(x => x.sc === scored[0].sc).map(x => x.c) : promos;
 }
 
 /** A placement or year in the text that contradicts the only promo printing's name. */
@@ -240,13 +244,15 @@ function filterPromoText(cards: CardData[], det: ScanDetection): Step {
   if (!read || !PROMO_WORDS.test(read)) return { cards };
   let promos = cards.filter(isPromo);
   if (!promos.length) return { cards };
-  if (promos.length > 1) {
+  const t = read.toLowerCase();
+  // Caption and scoring need printed promo text; a bare "P" in the corner only keeps the promos.
+  if (det.promoText && promos.length > 1) {
     const cap = byCaption(promos, read);
     if (cap.decided) return cap;
-    promos = cap.cards;
+    promos = byPromoScore(cap.cards, t);
+    // A read placement or year that still leaves several promos is the picker's call, never a price collapse.
+    if (promos.length > 1 && (placementIn(t) || yearIn(t))) return { cards: promos, ambiguous: true };
   }
-  const t = read.toLowerCase();
-  if (promos.length > 1) promos = byPromoScore(promos, t);
   if (promos.length === 1) {
     if (contradicts(promos[0], t)) return { cards, decided: 'printing_ambiguous', provisional: promos[0] };
     return { cards: promos, decided: 'promo_text' };
@@ -269,6 +275,13 @@ const FILTERS: ((cards: CardData[], det: ScanDetection) => Step)[] = [
 
 const isSpecial = (c: CardData) => isPromo(c) || isAB(c) || isLegacyRare(c) || isUrPlus(c);
 
+/** The cheapest priced survivor, else one with a corner code, else the first. */
+function defaultOf(cards: CardData[], survivors: Candidate[]): Candidate {
+  return survivors.filter(x => x.price != null).sort((a, b) => (a.price as number) - (b.price as number))[0]
+    ?? survivors.find((_, i) => cornerCode(cards[i]))
+    ?? survivors[0];
+}
+
 function collapse(cards: CardData[], all: Candidate[], prices: PriceMap): Selection {
   let removedSpecial = false;
   if (!cards.every(isPromo)) {
@@ -284,10 +297,8 @@ function collapse(cards: CardData[], all: Candidate[], prices: PriceMap): Select
   const ps = survivors.filter(x => x.price != null).map(x => x.price as number);
   const span = ps.length ? Math.max(...ps) - Math.min(...ps) : 0;
   const legalities = new Set(cards.map(c => c.legality));
-  const chosen = survivors.filter(x => x.price != null).sort((a, b) => (a.price as number) - (b.price as number))[0]
-    ?? survivors.find((_, i) => cornerCode(cards[i]))
-    ?? survivors[0];
-  if (span < PRICE_DELTA_FLOOR && legalities.size === 1) return { status: 'matched', printingReason: 'equivalent', chosen, candidates: survivors };
+  const chosen = defaultOf(cards, survivors);
+  if (span < PRICE_DELTA_FLOOR && legalities.size === 1) return { status: 'matched', printingReason: 'equivalent', chosen, candidates: all };
   return { status: 'check', printingReason: 'printing_ambiguous', chosen, candidates: survivors };
 }
 
@@ -296,6 +307,7 @@ export function selectPrinting(identity: ScanIdentity, det: ScanDetection, price
   let cards = identity.cards;
   for (const filter of FILTERS) {
     const step = filter(cards, det);
+    if (step.ambiguous) { const survivors = step.cards.map(c => candidate(c, prices)); return { status: 'check', printingReason: 'printing_ambiguous', chosen: defaultOf(step.cards, survivors), candidates: survivors }; }
     if (step.provisional) return { status: 'check', printingReason: 'printing_ambiguous', chosen: candidate(step.provisional, prices), candidates: step.cards.map(c => candidate(c, prices)) };
     if (step.decided) return { status: 'matched', printingReason: step.decided, chosen: candidate(step.cards[0], prices), candidates: all };
     cards = step.cards;

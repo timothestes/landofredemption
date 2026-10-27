@@ -41,6 +41,17 @@ describe('printing filters', () => {
     expect(matchDetection({ ...crowds, promoText: 'Local Redemption Tournament Participant' }, NO).chosen?.name).toMatch(/Local/);
     expect(matchDetection({ ...crowds, promoText: 'Seasonal Promo' }, NO).chosen?.name).toMatch(/Seasonal/);
   });
+  it('a placement that leaves several promos is Check this, never equivalent', () => {
+    const id = getScanIndex().identityOf(byName('Son of God [2023 - 1st Place]'));
+    const r = selectPrinting(id, det({ title: 'Son of God', promoText: '1st Place Winner' }), NO);
+    expect(r.status).toBe('check'); expect(r.printingReason).toBe('printing_ambiguous');
+    expect(r.candidates.every(c => /1st Place/.test(c.name))).toBe(true);
+  });
+  it('a bare P keeps the promos without scoring them', () => {
+    const m = matchDetection(det({ title: 'Lost Soul', reference: 'Luke 5:15', nickname: 'Crowds', type: 'Lost Soul', rarityCode: 'P' }), NO);
+    expect(m.printingReason).not.toBe('promo_text'); expect(m.printingReason).not.toBe('caption');
+    expect(m.candidates.length).toBeGreaterThan(1);
+  });
   it('a contradicted placement is Check this', () => { const m = matchDetection(det({ title: 'Warrior Overtaken', reference: 'II Chronicles 18:33', promoText: '2nd Place Promo' }), NO); expect(m.status).toBe('check'); });
   it('stats split old reprints', () => expect(matchDetection(det({ title: 'Christian Soldier', strength: '4', toughness: '4', reference: 'II Timothy 2:3' }), NO).chosen?.name).not.toMatch(/\( C\)/));
   it('promo text in the corner books the promo', () => {
@@ -53,7 +64,9 @@ describe('collapse', () => {
   const sog = det({ title: 'Son of God', type: 'Dominant' });
   it('prices under the floor collapse to the cheapest, over it ask', () => {
     const cheap = priced([['Son of God (1st Print - L)', 3], ['Son of God (1st Print - K)', 3.5], ['Son of God [K]', 4.9], ['Son of God [L]', 3]]);
-    expect(selectPrinting(id, sog, cheap).status).toBe('matched');
+    const eq = selectPrinting(id, sog, cheap);
+    expect(eq.status).toBe('matched'); expect(eq.printingReason).toBe('equivalent');
+    expect(eq.candidates.map(c => c.key).sort()).toEqual(id.cards.map(cardKey).sort());
     const wide = { ...cheap, [cardKey(byName('Son of God [K]'))]: 3 + PRICE_DELTA_FLOOR };
     expect(selectPrinting(id, sog, wide).status).toBe('check');
   });
