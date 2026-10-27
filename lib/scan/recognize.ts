@@ -23,7 +23,7 @@ export const MODEL_PRICES: Record<Arm['model'] & string, { input: number; output
 
 export type RecognizeResult =
   | { ok: true; output: ScanOutput; model: string; usage: { inputTokens: number; outputTokens: number }; costUsd: number; latencyMs: number; attempts: number }
-  | { ok: false; code: 'upstream_rate_limit' | 'upstream_overloaded' | 'billing_error' | 'recognizer_failed'; retryAfterSeconds?: number; latencyMs: number; attempts: number };
+  | { ok: false; code: 'upstream_rate_limit' | 'upstream_overloaded' | 'billing_error' | 'recognizer_failed'; retryAfterSeconds?: number; usage?: { inputTokens: number; outputTokens: number }; costUsd?: number; latencyMs: number; attempts: number };
 
 type Create = (params: unknown) => Promise<unknown>;
 interface Deps { create?: Create; sleep?: (ms: number) => Promise<void> }
@@ -104,10 +104,15 @@ export async function recognize(jpeg: Buffer, arm: Required<Arm>, deps: Deps = {
   const usage = { inputTokens: 0, outputTokens: 0 };
   let attempts = 0;
   let maxTokens = MAX_TOKENS;
+  let billed = false; // a response with usage came back, so at least one attempt costs money
+  const price = MODEL_PRICES[arm.model];
+  const cost = () => (usage.inputTokens * price.input + usage.outputTokens * price.output) / 1_000_000;
   const fail = (code: Extract<RecognizeResult, { ok: false }>['code'], retryAfterSeconds?: number): RecognizeResult => ({
     ok: false,
     code,
     ...(retryAfterSeconds !== undefined ? { retryAfterSeconds } : {}),
+    // Billed failures carry their spend so the 30-day cost cap sees them.
+    ...(billed ? { usage: { ...usage }, costUsd: cost() } : {}),
     latencyMs: Date.now() - started,
     attempts,
   });
@@ -131,8 +136,11 @@ export async function recognize(jpeg: Buffer, arm: Required<Arm>, deps: Deps = {
       return fail('recognizer_failed');
     }
 
-    usage.inputTokens += typeof res.usage?.input_tokens === 'number' ? res.usage.input_tokens : 0;
-    usage.outputTokens += typeof res.usage?.output_tokens === 'number' ? res.usage.output_tokens : 0;
+    const inT = res.usage?.input_tokens;
+    const outT = res.usage?.output_tokens;
+    if (typeof inT === 'number' || typeof outT === 'number') billed = true;
+    usage.inputTokens += typeof inT === 'number' ? inT : 0;
+    usage.outputTokens += typeof outT === 'number' ? outT : 0;
 
     if (typeof res.model !== 'string' || !res.model.startsWith(arm.model)) return fail('recognizer_failed');
     if (res.stop_reason === 'refusal') return fail('recognizer_failed');
@@ -146,8 +154,6 @@ export async function recognize(jpeg: Buffer, arm: Required<Arm>, deps: Deps = {
     const output = parseScanOutput(text);
     if (!output) return fail('recognizer_failed');
 
-    const price = MODEL_PRICES[arm.model];
-    const costUsd = (usage.inputTokens * price.input + usage.outputTokens * price.output) / 1_000_000;
-    return { ok: true, output, model: res.model, usage: { ...usage }, costUsd, latencyMs: Date.now() - started, attempts };
+    return { ok: true, output, model: res.model, usage: { ...usage }, costUsd: cost(), latencyMs: Date.now() - started, attempts };
   }
 }
