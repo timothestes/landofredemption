@@ -103,7 +103,7 @@ export function useScanQueue(dispatch: React.Dispatch<TrayAction>) {
         }, (view.autoRetryAfterSec ?? 30) * 1000);
         return;
       }
-      const ra = retryHeader === null ? undefined : Number(retryHeader);
+      const ra = retryHeader === null || retryHeader.trim() === '' ? undefined : Number(retryHeader);
       fail(id, res.status, body, Number.isFinite(ra) ? ra : undefined);
     } catch {
       fail(id, 0, { code: 'internal' });
@@ -150,7 +150,8 @@ export function useScanQueue(dispatch: React.Dispatch<TrayAction>) {
 
   const retry = useCallback((id: string) => {
     const e = entries.current.get(id);
-    if (!e || e.running || waiting.current.includes(id)) return;
+    // A pending busy auto-retry already owns this photo; a second upload would take another reserve slot.
+    if (!e || e.running || e.timer || waiting.current.includes(id)) return;
     e.busyRetries = 0;
     dispatchRef.current({ type: 'photoRetry', photoId: id });
     waiting.current.push(id);
@@ -165,5 +166,12 @@ export function useScanQueue(dispatch: React.Dispatch<TrayAction>) {
 
   const hasFile = useCallback((id: string) => entries.current.has(id), []);
 
-  return { addFiles, retry, remove, thumbs, online, hasFile };
+  /** Scan more: drop every photo, its object URL and any pending auto-retry. */
+  const clear = useCallback(() => {
+    for (const id of [...entries.current.keys()]) release(id);
+    waiting.current = [];
+    syncThumbs();
+  }, [release, syncThumbs]);
+
+  return { addFiles, retry, remove, clear, thumbs, online, hasFile };
 }

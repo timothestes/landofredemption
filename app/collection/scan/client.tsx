@@ -1,16 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useCollectionState } from '../hooks/useCollectionState';
 import { useShowPrices } from '../../../hooks/useShowPrices';
 import { useCardPrices } from '../../decklist/card-search/hooks/useCardPrices';
-import { COPY } from './copy';
+import ToastNotification from '@/components/ui/toast-notification';
+import { COPY, fill } from './copy';
 import { useScanTray } from './hooks/useScanTray';
 import { useScanQueue } from './hooks/useScanQueue';
 import CaptureButtons from './components/CaptureButtons';
 import PhotoGroup from './components/PhotoGroup';
 import DetectionRow from './components/DetectionRow';
+import PrintingPicker from './components/PrintingPicker';
+import CommitBar from './components/CommitBar';
+import SuccessPanel from './components/SuccessPanel';
 
 /**
  * The tray reads sessionStorage in its initializer, so nothing below renders
@@ -26,12 +30,13 @@ export default function ScanClient({ userId }: { userId: string }) {
 function ScanTray({ userId }: { userId: string }) {
   const [state, dispatch] = useScanTray(userId);
   const queue = useScanQueue(dispatch);
-  const { quantities } = useCollectionState();
+  const { quantities, reload } = useCollectionState();
   const [showPrices] = useShowPrices();
   const { getPrice } = useCardPrices();
   const chooseInputRef = useRef<HTMLInputElement>(null);
-  // Task 6 renders the printing picker for this row.
   const [pickerRow, setPickerRow] = useState<{ rowId: string; mode: 'printing' | 'search' } | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const closeToast = useCallback(() => setToast(null), []);
 
   const editable = state.phase === 'editing';
   const empty = state.photos.length === 0 && state.rows.length === 0;
@@ -43,6 +48,18 @@ function ScanTray({ userId }: { userId: string }) {
     return m;
   }, [state.rows]);
   const rowsOf = (photoId: string) => state.rows.filter(r => r.photoId === photoId && r.removedAs === null);
+  const picked = pickerRow && editable ? state.rows.find(r => r.rowId === pickerRow.rowId) ?? null : null;
+
+  const scanMore = () => {
+    setPickerRow(null);
+    queue.clear();
+    dispatch({ type: 'scanMore' });
+  };
+  const onUndone = (removed: number) => {
+    setToast(removed === 1 ? COPY.undoDoneOne : fill(COPY.undoDone, { n: removed }));
+    dispatch({ type: 'undoDone' });
+    void reload();
+  };
 
   return (
     <div className="mt-2 space-y-6">
@@ -97,6 +114,35 @@ function ScanTray({ userId }: { userId: string }) {
           </div>
         )}
       </div>
+
+      {state.phase === 'committed' && state.committed ? (
+        <SuccessPanel committed={state.committed} onUndone={onUndone} onScanMore={scanMore} />
+      ) : (
+        state.rows.length > 0 && (
+          <CommitBar
+            state={state}
+            dispatch={dispatch}
+            showPrices={showPrices}
+            onCommitted={() => void reload()}
+            onScanMore={scanMore}
+          />
+        )
+      )}
+
+      {picked && pickerRow && (
+        <PrintingPicker
+          key={picked.rowId}
+          row={picked}
+          mode={pickerRow.mode}
+          quantities={quantities}
+          showPrices={showPrices}
+          getPrice={key => getPrice(key)?.price ?? null}
+          onPick={(key, via, candidates) => dispatch({ type: 'setKey', rowId: picked.rowId, key, via, candidates })}
+          onClose={() => setPickerRow(null)}
+        />
+      )}
+
+      <ToastNotification message={toast ?? ''} show={toast !== null} onClose={closeToast} />
     </div>
   );
 }

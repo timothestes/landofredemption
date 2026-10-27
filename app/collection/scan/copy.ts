@@ -57,11 +57,18 @@ export const COPY: Record<string, string> = {
   commitFailed: "Couldn't save. Your tray is still here. Try again.",
   alreadyCommitted: 'These cards were already added to your collection.',
   unresolvedWarning: "{n} cards aren't matched and won't be added.",
+  unresolvedWarningOne: "1 card isn't matched and won't be added.",
   success: 'Added {n} cards to your collection.',
+  successOne: 'Added 1 card to your collection.',
   undo: 'Undo',
   scanMore: 'Scan more',
   viewCollection: 'View collection',
   undoDone: 'Removed {n} cards.',
+  undoDoneOne: 'Removed 1 card.',
+  undoSuperseded: "A later commit can't be undone from here.",
+  undoPartial: "Couldn't undo everything. Check your collection.",
+  undoFailed: "Couldn't undo. Try again.",
+  footerTooltip: 'Estimated cost to buy these cards at Your Turn Games retail prices — not a resale value.',
   justAdded: 'Just added',
   retentionNote:
     'Photos are sent to Anthropic to read the cards. Anthropic deletes them within 30 days unless its safety systems flag them (then up to two years) and does not train on them. We keep the text we read from each card, not the photo.',
@@ -82,7 +89,7 @@ export interface ScanErrorView {
   autoRetryAfterSec?: number;
 }
 
-const fill = (s: string, vars: Record<string, string | number>) =>
+export const fill = (s: string, vars: Record<string, string | number>) =>
   s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
 
 const timeOf = (d: Date) =>
