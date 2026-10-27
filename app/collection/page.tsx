@@ -15,9 +15,11 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export default async function CollectionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ format?: string; added?: string }>;
+  searchParams: Promise<{ format?: string | string[]; added?: string | string[] }>;
 }) {
-  const { format, added } = await searchParams;
+  const params = await searchParams;
+  const format = Array.isArray(params.format) ? params.format[0] : params.format;
+  const added = Array.isArray(params.added) ? params.added.join(",") : params.added;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

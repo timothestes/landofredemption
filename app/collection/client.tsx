@@ -286,7 +286,7 @@ export default function CollectionClient({
     () => justAddedKeys.flatMap((k) => CARD_BY_FULL_KEY.get(k) ?? []),
     [justAddedKeys],
   );
-  const justSet = new Set(justCards);
+  const justSet = useMemo(() => new Set(justCards), [justCards]);
   const visibleCards = justCards.length
     ? [...justCards, ...filteredCards.filter((c) => !justSet.has(c)).slice(0, visibleCount)]
     : filteredCards.slice(0, visibleCount);
@@ -714,9 +714,6 @@ export default function CollectionClient({
             <React.Fragment key={card.dataLine}>
             {i === 0 && justCards.length > 0 && (
               <h2 className="col-span-full text-sm font-semibold">Just added</h2>
-            )}
-            {i === justCards.length && justCards.length > 0 && (
-              <h2 className="col-span-full text-sm font-semibold mt-2">All cards</h2>
             )}
             <div
               className={`rounded-lg border p-1.5 flex flex-col gap-1.5 ${
