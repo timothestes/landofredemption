@@ -12,10 +12,19 @@ export interface TrayPhoto {
   startedAt?: number;
 }
 
+export interface TraySource {
+  id: string;
+  photoId: string;
+  chosenKey: string | null;
+  status: ScanDetectionView['status'];
+  candidateKeys: string[];
+  detection: ScanDetectionView;
+}
+
 export interface TrayRow {
   rowId: string;
   photoId: string;
-  detectionIds: string[];
+  sources: TraySource[];
   detection: ScanDetectionView;
   key: string | null;
   candidates: Candidate[];
@@ -64,6 +73,15 @@ const patchRow = (s: TrayState, rowId: string, fn: (r: TrayRow) => TrayRow): Tra
   rows: s.rows.map(r => (r.rowId === rowId ? fn(r) : r)),
 });
 
+const sourceOf = (det: ScanDetectionView, photoId: string): TraySource => ({
+  id: det.id,
+  photoId,
+  chosenKey: det.chosenKey,
+  status: det.status,
+  candidateKeys: det.candidates.map(c => c.key),
+  detection: det,
+});
+
 const gridOrder = (a: ScanDetectionView, b: ScanDetectionView) =>
   a.grid.row - b.grid.row || a.grid.col - b.grid.col;
 
@@ -85,12 +103,12 @@ export function trayReducer(s: TrayState, a: TrayAction): TrayState {
           : undefined;
         if (same) {
           same.qty = Math.min(99, same.qty + 1);
-          same.detectionIds = [...same.detectionIds, det.id];
+          same.sources = [...same.sources, sourceOf(det, a.photoId)];
         } else {
           rows.push({
             rowId: det.id,
             photoId: a.photoId,
-            detectionIds: [det.id],
+            sources: [sourceOf(det, a.photoId)],
             detection: det,
             key: det.chosenKey,
             candidates: det.candidates,
@@ -110,12 +128,27 @@ export function trayReducer(s: TrayState, a: TrayAction): TrayState {
     }
     case 'photoFailed':
       return patchPhoto(s, a.photoId, { status: 'failed', error: a.error });
-    case 'photoRemoved':
-      return {
-        ...s,
-        photos: s.photos.filter(p => p.photoId !== a.photoId),
-        rows: s.rows.filter(r => r.photoId !== a.photoId),
-      };
+    case 'photoRemoved': {
+      const rows: TrayRow[] = [];
+      for (const r of s.rows) {
+        const kept = r.sources.filter(x => x.photoId !== a.photoId);
+        if (kept.length === r.sources.length) rows.push(r);
+        else if (kept.length > 0) {
+          const first = kept[0];
+          const reseat = first.photoId !== r.photoId;
+          rows.push({
+            ...r,
+            sources: kept,
+            qty: Math.max(1, r.qty - (r.sources.length - kept.length)),
+            photoId: first.photoId,
+            detection: reseat ? first.detection : r.detection,
+            candidates: reseat && r.corrected === 'none' ? first.detection.candidates : r.candidates,
+            corrected: reseat && r.key === first.chosenKey ? 'none' : r.corrected,
+          });
+        }
+      }
+      return { ...s, photos: s.photos.filter(p => p.photoId !== a.photoId), rows };
+    }
     case 'photoRetry':
       return patchPhoto(s, a.photoId, { status: 'queued', error: undefined, startedAt: undefined });
     case 'setKey':

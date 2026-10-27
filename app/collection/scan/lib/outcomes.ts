@@ -22,13 +22,17 @@ export function buildCommitPayload(s: TrayState): CommitPayload {
   const outcomesByScanId: Record<string, ClientOutcome[]> = {};
   for (const r of s.rows) {
     const removed = r.removedAs !== null;
-    for (const id of r.detectionIds) {
+    for (const src of r.sources) {
+      const id = src.id;
       const scanId = id.split(':')[0];
+      const finalKey = removed ? null : r.key;
+      const changed = finalKey !== null && finalKey !== src.chosenKey;
+      const printingChanged = changed && src.candidateKeys.includes(finalKey) && src.status !== 'not_found';
       (outcomesByScanId[scanId] ??= []).push({
         id,
-        finalKey: removed ? null : r.key,
-        printingChanged: r.corrected === 'printing',
-        nameChanged: r.corrected === 'name',
+        finalKey,
+        printingChanged,
+        nameChanged: changed && !printingChanged,
         removed,
         removedAs: r.removedAs,
         unresolved: !removed && r.key === null,

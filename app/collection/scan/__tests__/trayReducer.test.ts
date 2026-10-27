@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countedRows, initialTray, rehydrateTray, trayReducer, trayTotals, type TrayAction, type TrayState } from '../lib/trayReducer';
+import { buildCommitPayload } from '../lib/outcomes';
 import { cand, det, resp } from './fixtures';
 
 const run = (s: TrayState, ...as: TrayAction[]) => as.reduce(trayReducer, s);
@@ -19,7 +20,7 @@ describe('trayReducer', () => {
       { type: 'photoDone', photoId: 'p2', response: resp([det(1, { chosenKey: 'X', scan: S2 })], S2) });
     expect(s.rows).toHaveLength(1);
     expect(s.rows[0].qty).toBe(2);
-    expect(s.rows[0].detectionIds).toHaveLength(2);
+    expect(s.rows[0].sources).toHaveLength(2);
     expect(s.rows.some(r => r.photoId === 'p2')).toBe(false);
   });
 
@@ -81,5 +82,25 @@ describe('trayReducer', () => {
     const s = run(initialTray('u'), { type: 'photoAdded', photoId: 'p1' });
     expect(rehydrateTray(JSON.stringify(s), 'other')).toEqual(initialTray('other'));
     expect(rehydrateTray(null, 'u')).toEqual(initialTray('u'));
+  });
+
+  const merged = () => run(initialTray('u'), { type: 'photoAdded', photoId: 'p1' }, { type: 'photoAdded', photoId: 'p2' },
+    { type: 'photoDone', photoId: 'p1', response: resp([det(1, { chosenKey: 'X' })]) },
+    { type: 'photoDone', photoId: 'p2', response: resp([det(1, { chosenKey: 'X', scan: S2 })], S2) });
+
+  it('removing the first photo keeps a merged row for the second', () => {
+    const s = trayReducer(merged(), { type: 'photoRemoved', photoId: 'p1' });
+    expect(s.rows).toHaveLength(1);
+    expect(s.rows[0]).toMatchObject({ photoId: 'p2', qty: 1 });
+    expect(s.rows[0].sources.map(x => x.id)).toEqual([`${S2}:1`]);
+    expect(s.rows[0].detection.id).toBe(`${S2}:1`);
+  });
+
+  it('removing the second photo decrements qty and drops its ids from outcomes', () => {
+    const s = trayReducer(merged(), { type: 'photoRemoved', photoId: 'p2' });
+    expect(s.rows).toHaveLength(1);
+    expect(s.rows[0].qty).toBe(1);
+    expect(buildCommitPayload(s).outcomesByScanId[S2]).toBeUndefined();
+    expect(trayReducer(trayReducer(merged(), { type: 'photoRemoved', photoId: 'p2' }), { type: 'photoRemoved', photoId: 'p1' }).rows).toHaveLength(0);
   });
 });

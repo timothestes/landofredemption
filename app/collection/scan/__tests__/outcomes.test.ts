@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildCommitPayload } from '../lib/outcomes';
 import { initialTray, trayReducer, type TrayAction } from '../lib/trayReducer';
-import { det, resp } from './fixtures';
+import { cand, det, resp } from './fixtures';
 
 const S2 = 'aaaaaaaa-2222-3333-4444-555555555555';
 const build = (...as: TrayAction[]) => as.reduce(trayReducer, initialTray('u'));
@@ -41,7 +41,7 @@ describe('buildCommitPayload', () => {
   it('outcome satisfies queries.sql assumptions', () => {
     let s = two();
     s = trayReducer(s, { type: 'setKey', rowId: s.rows[1].rowId, key: 'Q', via: 'search' });
-    const ids = new Set(s.rows.flatMap(r => r.detectionIds));
+    const ids = new Set(s.rows.flatMap(r => r.sources.map(x => x.id)));
     const outs = Object.values(buildCommitPayload(s).outcomesByScanId).flat();
     expect(outs.length).toBeGreaterThan(0);
     for (const o of outs) {
@@ -52,5 +52,33 @@ describe('buildCommitPayload', () => {
       expect(ids.has(o.id)).toBe(true);
       expect(JSON.parse(JSON.stringify(o))).toEqual(o);
     }
+  });
+
+  const S1 = '11111111-2222-3333-4444-555555555555';
+  const mergeSetup = (second: Parameters<typeof det>[1]) => {
+    let s = build({ type: 'photoAdded', photoId: 'p1' }, { type: 'photoAdded', photoId: 'p2' },
+      { type: 'photoDone', photoId: 'p1', response: resp([det(1, { chosenKey: 'A', candidates: [cand('A', 1), cand('B', 2)] })]) });
+    s = trayReducer(s, { type: 'setKey', rowId: s.rows[0].rowId, key: 'B', via: 'candidates' });
+    return trayReducer(s, { type: 'photoDone', photoId: 'p2', response: resp([det(1, { scan: S2, ...second })], S2) });
+  };
+
+  it('merged detection whose own pick equals the corrected key records no change', () => {
+    const s = mergeSetup({ chosenKey: 'B' });
+    expect(s.rows).toHaveLength(1);
+    const o = buildCommitPayload(s).outcomesByScanId;
+    expect(o[S1][0]).toMatchObject({ finalKey: 'B', printingChanged: true });
+    expect(o[S2][0]).toMatchObject({ finalKey: 'B', printingChanged: false, nameChanged: false });
+  });
+
+  it('merged detection with a different chosenKey records its own change', () => {
+    const s = mergeSetup({ chosenKey: 'B', candidates: [cand('B', 2)] });
+    const s3 = trayReducer(s, { type: 'photoAdded', photoId: 'p3' });
+    expect(s3.rows[0].sources).toHaveLength(2);
+    // detection whose own pick is C but whose row key is B (not a candidate -> name change)
+    const only = mergeSetup({ chosenKey: 'C', candidates: [cand('C', 1)] });
+    expect(only.rows).toHaveLength(2);
+    const t = trayReducer(only, { type: 'setKey', rowId: only.rows[1].rowId, key: 'B', via: 'search' });
+    const o = buildCommitPayload(t).outcomesByScanId[S2][0];
+    expect(o).toMatchObject({ finalKey: 'B', nameChanged: true, printingChanged: false });
   });
 });
