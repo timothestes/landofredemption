@@ -312,6 +312,68 @@ mapped to, and every alternative with price.
 **Changed in rev 4.3:** Transcription fields; Printing selection;
 Reason fields; E0 preview; outcomes row; call 18.
 
+## Round 6 (2026-10-27) — versions pass — rev 4.3 → rev 4.4
+
+Tim: "we are nailing identifying the card but the specific version is
+not great." Two fresh adversaries: a data analyst over the whole dataset
+and a visual inspector over the photos against the chosen versions,
+plus a cue-legibility run and a per-printing cue table built from the
+catalog images.
+
+**Data adversary.** 851 multi-printing identities; 512 classes of
+printings identical on every transcribed field; 279 classes survive the
+filters, worth about $0.50 in silent mis-booking (YTG prices AB and
+original the same; Main and Main Unlimited are unpriced and share one
+image). The money is in promos (77 priced pairs, median +$22, sum
+$4,941), Legacy Rares ($160), UR+ ($120), and in the matcher's own
+parser: K/L deck codes never parsed, the II set's "81_" prefix stripped
+as a set code, LoC "UR-Plus" files not recognised as UR+, CoW originals
+without the number their AB twin carries (so the number rule booked the
+AB for an original), a promo scorer that picked on event words alone
+(Laban). It predicted the illustrator plan would resolve almost nothing
+among the text-identical classes and that the © year would resolve T2C
+AB and K-deck pairs.
+
+**Measured.** Cue table from 1,839 catalog images ($4.30): credit read
+on all, year on 441 (2023+ sets only); credit differs on 10 of 387 AB
+pairs and separates 103 identities; year differs on 128 of 129 T2C AB
+pairs. Photo legibility: credit 77% (singles 97%), year 23%, set icon
+11% and as prose. So the adversary was right about the bulk and the
+author about the ten different-art pairs Tim had actually photographed.
+
+**Visual adversary.** 59 multi-printing rows inspected by eye against
+the then-current pick: 20 wrong versions (18 silent), 31 right, 5
+undecidable, 3 indistinguishable. Classes: T2C alt-border with new art
+(4), CoW/RoJ same-art alt-border booked backwards on the number
+asymmetry (3), promo against set printing with different art (4, two
+with identical credit), promo against promo with the caption transcribed
+but unused (4), Limited/Unlimited/2E reprints with different stats (3),
+old-set wording drift (2). Proposals adopted: a consistency gate on
+stats; the per-printing printed caption in the cue table; the shared
+number never decides an AB pair; the reference never splits AB twins
+(their rows differ by data-entry noise); a `default` reason with the
+removed printings on the printings line instead of a bare "only"; a
+sixth reference error (Baptism fundraiser Son of God). Of its 20 wrong
+rows, 3 remain (promo art with no corner read) plus one model copy error
+(the fifth Lost Souls card).
+
+**Tim's review of the rebuilt page.** Two more misses, both closed:
+a "Special Promo" Lost Soul booked as its Local twin (promo scorer now
+counts absent event words against a candidate) and King Asa booked as
+the Ki printing on a swapped dataset verse (reference that outvotes a
+six-word ability match is now Check this; fifth data fix).
+
+**Changed in rev 4.4:** `illustrator` and `copyrightYear` fields; the
+hint order rewritten as filters (UR+, LR, corner code, reference,
+credit, year, edition letter, ability tail, promo text); corner-code
+parser fixes; number never decides an AB pair; promo scorer restricted
+to placement and year; cue table in Files; Dataset numbers; Stage A2
+scoped; E0 preview; outcomes row; calls 19 and 20.
+
+**Rejected:** a free-text set-icon field (11% read, inconsistent prose);
+`border` (again); treating same-art AB pairs as Check this (equal price,
+and the printings line already carries the twin).
+
 ## Scoresheet resolutions
 
 To be filled at each resolution date: claim number, outcome, date,

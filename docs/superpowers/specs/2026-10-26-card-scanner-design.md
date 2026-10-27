@@ -1,10 +1,11 @@
 # Card scanner — design
 
-Date: 2026-10-26; rev 4.3 on 2026-10-27 after four review rounds
+Date: 2026-10-26; rev 4.4 on 2026-10-27 after four review rounds
 (sixteen reviewers; outcomes at the end, full log in
 `2026-10-26-card-scanner-review-log.md`), a throwaway spike against
-83 real photos and 148 catalog images, and a second pass on Tim's review
-of its output (E0 preview, under Evaluation). Not yet approved.
+83 real photos and 148 catalog images, a second pass on Tim's review of
+its output, and a versions pass with two more adversaries (E0 preview,
+under Evaluation). Not yet approved.
 
 **Surfaces:** `/collection` (toolbar, first-run banner), the deck
 builder's owned-cards filter and Check my collection modal (entry links),
@@ -117,8 +118,16 @@ Prose elsewhere cites these by name.
 | Same, under the Printing selection rule (adds `LoC_`-style prefixes); letter-prefixed codes pending E0 | 2,022 |
 | Lost Soul printings / identities | 263 / 170 |
 | Lost Soul references shared by more than one identity | 32 (69 identities) |
-| Lost Soul reference typos found so far (catalog override) | 4 |
+| Reference errors found so far (catalog override) | 6 (one to verify) |
 | Identity unions the scanner adds on top of `cardIdentityKey` (AB pairs; class or decoration splits sharing a reference) | 78 |
+| Multi-printing identities after those unions / their printings | 851 / 1,839 |
+| Printings identical to a sibling on every transcribed field (data adversary) | 512 classes, 1,060 printings; 279 classes (590 printings) survive the filters, 273 within the price floor, 162 of them unpriced; survivors' silent value about $0.50 |
+| Promo printings above their cheapest standard sibling | 77 priced pairs, median +$22, max +$288, sum $4,941 |
+| Legacy Rare above standard; UR+ above standard | 38 pairs, median +$2, sum $160; 6 pairs, +$20 each |
+| Per-printing cue table from catalog images (credit, © year) | 1,839 printings; credit read on all; year on 441, 2023-and-later sets only |
+| Multi-printing identities whose printings carry different credits | 103 |
+| AB pairs with different art / different credit / different year | 38 / 10 / 128 (T2C only, 2025 against 2026) of 387 |
+| Printings with a corner code after the parser fixes | 2,652 |
 | Stems with another stem at edit distance 1 / 2 | 131 / 389 |
 | Stems of five characters or fewer; of those with a neighbor within distance 2 | 170; 147 |
 | Different cards at distance 1 / 2 that type and brigade cannot separate | 9 / 42 |
@@ -277,6 +286,8 @@ numeric bounds (the API rejects them), so caps are enforced in code.
 | `abilityStart` | first six words of the special ability | identity scoring (last) |
 | `abilityEnd` | last four words of the special ability | printing tiebreak where printings of one card differ only in the tail (Lost Souls Two Liner against Three Liner) |
 | `promoText` | any tournament, event, placement or promotional text anywhere on the card, as printed ("25th Annual Redemption National Tournament, Knoxville, TN, August 1-3, 2019", "2nd Place Promo", "Redemption Gift Set") | promo printing hint; placement and year narrow it |
+| `illustrator` | the artist credit line near the bottom, as printed ("Illus. © Cahaba Productions", "Illus. AI Generated") | version tiebreak against the per-printing cue table; read on 97% of single-card photos |
+| `copyrightYear` | the four-digit year in the copyright line | version tiebreak against the cue table; printed only on 2023-and-later printings |
 | `type` | icon-box type as printed (Hero, Evil Character, Enhancement, Lost Soul, Dominant, Site, Fortress, Artifact, Covenant, Curse, City, token, unknown) | identity scoring; Lost Soul routing |
 | `brigade` | frame color words | identity scoring |
 | `strength`, `toughness` | the two numbers top-left | identity scoring |
@@ -285,7 +296,7 @@ numeric bounds (the API rejects them), so caps are enforced in code.
 | `grid` | row and column in reading order | ordering; crops (v1.1) |
 | `orientation` | upright, rotated, upside-down | information |
 | `confidence` | high, medium, low | stored; shown nowhere unless calibration earns it a chip |
-| `setMarking`, `setIconNote`, `copyrightYear` | **v1.1** | set legend hints; `border` was tried and rejected (E0 preview) |
+| `setMarking`, `setIconNote` | **v1.1** | set legend hints; `border` and a free-text set-icon field were tried and rejected (E0 preview) |
 | `bbox` | **v1.1**, normalized | crops |
 
 Plus `photoQuality`: ok, blurry, dark, glare, too_many_cards, no_cards.
@@ -386,8 +397,12 @@ it runs, because the collapse rule needs them. It imports `CARDS` from
    (exact above partial), then brigade, then the ability prefix (six
    words, falling back to four, with the "GE:", "EE:" and "STAR:"
    markers stripped from the dataset text), then type. A clear winner is
-   taken; otherwise the row is **Check this** with `identity_ambiguous`
-   and the identities as candidates.
+   taken, with one exception: when the winner won on the reference and
+   another identity matched six words of ability text, the row is
+   **Check this** with both as candidates, because that pattern is a
+   data error or a printing the data lacks (King Asa's Ki and TxP rows
+   carry each other's verse). Otherwise a tie is **Check this** with
+   `identity_ambiguous` and the identities as candidates.
 4. **Lost Souls.** Title "Lost Soul" skips steps 2 and 3: the normalized
    reference selects identities; ties are broken by the step-3 scoring
    plus three Lost Soul terms: the nickname badge (equal +2, different
@@ -396,11 +411,13 @@ it runs, because the collapse rule needs them. It imports `CARDS` from
    prefers a vanilla identity. No reference read is `reference_missing`;
    a reference still matching several identities is
    `reference_ambiguous`; both are **Check this** with the picker scoped
-   to Lost Souls. Four dataset reference typos (Lost Soul "Blind",
+   to Lost Souls. Six dataset reference errors (Lost Soul "Blind",
    "Lawless" AB, "Retribution" stored as Acts 18:22 for a card printed
-   Acts 16:22, and "Lost Soul (Daniel 9:7) [Fundraiser]" stored as
-   Daniel 9:5) are verified against the printed card and, if wrong, fixed
-   through the catalog override (`/admin/catalog`, live after a deploy),
+   Acts 16:22, "Lost Soul (Daniel 9:7) [Fundraiser]" stored as Daniel
+   9:5, King Asa, whose Ki and TxP rows carry each other's verse, and
+   the Baptism fundraiser Son of God, which prints Matthew 3:16 and is
+   stored as 28:5-6) are verified against the printed card and, if wrong, fixed through
+   the catalog override (`/admin/catalog`, live after a deploy),
    not in this migration; the fix reshapes `cardIdentityKey` unions,
    which is intended. Greek-language promo printings (Angel of the Lord,
    Son of Man) transcribe as Greek and stay Not found; a player adds
@@ -413,50 +430,83 @@ it runs, because the collapse rule needs them. It imports `CARDS` from
 
 Among the identity's printings, **successive filters, then a collapse**:
 
-1. **Hints**, in this order. A transcribed `rarityCode` of `UR+`
-   matching an `imgFile` ending `-UR+` chooses the UR+ printing
-   (`ur_plus`; 6 of 6 in the spike). A `rarityCode` of exactly `LR`
-   chooses the Legacy Rare printing whose `LR<n>` number matches, or the
-   only Legacy Rare printing (`legacy_rare`). A corner print number
-   matching one printing's `imgFile` number chooses it (`print_number`).
-   The number is the leading digit run of `imgFile` after any prefix
-   ending in `_`, with an `N` or `LR` letter prefix stripped
-   ("081-Authority-of-Christ-UR+" → 81; "LoC_232-…" → 232;
-   "CoW_AB_N114-…" → 114; "LR29-…" → 29): the spike showed AB cards print
-   the plain number and Legacy Rares print "LR" beside it. Starter codes
-   ("L20-", "K13-") stay unparsed; the model reads them into
-   `rarityCode` ("K10"). AB reprints share the number with their
-   original; in v1.0 the original wins that pair (v1.1's border and
-   copyright fields break it). **Reference filter:** printings of one
-   card can carry different verses (Son of God's do on purpose), so when
-   the read reference matches a strict subset of the printings, only
-   those stay (`reference`; this alone settled every Son of God promo in
-   the catalog sample). **Ability tail:** when `abilityEnd` matches a
-   strict subset, only those stay (`ability_end`). **Promo text** in
-   `rarityCode` or `promoText` ("Promo", "P", "National", "State",
-   "Regional", "Seasonal", "Winner", "Tournament", "District", "Local",
-   "Gift Set", "Place") keeps only promo printings when the identity has
-   any (`promo_text`); among several, a placement (1st, 2nd, 3rd), a
-   year and event words in the text are scored against each printing's
-   name, rarity and set, and a placement or year that contradicts the
-   only promo printing makes the row Check this rather than a silent
-   pick, because the data may lack that printing. The corner hint was a
-   v1.1 idea until the spike
-   showed the model reads that corner reliably and the hint settled 76
-   of 341 photo rows and cut catalog silent-wrongs from 8 to 5. **v1.1:**
-   `set_hint` from the legend, `border`, `copyright_year` as a weak
-   tiebreak; the canonical case no text field can settle is "Shipwreck
-   (Promo)", a borderless reprint carrying the original's 142/UR corner,
-   $65 against $0.25.
+1. **Hints and filters, in this order.** Each step keeps the printings
+   it supports and drops the rest; a step that leaves one printing ends
+   the selection with that step's reason.
+   - `UR+` in `rarityCode` keeps UR+ printings (`imgFile` ends `-UR+` or
+     `-UR-Plus`; the six LoC "UR-Plus" cards were invisible to the
+     earlier pattern) (`ur_plus`). `LR` keeps Legacy Rares, by number
+     when one was read (`legacy_rare`).
+   - The **corner code** keeps printings whose code matches
+     (`print_number`). The code is parsed from `imgFile`: a leading digit
+     run after any letter prefix ending in `_`, with `N` or `LR` stripped
+     ("081-…" → 81, "LoC_232-…" → 232, "CoW_AB_N114-…" → 114, "LR29-…" →
+     29); a digit run before `_` for the II set ("81_Captain-…" → 81);
+     `K13-` and `L20-` deck codes kept whole ("K13", matched against a
+     read "K13" in either corner field); and CoW originals, which print
+     the number but whose rows lack it, borrow their AB twin's through
+     `abMap.json`. That takes printings with a code from 2,022 to 2,652.
+     A code that matches an original and its AB twin keeps both: the
+     number never decides that pair.
+   - The **reference** keeps printings carrying the read verse when that
+     is a strict subset (`reference`; Son of God's printings differ by
+     verse on purpose).
+   - The **illustrator credit** keeps printings whose credit in the cue
+     table agrees with the read one, when at least two survivors have a
+     known credit and the read one matches a strict subset
+     (`illustrator`). Agreement is equality after stripping "Illus.",
+     "©" and punctuation, or two shared name tokens.
+   - The **copyright year** keeps the survivor whose printed year equals
+     the read one, including when the others print no year
+     (`copyright_year`; T2C originals print 2025 and their AB reprints
+     2026; K-deck reprints print 2023 and the first prints none).
+   - An **edition letter** A–H read alone in the corner keeps old-frame
+     printings whose file carries that letter (`edition_letter`).
+   - The **ability tail** keeps printings whose text ends as read
+     (`ability_end`).
+   - **Promo text** in `rarityCode` or `promoText` keeps promo printings
+     when the identity has any (`promo_text`); among several, a
+     placement (1st, 2nd, 3rd) or a year in the text picks by matching
+     the printing's name, and an event word printed in a candidate's own
+     name that the card does not carry counts against it, over the words
+     cards print (Local, Seasonal, State, Regional, District, Winner,
+     Gift Set), and "Special Promo" is what worker promos print ("Special
+     Promo" rules out the "[2016 - Local]" and "[2026-Seasonal]" twins
+     and leaves "[2025 - Worker]"); a tie leaves the choice to the picker,
+     and a placement or year that contradicts the only promo printing
+     makes the row Check this, because the data may lack that printing.
+     When the cue table holds a printed caption for two or more promo
+     candidates (it does for 115 of the 127 promo rows in multi-printing
+     cards, and the captions differ inside 18 of 78 promo sets), a read
+     caption that agrees with exactly one decides before any scoring
+     (`caption`).
+   - A read strength and toughness that match a strict subset keep it
+     (`stats`; old reprints inside one identity can differ, Main 4/4
+     against 2E 6/5).
+   - Then steps 2 to 4 below. "Original wins" for an AB pair is no
+     longer a hint; it is what step 2 does when nothing above separated
+     the pair, and the printings line keeps the twin one tap away.
+
+   **v1.1:** `set_hint` from the legend as a weak tiebreak. The cases no
+   text settles: "Shipwreck (Promo)", a borderless reprint carrying the
+   original's 142/UR corner ($65 against $0.25); the 258 RoJ and CoW AB
+   pairs, which share art, credit, number and (no) year and differ only
+   in frame texture; and Main against Main Unlimited, one catalog image
+   per pair and no price on either.
 2. **Special printings out.** Unless a hint supports one, remove special
-   printings when at least one standard printing remains:
+   printings when at least one standard printing remains. A row that
+   ends up decided only by this removal carries `printingReason:
+   'default'` and lists the removed printings on the printings line, so
+   a collector whose card is the promo or the alt-border is one tap from
+   it; the removal never books a promo, and never crosses the set-to-promo
+   line without a caption or corner match. Rules:
 
    | Class | Rule from the data |
    |---|---|
    | Promo | `set` starts `Pmo`, or `officialSet` starts `Promo`, or `rarity` in {Promo, National, Seasonal, Regional, State, Local, District, Winner, "National, Winner"}; this captures the 40 Fundraiser cards and nine promos filed under `GoC`/`LoC` |
    | AB | `set` ends `(AB)` |
    | Legacy Rare | `rarity === 'Legacy Rare'` |
-   | UR+ | `imgFile` ends `-UR+` |
+   | UR+ | `imgFile` ends `-UR+` or `-UR-Plus` |
 
    Counts are in Dataset numbers. "Alternate border" is AB; there are no
    foils. Fundraiser is treated as promo on purpose; a real Fundraiser
@@ -483,8 +533,9 @@ add a few percent; E0 measures the real rate on photos.
 ### Reason fields
 
 `nameReason` ∈ {exact, fuzzy, reference, none; v1.1 adds second_look}.
-`printingReason` ∈ {only, print_number, ur_plus, legacy_rare,
-reference, ability_end, promo_text, equivalent, printing_ambiguous,
+`printingReason` ∈ {only, default, print_number, ur_plus, legacy_rare,
+reference, stats, illustrator, copyright_year, caption, edition_letter,
+ability_end, promo_text, equivalent, printing_ambiguous,
 identity_ambiguous,
 reference_missing, reference_ambiguous; v1.1 adds set_hint, border,
 copyright_year, second_look}. Chips key on status and
@@ -508,7 +559,11 @@ community tool uses a 420-byte color-layout vector per image; ours can
 be that or a small embedding), compared against the card's crop to break
 ties inside an identity when prices differ and no hint was read. Built
 when the Stage A2 trigger in Kill, pivot and removal fires. Not in v1
-because it depends on crop quality, which E0 measures first.
+because it depends on crop quality, which E0 measures first. After the
+versions pass its job is narrow: the 258 RoJ and CoW AB pairs that
+differ only in frame texture (same art, so a frame classifier rather
+than an art hash), and the 38 AB pairs whose art differs on the cards
+the model could not read a credit from.
 
 ### Why not the alternatives first
 
@@ -1122,6 +1177,70 @@ The review page was rebuilt to show, per card, the crop from the photo,
 the printing mapped to, and every other printing of that card with set
 and price; that is also the shape the picker should take.
 
+**Versions pass, with two more adversaries.** Tim's next question was
+why an alt-border card was booked as the original when its art plainly
+differs. A data adversary measured the whole dataset and a visual one
+inspected photos against the chosen versions. The data: of 851
+multi-printing identities, 512 classes of printings are identical on
+every transcribed field; after the filters 279 classes survive, but
+their silent value is about fifty cents, because YTG prices an AB and
+its original the same and lists neither Main nor Main Unlimited. The
+money sits elsewhere: promos above their standard sibling (77 priced
+pairs, median $22, sum $4,941), Legacy Rares ($160) and UR+ ($120), and
+four parser gaps that booked the wrong printing on text that was not
+identical: K and L deck codes unparsed (272 rows), the II set's "81_"
+prefix eaten, LoC "UR-Plus" files missed, and CoW originals whose rows
+lack the number their AB twin carries, so the number rule booked the AB
+for an original (128 cards). The cue measurement: a Claude pass over
+the catalog images of all 1,839 multi-printing rows ($4.30) read the
+illustrator credit on every one and a © year on 441; the credit differs
+on 10 of 387 AB pairs and separates 103 identities; the year is printed
+only on 2023-and-later sets and differs on 128 of 129 T2C AB pairs. On
+photos the model reads the credit on 77% of cards (97% of singles), the
+year on 23%, and a set icon as inconsistent prose on 11%, so the credit
+and the year are v1.0 fields and the icon is not. With those fields and
+the parser fixes, and with the number no longer deciding an AB pair,
+the photos went to singles 36 / 2 / 1 and spreads 206 / 18 / 6; the
+credit decided 50 rows, the caption 5 and the year 4; every alt-border copy on Tim's
+binder page now maps to its AB printing and his single original to the
+original; catalog printing-exact rose from 84% to 88%, and the remaining
+inexact rows are same-art AB pairs at equal price, one Legacy Rare whose
+corner is unreadable at 344 px, and Main against Main Unlimited.
+Tim's next two misses on the rebuilt page closed two more holes: a foil
+"Special Promo" Lost Soul booked as its "[2016 - Local]" twin, because
+the promo scorer only counted words it found (now an event word in a
+candidate's name that the card lacks counts against it), and two King
+Asa cards booked as the Ki printing because the dataset gives Ki the
+verse the TxP card prints (now a reference that outvotes six words of
+ability text is Check this, and the swap goes on the data-fix list).
+The visual adversary inspected 59 of the 171 multi-printing rows by eye
+against the version the matcher had chosen at that point: 20 wrong
+versions, 18 of them silent Matched rows, 31 right, 5 undecidable from
+the photo, 3 indistinguishable in print. Its classes, with what became
+of each: T2C alt-border with new art (4 wrong; right now by credit and
+year); CoW and RoJ same-art alt-border (3 wrong, all booked backwards
+because only the AB rows carried the number; right now); promo against
+set printing with different art (4 wrong; two of them, Golgotha and
+Book of the Law, carry the same credit as the set printing and no
+corner was read, so only the art or an unread "P" would tell); promo
+against promo (4 wrong, all four printed captions the model had
+transcribed verbatim; right now by promo text, and the cue table gains
+the printed caption so the match is verbatim rather than scored); old
+Limited against Unlimited and 2E reprints (3 wrong, two of them 4/4
+cards booked as 6/5 and 5/4 printings, right now by a stats filter; the
+Limited and Unlimited pair shares one catalog image and is unresolvable
+there); and wording drift between old sets. It caught one identity-level
+error: the fifth Lost Souls card in the row of five is the Two Liner,
+and the model copied the Three Liner's text onto it. It also found that
+the AB and original rows of one card can carry different verses by
+data-entry noise, so the reference and ability-tail filters never
+separate a card from its own AB twin. A sixth reference error joins the
+list: the Baptism fundraiser Son of God prints Matthew 3:16 and is
+stored as 28:5-6. Of its 20, three stay wrong (the art-only promos) and
+one is the model's copy error. The extra fields cost: spreads $0.024 and p95 12.9 s
+against the baseline's $0.019 and 9.2 s, measured with two fields
+(border, set icon) that are now dropped.
+
 **What changed because of it:** the step-3 unions, print number in
 identity scoring, title variants, compound references, the LR and promo
 hints (Recognition); the prompt-size and thinking lines (Cost and
@@ -1324,7 +1443,12 @@ v1.0 unless tagged.
 - `app/api/scan/route.ts`; `app/api/prices/route.ts` switches to the
   shared loader.
 - `lib/scan/recognize.ts`, `match.ts`, `stemIndex.ts`, `vocab.ts`,
-  `schema.ts`, `prices.ts`, `gate.ts`, `__tests__/`. **v1.1:**
+  `schema.ts`, `prices.ts`, `cues.ts`, `gate.ts`, `__tests__/`;
+  `lib/scan/generated/printingCues.json` (illustrator credit, © year and
+  printed promo caption per printing, built by
+  `scripts/scan-eval/build-cues.ts` from the catalog images with one
+  Claude call each, about $4.50 for the 1,839 multi-printing rows, re-run
+  when `CARDS` changes). **v1.1:**
   `secondLook.ts`.
 - `scripts/scan-eval/run.ts`, `score.ts`, `export.ts`, `queries.sql`,
   `labels.json`, `catalog-sample.json` (the 148 labeled catalog printings
@@ -1444,6 +1568,7 @@ in `2026-10-26-card-scanner-review-log.md`.
 | 5 | Spike: promo text in the corner is read reliably; Legacy Rares print "LR"; AB cards print the plain number | `promo_text` and `legacy_rare` hints in v1.0; number parsing | Printing selection |
 | 5 | Spike: instruction and schema are about 1,880 tokens; `low` effort runs without thinking; two more reference typos | Cost lines corrected; typo list; E0 preview | Cost and latency; Dataset numbers; Evaluation |
 | 5 | Tim's review of the page: Nationals promos carry the tournament line in the card body; alt-border cards booked as originals; a Lost Souls pair differs only in the ability tail | `promoText` and `abilityEnd` fields; reference and ability-tail printing filters; placement and year matching; `border` tried and rejected | Transcription fields; Printing selection |
+| 6 | Versions pass: text-identical printings are worth about $0.50; promos, Legacy Rares, UR+ and four parser gaps are where silent booking loses money; the credit separates different-art pairs, the year T2C AB and K-deck pairs; frame-only AB pairs need the art tiebreaker | `illustrator` and `copyrightYear` fields; per-printing cue table; parser fixes; the number no longer decides an AB pair; promo scorer restricted to placement and year | Transcription fields; Printing selection; Files; Dataset numbers |
 
 Rejected or deferred: art tiebreaker in v1 (depends on unmeasured crop
 quality); legend image in every prompt (E0 arm only); higher global caps
@@ -1496,4 +1621,10 @@ Unrelated finding, flagged once: `scripts/run-claude-matching.ts` calls
     `cardIdentityKey` without changing it.
 18. `promoText` and `abilityEnd` are v1.0 transcription fields on the
     second pass's measurement; `border` is rejected on the same
-    measurement, so alt-border printings wait for the art tiebreaker.
+    measurement.
+19. The per-printing cue table (credit, year) is generated from the
+    catalog images with the model, not hand-entered, and rebuilt when
+    `CARDS` changes; `illustrator` and `copyrightYear` are v1.0 fields.
+20. Frame-only AB pairs stay on "original wins" at equal price with the
+    twin on the printings line; the art tiebreaker (v1.2) is scoped to
+    them and to the different-art pairs whose credit was unreadable.
