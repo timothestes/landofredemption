@@ -1,0 +1,385 @@
+# Card scanner — adversarial review log
+
+Companion to `2026-10-26-card-scanner-design.md`. Three rounds, fourteen
+reviewers, each a fresh agent with a single lens, read-only against the
+spec and the codebase at `origin/main`. Each round's findings were
+folded into the next revision; rejections are recorded with reasons.
+Later entries will hold E0 numbers and scoresheet resolutions.
+
+## Round 1 (2026-10-26) — rev 1 → rev 2
+
+Reviewers: a study of the community tool's source; a recognition and
+evaluation adversary with measurements over `cardData.json`; a product
+and slot-in adversary; a security, cost and operations adversary; a
+builder check.
+
+**Community-tool study.** Single 2,829-line `index.html`; picture-first
+matching with 420-byte color-layout descriptors and a sureness ratio,
+then Tesseract PSM 7 on the title band with lexicon repair; identity =
+Shopify handle (3,688 names, 5,219 printings, YTG listing only); "Read
+name with Claude" uses the Artifacts runtime and is hidden on GitHub
+Pages; "Teach this" learns card *type* per phone; about 7 MB first load;
+no accuracy numbers anywhere. Implications adopted: printing is the hard
+problem; Lost Souls need the verse; bbox or crop quality is load-bearing
+for confirmation; a vision model's failures are plausible names, so ask
+for type and brigade; default rules must not pick promos.
+
+**Recognition adversary.** Names embed the printing (5,681 names, 3,494
+case-folded stems, 64% of printings share a stem, 31% have an unsuffixed
+twin); `CARD_BY_NAME_LOWER` private and last-wins; Lost Souls
+unidentifiable by title; set icons unreadable at 1568 px in a 12-card
+spread; `searchCardNames` unscored; 40-photo gates too weak (binomial
+intervals); cost understated 1.6× once output and thinking are counted;
+grid positions over pixel boxes.
+
+**Product adversary.** Two modes resolved the same photo differently and
+"Save as collection" wrote the price-mode guess; increment with no owned
+quantity and no undo; `bulkImportCollectionAction` merge already exists;
+wrong printing slow to fix later; sessionStorage cannot hold thumbnails;
+iOS `capture` ignores `multiple`, HEIF on Android, 48 MP decode; nine
+elements per row at 390 px; amber on half the rows; a second primary on
+`/collection`; admin page needs the permission pattern and nav links;
+migration 121 taken; Add to Haves is one call away.
+
+**Security adversary.** Count-then-call cap racy for the whole model
+latency, no global cap, bare sign-up; "users insert their own" lets
+anyone forge events, and no UPDATE policy; SDK default retries;
+`maxDuration`; private Blob needs a private store and a proxy; sharp
+re-encode server-side; the credit is a personal perk and the listings
+cron shares the key; detections can hold personal text; purge semantics;
+`max_tokens` and thinking; rate tier unknown; prompt caching won't pay;
+PostgREST `.in()` quote trap; 413 handling; no `temperature`.
+
+**Builder check.** Printing unit is identity groups, not `name`; no fuzzy
+matcher exists; where opted-in photos live; "newest printing" has no data
+source; false claims listed (migration number, private map, BuyDeckModal
+builds cart URLs, image sizes not uniform); retired Sonnet 4 in
+`scripts/run-claude-matching.ts`.
+
+**Changed in rev 2:** matching on stems and identities; Lost Souls by
+reference; corroborating fields transcribed; real fuzzy matcher; measured
+second look; modes removed; owned quantity, no checkboxes, merged
+duplicates, undo, post-commit printing change; commit through the merge
+import; tray without images; capture realities; higher resolution with
+grid positions; reserve-first caps with a global ceiling; no
+INSERT/UPDATE for `authenticated`; superuser pattern; dedicated scanner
+key; server-side sharp; private store, image proxy, daily purge;
+migration 122; eval set grown with non-card photos, multiset scoring,
+precision gate, intervals; cost table with output tokens; prior-art
+paragraph corrected.
+
+**Rejected or deferred:** art tiebreaker in v1 (unmeasured crop quality);
+legend image in every prompt (E0 arm only); the reviewer's higher global
+caps (exceed the credit); 20 to 30 card spreads as a target (measured
+bucket only).
+
+## Round 2 (2026-10-27) — rev 2 → rev 3
+
+Reviewers: a consistency auditor; a data scientist who prototyped the
+matcher against the dataset and the live price map; a product designer
+and accessibility reviewer walking three personas; a platform engineer
+verifying library and browser claims; an evaluation designer.
+
+**Consistency auditor (20 defects).** Second look uncapped and
+uncounted (could exceed the credit alone); detections storage rule
+contradicted the purge; "from $X" contradicted the equivalent rule;
+rules 3 and 4 interacted so any card with a priced promo stayed amber;
+`cardNameStem` does no case folding; stem counts off; Lost Soul step
+underspecified (dataset names embed the verse; bracket can disagree with
+`reference`); `printingsForKey` returns non-unique names; one reason
+field for compounding stages; null vs `UNREADABLE`; outcomes per scan
+id; `putItems` overwrites; prices RPC duplicated `/api/prices`;
+`is_superuser()` is a fixed-uid check; legend location; type vocabulary;
+no privacy page; `maxDuration` budget; cost table input column; minor
+items (Aaron has four printings, `sendCronAlert` is failure-only, mixed
+windows, Forge store reachability, `get` needs store options,
+`searchCardNames` hits carry no key, Files omissions, "613 stems"
+undefined, `rotated` loses upside-down, `max_tokens` misfire).
+
+**Matcher data prototype.** `cardIdentityKey` splits 43 true reprints
+by `class` spelling and the stem index keeps 47 spelling variants apart;
+795 multi-printing identities, 319 amber under the collapse alone, 93
+after the special-printing filter, 64 after Rotation as a filter;
+promo/AB/Legacy/UR+ definitions from data (Fundraiser is promo by
+rarity; UR+ exists; no foils); cards print a corner number and rarity
+code that `imgFile` encodes; Lost Souls: 32 references shared, nickname
+badge resolves most, dataset typos listed; 959 homonym stems, 929
+separable by reference+ability+type+brigade, 947 with stats and
+identifier; fuzzy: 131 stems at distance 1, nine distance-1 pairs are
+different cards; set legend must key on `officialSet` (49) with no
+release years anywhere; vocabulary mapping needed (257 brigade strings);
+price-map gaps (T2C AB unpriced).
+
+**Product and accessibility (second pass).** Hourly burst cap walls a
+shoebox evening; Add to Haves before commit flags every row; the CSV
+modal pattern has no focus trap; View collection lands on the Limited
+filter and hides added cards; price should be on line one; failure rows
+need Retry and Remove; the `/collection` header cannot take a sixth
+button; Not found should open the picker; undo semantics; binder pages;
+desktop drop target and table; set completion per `officialSet`; no
+privacy page; "worth" vs "to buy" framing; a full copy table and
+accessibility specifics.
+
+**Platform verifier.** `@vercel/blob` `get` private streaming, two
+stores, `list` pagination, `del` arrays verified; SDK `output_config`
+verified; schema cannot carry length bounds; 28-pixel-patch rule with the
+4,784 cap (4:3 → 2212 × 1659); thinking unbounded and SDK cannot
+attribute it (refutes the `max_tokens` → too many cards mapping);
+`maxDuration` fine; `formData()` fine; sharp in routes already; WebKit
+drops EXIF on `createImageBitmap(Blob)` (refutes the client decode
+path); HEIC and `accept`; iOS resets `input.files`; sessionStorage quota;
+082's definer RPC pattern and 120's grant footer; WAF and cron on Pro;
+Anthropic retention copy overstated.
+
+**Evaluation designer.** Gates cannot use lower bounds at n = 25;
+pre-registered (unit, n, pass count, false-pass odds); label schema and
+position-free multiset scoring with a silent-wrong class; other-game
+photos should yield `not_found`; E0 circular if the matcher is tuned on
+the same photos (model-only vs matcher metrics; dev set); 637 requests
+as written, staged design about 410; crop usefulness needs grid labels;
+E3 denominators, abandonment, rejected rows, weekly audit sample;
+calibration rules; drift and paired acceptance; the probability table
+mixed rates and probabilities (Brier sheet instead); kill criteria need
+windows and minimum n.
+
+**Changed in rev 3:** everything above except the rejections; see the
+rev 3 review log section (preserved in git history at the rev 3 commit).
+
+**Rejected or deferred:** Add to Wants and Recent scans (v1.2);
+dropping prices from candidates (the rules need them); higher global
+caps; treating Fundraiser as standard.
+
+## Round 3 (2026-10-27) — rev 3 → rev 4
+
+Reviewers: a consistency auditor on the rewrite; a builder check; a red
+team on scope and failure modes; a readability editor.
+
+**Consistency auditor (19 defects).** Route order had the matcher before
+prices; the per-user advisory lock cannot serialize the global cap;
+`components/ui/dialog.tsx` is hand-rolled (no focus trap, no Radix dep);
+"two calls per photo" ignored retries (four billed attempts) and the
+duration budget; second-look cost understated 2.5× (six rows ≈ 9,200
+image tokens); "$90 realistic" below the no-second-look floor and Goal 6
+contradicted the planned exhaustion; cap table vs copy (no global
+monthly string; per-user 30 d equal to global 30 d); "about 410" was
+455 to 525; promo count 248 and UR+ 6 under the stated definitions, and
+the print-number claim unreproducible without an extraction rule; row
+width budget left 0 px for Remove; `printing_ambiguous` fires on
+legality too; `?format` param does not exist; confidence chip referenced
+but never defined; Files omissions; Haiku claim vs drop rule; "at least
+four" vs six true non-card; ambiguities (enlargement, second-look
+re-selection, toggle-off, who retries, fuzzy rows' set, cap list, token
+types); audit precision arithmetic; 1,564 tokens.
+
+**Builder check.** Must product code wait for E0 (70% of the build does
+not depend on it)? Privacy copy "we keep nothing" is false while
+detections are stored; dialog dependency choice; Lost Soul fixes belong
+in the catalog override, not migration 122, and reshape identity unions;
+global cap race; soft launch; false claims (`searchCardNames` names are
+stems so `findCard` by name fails, UR+ 6, 082 lock key, merge import
+cannot decrement, no shared price loader, `forgeAuth` not exported,
+`importRows` typed on the deck-builder `Card`, `/collection` reads no
+URL params); an 18-task breakdown in worktree lanes; a three-PR cut.
+
+**Red team.** Production usage pulled read-only: 622 accounts, 81 active
+in 30 days, 36 ever added a collection row, 7 touched one last month, 1
+trade list. Failure stories: nobody comes and every post-launch
+mechanism starves; quietly wrong printings nobody can detect without
+photos; slower than typing on Opus with thinking. Scope cut to v1.0 /
+v1.1 / v1.2 with a PR series; a thin slice before E0; the deck builder
+as the front door with "see what your cards are worth"; Sonnet baseline
+under a latency budget; price-delta floor on amber; commit idempotency;
+sharp `limitInputPixels`; two dated audits instead of weekly; a removal
+clause; Tim's hours (12 to 15 pre-launch); over-engineering list (five
+caps, Opus, calibration, legend, second look, Haves, 15 claims).
+
+**Readability editor.** Surfaces line and "How to read this"; table of
+contents reordered; dataset numbers quoted once; field list, special
+classes, errors and kill criteria as tables; redundancy cuts; vocabulary
+rules (Check this as status, amber as color; tray; `class` column vs
+special printings; tier vs arm); review log to a sibling file with an
+outcomes table inline; American spelling; title style.
+
+**Changed in rev 4:** all of the above except the rejections.
+
+**Rejected or deferred:** a new Radix dialog dependency (local focus
+trap instead); a weekly audit (two dated audits); dropping `confidence`
+from storage (stored, not shown); Opus baseline (Sonnet under a budget,
+Opus by exception); building the admin page in v1.0 (SQL via MCP
+instead).
+
+## Round 4 (2026-10-27) — rev 4 → rev 4.1
+
+Reviewers: a consistency auditor on rev 4; a builder check planning
+v1.0 only.
+
+**Builder check.** E0's requests would run through the player caps and
+seed the live metrics (needs an eval source the RPC and queries skip,
+and migration 122 on production before E0); E0 arms cannot reach the
+route without a superuser override on the request; `commitId` had no
+store and two racing commits both pass (needs an insert-first
+`scan_commits` table, which also makes undo server-authoritative);
+Sonnet 5.5 and Haiku 5.5 can turn thinking off at effort high or below
+(the constraint overstated it; worth an E0 arm), and stage 1 was not
+paired on effort; `CARDS` must come from `lookup.ts` for the legality
+overrides; `/collection` is page-gated, not middleware-gated;
+`adjustCollectionQuantitiesAction` must delete at zero; `owned` on
+candidates duplicates `useCollectionState`; PR cut: price loader to A,
+split C into core and entry, golden tests after E0; a 29-task breakdown
+in three worktree lanes.
+
+**Consistency auditor (16 defects).** Stage 1 "default effort" differs
+per model; the photo cap bounds photos, not tokens (a retried photo can
+bill about $0.50, so Goal 6 needed a spend ceiling); `calls` vs
+`attempts`; undo at zero violates the table's check; page and route
+gates described separately; `added` carried scan ids with no path to
+keys; cross-photo duplicates undefined; retry budget read two ways;
+`image_*` columns' timing; second-look token arithmetic; print-number
+counts (1,750 bare, 2,022 under the rule, 2,548 unreproducible); v1.1
+reason values untagged; three dataset numbers quoted without rows;
+outcomes-table section names; three round-3 rejections missing from the
+inline list; `run.ts` authentication unstated. Everything else,
+including every dataset count and every code claim, verified.
+
+**Changed in rev 4.1:** all of the above.
+
+**Rejected or deferred:** none this round.
+
+## Round 5 (2026-10-27) — the spike — rev 4.1 → rev 4.2
+
+Not a reviewer round. Tim dropped 83 phone photos in `tmp/card_images`
+and suggested the catalog images as labeled signal. A throwaway script
+in the session scratchpad ran the spec's prompt and schema through
+Sonnet 5.5 at `low` effort and a 500-line version of the matcher over
+the photos and a stratified 148-image catalog sample. Full numbers are
+in the spec's E0 preview.
+
+**Found.** The misses were the matcher's, not the model's: identity
+87% → 97% on the catalog after (a) unioning AB pairs through
+`abMap.json` and same-stem reprints that share a reference with
+near-identical ability (78 unions), (b) using the corner print number as
+an identity tiebreak for reprints whose ability text changed, (c) trying
+the title with a trailing parenthesised group removed and each half of
+a slash-joined dual name, (d) splitting compound references on both
+sides, (e) a six-word ability prefix with "GE:/EE:/STAR:" stripped.
+Printing: promo text in `rarityCode` is read reliably ("State Promo",
+"2022 1st Place Promo National Tournament", "P") and as a hint cut
+catalog silent-wrongs 8 → 5 and settled 76 of 341 photo rows; "LR" is
+printed and read; AB cards print the plain number. Dataset: two more
+Lost Soul reference typos (Daniel 9:7 Fundraiser stored as 9:5;
+Retribution stored as Acts 18:22). Prompt: instruction plus schema is
+about 1,880 tokens, not 900; at `low` effort Sonnet returned no
+thinking blocks. Bulk shots: the model stops at 14 to 17 cards and
+flags `too_many_cards`. Two cases no text field fixes: the borderless
+Shipwreck promo (the original's 142/UR corner, $65 against $0.25) and
+Greek-language promo printings.
+
+**Changed in rev 4.2:** The matcher steps 2 to 4; Printing selection
+hints; Reason fields; The Claude call and Cost and latency; Dataset
+numbers; Files; a new E0 preview subsection; Scoresheet note; outcomes
+rows; calls 16 and 17.
+
+**Rejected or deferred:** reading `too_many_cards` as a card count
+(still never); an art tiebreaker now (the Shipwreck case is one card);
+changing `cardIdentityKey` itself (the unions are the scanner's).
+
+**Arms, same day.** Sonnet low-res, Opus 5.5, and Haiku 5.5 with and
+without thinking on the photos; Haiku on the catalog too. All four gave
+every single the same status as the baseline. Opus: ten fewer spread
+Check this rows and 18 more bulk detections at twice the cost. Haiku:
+tied on singles and catalog identity, 4 and 8 silent-wrongs against
+Sonnet's 2, all promos booked as the standard printing because the
+corner text was not read; the Haiku rule now requires the silent-wrong
+screen. Low-res: print numbers 15% against 20%, five more spread Not
+found, three invented titles, a Lost Soul digit misread. Decisions:
+Sonnet 5.5 `low`, high-res, no thinking parameter. Spend about $6 over
+some 900 requests.
+
+**Second pass, on Tim's review (rev 4.2 → 4.3).** Tim read the review
+page and flagged three photos; all three were real. Nationals promos
+carry their tournament line in the card body, which the prompt did not
+ask for; alt-border cards were booked as originals by rule; the Lost
+Souls Two Liner and Three Liner differ only in the ability's tail. A
+prompt v2 (`promoText`, `abilityEnd`, `border`) ran once on the photos:
+`promoText` read on 103 of 329 cards, seven rows moved to the right promo
+printing (two at $175 and $199), one contradicted placement became Check
+this; `abilityEnd` separated the Lost Souls pair; `border` was wrong on
+every real alt-border card and on twelve others, so it is rejected and
+AB stays with the art tiebreaker. Reference as a printing filter settled
+the Son of God family. The review page now shows the crop, the printing
+mapped to, and every alternative with price.
+
+**Changed in rev 4.3:** Transcription fields; Printing selection;
+Reason fields; E0 preview; outcomes row; call 18.
+
+## Round 6 (2026-10-27) — versions pass — rev 4.3 → rev 4.4
+
+Tim: "we are nailing identifying the card but the specific version is
+not great." Two fresh adversaries: a data analyst over the whole dataset
+and a visual inspector over the photos against the chosen versions,
+plus a cue-legibility run and a per-printing cue table built from the
+catalog images.
+
+**Data adversary.** 851 multi-printing identities; 512 classes of
+printings identical on every transcribed field; 279 classes survive the
+filters, worth about $0.50 in silent mis-booking (YTG prices AB and
+original the same; Main and Main Unlimited are unpriced and share one
+image). The money is in promos (77 priced pairs, median +$22, sum
+$4,941), Legacy Rares ($160), UR+ ($120), and in the matcher's own
+parser: K/L deck codes never parsed, the II set's "81_" prefix stripped
+as a set code, LoC "UR-Plus" files not recognised as UR+, CoW originals
+without the number their AB twin carries (so the number rule booked the
+AB for an original), a promo scorer that picked on event words alone
+(Laban). It predicted the illustrator plan would resolve almost nothing
+among the text-identical classes and that the © year would resolve T2C
+AB and K-deck pairs.
+
+**Measured.** Cue table from 1,839 catalog images ($4.30): credit read
+on all, year on 441 (2023+ sets only); credit differs on 10 of 387 AB
+pairs and separates 103 identities; year differs on 128 of 129 T2C AB
+pairs. Photo legibility: credit 77% (singles 97%), year 23%, set icon
+11% and as prose. So the adversary was right about the bulk and the
+author about the ten different-art pairs Tim had actually photographed.
+
+**Visual adversary.** 59 multi-printing rows inspected by eye against
+the then-current pick: 20 wrong versions (18 silent), 31 right, 5
+undecidable, 3 indistinguishable. Classes: T2C alt-border with new art
+(4), CoW/RoJ same-art alt-border booked backwards on the number
+asymmetry (3), promo against set printing with different art (4, two
+with identical credit), promo against promo with the caption transcribed
+but unused (4), Limited/Unlimited/2E reprints with different stats (3),
+old-set wording drift (2). Proposals adopted: a consistency gate on
+stats; the per-printing printed caption in the cue table; the shared
+number never decides an AB pair; the reference never splits AB twins
+(their rows differ by data-entry noise); a `default` reason with the
+removed printings on the printings line instead of a bare "only"; a
+sixth reference error (Baptism fundraiser Son of God). Of its 20 wrong
+rows, 3 remain (promo art with no corner read) plus one model copy error
+(the fifth Lost Souls card).
+
+**Tim's review of the rebuilt page.** Two more misses, both closed:
+a "Special Promo" Lost Soul booked as its Local twin (promo scorer now
+counts absent event words against a candidate) and King Asa booked as
+the Ki printing on a swapped dataset verse (reference that outvotes a
+six-word ability match is now Check this; fifth data fix).
+
+**Changed in rev 4.4:** `illustrator` and `copyrightYear` fields; the
+hint order rewritten as filters (UR+, LR, corner code, reference,
+credit, year, edition letter, ability tail, promo text); corner-code
+parser fixes; number never decides an AB pair; promo scorer restricted
+to placement and year; cue table in Files; Dataset numbers; Stage A2
+scoped; E0 preview; outcomes row; calls 19 and 20.
+
+**Rejected:** a free-text set-icon field (11% read, inconsistent prose);
+`border` (again); treating same-art AB pairs as Check this (equal price,
+and the printings line already carries the twin).
+
+## Scoresheet resolutions
+
+To be filled at each resolution date: claim number, outcome, date,
+source, and the Brier contribution.
+
+## E0 results
+
+To be filled after the run: arms, screens, intervals, decisions on
+model, effort, tier, crops and second look.
