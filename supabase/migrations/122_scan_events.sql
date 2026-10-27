@@ -5,6 +5,13 @@
 -- the service-role admin client (finish). scan_commits: one row per committed
 -- scan, idempotent on the client-generated commit_id.
 --
+-- scan_reserve(p_user, p_source) is executable by service_role ONLY. The route
+-- (app/api/scan/route.ts) calls it through the service-role client after
+-- canScan admits the user, passing the gate-verified user id and the source it
+-- decided (eval only for a superuser). A user JWT cannot call it: otherwise
+-- anyone signed in could skip canScan, fill the global 30-day cap with pending
+-- rows and pause scanning for everyone. p_source is therefore trusted here.
+--
 -- scan_reserve() takes ONE constant-key advisory lock,
 -- pg_advisory_xact_lock(hashtext('scan_reserve')), because the global caps
 -- count every user's rows and a per-user key cannot serialize them. The lock
@@ -65,7 +72,7 @@ create policy scan_commits_select on public.scan_commits
 revoke all on public.scan_events, public.scan_commits from anon, authenticated;
 grant select on public.scan_events, public.scan_commits to authenticated;
 
-create or replace function public.scan_reserve(p_source text default 'player')
+create or replace function public.scan_reserve(p_user uuid, p_source text default 'player')
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
   c_user_10m   constant integer := 20;
@@ -73,7 +80,7 @@ declare
   c_global_30d constant integer := 1500;
   c_spend_30d  constant numeric := 80.00;
 
-  v_uid    uuid := auth.uid();
+  v_uid    uuid := p_user;
   v_source text;
   v_now    timestamptz;
   v_count  integer;
@@ -85,11 +92,11 @@ declare
   v_id     uuid;
 begin
   if v_uid is null then
-    raise exception 'not authenticated';
+    raise exception 'scan_reserve: p_user is required';
   end if;
 
-  -- 'eval' only for a superuser; anyone else is a player.
-  if p_source = 'eval' and public.is_superuser() then
+  -- Trusted: only service_role can call this, and the route decides eval.
+  if p_source = 'eval' then
     v_source := 'eval';
   else
     v_source := 'player';
@@ -156,7 +163,7 @@ begin
 end;
 $$;
 
--- Supabase grants execute to anon by default privilege; revoke it directly
--- (revoking from public alone leaves it).
-revoke all on function public.scan_reserve(text) from public, anon;
-grant execute on function public.scan_reserve(text) to authenticated;
+-- Service role only. Supabase grants execute to anon and authenticated by
+-- default privilege; revoke them directly (revoking from public alone leaves them).
+revoke all on function public.scan_reserve(uuid, text) from public, anon, authenticated;
+grant execute on function public.scan_reserve(uuid, text) to service_role;

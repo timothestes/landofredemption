@@ -121,8 +121,8 @@ grant select, insert, update, delete on rounds to authenticated;
 
 Spec: `docs/superpowers/specs/2026-10-26-card-scanner-design.md`. No client
 write access: `authenticated` has SELECT only (own rows, or all for
-`public.is_superuser()`); rows are written by `scan_reserve()` and the
-service-role admin client.
+`public.is_superuser()`); rows are written only through the service-role
+admin client (`scan_reserve()` to insert, a plain UPDATE to finish).
 
 ```sql
 scan_commits (
@@ -154,9 +154,9 @@ scan_events (
 --          scan_commits (user_id, created_at desc)
 ```
 
-`public.scan_reserve(p_source text default 'player') returns jsonb`
-(SECURITY DEFINER, executable by `authenticated` only) takes one constant
-advisory lock, `hashtext('scan_reserve')`, then checks in order:
+`public.scan_reserve(p_user uuid, p_source text default 'player') returns jsonb`
+(SECURITY DEFINER, executable by `service_role` only; revoked from public,
+anon and authenticated) takes one constant advisory lock, `hashtext('scan_reserve')`, then checks in order:
 
 | Code | Scope | Window | Limit |
 |------|-------|--------|-------|
@@ -169,8 +169,10 @@ Counted rows: `status in ('pending','done','failed')` and `source = 'player'`
 (`rejected` rows and eval rows never count). A hit inserts a `rejected` row
 and returns `{ok:false, cap, limit, resets_at}` (`resets_at` = oldest counted
 row in that window + the window length); otherwise it inserts a `pending`
-row and returns `{ok:true, id}`. `p_source = 'eval'` is honored only for a
-superuser (anyone else is treated as `player`); eval rows are inserted but
+row and returns `{ok:true, id}`. `/api/scan` calls it after `canScan` admits
+the user, passing that user's id as `p_user` (null raises) and the source it
+decided: `p_source` is trusted, and the route sends `'eval'` only for a
+superuser (an `arm` override or `source=eval`). Eval rows are inserted but
 skip every cap and every metrics query.
 
 ## SpacetimeDB Multiplayer Schema (Battle Zone)

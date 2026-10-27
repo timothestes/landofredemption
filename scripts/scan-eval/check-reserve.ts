@@ -1,23 +1,28 @@
 #!/usr/bin/env npx tsx
 /**
  * Concurrency check for public.scan_reserve() (migration 122): every cap holds
- * when two reserves race, and eval rows count against nothing.
+ * when two reserves race, eval rows count against nothing, and only the
+ * service role can call it (anon and authenticated get a permission error).
  *
  * Usage (a Supabase project or branch, never production):
  *   npx tsx scripts/scan-eval/check-reserve.ts --url <supabase url> \
- *     --anon-key <key> --service-key <key> --email <test user> --password <pw>
+ *     --anon-key <key> --service-key <key>
+ *   Creates two throwaway users (deleted at the end) and reserves as the service
+ *   role with p_user, as /api/scan does. The anon key is only for the
+ *   permission check (one of the throwaway users signs in).
  *
  * Usage (a bare PostgREST over a local Postgres with migration 122 applied):
  *   npx tsx scripts/scan-eval/check-reserve.ts --rest-url <PostgREST root> \
  *     --jwt-secret <secret> --user-id <uuid> --user2-id <uuid>
  *
- * Seeds go through the service role (authenticated cannot insert). Deletes
- * every scan_events row of both users before each check and at the end.
- * Prints a table; exits 1 on any failure.
+ * Refuses the production project (dhxxsolhgvimxtusepht) unless
+ * --i-know-this-is-prod: it seeds 1,499 rows and $79.99 of spend, which pauses
+ * scanning for everyone while it runs. Deletes every scan_events row of both
+ * users before each check and at the end. Prints a table; exits 1 on any failure.
  */
 
 import { join } from 'path';
-import { createHmac } from 'crypto';
+import { createHmac, randomBytes } from 'crypto';
 import { parseArgs } from 'util';
 import { config } from 'dotenv';
 
@@ -38,14 +43,21 @@ const { values: args } = parseArgs({
     url: { type: 'string' },
     'anon-key': { type: 'string' },
     'service-key': { type: 'string' },
-    email: { type: 'string' },
-    password: { type: 'string' },
     'rest-url': { type: 'string' },
     'jwt-secret': { type: 'string' },
     'user-id': { type: 'string' },
     'user2-id': { type: 'string' },
+    'i-know-this-is-prod': { type: 'boolean' },
   },
 });
+
+const PROD_REF = 'dhxxsolhgvimxtusepht';
+for (const u of [args.url, args['rest-url']]) {
+  if (u?.includes(PROD_REF) && !args['i-know-this-is-prod']) {
+    console.error(`refusing ${u}: that is the production project. Pass --i-know-this-is-prod to run anyway.`);
+    process.exit(2);
+  }
+}
 
 function b64url(s: string | Buffer) {
   return Buffer.from(s).toString('base64url');
@@ -60,7 +72,8 @@ function mintJwt(secret: string, role: string, sub?: string) {
   return `${head}.${body}.${sig}`;
 }
 
-type Setup = { user: Db; service: Db; uid: string; uid2: string; done: () => Promise<void> };
+// service: reserves and seeds, as the route does. anon/authenticated: only for the permission check.
+type Setup = { service: Db; anon: Db; authenticated: Db; uid: string; uid2: string; done: () => Promise<void> };
 
 async function setup(): Promise<Setup> {
   if (args['rest-url']) {
@@ -71,38 +84,49 @@ async function setup(): Promise<Setup> {
     const rest = (jwt: string) =>
       new PostgrestClient(args['rest-url']!, { headers: { Authorization: `Bearer ${jwt}` } }) as unknown as Db;
     return {
-      user: rest(mintJwt(secret, 'authenticated', uid)),
       service: rest(mintJwt(secret, 'service_role')),
+      anon: rest(mintJwt(secret, 'anon')),
+      authenticated: rest(mintJwt(secret, 'authenticated', uid)),
       uid,
       uid2,
       done: async () => {},
     };
   }
 
-  const { url, 'anon-key': anonKey, 'service-key': serviceKey, email, password } = args;
-  if (!url || !anonKey || !serviceKey || !email || !password) {
-    throw new Error('need --url --anon-key --service-key --email --password (or --rest-url mode)');
+  const { url, 'anon-key': anonKey, 'service-key': serviceKey } = args;
+  if (!url || !anonKey || !serviceKey) {
+    throw new Error('need --url --anon-key --service-key (or --rest-url mode)');
   }
   const opts = { auth: { persistSession: false, autoRefreshToken: false } };
-  const user = createClient(url, anonKey, opts);
   const service = createClient(url, serviceKey, opts);
-  const { data: signIn, error: signInErr } = await user.auth.signInWithPassword({ email, password });
-  if (signInErr || !signIn.user) throw new Error(`sign-in failed: ${signInErr?.message}`);
-  // The global cap is seeded on a throwaway second user.
-  const { data: made, error: makeErr } = await service.auth.admin.createUser({
-    email: `scan-check-${Date.now()}@example.invalid`,
-    email_confirm: true,
-  });
-  if (makeErr || !made.user) throw new Error(`could not create second user: ${makeErr?.message}`);
-  const uid2 = made.user.id;
+  const anon = createClient(url, anonKey, opts);
+  const authenticated = createClient(url, anonKey, opts);
+  // Two throwaway users: the reserving user and the one the global cap is seeded on.
+  const password = randomBytes(18).toString('base64url');
+  const made: string[] = [];
+  const done = async () => {
+    for (const id of made) await service.auth.admin.deleteUser(id);
+  };
+  try {
+    const emails = [1, 2].map((n) => `scan-check-${Date.now()}-${n}@example.invalid`);
+    for (const email of emails) {
+      const { data, error } = await service.auth.admin.createUser({ email, password, email_confirm: true });
+      if (error || !data.user) throw new Error(`could not create ${email}: ${error?.message}`);
+      made.push(data.user.id);
+    }
+    const { error: signInErr } = await authenticated.auth.signInWithPassword({ email: emails[0], password });
+    if (signInErr) throw new Error(`sign-in failed: ${signInErr.message}`);
+  } catch (e) {
+    await done();
+    throw e;
+  }
   return {
-    user: user as unknown as Db,
     service: service as unknown as Db,
-    uid: signIn.user.id,
-    uid2,
-    done: async () => {
-      await service.auth.admin.deleteUser(uid2);
-    },
+    anon: anon as unknown as Db,
+    authenticated: authenticated as unknown as Db,
+    uid: made[0],
+    uid2: made[1],
+    done,
   };
 }
 
@@ -111,7 +135,7 @@ const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
 
 async function main() {
-  const { user, service, uid, uid2, done } = await setup();
+  const { service, anon, authenticated, uid, uid2, done } = await setup();
 
   async function clean() {
     const { error } = await service.from('scan_events').delete().in('user_id', [uid, uid2]);
@@ -141,7 +165,7 @@ async function main() {
   }
 
   async function reserve(): Promise<Reserve> {
-    const { data, error } = await user.rpc('scan_reserve', { p_source: 'player' });
+    const { data, error } = await service.rpc('scan_reserve', { p_user: uid, p_source: 'player' });
     if (error) throw new Error(`scan_reserve: ${error.message}`);
     return data as Reserve;
   }
@@ -208,6 +232,25 @@ async function main() {
         return { got: show(r), pass: r.ok };
       },
     },
+    {
+      name: 'only service_role can call it',
+      seeded: 'none',
+      expected: 'anon + authenticated refused, 0 rows',
+      run: async () => {
+        const refused = async (db: Db) => {
+          const { error } = await db.rpc('scan_reserve', { p_user: uid, p_source: 'player' });
+          return error && (error.code === '42501' || /permission denied/i.test(error.message)) ? 'refused' : `allowed (${error?.message ?? 'no error'})`;
+        };
+        const a = await refused(anon);
+        const u = await refused(authenticated);
+        const { count, error } = await service.from('scan_events').select('id', { count: 'exact', head: true }).eq('user_id', uid);
+        if (error) throw new Error(`count: ${error.message}`);
+        return {
+          got: `anon ${a}, authenticated ${u}, ${count} rows`,
+          pass: a === 'refused' && u === 'refused' && count === 0,
+        };
+      },
+    },
   ];
 
   const rows: string[][] = [];
@@ -227,8 +270,11 @@ async function main() {
       rows.push([pass ? 'PASS' : 'FAIL', c.name, c.seeded, c.expected, got]);
     }
   } finally {
-    await clean();
-    await done();
+    try {
+      await clean();
+    } finally {
+      await done();
+    }
   }
 
   const header = ['result', 'check', 'seeded', 'expected', 'got'];

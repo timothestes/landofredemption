@@ -79,13 +79,15 @@ export async function POST(req: Request) {
       const parsed = parseArm(rawArm);
       if (!parsed) return fail(400, 'bad_request', 'arm must be a JSON object of model, effort, tier, thinking.');
       arm = parsed;
+      source = 'eval'; // an arm override is an experiment: never a player row
     }
     if (form.get('source') === 'eval') source = 'eval';
   }
 
   let reserved;
   try {
-    reserved = await reserveScan(supabase, source);
+    // Service role only (migration 122): the gate above is what admits the user.
+    reserved = await reserveScan(getSupabaseAdmin(), user.id, source);
   } catch (e) {
     console.error('[scan] reserve failed:', e);
     return fail(503, 'reserve_failed', 'The scanner could not start. Try again shortly.');
@@ -141,6 +143,7 @@ export async function POST(req: Request) {
     };
 
     if (r.ok === false) {
+      console.error('[scan] recognizer failed', { scanId, code: r.code, detail: r.detail });
       await finish({ status: 'failed', ...spent }); // billed failures keep their tokens and cost
       if (r.code === 'recognizer_failed') return fail(502, r.code, 'The scanner could not read that photo.');
       return fail(503, r.code, 'The scanner is busy. Try again shortly.', {

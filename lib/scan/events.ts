@@ -1,7 +1,7 @@
 // Server-only: do not import from "use client" files.
-// scan_events writes. Reserve goes through the user's own client (scan_reserve()
-// reads auth.uid()); finish goes through the service-role client because
-// authenticated has no UPDATE grant on scan_events (migration 122).
+// scan_events writes, both through the service-role client. scan_reserve() is
+// executable by service_role only (migration 122), so the caller passes the user id
+// canScan verified and the source it decided; authenticated has no write grant at all.
 
 export type ReserveResult =
   | { ok: true; id: string }
@@ -10,10 +10,11 @@ export type ReserveResult =
 /** Throws on an RPC error or a malformed reply: a reserve failure is never swallowed. */
 export async function reserveScan(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: { rpc: (fn: string, args?: any) => any },
+  admin: { rpc: (fn: string, args?: any) => any },
+  userId: string,
   source: 'player' | 'eval',
 ): Promise<ReserveResult> {
-  const { data, error } = await supabase.rpc('scan_reserve', { p_source: source });
+  const { data, error } = await admin.rpc('scan_reserve', { p_user: userId, p_source: source });
   if (error) throw new Error(`scan_reserve failed: ${error.message}`);
   if (data?.ok === true && typeof data.id === 'string') return { ok: true, id: data.id };
   if (data?.ok === false && typeof data.cap === 'string') {
@@ -53,8 +54,13 @@ export async function finishScan(
   if (patch.detections !== undefined) row.detections = patch.detections;
   try {
     const { error } = await admin.from('scan_events').update(row).eq('id', id);
-    if (error) console.error(`[scan] finish ${id} failed:`, error.message);
+    if (error) console.error(`[scan] finish ${id} failed:`, { error: error.message, ...spend(patch) });
   } catch (e) {
-    console.error(`[scan] finish ${id} threw:`, e);
+    console.error(`[scan] finish ${id} threw:`, { error: e, ...spend(patch) });
   }
+}
+
+/** What a lost finish write would have recorded, so the spend can be reconstructed from logs. */
+function spend(p: FinishPatch) {
+  return { status: p.status, costUsd: p.costUsd, inputTokens: p.inputTokens, outputTokens: p.outputTokens };
 }

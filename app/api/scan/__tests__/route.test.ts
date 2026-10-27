@@ -27,7 +27,8 @@ const det = (p: Partial<ScanDetection>): ScanDetection => ({
   illustrator: null, copyrightYear: null, grid: { row: 1, col: 1 }, orientation: 'upright', confidence: 'high', ...p,
 });
 
-let rpc: Mock;
+let rpc: Mock; // the user's client: is_superuser only
+let adminRpc: Mock; // the service-role client: scan_reserve
 let getUser: Mock;
 let update: Mock;
 let eq: Mock;
@@ -40,12 +41,15 @@ function session(opts: { user?: boolean; superuser?: boolean; reserve?: unknown;
   );
   rpc = vi.fn((fn: string) => {
     if (fn === 'is_superuser') return Promise.resolve({ data: opts.superuser === true, error: null });
+    return Promise.resolve({ data: null, error: { message: `unexpected rpc ${fn}` } });
+  });
+  adminRpc = vi.fn((fn: string) => {
     if (fn === 'scan_reserve') {
       return Promise.resolve(
         opts.reserveError ? { data: null, error: { message: 'boom' } } : { data: opts.reserve ?? { ok: true, id: SCAN_ID }, error: null },
       );
     }
-    return Promise.resolve({ data: null, error: { message: `unexpected rpc ${fn}` } });
+    return Promise.resolve({ data: null, error: { message: `unexpected admin rpc ${fn}` } });
   });
   (createClient as Mock).mockResolvedValue({ auth: { getUser }, rpc });
 }
@@ -61,7 +65,7 @@ function req(photo?: Blob | string, extra: Record<string, string> = {}): Request
 }
 
 const jpegBlob = () => new Blob([new Uint8Array(jpeg)], { type: 'image/jpeg' });
-const reserveCalls = () => rpc.mock.calls.filter(([fn]) => fn === 'scan_reserve');
+const reserveCalls = () => adminRpc.mock.calls.filter(([fn]) => fn === 'scan_reserve');
 const patchWritten = () => update.mock.calls[0]?.[0];
 
 beforeEach(async () => {
@@ -72,7 +76,8 @@ beforeEach(async () => {
   eq = vi.fn().mockResolvedValue({ data: null, error: null });
   update = vi.fn(() => ({ eq }));
   from = vi.fn(() => ({ update }));
-  (getSupabaseAdmin as Mock).mockReturnValue({ from });
+  // A getter, so session() can swap adminRpc after this runs.
+  (getSupabaseAdmin as Mock).mockImplementation(() => ({ from, rpc: (...a: unknown[]) => adminRpc(...a) }));
   (loadPriceMap as Mock).mockResolvedValue({});
   session();
 });
@@ -106,7 +111,7 @@ describe('POST /api/scan', () => {
     const res = await POST(req(new Blob(['not an image'], { type: 'image/jpeg' })));
     expect(res.status).toBe(429);
     expect(await res.json()).toMatchObject({ code: 'cap_user_10m', resetsAt, limit: 20 });
-    expect(reserveCalls()).toEqual([['scan_reserve', { p_source: 'player' }]]);
+    expect(reserveCalls()).toEqual([['scan_reserve', { p_user: 'u1', p_source: 'player' }]]);
     // A capped request with an undecodable body still got 429, not 415: reserve ran first.
     expect(recognize).not.toHaveBeenCalled();
     expect(loadPriceMap).not.toHaveBeenCalled();
@@ -163,7 +168,7 @@ describe('POST /api/scan', () => {
     (recognize as Mock).mockResolvedValue({ ok: true, output: { photoQuality: 'ok', cards: [] }, model: 'claude-sonnet-5-5', usage: { inputTokens: 10, outputTokens: 5 }, costUsd: 0.0001, latencyMs: 900, attempts: 1 });
     const res = await POST(req(jpegBlob(), { arm: JSON.stringify({ model: 'claude-opus-5-5', tier: 'low' }), source: 'eval' }));
     expect(res.status).toBe(200);
-    expect(reserveCalls()).toEqual([['scan_reserve', { p_source: 'player' }]]);
+    expect(reserveCalls()).toEqual([['scan_reserve', { p_user: 'u1', p_source: 'player' }]]);
     expect((recognize as Mock).mock.calls[0][1]).toEqual(DEFAULT_ARM);
     const body = await res.json();
     expect(body.usage).toEqual({ model: 'claude-sonnet-5-5', latencyMs: 900, attempts: 1 }); // no costUsd for a player
@@ -174,9 +179,32 @@ describe('POST /api/scan', () => {
     (recognize as Mock).mockResolvedValue({ ok: true, output: { photoQuality: 'ok', cards: [] }, model: 'claude-opus-5-5', usage: { inputTokens: 10, outputTokens: 5 }, costUsd: 0.0002, latencyMs: 700, attempts: 1 });
     const res = await POST(req(jpegBlob(), { arm: JSON.stringify({ model: 'claude-opus-5-5', tier: 'low', effort: 'high' }), source: 'eval' }));
     expect(res.status).toBe(200);
-    expect(reserveCalls()).toEqual([['scan_reserve', { p_source: 'eval' }]]);
+    expect(reserveCalls()).toEqual([['scan_reserve', { p_user: 'u1', p_source: 'eval' }]]);
     expect((recognize as Mock).mock.calls[0][1]).toEqual({ ...DEFAULT_ARM, model: 'claude-opus-5-5', tier: 'low', effort: 'high' });
     expect((await res.json()).usage).toEqual({ model: 'claude-opus-5-5', latencyMs: 700, attempts: 1, costUsd: 0.0002 });
+  });
+
+  it('reserve goes through the service-role client with the gate-verified user, never the user client', async () => {
+    (recognize as Mock).mockResolvedValue({ ok: true, output: { photoQuality: 'ok', cards: [] }, model: 'claude-sonnet-5-5', usage: { inputTokens: 10, outputTokens: 5 }, costUsd: 0.0001, latencyMs: 900, attempts: 1 });
+    const res = await POST(req(jpegBlob()));
+    expect(res.status).toBe(200);
+    expect(reserveCalls()).toEqual([['scan_reserve', { p_user: 'u1', p_source: 'player' }]]);
+    expect(rpc.mock.calls.filter(([fn]) => fn === 'scan_reserve')).toHaveLength(0);
+  });
+
+  it('a superuser arm override without source=eval still writes an eval row', async () => {
+    session({ superuser: true });
+    (recognize as Mock).mockResolvedValue({ ok: true, output: { photoQuality: 'ok', cards: [] }, model: 'claude-haiku-5-5', usage: { inputTokens: 10, outputTokens: 5 }, costUsd: 0.00001, latencyMs: 500, attempts: 1 });
+    const res = await POST(req(jpegBlob(), { arm: JSON.stringify({ model: 'claude-haiku-5-5' }) }));
+    expect(res.status).toBe(200);
+    expect(reserveCalls()).toEqual([['scan_reserve', { p_user: 'u1', p_source: 'eval' }]]);
+  });
+
+  it('a superuser with no arm and no source=eval writes a player row', async () => {
+    session({ superuser: true });
+    (recognize as Mock).mockResolvedValue({ ok: true, output: { photoQuality: 'ok', cards: [] }, model: 'claude-sonnet-5-5', usage: { inputTokens: 10, outputTokens: 5 }, costUsd: 0.0001, latencyMs: 900, attempts: 1 });
+    await POST(req(jpegBlob()));
+    expect(reserveCalls()).toEqual([['scan_reserve', { p_user: 'u1', p_source: 'player' }]]);
   });
 
   it('a superuser arm that is not valid is 400 before reserve', async () => {
@@ -202,6 +230,16 @@ describe('POST /api/scan', () => {
     expect(res.status).toBe(502);
     expect((await res.json()).code).toBe('recognizer_failed');
     expect(patchWritten()).toMatchObject({ status: 'failed', attempts: 2, latency_ms: 20000, input_tokens: 3000, output_tokens: 16000, cost_usd: 0.166 });
+  });
+
+  it('every recognizer failure is logged with the scan id, code and detail', async () => {
+    const detail = { status: 400, errorType: 'invalid_request_error', message: 'thinking.type: between_tools is not supported' };
+    (recognize as Mock).mockResolvedValue({ ok: false, code: 'recognizer_failed', detail, latencyMs: 300, attempts: 1 });
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = await POST(req(jpegBlob()));
+    expect(res.status).toBe(502);
+    expect(err).toHaveBeenCalledWith('[scan] recognizer failed', { scanId: SCAN_ID, code: 'recognizer_failed', detail });
+    err.mockRestore();
   });
 
   it('a recognizer that throws (no API key) is 502 recognizer_failed and the row is finished failed', async () => {
