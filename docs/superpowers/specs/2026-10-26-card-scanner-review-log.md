@@ -245,6 +245,56 @@ including every dataset count and every code claim, verified.
 
 **Rejected or deferred:** none this round.
 
+## Round 5 (2026-10-27) — the spike — rev 4.1 → rev 4.2
+
+Not a reviewer round. Tim dropped 83 phone photos in `tmp/card_images`
+and suggested the catalog images as labeled signal. A throwaway script
+in the session scratchpad ran the spec's prompt and schema through
+Sonnet 5.5 at `low` effort and a 500-line version of the matcher over
+the photos and a stratified 148-image catalog sample. Full numbers are
+in the spec's E0 preview.
+
+**Found.** The misses were the matcher's, not the model's: identity
+87% → 97% on the catalog after (a) unioning AB pairs through
+`abMap.json` and same-stem reprints that share a reference with
+near-identical ability (78 unions), (b) using the corner print number as
+an identity tiebreak for reprints whose ability text changed, (c) trying
+the title with a trailing parenthesised group removed and each half of
+a slash-joined dual name, (d) splitting compound references on both
+sides, (e) a six-word ability prefix with "GE:/EE:/STAR:" stripped.
+Printing: promo text in `rarityCode` is read reliably ("State Promo",
+"2022 1st Place Promo National Tournament", "P") and as a hint cut
+catalog silent-wrongs 8 → 5 and settled 76 of 341 photo rows; "LR" is
+printed and read; AB cards print the plain number. Dataset: two more
+Lost Soul reference typos (Daniel 9:7 Fundraiser stored as 9:5;
+Retribution stored as Acts 18:22). Prompt: instruction plus schema is
+about 1,880 tokens, not 900; at `low` effort Sonnet returned no
+thinking blocks. Bulk shots: the model stops at 14 to 17 cards and
+flags `too_many_cards`. Two cases no text field fixes: the borderless
+Shipwreck promo (the original's 142/UR corner, $65 against $0.25) and
+Greek-language promo printings.
+
+**Changed in rev 4.2:** The matcher steps 2 to 4; Printing selection
+hints; Reason fields; The Claude call and Cost and latency; Dataset
+numbers; Files; a new E0 preview subsection; Scoresheet note; outcomes
+rows; calls 16 and 17.
+
+**Rejected or deferred:** reading `too_many_cards` as a card count
+(still never); an art tiebreaker now (the Shipwreck case is one card);
+changing `cardIdentityKey` itself (the unions are the scanner's).
+
+**Arms, same day.** Sonnet low-res, Opus 5.5, and Haiku 5.5 with and
+without thinking on the photos; Haiku on the catalog too. All four gave
+every single the same status as the baseline. Opus: ten fewer spread
+Check this rows and 18 more bulk detections at twice the cost. Haiku:
+tied on singles and catalog identity, 4 and 8 silent-wrongs against
+Sonnet's 2, all promos booked as the standard printing because the
+corner text was not read; the Haiku rule now requires the silent-wrong
+screen. Low-res: print numbers 15% against 20%, five more spread Not
+found, three invented titles, a Lost Soul digit misread. Decisions:
+Sonnet 5.5 `low`, high-res, no thinking parameter. Spend about $6 over
+some 900 requests.
+
 ## Scoresheet resolutions
 
 To be filled at each resolution date: claim number, outcome, date,

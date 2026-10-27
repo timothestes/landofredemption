@@ -1,8 +1,10 @@
 # Card scanner — design
 
-Date: 2026-10-26; rev 4.1 on 2026-10-27 after four review rounds
+Date: 2026-10-26; rev 4.2 on 2026-10-27 after four review rounds
 (sixteen reviewers; outcomes at the end, full log in
-`2026-10-26-card-scanner-review-log.md`). Not yet approved.
+`2026-10-26-card-scanner-review-log.md`) and a throwaway spike against
+83 real photos and 148 catalog images (E0 preview, under Evaluation).
+Not yet approved.
 
 **Surfaces:** `/collection` (toolbar, first-run banner), the deck
 builder's owned-cards filter and Check my collection modal (entry links),
@@ -115,6 +117,8 @@ Prose elsewhere cites these by name.
 | Same, under the Printing selection rule (adds `LoC_`-style prefixes); letter-prefixed codes pending E0 | 2,022 |
 | Lost Soul printings / identities | 263 / 170 |
 | Lost Soul references shared by more than one identity | 32 (69 identities) |
+| Lost Soul reference typos found so far (catalog override) | 4 |
+| Identity unions the scanner adds on top of `cardIdentityKey` (AB pairs; class or decoration splits sharing a reference) | 78 |
 | Stems with another stem at edit distance 1 / 2 | 131 / 389 |
 | Stems of five characters or fewer; of those with a neighbor within distance 2 | 170; 147 |
 | Different cards at distance 1 / 2 that type and brigade cannot separate | 9 / 42 |
@@ -275,7 +279,7 @@ numeric bounds (the API rejects them), so caps are enforced in code.
 | `brigade` | frame color words | identity scoring |
 | `strength`, `toughness` | the two numbers top-left | identity scoring |
 | `identifier` | the small badge text | identity scoring |
-| `printNumber`, `rarityCode` | corner number and letters ("81", "UR+"; "LR65" is number "65", code "LR") | printing hint |
+| `printNumber`, `rarityCode` | corner number and letters ("81", "UR+"; "LR65" is number "65", code "LR"); promo text printed in that corner ("State Promo", "2022 1st Place Promo National Tournament", a bare "P") goes in `rarityCode` | printing hints: number, UR+, LR, promo text |
 | `grid` | row and column in reading order | ordering; crops (v1.1) |
 | `orientation` | upright, rotated, upside-down | information |
 | `confidence` | high, medium, low | stored; shown nowhere unless calibration earns it a chip |
@@ -301,9 +305,9 @@ route.
   tier, thinking) overrides the constants for E0 and is ignored for
   everyone else. No `temperature` (rejected on these models), no
   `cache_control` in v1
-  (the prompt sits near the 512-token caching minimum and traffic is too
-  sparse for the five-minute window; E0 confirms with
-  `cache_read_input_tokens`).
+  (the instruction and schema measure about 1,880 input tokens in the
+  spike, so caching is possible, but traffic is too sparse for the
+  five-minute window; E0 confirms with `cache_read_input_tokens`).
 - Structured output through `output_config.format` with the JSON schema
   in `lib/scan/schema.ts`; no tools.
 - **Image tokens follow the 28-pixel-patch rule**, `⌈w/28⌉ × ⌈h/28⌉`,
@@ -317,7 +321,10 @@ route.
   'between_tools' }` and Haiku 5.5 with `{ type: 'disabled' }`, both only
   at effort `high` or below, which E0 tests as its own arm. `max_tokens`
   is 16,000; a `max_tokens` stop spends the same single retry, at 32,000,
-  and a second stop is a 502. It is never read as "too many cards".
+  and a second stop is a 502. It is never read as "too many cards". In
+  the spike, Sonnet 5.5 at `low` returned no thinking blocks at all:
+  output was about 170 tokens for a single card and 900 for a ten-card
+  spread, so the retry path never fired.
 - The instruction describes where each field sits on a Redemption card,
   says cards may be sleeved, in binder pages, rotated or upside down,
   says to transcribe exactly and return null rather than guess, asks for
@@ -341,10 +348,14 @@ it runs, because the collapse rule needs them. It imports `CARDS` from
    ("Enhancement" becomes `GE` or `EE` by alignment; brigades compared as
    color-token sets).
 2. **Stem lookup.** A stem index built once from `CARDS` on the
-   normalized stem, with two unions baked in: the spelling-variant stem
-   pairs (Wizard/Wizards, Elisabeth/Elizabeth, Judgements/Judgments) and
-   the reprint identities split only by the `class` column (Dataset
-   numbers). Exact hit first. Otherwise **fuzzy**: normalized
+   normalized stem, with each half of a slash-joined dual name indexed
+   on its own ("Ram, the Exalter / Ram, the Uplifted"; the spike found
+   two such misses), the spelling-variant stem pairs (Wizard/Wizards,
+   Elisabeth/Elizabeth, Judgements/Judgments) folded, and the unions of
+   step 3 baked in. The transcribed title is tried as read, then with a
+   trailing parenthesised group removed (the model copies "Shadrach
+   (Hananiah)" exactly as printed), then as each half of a slash. Exact
+   hit first. Otherwise **fuzzy**: normalized
    optimal-string-alignment distance over the normalized stems, accepted
    only if the distance is at most 0.20 **and** either the stem is eight
    or more characters or the transcribed reference agrees with the
@@ -353,22 +364,45 @@ it runs, because the collapse rule needs them. It imports `CARDS` from
    with a margin over the runner-up set in E1. Short names are where
    fuzzy matching is unsafe (Cage/Rage, Dove/Love, Winds/Wings, Job/Lot,
    Jude/Luke; Dataset numbers). No acceptable hit is **Not found**.
-3. **Identity within the stem.** If one identity, done. Otherwise score
-   each identity on fields in this priority: reference, then strength
-   and toughness, then identifier, then brigade, then ability prefix (the
-   least reliably read). A clear winner is taken; otherwise the row is
-   **Check this** with `identity_ambiguous` and the identities as
-   candidates.
+3. **Identity within the stem.** Identities are first **unioned**, once
+   at index build, without touching `cardIdentityKey`: every AB
+   printing with its original through `abMap.json` (the key splits
+   "Fourth Seal, Death (RoJ)" from "Fourth Seal (Death) (RoJ AB)" on the
+   stem alone), and any two identities with the same stem, type, brigade
+   and alignment that share a scripture reference and whose abilities
+   are both empty, identical, or at least 60% token-overlapping (the
+   `class`-split reprints, and old-frame reprints whose names differ
+   only in decoration). The spike produced 78 unions on the current
+   data. A reference is every component of the printed line: "James 4:6
+   (Proverbs 3:34)" and "II Chronicles 33:12/II Kings 20:21" index as
+   two each, on both the dataset and the transcribed side. If one
+   identity, done. Otherwise score each identity on fields in this
+   priority: reference, then strength and toughness, then **the corner
+   print number** (a number matching a printing in exactly one of the
+   tied identities decides a reprint whose ability text changed:
+   Josiah's Covenant, Thievery of Judas, Astrologers), then identifier
+   (exact above partial), then brigade, then the ability prefix (six
+   words, falling back to four, with the "GE:", "EE:" and "STAR:"
+   markers stripped from the dataset text), then type. A clear winner is
+   taken; otherwise the row is **Check this** with `identity_ambiguous`
+   and the identities as candidates.
 4. **Lost Souls.** Title "Lost Soul" skips steps 2 and 3: the normalized
-   reference selects identities; the nickname badge and ability prefix
-   break ties. No reference read is `reference_missing`; a reference
-   still matching several identities is `reference_ambiguous`; both are
-   **Check this** with the picker scoped to Lost Souls. Three dataset
-   reference typos (Lost Soul "Blind", "Lawless" AB, "Retribution") are
-   verified against the printed card and, if wrong, fixed through the
-   catalog override (`/admin/catalog`, live after a deploy), not in this
-   migration; the fix reshapes `cardIdentityKey` unions, which is
-   intended.
+   reference selects identities; ties are broken by the step-3 scoring
+   plus three Lost Soul terms: the nickname badge (equal +2, different
+   −2, both absent +0.5), a "Token" word in the title must agree with
+   the token type (−3 otherwise), and a card with no ability read
+   prefers a vanilla identity. No reference read is `reference_missing`;
+   a reference still matching several identities is
+   `reference_ambiguous`; both are **Check this** with the picker scoped
+   to Lost Souls. Four dataset reference typos (Lost Soul "Blind",
+   "Lawless" AB, "Retribution" stored as Acts 18:22 for a card printed
+   Acts 16:22, and "Lost Soul (Daniel 9:7) [Fundraiser]" stored as
+   Daniel 9:5) are verified against the printed card and, if wrong, fixed
+   through the catalog override (`/admin/catalog`, live after a deploy),
+   not in this migration; the fix reshapes `cardIdentityKey` unions,
+   which is intended. Greek-language promo printings (Angel of the Lord,
+   Son of Man) transcribe as Greek and stay Not found; a player adds
+   those by hand.
 5. **Printing selection** (next section).
 6. **Score fields** on every detection: `matchScore`, `runnerUpScore`,
    `agreeingFields`.
@@ -377,16 +411,30 @@ it runs, because the collapse rule needs them. It imports `CARDS` from
 
 Among the identity's printings, **successive filters, then a collapse**:
 
-1. **Hints.** A corner print number matching one printing's `imgFile`
-   number chooses it (`print_number`). The number is the leading digit
-   run of `imgFile` after any set prefix ending in `_` ("081-Authority-
-   of-Christ-UR+" → 81; "LoC_232-…" → 232); letter-prefixed forms
-   ("L20-", "K13-", "CoW_AB_N03-") count only if E0 shows the card prints
-   them that way. AB reprints share the number with their original; in
-   v1.0 the original wins that pair (v1.1's border and copyright fields
-   break it). A transcribed `rarityCode` of `UR+` matching an `imgFile`
-   ending `-UR+` chooses the UR+ printing. **v1.1:** `set_hint` from the
-   legend, `border`, `copyright_year` as a weak tiebreak.
+1. **Hints**, in this order. A transcribed `rarityCode` of `UR+`
+   matching an `imgFile` ending `-UR+` chooses the UR+ printing
+   (`ur_plus`; 6 of 6 in the spike). A `rarityCode` of exactly `LR`
+   chooses the Legacy Rare printing whose `LR<n>` number matches, or the
+   only Legacy Rare printing (`legacy_rare`). A corner print number
+   matching one printing's `imgFile` number chooses it (`print_number`).
+   The number is the leading digit run of `imgFile` after any prefix
+   ending in `_`, with an `N` or `LR` letter prefix stripped
+   ("081-Authority-of-Christ-UR+" → 81; "LoC_232-…" → 232;
+   "CoW_AB_N114-…" → 114; "LR29-…" → 29): the spike showed AB cards print
+   the plain number and Legacy Rares print "LR" beside it. Starter codes
+   ("L20-", "K13-") stay unparsed; the model reads them into
+   `rarityCode` ("K10"). AB reprints share the number with their
+   original; in v1.0 the original wins that pair (v1.1's border and
+   copyright fields break it). **Promo text** in `rarityCode` ("Promo",
+   "P", "National", "State", "Regional", "Seasonal", "Winner",
+   "Tournament", "District", "Local") keeps only promo printings when the
+   identity has any (`promo_text`); this was a v1.1 idea until the spike
+   showed the model reads that corner reliably and the hint settled 76
+   of 341 photo rows and cut catalog silent-wrongs from 8 to 5. **v1.1:**
+   `set_hint` from the legend, `border`, `copyright_year` as a weak
+   tiebreak; the canonical case no text field can settle is "Shipwreck
+   (Promo)", a borderless reprint carrying the original's 142/UR corner,
+   $65 against $0.25.
 2. **Special printings out.** Unless a hint supports one, remove special
    printings when at least one standard printing remains:
 
@@ -422,9 +470,10 @@ add a few percent; E0 measures the real rate on photos.
 ### Reason fields
 
 `nameReason` ∈ {exact, fuzzy, reference, none; v1.1 adds second_look}.
-`printingReason` ∈ {only, print_number, equivalent, printing_ambiguous,
-identity_ambiguous, reference_missing, reference_ambiguous; v1.1 adds
-set_hint, border, copyright_year, second_look}. Chips key on status and
+`printingReason` ∈ {only, print_number, ur_plus, legacy_rare,
+promo_text, equivalent, printing_ambiguous, identity_ambiguous,
+reference_missing, reference_ambiguous; v1.1 adds set_hint, border,
+copyright_year, second_look}. Chips key on status and
 `printingReason`; a `fuzzy` name shows "Read as 'X'" on the row.
 
 ### Second look (v1.1)
@@ -468,8 +517,12 @@ that Opus with always-on thinking will not meet. Budget: single p50 ≤ 5 s
 and p95 ≤ 12 s; spread p95 ≤ 25 s, measured in E0 and E2. Opus 5.5 is
 chosen only if Sonnet fails the singles screen, Opus passes it, and Opus
 meets the budget; Haiku 5.5 is chosen if it is within three photos of
-the leader on singles. Pre-E0 estimates (instruction and schema about
-900 tokens; output is JSON plus thinking), replaced by measured `usage`:
+the leader on singles and no worse on the silent-wrong screen (in the
+spike Haiku tied on singles with four times the silent-wrongs). Pre-E0
+estimates (instruction and schema measured at about 1,880
+tokens in the spike, not the 900 first assumed; output is JSON, plus
+thinking only where the arm has it), with the spike's measured numbers
+in E0 preview:
 
 | Photo | Image tokens | Input total | Est. output | Sonnet 5.5 | Opus 5.5 | Haiku 5.5 |
 |---|---|---|---|---|---|---|
@@ -932,6 +985,113 @@ into v1.0. If only printing hints fail: ship with the collapse rule and
 schedule the v1.1 legend fields and Stage A2. Numbers and decisions go in
 the review log.
 
+### E0 preview: the spike (2026-10-27)
+
+Before any product code, a throwaway script in the session scratchpad
+(not in the repo) ran the Transcription fields prompt and a 500-line
+version of the matcher over two sets. Everything here is a development
+measurement on unaudited labels; E0 proper still runs through the
+deployed route. Baseline arm: `claude-sonnet-5-5`, `low` effort,
+high-res tier, `output_config.format` with the v1.0 schema, no thinking
+parameter.
+
+**Catalog ceiling test.** 148 catalog images from the Blob store
+(344 × 512, about 250 image tokens each), stratified: 40 standard
+Rotation printings across 40 sets, 20 promos, 12 AB, 8 Legacy Rares,
+all 6 UR+, 20 Lost Souls, 20 old-frame cards, 10 homonym stems, 5 Son
+of God printings, 7 starters. The label is the file, so these numbers
+are exact.
+
+| Measure | Sonnet 5.5, low |
+|---|---|
+| One detection per image | 147 / 148 |
+| Title equals the stem | 142 / 148 (96%) |
+| Reference correct | 144 / 148 (97%) |
+| Strength and toughness, characters only | 50 / 56 (89%) |
+| Print number read where the card has one | 73 / 78 (94%), all correct |
+| Identity top-1 | 144 / 148 (97%); 125 before the step-3 unions and print-number tiebreak |
+| Matched / Check this / Not found | 139 / 7 / 2 |
+| Printing exact among Matched | 117 / 139 (84%); AB pairs resolve to the original by rule |
+| Silent wrong (Matched and wrong identity, or price off by the floor) | 2 of 139: the borderless Shipwreck promo, and a Legacy Rare whose corner was unreadable at 344 px |
+| Latency p50 / p95 | 1.9 s / 2.8 s |
+| Cost per image | $0.0059 |
+
+The 7 Check this rows are five Son of God promos spanning $3 to $175
+(the picker's job), one vanilla Lost Soul whose old printings differ in
+legality, and one old-frame reprint pair with no stats. The 2 Not found
+are the two dataset reference typos.
+
+**Tim's photos.** 83 phone photos, re-encoded to the high-res tier: 39
+singles (promos and foils in sleeves, mostly), 39 spreads of 2 to 12
+(binder pages, table spreads, listing composites), 4 bulk shots of 25 to
+45 cards, 1 photo of card stacks. Labels are the filenames, which name
+some of the cards; 9 photos were checked by eye against the output and
+every read on them was right, including three copies of one promo on a
+binder page and five copies of one banned Lost Soul.
+
+| Bucket | Photos | Detections | Matched | Check this | Not found | Latency p50 / p95 | Cost per photo |
+|---|---|---|---|---|---|---|---|
+| Single | 39 | 39 | 32 | 6 | 1 (the blurry one) | 1.9 s / 4.8 s | $0.010 |
+| Spread 2–12 | 39 | 243 | 200 | 36 | 7 | 6.1 s / 9.2 s | $0.019 |
+| Bulk 25–45 | 4 | 59 | 41 | 17 | 1 | 11.3 s / 11.7 s | $0.031 |
+| Stacks | 1 | 0 | | | | 1.8 s | $0.007 |
+
+All six single-card Check this rows are multi-year promos with different
+prices. Matched rows by reason: `only` 119, `promo_text` 76,
+`print_number` 39, `equivalent` 35, `legacy_rare` 2, `ur_plus` 1; 245
+names were exact, 23 by Lost Soul reference, 4 fuzzy. Check rows:
+`printing_ambiguous` 27, `identity_ambiguous` 24, `reference_missing` 8
+(Lost Souls in bulk shots). Not found: seven cards with no readable
+title, all `low` confidence, and two Greek-language promos. Stored
+`confidence` already separates: 224 of 259 `high` rows Matched against
+3 of 15 `low`. The model returns at most 14 to 17 cards from a bulk shot
+and marks the photo `too_many_cards`, so bulk recall is bounded by the
+request, not the matcher; the photo of stacks returned zero cards and
+`too_many_cards`, which is the wanted behavior.
+
+**Arms.** The same photos through four more arms, and the catalog
+through two of them. Singles are paired on the baseline's 39: every arm
+gave every single the same status; the only differences were a
+different printing pick on one single (Haiku) and three (Haiku,
+thinking off). Spread and bulk rows are not paired, because a photo's
+bucket follows the arm's own detection count.
+
+| Arm | Catalog identity | Catalog silent-wrong | Singles M / C / NF | Singles p50 / p95 | Spreads M / C / NF | Spreads p50 / p95 | Bulk detections | Cost single / spread |
+|---|---|---|---|---|---|---|---|---|
+| Sonnet 5.5 low, high-res (baseline) | 144 / 148 | 2 of 139 | 32 / 6 / 1 | 1.9 / 4.8 s | 200 / 36 / 7 | 6.1 / 9.2 s | 59 | $0.010 / $0.019 |
+| Sonnet 5.5 low, low-res | not run | | 32 / 6 / 0 | 2.3 / 3.6 s | 201 / 32 / 12 | 5.5 / 9.6 s | 59 | $0.009 / $0.016 |
+| Opus 5.5 low, high-res | not run | | 32 / 6 / 0 | 3.1 / 4.5 s | 201 / 26 / 6 | 8.3 / 12.6 s | 77 | $0.020 / $0.037 |
+| Haiku 5.5 low, thinking on | 144 / 148 | 4 of 139 | 32 / 7 / 1 | 6.2 / 12.1 s | 181 / 36 / 14 | 9.6 / 17.0 s | 95 | $0.001 / $0.001 |
+| Haiku 5.5 low, thinking off | 143 / 148 | 8 of 139 | 32 / 7 / 1 | 2.0 / 3.2 s | 183 / 29 / 20 | 4.6 / 6.4 s | 108 | $0.001 / $0.001 |
+
+Reading it. **Model:** every model passes the singles. Opus turns ten
+spread Check this rows into Matched and finds 18 more cards in the bulk
+shots, at twice the cost and a spread p95 of 12.6 s. Haiku ties Sonnet
+on singles and on catalog identity, but its extra silent-wrongs are
+promos it booked as the standard printing because it did not read the
+corner text (Wall of Protection, Clinging to Power, Gates of Jerusalem:
+$15 cards at $3 to $7), so the promo corner is the field that separates
+the models, and the Haiku rule in Cost and latency now also requires
+the silent-wrong screen. Sonnet 5.5 at `low` stays the baseline.
+**Tier:** low-res reads a print number on 15% of spread and bulk cards
+against 20% at high-res, five points short of the ten the scoresheet
+claimed, and loses more elsewhere: five more Not found on spreads, eight
+more Check this on bulk, three invented titles on small cards, and one
+Lost Soul reference misread by a digit (Hebrews 12:6 for 12:8). High-res
+stays, for $0.003 more a spread. **Thinking:** at `low` effort neither
+Sonnet nor Opus emitted thinking; Haiku did, and it cost 4 s a single
+for no accuracy, so any Haiku arm runs thinking-off. The spike spent
+about $6 over some 900 requests.
+
+**What changed because of it:** the step-3 unions, print number in
+identity scoring, title variants, compound references, the LR and promo
+hints (Recognition); the prompt-size and thinking lines (Cost and
+latency); two more reference typos (Dataset numbers); the catalog
+sample as the matcher's regression set (Files). The review page, the
+re-encoded photos and a draft labels file in the spec's format sit in
+`tmp/scan-spike/` (git-ignored) for Tim to correct; corrected, they
+become the first `labels.json`.
+
 ### E1: during the build
 
 - `lib/scan/match.ts` has golden tests from recorded E0 outputs per
@@ -1020,6 +1180,17 @@ log at each date.
 | 9 | Printing share of corrections > 0.5 at n ≥ 30 | launch + 60 d | scan_events | 50% |
 | 10 | Scanner workspace spend under the credit for three months | monthly | Console | 95% |
 | 11 | v1.0 (PRs A to C) ships within six agent-days of approval, given the photos | merge | git | 55% |
+
+Spike signal (2026-10-27; not a resolution, E0 runs through the route):
+claim 1 looks likely (32 of 39 singles Matched, 6 Check this on
+multi-year promos, 1 blurry Not found); claim 3 cannot be read without
+labels, and the catalog ceiling test shows 2 silent-wrongs in 139
+Matched; claim 4 leans no (the tier lift on print numbers was 5
+points, not 10, though low-res lost on three other measures); claim 5
+leans yes (Sonnet passed every screen Opus passed, within the budget);
+claim 6 is met on its letter and fails its intent (Haiku was within
+three photos on singles and had four times the silent-wrongs, which
+the rule now screens).
 
 ## Copy and accessibility
 
@@ -1117,8 +1288,10 @@ v1.0 unless tagged.
   `schema.ts`, `prices.ts`, `gate.ts`, `__tests__/`. **v1.1:**
   `secondLook.ts`.
 - `scripts/scan-eval/run.ts`, `score.ts`, `export.ts`, `queries.sql`,
-  `labels.json`, `photos/` (git-ignored; shared copy in the Forge private
-  store under `scan-eval/`), `outputs/` (recorded model JSON, committed).
+  `labels.json`, `catalog-sample.json` (the 148 labeled catalog printings
+  the spike drew, the matcher's regression set), `photos/` (git-ignored;
+  shared copy in the Forge private store under `scan-eval/`), `outputs/`
+  (recorded model JSON, committed).
 - `supabase/migrations/122_scan_events.sql`: both tables, RLS,
   `scan_reserve()`. **v1.1:** the `profiles` column, its own migration.
 - `app/privacy/page.tsx`.
@@ -1197,8 +1370,9 @@ v1.0 unless tagged.
 
 ## Review outcomes
 
-Four rounds, sixteen reviewers. The full log with every finding is in
-`2026-10-26-card-scanner-review-log.md`.
+Four rounds, sixteen reviewers, then a spike against real photos and
+catalog images (round 5 in the log). The full log with every finding is
+in `2026-10-26-card-scanner-review-log.md`.
 
 | Round | Finding | Change | Section |
 |---|---|---|---|
@@ -1227,6 +1401,9 @@ Four rounds, sixteen reviewers. The full log with every finding is in
 | 4 | Photo caps bound photos, not tokens; Goal 6 overstated | 30-day spend ceiling in the RPC | Reserve first, then call |
 | 4 | Thinking is not always on for Sonnet or Haiku; stage 1 was not paired on effort | Thinking-off arm; effort pinned per stage | The Claude call; E0 |
 | 4 | Page and route gates could diverge; `added` carried scan ids, not keys; cross-photo duplicates undefined | `canScan` module; keys via outcomes; duplicates merge into the earlier row | Reserve first, then call; Routes; The tray |
+| 5 | Spike: reprints with changed text tie on reference and stats; AB and decoration splits are separate identities; dual names and parenthesised subtitles have no stem; compound references miss | Unions; print number in identity scoring; title variants; component references | The matcher |
+| 5 | Spike: promo text in the corner is read reliably; Legacy Rares print "LR"; AB cards print the plain number | `promo_text` and `legacy_rare` hints in v1.0; number parsing | Printing selection |
+| 5 | Spike: instruction and schema are about 1,880 tokens; `low` effort runs without thinking; two more reference typos | Cost lines corrected; typo list; E0 preview | Cost and latency; Dataset numbers; Evaluation |
 
 Rejected or deferred: art tiebreaker in v1 (depends on unmeasured crop
 quality); legend image in every prompt (E0 arm only); higher global caps
@@ -1272,3 +1449,8 @@ Unrelated finding, flagged once: `scripts/run-claude-matching.ts` calls
 15. E0 traffic is tagged `source = 'eval'` and exempt from caps and
     metrics; a 30-day spend ceiling sits beside the photo caps; commits
     are idempotent through `scan_commits`; thinking-off is an E0 arm.
+16. Promo text in the corner is a v1.0 printing hint, on the spike's
+    measurement rather than the earlier plan to wait for v1.1.
+17. The 148-card catalog sample is the matcher's regression set, and
+    the step-3 unions are the scanner's own, layered on
+    `cardIdentityKey` without changing it.
