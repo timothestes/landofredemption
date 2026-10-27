@@ -208,6 +208,43 @@ from storage (stored, not shown); Opus baseline (Sonnet under a budget,
 Opus by exception); building the admin page in v1.0 (SQL via MCP
 instead).
 
+## Round 4 (2026-10-27) — rev 4 → rev 4.1
+
+Reviewers: a consistency auditor on rev 4; a builder check planning
+v1.0 only.
+
+**Builder check.** E0's requests would run through the player caps and
+seed the live metrics (needs an eval source the RPC and queries skip,
+and migration 122 on production before E0); E0 arms cannot reach the
+route without a superuser override on the request; `commitId` had no
+store and two racing commits both pass (needs an insert-first
+`scan_commits` table, which also makes undo server-authoritative);
+Sonnet 5.5 and Haiku 5.5 can turn thinking off at effort high or below
+(the constraint overstated it; worth an E0 arm), and stage 1 was not
+paired on effort; `CARDS` must come from `lookup.ts` for the legality
+overrides; `/collection` is page-gated, not middleware-gated;
+`adjustCollectionQuantitiesAction` must delete at zero; `owned` on
+candidates duplicates `useCollectionState`; PR cut: price loader to A,
+split C into core and entry, golden tests after E0; a 29-task breakdown
+in three worktree lanes.
+
+**Consistency auditor (16 defects).** Stage 1 "default effort" differs
+per model; the photo cap bounds photos, not tokens (a retried photo can
+bill about $0.50, so Goal 6 needed a spend ceiling); `calls` vs
+`attempts`; undo at zero violates the table's check; page and route
+gates described separately; `added` carried scan ids with no path to
+keys; cross-photo duplicates undefined; retry budget read two ways;
+`image_*` columns' timing; second-look token arithmetic; print-number
+counts (1,750 bare, 2,022 under the rule, 2,548 unreproducible); v1.1
+reason values untagged; three dataset numbers quoted without rows;
+outcomes-table section names; three round-3 rejections missing from the
+inline list; `run.ts` authentication unstated. Everything else,
+including every dataset count and every code claim, verified.
+
+**Changed in rev 4.1:** all of the above.
+
+**Rejected or deferred:** none this round.
+
 ## Scoresheet resolutions
 
 To be filled at each resolution date: claim number, outcome, date,

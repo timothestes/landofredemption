@@ -1,7 +1,7 @@
 # Card scanner — design
 
-Date: 2026-10-26; rev 4 on 2026-10-27 after three review rounds (fourteen
-reviewers; outcomes at the end, full log in
+Date: 2026-10-26; rev 4.1 on 2026-10-27 after four review rounds
+(sixteen reviewers; outcomes at the end, full log in
 `2026-10-26-card-scanner-review-log.md`). Not yet approved.
 
 **Surfaces:** `/collection` (toolbar, first-run banner), the deck
@@ -105,11 +105,14 @@ Prose elsewhere cites these by name.
 | Same, after the Rotation filter too | 64 (153 printings, 2.7%) |
 | Identities with both a promo and a standard printing; promo pricier | 67; 62 (median gap $14, max $255) |
 | Promo printings (definition in Printing selection) | 248 (245 excluding tokens) |
+| Fundraiser printings (counted within promo) | 40 |
+| Promos filed under `GoC`/`LoC` (counted within promo) | 9 |
 | AB printings (`set` ends `(AB)`, equals `abMap.json`) | 387 |
 | Legacy Rare printings | 72 |
 | UR+ printings (`imgFile` ends `-UR+`) | 6 |
 | Rotation-legal printings | 3,190 |
-| Rotation printings whose `imgFile` starts with a print number | 1,750 (2,548 counting letter-prefixed codes whose meaning E0 must confirm) |
+| Rotation printings whose `imgFile` starts with a bare print number | 1,750 |
+| Same, under the Printing selection rule (adds `LoC_`-style prefixes); letter-prefixed codes pending E0 | 2,022 |
 | Lost Soul printings / identities | 263 / 170 |
 | Lost Soul references shared by more than one identity | 32 (69 identities) |
 | Stems with another stem at edit distance 1 / 2 | 131 / 389 |
@@ -118,6 +121,7 @@ Prose elsewhere cites these by name.
 | Set codes / official sets / `[Ban]` marker codes | 55 / 49 / 6 |
 | Distinct `brigade` strings | 257 |
 | Cards with a `reference` value | 5,687 |
+| Priced printings (live price map) | 4,900 |
 
 ## Scope
 
@@ -142,11 +146,15 @@ and the collection modal's Change printing; Beta as an env boolean.
 scanning.
 
 **PR series for v1.0:** A `lib/scan` matcher, vocabulary, stem index,
-schema, recognizer and the eval harness (pure code, no migration);
-B migration 122, `scan_reserve()`, the shared price loader and
-`POST /api/scan` behind `is_superuser()`; E0 runs through B on a preview
-deployment; C the scan page, tray, commit, undo and the entry links,
-then the gate opens to the allowlist and then to everyone.
+schema, recognizer, the shared price loader and the eval harness (pure
+code, no migration; golden tests follow E0 in a small follow-up);
+B migration 122, `scan_reserve()`, the gate module and `POST /api/scan`,
+gated to superusers; migration 122 is applied to production, then E0
+runs through B on a preview deployment; C-core the scan page, tray,
+picker, commit and undo; C-entry the `/collection` and deck-builder entry
+links, `/privacy` and the small shared-file edits (kept separate because
+those files are hot for sibling agents); then the gate opens to the
+allowlist and then to everyone.
 
 What the cut loses: "fixable after commit" degrades to the quantity
 controls on `/collection` until v1.1; photo retention and the admin
@@ -171,9 +179,10 @@ retained.
 5. Every scan, correction, rejection and abandonment recorded as
    structured data so quality is observable and the evaluation set grows
    for free.
-6. Spend bounded by construction: no path can exceed the global cap,
-   which is set below the Max plan's monthly credit (Constraints; Reserve
-   first).
+6. Spend bounded by construction: every model call is reserved against
+   photo caps and a 30-day spend ceiling set below the Max plan's
+   monthly credit (Reserve first), so no sequence of requests can exceed
+   it.
 
 ## Non-goals
 
@@ -280,14 +289,18 @@ Plus `photoQuality`: ok, blurry, dark, glare, too_many_cards, no_cards.
 `lib/scan/recognize.ts`, server only. Client
 `new Anthropic({ apiKey: SCANNER_ANTHROPIC_API_KEY, maxRetries: 0,
 timeout: 25_000 })`; one manual retry on 5xx, 529 or timeout, never on a
-refusal; so a photo is at most two billed attempts in v1.0 (`calls`
-records attempts). `export const maxDuration = 90` on the route.
+refusal; so a photo is at most two billed attempts in v1.0 (the event's
+`attempts` column records them). `export const maxDuration = 90` on the
+route.
 
 - `messages.create` with the image as a base64 block after a fixed
-  instruction block. Model from a constant, baseline `claude-sonnet-5-5`
-  (Cost and latency says why), `output_config.effort` from a constant
-  (E0 picks `low` or `medium`), adaptive thinking at its default, no
-  `temperature` (rejected on these models), no `cache_control` in v1
+  instruction block. Model, effort and thinking mode from constants:
+  baseline `claude-sonnet-5-5` (Cost and latency says why) at `low`
+  effort, thinking at the model's default unless E0's thinking-off arm
+  wins. A superuser-only `arm` field on the request (model, effort,
+  tier, thinking) overrides the constants for E0 and is ignored for
+  everyone else. No `temperature` (rejected on these models), no
+  `cache_control` in v1
   (the prompt sits near the 512-token caching minimum and traffic is too
   sparse for the five-minute window; E0 confirms with
   `cache_read_input_tokens`).
@@ -298,11 +311,13 @@ records attempts). `export const maxDuration = 90` on the route.
   and Haiku 5.5 all belong to; a 4:3 photo is downscaled to about 2212 ×
   1659 regardless, so the server encodes to the tier itself and
   positions map one to one.
-- **Thinking is always on and billed as output** on these models, is not
-  bounded by effort, and the installed SDK (0.78) cannot separate it
-  from text in `usage`. `max_tokens` is 16,000; a `max_tokens` stop
-  retries once at 32,000 and then is a 502. It is never read as "too
-  many cards".
+- **Thinking is billed as output** and the installed SDK (0.78) cannot
+  separate it from text in `usage`. On Opus 5.5 it is always on and not
+  bounded by effort; Sonnet 5.5 can turn it off with `thinking: { type:
+  'between_tools' }` and Haiku 5.5 with `{ type: 'disabled' }`, both only
+  at effort `high` or below, which E0 tests as its own arm. `max_tokens`
+  is 16,000; a `max_tokens` stop spends the same single retry, at 32,000,
+  and a second stop is a 502. It is never read as "too many cards".
 - The instruction describes where each field sits on a Redemption card,
   says cards may be sleeved, in binder pages, rotated or upside down,
   says to transcribe exactly and return null rather than guess, asks for
@@ -316,7 +331,9 @@ records attempts). `export const maxDuration = 90` on the route.
 ### The matcher
 
 `lib/scan/match.ts`, pure, unit-tested, no API. Prices are loaded before
-it runs, because the collapse rule needs them.
+it runs, because the collapse rule needs them. It imports `CARDS` from
+`lib/cards/lookup.ts`, never the generated module: the
+`LEGALITY_OVERRIDES` there are what make 3,190 printings Rotation-legal.
 
 1. **Normalize.** Lowercase, straight quotes, punctuation stripped,
    whitespace collapsed; references with Arabic and Roman book numbers
@@ -404,10 +421,10 @@ add a few percent; E0 measures the real rate on photos.
 
 ### Reason fields
 
-`nameReason` ∈ {exact, fuzzy, reference, second_look, none}.
-`printingReason` ∈ {only, print_number, set_hint, border, copyright_year,
-second_look, equivalent, printing_ambiguous, identity_ambiguous,
-reference_missing, reference_ambiguous}. Chips key on status and
+`nameReason` ∈ {exact, fuzzy, reference, none; v1.1 adds second_look}.
+`printingReason` ∈ {only, print_number, equivalent, printing_ambiguous,
+identity_ambiguous, reference_missing, reference_ambiguous; v1.1 adds
+set_hint, border, copyright_year, second_look}. Chips key on status and
 `printingReason`; a `fuzzy` name shows "Read as 'X'" on the row.
 
 ### Second look (v1.1)
@@ -459,16 +476,18 @@ the leader on singles. Pre-E0 estimates (instruction and schema about
 | Single, low-res tier (4:3 at 1269 × 952) | 1,564 | ~2,450 | ~800 | ~$0.013 | ~$0.026 | ~$0.0006 |
 | Spread, low-res tier | 1,564 | ~2,450 | ~2,000 | ~$0.025 | ~$0.050 | ~$0.0012 |
 | Spread, high-res tier (4:3 at 2212 × 1659) | 4,740 | ~5,640 | ~2,000 | ~$0.031 | ~$0.063 | ~$0.0016 |
-| Second look, six rows (v1.1) | ~9,200 | ~10,100 | ~500 | ~$0.025 | ~$0.048 | ~$0.0013 |
+| Second look, six rows (v1.1; crops ~280 tokens, thumbnails 70) | ~3,800 | ~4,700 | ~500 | ~$0.014 | ~$0.029 | ~$0.0007 |
 
 On a 4:3 high-res spread each of 12 cards is about 390 px wide; at the
 low-res tier about 240 px, where corner numbers will mostly come back
 null. E0 stage 3 decides whether the extra tokens buy printing accuracy.
-At the global cap of 1,500 photos a month, all high-res spreads, the
-worst case is about $47 on Sonnet, $95 on Opus, $2.40 on Haiku; with a
-v1.1 second look on every photo, $85 on Sonnet. E0's measured costs set
-the final cap constants so the worst case on the chosen model sits under
-the credit.
+At the photo cap of 1,500 a month, all high-res spreads at one attempt,
+the expected month is about $47 on Sonnet, $95 on Opus, $2.40 on Haiku;
+with a v1.1 second look on every photo, about $68 on Sonnet. The photo
+cap bounds photos, not tokens: a photo that spends its retry at 32,000
+output tokens can bill about $0.50, so the hard ceiling is the 30-day
+spend cap in Reserve first, set below the credit. E0's measured costs
+set the final constants.
 
 ## The flow
 
@@ -476,9 +495,9 @@ the credit.
 
 | Route | Who | What |
 |---|---|---|
-| `/collection` | signed in | Toolbar: below `sm`, **Scan cards** (primary) and Build a deck (outline), with Set completion, Import and Export folded into the gear menu (the header already wraps at 390 px); on desktop Scan sits beside Import CSV at existing weights. First-run banner's call to action becomes Scan cards, Import CSV a text link. New `?format=Unlimited` and `?added=<scanIds>` params; `added` sorts those keys first under a *Just added* header. **v1.1:** Change printing and a Close button in the card modal. |
+| `/collection` | signed in | Toolbar: below `sm`, **Scan cards** (primary) and Build a deck (outline), with Set completion, Import and Export folded into the gear menu (the header already wraps at 390 px); on desktop Scan sits beside Import CSV at existing weights. First-run banner's call to action becomes Scan cards, Import CSV a text link. New `?format=Unlimited` and `?added=<scanIds>` params; the page selects those `scan_events` rows (RLS: own rows), reads the final keys from their outcomes, and sorts them first under a *Just added* header. **v1.1:** Change printing and a Close button in the card modal. |
 | Deck builder | anyone | The Cards I own filter's empty state and the Check my collection modal get a "Scan your cards" link to `/collection/scan`. This is the front door: it is where players who have never opened `/collection` discover that a collection exists. |
-| `/collection/scan` | signed in; soft launch gate (Rollout) | The scanner. Signed out: the existing gate with the scanner's copy and `redirectTo=/collection/scan`. A route, not a modal, because a camera round-trip can evict the tab and a route restores cleanly. |
+| `/collection/scan` | signed in and `canScan` (Reserve first; Rollout) | The scanner. Signed out: the same page-level gate `/collection` renders today (neither route is in the middleware's protected prefixes), with the scanner's copy and `redirectTo=/collection/scan`. A route, not a modal, because a camera round-trip can evict the tab and a route restores cleanly. |
 | `/privacy` | anyone | What is sent to Anthropic, what is kept, for how long. |
 
 Lead copy everywhere is "see what your cards are worth"; adding to the
@@ -520,7 +539,8 @@ process while the player keeps taking more.
 
 One row per detection under its photo, in grid order. Identical keys
 within the tray merge into one row with a summed quantity, as the CSV
-merge import does. The set is always shown.
+merge import does; a duplicate from a later photo increments the earlier
+row and adds no row under its own photo. The set is always shown.
 
 Row at 390 px (content width 358): `[thumb 44] [8] [text 194] [8] [qty
 56] [4] [remove 44]`. Line one: name (truncated) left, price right in
@@ -536,8 +556,9 @@ comes from `useCollectionState`, which the deck builder already mounts.
 
 Chips:
 
-- **Matched**: no chip for `only`, `print_number`, `set_hint`, `border`,
-  `copyright_year`; the printings line as muted text for `equivalent`.
+- **Matched**: no chip for `only` and `print_number` (v1.1: `set_hint`,
+  `border`, `copyright_year`); the printings line as muted text for
+  `equivalent`.
 - **Check this**: amber; reason on line two; `aria-describedby` points the
   row at it. The row holds the provisional choice; the amber is the ask.
   **v1.1:** a crop (44 to 56 px, `object-cover`, `ring-1 ring-border/60`)
@@ -576,21 +597,24 @@ and **Add 12 to collection**. If unresolved rows exist, *Unresolved
 warning*.
 
 Commit is one server action, `commitScanAction(commitId, rows,
-outcomesByScanId)`, idempotent on a client-generated `commitId` stored
-on the scan events: a double tap, or a retry after a timeout the server
-had already completed, returns the stored result instead of adding
-twice. The button is disabled while in flight. The action performs the
-merge import (the same path as `bulkImportCollectionAction` in `merge`
-mode, which sums quantities) and writes outcomes in one call.
+outcomesByScanId)`, idempotent on a client-generated `commitId`: it
+inserts a `scan_commits` row first (`on conflict do nothing`), and if
+the row already existed it returns that row's stored result, so a double
+tap, or a retry after a timeout the server had already completed, never
+adds twice. The button is disabled while in flight. The action then
+performs the merge import (the same path as `bulkImportCollectionAction`
+in `merge` mode, which sums quantities), stores the per-key deltas and
+the result on the `scan_commits` row, and writes outcomes in one call.
 
 ### Success state
 
 The committed rows stay on screen with their new owned totals, plus:
 
-- **Undo**: a new `adjustCollectionQuantitiesAction(deltas)` subtracts
-  this commit's per-key deltas (the merge import drops non-positive
-  rows and cannot decrement); disabled after a later commit; toast *Undo
-  done*.
+- **Undo**: `adjustCollectionQuantitiesAction(commitId)` reads the
+  commit's stored deltas (server-authoritative, not from the tray) and
+  subtracts them; a key whose quantity reaches zero is deleted (the table
+  forbids 0) and never goes below; the merge import itself cannot
+  decrement. Disabled after a later commit; toast *Undo done*.
 - **Scan more**: clears the tray and stays.
 - **View collection**: `/collection?format=Unlimited&added=<scanIds>`
   (the default Limited filter would hide every non-Rotation card just
@@ -613,9 +637,11 @@ the detection's reasons and scores. Abandonment is defined in E3.
 
 ### `POST /api/scan`
 
-Request: `multipart/form-data` with `photo` (≤ 3 MB). Order inside the
-route: session check before the body is read; `scan_reserve()`; sharp;
-prices loaded once; recognizer; matcher; (v1.1) second look and printing
+Request: `multipart/form-data` with `photo` (≤ 3 MB) and, for superusers
+only, an optional `arm` JSON field (model, effort, tier, thinking) that
+E0 uses and everyone else cannot. Order inside the route: session and
+`canScan` before the body is read; `scan_reserve()`; sharp; prices
+loaded once; recognizer; matcher; (v1.1) second look and printing
 re-selection; finish event.
 
 Sharp (already used in several route handlers; pattern in
@@ -639,11 +665,14 @@ Response 200:
     status: 'matched' | 'check' | 'not_found',
     nameReason, printingReason, chosenKey | null,
     scores: { matchScore, runnerUpScore, agreeingFields },
-    candidates: [{ key, name, set, officialSet, imgFile, legality, price | null, owned }]
+    candidates: [{ key, name, set, officialSet, imgFile, legality, price | null }]
   }],
   usage: { model, latencyMs, attempts }
 }
 ```
+
+Owned quantities are not in the response; the client reads them from
+`useCollectionState`, which it mounts anyway.
 
 | HTTP | `code` | Trigger | Copy key |
 |---|---|---|---|
@@ -651,7 +680,8 @@ Response 200:
 | 413 | | body too large (also Vercel's own `text/plain` 413 by header) | Too large |
 | 415 | `undecodable` | sharp cannot decode | HEIF |
 | 429 | `cap_user_10m` / `cap_user_24h` | user caps, with `resetsAt` | Ten-minute cap / Daily cap |
-| 503 | `cap_global_30d` | global cap, `Retry-After` | Global cap |
+| 503 | `cap_global_30d` | global photo cap, `Retry-After` | Global cap |
+| 503 | `cap_global_spend` | 30-day spend ceiling, `Retry-After` | Credit out |
 | 503 | `upstream_rate_limit` / `upstream_overloaded` | Anthropic 429 / 529, `Retry-After` | Busy |
 | 503 | `billing_error` | credit exhausted | Credit out |
 | 502 | `recognizer_failed` | refusal, invalid JSON, truncated after retry | Generic |
@@ -673,21 +703,33 @@ authenticated`). It takes **one constant-key lock**,
 cap counts every user's rows and a per-user key cannot serialize it;
 every reserve serializes, which is fine at this volume. Under the lock
 it counts the caller's rows in the trailing 10 minutes and 24 hours and
-everyone's rows in the trailing 30 days, counting `pending`, `done` and
-`failed` and excluding `rejected`, checking the user caps first. It then
-either inserts a `pending` row and returns its id, or inserts a
-`rejected` row naming the cap and returns the cap and `resets_at`. Only
-then does the route call the model, and it finishes the row (`done` or
-`failed`, with model, tokens, latency, attempts, cost) through the admin
-client. Cap hits are observable; model latency is never a race window.
+everyone's rows and summed `cost_usd` in the trailing 30 days, counting
+`pending`, `done` and `failed`, excluding `rejected` and excluding
+`source = 'eval'`, checking the user caps first, then the global photo
+cap, then the spend ceiling. It then either inserts a `pending` row and
+returns its id, or inserts a `rejected` row naming the cap and returns
+the cap and `resets_at`. Only then does the route call the model, and it
+finishes the row (`done` or `failed`, with model, tokens, latency,
+attempts, cost) through the admin client. Cap hits are observable; model
+latency is never a race window.
 
 | Scope | Window | Limit |
 |---|---|---|
 | Per user | 10 minutes | 20 photos |
 | Per user | 24 hours | 150 |
-| Everyone | 30 days | 1,500 |
+| Everyone | 30 days | 1,500 photos |
+| Everyone | 30 days | $80 summed `cost_usd` (`cap_global_spend`) |
 
 Copy for the caps interpolates the RPC's constants and `resets_at`.
+`scan_reserve(p_source)` accepts `'eval'` only when the caller is a
+superuser; eval rows are skipped by every cap and by every E3 query,
+which is how E0's requests run through the deployed route without
+consuming the launch month or polluting the metrics.
+
+`lib/scan/gate.ts` exports `canScan(userId)`: superuser, or in
+`SCANNER_ALLOWLIST`, or everyone once the launch flag flips. It is the
+one gate the page and the route both call, so widening one never leaves
+the other returning 401.
 
 ### Migration `122_scan_events.sql`
 
@@ -699,6 +741,7 @@ scan_events (
   user_id uuid not null references auth.users(id) on delete cascade,
   created_at timestamptz not null default now(),
   status text not null check (status in ('pending','done','failed','rejected')),
+  source text not null default 'player' check (source in ('player','eval')),
   rejected_cap text,
   model text, attempts smallint, latency_ms integer,
   input_tokens integer, output_tokens integer,
@@ -706,9 +749,17 @@ scan_events (
   photo_quality text,
   detections jsonb,                    -- always stored; every read field capped in code (title 60, reference 40, nickname 30, ability 80, identifier 40, type 30, brigade 40, numbers 8; v1.1 marking 20, icon note 60)
   outcomes jsonb,                      -- set on commit
-  commit_id uuid,                      -- idempotency key of the commit that wrote outcomes
-  image_pathname text,                 -- v1.1: private Blob pathname when opted in
-  image_expires_at timestamptz         -- v1.1
+  commit_id uuid references scan_commits(commit_id),
+  image_pathname text,                 -- created now, nullable, unwritten until v1.1
+  image_expires_at timestamptz         -- same
+)
+
+scan_commits (
+  commit_id uuid pk,                   -- client-generated; insert-first makes commit idempotent
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  deltas jsonb not null,               -- per-key quantities added; undo subtracts these
+  result jsonb                         -- the response returned to the client, replayed on a repeat
 )
 ```
 
@@ -717,9 +768,11 @@ RLS: `SELECT` own rows; superuser sees all through the existing
 table). **No INSERT or UPDATE grant to `authenticated`**: writes go
 through `scan_reserve()` or the admin client, so nobody can forge
 events, token counts or detections. `commitScanAction` filters by the
-caller's `user_id`, validates the JSON shape, and caps its size. Indexes
-on `(user_id, created_at desc)` and `(created_at)`. **v1.1:** a boolean
-`keep_scan_photos` on `profiles`.
+caller's `user_id`, validates the JSON shape, and caps its size.
+`scan_commits` has the same RLS shape (own rows readable, no writes for
+`authenticated`). Indexes on `(user_id, created_at desc)` and
+`(created_at)`. **v1.1:** a boolean `keep_scan_photos` on `profiles`, in
+its own migration.
 
 ### Retention and privacy
 
@@ -747,7 +800,8 @@ its siblings.
 ### Admin and audits
 
 v1.0 has no admin page. The E3 metrics and kill queries are SQL kept in
-`scripts/scan-eval/queries.sql` and run through the Supabase MCP; the
+`scripts/scan-eval/queries.sql`, every one filtered to `source =
+'player'`, and run through the Supabase MCP; the
 two dated audits (E3) export from the same place. **v1.1:**
 `/admin/scans`, superuser-only through `supabase.rpc('is_superuser')` as
 `app/admin/permissions/lib/auth.ts` does, linked from the admin dropdown
@@ -831,16 +885,20 @@ stem; reference equals; print number non-null on `setVisible` cards;
 per-field agreement), which choose model, effort and tier; and
 **matcher** metrics, which belong to E1 and are reported here as
 information. E0 runs through the deployed route from PR B on a preview
-URL, so the resize and upload path is measured from the start; the
-first photos come from the real client. Stages, each paired on the same
-photos:
+URL, with a minted superuser session per the `verify` skill, the `arm`
+override and `source = 'eval'`, after migration 122 is applied to
+production (the preview shares the production database); so the resize
+and upload path is measured from the start and the first photos come
+from the real client. Stages, each paired on the same photos:
 
 0. Smoke: five photos through every arm; assert model, stop reason,
    schema parse; run the scorer's self-tests.
-1. Model screen: Sonnet 5.5, Opus 5.5, Haiku 5.5 at default effort on
-   the 40 singles and the 14 spreads of twelve or fewer. Drop a model
-   that is four or more photos behind the leader on paired singles.
-2. Effort: the leader at the other effort, same 54 photos.
+1. Model screen: Sonnet 5.5, Opus 5.5, Haiku 5.5, each at `low` effort
+   set explicitly (defaults differ by model), on the 40 singles and the
+   14 spreads of twelve or fewer. Drop a model that is four or more
+   photos behind the leader on paired singles.
+2. Effort and thinking: the leader at `medium`, and, if the leader is
+   Sonnet or Haiku, with thinking off at `low`, same 54 photos.
 3. Tier: the leader, high-res versus low-res, all 26 spreads including
    binder pages. Decision: print-number lift versus cost and latency.
 4. **v1.1** Position: bbox at the chosen tier on the spreads, only if
@@ -852,7 +910,7 @@ photos:
 7. Two more repetitions of the final arm on all photos: the noise floor
    every later comparison is judged against.
 
-About 440 requests for v1.0's stages; stages 4 to 6 add about 90. A few
+About 490 requests for v1.0's stages; stages 4 to 6 add about 90. A few
 dollars either way.
 
 Pre-registered pass rules, with what each buys printed by the script
@@ -1056,12 +1114,13 @@ v1.0 unless tagged.
 - `app/api/scan/route.ts`; `app/api/prices/route.ts` switches to the
   shared loader.
 - `lib/scan/recognize.ts`, `match.ts`, `stemIndex.ts`, `vocab.ts`,
-  `schema.ts`, `prices.ts`, `__tests__/`. **v1.1:** `secondLook.ts`.
+  `schema.ts`, `prices.ts`, `gate.ts`, `__tests__/`. **v1.1:**
+  `secondLook.ts`.
 - `scripts/scan-eval/run.ts`, `score.ts`, `export.ts`, `queries.sql`,
   `labels.json`, `photos/` (git-ignored; shared copy in the Forge private
   store under `scan-eval/`), `outputs/` (recorded model JSON, committed).
-- `supabase/migrations/122_scan_events.sql`: table, RLS, `scan_reserve()`.
-  **v1.1:** the `profiles` column.
+- `supabase/migrations/122_scan_events.sql`: both tables, RLS,
+  `scan_reserve()`. **v1.1:** the `profiles` column, its own migration.
 - `app/privacy/page.tsx`.
 - `app/globals.css` reduced-motion list.
 - **v1.1:** `lib/cards/setOrder.ts` (legend keyed on `officialSet`,
@@ -1086,10 +1145,13 @@ v1.0 unless tagged.
   golden set. Vitest, node only.
 - `app/api/scan/route.ts`: error mapping and size and format checks with
   the recognizer stubbed; `tsc` clean against the baseline.
-- `commitScanAction`: idempotency on a repeated `commitId`.
-- The RPC: a scripted check that two concurrent reserves at a cap yield
-  exactly one `pending` and one `rejected` row, for a user cap and for
-  the global cap.
+- `commitScanAction`: idempotency on a repeated `commitId`, including
+  two concurrent calls; `adjustCollectionQuantitiesAction`: decrement to
+  zero deletes, never below zero.
+- The RPC: a scripted check against a branch database that two
+  concurrent reserves at a cap yield exactly one `pending` and one
+  `rejected` row, for a user cap, the global photo cap and the spend
+  ceiling, and that `source = 'eval'` rows are not counted.
 - The scorer's self-tests; the eval script as the recognizer's
   integration test (E0, E1, E2).
 - Manual E2 as above.
@@ -1104,11 +1166,13 @@ v1.0 unless tagged.
    (printing-level, about 350 cards); confirm the three Lost Soul
    references against the printed cards; `/privacy` wording; recruit
    three named players for week one.
-2. PR A (matcher, harness), PR B (migration, RPC, route behind
-   `is_superuser()`). Apply migration 122 before merging B. Run E0
-   through B on a preview URL; record numbers and decisions in the
-   review log; pick model, effort, tier.
-3. PR C (page, commit, entry links). E2. Merge with the gate set to
+2. PR A (matcher, loader, harness), PR B (migration, RPC, gate, route).
+   Apply migration 122 to production before E0, since the preview shares
+   the database. Run E0 through B on a preview URL with a minted
+   superuser session and the `arm` override; record numbers and
+   decisions in the review log; pick model, effort, thinking, tier.
+3. PR C-core (page, tray, picker, commit, undo) and PR C-entry (entry
+   links, `/privacy`, shared-file edits). E2. Merge with `canScan` set to
    superuser plus an allowlist of the three testers' user ids (env
    `SCANNER_ALLOWLIST`), Beta label on.
 4. Week two: open the gate; one What's New line; a 20-second Discord
@@ -1123,13 +1187,17 @@ v1.0 unless tagged.
 - Whether `importRows`' deck-builder `Card` type is bridged or
   `bulkImportCollectionAction`'s row shape is called directly.
 - Component split inside the client as long as the listed pieces exist.
+- Request validators: the repo has no zod; hand-rolled validators for
+  commit rows and detection caps.
+- The gear menu below `sm` holds only Clear today; the fold adds three
+  items.
 - Exact copy beyond the table, within the design system's tone.
 - **v1.1:** legend contents and set order (hand-written; the repo has no
   release years).
 
 ## Review outcomes
 
-Three rounds, fourteen reviewers. The full log with every finding is in
+Four rounds, sixteen reviewers. The full log with every finding is in
 `2026-10-26-card-scanner-review-log.md`.
 
 | Round | Finding | Change | Section |
@@ -1140,20 +1208,25 @@ Three rounds, fourteen reviewers. The full log with every finding is in
 | 1 | Two modes resolved the same photo differently | One flow; price always visible | The flow |
 | 1 | Per-user cap racy; RLS forgeable; `registration_admin` retired | Reserve-first RPC; no writes for `authenticated`; `is_superuser()` | Reserve first; Migration |
 | 1 | Spend on a personal credit with no isolation | Dedicated scanner key and workspace | Constraints |
-| 1 | EXIF and oversized uploads | Server-side sharp re-encode | API |
+| 1 | EXIF and oversized uploads | Server-side sharp re-encode | `POST /api/scan` |
 | 2 | 64% of printings share a stem; promos pricier in 62 of 67 | Filters then collapse; special printings defined from data | Printing selection |
 | 2 | 131 stems have a distance-1 neighbor | Guarded fuzzy | The matcher |
 | 2 | Second look was uncapped and uncounted | One capped call under the same reservation (v1.1) | Second look |
 | 2 | WebKit drops EXIF on `createImageBitmap(file)` | Decode through `<img>` | Capture |
 | 2 | Thinking unbounded; SDK cannot attribute it | `max_tokens` 16k with retry; no "too many cards" mapping | The Claude call |
 | 2 | 28-px patch rule and 4,784 cap | Tiers and cost table rebuilt | Cost and latency |
-| 2 | Burst cap walled a shoebox evening; Haves before commit flagged rows; View collection hid added cards | 20 per 10 min; Haves after commit; `format` and `added` params | Caps; Success state |
+| 2 | Burst cap walled a shoebox evening; Haves before commit flagged rows; View collection hid added cards | 20 per 10 min; Haves after commit; `format` and `added` params | Reserve first, then call; Success state |
 | 2 | 25 photos cannot certify 90% | Pre-registered screen; audits certify; dated scoresheet | Evaluation |
 | 3 | 36 collectors; 7 active last month | Scope cut; deck-builder front door; removal clause; Sonnet under a latency budget | Scope; Routes; Kill |
 | 3 | Per-user lock cannot serialize the global cap | One constant-key lock | Reserve first |
 | 3 | House dialog has no focus trap; merge import cannot decrement; `putItems` overwrites | Local focus trap; `adjustCollectionQuantitiesAction`; add-to-existing Haves | Picker; Success state |
-| 3 | Prices needed before matching; attempts vs calls; counts 248 / 6; row width left no room for Remove | Route order; attempts; Dataset numbers; row budget | API; Claude call; Tray |
+| 3 | Prices needed before matching; attempts vs calls; counts 248 / 6; row width left no room for Remove | Route order; attempts; Dataset numbers; row budget | `POST /api/scan`; The Claude call; The tray |
 | 3 | Double-tap commit double-adds | Idempotent `commitScanAction` | Commit |
+| 4 | E0's requests would run through player caps and pollute metrics; arms could not reach the deployed route | `source = 'eval'` exempt from caps and queries; superuser-only `arm` override | Reserve first, then call; `POST /api/scan` |
+| 4 | Idempotency had no store and raced; undo relied on the tray | `scan_commits` insert-first; server-authoritative deltas; delete at zero | Commit; Success state |
+| 4 | Photo caps bound photos, not tokens; Goal 6 overstated | 30-day spend ceiling in the RPC | Reserve first, then call |
+| 4 | Thinking is not always on for Sonnet or Haiku; stage 1 was not paired on effort | Thinking-off arm; effort pinned per stage | The Claude call; E0 |
+| 4 | Page and route gates could diverge; `added` carried scan ids, not keys; cross-photo duplicates undefined | `canScan` module; keys via outcomes; duplicates merge into the earlier row | Reserve first, then call; Routes; The tray |
 
 Rejected or deferred: art tiebreaker in v1 (depends on unmeasured crop
 quality); legend image in every prompt (E0 arm only); higher global caps
@@ -1161,7 +1234,9 @@ quality); legend image in every prompt (E0 arm only); higher global caps
 only); Add to Wants and Recent scans (v1.2); dropping prices from
 candidates (the rules need them); treating Fundraiser as standard; a
 weekly audit (two dated audits instead); a new Radix dialog dependency
-(local focus trap instead).
+(local focus trap instead); dropping `confidence` from storage (stored,
+not shown); an Opus baseline (Sonnet under a budget, Opus by exception);
+an admin page in v1.0 (SQL through the MCP instead).
 
 Unrelated finding, flagged once: `scripts/run-claude-matching.ts` calls
 `claude-sonnet-4-20250514`, retired on 2026-06-15; current Sonnet is
@@ -1194,3 +1269,6 @@ Unrelated finding, flagged once: `scripts/run-claude-matching.ts` calls
 12. Two dated audits instead of a weekly one; no admin page in v1.0.
 13. A removal clause with a date and a criterion.
 14. Review log moved to a sibling file; outcomes table inline.
+15. E0 traffic is tagged `source = 'eval'` and exempt from caps and
+    metrics; a 30-day spend ceiling sits beside the photo caps; commits
+    are idempotent through `scan_commits`; thinking-off is an E0 arm.
