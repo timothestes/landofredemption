@@ -32,7 +32,7 @@ describe('run.ts', () => {
     expect(parseRetryAfter('junk', 0)).toBe(5000);
     const now = Date.parse('2026-10-27T00:00:00Z');
     expect(parseRetryAfter('Tue, 27 Oct 2026 00:00:10 GMT', now)).toBe(10000);
-    expect(parseRetryAfter('Tue, 27 Oct 2026 00:00:00 GMT', now + 5000)).toBe(5000);
+    expect(parseRetryAfter('Tue, 27 Oct 2026 00:00:00 GMT', now + 5000)).toBe(0);
   });
   it('isRetryable: network errors and 429/503 yes, billing and global caps no', () => {
     expect(isRetryable(0, null)).toBe(true);
