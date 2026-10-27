@@ -115,11 +115,11 @@ export const SPELLING_VARIANT_STEMS: [string, string][] = [
   ['judgements', 'judgments'],
 ];
 
-/** The corner code as transcribed: a K/L deck code, else the print number without padding. */
+/** The corner code as transcribed: a K/L deck code, else the print number's first digit run without padding ("81/200" gives 81). */
 export function readCornerCode(printNumber: string | null, rarityCode: string | null): string | null {
   const kl = /\b([KL])\s?(\d{1,3})\b/.exec(`${printNumber ?? ''} ${rarityCode ?? ''}`);
   if (kl) return kl[1] + Number(kl[2]);
-  const digits = printNumber ? printNumber.replace(/\D/g, '') : '';
+  const digits = /\d+/.exec(printNumber ?? '')?.[0] ?? '';
   const n = digits ? String(Number(digits)) : null;
   return n && n !== '0' ? n : null;
 }

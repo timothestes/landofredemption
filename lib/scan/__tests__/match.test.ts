@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { CARDS } from '@/lib/cards/lookup';
 import { matchDetection, selectPrinting, PRICE_DELTA_FLOOR } from '../match';
 import { getScanIndex } from '../stemIndex';
-import { cardKey } from '../vocab';
+import { cardKey, isPromo } from '../vocab';
+import { cueFor } from '../cues';
 import type { ScanDetection } from '../schema';
 const det = (p: Partial<ScanDetection>): ScanDetection => ({ title: null, reference: null, nickname: null, abilityStart: null, abilityEnd: null, type: 'unknown', brigade: null, strength: null, toughness: null, identifier: null, printNumber: null, rarityCode: null, promoText: null, illustrator: null, copyrightYear: null, grid: { row: 1, col: 1 }, orientation: 'upright', confidence: 'high', ...p });
 const byName = (n: string) => CARDS.find(c => c.name === n)!;
@@ -41,7 +42,39 @@ describe('printing filters', () => {
     expect(matchDetection({ ...crowds, promoText: 'Local Redemption Tournament Participant' }, NO).chosen?.name).toMatch(/Local/);
     expect(matchDetection({ ...crowds, promoText: 'Seasonal Promo' }, NO).chosen?.name).toMatch(/Seasonal/);
   });
-  it('a contradicted placement is Check this', () => { const m = matchDetection(det({ title: 'Warrior Overtaken', reference: 'II Chronicles 18:33', promoText: '2nd Place Promo' }), NO); expect(m.status).toBe('check'); });
+  it('a placement that leaves several promos is Check this, never equivalent', () => {
+    const id = getScanIndex().identityOf(byName('Son of God [2023 - 1st Place]'));
+    const r = selectPrinting(id, det({ title: 'Son of God', promoText: '1st Place Winner' }), NO);
+    expect(r.status).toBe('check'); expect(r.printingReason).toBe('printing_ambiguous');
+    expect(r.candidates.every(c => /1st Place/.test(c.name))).toBe(true);
+  });
+  it('a bare P keeps the promos without scoring them', () => {
+    const m = matchDetection(det({ title: 'Lost Soul', reference: 'Luke 5:15', nickname: 'Crowds', type: 'Lost Soul', rarityCode: 'P' }), NO);
+    expect(m.printingReason).not.toBe('promo_text'); expect(m.printingReason).not.toBe('caption');
+    expect(m.candidates.length).toBeGreaterThan(1);
+  });
+  it('a contradicted placement is Check this, spelled out or not', () => {
+    for (const promoText of ['2nd Place Promo', 'Second Place Promo']) {
+      const m = matchDetection(det({ title: 'Warrior Overtaken', reference: 'II Chronicles 18:33', promoText }), NO);
+      expect(m.status, promoText).toBe('check'); expect(m.printingReason, promoText).toBe('printing_ambiguous');
+    }
+  });
+  it('a printing with no cue entry is neutral: credit, year and caption decide only on known disagreement', () => {
+    const id = getScanIndex().identityOf(byName('The Prince of Persia [T2C]'));
+    const without = (gone: string) => (k: string) => (k === gone ? undefined : cueFor(k));
+    const ai = { ...pop, illustrator: 'Illus. AI Generated' };
+    expect(selectPrinting(id, ai, NO).printingReason).toBe('illustrator');
+    const credit = selectPrinting(id, ai, NO, { cueFor: without(cardKey(byName('The Prince of Persia [T2C AB]'))) });
+    expect(credit.status).toBe('matched'); expect(credit.printingReason).toBe('default');
+    const y = { ...pop, copyrightYear: '2026' };
+    expect(selectPrinting(id, y, NO).printingReason).toBe('copyright_year');
+    expect(selectPrinting(id, y, NO, { cueFor: without(cardKey(byName('The Prince of Persia [T2C]'))) }).printingReason).not.toBe('copyright_year');
+    const crowds = det({ title: 'Lost Soul', reference: 'Luke 5:15', nickname: 'Crowds', type: 'Lost Soul', promoText: 'Special Promo' });
+    const crowdsId = getScanIndex().identityOf(byName('Lost Soul "Crowds" [Luke 5:15] [2025 - Worker]'));
+    expect(selectPrinting(crowdsId, crowds, NO).printingReason).toBe('caption');
+    const other = crowdsId.cards.find(c => isPromo(c) && !/Worker/.test(c.name))!;
+    expect(selectPrinting(crowdsId, crowds, NO, { cueFor: without(cardKey(other)) }).printingReason).not.toBe('caption');
+  });
   it('stats split old reprints', () => expect(matchDetection(det({ title: 'Christian Soldier', strength: '4', toughness: '4', reference: 'II Timothy 2:3' }), NO).chosen?.name).not.toMatch(/\( C\)/));
   it('promo text in the corner books the promo', () => {
     expect(matchDetection(det({ title: 'Root of Jesse', reference: 'Isaiah 11:10', rarityCode: 'P' }), NO).chosen?.name).toBe('Root of Jesse (Promo)');
@@ -53,9 +86,18 @@ describe('collapse', () => {
   const sog = det({ title: 'Son of God', type: 'Dominant' });
   it('prices under the floor collapse to the cheapest, over it ask', () => {
     const cheap = priced([['Son of God (1st Print - L)', 3], ['Son of God (1st Print - K)', 3.5], ['Son of God [K]', 4.9], ['Son of God [L]', 3]]);
-    expect(selectPrinting(id, sog, cheap).status).toBe('matched');
+    const eq = selectPrinting(id, sog, cheap);
+    expect(eq.status).toBe('matched'); expect(eq.printingReason).toBe('equivalent');
+    expect(eq.candidates.map(c => c.key).sort()).toEqual(id.cards.map(cardKey).sort());
     const wide = { ...cheap, [cardKey(byName('Son of God [K]'))]: 3 + PRICE_DELTA_FLOOR };
     expect(selectPrinting(id, sog, wide).status).toBe('check');
   });
   it('all unpriced counts as zero span and picks a real printing', () => { const r = selectPrinting(id, sog, NO); expect(r.chosen?.price).toBeNull(); expect(r.chosen?.key).toBeTruthy(); });
+  it('a lone Rotation-legal survivor is the default, with every printing a tap away', () => {
+    const arch = getScanIndex().identityOf(byName('Archippus'));
+    expect(arch.cards.length).toBe(2);
+    const r = selectPrinting(arch, det({ title: 'Archippus' }), NO);
+    expect(r.status).toBe('matched'); expect(r.printingReason).toBe('default'); expect(r.chosen?.legality).toBe('Rotation');
+    expect(r.candidates.map(c => c.key).sort()).toEqual(arch.cards.map(cardKey).sort());
+  });
 });

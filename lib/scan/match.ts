@@ -7,7 +7,7 @@
 import type { CardData } from '@/lib/cards/lookup';
 import type { ScanDetection } from './schema';
 import { getScanIndex, type ScanIdentity } from './stemIndex';
-import { cueFor, creditAgrees, normalizeCaption, normalizeCredit } from './cues';
+import { cueFor as tableCueFor, creditAgrees, normalizeCaption, normalizeCredit, type PrintingCue } from './cues';
 import {
   brigadeAgrees, cardKey, cornerCode, editionLetter, isAB, isLegacyRare, isPromo, isUrPlus,
   nicknameOf, normalizeAbility, normalizeTitle, readCornerCode, refsOf, typeAgrees,
@@ -53,6 +53,9 @@ const FUZZY_MAX = 0.2;
 const FUZZY_SHORT_TITLE = 8;
 
 type Selection = Pick<MatchResult, 'status' | 'printingReason' | 'chosen' | 'candidates'>;
+
+/** Per-printing cue lookup; the generated table unless a test injects one. */
+export type CueLookup = (cardKey: string) => PrintingCue | undefined;
 
 const candidate = (c: CardData, prices: PriceMap): Candidate => {
   const key = cardKey(c);
@@ -105,7 +108,18 @@ const rank = (ids: ScanIdentity[], det: ScanDetection) => ids.map(i => scoreIden
 // Printing filters. Each returns the survivors it supports (or the input
 // unchanged) and, when exactly one remains by its own decision, that reason.
 
-interface Step { cards: CardData[]; decided?: PrintingReason; provisional?: CardData }
+/** `provisional`: Check this with that card as the provisional choice; `ambiguous`: Check this among `cards`, cheapest priced provisional. */
+interface Step { cards: CardData[]; decided?: PrintingReason; provisional?: CardData; ambiguous?: boolean }
+
+/**
+ * Keep the cards a cue agrees with plus the cards with no cue entry (neutral);
+ * drop only known disagreement. Nothing agreeing leaves the input; one survivor decides.
+ */
+function keepAgreeing(cards: CardData[], agrees: (c: CardData) => boolean, unknown: (c: CardData) => boolean, reason: PrintingReason): Step {
+  if (!cards.some(agrees)) return { cards };
+  const kept = cards.filter(c => agrees(c) || unknown(c));
+  return kept.length === 1 ? { cards: kept, decided: reason } : { cards: kept };
+}
 
 /** True when every dropped card is the AB twin of a kept one: the filter would only split one card from its twin. */
 function onlySplitsAbTwins(kept: CardData[], dropped: CardData[]): boolean {
@@ -123,7 +137,8 @@ function narrow(cards: CardData[], hits: CardData[], reason: PrintingReason): St
 function filterUrPlus(cards: CardData[], det: ScanDetection): Step {
   if (!/UR\+/.test(det.rarityCode ?? '')) return { cards };
   const hits = cards.filter(isUrPlus);
-  return hits.length === 1 ? { cards: hits, decided: 'ur_plus' } : { cards };
+  if (hits.length === 1) return { cards: hits, decided: 'ur_plus' };
+  return hits.length > 1 ? { cards: hits } : { cards };
 }
 
 function filterLegacyRare(cards: CardData[], det: ScanDetection): Step {
@@ -157,22 +172,20 @@ function filterStats(cards: CardData[], det: ScanDetection): Step {
   return narrow(cards, cards.filter(c => c.strength === det.strength && c.toughness === det.toughness), 'stats');
 }
 
-function filterCredit(cards: CardData[], det: ScanDetection): Step {
+function filterCredit(cards: CardData[], det: ScanDetection, cueFor: CueLookup): Step {
   const read = normalizeCredit(det.illustrator);
   if (!read || cards.length < 2) return { cards };
   const credit = (c: CardData) => normalizeCredit(cueFor(cardKey(c))?.illustrator);
   if (cards.filter(credit).length < 2) return { cards };
-  return narrow(cards, cards.filter(c => { const k = credit(c); return !!k && creditAgrees(read, k); }), 'illustrator');
+  return keepAgreeing(cards, c => { const k = credit(c); return !!k && creditAgrees(read, k); }, c => !cueFor(cardKey(c)), 'illustrator');
 }
 
-/** A single survivor whose printed year equals the read one wins even if the others print none. */
-function filterYear(cards: CardData[], det: ScanDetection): Step {
+/** A single survivor whose printed year equals the read one wins even if the others print none (a missing entry is not "none"). */
+function filterYear(cards: CardData[], det: ScanDetection, cueFor: CueLookup): Step {
   const year = det.copyrightYear;
   const yearOf = (c: CardData) => cueFor(cardKey(c))?.year;
   if (!year || cards.length < 2 || !cards.some(yearOf)) return { cards };
-  const hits = cards.filter(c => yearOf(c) === year);
-  if (hits.length === 1) return { cards: hits, decided: 'copyright_year' };
-  return hits.length > 1 ? { cards: hits } : { cards };
+  return keepAgreeing(cards, c => yearOf(c) === year, c => !cueFor(cardKey(c)), 'copyright_year');
 }
 
 function filterEditionLetter(cards: CardData[], det: ScanDetection): Step {
@@ -198,14 +211,12 @@ const PRINTED_EVENT_WORDS = ['local', 'seasonal', 'state', 'regional', 'district
 const placementIn = (t: string) => (/\b(1st|first)\b/.test(t) ? '1st' : /\b(2nd|second)\b/.test(t) ? '2nd' : /\b(3rd|third)\b/.test(t) ? '3rd' : null);
 const yearIn = (t: string) => /\b(20\d\d)\b/.exec(t)?.[1] ?? null;
 
-/** Among several promos, a printed caption agreeing with exactly one decides. */
-function byCaption(promos: CardData[], read: string): Step {
+/** Among several promos, a printed caption agreeing with exactly one decides (a promo with no cue entry keeps it open). */
+function byCaption(promos: CardData[], read: string, cueFor: CueLookup): Step {
   const caption = (c: CardData) => normalizeCaption(cueFor(cardKey(c))?.caption);
   const readCap = normalizeCaption(read);
   if (promos.filter(caption).length < 2 || !readCap) return { cards: promos };
-  const agree = promos.filter(c => { const cap = caption(c); return cap.length >= 3 && (readCap === cap || readCap.includes(cap) || cap.includes(readCap)); });
-  if (agree.length === 1) return { cards: agree, decided: 'caption' };
-  return agree.length > 1 ? { cards: agree } : { cards: promos };
+  return keepAgreeing(promos, c => { const cap = caption(c); return cap.length >= 3 && (readCap === cap || readCap.includes(cap) || cap.includes(readCap)); }, c => !cueFor(cardKey(c)), 'caption');
 }
 
 function promoScore(c: CardData, t: string): number {
@@ -221,32 +232,36 @@ function promoScore(c: CardData, t: string): number {
   return sc;
 }
 
+/** A strict top wins; a tie at a positive top keeps the tied top; otherwise every promo stays. */
 function byPromoScore(promos: CardData[], t: string): CardData[] {
   const scored = promos.map(c => ({ c, sc: promoScore(c, t) })).sort((a, b) => b.sc - a.sc);
-  return scored[0].sc > scored[1].sc ? [scored[0].c] : promos;
+  if (scored[0].sc > scored[1].sc) return [scored[0].c];
+  return scored[0].sc > 0 ? scored.filter(x => x.sc === scored[0].sc).map(x => x.c) : promos;
 }
 
 /** A placement or year in the text that contradicts the only promo printing's name. */
 function contradicts(promo: CardData, t: string): boolean {
   const h = promo.name.toLowerCase();
-  const place = /\b(1st|2nd|3rd)\b/.exec(t)?.[1];
+  const place = placementIn(t);
   const year = yearIn(t);
   return !!(place && /\b(1st|2nd|3rd) place\b/.test(h) && !h.includes(`${place} place`))
     || !!(year && /\b20\d\d\b/.test(h) && !h.includes(year));
 }
 
-function filterPromoText(cards: CardData[], det: ScanDetection): Step {
+function filterPromoText(cards: CardData[], det: ScanDetection, cueFor: CueLookup): Step {
   const read = [det.promoText, det.rarityCode].filter(Boolean).join(' ');
   if (!read || !PROMO_WORDS.test(read)) return { cards };
   let promos = cards.filter(isPromo);
   if (!promos.length) return { cards };
-  if (promos.length > 1) {
-    const cap = byCaption(promos, read);
-    if (cap.decided) return cap;
-    promos = cap.cards;
-  }
   const t = read.toLowerCase();
-  if (promos.length > 1) promos = byPromoScore(promos, t);
+  // Caption and scoring need printed promo text; a bare "P" in the corner only keeps the promos.
+  if (det.promoText && promos.length > 1) {
+    const cap = byCaption(promos, read, cueFor);
+    if (cap.decided) return cap;
+    promos = byPromoScore(cap.cards, t);
+    // A read placement or year that still leaves several promos is the picker's call, never a price collapse.
+    if (promos.length > 1 && (placementIn(t) || yearIn(t))) return { cards: promos, ambiguous: true };
+  }
   if (promos.length === 1) {
     if (contradicts(promos[0], t)) return { cards, decided: 'printing_ambiguous', provisional: promos[0] };
     return { cards: promos, decided: 'promo_text' };
@@ -254,7 +269,7 @@ function filterPromoText(cards: CardData[], det: ScanDetection): Step {
   return { cards: promos };
 }
 
-const FILTERS: ((cards: CardData[], det: ScanDetection) => Step)[] = [
+const FILTERS: ((cards: CardData[], det: ScanDetection, cueFor: CueLookup) => Step)[] = [
   filterUrPlus,
   filterLegacyRare,
   filterCornerCode,
@@ -269,33 +284,41 @@ const FILTERS: ((cards: CardData[], det: ScanDetection) => Step)[] = [
 
 const isSpecial = (c: CardData) => isPromo(c) || isAB(c) || isLegacyRare(c) || isUrPlus(c);
 
+/** The cheapest priced survivor, else one with a corner code, else the first. */
+function defaultOf(cards: CardData[], survivors: Candidate[]): Candidate {
+  return survivors.filter(x => x.price != null).sort((a, b) => (a.price as number) - (b.price as number))[0]
+    ?? survivors.find((_, i) => cornerCode(cards[i]))
+    ?? survivors[0];
+}
+
 function collapse(cards: CardData[], all: Candidate[], prices: PriceMap): Selection {
-  let removedSpecial = false;
+  let removed = false;
   if (!cards.every(isPromo)) {
     const standard = cards.filter(c => !isSpecial(c));
-    if (standard.length && standard.length < cards.length) { removedSpecial = true; cards = standard; }
+    if (standard.length && standard.length < cards.length) { removed = true; cards = standard; }
   }
+  // Dropping non-Rotation printings is a removal too: a lone survivor is the default, one tap from the rest.
   const rotation = cards.filter(c => c.legality === 'Rotation');
-  if (rotation.length) cards = rotation;
+  if (rotation.length && rotation.length < cards.length) { removed = true; cards = rotation; }
 
   const survivors = cards.map(c => candidate(c, prices));
-  if (cards.length === 1) return { status: 'matched', printingReason: removedSpecial ? 'default' : 'only', chosen: survivors[0], candidates: all };
+  if (cards.length === 1) return { status: 'matched', printingReason: removed ? 'default' : 'only', chosen: survivors[0], candidates: all };
 
   const ps = survivors.filter(x => x.price != null).map(x => x.price as number);
   const span = ps.length ? Math.max(...ps) - Math.min(...ps) : 0;
   const legalities = new Set(cards.map(c => c.legality));
-  const chosen = survivors.filter(x => x.price != null).sort((a, b) => (a.price as number) - (b.price as number))[0]
-    ?? survivors.find((_, i) => cornerCode(cards[i]))
-    ?? survivors[0];
-  if (span < PRICE_DELTA_FLOOR && legalities.size === 1) return { status: 'matched', printingReason: 'equivalent', chosen, candidates: survivors };
+  const chosen = defaultOf(cards, survivors);
+  if (span < PRICE_DELTA_FLOOR && legalities.size === 1) return { status: 'matched', printingReason: 'equivalent', chosen, candidates: all };
   return { status: 'check', printingReason: 'printing_ambiguous', chosen, candidates: survivors };
 }
 
-export function selectPrinting(identity: ScanIdentity, det: ScanDetection, prices: PriceMap): Selection {
+export function selectPrinting(identity: ScanIdentity, det: ScanDetection, prices: PriceMap, opts: { cueFor?: CueLookup } = {}): Selection {
+  const cueFor = opts.cueFor ?? tableCueFor;
   const all = identity.cards.map(c => candidate(c, prices));
   let cards = identity.cards;
   for (const filter of FILTERS) {
-    const step = filter(cards, det);
+    const step = filter(cards, det, cueFor);
+    if (step.ambiguous) { const survivors = step.cards.map(c => candidate(c, prices)); return { status: 'check', printingReason: 'printing_ambiguous', chosen: defaultOf(step.cards, survivors), candidates: survivors }; }
     if (step.provisional) return { status: 'check', printingReason: 'printing_ambiguous', chosen: candidate(step.provisional, prices), candidates: step.cards.map(c => candidate(c, prices)) };
     if (step.decided) return { status: 'matched', printingReason: step.decided, chosen: candidate(step.cards[0], prices), candidates: all };
     cards = step.cards;

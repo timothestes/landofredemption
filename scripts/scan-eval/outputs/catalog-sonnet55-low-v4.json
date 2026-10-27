@@ -1,0 +1,4156 @@
+{
+ "model": "claude-sonnet-5-5",
+ "promptHash": "09d27ef8958b",
+ "arm": {
+  "model": "claude-sonnet-5-5",
+  "effort": "low",
+  "tier": "high"
+ },
+ "recordedAt": "2026-10-27",
+ "rows": [
+  {
+   "id": "c_001",
+   "detections": [
+    {
+     "title": "Captive Priest",
+     "reference": "Judges 18:27",
+     "nickname": null,
+     "abilityStart": "You may capture this Hero to",
+     "abilityEnd": "or Reserve to battle.",
+     "identifier": "Generic, Priest",
+     "brigade": "Teal",
+     "strength": "2",
+     "toughness": "4",
+     "printNumber": "98",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": "2007",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_002",
+   "detections": [
+    {
+     "title": "Clinging to Power",
+     "reference": "John 11:48",
+     "nickname": null,
+     "abilityStart": "You may take an evil card",
+     "abilityEnd": "or underdeck this card.",
+     "identifier": null,
+     "brigade": "Gold",
+     "strength": "3",
+     "toughness": "3",
+     "printNumber": "166",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. Édouard Moyse",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_003",
+   "detections": [
+    {
+     "title": "Naming the Nation",
+     "reference": "Genesis 48:16",
+     "nickname": null,
+     "abilityStart": "Underdeck all Evil Characters in battle. You",
+     "abilityEnd": "You may draw 3.",
+     "identifier": null,
+     "brigade": "Blue",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "46",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": "2023",
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_004",
+   "detections": [
+    {
+     "title": "Josiah's Covenant",
+     "reference": "II Kings 23:3",
+     "nickname": null,
+     "abilityStart": "Discard an evil card. Cannot be negated",
+     "abilityEnd": "Protect Heroes in territory from harm.",
+     "identifier": null,
+     "brigade": "Gold",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "12",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. Leonaert Bramer",
+     "copyrightYear": null,
+     "type": "Covenant",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_005",
+   "detections": [
+    {
+     "title": "Ninevites",
+     "reference": "Jonah 3:5",
+     "nickname": null,
+     "abilityStart": "You may exchange a card from",
+     "abilityEnd": "a prophet is in play.",
+     "identifier": "Begins as an Evil Character. Generic, As",
+     "brigade": "Green",
+     "strength": "5",
+     "toughness": "3",
+     "printNumber": "190",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Gebhard Fugel",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_006",
+   "detections": [
+    {
+     "title": "Prince Jonathan",
+     "reference": "I Samuel 20:17",
+     "nickname": null,
+     "abilityStart": "Protect a different O.T. purple warrior from",
+     "abilityEnd": "O.T. purple card from Reserve.",
+     "identifier": "Royalty",
+     "brigade": "Purple",
+     "strength": "8",
+     "toughness": "8",
+     "printNumber": "96",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. © Jamison Services, Inc.",
+     "copyrightYear": "2023",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_007",
+   "detections": [
+    {
+     "title": "Men of Judah",
+     "reference": "Judges 1:9",
+     "nickname": null,
+     "abilityStart": "If this card is harmed or defeated,",
+     "abilityEnd": "to an O.T. gold warrior.",
+     "identifier": "Generic, Wilderness",
+     "brigade": "Gold",
+     "strength": "12",
+     "toughness": "12",
+     "printNumber": "296",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Rafael Ximeno y Planes",
+     "copyrightYear": "2026",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_008",
+   "detections": [
+    {
+     "title": "Fourth Seal",
+     "reference": "Revelation 6:8",
+     "nickname": null,
+     "abilityStart": "Discard an Evil Character (or 2 Evil",
+     "abilityEnd": "Cannot be negated if an animal is in play.",
+     "identifier": "Symbolic, Character is territory class",
+     "brigade": "Red",
+     "strength": "4",
+     "toughness": "1",
+     "printNumber": "29",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. © Jamison Services, Inc.",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_009",
+   "detections": [
+    {
+     "title": "Abomination of Desolation",
+     "reference": "Daniel 11:31",
+     "nickname": null,
+     "abilityStart": "You may reserve this card to",
+     "abilityEnd": "discard a card in their territory.",
+     "identifier": "Idol",
+     "brigade": "Red",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "6",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. William Hartman K.",
+     "copyrightYear": "2025",
+     "type": "Curse",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_010",
+   "detections": [
+    {
+     "title": "Prisoner at Gaza",
+     "reference": "Judges 16:21",
+     "nickname": null,
+     "abilityStart": "You may capture this character to",
+     "abilityEnd": "brigade to battle.",
+     "identifier": "Generic",
+     "brigade": "Gold",
+     "strength": "5",
+     "toughness": "2",
+     "printNumber": "95",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. William Hole",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_011",
+   "detections": [
+    {
+     "title": "Questioning Christ",
+     "reference": "John 18:19",
+     "nickname": null,
+     "abilityStart": "Discard a good card from a",
+     "abilityEnd": "toughness X or less.",
+     "identifier": null,
+     "brigade": "Purple",
+     "strength": "X",
+     "toughness": "6",
+     "printNumber": "189",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. J.J. Tissot",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_012",
+   "detections": [
+    {
+     "title": "Grain in a Famine",
+     "reference": "Genesis 41:56",
+     "nickname": null,
+     "abilityStart": "You may capture a Hero. If",
+     "abilityEnd": "from deck or Reserve.",
+     "identifier": null,
+     "brigade": "Green",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "127",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Bartholomeus Breenbergh",
+     "copyrightYear": "2023",
+     "type": "Curse",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_013",
+   "detections": [
+    {
+     "title": "Ram, the Exalter",
+     "reference": "Ruth 4:19",
+     "nickname": null,
+     "abilityStart": "Discard an evil card from a",
+     "abilityEnd": "to a meek white Hero.",
+     "identifier": "Meek (has no special ability)",
+     "brigade": "White",
+     "strength": "3",
+     "toughness": "4",
+     "printNumber": "122",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. J.M. Cabezalero & Rembrandt",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_014",
+   "detections": [
+    {
+     "title": "Devouring Lion",
+     "reference": "Isaiah 5:29",
+     "nickname": null,
+     "abilityStart": "Reserve a human. If it is",
+     "abilityEnd": "from hand instead.",
+     "identifier": "Animal, Generic",
+     "brigade": "Crimson",
+     "strength": "5",
+     "toughness": "4",
+     "printNumber": "87",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. Eugène Delacroix",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_015",
+   "detections": [
+    {
+     "title": "Deborah, the Brave",
+     "reference": "Judges 4:4",
+     "nickname": null,
+     "abilityStart": "Protect Lost Souls from evil cards.",
+     "abilityEnd": "Cannot be prevented.",
+     "identifier": "Judge, Musician, Prophet",
+     "brigade": "Gold",
+     "strength": "7",
+     "toughness": "6",
+     "printNumber": "68",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Charles Landelle",
+     "copyrightYear": "2023",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_016",
+   "detections": [
+    {
+     "title": "Amasa, Son of Ithra",
+     "reference": "II Samuel 17:25",
+     "nickname": null,
+     "abilityStart": "If you control a meek Lost",
+     "abilityEnd": "to a brown human.",
+     "identifier": null,
+     "brigade": "Brown",
+     "strength": "8",
+     "toughness": "8",
+     "printNumber": "383",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": "2026",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_017",
+   "detections": [
+    {
+     "title": "Lamb's Righteousness",
+     "reference": "Revelation 5:6",
+     "nickname": null,
+     "abilityStart": "If rescuing and your Hero is opposed,",
+     "abilityEnd": "additional cards this turn.",
+     "identifier": null,
+     "brigade": "Purple",
+     "strength": "3",
+     "toughness": "2",
+     "printNumber": "56",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. © Jamison Services, Inc.",
+     "copyrightYear": null,
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_018",
+   "detections": [
+    {
+     "title": "The Final Act",
+     "reference": "Daniel 12:10",
+     "nickname": null,
+     "abilityStart": "(Unity) Shuffle all evil cards in a",
+     "abilityEnd": "Cannot be negated.",
+     "identifier": "Unity: Heroes (Daniel reference)",
+     "brigade": "Silver",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "73",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. Jean Cousin",
+     "copyrightYear": "2025",
+     "type": "Dominant",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_019",
+   "detections": [
+    {
+     "title": "Tubal-cain",
+     "reference": "Genesis 4:22",
+     "nickname": null,
+     "abilityStart": "You may exchange a card from",
+     "abilityEnd": "Cannot be interrupted.",
+     "identifier": "Antediluvian",
+     "brigade": "Green",
+     "strength": "6",
+     "toughness": "4",
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Diego Velasquez",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_020",
+   "detections": [
+    {
+     "title": "Angel Party",
+     "reference": "Luke 15:10",
+     "nickname": null,
+     "abilityStart": "(Unity) Place in territory: Each upkeep,",
+     "abilityEnd": "Cannot be prevented.",
+     "identifier": "Unity: Heroes (N.T.)",
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": "80",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. J.J. Tissot",
+     "copyrightYear": null,
+     "type": "Dominant",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_021",
+   "detections": [
+    {
+     "title": "Unclean Animals",
+     "reference": "Leviticus 11:26",
+     "nickname": null,
+     "abilityStart": "Negate good draw abilities. May band to",
+     "abilityEnd": "Cannot be interrupted.",
+     "identifier": "Generic, Animal",
+     "brigade": "Pink",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "105",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": "2023",
+     "type": "Curse",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_022",
+   "detections": [
+    {
+     "title": "Judah's Intervention",
+     "reference": "Genesis 44:33",
+     "nickname": null,
+     "abilityStart": "You may capture your Genesis or",
+     "abilityEnd": "an opposing character.",
+     "identifier": null,
+     "brigade": "Blue",
+     "strength": "4",
+     "toughness": "3",
+     "printNumber": "146",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_023",
+   "detections": [
+    {
+     "title": "Book of the Covenant",
+     "reference": "Exodus 24:7",
+     "nickname": null,
+     "abilityStart": "You may take a Covenant from",
+     "abilityEnd": "you may draw 1.",
+     "identifier": "Tabernacle, Temple, Holds up to 2 Covena",
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": "36",
+     "rarityCode": "UR",
+     "promoText": null,
+     "illustrator": "Illus. Doug Gray",
+     "copyrightYear": null,
+     "type": "Covenant",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_024",
+   "detections": [
+    {
+     "title": "Laban, the Deal Breaker",
+     "reference": "Genesis 30:27",
+     "nickname": null,
+     "abilityStart": "You may bounce a multi-brigade card",
+     "abilityEnd": "Take up to 1 evil card.",
+     "identifier": "Magician, Syrian",
+     "brigade": "Green",
+     "strength": "2",
+     "toughness": "7",
+     "printNumber": "143",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Pietro da Cortona",
+     "copyrightYear": "2023",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_025",
+   "detections": [
+    {
+     "title": "Abel, the Accepted",
+     "reference": "Genesis 4:4",
+     "nickname": null,
+     "abilityStart": "You may draw 2. If this card",
+     "abilityEnd": "Genesis Hero to battle.",
+     "identifier": "Antediluvian, Prophet",
+     "brigade": "Blue",
+     "strength": "4",
+     "toughness": "4",
+     "printNumber": "273",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. © Jamison Services, Inc.",
+     "copyrightYear": "2026",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_026",
+   "detections": [
+    {
+     "title": "Outsiders",
+     "reference": "Revelation 22:15",
+     "nickname": null,
+     "abilityStart": "If blocking, search deck, discard pile or",
+     "abilityEnd": "cards in hand than you.",
+     "identifier": "Generic, Genderless, X = # of cards in o",
+     "brigade": "Gray",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "90",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Giovanni Pastrone",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_027",
+   "detections": [
+    {
+     "title": "Ahasuerus, the Father",
+     "reference": "Daniel 9:1",
+     "nickname": null,
+     "abilityStart": "You may take an O.T. brown",
+     "abilityEnd": "play an O.T. brown Enhancement.",
+     "identifier": "Persian King",
+     "brigade": "Brown",
+     "strength": "9",
+     "toughness": "10",
+     "printNumber": "96",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. Jac. van der Borght",
+     "copyrightYear": "2025",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_028",
+   "detections": [
+    {
+     "title": "Heart of Depravity",
+     "reference": "Romans 1:29-30",
+     "nickname": null,
+     "abilityStart": "If used by a human, you may",
+     "abilityEnd": "(or take it if played in battle).",
+     "identifier": null,
+     "brigade": "Black",
+     "strength": "-3",
+     "toughness": "3",
+     "printNumber": "144",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. Janos Pentelei-Molnar",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_029",
+   "detections": [
+    {
+     "title": "His Sacrifice",
+     "reference": "Matthew 26:28",
+     "nickname": null,
+     "abilityStart": "Convert all evil humans in battle.",
+     "abilityEnd": "an evil Dominant.",
+     "identifier": "Unity: Heroes (N.T.)",
+     "brigade": null,
+     "strength": "7",
+     "toughness": "0",
+     "printNumber": "18",
+     "rarityCode": "UR",
+     "promoText": null,
+     "illustrator": "Illus. J.J. Tissot",
+     "copyrightYear": null,
+     "type": "Dominant",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_030",
+   "detections": [
+    {
+     "title": "Curse Their Parents",
+     "reference": "Leviticus 20:9",
+     "nickname": null,
+     "abilityStart": "Discard all cards in battle and",
+     "abilityEnd": "Cannot be prevented.",
+     "identifier": "X = # of good Dominants in opponent's di",
+     "brigade": "Gray",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "113",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Wilhelm von Kaulbach",
+     "copyrightYear": "2023",
+     "type": "Curse",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_031",
+   "detections": [
+    {
+     "title": "Jehoiakim, Puppet King",
+     "reference": "II Kings 23:34",
+     "nickname": null,
+     "abilityStart": "Underdeck a meek Lost Soul.",
+     "abilityEnd": "to an evil royal human.",
+     "identifier": "King of Judah",
+     "brigade": "Gold",
+     "strength": "3",
+     "toughness": "6",
+     "printNumber": "188",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Vladimir Borovikovsky",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_032",
+   "detections": [
+    {
+     "title": "False Dreams",
+     "reference": "Jeremiah 23:25",
+     "nickname": null,
+     "abilityStart": "Place in territory: When played from hand",
+     "abilityEnd": "from hand for one round.",
+     "identifier": null,
+     "brigade": "Black",
+     "strength": "-3",
+     "toughness": "3",
+     "printNumber": "131",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Pierre Puvis de Chavannes",
+     "copyrightYear": null,
+     "type": "Curse",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_033",
+   "detections": [
+    {
+     "title": "Evil Released",
+     "reference": "Revelation 20:7",
+     "nickname": null,
+     "abilityStart": "Play a demon from discard pile",
+     "abilityEnd": "banish this card.",
+     "identifier": null,
+     "brigade": "Orange",
+     "strength": "6",
+     "toughness": "0",
+     "printNumber": "207",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. © Cahaba Productions",
+     "copyrightYear": "2023",
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_034",
+   "detections": [
+    {
+     "title": "Table of Demons",
+     "reference": "I Corinthians 10:21",
+     "nickname": null,
+     "abilityStart": "Negate humans. You may take an",
+     "abilityEnd": "Reserve if an idol is active",
+     "identifier": null,
+     "brigade": "Orange",
+     "strength": "4",
+     "toughness": "2",
+     "printNumber": "432",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Doug Gray",
+     "copyrightYear": "2026",
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_035",
+   "detections": [
+    {
+     "title": "Second Seal",
+     "reference": "Revelation 6:4",
+     "nickname": null,
+     "abilityStart": "Begin a side battle between 2",
+     "abilityEnd": "for an evil weapon.",
+     "identifier": "Symbolic",
+     "brigade": "Red",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "27",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. © Jamison Services, Inc.",
+     "copyrightYear": null,
+     "type": "unknown",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_036",
+   "detections": [
+    {
+     "title": "Allowed to Be Trampled",
+     "reference": "Daniel 8:13",
+     "nickname": null,
+     "abilityStart": "If used by a Greek, interrupt",
+     "abilityEnd": "all opposing Heroes.",
+     "identifier": null,
+     "brigade": "Black",
+     "strength": "2",
+     "toughness": "3",
+     "printNumber": "91",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Heinrich Leutemann",
+     "copyrightYear": "2025",
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_037",
+   "detections": [
+    {
+     "title": "Shame",
+     "reference": "Genesis 3:10",
+     "nickname": null,
+     "abilityStart": "Set aside up to 2 of",
+     "abilityEnd": "set aside by this ability.",
+     "identifier": null,
+     "brigade": "Green",
+     "strength": "3",
+     "toughness": "2",
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_038",
+   "detections": [
+    {
+     "title": "Thievery of Judas",
+     "reference": "John 12:6",
+     "nickname": null,
+     "abilityStart": "Topdeck a thief from Reserve. If",
+     "abilityEnd": "regardless of brigade.",
+     "identifier": null,
+     "brigade": "Crimson",
+     "strength": "6",
+     "toughness": "0",
+     "printNumber": "199",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Carl Bloch",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_039",
+   "detections": [
+    {
+     "title": "Offering of Wrongdoing",
+     "reference": "Numbers 5:15",
+     "nickname": null,
+     "abilityStart": "Prevent evil Enhancements in territories. You",
+     "abilityEnd": "priest from deck.",
+     "identifier": null,
+     "brigade": "Crimson",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "6",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. Gerbrand van den Eeckhout",
+     "copyrightYear": "2023",
+     "type": "Covenant",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_040",
+   "detections": [
+    {
+     "title": "Plague of Boils",
+     "reference": "Exodus 9:10",
+     "nickname": null,
+     "abilityStart": "Opponent may discard the top 5",
+     "abilityEnd": "evil Enhancements from hand.",
+     "identifier": "Plague",
+     "brigade": "Purple",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "150",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. Joe Boulden",
+     "copyrightYear": null,
+     "type": "Curse",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_041",
+   "detections": [
+    {
+     "title": "Peter, the Believer",
+     "reference": "John 20:6",
+     "nickname": null,
+     "abilityStart": "You may bounce a human in",
+     "abilityEnd": "may play a Gospel Enhancement. Cannot be interrupted.",
+     "identifier": "Disciple, Empty Tomb, Jerusalem, Martyr,",
+     "brigade": "Gold",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "1/12",
+     "rarityCode": "Seasonal",
+     "promoText": "Seasonal Promo",
+     "illustrator": "Illus. Eugene Burnand",
+     "copyrightYear": "2026",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_042",
+   "detections": [
+    {
+     "title": "Whirlwind",
+     "reference": "Proverbs 10:25",
+     "nickname": null,
+     "abilityStart": "Discard an evil card (except a",
+     "abilityEnd": "Take up to 1.",
+     "identifier": null,
+     "brigade": "Gray",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": "24th Annual Redemption National Tournament Tomball, TX August 2-4 2018",
+     "illustrator": "Illus. Cornelis Mahu",
+     "copyrightYear": null,
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "medium"
+    }
+   ]
+  },
+  {
+   "id": "c_043",
+   "detections": [
+    {
+     "title": "Panic Demon",
+     "reference": "II Timothy 1:7",
+     "nickname": null,
+     "abilityStart": "Negate the special abilities on opponents'",
+     "abilityEnd": "May band to Panic Demon.",
+     "identifier": "GENERIC MALE DEMON",
+     "brigade": "Gold",
+     "strength": "2",
+     "toughness": "4",
+     "printNumber": null,
+     "rarityCode": "P",
+     "promoText": "Local Redemption Tournament Participant",
+     "illustrator": "Illus. ©Backyard Digital Studios",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_044",
+   "detections": [
+    {
+     "title": "The Watchman",
+     "reference": "Ezekiel 3:17",
+     "nickname": null,
+     "abilityStart": "Negate evil search and shuffle abilities.",
+     "abilityEnd": "Cannot be interrupted.",
+     "identifier": "Prophet",
+     "brigade": "Gold",
+     "strength": "4",
+     "toughness": "12",
+     "printNumber": null,
+     "rarityCode": "P",
+     "promoText": "Local Redemption Tournament Participant",
+     "illustrator": "Illus. David Dietrick",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_045",
+   "detections": [
+    {
+     "title": "Wall of Protection",
+     "reference": "Nehemiah 4:7",
+     "nickname": null,
+     "abilityStart": "Protect your characters from opponents' band,",
+     "abilityEnd": "evil Enhancement played each battle.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "P",
+     "promoText": null,
+     "illustrator": "Illus. J.J. Tissot",
+     "copyrightYear": null,
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_046",
+   "detections": [
+    {
+     "title": "Shipwreck",
+     "reference": "Acts 27:41",
+     "nickname": null,
+     "abilityStart": "Negate and discard a Fortress or",
+     "abilityEnd": "or a set-aside area.",
+     "identifier": null,
+     "brigade": "Black",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "142",
+     "rarityCode": "UR",
+     "promoText": null,
+     "illustrator": "Illus. Jan Porcellis",
+     "copyrightYear": null,
+     "type": "Curse",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_047",
+   "detections": [
+    {
+     "title": "Son of God",
+     "reference": "Revelation 1:17-18",
+     "nickname": null,
+     "abilityStart": "Negate and rescue a Lost Soul.",
+     "abilityEnd": "rescue a Lost Soul.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": "2020 National Tournament Special Promo",
+     "illustrator": "Illus. Gustave Dore",
+     "copyrightYear": "2020",
+     "type": "unknown",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_048",
+   "detections": [
+    {
+     "title": "Bethlehem",
+     "reference": "Matthew 2:6 (Micah 5:2)",
+     "nickname": null,
+     "abilityStart": "Protect your human Heroes with strength 6",
+     "abilityEnd": "from discard abilities.",
+     "identifier": "Fortress holds a human Hero",
+     "brigade": "Black",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "P",
+     "promoText": "Seasonal Redemption Promo",
+     "illustrator": "Illus. Thomas Cole",
+     "copyrightYear": null,
+     "type": "Fortress",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_049",
+   "detections": [
+    {
+     "title": "Shadrach (Hananiah)",
+     "reference": "Daniel 3:28",
+     "nickname": null,
+     "abilityStart": "May band to a Hero with",
+     "abilityEnd": "abilities on Crimson brigade cards.",
+     "identifier": null,
+     "brigade": "Gold",
+     "strength": "5",
+     "toughness": "7",
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": "District Redemption Tournament Participant",
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_050",
+   "detections": [
+    {
+     "title": "Paul",
+     "reference": "Romans 1:1",
+     "nickname": null,
+     "abilityStart": "Negate neutral cards (except Acts cards).",
+     "abilityEnd": "Cannot be negated.",
+     "identifier": "Martyr, Missionary, Pharisee, Prophet, R",
+     "brigade": "Gold",
+     "strength": "10",
+     "toughness": "10",
+     "printNumber": null,
+     "rarityCode": "P",
+     "promoText": "District Redemption Tournament Participant",
+     "illustrator": "Illus. Antonio del Castillo",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_051",
+   "detections": [
+    {
+     "title": "Saint Patrick",
+     "reference": "Matthew 28:19",
+     "nickname": null,
+     "abilityStart": "Discard a single-colored green Enhancement from",
+     "abilityEnd": "immune to evil Priests.",
+     "identifier": null,
+     "brigade": "Green",
+     "strength": "6",
+     "toughness": "7",
+     "printNumber": null,
+     "rarityCode": "P",
+     "promoText": "Local Redemption Tournament Participant",
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_052",
+   "detections": [
+    {
+     "title": "Gideon's 300",
+     "reference": "Judges 7:7",
+     "nickname": null,
+     "abilityStart": "Set aside all Heroes in territory",
+     "abilityEnd": "Torches cannot be negated.",
+     "identifier": "Army",
+     "brigade": "Gold",
+     "strength": "3",
+     "toughness": "3",
+     "printNumber": null,
+     "rarityCode": "P",
+     "promoText": "State Redemption Tournament Participant",
+     "illustrator": "Illus. H.A. Dixon",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_053",
+   "detections": [
+    {
+     "title": "Samson, Son of Manoah",
+     "reference": "Judges 14:5",
+     "nickname": null,
+     "abilityStart": "You may discard an animal to",
+     "abilityEnd": "Cannot be negated.",
+     "identifier": "Judge, X = # of cards in hand",
+     "brigade": "Gold",
+     "strength": "12",
+     "toughness": "8",
+     "printNumber": null,
+     "rarityCode": "State Pr",
+     "promoText": "State Promo",
+     "illustrator": "Illus. Peter Paul Rubens",
+     "copyrightYear": "2025",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_054",
+   "detections": [
+    {
+     "title": "Jairus",
+     "reference": "Mark 5:22",
+     "nickname": null,
+     "abilityStart": "You may reveal Son of God",
+     "abilityEnd": "Cannot be negated.",
+     "identifier": null,
+     "brigade": "Gold",
+     "strength": "8",
+     "toughness": "7",
+     "printNumber": null,
+     "rarityCode": "P",
+     "promoText": "State Redemption Tournament Participant",
+     "illustrator": "Illus: ©Pacific Press/GoodSalt.com",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_055",
+   "detections": [
+    {
+     "title": "Son of God",
+     "reference": "Revelation 19:11",
+     "nickname": null,
+     "abilityStart": "Negate and rescue a Lost Soul.",
+     "abilityEnd": "rescue a Lost Soul.",
+     "identifier": null,
+     "brigade": "Gold",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "P",
+     "promoText": "2017 National Tournament Special Promo",
+     "illustrator": "Illus. © Jamison Services, Inc.",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_056",
+   "detections": [
+    {
+     "title": "Nehemiah, the Vigilant",
+     "reference": "Nehemiah 5:7",
+     "nickname": null,
+     "abilityStart": "Protect meek cards from evil cards.",
+     "abilityEnd": "negated by evil O.T. cards.",
+     "identifier": "Postexilic",
+     "brigade": "Gold",
+     "strength": "7",
+     "toughness": "12",
+     "printNumber": null,
+     "rarityCode": "P",
+     "promoText": "State Redemption Tournament Promo",
+     "illustrator": "Illus. J.J. Tissot",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_057",
+   "detections": [
+    {
+     "title": "Rapha of Gath",
+     "reference": "II Samuel 21:22",
+     "nickname": null,
+     "abilityStart": "Protect Philistines in territory from opponents.",
+     "abilityEnd": "draw or search ability this turn",
+     "identifier": "Philistine Giant",
+     "brigade": "Black",
+     "strength": "12",
+     "toughness": "12",
+     "printNumber": null,
+     "rarityCode": "P",
+     "promoText": "Seasonal Redemption Promo",
+     "illustrator": "Illus. Angelo Bronzino",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_058",
+   "detections": [
+    {
+     "title": "Baruch the Scribe",
+     "reference": "Jeremiah 36:4",
+     "nickname": null,
+     "abilityStart": "You may take an O.T. Artifact",
+     "abilityEnd": "Cannot be interrupted.",
+     "identifier": null,
+     "brigade": "Green",
+     "strength": "1",
+     "toughness": "2",
+     "printNumber": null,
+     "rarityCode": "Local Pr",
+     "promoText": "Local Promo",
+     "illustrator": "Illus. James Doyle Penrose",
+     "copyrightYear": "2025",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_059",
+   "detections": [
+    {
+     "title": "Clinging to Power",
+     "reference": "John 11:48",
+     "nickname": null,
+     "abilityStart": "You may take an evil card",
+     "abilityEnd": "reserve a Hero in battle or underdeck this card.",
+     "identifier": null,
+     "brigade": "Gold/Black",
+     "strength": "3",
+     "toughness": "3",
+     "printNumber": null,
+     "rarityCode": "P",
+     "promoText": null,
+     "illustrator": "Illus. J.J. Tissot",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_060",
+   "detections": [
+    {
+     "title": "Gates of Jerusalem",
+     "reference": "II Chronicles 14:7",
+     "nickname": null,
+     "abilityStart": "Protect your kings and queens of",
+     "abilityEnd": "evil king of Judah) to battle.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "P",
+     "promoText": null,
+     "illustrator": "Illus. Carl Wuttke",
+     "copyrightYear": null,
+     "type": "City",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_061",
+   "detections": [
+    {
+     "title": "Merchants of the Earth",
+     "reference": "Revelation 18:11-12",
+     "nickname": null,
+     "abilityStart": "If blocking, you may exchange an",
+     "abilityEnd": "Babylon or The Harlot is in play.",
+     "identifier": "Generic",
+     "brigade": "Gold",
+     "strength": "5",
+     "toughness": "4",
+     "printNumber": "112",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Hendrick ter Brugghen",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_062",
+   "detections": [
+    {
+     "title": "Sins Forgotten",
+     "reference": "Hebrews 8:12 (Jeremiah 31:34)",
+     "nickname": null,
+     "abilityStart": "Negate and remove up to X",
+     "abilityEnd": "if used by Jeremiah.",
+     "identifier": null,
+     "brigade": "Blue",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "82",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Providence Lithograph Co.",
+     "copyrightYear": null,
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_063",
+   "detections": [
+    {
+     "title": "Letter to the Hebrews",
+     "reference": "Hebrews 13:22",
+     "nickname": null,
+     "abilityStart": "On activation, you may discard a",
+     "abilityEnd": "for a Hebrews card.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": "4",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus: Artist Unknown",
+     "copyrightYear": null,
+     "type": "Artifact",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_064",
+   "detections": [
+    {
+     "title": "Faith of Rahab",
+     "reference": "Hebrews 11:31",
+     "nickname": null,
+     "abilityStart": "You may negate and discard an",
+     "abilityEnd": "it to territory.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": "52",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_065",
+   "detections": [
+    {
+     "title": "The Murdering Pharaoh",
+     "reference": "Exodus 1:8",
+     "nickname": null,
+     "abilityStart": "Search deck for a Genesis or",
+     "abilityEnd": "Taskmaster cannot be prevented.",
+     "identifier": "Egyptian, X = # of opponent's good briga",
+     "brigade": "Red",
+     "strength": "10",
+     "toughness": "8",
+     "printNumber": "114",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Victor Orsel",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_066",
+   "detections": [
+    {
+     "title": "Kingdom of the Divine",
+     "reference": "Daniel 2:44",
+     "nickname": null,
+     "abilityStart": "While a Daniel Lost Soul is in",
+     "abilityEnd": "Lost Soul token in a territory.",
+     "identifier": null,
+     "brigade": "Gold",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "17",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. Frederic Edwin Church",
+     "copyrightYear": "2026",
+     "type": "Dominant",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_067",
+   "detections": [
+    {
+     "title": "The Ends of the Earth",
+     "reference": "Acts 1:8",
+     "nickname": null,
+     "abilityStart": "Reveal the top 7 cards of",
+     "abilityEnd": "Cannot be interrupted.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": "18",
+     "rarityCode": "R",
+     "promoText": "2016 National Tournament Booster Draft Winner Creation",
+     "illustrator": "Illus. Claude Lorrain",
+     "copyrightYear": null,
+     "type": "Dominant",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_068",
+   "detections": [
+    {
+     "title": "Michal",
+     "reference": "I Samuel 25:44",
+     "nickname": null,
+     "abilityStart": "Reveal the top X cards of",
+     "abilityEnd": "Cannot be interrupted.",
+     "identifier": "Royalty, X = # of brown Evil Characters ",
+     "brigade": "Purple",
+     "strength": "4",
+     "toughness": "4",
+     "printNumber": "108",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. J.J. Tissot",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_069",
+   "detections": [
+    {
+     "title": "Last Days",
+     "reference": "Ezekiel 38:16",
+     "nickname": null,
+     "abilityStart": "Shuffle an Evil Character. If used",
+     "abilityEnd": "Cannot be prevented.",
+     "identifier": null,
+     "brigade": "Green",
+     "strength": "1",
+     "toughness": "6",
+     "printNumber": "43",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Karl Briullov",
+     "copyrightYear": "2026",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_070",
+   "detections": [
+    {
+     "title": "Darius' Satraps",
+     "reference": "Daniel 6:1",
+     "nickname": null,
+     "abilityStart": "If a Persian king is in",
+     "abilityEnd": "Persian from deck.",
+     "identifier": "Generic, Persian",
+     "brigade": "Brown",
+     "strength": "5",
+     "toughness": "3",
+     "printNumber": "101",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Ludwig Deutsch",
+     "copyrightYear": "2026",
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_071",
+   "detections": [
+    {
+     "title": "Zechariah, the Seer",
+     "reference": "Zechariah 7:1",
+     "nickname": null,
+     "abilityStart": "You may reveal a good Dominant",
+     "abilityEnd": "or a Zechariah Hero.",
+     "identifier": "Minor Prophet, Postexilic, Zerubbabel's ",
+     "brigade": "Green",
+     "strength": "4",
+     "toughness": "9",
+     "printNumber": "33",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Michelangelo",
+     "copyrightYear": "2026",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_072",
+   "detections": [
+    {
+     "title": "Daniel",
+     "reference": "Daniel 6:10",
+     "nickname": null,
+     "abilityStart": "Protect Daniel from animals. You may",
+     "abilityEnd": "pile into deck. Cannot be negated.",
+     "identifier": "Prophet",
+     "brigade": "Orange",
+     "strength": "6",
+     "toughness": "7",
+     "printNumber": "36",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Briton Rivière",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_073",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "II Chronicles 28:13",
+     "nickname": "Hopper",
+     "abilityStart": "If drawn, give this Lost Soul",
+     "abilityEnd": "to an opponent's territory.",
+     "identifier": "Does not count as a Lost Soul for deck b",
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_074",
+   "detections": [
+    {
+     "title": "Eve",
+     "reference": "Genesis 3:20",
+     "nickname": null,
+     "abilityStart": "Reveal the top X cards of deck:",
+     "abilityEnd": "ignores evil females.",
+     "identifier": "Antediluvian, X = # of your Genesis Hero",
+     "brigade": "Blue",
+     "strength": "7",
+     "toughness": "3",
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Michael Bennett",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_075",
+   "detections": [
+    {
+     "title": "The Amalekites' Slave",
+     "reference": "I Samuel 30:13",
+     "nickname": null,
+     "abilityStart": "If blocking, you may capture this card",
+     "abilityEnd": "evil human from deck to battle.",
+     "identifier": "Egyptian",
+     "brigade": "Gold",
+     "strength": "4",
+     "toughness": "4",
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_076",
+   "detections": [
+    {
+     "title": "Astrologers",
+     "reference": "Daniel 2:27",
+     "nickname": null,
+     "abilityStart": "Reveal the top or bottom card",
+     "abilityEnd": "Cannot be interrupted.",
+     "identifier": "Generic, Magician, Babylonian",
+     "brigade": "Purple",
+     "strength": "3",
+     "toughness": "3",
+     "printNumber": "29",
+     "rarityCode": "LR",
+     "promoText": null,
+     "illustrator": "Illus. Valerie Leeds",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_077",
+   "detections": [
+    {
+     "title": "Great Image",
+     "reference": "Daniel 2:31",
+     "nickname": null,
+     "abilityStart": "After battle, discard all opponents' Heroes",
+     "abilityEnd": "Heroes in territories.",
+     "identifier": null,
+     "brigade": "Black",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "30",
+     "rarityCode": "LR",
+     "promoText": null,
+     "illustrator": "Illus. © Lars Justinen/Goodsalt.com",
+     "copyrightYear": null,
+     "type": "Curse",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_078",
+   "detections": [
+    {
+     "title": "Stone Pillar at Bethel",
+     "reference": "Genesis 35:14-15",
+     "nickname": null,
+     "abilityStart": "If you have a Genesis Hero",
+     "abilityEnd": "Limit twice per game.",
+     "identifier": null,
+     "brigade": "Gold",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "41",
+     "rarityCode": "LR",
+     "promoText": null,
+     "illustrator": "Illus. © Standard Publishing/goodsalt.com",
+     "copyrightYear": null,
+     "type": "Artifact",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_079",
+   "detections": [
+    {
+     "title": "Striking Herod",
+     "reference": "Acts 12:23",
+     "nickname": null,
+     "abilityStart": "Interrupt the battle. Discard an evil",
+     "abilityEnd": "an evil male human.",
+     "identifier": null,
+     "brigade": "White",
+     "strength": "7",
+     "toughness": "0",
+     "printNumber": "69",
+     "rarityCode": "LR",
+     "promoText": null,
+     "illustrator": "Illus. © Standard Publishing/goodsalt.com",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_080",
+   "detections": [
+    {
+     "title": "Herod Agrippa II",
+     "reference": "Acts 25:23",
+     "nickname": null,
+     "abilityStart": "Negate protect abilities on Fortresses. If",
+     "abilityEnd": "Cannot be negated.",
+     "identifier": "Herod, King, Roman",
+     "brigade": "Gold",
+     "strength": "6",
+     "toughness": "6",
+     "printNumber": "70",
+     "rarityCode": "LR",
+     "promoText": null,
+     "illustrator": "Illus. © Standard Publishing/goodsalt.com",
+     "copyrightYear": "2020",
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_081",
+   "detections": [
+    {
+     "title": "Authority of Christ",
+     "reference": "Matthew 8:26",
+     "nickname": null,
+     "abilityStart": "Set aside a Hero from hand",
+     "abilityEnd": "used by a meek disciple.",
+     "identifier": null,
+     "brigade": "Purple/White",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "81",
+     "rarityCode": "UR+",
+     "promoText": null,
+     "illustrator": "Illus. Jeff Haynie",
+     "copyrightYear": null,
+     "type": "unknown",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_082",
+   "detections": [
+    {
+     "title": "Beelzebub",
+     "reference": "Matthew 12:24",
+     "nickname": null,
+     "abilityStart": "Discard top card of deck and",
+     "abilityEnd": "Cannot be negated.",
+     "identifier": "King",
+     "brigade": "Orange",
+     "strength": "11",
+     "toughness": "11",
+     "printNumber": "242",
+     "rarityCode": "UR+",
+     "promoText": null,
+     "illustrator": "Illus. © Cahaba Productions",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_083",
+   "detections": [
+    {
+     "title": "Gabriel, Mouth of God",
+     "reference": "Luke 1:26",
+     "nickname": null,
+     "abilityStart": "Negate an evil card. You may",
+     "abilityEnd": "Cannot be negated.",
+     "identifier": "Angel, Nativity, Prophet",
+     "brigade": "Green",
+     "strength": "5",
+     "toughness": "12",
+     "printNumber": "57",
+     "rarityCode": "UR+",
+     "promoText": null,
+     "illustrator": "Illus. © Cahaba Productions",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_084",
+   "detections": [
+    {
+     "title": "His Sacrifice",
+     "reference": "Matthew 26:28",
+     "nickname": null,
+     "abilityStart": "Convert all evil humans in battle.",
+     "abilityEnd": "an evil Enhancement or an evil Dominant.",
+     "identifier": "Unity: Heroes (N.T.)",
+     "brigade": "Multi",
+     "strength": "7",
+     "toughness": "0",
+     "printNumber": "18",
+     "rarityCode": "UR+",
+     "promoText": null,
+     "illustrator": "Illus. © Jamison Services, Inc.",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_085",
+   "detections": [
+    {
+     "title": "The Cross",
+     "reference": "Matthew 27:42",
+     "nickname": null,
+     "abilityStart": "Restrict Dominants. Toss all Enhancements",
+     "abilityEnd": "Lost Souls and/or meek Heroes.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": "9",
+     "rarityCode": "UR+",
+     "promoText": null,
+     "illustrator": "Illus. Carl Bloch",
+     "copyrightYear": null,
+     "type": "Dominant",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_086",
+   "detections": [
+    {
+     "title": "The Resurrection",
+     "reference": "Matthew 28:5-6",
+     "nickname": null,
+     "abilityStart": "You may play a good Gospel",
+     "abilityEnd": "to 3 N.T. human Heroes.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": "3",
+     "rarityCode": "UR+",
+     "promoText": null,
+     "illustrator": "Illus. J.J. Tissot",
+     "copyrightYear": null,
+     "type": "Dominant",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_087",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "Exodus 10:10",
+     "nickname": null,
+     "abilityStart": "Meek (has no special ability)",
+     "abilityEnd": "has no special ability)",
+     "identifier": null,
+     "brigade": "Teal",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "K10",
+     "promoText": null,
+     "illustrator": "Illus. Christian Köhler",
+     "copyrightYear": "2023",
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_088",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "Exodus 15:16",
+     "nickname": "Dread",
+     "abilityStart": "If put in play, you may take",
+     "abilityEnd": "Egyptian from deck.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "K6",
+     "promoText": null,
+     "illustrator": "Illus. Charles Sprague Pearce",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_089",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "Luke 5:15",
+     "nickname": "Crowds",
+     "abilityStart": "While you have drawn 4 or",
+     "abilityEnd": "from opponents' cards.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "Seasonal",
+     "promoText": "Seasonal Promo",
+     "illustrator": "Illus. J.J. Tissot",
+     "copyrightYear": "2026",
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_090",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "Daniel 9:7",
+     "nickname": null,
+     "abilityStart": "Meek (has no special ability)",
+     "abilityEnd": "(has no special ability)",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "Special ",
+     "promoText": "Special Promo",
+     "illustrator": "Illus. Karl Schneider",
+     "copyrightYear": "2025",
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_091",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "Jeremiah 28:6",
+     "nickname": "Exiles",
+     "abilityStart": "If put in territory, select 1: Release",
+     "abilityEnd": "good Enhancement from discard pile.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": "133",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. Eduard Bendemann",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_092",
+   "detections": [
+    {
+     "title": "Lost Souls",
+     "reference": "Proverbs 22:14",
+     "nickname": null,
+     "abilityStart": "This card counts as two Lost",
+     "abilityEnd": "must be rescued twice.",
+     "identifier": null,
+     "brigade": "Gray",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. © Tom Simonton",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_093",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "Ezekiel 34:12",
+     "nickname": null,
+     "abilityStart": null,
+     "abilityEnd": null,
+     "identifier": null,
+     "brigade": "Blue",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Steve Firchow",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_094",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "Deuteronomy 5:21",
+     "nickname": "Covet",
+     "abilityStart": "If drawn (or put in play by",
+     "abilityEnd": "give this card to that player's territory.",
+     "identifier": "Unity; Lost Souls (O.T.)",
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": "75",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. Joseph von Führich",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_095",
+   "detections": [
+    {
+     "title": "Lost Soul Token",
+     "reference": "John 4:35",
+     "nickname": "Harvest",
+     "abilityStart": "Meek (has no special ability)",
+     "abilityEnd": "(has no special ability)",
+     "identifier": "Meek",
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "T",
+     "promoText": null,
+     "illustrator": "Illus. J.J. Tissot",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_096",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "Proverbs 21:16",
+     "nickname": null,
+     "abilityStart": null,
+     "abilityEnd": null,
+     "identifier": null,
+     "brigade": "Purple",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "I",
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_097",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "I Kings 17:12",
+     "nickname": null,
+     "abilityStart": null,
+     "abilityEnd": null,
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Valerie Leeds",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_098",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "Exodus 11:5",
+     "nickname": "Hunter",
+     "abilityStart": "If drawn (or put in play by",
+     "abilityEnd": "to shuffle this card.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": "63",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Lissanne Lake",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_099",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "I Samuel 30:13",
+     "nickname": "Meek",
+     "abilityStart": "Meek (has no special ability)",
+     "abilityEnd": "no special ability)",
+     "identifier": null,
+     "brigade": "Brown",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "11",
+     "rarityCode": "L",
+     "promoText": null,
+     "illustrator": "Illus. Carl Haag",
+     "copyrightYear": "2023",
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_100",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "I Samuel 30:3",
+     "nickname": "Behold",
+     "abilityStart": "If put in play, you may look",
+     "abilityEnd": "opponent's hand or Reserve.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "L9",
+     "promoText": null,
+     "illustrator": "Illus. J.J. Tissot",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_101",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "Luke 15: 6",
+     "nickname": null,
+     "abilityStart": null,
+     "abilityEnd": null,
+     "identifier": null,
+     "brigade": "Purple",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Scott Sava",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_102",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "Proverbs 20:20",
+     "nickname": null,
+     "abilityStart": null,
+     "abilityEnd": null,
+     "identifier": null,
+     "brigade": "Orange",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_103",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "James 4:6 (Proverbs 3:34)",
+     "nickname": "Humble",
+     "abilityStart": "During battle, while opponent has more",
+     "abilityEnd": "prevented by opponents' cards.",
+     "identifier": null,
+     "brigade": "Purple",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "22",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. William Adolphe Bouguereau",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_104",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "Acts 16:22",
+     "nickname": null,
+     "abilityStart": "If an opponent's special ability targets your",
+     "abilityEnd": "(except a Lost Soul).",
+     "identifier": null,
+     "brigade": "Red",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "80",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Raphael",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_105",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "Ezekiel 34:12",
+     "nickname": "Lost Boy",
+     "abilityStart": "Protect this Lost Soul from rescue",
+     "abilityEnd": "Heroes (except one) in battle.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": "144",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Steve Firchow",
+     "copyrightYear": null,
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_106",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "I Samuel 5:12",
+     "nickname": "Outcry",
+     "abilityStart": "If put in play, you may exchange",
+     "abilityEnd": "evil Philistine from deck.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": "6",
+     "rarityCode": "L",
+     "promoText": null,
+     "illustrator": "Illus. Alexandre Cabanel",
+     "copyrightYear": "2023",
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_107",
+   "detections": [
+    {
+     "title": "Chariots of Iron",
+     "reference": "Judges 1:19",
+     "nickname": null,
+     "abilityStart": null,
+     "abilityEnd": null,
+     "identifier": null,
+     "brigade": "Gray",
+     "strength": "2",
+     "toughness": "2",
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Michael Ulrich",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_108",
+   "detections": [
+    {
+     "title": "Ruth",
+     "reference": "Ruth 3:11",
+     "nickname": null,
+     "abilityStart": null,
+     "abilityEnd": null,
+     "identifier": null,
+     "brigade": "Gray",
+     "strength": "4",
+     "toughness": "4",
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Jeff Anderson",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_109",
+   "detections": [
+    {
+     "title": "Angel at Jerusalem",
+     "reference": "II Chronicles 32: 21",
+     "nickname": null,
+     "abilityStart": "Hero has access to any Site.",
+     "abilityEnd": "to any Site.",
+     "identifier": null,
+     "brigade": "Red",
+     "strength": "2",
+     "toughness": "2",
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. © Eternal Studios, Inc.",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_110",
+   "detections": [
+    {
+     "title": "Hate",
+     "reference": "John 3:20",
+     "nickname": null,
+     "abilityStart": "Evil Character repels green brigade.",
+     "abilityEnd": "repels green brigade.",
+     "identifier": null,
+     "brigade": "Purple",
+     "strength": "2",
+     "toughness": "3",
+     "printNumber": null,
+     "rarityCode": "D",
+     "promoText": null,
+     "illustrator": "Illus. Todd DeMelle",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_111",
+   "detections": [
+    {
+     "title": "Conqueror over Death",
+     "reference": "II Timothy 1:10",
+     "nickname": null,
+     "abilityStart": "Return all Heroes in your Potter's",
+     "abilityEnd": "cannot be negated.",
+     "identifier": null,
+     "brigade": "Purple",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Dominant",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_112",
+   "detections": [
+    {
+     "title": "King Jehoshaphat",
+     "reference": "1 Kings 15:24",
+     "nickname": null,
+     "abilityStart": "May band to any Hero with",
+     "abilityEnd": "reference from II Chronicles 17:20.",
+     "identifier": "Judean King",
+     "brigade": "Purple",
+     "strength": "9",
+     "toughness": "6",
+     "printNumber": null,
+     "rarityCode": "UC",
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_113",
+   "detections": [
+    {
+     "title": "Eleazar, son of Aaron",
+     "reference": "Leviticus 10:6",
+     "nickname": null,
+     "abilityStart": "Heal a Hero in play. When",
+     "abilityEnd": "Negate previous Artifact.",
+     "identifier": "Tabernacle High Priest, House of Eleazar",
+     "brigade": "Green",
+     "strength": "8",
+     "toughness": "9",
+     "printNumber": null,
+     "rarityCode": "UC",
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_114",
+   "detections": [
+    {
+     "title": "Apollos",
+     "reference": "Acts 18:24",
+     "nickname": null,
+     "abilityStart": "Increase 2/2 when banded to Paul.",
+     "abilityEnd": "banded to Paul.",
+     "identifier": null,
+     "brigade": "Purple",
+     "strength": "9",
+     "toughness": "8",
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. William Hole",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_115",
+   "detections": [
+    {
+     "title": "Evil Armor",
+     "reference": "Luke 11:22",
+     "nickname": null,
+     "abilityStart": "All of holder's Evil Characters gain 2/3",
+     "abilityEnd": "2/3 until end of battle.",
+     "identifier": null,
+     "brigade": "Red",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "D",
+     "promoText": null,
+     "illustrator": "Illus. © Eternal Studios, Inc.",
+     "copyrightYear": null,
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_116",
+   "detections": [
+    {
+     "title": "Fishers of Men",
+     "reference": "Matthew 4:18-19",
+     "nickname": null,
+     "abilityStart": "Convert any human Evil Character to",
+     "abilityEnd": "color of your choice.",
+     "identifier": null,
+     "brigade": "Green",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. J. J. Tissot",
+     "copyrightYear": null,
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_117",
+   "detections": [
+    {
+     "title": "Angel of Might",
+     "reference": "Revelation 10:1",
+     "nickname": null,
+     "abilityStart": "Hero has first strike ability.",
+     "abilityEnd": "has first strike ability.",
+     "identifier": "Prophet",
+     "brigade": "Purple",
+     "strength": "9",
+     "toughness": "9",
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. © Artist Unknown",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_118",
+   "detections": [
+    {
+     "title": "Preemptive Strike",
+     "reference": "Exodus 17:8-9",
+     "nickname": null,
+     "abilityStart": "Prevent the special ability of the",
+     "abilityEnd": "enhancement played this battle.",
+     "identifier": null,
+     "brigade": "Black",
+     "strength": "3",
+     "toughness": "3",
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. © Jeff Preston/GoodSalt.com",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "medium"
+    }
+   ]
+  },
+  {
+   "id": "c_119",
+   "detections": [
+    {
+     "title": "Gibeonite Delegates",
+     "reference": "Joshua 9:6",
+     "nickname": null,
+     "abilityStart": "Protected from discard abilities. If defeated,",
+     "abilityEnd": "Cannot be prevented.",
+     "identifier": "Canaanite, Generic",
+     "brigade": "Red",
+     "strength": "0",
+     "toughness": "4",
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_120",
+   "detections": [
+    {
+     "title": "Beast from the Sea",
+     "reference": "Revelation 13:1",
+     "nickname": null,
+     "abilityStart": null,
+     "abilityEnd": null,
+     "identifier": null,
+     "brigade": "Orange",
+     "strength": "10",
+     "toughness": "10",
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Michael Carroll",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_121",
+   "detections": [
+    {
+     "title": "King Lemuel",
+     "reference": "Proverbs 31:1",
+     "nickname": null,
+     "abilityStart": "If you have a royal female",
+     "abilityEnd": "in your discard pile.",
+     "identifier": "King of Massa",
+     "brigade": "Teal",
+     "strength": "8",
+     "toughness": "11",
+     "printNumber": null,
+     "rarityCode": "XV",
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_122",
+   "detections": [
+    {
+     "title": "Babylon",
+     "reference": "II Kings 24:16",
+     "nickname": null,
+     "abilityStart": null,
+     "abilityEnd": null,
+     "identifier": null,
+     "brigade": "Gray",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "w",
+     "promoText": null,
+     "illustrator": "Illus. Michael Carroll",
+     "copyrightYear": null,
+     "type": "City",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_123",
+   "detections": [
+    {
+     "title": "Construction Begins",
+     "reference": "Genesis 6:14",
+     "nickname": null,
+     "abilityStart": "Look at opponent's hand.",
+     "abilityEnd": "Look at opponent's hand.",
+     "identifier": null,
+     "brigade": "Blue",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "F",
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_124",
+   "detections": [
+    {
+     "title": "Deceit of Sapphira",
+     "reference": "Acts 5:1-2",
+     "nickname": null,
+     "abilityStart": "Discard all cards in battle (including yours).",
+     "abilityEnd": "prevented by an evil card.",
+     "identifier": null,
+     "brigade": "Gray",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "G",
+     "promoText": null,
+     "illustrator": "Illus. Bill Hodgson",
+     "copyrightYear": null,
+     "type": "Curse",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_125",
+   "detections": [
+    {
+     "title": "Begging for Grain",
+     "reference": "Genesis 42:7",
+     "nickname": null,
+     "abilityStart": "Negate all enhancements currently in play",
+     "abilityEnd": "enters battle.",
+     "identifier": null,
+     "brigade": "Gray",
+     "strength": "1",
+     "toughness": "2",
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_126",
+   "detections": [
+    {
+     "title": "Miracle of Healing",
+     "reference": "I Corinthians 12:28",
+     "nickname": null,
+     "abilityStart": "Heal any Hero who has been",
+     "abilityEnd": "poisoned or diseased.",
+     "identifier": null,
+     "brigade": "Red",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. William Hole",
+     "copyrightYear": null,
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_127",
+   "detections": [
+    {
+     "title": "New Covenant",
+     "reference": "Isaiah 59:21",
+     "nickname": null,
+     "abilityStart": "- Convert an evil human in battle.",
+     "abilityEnd": "each discard pile.",
+     "identifier": null,
+     "brigade": "Green",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "119",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Covenant",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_128",
+   "detections": [
+    {
+     "title": "Peter",
+     "reference": "Acts 2:38",
+     "nickname": null,
+     "abilityStart": "Once per round, you may heal",
+     "abilityEnd": "Peter cannot be negated.",
+     "identifier": "Apostle, Jerusalem, Prophet, Disciple",
+     "brigade": "Red",
+     "strength": "10",
+     "toughness": "10",
+     "printNumber": "25",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. Francesco Trevisani",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_129",
+   "detections": [
+    {
+     "title": "Captain's Sword",
+     "reference": "Joshua 5:13",
+     "nickname": null,
+     "abilityStart": "You may look at a hand.",
+     "abilityEnd": "an Evil Character this turn.",
+     "identifier": null,
+     "brigade": "Silver",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "85",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. AI Generated",
+     "copyrightYear": "2024",
+     "type": "Artifact",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_130",
+   "detections": [
+    {
+     "title": "Rage",
+     "reference": "Psalm 2:1",
+     "nickname": null,
+     "abilityStart": "Discard all cards in battle. Cannot be",
+     "abilityEnd": "Cannot be prevented.",
+     "identifier": null,
+     "brigade": "Brown",
+     "strength": "2",
+     "toughness": "1",
+     "printNumber": "392",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Todd DeMelle",
+     "copyrightYear": "2026",
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_131",
+   "detections": [
+    {
+     "title": "King Tiglath-Pileser III",
+     "reference": "Isaiah 7:17",
+     "nickname": null,
+     "abilityStart": "If blocking, opponent must capture their",
+     "abilityEnd": "negated by a good card.",
+     "identifier": "Assyrian, Unity: Evil Characters (Assyri",
+     "brigade": "Purple",
+     "strength": "10",
+     "toughness": "11",
+     "printNumber": "90",
+     "rarityCode": "R",
+     "promoText": null,
+     "illustrator": "Illus. Frederick Arthur Bridgman",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_132",
+   "detections": [
+    {
+     "title": "Barak",
+     "reference": "Judges 4:10",
+     "nickname": null,
+     "abilityStart": "You may exchange Barak with Jael",
+     "abilityEnd": "cannot be negated.",
+     "identifier": "Musician",
+     "brigade": "Red",
+     "strength": "5",
+     "toughness": "4",
+     "printNumber": "83",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. © Youth Life Creations, Inc.",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_133",
+   "detections": [
+    {
+     "title": "Foolish Advice",
+     "reference": "Job 42:7",
+     "nickname": null,
+     "abilityStart": "Opponent must discard X good cards",
+     "abilityEnd": "used by a Job Evil Character.",
+     "identifier": null,
+     "brigade": "Gray",
+     "strength": "4",
+     "toughness": "2",
+     "printNumber": "109",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Vladimir Borovikovsky",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "medium"
+    }
+   ]
+  },
+  {
+   "id": "c_134",
+   "detections": [
+    {
+     "title": "Passover",
+     "reference": "Exodus 12:27",
+     "nickname": null,
+     "abilityStart": "If an Exodus Hero is in",
+     "abilityEnd": "your evil human instead.",
+     "identifier": null,
+     "brigade": "Green/White",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "26",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_135",
+   "detections": [
+    {
+     "title": "Entertaining Angels",
+     "reference": "Hebrews 13:1-2",
+     "nickname": null,
+     "abilityStart": "Interrupt the battle and search deck",
+     "abilityEnd": "silver brigade Heroes.",
+     "identifier": null,
+     "brigade": "Silver",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "78",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Titan",
+     "copyrightYear": null,
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_136",
+   "detections": [
+    {
+     "title": "Darius' Decree",
+     "reference": "Daniel 6:9",
+     "nickname": null,
+     "abilityStart": "If a Hero uses an Enhancement,",
+     "abilityEnd": "at the end of the phase.",
+     "identifier": null,
+     "brigade": "Crimson",
+     "strength": null,
+     "toughness": null,
+     "printNumber": "228",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. © lookandlearn.com",
+     "copyrightYear": "2026",
+     "type": "Curse",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_137",
+   "detections": [
+    {
+     "title": "Son of God",
+     "reference": "Revelation 19:11",
+     "nickname": null,
+     "abilityStart": "Negate and rescue a Lost Soul.",
+     "abilityEnd": "rescue a Lost Soul.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "P",
+     "promoText": "2018 National Tournament Special Promo",
+     "illustrator": "Illus. Michael Carroll",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_138",
+   "detections": [
+    {
+     "title": "Son of God",
+     "reference": "Revelation 1:12-13",
+     "nickname": null,
+     "abilityStart": "Rescue any Lost Soul in play.",
+     "abilityEnd": "any Lost Soul in play.",
+     "identifier": null,
+     "brigade": "Purple",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "F",
+     "promoText": null,
+     "illustrator": "Illus. Michael Carroll",
+     "copyrightYear": null,
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_139",
+   "detections": [
+    {
+     "title": "Son of God",
+     "reference": "Revelation 1: 12-13",
+     "nickname": null,
+     "abilityStart": "Rescue any Lost Soul in play.",
+     "abilityEnd": "Lost Soul in play.",
+     "identifier": null,
+     "brigade": "Blue",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. Michael Carroll",
+     "copyrightYear": null,
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_140",
+   "detections": [
+    {
+     "title": "Son of God",
+     "reference": "Revelation 1:17-18",
+     "nickname": null,
+     "abilityStart": "Negate and rescue a Lost Soul.",
+     "abilityEnd": "rescue a Lost Soul.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": null,
+     "promoText": "2016 National Tournament Special Promo",
+     "illustrator": "Illus. Gustave Dore",
+     "copyrightYear": "2016",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_141",
+   "detections": [
+    {
+     "title": "Son of God",
+     "reference": "Matthew 3:16",
+     "nickname": null,
+     "abilityStart": "Negate and rescue a Lost Soul.",
+     "abilityEnd": "rescue a Lost Soul.",
+     "identifier": null,
+     "brigade": null,
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "Special ",
+     "promoText": "Special Promo",
+     "illustrator": "Illus. Jeff Haynie",
+     "copyrightYear": "2023",
+     "type": "unknown",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_142",
+   "detections": [
+    {
+     "title": "Joshua, the Faithful",
+     "reference": "Exodus 32:17",
+     "nickname": null,
+     "abilityStart": "You may take a good Exodus",
+     "abilityEnd": "Enhancement from deck.",
+     "identifier": "Judge, Prophet, Wilderness",
+     "brigade": "Silver",
+     "strength": "9",
+     "toughness": "7",
+     "printNumber": "L29",
+     "rarityCode": null,
+     "promoText": null,
+     "illustrator": "Illus. J.J. Tissot",
+     "copyrightYear": "2023",
+     "type": "Hero",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_143",
+   "detections": [
+    {
+     "title": "Pilate's Soldiers",
+     "reference": "Matthew 27:27",
+     "nickname": null,
+     "abilityStart": null,
+     "abilityEnd": null,
+     "identifier": "Roman, Generic",
+     "brigade": "Purple",
+     "strength": "6",
+     "toughness": "12",
+     "printNumber": null,
+     "rarityCode": "J",
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_144",
+   "detections": [
+    {
+     "title": "Terrifying Philistines",
+     "reference": "I Samuel 7:7",
+     "nickname": null,
+     "abilityStart": "Meek (has no special ability)",
+     "abilityEnd": "no special ability)",
+     "identifier": "Generic, Philistine",
+     "brigade": "Black",
+     "strength": "10",
+     "toughness": "11",
+     "printNumber": null,
+     "rarityCode": "L55-Rese",
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": "2023",
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_145",
+   "detections": [
+    {
+     "title": "Fishers of Men",
+     "reference": "Matthew 4:18-19",
+     "nickname": null,
+     "abilityStart": "Reveal the top 3 cards of",
+     "abilityEnd": "underdeck the rest.",
+     "identifier": null,
+     "brigade": "Green",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "I",
+     "promoText": null,
+     "illustrator": "Illus. O. A. Stemler",
+     "copyrightYear": null,
+     "type": "Enhancement",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_146",
+   "detections": [
+    {
+     "title": "Displeased Philistines",
+     "reference": "I Samuel 29:7",
+     "nickname": null,
+     "abilityStart": "Negate a good Enhancement. Discard all",
+     "abilityEnd": "good Enhancements in battle.",
+     "identifier": null,
+     "brigade": "Crimson",
+     "strength": "1",
+     "toughness": "5",
+     "printNumber": null,
+     "rarityCode": "L50",
+     "promoText": null,
+     "illustrator": "Illus. Artist Unknown",
+     "copyrightYear": null,
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_147",
+   "detections": [
+    {
+     "title": "Abusive Taskmaster",
+     "reference": "Exodus 2:11",
+     "nickname": null,
+     "abilityStart": "Negate a Hero. You may topdeck",
+     "abilityEnd": "evil card from Reserve.",
+     "identifier": "Generic, Egyptian",
+     "brigade": "Green",
+     "strength": "8",
+     "toughness": "9",
+     "printNumber": "36",
+     "rarityCode": "K",
+     "promoText": null,
+     "illustrator": "Illus. Neville Dear",
+     "copyrightYear": "2023",
+     "type": "Evil Character",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  },
+  {
+   "id": "c_148",
+   "detections": [
+    {
+     "title": "Lost Soul",
+     "reference": "Exodus 33:3",
+     "nickname": "Obstinate",
+     "abilityStart": "If rescued, you may draw 1.",
+     "abilityEnd": "you may draw 1.",
+     "identifier": null,
+     "brigade": "Teal",
+     "strength": null,
+     "toughness": null,
+     "printNumber": null,
+     "rarityCode": "K9",
+     "promoText": null,
+     "illustrator": "Illus. David Roberts",
+     "copyrightYear": "2023",
+     "type": "Lost Soul",
+     "grid": {
+      "row": 1,
+      "col": 1
+     },
+     "orientation": "upright",
+     "confidence": "high"
+    }
+   ]
+  }
+ ]
+}

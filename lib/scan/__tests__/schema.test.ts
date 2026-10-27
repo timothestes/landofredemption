@@ -27,6 +27,12 @@ describe('capDetection / parseScanOutput', () => {
     const d = capDetection({ promoText: 'p'.repeat(200), copyrightYear: '20255', abilityEnd: 'a'.repeat(99), nickname: 'n'.repeat(99) } as any);
     expect([d.promoText!.length, d.copyrightYear!.length, d.abilityEnd!.length, d.nickname!.length]).toEqual([120, 4, 80, 30]);
   });
+  it('copyrightYear keeps the year from a whole copyright line', () => {
+    expect(capDetection({ copyrightYear: '© 2025 Cactus Game Design, Inc.' } as any).copyrightYear).toBe('2025');
+    expect(capDetection({ copyrightYear: '©1999' } as any).copyrightYear).toBe('1999');
+    expect(capDetection({ copyrightYear: '2026' } as any).copyrightYear).toBe('2026');
+    expect(capDetection({ copyrightYear: 'unreadable' } as any).copyrightYear).toBe('unre');
+  });
   it('parse rejects non-object cards and missing grid, and caps valid cards', () => {
     expect(parseScanOutput('{"photoQuality":"ok","cards":[1]}')).toBeNull();
     expect(parseScanOutput('{"photoQuality":"ok","cards":[{"title":"x"}]}')).toBeNull();
