@@ -33,7 +33,7 @@ export default function CollectionCheckModal({
     () => computeMissingCards(cards, ownedByName),
     [cards, ownedByName]
   );
-  const canScan = useCanScan(collectionAvailable);
+  const canScan = useCanScan(collectionAvailable, "collection-check");
   const missingCount = missing.reduce((sum, c) => sum + c.quantity, 0);
 
   // "Add missing to my Wants": any printing, since this check matches by name.

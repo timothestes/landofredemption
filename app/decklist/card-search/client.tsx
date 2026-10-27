@@ -497,7 +497,6 @@ export default function CardSearchClient({
   // resolves, so anonymous-only UI (the sign-in hint) never flashes for
   // signed-in users while `user` is still null.
   const [user, setUser] = useState<User | null>(null);
-  const canScan = useCanScan(!!user);
   const [authChecked, setAuthChecked] = useState(false);
 
   // Deck builder state
@@ -586,6 +585,11 @@ export default function CardSearchClient({
   // signed-out). Gate at the point of use rather than resetting state, so the
   // async auth load doesn't race the URL-restored value back off.
   const activeOwnedMode: OwnedFilterMode = collectionFilterAvailable ? ownedMode : "off";
+  // Scanner entry link lives in the empty owned-filter state; only ask the gate when it shows.
+  const canScan = useCanScan(
+    !!user && collectionAvailable && activeOwnedMode === 'owned' && ownedNames.size === 0,
+    user?.id ?? null,
+  );
 
   // Refs for input fields to enable auto-focus
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);

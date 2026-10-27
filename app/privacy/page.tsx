@@ -22,8 +22,8 @@ export default function PrivacyPage() {
             We keep the text we read from each card, not the photo.
           </p>
           <ul className="mt-4 list-disc space-y-2 pl-5 text-base leading-relaxed text-foreground">
-            <li>We keep the text read from each card, plus token counts and cost. We do not keep the photo.</li>
-            <li>Text read from photos where no card matched is deleted after 30 days.</li>
+            <li>For each scan we also keep token counts and cost, and the text read from each card stays with your account.</li>
+            <li>Text read from photos where no card matched is deleted after 30 days, in a monthly cleanup, so it can take up to two months.</li>
             <li>Scanning requires an account and is limited per user.</li>
           </ul>
         </section>

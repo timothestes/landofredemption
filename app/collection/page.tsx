@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "../../utils/supabase/server";
-import { canScanForSession } from "../../lib/scan/gate";
+import { canScan as canScanGate } from "../../lib/scan/gate";
 import CollectionClient from "./client";
 import { justAddedKeys } from "./justAdded";
 
@@ -62,17 +62,29 @@ export default async function CollectionPage({
     );
   }
 
-  const { allowed: canScan } = await canScanForSession(supabase);
+  const ids = added
+    ? added.split(",").filter((id) => UUID_RE.test(id)).slice(0, 150)
+    : [];
 
-  let addedKeys: string[] = [];
-  if (added) {
-    const ids = added.split(",").filter((id) => UUID_RE.test(id)).slice(0, 50);
-    if (ids.length > 0) {
-      // User client: RLS limits this to the viewer's own scan events.
-      const { data } = await supabase.from("scan_events").select("outcomes").in("id", ids);
-      addedKeys = justAddedKeys((data ?? []).flatMap((row) => (Array.isArray(row.outcomes) ? row.outcomes : [])));
-    }
-  }
+  const [canScan, scanRows] = await Promise.all([
+    canScanGate(user.id, {
+      isSuperuser: async () => {
+        const { data, error } = await supabase.rpc("is_superuser");
+        return !error && data === true;
+      },
+    }),
+    // User client: RLS limits this to the viewer's own scan events.
+    ids.length > 0
+      ? supabase.from("scan_events").select("id, outcomes").in("id", ids)
+      : Promise.resolve({ data: null }),
+  ]);
+
+  // Order by the scan ids' order in the URL.
+  const order = new Map(ids.map((id, i) => [id, i]));
+  const rows = [...(scanRows.data ?? [])].sort(
+    (a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0),
+  );
+  const addedKeys = justAddedKeys(rows.flatMap((row) => (Array.isArray(row.outcomes) ? row.outcomes : [])));
 
   return <CollectionClient canScan={canScan} initialFormat={format} justAddedKeys={addedKeys} />;
 }
