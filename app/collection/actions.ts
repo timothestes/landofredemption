@@ -299,24 +299,28 @@ export async function commitScanAction(
         if (error) throw error;
       },
       claimScans: async (cid, scanIds, undoneIds) => {
-        // One statement:
+        // Up to three single-statement conditional updates, each
         //   UPDATE scan_events SET commit_id = $cid
-        //    WHERE user_id = $user AND id IN (...scanIds)
-        //      AND (commit_id IS NULL OR commit_id = $cid OR commit_id IN (...undoneIds))
-        //   RETURNING id
-        // Every id interpolated here is a UUID (cid and scanIds validated, undoneIds read
-        // from a uuid column), so the filter string needs no quoting.
-        const claimable = [`commit_id.is.null`, `commit_id.eq.${cid}`];
-        if (undoneIds.length > 0) claimable.push(`commit_id.in.(${undoneIds.join(",")})`);
-        const { data, error } = await admin
-          .from("scan_events")
-          .update({ commit_id: cid })
-          .eq("user_id", userId)
-          .in("id", scanIds)
-          .or(claimable.join(","))
-          .select("id");
-        if (error) throw error;
-        return (data ?? []).length;
+        //    WHERE user_id = $user AND id IN (...scanIds) AND <one condition> RETURNING id
+        // and the claimed count is their sum. Not one .or(): this project's PostgREST
+        // rejects or=(...) on PATCH (42703 "column scan_events.commit_id does not exist").
+        // Each statement is atomic per row (row lock + WHERE re-check), so a competing
+        // commit cannot take a row we claimed. `= cid` runs FIRST so rows the later
+        // statements move to cid are not counted twice.
+        const conditions: Array<(q: any) => any> = [
+          (q) => q.eq("commit_id", cid),
+          (q) => q.is("commit_id", null),
+        ];
+        if (undoneIds.length > 0) conditions.push((q) => q.in("commit_id", undoneIds));
+        let claimed = 0;
+        for (const where of conditions) {
+          const { data, error } = await where(
+            admin.from("scan_events").update({ commit_id: cid }).eq("user_id", userId).in("id", scanIds)
+          ).select("id");
+          if (error) throw error;
+          claimed += (data ?? []).length;
+        }
+        return claimed;
       },
       releaseScans: async (cid) => {
         const { error } = await admin
