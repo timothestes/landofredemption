@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/pricing/supabase-admin';
+import { loadPriceRows, type PriceRow } from '@/lib/scan/prices';
 import type { PricesResponse } from '@/lib/pricing/types';
 
 export const revalidate = 86400; // 1 day
@@ -7,23 +8,11 @@ export const revalidate = 86400; // 1 day
 export async function GET() {
   const supabase = getSupabaseAdmin();
 
-  // Paginate to get all rows (Supabase defaults to 1000 max per query)
-  const allData: any[] = [];
-  const pageSize = 1000;
-  let offset = 0;
-
-  while (true) {
-    const { data, error } = await supabase
-      .from('card_prices')
-      .select('card_key, price, shopify_handle, shopify_title, updated_at')
-      .range(offset, offset + pageSize - 1);
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-    allData.push(...(data ?? []));
-    if (!data || data.length < pageSize) break;
-    offset += pageSize;
+  let allData: PriceRow[];
+  try {
+    allData = await loadPriceRows(supabase);
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
 
   const prices: PricesResponse['prices'] = {};
@@ -31,7 +20,7 @@ export async function GET() {
 
   for (const row of allData) {
     prices[row.card_key] = {
-      price: parseFloat(row.price),
+      price: row.price,
       shopify_handle: row.shopify_handle,
       shopify_title: row.shopify_title,
     };

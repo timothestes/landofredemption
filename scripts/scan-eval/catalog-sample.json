@@ -1,0 +1,2666 @@
+[
+ {
+  "id": "c_001",
+  "stratum": "standard",
+  "label": {
+   "key": "Captive Priest|FoM|098-Captive-Priest",
+   "name": "Captive Priest",
+   "set": "FoM",
+   "imgFile": "098-Captive-Priest",
+   "identity": "captive priest|hero|teal|good|#Captive Priest",
+   "stem": "Captive Priest",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Judges 18:27",
+   "strength": "2",
+   "toughness": "4"
+  }
+ },
+ {
+  "id": "c_002",
+  "stratum": "standard",
+  "label": {
+   "key": "Clinging to Power (GoC)|GoC|166-Clinging-to-Power-R",
+   "name": "Clinging to Power (GoC)",
+   "set": "GoC",
+   "imgFile": "166-Clinging-to-Power-R",
+   "identity": "clinging to power|ee|blackgoldgray|evil|territory#Clinging to Power [2022 - GoC P]",
+   "stem": "Clinging to Power",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "John 11:48",
+   "strength": "3",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_003",
+  "stratum": "standard",
+  "label": {
+   "key": "Naming the Nation|IR|046-Naming-the-Nation",
+   "name": "Naming the Nation",
+   "set": "IR",
+   "imgFile": "046-Naming-the-Nation",
+   "identity": "naming the nation|ge|blue|good|#Naming the Nation",
+   "stem": "Naming the Nation",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Genesis 48:16",
+   "strength": "5",
+   "toughness": "0"
+  }
+ },
+ {
+  "id": "c_004",
+  "stratum": "standard",
+  "label": {
+   "key": "Josiah’s Covenant (LoC)|LoC|LoC_012-Josiahs-Covenant-R",
+   "name": "Josiah’s Covenant (LoC)",
+   "set": "LoC",
+   "imgFile": "LoC_012-Josiahs-Covenant-R",
+   "identity": "josiah’s covenant|covenant|purplered|good|#Josiah’s Covenant (LoC)",
+   "stem": "Josiah’s Covenant",
+   "type": "Covenant",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "II Kings 23:3",
+   "strength": "3",
+   "toughness": "4"
+  }
+ },
+ {
+  "id": "c_005",
+  "stratum": "standard",
+  "label": {
+   "key": "Ninevites|PoC|190-Ninevites",
+   "name": "Ninevites",
+   "set": "PoC",
+   "imgFile": "190-Ninevites",
+   "identity": "ninevites|evil character|pale green white|evil|#Ninevites",
+   "stem": "Ninevites",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Jonah 3:5",
+   "strength": "5(3)",
+   "toughness": "3(5)"
+  }
+ },
+ {
+  "id": "c_006",
+  "stratum": "standard",
+  "label": {
+   "key": "Prince Jonathan (Roots)|RR|096-Prince-Jonathan",
+   "name": "Prince Jonathan (Roots)",
+   "set": "RR",
+   "imgFile": "096-Prince-Jonathan",
+   "identity": "prince jonathan|hero|purple|good|warrior#Prince Jonathan (Roots)",
+   "stem": "Prince Jonathan",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "",
+   "reference": "I Samuel 20:17",
+   "strength": "8",
+   "toughness": "8"
+  }
+ },
+ {
+  "id": "c_007",
+  "stratum": "standard",
+  "label": {
+   "key": "Men of Judah [RR2]|RR2|296-Men-of-Judah",
+   "name": "Men of Judah [RR2]",
+   "set": "RR2",
+   "imgFile": "296-Men-of-Judah",
+   "identity": "men of judah|hero|good gold|good|warrior#Men of Judah [RR2]",
+   "stem": "Men of Judah",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "",
+   "reference": "Judges 1:9",
+   "strength": "12",
+   "toughness": "12"
+  }
+ },
+ {
+  "id": "c_008",
+  "stratum": "standard",
+  "label": {
+   "key": "Fourth Seal, Death (RoJ)|RoJ|29-Fourth-Seal-Death",
+   "name": "Fourth Seal, Death (RoJ)",
+   "set": "RoJ",
+   "imgFile": "29-Fourth-Seal-Death",
+   "identity": "fourth seal, death|geevil character|silverorangepale green|neutral|#Fourth Seal, Death (RoJ)",
+   "stem": "Fourth Seal, Death",
+   "type": "GE/Evil Character",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Revelation 6:8",
+   "strength": "4",
+   "toughness": "1"
+  }
+ },
+ {
+  "id": "c_009",
+  "stratum": "standard",
+  "label": {
+   "key": "Abomination of Desolation [T2C]|T2C|006-Abomination-of-Desolation-R",
+   "name": "Abomination of Desolation [T2C]",
+   "set": "T2C",
+   "imgFile": "006-Abomination-of-Desolation-R",
+   "identity": "abomination of desolation|artifact||neutral|#Abomination of Desolation [T2C AB]",
+   "stem": "Abomination of Desolation",
+   "type": "Artifact",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Daniel 11:31",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_010",
+  "stratum": "standard",
+  "label": {
+   "key": "Prisoner at Gaza|FoM|095-Prisoner-at-Gaza",
+   "name": "Prisoner at Gaza",
+   "set": "FoM",
+   "imgFile": "095-Prisoner-at-Gaza",
+   "identity": "prisoner at gaza|heroevil character|goldblack|neutral|#Prisoner at Gaza",
+   "stem": "Prisoner at Gaza",
+   "type": "Hero/Evil Character",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Judges 16:21",
+   "strength": "5",
+   "toughness": "2"
+  }
+ },
+ {
+  "id": "c_011",
+  "stratum": "standard",
+  "label": {
+   "key": "Questioning Christ (GoC)|GoC|189-Questioning-Christ",
+   "name": "Questioning Christ (GoC)",
+   "set": "GoC",
+   "imgFile": "189-Questioning-Christ",
+   "identity": "questioning christ|ee|black|evil|star#Questioning Christ (GoC)",
+   "stem": "Questioning Christ",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "John 18:19",
+   "strength": "X",
+   "toughness": "6"
+  }
+ },
+ {
+  "id": "c_012",
+  "stratum": "standard",
+  "label": {
+   "key": "Grain in a Famine|IR|127-Grain-in-a-Famine",
+   "name": "Grain in a Famine",
+   "set": "IR",
+   "imgFile": "127-Grain-in-a-Famine",
+   "identity": "grain in a famine|ee|pale green|evil|territory#Grain in a Famine",
+   "stem": "Grain in a Famine",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Genesis 41:56",
+   "strength": "0",
+   "toughness": "4"
+  }
+ },
+ {
+  "id": "c_013",
+  "stratum": "standard",
+  "label": {
+   "key": "Ram, the Exalter / Ram, the Uplifted (LoC)|LoC|LoC_122-Ram",
+   "name": "Ram, the Exalter / Ram, the Uplifted (LoC)",
+   "set": "LoC",
+   "imgFile": "LoC_122-Ram",
+   "identity": "ram, the exalter / ram, the uplifted|hero|white whitered|good|star#Ram, the Exalter / Ram, the Uplifted (LoC)",
+   "stem": "Ram, the Exalter / Ram, the Uplifted",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Ruth 4:19",
+   "strength": "3(9)",
+   "toughness": "4(10)"
+  }
+ },
+ {
+  "id": "c_014",
+  "stratum": "standard",
+  "label": {
+   "key": "Devouring Lion|PoC|087-Devouring-Lion-R",
+   "name": "Devouring Lion",
+   "set": "PoC",
+   "imgFile": "087-Devouring-Lion-R",
+   "identity": "devouring lion|evil character|crimson|evil|#Devouring Lion",
+   "stem": "Devouring Lion",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Isaiah 5:29",
+   "strength": "5",
+   "toughness": "4"
+  }
+ },
+ {
+  "id": "c_015",
+  "stratum": "standard",
+  "label": {
+   "key": "Deborah, the Brave (Roots)|RR|068-Deborah-the-Brave",
+   "name": "Deborah, the Brave (Roots)",
+   "set": "RR",
+   "imgFile": "068-Deborah-the-Brave",
+   "identity": "deborah, the brave|hero|gold|good|#Deborah, the Brave (Roots)",
+   "stem": "Deborah, the Brave",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "",
+   "reference": "Judges 4:4",
+   "strength": "7",
+   "toughness": "6"
+  }
+ },
+ {
+  "id": "c_016",
+  "stratum": "standard",
+  "label": {
+   "key": "Amasa, Son of Ithra [RR2]|RR2|383-Amasa",
+   "name": "Amasa, Son of Ithra [RR2]",
+   "set": "RR2",
+   "imgFile": "383-Amasa",
+   "identity": "amasa, son of ithra|evil character|brown|evil|warrior#Amasa, Son of Ithra [RR2]",
+   "stem": "Amasa, Son of Ithra",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "",
+   "reference": "II Samuel 17:25",
+   "strength": "8",
+   "toughness": "8"
+  }
+ },
+ {
+  "id": "c_017",
+  "stratum": "standard",
+  "label": {
+   "key": "Lamb's Righteousness (RoJ)|RoJ|56-Lambs-Righteousness",
+   "name": "Lamb's Righteousness (RoJ)",
+   "set": "RoJ",
+   "imgFile": "56-Lambs-Righteousness",
+   "identity": "lamb's righteousness|ge|silverwhite|good|#Lamb's Righteousness (RoJ)",
+   "stem": "Lamb's Righteousness",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Revelation 5:6",
+   "strength": "3",
+   "toughness": "2"
+  }
+ },
+ {
+  "id": "c_018",
+  "stratum": "standard",
+  "label": {
+   "key": "The Final Act|T2C|073-The-Final-Act-R",
+   "name": "The Final Act",
+   "set": "T2C",
+   "imgFile": "073-The-Final-Act-R",
+   "identity": "the final act|ge|white|good|#The Final Act [T2C AB]",
+   "stem": "The Final Act",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Daniel 12:10",
+   "strength": "0",
+   "toughness": "0"
+  }
+ },
+ {
+  "id": "c_019",
+  "stratum": "standard",
+  "label": {
+   "key": "Tubal-cain|FoM|017-Tubal-cain",
+   "name": "Tubal-cain",
+   "set": "FoM",
+   "imgFile": "017-Tubal-cain",
+   "identity": "tubal-cain|evil character|pale green|evil|warrior#Tubal-cain",
+   "stem": "Tubal-cain",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Genesis 4:22",
+   "strength": "2",
+   "toughness": "2"
+  }
+ },
+ {
+  "id": "c_020",
+  "stratum": "standard",
+  "label": {
+   "key": "Angel Party (GoC)|GoC|080-Angel-Party-R",
+   "name": "Angel Party (GoC)",
+   "set": "GoC",
+   "imgFile": "080-Angel-Party-R",
+   "identity": "angel party|ge|claygoldsilver|good|territory#Angel Party (GoC)",
+   "stem": "Angel Party",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Luke 15:10",
+   "strength": "0",
+   "toughness": "0"
+  }
+ },
+ {
+  "id": "c_021",
+  "stratum": "standard",
+  "label": {
+   "key": "Unclean Animals [Rock Hyrax]|IR|105-Unclean-Animals-hyrax",
+   "name": "Unclean Animals [Rock Hyrax]",
+   "set": "IR",
+   "imgFile": "105-Unclean-Animals-hyrax",
+   "identity": "unclean animals|evil character|crimson|evil|#Unclean Animals [Rock Hyrax]",
+   "stem": "Unclean Animals",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Leviticus 11:26",
+   "strength": "1",
+   "toughness": "4"
+  }
+ },
+ {
+  "id": "c_022",
+  "stratum": "standard",
+  "label": {
+   "key": "Judah’s Intervention (LoC)|LoC|LoC_146-Judahs-Intervention",
+   "name": "Judah’s Intervention (LoC)",
+   "set": "LoC",
+   "imgFile": "LoC_146-Judahs-Intervention",
+   "identity": "judah’s intervention|ge|bluered|good|territory#Judah’s Intervention (LoC)",
+   "stem": "Judah’s Intervention",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Genesis 44:33",
+   "strength": "4",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_023",
+  "stratum": "standard",
+  "label": {
+   "key": "Book of the Covenant (PoC)|PoC|036-Book-of-the-Covenant-UR",
+   "name": "Book of the Covenant (PoC)",
+   "set": "PoC",
+   "imgFile": "036-Book-of-the-Covenant-UR",
+   "identity": "book of the covenant|artifact||neutral|#Book of the Covenant (PoC)",
+   "stem": "Book of the Covenant",
+   "type": "Artifact",
+   "legality": "Rotation",
+   "rarity": "Ultra Rare",
+   "reference": "Exodus 24:7",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_024",
+  "stratum": "standard",
+  "label": {
+   "key": "Laban, the Deal Breaker (Roots)|RR|143-Laban",
+   "name": "Laban, the Deal Breaker (Roots)",
+   "set": "RR",
+   "imgFile": "143-Laban",
+   "identity": "laban, the deal breaker|evil character|graypale green|evil|#Laban, the Deal Breaker (Roots)",
+   "stem": "Laban, the Deal Breaker",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "",
+   "reference": "Genesis 30:27",
+   "strength": "2",
+   "toughness": "7"
+  }
+ },
+ {
+  "id": "c_025",
+  "stratum": "standard",
+  "label": {
+   "key": "Abel, the Accepted [RR2]|RR2|273-Abel",
+   "name": "Abel, the Accepted [RR2]",
+   "set": "RR2",
+   "imgFile": "273-Abel",
+   "identity": "abel, the accepted|hero|blue|good|#Abel, the Accepted [RR2]",
+   "stem": "Abel, the Accepted",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "",
+   "reference": "Genesis 4:4",
+   "strength": "4",
+   "toughness": "4"
+  }
+ },
+ {
+  "id": "c_026",
+  "stratum": "standard",
+  "label": {
+   "key": "Outsiders (Brown/Crimson) (RoJ)|RoJ|90-Outsiders-2",
+   "name": "Outsiders (Brown/Crimson) (RoJ)",
+   "set": "RoJ",
+   "imgFile": "90-Outsiders-2",
+   "identity": "outsiders|evil character|browncrimson|evil|#Outsiders (Brown/Crimson) (RoJ)",
+   "stem": "Outsiders",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Revelation 22:15",
+   "strength": "X",
+   "toughness": "X"
+  }
+ },
+ {
+  "id": "c_027",
+  "stratum": "standard",
+  "label": {
+   "key": "Ahasuerus, the Father|T2C|096-Ahasuerus-the-Father-R",
+   "name": "Ahasuerus, the Father",
+   "set": "T2C",
+   "imgFile": "096-Ahasuerus-the-Father-R",
+   "identity": "ahasuerus, the father|evil character|brown|evil|warrior#Ahasuerus, the Father [T2C AB]",
+   "stem": "Ahasuerus, the Father",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Daniel 9:1",
+   "strength": "9",
+   "toughness": "10"
+  }
+ },
+ {
+  "id": "c_028",
+  "stratum": "standard",
+  "label": {
+   "key": "Heart of Depravity|FoM|144-Heart-of-Depravity-R",
+   "name": "Heart of Depravity",
+   "set": "FoM",
+   "imgFile": "144-Heart-of-Depravity-R",
+   "identity": "heart of depravity|ee|multi|evil|territory#Heart of Depravity",
+   "stem": "Heart of Depravity",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Romans 1:29-30",
+   "strength": "-3",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_029",
+  "stratum": "standard",
+  "label": {
+   "key": "His Sacrifice (GoC)|GoC|018-His-Sacrifice-UR",
+   "name": "His Sacrifice (GoC)",
+   "set": "GoC",
+   "imgFile": "018-His-Sacrifice-UR",
+   "identity": "his sacrifice|covenant|multi|good|#His Sacrifice (GoC)",
+   "stem": "His Sacrifice",
+   "type": "Covenant",
+   "legality": "Rotation",
+   "rarity": "Ultra Rare",
+   "reference": "Matthew 26:28",
+   "strength": "7",
+   "toughness": "0"
+  }
+ },
+ {
+  "id": "c_030",
+  "stratum": "standard",
+  "label": {
+   "key": "Curse Their Parents|IR|113-Curse-Their-Parents",
+   "name": "Curse Their Parents",
+   "set": "IR",
+   "imgFile": "113-Curse-Their-Parents",
+   "identity": "curse their parents|ee|gray|evil|#Curse Their Parents",
+   "stem": "Curse Their Parents",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Leviticus 20:9",
+   "strength": "X",
+   "toughness": "X"
+  }
+ },
+ {
+  "id": "c_031",
+  "stratum": "standard",
+  "label": {
+   "key": "Jehoiakim, Puppet King (LoC)|LoC|LoC_188-Jehoiakim",
+   "name": "Jehoiakim, Puppet King (LoC)",
+   "set": "LoC",
+   "imgFile": "LoC_188-Jehoiakim",
+   "identity": "jehoiakim, puppet king|evil character|brown|evil|star#Jehoiakim, Puppet King (LoC)",
+   "stem": "Jehoiakim, Puppet King",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "II Kings 23:34",
+   "strength": "3",
+   "toughness": "6"
+  }
+ },
+ {
+  "id": "c_032",
+  "stratum": "standard",
+  "label": {
+   "key": "False Dreams (PoC)|PoC|131-False-Dreams",
+   "name": "False Dreams (PoC)",
+   "set": "PoC",
+   "imgFile": "131-False-Dreams",
+   "identity": "false dreams|ee|browngray|evil|territory#False Dreams (PoC)",
+   "stem": "False Dreams",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Jeremiah 23:25",
+   "strength": "-3",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_033",
+  "stratum": "standard",
+  "label": {
+   "key": "Evil Released (Roots)|RR|207-Evil-Released",
+   "name": "Evil Released (Roots)",
+   "set": "RR",
+   "imgFile": "207-Evil-Released",
+   "identity": "evil released|ee|orange|evil|territory#Evil Released (Roots)",
+   "stem": "Evil Released",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "",
+   "reference": "Revelation 20:7",
+   "strength": "6",
+   "toughness": "0"
+  }
+ },
+ {
+  "id": "c_034",
+  "stratum": "standard",
+  "label": {
+   "key": "Table of Demons [RR2]|RR2|432-Table-of-Demons",
+   "name": "Table of Demons [RR2]",
+   "set": "RR2",
+   "imgFile": "432-Table-of-Demons",
+   "identity": "table of demons|ee|orange|evil|territory#Table of Demons [RR2]",
+   "stem": "Table of Demons",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "",
+   "reference": "I Corinthians 10:21",
+   "strength": "4",
+   "toughness": "2"
+  }
+ },
+ {
+  "id": "c_035",
+  "stratum": "standard",
+  "label": {
+   "key": "Second Seal, War (RoJ)|RoJ|27-Second-Seal-War",
+   "name": "Second Seal, War (RoJ)",
+   "set": "RoJ",
+   "imgFile": "27-Second-Seal-War",
+   "identity": "second seal, war|geevil character|silverblackpale green|neutral|#Second Seal, War (RoJ)",
+   "stem": "Second Seal, War",
+   "type": "GE/Evil Character",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Revelation 6:4",
+   "strength": "5",
+   "toughness": "2"
+  }
+ },
+ {
+  "id": "c_036",
+  "stratum": "standard",
+  "label": {
+   "key": "Allowed to Be Trampled|T2C|091-Allowed-to-be-Trampled",
+   "name": "Allowed to Be Trampled",
+   "set": "T2C",
+   "imgFile": "091-Allowed-to-be-Trampled",
+   "identity": "allowed to be trampled|ee|black|evil|#Allowed to Be Trampled [T2C AB]",
+   "stem": "Allowed to Be Trampled",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Daniel 8:13",
+   "strength": "2",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_037",
+  "stratum": "standard",
+  "label": {
+   "key": "Shame|FoM|005-Shame",
+   "name": "Shame",
+   "set": "FoM",
+   "imgFile": "005-Shame",
+   "identity": "shame|ee|orangepale green|evil|#Shame",
+   "stem": "Shame",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Genesis 3:10",
+   "strength": "3",
+   "toughness": "-2"
+  }
+ },
+ {
+  "id": "c_038",
+  "stratum": "standard",
+  "label": {
+   "key": "Thievery of Judas (GoC)|GoC|199-Thievery-of-Judas",
+   "name": "Thievery of Judas (GoC)",
+   "set": "GoC",
+   "imgFile": "199-Thievery-of-Judas",
+   "identity": "thievery of judas|ee|crimson|evil|star#Thievery of Judas (GoC)",
+   "stem": "Thievery of Judas",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "John 12:6",
+   "strength": "6",
+   "toughness": "0"
+  }
+ },
+ {
+  "id": "c_039",
+  "stratum": "standard",
+  "label": {
+   "key": "Offering of Wrongdoing|IR|006-Offering-of-Wrongdoing-R",
+   "name": "Offering of Wrongdoing",
+   "set": "IR",
+   "imgFile": "006-Offering-of-Wrongdoing-R",
+   "identity": "offering of wrongdoing|artifact||neutral|#Offering of Wrongdoing",
+   "stem": "Offering of Wrongdoing",
+   "type": "Artifact",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Numbers 5:15",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_040",
+  "stratum": "standard",
+  "label": {
+   "key": "Plague of Boils (LoC)|LoC|LoC_150-Plague-of-Boils-R",
+   "name": "Plague of Boils (LoC)",
+   "set": "LoC",
+   "imgFile": "LoC_150-Plague-of-Boils-R",
+   "identity": "plague of boils|ge|goldgreenwhite|good|#Plague of Boils (LoC)",
+   "stem": "Plague of Boils",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Exodus 9:10",
+   "strength": "1",
+   "toughness": "6"
+  }
+ },
+ {
+  "id": "c_041",
+  "stratum": "promo",
+  "label": {
+   "key": "Peter, the Believer [2026 - Seasonal]|Pmo-P3|Peter-the-Believer-2026-Seasonal",
+   "name": "Peter, the Believer [2026 - Seasonal]",
+   "set": "Pmo-P3",
+   "imgFile": "Peter-the-Believer-2026-Seasonal",
+   "identity": "peter, the believer|hero|white|good|#Peter, the Believer [2026 - Seasonal]",
+   "stem": "Peter, the Believer",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "John 20:6",
+   "strength": "1",
+   "toughness": "12"
+  }
+ },
+ {
+  "id": "c_042",
+  "stratum": "promo",
+  "label": {
+   "key": "Whirlwind / Everlasting Ground|Pmo-P2|Whirlwind",
+   "name": "Whirlwind / Everlasting Ground",
+   "set": "Pmo-P2",
+   "imgFile": "Whirlwind",
+   "identity": "whirlwind / everlasting ground|ge|multi|good|#Whirlwind / Everlasting Ground",
+   "stem": "Whirlwind / Everlasting Ground",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "Proverbs 10:25",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_043",
+  "stratum": "promo",
+  "label": {
+   "key": "Panic Demon (Promo)|Pmo-P1|Panic_Demon_(Promo)_(Promo)",
+   "name": "Panic Demon (Promo)",
+   "set": "Pmo-P1",
+   "imgFile": "Panic_Demon_(Promo)_(Promo)",
+   "identity": "panic demon|evil character|orange|evil|#Panic Demon (Promo)",
+   "stem": "Panic Demon",
+   "type": "Evil Character",
+   "legality": "",
+   "rarity": "Promo",
+   "reference": "II Timothy 1:7",
+   "strength": "2",
+   "toughness": "4"
+  }
+ },
+ {
+  "id": "c_044",
+  "stratum": "promo",
+  "label": {
+   "key": "The Watchman (Promo)|Pmo-P2|The-Watchman_(Promo)",
+   "name": "The Watchman (Promo)",
+   "set": "Pmo-P2",
+   "imgFile": "The-Watchman_(Promo)",
+   "identity": "the watchman|hero|green|good|#The Watchman (Promo)",
+   "stem": "The Watchman",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "Ezekiel 3:17",
+   "strength": "4",
+   "toughness": "12"
+  }
+ },
+ {
+  "id": "c_045",
+  "stratum": "promo",
+  "label": {
+   "key": "Wall of Protection (Promo)|LoC|Promo_Wall-of-Protection",
+   "name": "Wall of Protection (Promo)",
+   "set": "LoC",
+   "imgFile": "Promo_Wall-of-Protection",
+   "identity": "wall of protection|fortress||good|#Wall of Protection (Promo)",
+   "stem": "Wall of Protection",
+   "type": "Fortress",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "Nehemiah 4:7",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_046",
+  "stratum": "promo",
+  "label": {
+   "key": "Shipwreck (Promo)|Pmo-P2|Shipwreck-Borderless",
+   "name": "Shipwreck (Promo)",
+   "set": "Pmo-P2",
+   "imgFile": "Shipwreck-Borderless",
+   "identity": "shipwreck|dominant||evil|#Shipwreck (Promo)",
+   "stem": "Shipwreck",
+   "type": "Dominant",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "Acts 27:41",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_047",
+  "stratum": "promo",
+  "label": {
+   "key": "Son of God (2020 Promo)|Pmo-P2|Son-of-God-2020-P",
+   "name": "Son of God (2020 Promo)",
+   "set": "Pmo-P2",
+   "imgFile": "Son-of-God-2020-P",
+   "identity": "son of god|dominant||good|#Son of God [2026 - 1st Place]",
+   "stem": "Son of God",
+   "type": "Dominant",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "Revelation 1:17-18",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_048",
+  "stratum": "promo",
+  "label": {
+   "key": "Bethlehem (Promo)|Pmo-P2|Bethlehem",
+   "name": "Bethlehem (Promo)",
+   "set": "Pmo-P2",
+   "imgFile": "Bethlehem",
+   "identity": "bethlehem|city|goodwhite|good|#Bethlehem (Promo)",
+   "stem": "Bethlehem",
+   "type": "City",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "Matthew 2:6/Micah 5:2",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_049",
+  "stratum": "promo",
+  "label": {
+   "key": "Shadrach (Hananiah)|Pmo-P1|Shadrach_(Hananiah)_(Promo)",
+   "name": "Shadrach (Hananiah)",
+   "set": "Pmo-P1",
+   "imgFile": "Shadrach_(Hananiah)_(Promo)",
+   "identity": "shadrach|hero|white|good|#Shadrach (Hananiah)",
+   "stem": "Shadrach",
+   "type": "Hero",
+   "legality": "",
+   "rarity": "Promo",
+   "reference": "Daniel 3:28",
+   "strength": "5",
+   "toughness": "7"
+  }
+ },
+ {
+  "id": "c_050",
+  "stratum": "promo",
+  "label": {
+   "key": "Paul (Promo)|Pmo-P2|Paul_(Promo)",
+   "name": "Paul (Promo)",
+   "set": "Pmo-P2",
+   "imgFile": "Paul_(Promo)",
+   "identity": "paul|hero|claygreen|good|#Paul (Promo)",
+   "stem": "Paul",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "Romans 1:1",
+   "strength": "10",
+   "toughness": "10"
+  }
+ },
+ {
+  "id": "c_051",
+  "stratum": "promo",
+  "label": {
+   "key": "Saint Patrick|Pmo-P1|Saint_Patrick_(Promo)",
+   "name": "Saint Patrick",
+   "set": "Pmo-P1",
+   "imgFile": "Saint_Patrick_(Promo)",
+   "identity": "saint patrick|hero|green|good|#Saint Patrick",
+   "stem": "Saint Patrick",
+   "type": "Hero",
+   "legality": "",
+   "rarity": "Promo",
+   "reference": "Matthew 28:19",
+   "strength": "6",
+   "toughness": "7"
+  }
+ },
+ {
+  "id": "c_052",
+  "stratum": "promo",
+  "label": {
+   "key": "Gideon's 300|Pmo-P2|Gideons_300_(Promo)",
+   "name": "Gideon's 300",
+   "set": "Pmo-P2",
+   "imgFile": "Gideons_300_(Promo)",
+   "identity": "gideon's 300|hero|goldred|good|warrior#Gideon's 300",
+   "stem": "Gideon's 300",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "Judges 7:7",
+   "strength": "3",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_053",
+  "stratum": "promo",
+  "label": {
+   "key": "Samson, Son of Manoah [2025 - State]|Pmo-P3|Samson-Son-of-Manoah-State",
+   "name": "Samson, Son of Manoah [2025 - State]",
+   "set": "Pmo-P3",
+   "imgFile": "Samson-Son-of-Manoah-State",
+   "identity": "samson, son of manoah|hero|gold|good|warrior#Samson, Son of Manoah [2025 - State]",
+   "stem": "Samson, Son of Manoah",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "State",
+   "reference": "Judges 14:5",
+   "strength": "12",
+   "toughness": "8"
+  }
+ },
+ {
+  "id": "c_054",
+  "stratum": "promo",
+  "label": {
+   "key": "Jairus|Pmo-P1|Jairus_(Promo)",
+   "name": "Jairus",
+   "set": "Pmo-P1",
+   "imgFile": "Jairus_(Promo)",
+   "identity": "jairus|hero|white|good|#Jairus",
+   "stem": "Jairus",
+   "type": "Hero",
+   "legality": "",
+   "rarity": "Promo",
+   "reference": "Mark 5:22",
+   "strength": "8",
+   "toughness": "7"
+  }
+ },
+ {
+  "id": "c_055",
+  "stratum": "promo",
+  "label": {
+   "key": "Son of God (2017 Promo)|Pmo-P2|Son-of-God-2017-P",
+   "name": "Son of God (2017 Promo)",
+   "set": "Pmo-P2",
+   "imgFile": "Son-of-God-2017-P",
+   "identity": "son of god|dominant||good|#Son of God [2026 - 1st Place]",
+   "stem": "Son of God",
+   "type": "Dominant",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "Revelation 19:11",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_056",
+  "stratum": "promo",
+  "label": {
+   "key": "Nehemiah, the Viligant (Promo)|Pmo-P2|Promo_Nehemiah-State",
+   "name": "Nehemiah, the Viligant (Promo)",
+   "set": "Pmo-P2",
+   "imgFile": "Promo_Nehemiah-State",
+   "identity": "nehemiah, the viligant|hero|goldred|good|warrior#Nehemiah, the Viligant (Promo)",
+   "stem": "Nehemiah, the Viligant",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "State",
+   "reference": "Nehemiah 5:7",
+   "strength": "7",
+   "toughness": "12"
+  }
+ },
+ {
+  "id": "c_057",
+  "stratum": "promo",
+  "label": {
+   "key": "Rapha of Gath|Pmo-P2|Rapha-of-Gath_(Promo)",
+   "name": "Rapha of Gath",
+   "set": "Pmo-P2",
+   "imgFile": "Rapha-of-Gath_(Promo)",
+   "identity": "rapha of gath|evil character|black|evil|territorywarrior#Rapha of Gath",
+   "stem": "Rapha of Gath",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "II Samuel 21:22",
+   "strength": "12",
+   "toughness": "12"
+  }
+ },
+ {
+  "id": "c_058",
+  "stratum": "promo",
+  "label": {
+   "key": "Baruch the Scribe [2025 - Local]|Pmo-P3|Baruch-the-Scribe",
+   "name": "Baruch the Scribe [2025 - Local]",
+   "set": "Pmo-P3",
+   "imgFile": "Baruch-the-Scribe",
+   "identity": "baruch the scribe|hero|green|good|#Baruch the Scribe [2025 - Local]",
+   "stem": "Baruch the Scribe",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "Local",
+   "reference": "Jeremiah 36:4",
+   "strength": "1",
+   "toughness": "2"
+  }
+ },
+ {
+  "id": "c_059",
+  "stratum": "promo",
+  "label": {
+   "key": "Clinging to Power [2022 - GoC P]|GoC|Clinging-to-Power-P",
+   "name": "Clinging to Power [2022 - GoC P]",
+   "set": "GoC",
+   "imgFile": "Clinging-to-Power-P",
+   "identity": "clinging to power|ee|blackgoldgray|evil|territory#Clinging to Power [2022 - GoC P]",
+   "stem": "Clinging to Power",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "John 11:48",
+   "strength": "3",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_060",
+  "stratum": "promo",
+  "label": {
+   "key": "Gates of Jerusalem (Promo)|LoC|Promo_Gates-of-Jerusalem",
+   "name": "Gates of Jerusalem (Promo)",
+   "set": "LoC",
+   "imgFile": "Promo_Gates-of-Jerusalem",
+   "identity": "gates of jerusalem|fortress||good|#Gates of Jerusalem (Promo)",
+   "stem": "Gates of Jerusalem",
+   "type": "Fortress",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "II Chronicles 14:7",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_061",
+  "stratum": "ab",
+  "label": {
+   "key": "Merchants of the Earth (RoJ AB)|RoJ (AB)|RoJ_AB_N112-Merchants-of-the-Earth",
+   "name": "Merchants of the Earth (RoJ AB)",
+   "set": "RoJ (AB)",
+   "imgFile": "RoJ_AB_N112-Merchants-of-the-Earth",
+   "identity": "merchants of the earth|evil character|gold|evil|#Merchants of the Earth (RoJ)",
+   "stem": "Merchants of the Earth",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Revelation 18:11-12",
+   "strength": "5",
+   "toughness": "4"
+  }
+ },
+ {
+  "id": "c_062",
+  "stratum": "ab",
+  "label": {
+   "key": "Sins Forgotten (CoW AB)|CoW (AB)|CoW_AB_N82-Sins-Forgotten",
+   "name": "Sins Forgotten (CoW AB)",
+   "set": "CoW (AB)",
+   "imgFile": "CoW_AB_N82-Sins-Forgotten",
+   "identity": "sins forgotten|ge|green|good|#Sins Forgotten (CoW AB)",
+   "stem": "Sins Forgotten",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Hebrews 8:12 (Jeremiah 31:34)",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_063",
+  "stratum": "ab",
+  "label": {
+   "key": "Letter to the Hebrews (CoW AB)|CoW (AB)|CoW_AB_N04-Letter-to-the-Hebrews",
+   "name": "Letter to the Hebrews (CoW AB)",
+   "set": "CoW (AB)",
+   "imgFile": "CoW_AB_N04-Letter-to-the-Hebrews",
+   "identity": "letter to the hebrews|artifact||neutral|#Letter to the Hebrews (CoW AB)",
+   "stem": "Letter to the Hebrews",
+   "type": "Artifact",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Hebrews 13:22",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_064",
+  "stratum": "ab",
+  "label": {
+   "key": "Faith of Rahab (CoW AB)|CoW (AB)|CoW_AB_N52-Faith-of-Rahab",
+   "name": "Faith of Rahab (CoW AB)",
+   "set": "CoW (AB)",
+   "imgFile": "CoW_AB_N52-Faith-of-Rahab",
+   "identity": "faith of rahab|ge|claywhite|good|cloud#Faith of Rahab (CoW AB)",
+   "stem": "Faith of Rahab",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Hebrews 11:31",
+   "strength": "3",
+   "toughness": "1"
+  }
+ },
+ {
+  "id": "c_065",
+  "stratum": "ab",
+  "label": {
+   "key": "The Murdering Pharaoh (CoW AB)|CoW (AB)|CoW_AB_N114-The-Murdering-Pharaoh",
+   "name": "The Murdering Pharaoh (CoW AB)",
+   "set": "CoW (AB)",
+   "imgFile": "CoW_AB_N114-The-Murdering-Pharaoh",
+   "identity": "the murdering pharaoh|evil character|gold|evil|warrior#The Murdering Pharaoh (CoW AB)",
+   "stem": "The Murdering Pharaoh",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Exodus 1:8",
+   "strength": "10",
+   "toughness": "8"
+  }
+ },
+ {
+  "id": "c_066",
+  "stratum": "ab",
+  "label": {
+   "key": "Kingdom of the Divine [T2C AB]|T2C (AB)|017-Kingdom-of-the-Divine-R-AB",
+   "name": "Kingdom of the Divine [T2C AB]",
+   "set": "T2C (AB)",
+   "imgFile": "017-Kingdom-of-the-Divine-R-AB",
+   "identity": "kingdom of the divine|fortress||good|#Kingdom of the Divine [T2C AB]",
+   "stem": "Kingdom of the Divine",
+   "type": "Fortress",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Daniel 2:44",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_067",
+  "stratum": "ab",
+  "label": {
+   "key": "The Ends of the Earth (RoJ AB)|RoJ (AB)|RoJ_AB_N18-The-Ends-of-the-Earth-R",
+   "name": "The Ends of the Earth (RoJ AB)",
+   "set": "RoJ (AB)",
+   "imgFile": "RoJ_AB_N18-The-Ends-of-the-Earth-R",
+   "identity": "the ends of the earth|site|multi|neutral|#The Ends of the Earth (RoJ)",
+   "stem": "The Ends of the Earth",
+   "type": "Site",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Acts 1:8",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_068",
+  "stratum": "ab",
+  "label": {
+   "key": "Michal (CoW AB)|CoW (AB)|CoW_AB_N108-Michal",
+   "name": "Michal (CoW AB)",
+   "set": "CoW (AB)",
+   "imgFile": "CoW_AB_N108-Michal",
+   "identity": "michal|evil character|brown|evil|#Michal (CoW)",
+   "stem": "Michal",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "I Samuel 25:44",
+   "strength": "4",
+   "toughness": "4"
+  }
+ },
+ {
+  "id": "c_069",
+  "stratum": "ab",
+  "label": {
+   "key": "Last Days [T2C AB]|T2C (AB)|043-Last-Days-AB",
+   "name": "Last Days [T2C AB]",
+   "set": "T2C (AB)",
+   "imgFile": "043-Last-Days-AB",
+   "identity": "last days|ge|green|good|#Last Days [T2C AB]",
+   "stem": "Last Days",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Ezekiel 38:16",
+   "strength": "1",
+   "toughness": "6"
+  }
+ },
+ {
+  "id": "c_070",
+  "stratum": "ab",
+  "label": {
+   "key": "Darius' Satraps [T2C AB]|T2C (AB)|101-Darius-Satraps-AB",
+   "name": "Darius' Satraps [T2C AB]",
+   "set": "T2C (AB)",
+   "imgFile": "101-Darius-Satraps-AB",
+   "identity": "darius' satraps|evil character|brown|evil|#Darius' Satraps [T2C AB]",
+   "stem": "Darius' Satraps",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Daniel 6:1",
+   "strength": "5",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_071",
+  "stratum": "ab",
+  "label": {
+   "key": "Zechariah, the Seer [T2C AB]|T2C (AB)|033-Zechariah-the-Predictor-AB",
+   "name": "Zechariah, the Seer [T2C AB]",
+   "set": "T2C (AB)",
+   "imgFile": "033-Zechariah-the-Predictor-AB",
+   "identity": "zechariah, the seer|hero|green|good|#Zechariah, the Seer [T2C AB]",
+   "stem": "Zechariah, the Seer",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Zechariah 7:1",
+   "strength": "4",
+   "toughness": "9"
+  }
+ },
+ {
+  "id": "c_072",
+  "stratum": "ab",
+  "label": {
+   "key": "Daniel (CoW AB)|CoW (AB)|CoW_AB_N36-Daniel",
+   "name": "Daniel (CoW AB)",
+   "set": "CoW (AB)",
+   "imgFile": "CoW_AB_N36-Daniel",
+   "identity": "daniel|hero|greenwhite|good|cloud#Daniel (CoW)",
+   "stem": "Daniel",
+   "type": "Hero",
+   "legality": "Banned",
+   "rarity": "Common",
+   "reference": "Daniel 6:10",
+   "strength": "6",
+   "toughness": "7"
+  }
+ },
+ {
+  "id": "c_073",
+  "stratum": "legacy_rare",
+  "label": {
+   "key": "Lost Soul \"Hopper\" [II Chronicles 28:13 - LR]|FoM|115-Lost-Soul-II_Chronicles-28_13",
+   "name": "Lost Soul \"Hopper\" [II Chronicles 28:13 - LR]",
+   "set": "FoM",
+   "imgFile": "115-Lost-Soul-II_Chronicles-28_13",
+   "identity": "lost soul \"hopper\"|lost soul||neutral|#Lost Soul \"Hopper\" [Matthew 18:12] [2025 - Seasonal]",
+   "stem": "Lost Soul \"Hopper\"",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Legacy Rare",
+   "reference": "II Chronicles 28:13",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_074",
+  "stratum": "legacy_rare",
+  "label": {
+   "key": "Eve (FoM)|FoM|101-Eve",
+   "name": "Eve (FoM)",
+   "set": "FoM",
+   "imgFile": "101-Eve",
+   "identity": "eve|hero|blue|good|#Eve (FoM)",
+   "stem": "Eve",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "Legacy Rare",
+   "reference": "Genesis 3:20",
+   "strength": "7",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_075",
+  "stratum": "legacy_rare",
+  "label": {
+   "key": "The Amalekites' Slave (FoM)|FoM|113-The-Amalekites-Slave",
+   "name": "The Amalekites' Slave (FoM)",
+   "set": "FoM",
+   "imgFile": "113-The-Amalekites-Slave",
+   "identity": "the amalekites' slave|evil character|browngold|evil|#The Amalekites' Slave (FoM)",
+   "stem": "The Amalekites' Slave",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Legacy Rare",
+   "reference": "I Samuel 30:13",
+   "strength": "4",
+   "toughness": "4"
+  }
+ },
+ {
+  "id": "c_076",
+  "stratum": "legacy_rare",
+  "label": {
+   "key": "Astrologers (PoC)|PoC|LR29-Astrologers",
+   "name": "Astrologers (PoC)",
+   "set": "PoC",
+   "imgFile": "LR29-Astrologers",
+   "identity": "astrologers|evil character|crimsonpale green|evil|#Astrologers (PoC)",
+   "stem": "Astrologers",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Legacy Rare",
+   "reference": "Daniel 2:27",
+   "strength": "3",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_077",
+  "stratum": "legacy_rare",
+  "label": {
+   "key": "Great Image (PoC)|PoC|LR30-Great-Image",
+   "name": "Great Image (PoC)",
+   "set": "PoC",
+   "imgFile": "LR30-Great-Image",
+   "identity": "great image|ee|crimson|evil|#Great Image (PoC)",
+   "stem": "Great Image",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "Legacy Rare",
+   "reference": "Daniel 2:31",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_078",
+  "stratum": "legacy_rare",
+  "label": {
+   "key": "Stone Pillar at Bethel (LoC)|LoC|LR41-Stone-Pillar-at-Bethel",
+   "name": "Stone Pillar at Bethel (LoC)",
+   "set": "LoC",
+   "imgFile": "LR41-Stone-Pillar-at-Bethel",
+   "identity": "stone pillar at bethel|artifact||neutral|#Stone Pillar at Bethel (LoC)",
+   "stem": "Stone Pillar at Bethel",
+   "type": "Artifact",
+   "legality": "Rotation",
+   "rarity": "Legacy Rare",
+   "reference": "Genesis 35:14-15",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_079",
+  "stratum": "legacy_rare",
+  "label": {
+   "key": "Striking Herod (GoC)|GoC|LR69-Striking-Herod",
+   "name": "Striking Herod (GoC)",
+   "set": "GoC",
+   "imgFile": "LR69-Striking-Herod",
+   "identity": "striking herod|ge|silver|good|#Striking Herod (GoC)",
+   "stem": "Striking Herod",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Legacy Rare",
+   "reference": "Acts 12:23",
+   "strength": "7",
+   "toughness": "0"
+  }
+ },
+ {
+  "id": "c_080",
+  "stratum": "legacy_rare",
+  "label": {
+   "key": "Herod Agrippa II (GoC)|GoC|LR70-Herod-Agrippa-II",
+   "name": "Herod Agrippa II (GoC)",
+   "set": "GoC",
+   "imgFile": "LR70-Herod-Agrippa-II",
+   "identity": "herod agrippa ii|evil character|gold|evil|warrior#Herod Agrippa II (TxP)",
+   "stem": "Herod Agrippa II",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Legacy Rare",
+   "reference": "Acts 25:23",
+   "strength": "6",
+   "toughness": "6"
+  }
+ },
+ {
+  "id": "c_081",
+  "stratum": "ur_plus",
+  "label": {
+   "key": "Authority of Christ (GoC UR+)|GoC|081-Authority-of-Christ-UR+",
+   "name": "Authority of Christ (GoC UR+)",
+   "set": "GoC",
+   "imgFile": "081-Authority-of-Christ-UR+",
+   "identity": "authority of christ|ge|claypurple|good|star#Authority of Christ (GoC)",
+   "stem": "Authority of Christ",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Ultra Rare",
+   "reference": "Matthew 8:26",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_082",
+  "stratum": "ur_plus",
+  "label": {
+   "key": "Beelzebub [UR+] (GoC)|GoC|242-Beelzebub-UR+",
+   "name": "Beelzebub [UR+] (GoC)",
+   "set": "GoC",
+   "imgFile": "242-Beelzebub-UR+",
+   "identity": "beelzebub|evil character|orange|evil|warrior star#Beelzebub [UR+] (GoC)",
+   "stem": "Beelzebub",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Ultra Rare",
+   "reference": "Matthew 12:24",
+   "strength": "11",
+   "toughness": "11"
+  }
+ },
+ {
+  "id": "c_083",
+  "stratum": "ur_plus",
+  "label": {
+   "key": "Gabriel, Mouth of God [UR+] (GoC)|GoC|057-Gabriel-UR+",
+   "name": "Gabriel, Mouth of God [UR+] (GoC)",
+   "set": "GoC",
+   "imgFile": "057-Gabriel-UR+",
+   "identity": "gabriel, mouth of god|hero|greensilver|good|#Gabriel, Mouth of God [UR+] (GoC)",
+   "stem": "Gabriel, Mouth of God",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "Ultra Rare",
+   "reference": "Luke 1:26",
+   "strength": "5",
+   "toughness": "12"
+  }
+ },
+ {
+  "id": "c_084",
+  "stratum": "ur_plus",
+  "label": {
+   "key": "His Sacrifice (GoC UR+)|GoC|018-His-Sacrifice-UR+",
+   "name": "His Sacrifice (GoC UR+)",
+   "set": "GoC",
+   "imgFile": "018-His-Sacrifice-UR+",
+   "identity": "his sacrifice|covenant|multi|good|#His Sacrifice (GoC)",
+   "stem": "His Sacrifice",
+   "type": "Covenant",
+   "legality": "Rotation",
+   "rarity": "Ultra Rare",
+   "reference": "Matthew 26:28",
+   "strength": "7",
+   "toughness": "0"
+  }
+ },
+ {
+  "id": "c_085",
+  "stratum": "ur_plus",
+  "label": {
+   "key": "The Cross (GoC UR+)|GoC|009-The-Cross-UR+",
+   "name": "The Cross (GoC UR+)",
+   "set": "GoC",
+   "imgFile": "009-The-Cross-UR+",
+   "identity": "the cross|artifact||neutral|#The Cross (GoC)",
+   "stem": "The Cross",
+   "type": "Artifact",
+   "legality": "Rotation",
+   "rarity": "Ultra Rare",
+   "reference": "Matthew 27:42",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_086",
+  "stratum": "ur_plus",
+  "label": {
+   "key": "The Resurrection [UR+] (GoC)|GoC|003-The-Resurrection-UR+",
+   "name": "The Resurrection [UR+] (GoC)",
+   "set": "GoC",
+   "imgFile": "003-The-Resurrection-UR+",
+   "identity": "the resurrection|dominant||good|#The Resurrection [UR+] (GoC)",
+   "stem": "The Resurrection",
+   "type": "Dominant",
+   "legality": "Rotation",
+   "rarity": "Ultra Rare",
+   "reference": "Matthew 28:5-6",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_087",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul [Exodus 10:10 - K]|K|K10-Lost-Soul-Exodus-10_10",
+   "name": "Lost Soul [Exodus 10:10 - K]",
+   "set": "K",
+   "imgFile": "K10-Lost-Soul-Exodus-10_10",
+   "identity": "lost soul|lost soul||neutral|#Lost Soul [Exodus 10:10] [1st Print - K]",
+   "stem": "Lost Soul",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Starter",
+   "reference": "Exodus 10:10",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_088",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul \"Dread\" [Exodus 15:16] [1st Print - K]|K1P|K6-1P-Lost-Soul-Dread-Exodus-15_16",
+   "name": "Lost Soul \"Dread\" [Exodus 15:16] [1st Print - K]",
+   "set": "K1P",
+   "imgFile": "K6-1P-Lost-Soul-Dread-Exodus-15_16",
+   "identity": "lost soul \"dread\"|lost soul||neutral|#Lost Soul \"Dread\" [Exodus 15:16] [1st Print - K]",
+   "stem": "Lost Soul \"Dread\"",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Starter",
+   "reference": "Exodus 15:16",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_089",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul \"Crowds\" [Luke 5:15] [2026-Seasonal]|Pmo-P3|Lost-Soul-Crowds-Summer-2026",
+   "name": "Lost Soul \"Crowds\" [Luke 5:15] [2026-Seasonal]",
+   "set": "Pmo-P3",
+   "imgFile": "Lost-Soul-Crowds-Summer-2026",
+   "identity": "lost soul \"crowds\"|lost soul||neutral|#Lost Soul \"Crowds\" [Luke 5:15] [2026-Seasonal]",
+   "stem": "Lost Soul \"Crowds\"",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Seasonal",
+   "reference": "Luke 5:15",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_090",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul (Daniel 9:7) [Fundraiser]|Fund|Lost-Soul-meek-Daniel-9.7-Schneider",
+   "name": "Lost Soul (Daniel 9:7) [Fundraiser]",
+   "set": "Fund",
+   "imgFile": "Lost-Soul-meek-Daniel-9.7-Schneider",
+   "identity": "lost soul|lost soul||neutral|#Lost Soul (Daniel 9:7) [Fundraiser]",
+   "stem": "Lost Soul",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "Daniel 9:5",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_091",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul \"Exiles\" [Jeremiah 28:6]|PoC|133-Lost-Soul-Exile-(Jeremiah-28_6)-R",
+   "name": "Lost Soul \"Exiles\" [Jeremiah 28:6]",
+   "set": "PoC",
+   "imgFile": "133-Lost-Soul-Exile-(Jeremiah-28_6)-R",
+   "identity": "lost soul \"exiles\"|lost soul||neutral|#Lost Soul \"Exiles\" [Jeremiah 28:6]",
+   "stem": "Lost Soul \"Exiles\"",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Jeremiah 28:6",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_092",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Souls (Two Liner)|Main [Ban]|Lost_Souls_(Two_Liner)_(Li)",
+   "name": "Lost Souls (Two Liner)",
+   "set": "Main [Ban]",
+   "imgFile": "Lost_Souls_(Two_Liner)_(Li)",
+   "identity": "lost souls|lost soul||neutral|#Lost Souls (Two Liner)",
+   "stem": "Lost Souls",
+   "type": "Lost Soul",
+   "legality": "Banned",
+   "rarity": "Rare",
+   "reference": "Proverbs 22:14",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_093",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul Ezekiel 34:12 (UL)|Main UL|Lost_Soul_Ezekiel_34_12_(UL)",
+   "name": "Lost Soul Ezekiel 34:12 (UL)",
+   "set": "Main UL",
+   "imgFile": "Lost_Soul_Ezekiel_34_12_(UL)",
+   "identity": "lost soul ezekiel 34:12|lost soul||neutral|#Lost Soul Ezekiel 34:12 (UL)",
+   "stem": "Lost Soul Ezekiel 34:12",
+   "type": "Lost Soul",
+   "legality": "",
+   "rarity": "Common",
+   "reference": "Ezekiel 34:12",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_094",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul \"Covet\" [Deuteronomy 5:21]|FoM|075-Lost_Soul_Deut_5-21-R",
+   "name": "Lost Soul \"Covet\" [Deuteronomy 5:21]",
+   "set": "FoM",
+   "imgFile": "075-Lost_Soul_Deut_5-21-R",
+   "identity": "lost soul \"covet\"|lost soul||neutral|#Lost Soul \"Covet\" [Deuteronomy 5:21]",
+   "stem": "Lost Soul \"Covet\"",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Deuteronomy 5:21",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_095",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul Token \"Harvest\" [John 4:35]|GoC|Lost-Soul-Harvest-Token",
+   "name": "Lost Soul Token \"Harvest\" [John 4:35]",
+   "set": "GoC",
+   "imgFile": "Lost-Soul-Harvest-Token",
+   "identity": "lost soul token \"harvest\"|lost soul token||neutral|#Lost Soul Token \"Harvest\" [John 4:35]",
+   "stem": "Lost Soul Token \"Harvest\"",
+   "type": "Lost Soul Token",
+   "legality": "Rotation",
+   "rarity": "Token",
+   "reference": "John 4:35",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_096",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul Proverbs 21:16 (I)|I|Lost_Soul_Proverbs_21_16_(I)",
+   "name": "Lost Soul Proverbs 21:16 (I)",
+   "set": "I",
+   "imgFile": "Lost_Soul_Proverbs_21_16_(I)",
+   "identity": "lost soul proverbs 21:16|lost soul||neutral|#Lost Soul Proverbs 21:16 (I)",
+   "stem": "Lost Soul Proverbs 21:16",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Deck",
+   "reference": "Proverbs 21:16",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_097",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul I Kings 17:12 (UL)|Main UL|Lost_Soul_I_Kings_17_12_(UL)",
+   "name": "Lost Soul I Kings 17:12 (UL)",
+   "set": "Main UL",
+   "imgFile": "Lost_Soul_I_Kings_17_12_(UL)",
+   "identity": "lost soul i kings 17:12|lost soul||neutral|#Lost Soul I Kings 17:12 (UL)",
+   "stem": "Lost Soul I Kings 17:12",
+   "type": "Lost Soul",
+   "legality": "",
+   "rarity": "Uncommon",
+   "reference": "I Kings 17:12",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_098",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul \"Hunter\" [Exodus 11:5 - FoM]|FoM|063-Lost_Soul-Exodus_11-5",
+   "name": "Lost Soul \"Hunter\" [Exodus 11:5 - FoM]",
+   "set": "FoM",
+   "imgFile": "063-Lost_Soul-Exodus_11-5",
+   "identity": "lost soul \"hunter\"|lost soul||neutral|#Lost Soul \"Hunter\" [Exodus 11:5 - FoM]",
+   "stem": "Lost Soul \"Hunter\"",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Exodus 11:5",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_099",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul [I Samuel 30:13 - L]|L|L11-Lost-Soul-ISamuel-30_13",
+   "name": "Lost Soul [I Samuel 30:13 - L]",
+   "set": "L",
+   "imgFile": "L11-Lost-Soul-ISamuel-30_13",
+   "identity": "lost soul|lost soul||neutral|#Lost Soul [I Samuel 30:13] (1st Print - L)",
+   "stem": "Lost Soul",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Starter",
+   "reference": "I Samuel 30:13",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_100",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul \"Behold\" [I Samuel 30:3] [1st Print - L]|L1P|L9-1P-Lost-Soul-ISamuel-30_3",
+   "name": "Lost Soul \"Behold\" [I Samuel 30:3] [1st Print - L]",
+   "set": "L1P",
+   "imgFile": "L9-1P-Lost-Soul-ISamuel-30_3",
+   "identity": "lost soul \"behold\"|lost soul||neutral|#Lost Soul \"Behold\" [I Samuel 30:3] [1st Print - L]",
+   "stem": "Lost Soul \"Behold\"",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Starter",
+   "reference": "I Samuel 30:3",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_101",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul Luke 15:6 (UL)|1EU|Lost_Soul_Luke_15_6_(A)",
+   "name": "Lost Soul Luke 15:6 (UL)",
+   "set": "1EU",
+   "imgFile": "Lost_Soul_Luke_15_6_(A)",
+   "identity": "lost soul luke 15:6|lost soul||neutral|#Lost Soul Luke 15:6 (UL)",
+   "stem": "Lost Soul Luke 15:6",
+   "type": "Lost Soul",
+   "legality": "",
+   "rarity": "Deck",
+   "reference": "Luke 15:6",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_102",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul Proverbs 20:20|3E|Lost_Soul_Proverbs_20_20_(E)",
+   "name": "Lost Soul Proverbs 20:20",
+   "set": "3E",
+   "imgFile": "Lost_Soul_Proverbs_20_20_(E)",
+   "identity": "lost soul proverbs 20:20|lost soul||neutral|#Lost Soul Proverbs 20:20",
+   "stem": "Lost Soul Proverbs 20:20",
+   "type": "Lost Soul",
+   "legality": "",
+   "rarity": "Deck",
+   "reference": "Proverbs 20:20",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_103",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul \"Humble\" [James 4:6 / Proverbs 3:34 - RoJ]|RoJ|22-Lost-Soul-Humble-R",
+   "name": "Lost Soul \"Humble\" [James 4:6 / Proverbs 3:34 - RoJ]",
+   "set": "RoJ",
+   "imgFile": "22-Lost-Soul-Humble-R",
+   "identity": "lost soul \"humble\"|lost soul||neutral|#Lost Soul \"Humble\" [James 4:6 / Proverbs 3:34] [2022 - 3rd Place]",
+   "stem": "Lost Soul \"Humble\"",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "James 4:6 (Proverbs 3:34)",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_104",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul \"Retribution\" [Acts 16:22]|TEC|Lost_Soul_Acts_16_22_(EC)",
+   "name": "Lost Soul \"Retribution\" [Acts 16:22]",
+   "set": "TEC",
+   "imgFile": "Lost_Soul_Acts_16_22_(EC)",
+   "identity": "lost soul \"retribution\"|lost soul||neutral|#Lost Soul \"Retribution\" [Acts 16:22]",
+   "stem": "Lost Soul \"Retribution\"",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Acts 18:22",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_105",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul \"Lost Boy\" [Ezekiel 34:12 - PoC]|PoC|144-Lost-Soul-Lost-Boy-Ezekiel-34_12",
+   "name": "Lost Soul \"Lost Boy\" [Ezekiel 34:12 - PoC]",
+   "set": "PoC",
+   "imgFile": "144-Lost-Soul-Lost-Boy-Ezekiel-34_12",
+   "identity": "lost soul \"lost boy\"|lost soul||neutral|#Lost Soul \"Lost Boy\" [Ezekiel 34:12 - PoC]",
+   "stem": "Lost Soul \"Lost Boy\"",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Ezekiel 34:12",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_106",
+  "stratum": "lost_soul",
+  "label": {
+   "key": "Lost Soul \"Outcry\" [I Samuel 5:12 - L]|L|L6-Lost-Soul-ISamuel-5_12",
+   "name": "Lost Soul \"Outcry\" [I Samuel 5:12 - L]",
+   "set": "L",
+   "imgFile": "L6-Lost-Soul-ISamuel-5_12",
+   "identity": "lost soul \"outcry\"|lost soul||neutral|#Lost Soul \"Outcry\" [I Samuel 5:12] [1st Print - L]",
+   "stem": "Lost Soul \"Outcry\"",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Starter",
+   "reference": "I Samuel 5:12",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_107",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Chariots of Iron (UL)|Main UL|Chariots_of_Iron_(UL)",
+   "name": "Chariots of Iron (UL)",
+   "set": "Main UL",
+   "imgFile": "Chariots_of_Iron_(UL)",
+   "identity": "chariots of iron|ee|crimson|evil|#Chariots of Iron (UL)",
+   "stem": "Chariots of Iron",
+   "type": "EE",
+   "legality": "",
+   "rarity": "Common",
+   "reference": "Judges 1:19",
+   "strength": "2",
+   "toughness": "2"
+  }
+ },
+ {
+  "id": "c_108",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Ruth (L)|Main|Ruth_(UL)",
+   "name": "Ruth (L)",
+   "set": "Main",
+   "imgFile": "Ruth_(UL)",
+   "identity": "ruth|hero|white|good|#Ruth (UL)",
+   "stem": "Ruth",
+   "type": "Hero",
+   "legality": "",
+   "rarity": "Uncommon",
+   "reference": "Ruth 3:11",
+   "strength": "4",
+   "toughness": "4"
+  }
+ },
+ {
+  "id": "c_109",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Angel at Jerusalem (Wa)|War|Angel_at_Jerusalem_(Wa)",
+   "name": "Angel at Jerusalem (Wa)",
+   "set": "War",
+   "imgFile": "Angel_at_Jerusalem_(Wa)",
+   "identity": "angel at jerusalem|hero|silver|good|#Angel at Jerusalem (Wa)",
+   "stem": "Angel at Jerusalem",
+   "type": "Hero",
+   "legality": "",
+   "rarity": "Common",
+   "reference": "II Chronicles 32:21",
+   "strength": "2",
+   "toughness": "2"
+  }
+ },
+ {
+  "id": "c_110",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Hate (D)|2E|Hate_(DU)",
+   "name": "Hate (D)",
+   "set": "2E",
+   "imgFile": "Hate_(DU)",
+   "identity": "hate|ee|black|evil|#Hate (UL)",
+   "stem": "Hate",
+   "type": "EE",
+   "legality": "",
+   "rarity": "Deck",
+   "reference": "John 3:20",
+   "strength": "2",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_111",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Conqueror over Death|Ki|Conqueror_over_Death_(Ki)",
+   "name": "Conqueror over Death",
+   "set": "Ki",
+   "imgFile": "Conqueror_over_Death_(Ki)",
+   "identity": "conqueror over death|ge|white|good|#Conqueror over Death",
+   "stem": "Conqueror over Death",
+   "type": "GE",
+   "legality": "",
+   "rarity": "Uncommon",
+   "reference": "II Timothy 1:10",
+   "strength": "4",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_112",
+  "stratum": "old_frame",
+  "label": {
+   "key": "King Jehoshaphat (Pi)|Pri|King_Jehoshaphat_(Pi)",
+   "name": "King Jehoshaphat (Pi)",
+   "set": "Pri",
+   "imgFile": "King_Jehoshaphat_(Pi)",
+   "identity": "king jehoshaphat|hero|purple|good|warrior#King Jehoshaphat (Pi)",
+   "stem": "King Jehoshaphat",
+   "type": "Hero",
+   "legality": "",
+   "rarity": "Uncommon",
+   "reference": "I Kings 15:24",
+   "strength": "9",
+   "toughness": "6"
+  }
+ },
+ {
+  "id": "c_113",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Eleazar, son of Aaron|Pri|Eleazar_Son_of_Aaron_(Pi)",
+   "name": "Eleazar, son of Aaron",
+   "set": "Pri",
+   "imgFile": "Eleazar_Son_of_Aaron_(Pi)",
+   "identity": "eleazar, son of aaron|hero|teal|good|#Eleazar, son of Aaron",
+   "stem": "Eleazar, son of Aaron",
+   "type": "Hero",
+   "legality": "",
+   "rarity": "Uncommon",
+   "reference": "Leviticus 10:6",
+   "strength": "8",
+   "toughness": "9"
+  }
+ },
+ {
+  "id": "c_114",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Apollos|Ap|Apollos_(Ap)",
+   "name": "Apollos",
+   "set": "Ap",
+   "imgFile": "Apollos_(Ap)",
+   "identity": "apollos|hero|gold|good|#Apollos",
+   "stem": "Apollos",
+   "type": "Hero",
+   "legality": "",
+   "rarity": "Uncommon",
+   "reference": "Acts 18:24",
+   "strength": "9",
+   "toughness": "8"
+  }
+ },
+ {
+  "id": "c_115",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Evil Armor (D)|2E|Evil_Armor_(DU)",
+   "name": "Evil Armor (D)",
+   "set": "2E",
+   "imgFile": "Evil_Armor_(DU)",
+   "identity": "evil armor|ee|gold|evil|#Evil Armor (D)",
+   "stem": "Evil Armor",
+   "type": "EE",
+   "legality": "",
+   "rarity": "Deck",
+   "reference": "Luke 11:22",
+   "strength": "2",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_116",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Fishers of Men (Ap)|Ap|Fishers_of_Men_(Ap)",
+   "name": "Fishers of Men (Ap)",
+   "set": "Ap",
+   "imgFile": "Fishers_of_Men_(Ap)",
+   "identity": "fishers of men|ge|gold|good|#Fishers of Men (Ap)",
+   "stem": "Fishers of Men",
+   "type": "GE",
+   "legality": "",
+   "rarity": "Rare",
+   "reference": "Matthew 4:18-19",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_117",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Angel of Might|Ki|Angel_of_Might_(Ki)",
+   "name": "Angel of Might",
+   "set": "Ki",
+   "imgFile": "Angel_of_Might_(Ki)",
+   "identity": "angel of might|hero|silver|good|#Angel of Might",
+   "stem": "Angel of Might",
+   "type": "Hero",
+   "legality": "",
+   "rarity": "Uncommon",
+   "reference": "Revelation 10:1",
+   "strength": "9",
+   "toughness": "9"
+  }
+ },
+ {
+  "id": "c_118",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Preemptive Strike|10A|Preemptive_Strike_(H)",
+   "name": "Preemptive Strike",
+   "set": "10A",
+   "imgFile": "Preemptive_Strike_(H)",
+   "identity": "preemptive strike|ee|brown|evil|#Preemptive Strike",
+   "stem": "Preemptive Strike",
+   "type": "EE",
+   "legality": "",
+   "rarity": "Deck",
+   "reference": "Exodus 17:8-9",
+   "strength": "3",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_119",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Gibeonite Delegates|RoA|Gibeonite_Delegates_(RA2)",
+   "name": "Gibeonite Delegates",
+   "set": "RoA",
+   "imgFile": "Gibeonite_Delegates_(RA2)",
+   "identity": "gibeonite delegates|evil character|black|evil|#Gibeonite Delegates",
+   "stem": "Gibeonite Delegates",
+   "type": "Evil Character",
+   "legality": "",
+   "rarity": "Fixed",
+   "reference": "Joshua 9:6",
+   "strength": "0",
+   "toughness": "4"
+  }
+ },
+ {
+  "id": "c_120",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Beast from the Sea (L)|Main|Beast_from_the_Sea_(UL)",
+   "name": "Beast from the Sea (L)",
+   "set": "Main",
+   "imgFile": "Beast_from_the_Sea_(UL)",
+   "identity": "beast from the sea|evil character|pale green|evil|#Beast from the Sea (UL)",
+   "stem": "Beast from the Sea",
+   "type": "Evil Character",
+   "legality": "",
+   "rarity": "Rare",
+   "reference": "Revelation 13:1",
+   "strength": "10",
+   "toughness": "10"
+  }
+ },
+ {
+  "id": "c_121",
+  "stratum": "old_frame",
+  "label": {
+   "key": "King Lemuel|RoA|King_Lemuel_(RA)",
+   "name": "King Lemuel",
+   "set": "RoA",
+   "imgFile": "King_Lemuel_(RA)",
+   "identity": "king lemuel|hero|purple|good|#King Lemuel (Roots)",
+   "stem": "King Lemuel",
+   "type": "Hero",
+   "legality": "",
+   "rarity": "Fixed",
+   "reference": "Proverbs 31:1",
+   "strength": "8",
+   "toughness": "11"
+  }
+ },
+ {
+  "id": "c_122",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Babylon|Wom|Babylon_(Wo)",
+   "name": "Babylon",
+   "set": "Wom",
+   "imgFile": "Babylon_(Wo)",
+   "identity": "babylon|site|red|neutral|#Babylon",
+   "stem": "Babylon",
+   "type": "Site",
+   "legality": "",
+   "rarity": "Common",
+   "reference": "II Kings 24:16",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_123",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Construction Begins|3E|Construction_Begins_(E)",
+   "name": "Construction Begins",
+   "set": "3E",
+   "imgFile": "Construction_Begins_(E)",
+   "identity": "construction begins|ge|blue|good|#Construction Begins",
+   "stem": "Construction Begins",
+   "type": "GE",
+   "legality": "",
+   "rarity": "Deck",
+   "reference": "Genesis 6:14",
+   "strength": "4",
+   "toughness": "2"
+  }
+ },
+ {
+  "id": "c_124",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Deceit of Sapphira (G)|10A|Deceit_of_Sapphira_(G)",
+   "name": "Deceit of Sapphira (G)",
+   "set": "10A",
+   "imgFile": "Deceit_of_Sapphira_(G)",
+   "identity": "deceit of sapphira|ee|crimson|evil|#Deceit of Sapphira (G)",
+   "stem": "Deceit of Sapphira",
+   "type": "EE",
+   "legality": "",
+   "rarity": "Deck",
+   "reference": "Acts 5:1-2",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_125",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Begging for Grain|Pat|Begging_for_Grain_(Pa)",
+   "name": "Begging for Grain",
+   "set": "Pat",
+   "imgFile": "Begging_for_Grain_(Pa)",
+   "identity": "begging for grain|ee|gray|evil|#Begging for Grain",
+   "stem": "Begging for Grain",
+   "type": "EE",
+   "legality": "",
+   "rarity": "Common",
+   "reference": "Genesis 42:7",
+   "strength": "1",
+   "toughness": "2"
+  }
+ },
+ {
+  "id": "c_126",
+  "stratum": "old_frame",
+  "label": {
+   "key": "Miracle of Healing|Ap|Miracle_of_Healing_(Ap)",
+   "name": "Miracle of Healing",
+   "set": "Ap",
+   "imgFile": "Miracle_of_Healing_(Ap)",
+   "identity": "miracle of healing|ge|blue|good|#Miracle of Healing",
+   "stem": "Miracle of Healing",
+   "type": "GE",
+   "legality": "",
+   "rarity": "Common",
+   "reference": "I Corinthians 12:28",
+   "strength": "2",
+   "toughness": "5"
+  }
+ },
+ {
+  "id": "c_127",
+  "stratum": "homonym",
+  "label": {
+   "key": "New Covenant (Isaiah)|PoC|119-New-Covenant-Isaiah-R",
+   "name": "New Covenant (Isaiah)",
+   "set": "PoC",
+   "imgFile": "119-New-Covenant-Isaiah-R",
+   "identity": "new covenant|covenant|greenpurpleteal|good|#New Covenant (Isaiah)",
+   "stem": "New Covenant",
+   "type": "Covenant",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Isaiah 59:21",
+   "strength": "1",
+   "toughness": "6"
+  }
+ },
+ {
+  "id": "c_128",
+  "stratum": "homonym",
+  "label": {
+   "key": "Peter (EC)|TEC|Peter_(EC)",
+   "name": "Peter (EC)",
+   "set": "TEC",
+   "imgFile": "Peter_(EC)",
+   "identity": "peter|hero|clay|good|territory#Peter (EC)",
+   "stem": "Peter",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Acts 2:38",
+   "strength": "10",
+   "toughness": "10"
+  }
+ },
+ {
+  "id": "c_129",
+  "stratum": "homonym",
+  "label": {
+   "key": "Captain's Sword [II]|II|85_Captain_s-Sword",
+   "name": "Captain's Sword [II]",
+   "set": "II",
+   "imgFile": "85_Captain_s-Sword",
+   "identity": "captain's sword|ge|silver|good|weapon#Captain's Sword [II]",
+   "stem": "Captain's Sword",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Joshua 5:13",
+   "strength": "3",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_130",
+  "stratum": "homonym",
+  "label": {
+   "key": "Rage [RR2]|RR2|392-Rage",
+   "name": "Rage [RR2]",
+   "set": "RR2",
+   "imgFile": "392-Rage",
+   "identity": "rage|ee|brown|evil|#Rage [RR2]",
+   "stem": "Rage",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "",
+   "reference": "Psalm 2:1",
+   "strength": "2",
+   "toughness": "1"
+  }
+ },
+ {
+  "id": "c_131",
+  "stratum": "homonym",
+  "label": {
+   "key": "King Tiglath-Pileser III (PoC)|PoC|090-King-Tiglath-Pileser-III-R",
+   "name": "King Tiglath-Pileser III (PoC)",
+   "set": "PoC",
+   "imgFile": "090-King-Tiglath-Pileser-III-R",
+   "identity": "king tiglath-pileser iii|evil character|pale green|evil|warrior#King Tiglath-Pileser III (PoC)",
+   "stem": "King Tiglath-Pileser III",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Rare",
+   "reference": "Isaiah 7:17",
+   "strength": "10",
+   "toughness": "11"
+  }
+ },
+ {
+  "id": "c_132",
+  "stratum": "homonym",
+  "label": {
+   "key": "Barak (CoW AB)|CoW (AB)|CoW_AB_N83-Barak",
+   "name": "Barak (CoW AB)",
+   "set": "CoW (AB)",
+   "imgFile": "CoW_AB_N83-Barak",
+   "identity": "barak|hero|red|good|warrior cloud#Barak (CoW AB)",
+   "stem": "Barak",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Judges 4:10",
+   "strength": "5",
+   "toughness": "4"
+  }
+ },
+ {
+  "id": "c_133",
+  "stratum": "homonym",
+  "label": {
+   "key": "Foolish Advice (RoJ)|RoJ|109-Foolish-Advice",
+   "name": "Foolish Advice (RoJ)",
+   "set": "RoJ",
+   "imgFile": "109-Foolish-Advice",
+   "identity": "foolish advice|ee|brown|evil|#Foolish Advice (RoJ)",
+   "stem": "Foolish Advice",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Job 42:7",
+   "strength": "4",
+   "toughness": "2"
+  }
+ },
+ {
+  "id": "c_134",
+  "stratum": "homonym",
+  "label": {
+   "key": "Passover (PoC)|PoC|026-Passover",
+   "name": "Passover (PoC)",
+   "set": "PoC",
+   "imgFile": "026-Passover",
+   "identity": "passover|ge|greentealwhite|good|territory star#Passover (PoC)",
+   "stem": "Passover",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Exodus 12:27",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_135",
+  "stratum": "homonym",
+  "label": {
+   "key": "Entertaining Angels (CoW)|CoW|Entertaining_Angels_(CoW)",
+   "name": "Entertaining Angels (CoW)",
+   "set": "CoW",
+   "imgFile": "Entertaining_Angels_(CoW)",
+   "identity": "entertaining angels|ge|clay|good|#Entertaining Angels (CoW)",
+   "stem": "Entertaining Angels",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Common",
+   "reference": "Hebrews 13:1-2",
+   "strength": "2",
+   "toughness": "3"
+  }
+ },
+ {
+  "id": "c_136",
+  "stratum": "homonym",
+  "label": {
+   "key": "Darius' Decree [RR2]|RR2|228-Darius-Decree",
+   "name": "Darius' Decree [RR2]",
+   "set": "RR2",
+   "imgFile": "228-Darius-Decree",
+   "identity": "darius' decree|artifact||neutral|#Darius' Decree [RR2]",
+   "stem": "Darius' Decree",
+   "type": "Artifact",
+   "legality": "Rotation",
+   "rarity": "",
+   "reference": "Daniel 6:9",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_137",
+  "stratum": "son_of_god",
+  "label": {
+   "key": "Son of God (Promo 2018)|Pmo-P2|Son-of-God-2018",
+   "name": "Son of God (Promo 2018)",
+   "set": "Pmo-P2",
+   "imgFile": "Son-of-God-2018",
+   "identity": "son of god|dominant||good|#Son of God [2026 - 1st Place]",
+   "stem": "Son of God",
+   "type": "Dominant",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "Revelation 1:12-13",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_138",
+  "stratum": "son_of_god",
+  "label": {
+   "key": "Son of God (F)|3E|Son_of_God_(F)",
+   "name": "Son of God (F)",
+   "set": "3E",
+   "imgFile": "Son_of_God_(F)",
+   "identity": "son of god|dominant||good|#Son of God (H)",
+   "stem": "Son of God",
+   "type": "Dominant",
+   "legality": "",
+   "rarity": "Deck",
+   "reference": "Revelation 1:12-13",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_139",
+  "stratum": "son_of_god",
+  "label": {
+   "key": "Son of God (B)|1EU|Son_of_God_(A)",
+   "name": "Son of God (B)",
+   "set": "1EU",
+   "imgFile": "Son_of_God_(A)",
+   "identity": "son of god|dominant||good|#Son of God (H)",
+   "stem": "Son of God",
+   "type": "Dominant",
+   "legality": "",
+   "rarity": "Deck",
+   "reference": "Revelation 1:12-13",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_140",
+  "stratum": "son_of_god",
+  "label": {
+   "key": "Son of God (2016 Promo)|Pmo-P2|Son-of-God-2016-P",
+   "name": "Son of God (2016 Promo)",
+   "set": "Pmo-P2",
+   "imgFile": "Son-of-God-2016-P",
+   "identity": "son of god|dominant||good|#Son of God [2026 - 1st Place]",
+   "stem": "Son of God",
+   "type": "Dominant",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "Revelation 1:17-18",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_141",
+  "stratum": "son_of_god",
+  "label": {
+   "key": "Son of God [Fundraiser]|Fund|FR-Son-of-God-Baptism-of-Jesus",
+   "name": "Son of God [Fundraiser]",
+   "set": "Fund",
+   "imgFile": "FR-Son-of-God-Baptism-of-Jesus",
+   "identity": "son of god|dominant||good|#Son of God [2026 - 1st Place]",
+   "stem": "Son of God",
+   "type": "Dominant",
+   "legality": "Rotation",
+   "rarity": "Promo",
+   "reference": "Matthew 28:5-6",
+   "strength": "",
+   "toughness": ""
+  }
+ },
+ {
+  "id": "c_142",
+  "stratum": "starter",
+  "label": {
+   "key": "Joshua, the Faithful [L]|L|L29-Joshua",
+   "name": "Joshua, the Faithful [L]",
+   "set": "L",
+   "imgFile": "L29-Joshua",
+   "identity": "joshua, the faithful|hero|white|good|#Joshua, the Faithful [L]",
+   "stem": "Joshua, the Faithful",
+   "type": "Hero",
+   "legality": "Rotation",
+   "rarity": "Starter",
+   "reference": "Exodus 32:17",
+   "strength": "9",
+   "toughness": "7"
+  }
+ },
+ {
+  "id": "c_143",
+  "stratum": "starter",
+  "label": {
+   "key": "Pilate's Soldiers|J|Pilate's_Soldiers_(J)",
+   "name": "Pilate's Soldiers",
+   "set": "J",
+   "imgFile": "Pilate's_Soldiers_(J)",
+   "identity": "pilate's soldiers|evil character|gray|evil|warrior#Pilate's Soldiers",
+   "stem": "Pilate's Soldiers",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Deck",
+   "reference": "Matthew 27:27",
+   "strength": "6",
+   "toughness": "12"
+  }
+ },
+ {
+  "id": "c_144",
+  "stratum": "starter",
+  "label": {
+   "key": "Terrifying Philistines [L]|L|L55-Terrifying-Philistines",
+   "name": "Terrifying Philistines [L]",
+   "set": "L",
+   "imgFile": "L55-Terrifying-Philistines",
+   "identity": "terrifying philistines|evil character|black|evil|warrior#Terrifying Philistines [L]",
+   "stem": "Terrifying Philistines",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Starter",
+   "reference": "I Samuel 7:7",
+   "strength": "10",
+   "toughness": "11"
+  }
+ },
+ {
+  "id": "c_145",
+  "stratum": "starter",
+  "label": {
+   "key": "Fishers of Men (I)|I|Fishers_of_Men_(I)",
+   "name": "Fishers of Men (I)",
+   "set": "I",
+   "imgFile": "Fishers_of_Men_(I)",
+   "identity": "fishers of men|ge|purple|good|territory#Fishers of Men (I)",
+   "stem": "Fishers of Men",
+   "type": "GE",
+   "legality": "Rotation",
+   "rarity": "Deck",
+   "reference": "Matthew 4:18-19",
+   "strength": "2",
+   "toughness": "2"
+  }
+ },
+ {
+  "id": "c_146",
+  "stratum": "starter",
+  "label": {
+   "key": "Displeased Philistines (1st Print - L)|L1P|L50-1P-Displeased-Philistines",
+   "name": "Displeased Philistines (1st Print - L)",
+   "set": "L1P",
+   "imgFile": "L50-1P-Displeased-Philistines",
+   "identity": "displeased philistines|ee|black|evil|#Displeased Philistines [L]",
+   "stem": "Displeased Philistines",
+   "type": "EE",
+   "legality": "Rotation",
+   "rarity": "Starter",
+   "reference": "I Samuel 29:7",
+   "strength": "1",
+   "toughness": "5"
+  }
+ },
+ {
+  "id": "c_147",
+  "stratum": "starter",
+  "label": {
+   "key": "Abusive Taskmaster [K]|K|K36-Abusive-Taskmaster",
+   "name": "Abusive Taskmaster [K]",
+   "set": "K",
+   "imgFile": "K36-Abusive-Taskmaster",
+   "identity": "abusive taskmaster|evil character|pale green|evil|#Abusive Taskmaster [K]",
+   "stem": "Abusive Taskmaster",
+   "type": "Evil Character",
+   "legality": "Rotation",
+   "rarity": "Starter",
+   "reference": "Exodus 2:11",
+   "strength": "8",
+   "toughness": "9"
+  }
+ },
+ {
+  "id": "c_148",
+  "stratum": "starter",
+  "label": {
+   "key": "Lost Soul \"Obstinate\" [Exodus 33:3 - K]|K|K9-Lost-Soul-Exodus-33_3",
+   "name": "Lost Soul \"Obstinate\" [Exodus 33:3 - K]",
+   "set": "K",
+   "imgFile": "K9-Lost-Soul-Exodus-33_3",
+   "identity": "lost soul \"obstinate\"|lost soul||neutral|#Lost Soul \"Obstinate\" [Exodus 33:3] [1st Print - K]",
+   "stem": "Lost Soul \"Obstinate\"",
+   "type": "Lost Soul",
+   "legality": "Rotation",
+   "rarity": "Starter",
+   "reference": "Exodus 33:3",
+   "strength": "",
+   "toughness": ""
+  }
+ }
+]

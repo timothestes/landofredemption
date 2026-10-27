@@ -119,3 +119,8 @@ nationals-history-source.html
 scripts/output/wxr/
 # Backfill report: a full copy of every deck description it would rewrite.
 scripts/output/deck-mentions-backfill.json
+
+# Card scanner eval (scripts/scan-eval): golden-set photos and per-arm run outputs.
+# Committed catalog-*.json files sit directly in outputs/ and stay tracked.
+scripts/scan-eval/photos/
+scripts/scan-eval/outputs/*/

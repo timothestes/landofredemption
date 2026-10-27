@@ -35,6 +35,7 @@ help:
 	@echo "Card Data:"
 	@echo "  make update-cards    - Download latest card data and regenerate TypeScript"
 	@echo "  make cards           - Alias for update-cards"
+	@echo "  make update-scan-cues - Rebuild the scanner per-printing cue table (Claude, ~$$4.50)"
 	@echo "  make pull-forge-releases - Sync forge-released sets into the catalog overlay"
 	@echo "  make forge-frames    - Regenerate the Forge frame kit from the card template (.ai)"
 	@echo "  make forge-fonts     - Upload the printed card faces (tmp/) to the private Forge Blob store"
@@ -109,6 +110,10 @@ update-cards:
 
 cards: update-cards
 
+# Rebuild lib/scan/generated/printingCues.json from the catalog images (Claude, ~$$4.50)
+update-scan-cues:
+	npx tsx scripts/scan-eval/build-cues.ts --only-missing
+
 # Sync forge-released sets from Supabase into the overlay + regenerate the catalog.
 # Needs .env.local (service key) — run from the main checkout, not a bare worktree.
 pull-forge-releases:
@@ -140,4 +145,4 @@ forge-fonts:
 forge-font-metrics:
 	@python3.11 scripts/forge-font-metrics.py --title "$(FORGE_FONTS_DIR)/SYMPHOBL.TTF"
 
-.PHONY: all install run dev dev-windows build start stop setup clean fresh update-paragons paragons update-cards cards pull-forge-releases pull-card-overrides forge-frames forge-fonts forge-font-metrics
+.PHONY: all install run dev dev-windows build start stop setup clean fresh update-paragons paragons update-cards cards update-scan-cues pull-forge-releases pull-card-overrides forge-frames forge-fonts forge-font-metrics
