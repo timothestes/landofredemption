@@ -11,7 +11,7 @@ export interface PriceRow {
   updated_at: string;
 }
 
-/** Pages card_prices (Supabase caps a query at 1000 rows). Throws on a query error. */
+/** Pages card_prices by card_key (Supabase caps a query at 1000 rows; a stable order keeps pages from overlapping). Throws on a query error. */
 export async function loadPriceRows(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   client: { from(table: string): any },
@@ -24,6 +24,7 @@ export async function loadPriceRows(
     const { data, error } = await client
       .from('card_prices')
       .select('card_key, price, shopify_handle, shopify_title, updated_at')
+      .order('card_key')
       .range(offset, offset + pageSize - 1);
 
     if (error) throw new Error(error.message);
