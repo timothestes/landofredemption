@@ -41,10 +41,18 @@ export default function PhotoGroup({
     return () => clearInterval(t);
   }, [reading]);
 
-  let line: string;
+  let line: ReactNode;
   let actions: { retry: boolean; chooseAnother: boolean } | null = null;
   if (reading) {
-    line = readingLine(photo.startedAt ? Math.max(0, now - photo.startedAt) : 0);
+    // Only "Reading…" is announced; the ticking seconds are hidden so the live region does not repeat.
+    const full = readingLine(photo.startedAt ? Math.max(0, now - photo.startedAt) : 0);
+    const seconds = full.slice(COPY.reading.length);
+    line = (
+      <>
+        {COPY.reading}
+        {seconds && <span aria-hidden="true">{seconds}</span>}
+      </>
+    );
   } else if (photo.status === 'failed') {
     const e = photo.error;
     const view = scanErrorView(

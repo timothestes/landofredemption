@@ -9,6 +9,8 @@ import { rowPrice, type TrayAction, type TrayRow } from '../lib/trayReducer';
 interface Props {
   row: TrayRow;
   owned: number;
+  /** Price from the catalog price map, used when the row's key has no matching candidate. */
+  catalogPrice: number | null;
   showPrices: boolean;
   /** False once the tray is committing or committed. */
   editable: boolean;
@@ -42,8 +44,10 @@ function checkReason(row: TrayRow): string | null {
   }
 }
 
-export default function DetectionRow({ row, owned, showPrices, editable, dispatch, onOpenPicker }: Props) {
-  const reasonId = useId();
+export default function DetectionRow({
+  row, owned, catalogPrice, showPrices, editable, dispatch, onOpenPicker,
+}: Props) {
+  const lineTwoId = useId();
   const [stepperOpen, setStepperOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
 
@@ -63,38 +67,30 @@ export default function DetectionRow({ row, owned, showPrices, editable, dispatc
   const isEquivalent = !notFound && !resolved && !isCheck && row.detection.printingReason === 'equivalent';
   const reason = isCheck ? checkReason(row) : null;
 
-  const price = card ? rowPrice(row) : null;
+  const price = card ? rowPrice(row) : catalogPrice;
   const ownedText = owned > 0 ? ` · ${fill(COPY.owned, { n: owned })}` : '';
 
   const pickerLabel = notFound ? `${COPY.findCard}: ${readTitle}` : `Change printing: ${name}, ${set}`;
 
   let lineTwo: React.ReactNode;
   if (notFound) {
-    lineTwo = (
-      <span className="flex min-w-0 items-center gap-2">
-        <span className={chipClass}>{COPY.chipNotFound}</span>
-      </span>
-    );
+    lineTwo = <span className={chipClass}>{COPY.chipNotFound}</span>;
   } else if (isCheck) {
     lineTwo = (
-      <span className="flex min-w-0 items-center gap-2">
+      <>
         <span className={chipClass}>{COPY.chipCheck}</span>
-        {reason && (
-          <span id={reasonId} className="min-w-0 truncate text-muted-foreground">
-            {reason}
-          </span>
-        )}
-      </span>
+        {reason && <span className="min-w-0 truncate text-muted-foreground">{reason}</span>}
+      </>
     );
   } else if (isFuzzy) {
     lineTwo = (
-      <span className="block truncate text-muted-foreground">
+      <span className="min-w-0 truncate text-muted-foreground">
         Read as &ldquo;{readTitle}&rdquo;{ownedText}
       </span>
     );
   } else {
     lineTwo = (
-      <span className="block truncate text-muted-foreground">
+      <span className="min-w-0 truncate text-muted-foreground">
         {set}
         {isEquivalent && ` · ${fill(COPY.printings, { n: row.candidates.length })}`}
         {ownedText}
@@ -102,36 +98,38 @@ export default function DetectionRow({ row, owned, showPrices, editable, dispatc
     );
   }
 
+  // Grid at 358 px: [thumb 44][text 194 = 8 + name | price][qty 64 = 8 + 56][remove 48 = 4 + 44].
+  // The picker button is laid over the thumb and both text lines; the price link sits above it on
+  // line one, and line two spans the name and price columns so it keeps the full text width.
   return (
     <li>
-      <div className="flex items-center py-2">
+      <div className="relative grid grid-cols-[44px_minmax(0,1fr)_auto_64px_48px] grid-rows-[auto_auto] py-2">
         <button
           type="button"
-          className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-md text-left hover:bg-muted/40 focus:outline-none disabled:pointer-events-none"
+          className="col-start-1 col-end-4 row-start-1 row-end-3 min-h-11 rounded-md hover:bg-muted/40 focus:outline-none disabled:pointer-events-none"
           aria-label={pickerLabel}
-          aria-describedby={isCheck && reason ? reasonId : undefined}
+          aria-describedby={lineTwoId}
           disabled={!editable}
           onClick={() => onOpenPicker(row.rowId, notFound ? 'search' : 'printing')}
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none col-start-1 row-start-1 row-end-3 flex h-[62px] w-11 items-center justify-center overflow-hidden rounded-sm bg-muted"
         >
-          <span className="flex h-[62px] w-11 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted">
-            {thumbSrc && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={thumbSrc} alt="" loading="lazy" className="h-full w-full object-contain" />
-            )}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="flex items-baseline gap-2">
-              <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                {notFound ? readTitle || '—' : name}
-                {isFuzzy && <span className="font-normal text-muted-foreground"> · {set}</span>}
-              </span>
-            </span>
-            <span className="mt-0.5 block text-xs">{lineTwo}</span>
-          </span>
-        </button>
-
-        {showPrices && card && (
-          <span className="ml-2 shrink-0 text-right text-sm tabular-nums">
+          {thumbSrc && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={thumbSrc} alt="" loading="lazy" className="h-full w-full object-contain" />
+          )}
+        </span>
+        <span
+          aria-hidden
+          className="pointer-events-none col-start-2 row-start-1 min-w-0 self-end truncate pl-2 text-sm font-medium"
+        >
+          {notFound ? readTitle || '—' : name}
+          {isFuzzy && <span className="font-normal text-muted-foreground"> · {set}</span>}
+        </span>
+        {showPrices && !notFound && (
+          <span className="relative z-10 col-start-3 row-start-1 self-end pl-2 text-right text-sm tabular-nums">
             {price != null ? (
               `$${price.toFixed(2)}`
             ) : (
@@ -146,11 +144,18 @@ export default function DetectionRow({ row, owned, showPrices, editable, dispatc
             )}
           </span>
         )}
+        <span
+          id={lineTwoId}
+          aria-hidden
+          className="pointer-events-none col-start-2 col-end-4 row-start-2 mt-0.5 flex min-w-0 items-center gap-2 self-start pl-2 text-xs"
+        >
+          {lineTwo}
+        </span>
 
         {notFound ? (
           <button
             type="button"
-            className="ml-2 min-h-11 shrink-0 rounded-md border border-border px-2 text-xs font-medium hover:bg-muted focus:outline-none disabled:pointer-events-none disabled:opacity-50"
+            className="col-start-4 row-start-1 row-end-3 min-h-11 w-14 self-center justify-self-end rounded-md border border-border px-1 text-xs font-medium hover:bg-muted focus:outline-none disabled:pointer-events-none disabled:opacity-50"
             disabled={!editable}
             onClick={() => onOpenPicker(row.rowId, 'search')}
           >
@@ -159,7 +164,7 @@ export default function DetectionRow({ row, owned, showPrices, editable, dispatc
         ) : (
           <button
             type="button"
-            className="ml-2 min-h-11 w-14 shrink-0 rounded-md text-sm font-medium tabular-nums hover:bg-muted focus:outline-none disabled:pointer-events-none"
+            className="col-start-4 row-start-1 row-end-3 min-h-11 w-14 self-center justify-self-end rounded-md text-sm font-medium tabular-nums hover:bg-muted focus:outline-none disabled:pointer-events-none"
             aria-label={`${COPY.quantity} ${row.qty}, change`}
             aria-expanded={stepperOpen}
             disabled={!editable}
@@ -171,7 +176,7 @@ export default function DetectionRow({ row, owned, showPrices, editable, dispatc
 
         <button
           type="button"
-          className={`ml-1 ${iconButton}`}
+          className={`col-start-5 row-start-1 row-end-3 self-center justify-self-end ${iconButton}`}
           aria-label={`${COPY.remove} ${name || readTitle}`}
           aria-expanded={removeOpen}
           disabled={!editable}

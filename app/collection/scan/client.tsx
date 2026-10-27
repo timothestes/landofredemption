@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useCollectionState } from '../hooks/useCollectionState';
 import { useShowPrices } from '../../../hooks/useShowPrices';
+import { useCardPrices } from '../../decklist/card-search/hooks/useCardPrices';
 import { COPY } from './copy';
 import { useScanTray } from './hooks/useScanTray';
 import { useScanQueue } from './hooks/useScanQueue';
@@ -27,6 +28,7 @@ function ScanTray({ userId }: { userId: string }) {
   const queue = useScanQueue(dispatch);
   const { quantities } = useCollectionState();
   const [showPrices] = useShowPrices();
+  const { getPrice } = useCardPrices();
   const chooseInputRef = useRef<HTMLInputElement>(null);
   // Task 6 renders the printing picker for this row.
   const [pickerRow, setPickerRow] = useState<{ rowId: string; mode: 'printing' | 'search' } | null>(null);
@@ -83,6 +85,7 @@ function ScanTray({ userId }: { userId: string }) {
                     key={r.rowId}
                     row={r}
                     owned={r.key ? quantities.get(r.key) ?? 0 : 0}
+                    catalogPrice={r.key ? getPrice(r.key)?.price ?? null : null}
                     showPrices={showPrices}
                     editable={editable}
                     dispatch={dispatch}
