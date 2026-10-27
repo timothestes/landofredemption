@@ -9,6 +9,8 @@ import {
   runCommit,
   runUndo,
   validateCommitInput,
+  splitKey,
+  UUID,
   type CommitResult,
   type UndoResult,
 } from "./scan/lib/commitCore";
@@ -243,11 +245,6 @@ function isKnownCardKey(k: string): boolean {
   return !!c && `${c.name}|${c.set}|${c.imgFile}` === k;
 }
 
-function splitCardKey(k: string) {
-  const [card_name, card_set, card_img_file] = k.split("|");
-  return { card_name, card_set, card_img_file };
-}
-
 export async function commitScanAction(
   commitId: string,
   rows: { key: string; qty: number }[],
@@ -267,7 +264,7 @@ export async function commitScanAction(
         if (ids.length === 0) return [];
         const { data, error } = await admin
           .from("scan_events")
-          .select("id, user_id, status, detections")
+          .select("id, user_id, status, detections, commit_id")
           .eq("user_id", userId)
           .in("id", ids);
         if (error) throw error;
@@ -301,13 +298,43 @@ export async function commitScanAction(
           .is("result", null);
         if (error) throw error;
       },
-      merge: async (mergeRows) => (await bulkImportCollectionAction(mergeRows, "merge")).success,
-      writeOutcomes: async (scanId, outcomes, cid) => {
+      claimScans: async (cid, scanIds, undoneIds) => {
+        // One statement:
+        //   UPDATE scan_events SET commit_id = $cid
+        //    WHERE user_id = $user AND id IN (...scanIds)
+        //      AND (commit_id IS NULL OR commit_id = $cid OR commit_id IN (...undoneIds))
+        //   RETURNING id
+        // Every id interpolated here is a UUID (cid and scanIds validated, undoneIds read
+        // from a uuid column), so the filter string needs no quoting.
+        const claimable = [`commit_id.is.null`, `commit_id.eq.${cid}`];
+        if (undoneIds.length > 0) claimable.push(`commit_id.in.(${undoneIds.join(",")})`);
+        const { data, error } = await admin
+          .from("scan_events")
+          .update({ commit_id: cid })
+          .eq("user_id", userId)
+          .in("id", scanIds)
+          .or(claimable.join(","))
+          .select("id");
+        if (error) throw error;
+        return (data ?? []).length;
+      },
+      releaseScans: async (cid) => {
         const { error } = await admin
           .from("scan_events")
-          .update({ outcomes, commit_id: cid })
-          .eq("id", scanId)
+          .update({ commit_id: null })
+          .eq("commit_id", cid)
           .eq("user_id", userId);
+        if (error) throw error;
+      },
+      merge: async (mergeRows) => (await bulkImportCollectionAction(mergeRows, "merge")).success,
+      writeOutcomes: async (scanId, outcomes, cid) => {
+        // commit_id was set by claimScans; write only where this commit still holds the scan.
+        const { error } = await admin
+          .from("scan_events")
+          .update({ outcomes })
+          .eq("id", scanId)
+          .eq("user_id", userId)
+          .eq("commit_id", cid);
         if (error) throw error;
       },
       storeResult: async (id, result) => {
@@ -327,9 +354,7 @@ export async function commitScanAction(
 export async function adjustCollectionQuantitiesAction(commitId: string): Promise<UndoResult> {
   const { supabase, user } = await getAuthedClient();
   if (!user || !supabase) return { ok: false, code: "unauthorized" };
-  if (typeof commitId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(commitId)) {
-    return { ok: false, code: "not_found" };
-  }
+  if (typeof commitId !== "string" || !UUID.test(commitId)) return { ok: false, code: "not_found" };
 
   const admin = getSupabaseAdmin();
   const userId = user.id;
@@ -371,7 +396,7 @@ export async function adjustCollectionQuantitiesAction(commitId: string): Promis
       },
       currentQuantities: async (keys) => {
         const out: Record<string, number> = {};
-        const names = [...new Set(keys.map((k) => splitCardKey(k).card_name))];
+        const names = [...new Set(keys.map((k) => splitKey(k).card_name))];
         // pgrestInList, not .in(): Lost Soul names carry double quotes that .in() drops rows on.
         for (let i = 0; i < names.length; i += 100) {
           const { data, error } = await supabase
@@ -387,7 +412,7 @@ export async function adjustCollectionQuantitiesAction(commitId: string): Promis
         return out;
       },
       setQuantity: async (key, qty) => {
-        const { card_name, card_set, card_img_file } = splitCardKey(key);
+        const { card_name, card_set, card_img_file } = splitKey(key);
         if (qty <= 0) {
           const { error } = await supabase
             .from("collection_cards")

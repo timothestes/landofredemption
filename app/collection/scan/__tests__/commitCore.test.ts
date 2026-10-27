@@ -25,10 +25,10 @@ const storedDet = (id: string, n = 0) => ({
 });
 
 function scan(id: string, n: number, user = U, status = 'done'): StoredScan {
-  return { id, user_id: user, status, detections: Array.from({ length: n }, (_, i) => storedDet(`${id}:${i}`, i)) };
+  return { id, user_id: user, status, detections: Array.from({ length: n }, (_, i) => storedDet(`${id}:${i}`, i)), commit_id: null };
 }
 
-/** In-memory store. insertCommit is atomic (single synchronous check-and-set). */
+/** In-memory store. insertCommit, claimScans and claimUndo are atomic (synchronous check-and-set). */
 function makeWorld(scans: StoredScan[], userId = U) {
   const commits = new Map<string, CommitRow>();
   const collection = new Map<string, number>();
@@ -46,14 +46,28 @@ function makeWorld(scans: StoredScan[], userId = U) {
   });
   const deps: CommitDeps = {
     userId,
-    loadScans: async ids => scans.filter(s => ids.includes(s.id)),
+    loadScans: async ids => scans.filter(s => ids.includes(s.id)).map(s => ({ ...s })),
     insertCommit: async row => {
       if (commits.has(row.commit_id)) return false;
       commits.set(row.commit_id, { ...row, created_at: new Date(Date.UTC(2026, 0, 1, 0, 0, ++clock)).toISOString(), result: null });
       return true;
     },
     getCommit: async id => commits.get(id) ?? null,
-    deleteCommit: async id => { commits.delete(id); },
+    deleteCommit: async id => {
+      if (scans.some(s => s.commit_id === id)) throw new Error('FK: scan_events.commit_id still references the commit');
+      commits.delete(id);
+    },
+    claimScans: async (commitId, ids, undoneIds) => {
+      let n = 0;
+      for (const s of scans) {
+        if (!ids.includes(s.id) || s.user_id !== userId) continue;
+        if (s.commit_id === null || s.commit_id === commitId || undoneIds.includes(s.commit_id)) { s.commit_id = commitId; n++; }
+      }
+      return n;
+    },
+    releaseScans: async commitId => {
+      for (const s of scans) if (s.commit_id === commitId && s.user_id === userId) s.commit_id = null;
+    },
     merge,
     writeOutcomes: async (scanId, o, commitId) => { outcomes.set(scanId, { outcomes: o, commitId }); },
     storeResult: async (id, result) => { commits.get(id)!.result = result; },
@@ -172,6 +186,76 @@ describe('runCommit', () => {
     expect((w.outcomes.get(S2)!.outcomes[1] as ClientOutcome).removedAs).toBe('wrong');
   });
 
+  it('claims the scans for the commit', async () => {
+    const scans = [scan(S1, 2), scan(S2, 2)];
+    const w = makeWorld(scans);
+    await runCommit(w.deps, C1, payload());
+    expect(scans.map(s => s.commit_id)).toEqual([C1, C1]);
+  });
+
+  it('storeResult failure then a fresh commitId is refused and merge ran once', async () => {
+    const w = makeWorld([scan(S1, 2), scan(S2, 2)]);
+    w.deps.storeResult = async () => { throw new Error('boom'); };
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect((await runCommit(w.deps, C1, payload())).ok).toBe(true);
+    expect(await runCommit(w.deps, C1, payload())).toEqual({ ok: false, code: 'in_progress' });
+    expect(await runCommit(w.deps, C2, payload())).toEqual({ ok: false, code: 'already_committed' });
+    err.mockRestore();
+    expect(w.merge).toHaveBeenCalledTimes(1);
+    expect(w.collection.get(KA)).toBe(2);
+    expect(w.commits.has(C2)).toBe(false);
+  });
+
+  it('a crash after merge (merge resolves, then storeResult never called) blocks a fresh commitId', async () => {
+    const scans = [scan(S1, 2), scan(S2, 2)];
+    const w = makeWorld(scans);
+    // The state a process death right after merge leaves: commit inserted, scans claimed,
+    // cards merged, result never stored.
+    w.commits.set(C1, { commit_id: C1, user_id: U, created_at: '2026-01-01T00:00:00.000Z', deltas: { [KA]: 2, [KB]: 1 }, result: null });
+    for (const s of scans) s.commit_id = C1;
+    w.collection.set(KA, 2);
+    w.collection.set(KB, 1);
+    expect(await runCommit(w.deps, C1, payload())).toEqual({ ok: false, code: 'in_progress' });
+    expect(await runCommit(w.deps, C2, payload())).toEqual({ ok: false, code: 'already_committed' });
+    expect(w.collection.get(KA)).toBe(2);
+    expect(w.merge).not.toHaveBeenCalled();
+    expect(scans.map(s => s.commit_id)).toEqual([C1, C1]);
+    expect(w.commits.has(C2)).toBe(false);
+  });
+
+  it('a partial claim releases only its own scans', async () => {
+    const scans = [scan(S1, 2), scan(S2, 2)];
+    const w = makeWorld(scans);
+    w.commits.set(C2, { commit_id: C2, user_id: U, created_at: 'x', deltas: {}, result: null });
+    scans[1].commit_id = C2;
+    expect(await runCommit(w.deps, C1, payload())).toEqual({ ok: false, code: 'already_committed' });
+    expect(scans.map(s => s.commit_id)).toEqual([null, C2]);
+    expect(w.commits.has(C1)).toBe(false);
+  });
+
+  it('scans of an undone commit can be committed again', async () => {
+    const scans = [scan(S1, 2), scan(S2, 2)];
+    const w = makeWorld(scans);
+    await runCommit(w.deps, C1, payload());
+    expect(await runUndo(w.undoDeps, C1)).toEqual({ ok: true, removed: 3 });
+    const r = await runCommit(w.deps, C2, payload());
+    expect(r).toEqual({ ok: true, commitId: C2, added: 3, scanIds: [S1, S2] });
+    expect(scans.map(s => s.commit_id)).toEqual([C2, C2]);
+    expect(w.collection.get(KA)).toBe(2);
+  });
+
+  it('merge failure releases the claim so a fresh commitId proceeds', async () => {
+    const scans = [scan(S1, 2), scan(S2, 2)];
+    const w = makeWorld(scans);
+    w.failMerge();
+    expect(await runCommit(w.deps, C1, payload())).toEqual({ ok: false, code: 'commit_failed' });
+    expect(scans.map(s => s.commit_id)).toEqual([null, null]);
+    expect(w.commits.has(C1)).toBe(false);
+    w.fixMerge();
+    expect((await runCommit(w.deps, C2, payload())).ok).toBe(true);
+    expect(w.collection.get(KA)).toBe(2);
+  });
+
   it('an outcome write error is not fatal', async () => {
     const w = makeWorld([scan(S1, 2), scan(S2, 2)]);
     w.deps.writeOutcomes = async () => { throw new Error('boom'); };
@@ -225,10 +309,14 @@ describe('runUndo', () => {
   });
 
   it('undo refused after a later commit', async () => {
-    const w = await committed();
-    await runCommit(w.deps, C2, payload());
+    const S3 = '33333333-2222-4333-8444-555555555555';
+    const scans = [scan(S1, 2), scan(S2, 2), scan(S3, 1)];
+    const w = makeWorld(scans);
+    await runCommit(w.deps, C1, payload());
+    const later = await runCommit(w.deps, C2, { rows: [{ key: KA, qty: 1 }], outcomesByScanId: { [S3]: [outcome(`${S3}:0`, KA)] } });
+    expect(later.ok).toBe(true);
     expect(await runUndo(w.undoDeps, C1)).toEqual({ ok: false, code: 'superseded' });
-    expect(w.collection.get(KA)).toBe(4);
+    expect(w.collection.get(KA)).toBe(3);
   });
 
   it('undo of a missing, foreign or unfinished commit is not_found', async () => {
@@ -282,6 +370,14 @@ describe('validateCommitInput', () => {
     const uncovered = ok();
     uncovered.outcomesByScanId[S2][0].finalKey = KA;
     expect(validateCommitInput(C1, uncovered, known)).toBeNull();
+    const unknownFinal = ok();
+    unknownFinal.outcomesByScanId[S2][1].finalKey = 'Nope|X|Y';
+    expect(validateCommitInput(C1, unknownFinal, known)).toBeNull();
+    const longKey = 'x'.repeat(301);
+    const longFinal = ok();
+    longFinal.outcomesByScanId[S2][1].finalKey = longKey;
+    expect(validateCommitInput(C1, longFinal, () => true)).toBeNull();
+    expect(validateCommitInput(C1, { ...ok(), rows: [{ key: longKey, qty: 1 }] }, () => true)).toBeNull();
     const tooMany = ok();
     tooMany.outcomesByScanId[S1] = Array.from({ length: 41 }, (_, i) => outcome(`${S1}:${i}`, KA));
     expect(validateCommitInput(C1, tooMany, known)).toBeNull();

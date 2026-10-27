@@ -5,7 +5,7 @@ import type { ClientOutcome, CommitPayload } from './outcomes';
 
 export type CommitResult =
   | { ok: true; commitId: string; added: number; scanIds: string[] }
-  | { ok: false; code: 'unauthorized' | 'bad_request' | 'in_progress' | 'commit_failed' };
+  | { ok: false; code: 'unauthorized' | 'bad_request' | 'in_progress' | 'commit_failed' | 'already_committed' };
 export type UndoResult =
   | { ok: true; removed: number }
   | { ok: false; code: 'unauthorized' | 'not_found' | 'superseded' | 'partial' | 'undo_failed' };
@@ -15,6 +15,7 @@ export interface StoredScan {
   user_id: string;
   status: string;
   detections: Array<{ id: string; status: string; nameReason: string; printingReason: string; scores: unknown }> | null;
+  commit_id: string | null;
 }
 export interface CommitRow {
   commit_id: string;
@@ -30,6 +31,14 @@ export interface CommitDeps {
   insertCommit(row: { commit_id: string; user_id: string; deltas: Record<string, number> }): Promise<boolean>;
   getCommit(id: string): Promise<CommitRow | null>;
   deleteCommit(id: string): Promise<void>;
+  /**
+   * Atomically set scan_events.commit_id = commitId on the caller's scans in
+   * scanIds whose commit_id is null, equals commitId, or is one of undoneIds.
+   * Returns how many rows were claimed.
+   */
+  claimScans(commitId: string, scanIds: string[], undoneIds: string[]): Promise<number>;
+  /** Set commit_id back to null on the caller's scans claimed by commitId. */
+  releaseScans(commitId: string): Promise<void>;
   merge(rows: { card_name: string; card_set: string; card_img_file: string; quantity: number }[]): Promise<boolean>;
   writeOutcomes(scanId: string, outcomes: unknown[], commitId: string): Promise<void>;
   storeResult(id: string, result: CommitResult): Promise<void>;
@@ -47,7 +56,10 @@ export interface UndoDeps {
 
 export const COMMIT_LIMITS = { rows: 500, qty: 99, scans: 200, detectionsPerScan: 40 };
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_KEY_LENGTH = 300;
+const knownKey = (k: unknown, isKnownKey: (k: string) => boolean): k is string =>
+  typeof k === 'string' && k.length <= MAX_KEY_LENGTH && isKnownKey(k);
 const OUTCOME_FIELDS = ['id', 'finalKey', 'printingChanged', 'nameChanged', 'removed', 'removedAs', 'unresolved'];
 
 const isObj = (v: unknown): v is Record<string, unknown> =>
@@ -78,7 +90,7 @@ export function validateCommitInput(
 
   const cleanRows: CommitPayload['rows'] = [];
   for (const r of rows) {
-    if (!isObj(r) || typeof r.key !== 'string' || !isKnownKey(r.key)) return null;
+    if (!isObj(r) || !knownKey(r.key, isKnownKey)) return null;
     if (typeof r.qty !== 'number' || !Number.isInteger(r.qty) || r.qty < 1 || r.qty > COMMIT_LIMITS.qty) return null;
     cleanRows.push({ key: r.key, qty: r.qty });
   }
@@ -94,6 +106,7 @@ export function validateCommitInput(
     const clean: ClientOutcome[] = [];
     for (const o of list) {
       if (!validOutcome(o, scanId)) return null;
+      if (o.finalKey !== null && !knownKey(o.finalKey, isKnownKey)) return null;
       clean.push({
         id: o.id, finalKey: o.finalKey, printingChanged: o.printingChanged, nameChanged: o.nameChanged,
         removed: o.removed, removedAs: o.removedAs, unresolved: o.unresolved,
@@ -119,7 +132,7 @@ function scansMatch(userId: string, scans: StoredScan[], p: CommitPayload): bool
   return true;
 }
 
-function splitKey(key: string) {
+export function splitKey(key: string) {
   const [card_name, card_set, card_img_file] = key.split('|');
   return { card_name, card_set, card_img_file };
 }
@@ -129,13 +142,20 @@ export async function runCommit(deps: CommitDeps, commitId: string, p: CommitPay
   const deltas: Record<string, number> = {};
   for (const r of p.rows) deltas[r.key] = (deltas[r.key] ?? 0) + r.qty;
 
-  let inserted: boolean;
   let scans: StoredScan[];
+  const undoneIds: string[] = [];
   try {
     scans = await deps.loadScans(scanIds);
     if (!scansMatch(deps.userId, scans, p)) return { ok: false, code: 'bad_request' };
 
-    inserted = await deps.insertCommit({ commit_id: commitId, user_id: deps.userId, deltas });
+    // Scans already claimed by another commit are claimable again only if that commit was undone.
+    const foreign = [...new Set(scans.map(s => s.commit_id).filter((c): c is string => !!c && c !== commitId))];
+    for (const cid of foreign) {
+      const c = await deps.getCommit(cid);
+      if (c && c.user_id === deps.userId && c.result?.undoneAt) undoneIds.push(cid);
+    }
+
+    const inserted = await deps.insertCommit({ commit_id: commitId, user_id: deps.userId, deltas });
     if (!inserted) {
       const existing = await deps.getCommit(commitId);
       if (!existing) return { ok: false, code: 'in_progress' }; // deleted by a failed merge between our two calls
@@ -147,8 +167,30 @@ export async function runCommit(deps: CommitDeps, commitId: string, p: CommitPay
       return { ok: false, code: 'in_progress' };
     }
   } catch (e) {
-    console.error('[scan commit] before merge', e);
+    console.error('[scan commit] before claim', e);
     return { ok: false, code: 'commit_failed' };
+  }
+
+  // Release before delete: scan_events.commit_id references scan_commits.
+  const unwind = async (why: string) => {
+    try {
+      await deps.releaseScans(commitId);
+      await deps.deleteCommit(commitId);
+    } catch (e) { console.error('[scan commit] unwind after', why, e); }
+  };
+
+  // A scan adds its cards once: a fresh commit id cannot re-add scans another live commit holds.
+  let claimed = 0;
+  try {
+    claimed = await deps.claimScans(commitId, scanIds, undoneIds);
+  } catch (e) {
+    console.error('[scan commit] claim scans', e);
+    await unwind('claim error');
+    return { ok: false, code: 'commit_failed' };
+  }
+  if (claimed < scanIds.length) {
+    await unwind('partial claim');
+    return { ok: false, code: 'already_committed' };
   }
 
   // R5: a failed merge must not leave a row that makes every retry "in progress".
@@ -159,9 +201,12 @@ export async function runCommit(deps: CommitDeps, commitId: string, p: CommitPay
     console.error('[scan commit] merge threw', e);
   }
   if (!merged) {
-    try { await deps.deleteCommit(commitId); } catch (e) { console.error('[scan commit] delete after failed merge', e); }
+    await unwind('failed merge');
     return { ok: false, code: 'commit_failed' };
   }
+
+  const result: CommitResult = { ok: true, commitId, added: p.rows.reduce((n, r) => n + r.qty, 0), scanIds };
+  try { await deps.storeResult(commitId, result); } catch (e) { console.error('[scan commit] store result', e); }
 
   // R3: outcomes carry the stored read alongside the player's correction.
   const byScan = new Map(scans.map(s => [s.id, new Map((s.detections ?? []).map(d => [d.id, d]))]));
@@ -173,9 +218,6 @@ export async function runCommit(deps: CommitDeps, commitId: string, p: CommitPay
     });
     try { await deps.writeOutcomes(scanId, enriched, commitId); } catch (e) { console.error('[scan commit] outcomes write', scanId, e); }
   }
-
-  const result: CommitResult = { ok: true, commitId, added: p.rows.reduce((n, r) => n + r.qty, 0), scanIds };
-  try { await deps.storeResult(commitId, result); } catch (e) { console.error('[scan commit] store result', e); }
   return result;
 }
 
