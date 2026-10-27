@@ -7,12 +7,14 @@
 --   scan_events.detections = the route's detections minus candidates: an array of
 --     { id: '<scanId>:<i>', grid, orientation, read{..., confidence}, status
 --       ('matched'|'check'|'not_found'), nameReason, printingReason, chosenKey, scores }
---   scan_events.outcomes   = written on commit by PR C, NOT YET WRITTEN. Assumed shape,
---     from the spec's "What is recorded": an array, one entry per committed detection:
+--   scan_events.outcomes   = written on commit by commitScanAction (app/collection/actions.ts,
+--     app/collection/scan/lib/commitCore.ts), with scan_events.commit_id set. An array with
+--     one entry per detection of every committed scan (the server refuses a commit whose
+--     outcome ids are not exactly the scan's stored detection ids):
 --     { id: '<detection id>', finalKey, printingChanged: bool, nameChanged: bool,
---       removed: bool, removedAs: 'wrong'|'unwanted'|null, unresolved: bool }
---   If PR C stores a different shape, fix the `committed` CTE below (it is repeated in each
---   outcome query) and nothing else.
+--       removed: bool, removedAs: 'wrong'|'unwanted'|null, unresolved: bool,
+--       status, nameReason, printingReason, scores }
+--     The last four are copied from the stored detection with the same id.
 --
 -- The `committed` CTE below is repeated IDENTICALLY in every outcome-based query, so the
 -- correction predicate and the denominator are defined once and all of them agree.
