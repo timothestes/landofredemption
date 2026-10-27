@@ -43,6 +43,7 @@ const COLUMNS: { heading: string; links: FooterLink[] }[] = [
       { label: "Rulings", href: "/rulings" },
       { label: "Resources", href: "/resources" },
       { label: "Spoilers", href: "/spoilers" },
+      { label: "Privacy", href: "/privacy" },
     ],
   },
   {

@@ -23,6 +23,7 @@ import { useDeckState } from "./hooks/useDeckState";
 import { useDeckCheck } from "./hooks/useDeckCheck";
 import { useCardImageUrl } from "./hooks/useCardImageUrl";
 import { useCollectionState } from "../../collection/hooks/useCollectionState";
+import { useCanScan } from "../../collection/hooks/useCanScan";
 import { ownedCardNames } from "./utils/collectionCheck";
 import { cycleOwnedMode, parseOwnedMode, ownedModeParam, OWNED_MODE_LABELS, type OwnedFilterMode } from "./ownedFilter";
 import { parseDeckText, generateDeckText, downloadDeckAsFile, downloadDeckAsFileBySet, copyDeckToClipboard } from "./utils/deckImportExport";
@@ -496,6 +497,7 @@ export default function CardSearchClient({
   // resolves, so anonymous-only UI (the sign-in hint) never flashes for
   // signed-in users while `user` is still null.
   const [user, setUser] = useState<User | null>(null);
+  const canScan = useCanScan(!!user);
   const [authChecked, setAuthChecked] = useState(false);
 
   // Deck builder state
@@ -2797,6 +2799,11 @@ export default function CardSearchClient({
                     <a href="/collection" className="underline hover:text-foreground">Add cards to your collection</a>{" "}
                     to build a deck from it.
                   </p>
+                  {canScan && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      <a href="/collection/scan" className="underline hover:text-foreground">Scan your cards</a>
+                    </p>
+                  )}
                 </>
               ) : activeOwnedMode === 'owned' ? (
                 <>
