@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { fitWithin } from '../prepareImage';
+import { fitWithin } from '../lib/prepareImage';
 
 describe('fitWithin', () => {
   it('scales landscape to the max edge', () => {
