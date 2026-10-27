@@ -90,9 +90,39 @@ export function recordFor(
   return { ...body, ...base, error: typeof code === 'string' && code ? code : `http_${res.status}` };
 }
 
+const MAX_SLEEP_MS = 120_000;
+
+/** Retry-After as delta-seconds or HTTP-date, in ms; default 5 s, capped at 120 s. */
+export function parseRetryAfter(h: string | null, now: number = Date.now()): number {
+  let ms = 5000;
+  if (h && /^\s*\d+(\.\d+)?\s*$/.test(h)) ms = Number(h) * 1000;
+  else if (h) {
+    const t = Date.parse(h);
+    if (Number.isFinite(t)) ms = Math.max(0, t - now);
+  }
+  return Math.min(ms, MAX_SLEEP_MS);
+}
+
+/** status 0 = network/read failure. Billing and global caps will not clear in minutes. */
+export function isRetryable(status: number, json: unknown): boolean {
+  if (status === 0) return true;
+  if (status !== 429 && status !== 503) return false;
+  const code = (json as { code?: unknown } | null)?.code;
+  return !(typeof code === 'string' && (code === 'billing_error' || code.startsWith('cap_global_')));
+}
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function postOnce(o: RunOptions, file: string) {
+  const t0 = Date.now();
+  try {
+    return await postRaw(o, file);
+  } catch (err) {
+    return { status: 0, headers: new Headers(), json: { code: 'network_error', message: String(err) } as unknown, latencyMs: Date.now() - t0 };
+  }
+}
+
+async function postRaw(o: RunOptions, file: string) {
   const buf = fs.readFileSync(path.join(o.photos, file));
   const form = new FormData();
   form.append('photo', new Blob([buf], { type: 'image/jpeg' }), file);
@@ -129,15 +159,14 @@ async function main() {
       let attempts = 0;
       let res = await postOnce(o, file);
       attempts++;
-      while ((res.status === 429 || res.status === 503) && attempts < MAX_ATTEMPTS) {
-        const ra = Number(res.headers.get('retry-after'));
-        await sleep((Number.isFinite(ra) && ra > 0 ? ra : 5) * 1000);
+      while (isRetryable(res.status, res.json) && attempts < MAX_ATTEMPTS) {
+        await sleep(res.status === 0 ? 2000 : parseRetryAfter(res.headers.get('retry-after')));
         res = await postOnce(o, file);
         attempts++;
       }
       const rec = recordFor(file, res, res.latencyMs, attempts);
       if (rec.error) {
-        fs.appendFileSync(path.join(o.out, 'errors.jsonl'), JSON.stringify({ file, status: res.status, body: res.json }) + '\n');
+        fs.appendFileSync(path.join(o.out, 'errors.jsonl'), JSON.stringify({ file, status: res.status, body: res.status === 0 ? String((res.json as { message?: unknown }).message) : res.json }) + '\n');
       } else {
         fs.writeFileSync(path.join(o.out, `${file}.json`), JSON.stringify(rec, null, 2));
         const c = (rec.usage as { costUsd?: unknown } | undefined)?.costUsd;

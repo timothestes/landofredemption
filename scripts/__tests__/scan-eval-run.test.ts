@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseArgs, recordFor, globToRegExp } from '@/scripts/scan-eval/run';
+import { parseArgs, recordFor, globToRegExp, parseRetryAfter, isRetryable } from '@/scripts/scan-eval/run';
 
 describe('run.ts', () => {
   it('parses the arm and defaults', () => {
@@ -24,5 +24,23 @@ describe('run.ts', () => {
     expect(globToRegExp('a?.jpg').test('ab.jpg')).toBe(true);
     expect(globToRegExp('a?.jpg').test('abc.jpg')).toBe(false);
     expect(globToRegExp('a.jpg').test('aXjpg')).toBe(false);
+  });
+  it('parseRetryAfter handles seconds, HTTP dates, junk and the cap', () => {
+    expect(parseRetryAfter('7', 0)).toBe(7000);
+    expect(parseRetryAfter('9999', 0)).toBe(120000);
+    expect(parseRetryAfter(null, 0)).toBe(5000);
+    expect(parseRetryAfter('junk', 0)).toBe(5000);
+    const now = Date.parse('2026-10-27T00:00:00Z');
+    expect(parseRetryAfter('Tue, 27 Oct 2026 00:00:10 GMT', now)).toBe(10000);
+    expect(parseRetryAfter('Tue, 27 Oct 2026 00:00:00 GMT', now + 5000)).toBe(5000);
+  });
+  it('isRetryable: network errors and 429/503 yes, billing and global caps no', () => {
+    expect(isRetryable(0, null)).toBe(true);
+    expect(isRetryable(429, { code: 'upstream_rate_limit' })).toBe(true);
+    expect(isRetryable(503, { code: 'upstream_overloaded' })).toBe(true);
+    expect(isRetryable(503, { code: 'billing_error' })).toBe(false);
+    expect(isRetryable(503, { code: 'cap_global_30d' })).toBe(false);
+    expect(isRetryable(503, { code: 'cap_global_spend' })).toBe(false);
+    expect(isRetryable(502, { code: 'recognizer_failed' })).toBe(false);
   });
 });
