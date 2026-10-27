@@ -9,6 +9,10 @@ describe('normalizeTitle folds quotes', () => {
     expect(normalizeTitle("Aaron's  Staff ")).toBe('aarons staff');
     expect(normalizeTitle('Ram, the Exalter / Ram, the Uplifted')).toBe('ram the exalter ram the uplifted');
   });
+  it('non-breaking spaces fold like spaces', () => {
+    expect(normalizeTitle('Son\u00a0of\u00a0God')).toBe('son of god');
+    expect(normalizeTitle('Aaron\u2019s\u00a0 Staff')).toBe('aarons staff');
+  });
 });
 describe('normalizeRef', () => {
   it('folds Roman book numbers and spacing', () => {
@@ -40,6 +44,11 @@ describe('readCornerCode', () => {
     expect(readCornerCode('081', 'UR+')).toBe('81');
     expect(readCornerCode(null, 'K10')).toBe('K10');
     expect(readCornerCode('P', null)).toBe(null);
+  });
+  it('takes the first digit run, never joining runs', () => {
+    expect(readCornerCode('81/200', 'R')).toBe('81');
+    expect(readCornerCode('3 of 4', null)).toBe('3');
+    expect(readCornerCode('No. 12', null)).toBe('12');
   });
 });
 describe('typeAgrees', () => {

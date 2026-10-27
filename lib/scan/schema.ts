@@ -116,6 +116,8 @@ export function capDetection(d: ScanDetection): ScanDetection {
   const src = (d && typeof d === 'object' ? d : {}) as Record<string, any>;
   const out: Record<string, unknown> = {};
   for (const k of STRING_LEAVES) out[k] = typeof src[k] === 'string' ? src[k].slice(0, FIELD_CAPS[k]) : null;
+  // A copyright line read whole ("© 2025 Cactus…") keeps its year, not its first four characters.
+  if (typeof src.copyrightYear === 'string') out.copyrightYear = /\b(?:19|20)\d\d\b/.exec(src.copyrightYear)?.[0] ?? out.copyrightYear;
   const g = src.grid && typeof src.grid === 'object' ? src.grid : {};
   return {
     ...(out as Omit<ScanDetection, 'type' | 'grid' | 'orientation' | 'confidence'>),
