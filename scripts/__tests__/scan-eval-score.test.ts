@@ -6,7 +6,7 @@ import { CARDS } from '@/lib/cards/lookup';
 import { cardKey } from '@/lib/scan/vocab';
 import { PRICE_DELTA_FLOOR } from '@/lib/scan/match';
 import {
-  scorePhoto, summarize, labelsAsPredictions, emptyPredictions, loadLabelsFrom, recordToPrediction, readOutputs,
+  scorePhoto, summarize, labelsAsPredictions, emptyPredictions, loadLabelsFrom, recordToPrediction, readOutputs, markdown,
   type LabelPhoto, type Prediction,
 } from '@/scripts/scan-eval/score';
 
@@ -171,5 +171,52 @@ describe('route records', () => {
     expect(predictions.get('b.jpg')?.error).toBe('upstream_overloaded');
     expect(prices[cp]).toBe(0.5);
     fs.rmSync(dir, { recursive: true });
+  });
+});
+
+describe('fix round 1', () => {
+  const cp = k('Captive Priest'), sog = k('Son of God [L]');
+  const nf = (p: Prediction, i: number) => { p.detections[i].match.status = 'not_found'; return p; };
+  it('silent wrong does not depend on row order (R9a)', () => {
+    const a = scorePhoto(photo([full(cp)]), nf(predOf([full(sog), full(sog)]), 0), {});
+    const b = scorePhoto(photo([full(cp)]), nf(predOf([full(sog), full(sog)]), 1), {});
+    expect([a.silentWrong, b.silentWrong]).toEqual([1, 1]);
+    expect(a.byClass.matched_wrong).toBe(1);
+    expect(b.byClass.matched_wrong).toBe(1);
+  });
+  it('a Matched extra of an absent card on a single is silent wrong', () => {
+    const s = scorePhoto(photo([full(cp)], { bucket: 'single' }), predOf([full(cp), full(sog)]), {});
+    expect([s.tp, s.fp, s.silentWrong]).toEqual([1, 1, 1]);
+  });
+  it('a duplicate Matched of a present card is fp but not silent', () => {
+    const s = scorePhoto(photo([full(cp)]), predOf([full(cp), full(cp)]), {});
+    expect([s.fp, s.silentWrong]).toEqual([1, 0]);
+  });
+  it('a Matched row on an other-game photo and on a non-card photo is silent wrong', () => {
+    expect(scorePhoto(photo([], { otherGame: true }), predOf([full(sog)]), {}).silentWrong).toBe(1);
+    expect(scorePhoto(photo([], { bucket: 'none' }), predOf([full(sog)]), {}).silentWrong).toBe(1);
+  });
+  it('a Check row naming an absent card is not silent', () => {
+    const p = predOf([full(sog)]);
+    p.detections[0].match.status = 'check';
+    expect(scorePhoto(photo([]), p, {}).silentWrong).toBe(0);
+  });
+  it('tp takes the full label before a partial one of the same identity', () => {
+    const s = scorePhoto(photo([{ printing: cp, setVisible: true, inFrame: 'partial' }, full(cp)]), predOf([full(cp)]), {});
+    expect([s.tp, s.fn]).toEqual([1, 0]);
+  });
+  it('--rematch refuses to run without a full price dump', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'score-'));
+    expect(() => readOutputs(dir, true)).toThrow(/--prices/);
+    expect(() => readOutputs(dir, true, { [cp]: 1 })).not.toThrow();
+    fs.rmSync(dir, { recursive: true });
+  });
+  it('the table has a missing column and the singles line shows scored/expected', () => {
+    const single = (f: string) => photo([full(cp)], { bucket: 'single', file: f });
+    const sum = summarize([scorePhoto(single('1.jpg'), predOf([full(cp)]), {}), scorePhoto(single('2.jpg'), undefined, {})]);
+    expect(sum.singles).toMatchObject({ photos: 1, expected: 2, top1: 1 });
+    const md = markdown(sum);
+    expect(md.split('\n')[0]).toMatch(/\| missing \|/);
+    expect(md).toMatch(/1 of 1 scored \(1\/2 expected/);
   });
 });

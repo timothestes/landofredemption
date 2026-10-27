@@ -8,7 +8,10 @@
  *     [--prices prices.json] [--rematch]
  *
  * --rematch ignores the route's match fields and re-runs matchDetection on
- * each `read` (E1: score a matcher change on saved outputs for free).
+ * each `read` (E1: score a matcher change on saved outputs for free). It
+ * requires --prices: a full card_prices dump as JSON Record<cardKey, number>.
+ * Prices harvested from returned candidates miss unpriced and unreturned
+ * printings, which would let the collapse hide a silent_wrong_price.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -115,8 +118,8 @@ export interface Tally {
 export interface Summary {
   buckets: Record<string, Tally>;
   pooled: Tally;
-  /** Scored photos in buckets starting "single" with a full card labeled: top-1 = every full card found and no false card. */
-  singles: { photos: number; top1: number; matchedCorrect: number };
+  /** Photos in buckets starting "single" with a full card labeled (`expected`), of which `photos` were scored: top-1 = every full card found and no false card. */
+  singles: { photos: number; expected: number; top1: number; matchedCorrect: number };
 }
 
 // ---------------------------------------------------------------------------
@@ -223,7 +226,9 @@ export function scorePhoto(label: LabelPhoto, pred: Prediction | undefined, pric
   const rows = pred.detections;
   s.hardFail = label.otherGame && rows.some(d => d.match.status !== 'not_found');
 
-  const labs = label.cards.map((c, i) => ({ i, c, id: identityOfKey(c.printing) }));
+  // Full labels first everywhere, so a partial card never takes a tp a full one could have.
+  const labs = label.cards.map((c, i) => ({ i, c, id: identityOfKey(c.printing) }))
+    .sort((a, b) => Number(a.c.inFrame === 'partial') - Number(b.c.inFrame === 'partial'));
   const preds = rows.map((d, i) => ({ i, d, id: topIdentity(d.match) }));
   const usedL = new Set<number>(), usedP = new Set<number>();
 
@@ -253,8 +258,11 @@ export function scorePhoto(label: LabelPhoto, pred: Prediction | undefined, pric
 
   // 2. Leftovers. Every remaining row pairs with a remaining label (full
   //    ones first), by grid cell, then in order.
-  const leftL = labs.filter(l => !usedL.has(l.i)).sort((a, b) => Number(a.c.inFrame === 'partial') - Number(b.c.inFrame === 'partial'));
-  const leftP = preds.filter(p => !usedP.has(p.i));
+  const leftL = labs.filter(l => !usedL.has(l.i));
+  // Asserting rows pair first (Matched, Check with an identity, identity-less
+  // Check), not_found rows last, so the class never depends on row order.
+  const rank = (p: typeof preds[number]) => (p.d.match.status === 'matched' ? 0 : p.d.match.status === 'not_found' ? 3 : p.id ? 1 : 2);
+  const leftP = preds.filter(p => !usedP.has(p.i)).sort((a, b) => rank(a) - rank(b) || a.i - b.i);
   const wrongPair = (l: typeof labs[number], p: typeof preds[number]): PairClass => {
     const m = p.d.match;
     if (m.status === 'not_found') return 'not_found_miss';
@@ -283,7 +291,12 @@ export function scorePhoto(label: LabelPhoto, pred: Prediction | undefined, pric
     if (!pairedL.has(l.i)) add({ class: 'missed', label: l.c });
   }
 
-  s.silentWrong = s.byClass.matched_wrong;
+  // Silent wrong: a Matched row outside a tp pair naming a card not labeled
+  // on this photo (matched_wrong, and Matched hallucinations of absent cards,
+  // other-game and non-card photos included). A duplicate of a present card
+  // stays fp only.
+  const present = new Set(labs.map(l => l.id).filter(Boolean));
+  s.silentWrong = preds.filter(p => !usedP.has(p.i) && p.d.match.status === 'matched' && !present.has(p.id)).length;
   for (const p of s.pairs) {
     if (p.silentWrongPrice) s.silentWrongPrice++;
     if (!p.printing) continue;
@@ -351,12 +364,14 @@ function tally(scores: PhotoScore[]): Tally {
 export function summarize(scores: PhotoScore[]): Summary {
   const groups = new Map<string, PhotoScore[]>();
   for (const s of scores) groups.set(s.bucket, [...(groups.get(s.bucket) ?? []), s]);
-  const singles = scores.filter(s => s.bucket.startsWith('single') && !s.excluded && s.labeledFull > 0);
+  const expected = scores.filter(s => s.bucket.startsWith('single') && s.labeledFull > 0);
+  const singles = expected.filter(s => !s.excluded);
   return {
     buckets: Object.fromEntries([...groups].map(([b, ss]) => [b, tally(ss)])),
     pooled: tally(scores),
     singles: {
       photos: singles.length,
+      expected: expected.length,
       top1: singles.filter(s => s.fn === 0 && s.fp === 0).length,
       matchedCorrect: singles.filter(s => s.fn === 0 && s.fp === 0 && s.byClass.check_top1 === 0).length,
     },
@@ -440,15 +455,18 @@ function routeMatch(d: any): MatchResult {
 /**
  * A run.ts output directory: `<photo>.json` per success, `errors.jsonl` for
  * the rest. A later success wins over earlier error lines for the same file.
- * Prices are harvested from every candidate the route priced.
+ * Without rematch, prices are harvested from every candidate the route
+ * priced, with `extraPrices` on top. With rematch only `extraPrices` (a full
+ * card_prices dump) is used, and it is required.
  */
 export function readOutputs(dir: string, rematch: boolean, extraPrices: PriceMap = {}): { predictions: Map<string, Prediction>; prices: PriceMap } {
+  if (rematch && !Object.keys(extraPrices).length) throw new Error('--rematch requires --prices <card_prices dump JSON: Record<cardKey, number>>');
   const records = fs.readdirSync(dir)
     .filter(f => f.endsWith('.json') && f !== 'score.json')
     .map(f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')))
     .filter(r => r && typeof r.file === 'string');
   const prices: PriceMap = {};
-  for (const r of records) for (const d of r.detections ?? []) for (const c of d?.candidates ?? []) {
+  if (!rematch) for (const r of records) for (const d of r.detections ?? []) for (const c of d?.candidates ?? []) {
     if (typeof c?.key === 'string' && typeof c.price === 'number') prices[c.key] = c.price;
   }
   Object.assign(prices, extraPrices);
@@ -476,9 +494,9 @@ const fmtPct = (x: number | null) => (x === null ? '–' : `${(x * 100).toFixed(
 const fmtMs = (x: number | null) => (x === null ? '–' : `${(x / 1000).toFixed(1)}s`);
 
 export function markdown(sum: Summary): string {
-  const head = ['bucket', 'photos', 'scored', 'err', 'trunc', 'tp', 'fp', 'fn', 'recall', 'precision', 'silent wrong', 'wrong price', 'hard fail', ...PAIR_CLASSES, 'set-visible correct', 'not defensible', 'grid', 'p50', 'p95', 'cost'];
+  const head = ['bucket', 'photos', 'scored', 'err', 'trunc', 'missing', 'tp', 'fp', 'fn', 'recall', 'precision', 'silent wrong', 'wrong price', 'hard fail', ...PAIR_CLASSES, 'set-visible correct', 'not defensible', 'grid', 'p50', 'p95', 'cost'];
   const row = (name: string, t: Tally) => [
-    name, t.photos, t.scored, t.errors, t.truncated, t.tp, t.fp, t.fn, fmtPct(t.recall), fmtPct(t.precision), t.silentWrong, t.silentWrongPrice, t.hardFails,
+    name, t.photos, t.scored, t.errors, t.truncated, t.missing, t.tp, t.fp, t.fn, fmtPct(t.recall), fmtPct(t.precision), t.silentWrong, t.silentWrongPrice, t.hardFails,
     ...PAIR_CLASSES.map(c => t.byClass[c]),
     `${t.printing.setVisibleCorrect}/${t.printing.setVisiblePairs}`, t.printing.notDefensible, `${t.grid.matched}/${t.grid.checked}`,
     fmtMs(t.latency.p50), fmtMs(t.latency.p95), `$${t.costUsd.toFixed(3)}`,
@@ -489,7 +507,7 @@ export function markdown(sum: Summary): string {
     ...Object.keys(sum.buckets).sort().map(b => `| ${row(b, sum.buckets[b])} |`),
     `| ${row('**pooled**', sum.pooled)} |`,
     '',
-    `Singles identity top-1: ${sum.singles.top1} of ${sum.singles.photos} (all pairs Matched-correct: ${sum.singles.matchedCorrect}).`,
+    `Singles identity top-1: ${sum.singles.top1} of ${sum.singles.photos} scored (${sum.singles.photos}/${sum.singles.expected} expected; all pairs Matched-correct: ${sum.singles.matchedCorrect}).`,
   ].join('\n');
 }
 
@@ -505,6 +523,7 @@ function parseArgs(argv: string[]) {
   }
   if (typeof f.labels !== 'string') throw new Error('--labels is required');
   if (typeof f.outputs !== 'string') throw new Error('--outputs is required');
+  if (f.rematch === true && typeof f.prices !== 'string') throw new Error('--rematch requires --prices <card_prices dump JSON: Record<cardKey, number>>');
   return { labels: f.labels, outputs: f.outputs, photos: typeof f.photos === 'string' ? f.photos : null, prices: typeof f.prices === 'string' ? f.prices : null, rematch: f.rematch === true };
 }
 
