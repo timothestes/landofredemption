@@ -14,6 +14,8 @@
 --   If PR C stores a different shape, fix the `outc` CTE below (it is repeated in each
 --   correction query) and nothing else.
 --
+-- The `committed` CTE below is repeated IDENTICALLY in every outcome-based query, so the
+-- correction predicate and the denominator are defined once and all of them agree.
 -- A correction = nameChanged or printingChanged or (removed and removedAs = 'wrong').
 -- Denominator = committed detections with outcomes, excluding removedAs = 'unwanted'
 -- (a card the player did not want says nothing about the read) and unresolved ones.
@@ -21,8 +23,12 @@
 -- name: correction_rate_by_status
 -- correction rate = corrections / committed detections with outcomes, split by status
 -- (check rows are prompted; matched rows are not: mixing them hides the silent error).
-with outc as (
-  select e.id as scan_id, d.value as det, o.value as o
+with committed as (
+  select e.created_at, d.value as det, o.value as o,
+         (coalesce((o.value ->> 'nameChanged')::boolean, false)
+          or coalesce((o.value ->> 'printingChanged')::boolean, false)
+          or o.value ->> 'removedAs' = 'wrong') as corrected,
+         coalesce((o.value ->> 'printingChanged')::boolean, false) as printing_changed
   from public.scan_events e
   cross join lateral jsonb_array_elements(coalesce(e.detections, '[]'::jsonb)) d
   join lateral jsonb_array_elements(coalesce(e.outcomes, '[]'::jsonb)) o on o.value ->> 'id' = d.value ->> 'id'
@@ -32,13 +38,9 @@ with outc as (
 )
 select det ->> 'status' as status,
        count(*) as committed,
-       count(*) filter (where coalesce((o ->> 'nameChanged')::boolean, false)
-                          or coalesce((o ->> 'printingChanged')::boolean, false)
-                          or o ->> 'removedAs' = 'wrong') as corrected,
-       round(100.0 * count(*) filter (where coalesce((o ->> 'nameChanged')::boolean, false)
-                          or coalesce((o ->> 'printingChanged')::boolean, false)
-                          or o ->> 'removedAs' = 'wrong') / nullif(count(*), 0), 1) as correction_pct
-from outc
+       count(*) filter (where corrected) as corrected,
+       round(100.0 * count(*) filter (where corrected) / nullif(count(*), 0), 1) as correction_pct
+from committed
 group by 1
 order by 1;
 
@@ -60,12 +62,17 @@ select (select count(*) from det) as detections,
            and jsonb_array_length(coalesce(detections, '[]'::jsonb)) = 0) as zero_detection_photos,
        (select count(*) from public.scan_events where source = 'player' and status = 'done') as done_photos;
 
+
 -- name: uncorrected_rate_by_printing_reason
 -- uncorrected rate by printingReason (not "accuracy": players fix what they notice).
 -- Uncorrected = committed, not corrected, not removed. fuzzy must score below exact
 -- (see the next query) and each printing reason is useful only if it separates.
-with outc as (
-  select d.value as det, o.value as o
+with committed as (
+  select e.created_at, d.value as det, o.value as o,
+         (coalesce((o.value ->> 'nameChanged')::boolean, false)
+          or coalesce((o.value ->> 'printingChanged')::boolean, false)
+          or o.value ->> 'removedAs' = 'wrong') as corrected,
+         coalesce((o.value ->> 'printingChanged')::boolean, false) as printing_changed
   from public.scan_events e
   cross join lateral jsonb_array_elements(coalesce(e.detections, '[]'::jsonb)) d
   join lateral jsonb_array_elements(coalesce(e.outcomes, '[]'::jsonb)) o on o.value ->> 'id' = d.value ->> 'id'
@@ -75,21 +82,21 @@ with outc as (
 )
 select det ->> 'printingReason' as printing_reason,
        count(*) as committed,
-       count(*) filter (where not (coalesce((o ->> 'nameChanged')::boolean, false)
-                          or coalesce((o ->> 'printingChanged')::boolean, false)
-                          or coalesce((o ->> 'removed')::boolean, false))) as uncorrected,
-       round(100.0 * count(*) filter (where not (coalesce((o ->> 'nameChanged')::boolean, false)
-                          or coalesce((o ->> 'printingChanged')::boolean, false)
-                          or coalesce((o ->> 'removed')::boolean, false))) / nullif(count(*), 0), 1) as uncorrected_pct
-from outc
+       count(*) filter (where not corrected) as uncorrected,
+       round(100.0 * count(*) filter (where not corrected) / nullif(count(*), 0), 1) as uncorrected_pct
+from committed
 group by 1
 order by committed desc;
 
 -- name: uncorrected_rate_by_name_reason
 -- same, by nameReason (exact / fuzzy / reference / none): a reason code is useful only
 -- if fuzzy scores below exact.
-with outc as (
-  select d.value as det, o.value as o
+with committed as (
+  select e.created_at, d.value as det, o.value as o,
+         (coalesce((o.value ->> 'nameChanged')::boolean, false)
+          or coalesce((o.value ->> 'printingChanged')::boolean, false)
+          or o.value ->> 'removedAs' = 'wrong') as corrected,
+         coalesce((o.value ->> 'printingChanged')::boolean, false) as printing_changed
   from public.scan_events e
   cross join lateral jsonb_array_elements(coalesce(e.detections, '[]'::jsonb)) d
   join lateral jsonb_array_elements(coalesce(e.outcomes, '[]'::jsonb)) o on o.value ->> 'id' = d.value ->> 'id'
@@ -99,21 +106,21 @@ with outc as (
 )
 select det ->> 'nameReason' as name_reason,
        count(*) as committed,
-       count(*) filter (where not (coalesce((o ->> 'nameChanged')::boolean, false)
-                          or coalesce((o ->> 'printingChanged')::boolean, false)
-                          or coalesce((o ->> 'removed')::boolean, false))) as uncorrected,
-       round(100.0 * count(*) filter (where not (coalesce((o ->> 'nameChanged')::boolean, false)
-                          or coalesce((o ->> 'printingChanged')::boolean, false)
-                          or coalesce((o ->> 'removed')::boolean, false))) / nullif(count(*), 0), 1) as uncorrected_pct
-from outc
+       count(*) filter (where not corrected) as uncorrected,
+       round(100.0 * count(*) filter (where not corrected) / nullif(count(*), 0), 1) as uncorrected_pct
+from committed
 group by 1
 order by committed desc;
 
 -- name: uncorrected_rate_by_confidence
 -- same, by the stored read.confidence (calibration: the chip earns its place only if
 -- high and low differ by >= 15 points with low covering >= a tenth of rows).
-with outc as (
-  select d.value as det, o.value as o
+with committed as (
+  select e.created_at, d.value as det, o.value as o,
+         (coalesce((o.value ->> 'nameChanged')::boolean, false)
+          or coalesce((o.value ->> 'printingChanged')::boolean, false)
+          or o.value ->> 'removedAs' = 'wrong') as corrected,
+         coalesce((o.value ->> 'printingChanged')::boolean, false) as printing_changed
   from public.scan_events e
   cross join lateral jsonb_array_elements(coalesce(e.detections, '[]'::jsonb)) d
   join lateral jsonb_array_elements(coalesce(e.outcomes, '[]'::jsonb)) o on o.value ->> 'id' = d.value ->> 'id'
@@ -124,13 +131,9 @@ with outc as (
 select det -> 'read' ->> 'confidence' as confidence,
        count(*) as committed,
        round(100.0 * count(*) / sum(count(*)) over (), 1) as share_pct,
-       count(*) filter (where not (coalesce((o ->> 'nameChanged')::boolean, false)
-                          or coalesce((o ->> 'printingChanged')::boolean, false)
-                          or coalesce((o ->> 'removed')::boolean, false))) as uncorrected,
-       round(100.0 * count(*) filter (where not (coalesce((o ->> 'nameChanged')::boolean, false)
-                          or coalesce((o ->> 'printingChanged')::boolean, false)
-                          or coalesce((o ->> 'removed')::boolean, false))) / nullif(count(*), 0), 1) as uncorrected_pct
-from outc
+       count(*) filter (where not corrected) as uncorrected,
+       round(100.0 * count(*) filter (where not corrected) / nullif(count(*), 0), 1) as uncorrected_pct
+from committed
 group by 1
 order by 1;
 
@@ -143,6 +146,7 @@ select count(*) as done_scans_older_than_24h,
 from public.scan_events
 where source = 'player' and status = 'done' and created_at < now() - interval '24 hours';
 
+
 -- name: rejections_by_cap_per_day
 select date_trunc('day', created_at)::date as day,
        rejected_cap,
@@ -151,6 +155,7 @@ from public.scan_events
 where source = 'player' and status = 'rejected'
 group by 1, 2
 order by 1 desc, 2;
+
 
 -- name: failure_rate
 -- failures / all. "All" = photos that reached the model (done + failed); rejected rows
@@ -161,12 +166,14 @@ select count(*) filter (where status = 'failed') as failed,
 from public.scan_events
 where source = 'player' and status in ('done', 'failed');
 
+
 -- name: latency_p50_p95
 select count(*) as done_scans,
        percentile_cont(0.5) within group (order by latency_ms) as p50_ms,
        percentile_cont(0.95) within group (order by latency_ms) as p95_ms
 from public.scan_events
 where source = 'player' and status = 'done' and latency_ms is not null;
+
 
 -- name: cost_per_day
 -- cost per day over done and failed (billed failures keep their cost).
@@ -178,6 +185,7 @@ where source = 'player' and status in ('done', 'failed')
 group by 1
 order by 1 desc;
 
+
 -- name: distinct_committing_players
 -- Outcomes are written on commit, so a row with outcomes is a committed scan.
 select count(distinct user_id) as committing_players,
@@ -185,58 +193,57 @@ select count(distinct user_id) as committing_players,
 from public.scan_events
 where source = 'player' and outcomes is not null;
 
+
 -- name: kill_correction_rate_days_7_14
 -- KILL: correction rate > 30% over days 7-14 after launch, minimum 100 committed
 -- detections. Launch = the first player row. Action: keep Beta, pull v1.1 legend
 -- fields and the second look forward.
-with launch as (
-  select min(created_at) as t from public.scan_events where source = 'player'
-),
-outc as (
-  select o.value as o
-  from public.scan_events e, launch
-  cross join lateral jsonb_array_elements(coalesce(e.outcomes, '[]'::jsonb)) o
+with committed as (
+  select e.created_at, d.value as det, o.value as o,
+         (coalesce((o.value ->> 'nameChanged')::boolean, false)
+          or coalesce((o.value ->> 'printingChanged')::boolean, false)
+          or o.value ->> 'removedAs' = 'wrong') as corrected,
+         coalesce((o.value ->> 'printingChanged')::boolean, false) as printing_changed
+  from public.scan_events e
+  cross join lateral jsonb_array_elements(coalesce(e.detections, '[]'::jsonb)) d
+  join lateral jsonb_array_elements(coalesce(e.outcomes, '[]'::jsonb)) o on o.value ->> 'id' = d.value ->> 'id'
   where e.source = 'player' and e.status = 'done' and e.outcomes is not null
-    and e.created_at >= launch.t + interval '7 days' and e.created_at < launch.t + interval '14 days'
     and coalesce(o.value ->> 'removedAs', '') <> 'unwanted'
     and coalesce((o.value ->> 'unresolved')::boolean, false) = false
 )
 select count(*) as committed,
-       count(*) filter (where coalesce((o ->> 'nameChanged')::boolean, false)
-                          or coalesce((o ->> 'printingChanged')::boolean, false)
-                          or o ->> 'removedAs' = 'wrong') as corrected,
-       round(100.0 * count(*) filter (where coalesce((o ->> 'nameChanged')::boolean, false)
-                          or coalesce((o ->> 'printingChanged')::boolean, false)
-                          or o ->> 'removedAs' = 'wrong') / nullif(count(*), 0), 1) as correction_pct,
+       count(*) filter (where corrected) as corrected,
+       round(100.0 * count(*) filter (where corrected) / nullif(count(*), 0), 1) as correction_pct,
        count(*) >= 100 as enough_data,
-       (count(*) >= 100 and 100.0 * count(*) filter (where coalesce((o ->> 'nameChanged')::boolean, false)
-                          or coalesce((o ->> 'printingChanged')::boolean, false)
-                          or o ->> 'removedAs' = 'wrong') / count(*) > 30) as kill_triggered
-from outc;
+       (count(*) >= 100 and 100.0 * count(*) filter (where corrected) / count(*) > 30) as kill_triggered
+from committed c
+join (select min(created_at) as t from public.scan_events where source = 'player') launch
+  on c.created_at >= launch.t + interval '7 days' and c.created_at < launch.t + interval '14 days';
 
 -- name: kill_printing_share_of_corrections_14d
 -- KILL: printing share of corrections > 0.5, trailing 14 days, minimum 30 corrections.
 -- Printing share = corrections with printingChanged / all corrections.
 -- Action: start Stage A2.
-with outc as (
-  select o.value as o
+with committed as (
+  select e.created_at, d.value as det, o.value as o,
+         (coalesce((o.value ->> 'nameChanged')::boolean, false)
+          or coalesce((o.value ->> 'printingChanged')::boolean, false)
+          or o.value ->> 'removedAs' = 'wrong') as corrected,
+         coalesce((o.value ->> 'printingChanged')::boolean, false) as printing_changed
   from public.scan_events e
-  cross join lateral jsonb_array_elements(coalesce(e.outcomes, '[]'::jsonb)) o
+  cross join lateral jsonb_array_elements(coalesce(e.detections, '[]'::jsonb)) d
+  join lateral jsonb_array_elements(coalesce(e.outcomes, '[]'::jsonb)) o on o.value ->> 'id' = d.value ->> 'id'
   where e.source = 'player' and e.status = 'done' and e.outcomes is not null
-    and e.created_at >= now() - interval '14 days'
-),
-corr as (
-  select o from outc
-  where coalesce((o ->> 'nameChanged')::boolean, false)
-     or coalesce((o ->> 'printingChanged')::boolean, false)
-     or o ->> 'removedAs' = 'wrong'
+    and coalesce(o.value ->> 'removedAs', '') <> 'unwanted'
+    and coalesce((o.value ->> 'unresolved')::boolean, false) = false
 )
 select count(*) as corrections,
-       count(*) filter (where coalesce((o ->> 'printingChanged')::boolean, false)) as printing_corrections,
-       round(count(*) filter (where coalesce((o ->> 'printingChanged')::boolean, false))::numeric / nullif(count(*), 0), 3) as printing_share,
+       count(*) filter (where printing_changed) as printing_corrections,
+       round(count(*) filter (where printing_changed)::numeric / nullif(count(*), 0), 3) as printing_share,
        count(*) >= 30 as enough_data,
-       (count(*) >= 30 and count(*) filter (where coalesce((o ->> 'printingChanged')::boolean, false))::numeric / count(*) > 0.5) as kill_triggered
-from corr;
+       (count(*) >= 30 and count(*) filter (where printing_changed)::numeric / count(*) > 0.5) as kill_triggered
+from committed
+where corrected and created_at >= now() - interval '14 days';
 
 -- name: kill_failure_or_latency_3d
 -- KILL: failure rate > 10% or p95 latency > 20 s, trailing 3 days. Action: investigate
