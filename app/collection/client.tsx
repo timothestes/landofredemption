@@ -715,6 +715,9 @@ export default function CollectionClient({
             {i === 0 && justCards.length > 0 && (
               <h2 className="col-span-full text-sm font-semibold">Just added</h2>
             )}
+            {i === justCards.length && justCards.length > 0 && (
+              <h2 className="col-span-full mt-3 border-t border-border pt-3 text-sm font-semibold">All cards</h2>
+            )}
             <div
               className={`rounded-lg border p-1.5 flex flex-col gap-1.5 ${
                 qty > 0 ? "border-primary/60" : "border-border"

@@ -19,13 +19,14 @@ if (typeof window !== "undefined" && localStorage.getItem(KEY) === null) {
   if (legacy) localStorage.setItem(KEY, "true");
 }
 
-function getSnapshot(): boolean {
-  return localStorage.getItem(KEY) === "true";
+// null until the player chooses, so a page can pick its own default.
+function getSnapshot(): string | null {
+  return localStorage.getItem(KEY);
 }
 
-// Server render and first client render both return false → no hydration mismatch.
-function getServerSnapshot(): boolean {
-  return false;
+// Server render and first client render agree → no hydration mismatch.
+function getServerSnapshot(): string | null {
+  return null;
 }
 
 function subscribe(callback: () => void): () => void {
@@ -37,8 +38,10 @@ function subscribe(callback: () => void): () => void {
   };
 }
 
-export function useShowPrices(): [boolean, (value: boolean) => void] {
-  const showPrices = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+/** defaultValue applies until the player has set the preference anywhere. */
+export function useShowPrices(defaultValue = false): [boolean, (value: boolean) => void] {
+  const stored = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const showPrices = stored === null ? defaultValue : stored === "true";
   const setShowPrices = useCallback((value: boolean) => {
     localStorage.setItem(KEY, String(value));
     window.dispatchEvent(new Event(EVENT));

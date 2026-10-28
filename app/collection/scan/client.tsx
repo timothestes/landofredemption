@@ -15,6 +15,7 @@ import DetectionRow from './components/DetectionRow';
 import PrintingPicker, { type PickerMode } from './components/PrintingPicker';
 import CommitBar from './components/CommitBar';
 import SuccessPanel from './components/SuccessPanel';
+import { isEditable } from './lib/trayReducer';
 
 /**
  * The tray reads sessionStorage in its initializer, so nothing below renders
@@ -31,23 +32,32 @@ function ScanTray({ userId }: { userId: string }) {
   const [state, dispatch] = useScanTray(userId);
   const queue = useScanQueue(dispatch);
   const { quantities, reload } = useCollectionState();
-  const [showPrices] = useShowPrices();
+  // Prices are what the scanner is for: on here unless the player turned them off somewhere.
+  const [showPrices, setShowPrices] = useShowPrices(true);
   const { getPrice } = useCardPrices();
   const chooseInputRef = useRef<HTMLInputElement>(null);
   const [pickerRow, setPickerRow] = useState<{ rowId: string; mode: PickerMode } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const closeToast = useCallback(() => setToast(null), []);
 
-  const editable = state.phase === 'editing';
+  const editable = isEditable(state);
   const empty = state.photos.length === 0 && state.rows.length === 0;
   const waitingOffline = !queue.online && state.photos.some(p => p.status === 'queued');
 
-  const detectionsByPhoto = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const r of state.rows) for (const s of r.sources) m.set(s.photoId, (m.get(s.photoId) ?? 0) + 1);
-    return m;
+  // A card already listed under an earlier photo raises that row's count instead of adding a row here.
+  const { detectionsByPhoto, mergedByPhoto } = useMemo(() => {
+    const all = new Map<string, number>();
+    const merged = new Map<string, number>();
+    for (const r of state.rows) {
+      for (const s of r.sources) {
+        all.set(s.photoId, (all.get(s.photoId) ?? 0) + 1);
+        if (s.photoId !== r.photoId) merged.set(s.photoId, (merged.get(s.photoId) ?? 0) + 1);
+      }
+    }
+    return { detectionsByPhoto: all, mergedByPhoto: merged };
   }, [state.rows]);
-  const rowsOf = (photoId: string) => state.rows.filter(r => r.photoId === photoId && r.removedAs === null);
+  // Removed rows stay in place, collapsed, so a mis-tap can be undone.
+  const rowsOf = (photoId: string) => state.rows.filter(r => r.photoId === photoId);
   const picked = pickerRow && editable ? state.rows.find(r => r.rowId === pickerRow.rowId) ?? null : null;
 
   const scanMore = () => {
@@ -56,7 +66,12 @@ function ScanTray({ userId }: { userId: string }) {
     dispatch({ type: 'scanMore' });
   };
   const onUndone = (removed: number) => {
-    setToast(removed === 1 ? COPY.undoDoneOne : fill(COPY.undoDone, { n: removed }));
+    const added = state.committed?.added ?? removed;
+    setToast(
+      removed < added
+        ? fill(COPY.undoDoneFewer, { n: removed, added })
+        : removed === 1 ? COPY.undoDoneOne : fill(COPY.undoDone, { n: removed }),
+    );
     dispatch({ type: 'undoDone' });
     void reload();
   };
@@ -66,7 +81,16 @@ function ScanTray({ userId }: { userId: string }) {
       {empty && <p className="text-sm text-muted-foreground">{COPY.firstRun}</p>}
 
       <div className="space-y-3">
-        <CaptureButtons addFiles={queue.addFiles} chooseInputRef={chooseInputRef} disabled={!editable} />
+        <CaptureButtons
+          addFiles={queue.addFiles}
+          chooseInputRef={chooseInputRef}
+          accepting={editable}
+          disabled={!editable && state.phase !== 'committed'}
+          // After an add, the capture buttons start the next batch rather than sitting greyed out.
+          onBeforeOpen={state.phase === 'committed' ? scanMore : undefined}
+          hint={state.phase === 'committed' ? COPY.startNew : null}
+          showTips={empty}
+        />
         <details className="text-xs text-muted-foreground">
           <summary className="min-h-11 cursor-pointer py-3 hover:text-foreground focus:outline-none">
             {COPY.retentionSummary}
@@ -96,7 +120,9 @@ function ScanTray({ userId }: { userId: string }) {
                 photo={photo}
                 thumb={queue.thumbs.get(photo.photoId)}
                 detectionCount={detectionsByPhoto.get(photo.photoId) ?? 0}
+                mergedCount={mergedByPhoto.get(photo.photoId) ?? 0}
                 editable={editable}
+                online={queue.online}
                 canRetry={queue.hasFile(photo.photoId)}
                 onRetry={() => queue.retry(photo.photoId)}
                 onRemove={() => queue.remove(photo.photoId)}
@@ -128,6 +154,8 @@ function ScanTray({ userId }: { userId: string }) {
             state={state}
             dispatch={dispatch}
             showPrices={showPrices}
+            onShowPrices={() => setShowPrices(true)}
+            priceOf={key => getPrice(key)?.price ?? null}
             onCommitted={() => void reload()}
             onScanMore={scanMore}
           />

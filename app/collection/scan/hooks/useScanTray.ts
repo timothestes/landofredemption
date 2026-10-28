@@ -3,7 +3,8 @@
 import { useEffect, useReducer, type Dispatch } from 'react';
 import { initialTray, rehydrateTray, trayReducer, type TrayAction, type TrayState } from '../lib/trayReducer';
 
-const keyFor = (userId: string) => `scan-tray:${userId}`;
+// Bump the version when TrayState's shape changes, so a tab left open across a deploy starts fresh.
+const keyFor = (userId: string) => `scan-tray:v2:${userId}`;
 
 export function useScanTray(userId: string): [TrayState, Dispatch<TrayAction>] {
   const [state, dispatch] = useReducer(trayReducer, userId, (uid): TrayState => {
@@ -17,7 +18,8 @@ export function useScanTray(userId: string): [TrayState, Dispatch<TrayAction>] {
     try {
       sessionStorage.setItem(keyFor(userId), JSON.stringify(state));
     } catch {
-      /* storage unavailable */
+      // Full or unavailable: drop the old snapshot so a reload cannot restore a tray older than this one.
+      try { sessionStorage.removeItem(keyFor(userId)); } catch { /* storage unavailable */ }
     }
   }, [state, userId]);
   return [state, dispatch];

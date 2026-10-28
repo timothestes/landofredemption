@@ -1,7 +1,8 @@
 'use client';
 
 import { Children, useEffect, useState, type ReactNode } from 'react';
-import { COPY, doneLine, qualityLine, readingLine, scanErrorView } from '../copy';
+import Link from 'next/link';
+import { COPY, doneLine, fill, qualityLine, readingLine, scanErrorView } from '../copy';
 import type { TrayPhoto } from '../lib/trayReducer';
 
 interface Props {
@@ -9,8 +10,11 @@ interface Props {
   thumb?: string;
   /** Detections this photo returned (merged duplicates included). */
   detectionCount: number;
+  /** Of those, how many raised the count of a row listed under an earlier photo. */
+  mergedCount: number;
   /** False once the tray is committing or committed: no Retry, Remove or Choose another. */
   editable: boolean;
+  online: boolean;
   canRetry: boolean;
   onRetry: () => void;
   onRemove: () => void;
@@ -29,11 +33,23 @@ const ZERO_TEXT: Record<string, string> = {
 const actionClass =
   'min-h-11 px-2 text-sm font-medium text-foreground underline-offset-4 hover:underline focus:outline-none';
 
+function doneText(n: number, merged: number, quality: string | undefined): string {
+  const parts = [doneLine(n)];
+  if (merged > 0) parts.push(merged === n ? COPY.mergedAboveAll : fill(COPY.mergedAbove, { n: merged }));
+  if (quality === 'too_many_cards') parts.push(COPY.tooManyPartial);
+  else {
+    const q = quality && quality !== 'ok' ? qualityLine(quality) : null;
+    if (q) parts.push(fill(COPY.qualityCheckNames, { q }));
+  }
+  return parts.join(' · ');
+}
+
 export default function PhotoGroup({
-  photo, thumb, detectionCount, editable, canRetry, onRetry, onRemove, onChooseAnother, children,
+  photo, thumb, detectionCount, mergedCount, editable, online, canRetry, onRetry, onRemove, onChooseAnother, children,
 }: Props) {
-  const reading = photo.status === 'reading' || photo.status === 'queued';
+  const reading = photo.status === 'reading';
   const [now, setNow] = useState(() => Date.now());
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   useEffect(() => {
     if (!reading) return;
@@ -42,9 +58,13 @@ export default function PhotoGroup({
   }, [reading]);
 
   let line: ReactNode;
-  let actions: { retry: boolean; chooseAnother: boolean } | null = null;
+  let actions: { retry: boolean; chooseAnother: boolean; signIn?: boolean } | null = null;
+  // Remove is always offered while editing; a read photo asks first, since its cards go with it.
+  let removeNeedsConfirm = false;
   if (photo.busy && photo.status === 'queued') {
     line = COPY.busy;
+  } else if (photo.status === 'queued') {
+    line = online ? COPY.waiting : COPY.waitingOffline;
   } else if (reading) {
     // Only "Reading…" is announced; the ticking seconds are hidden so the live region does not repeat.
     const full = readingLine(photo.startedAt ? Math.max(0, now - photo.startedAt) : 0);
@@ -64,15 +84,18 @@ export default function PhotoGroup({
       new Date(),
     );
     // Auto-retries are spent by the time a busy error lands here, so nothing is retrying.
-    line = view.kind === 'busy' ? COPY.generic : view.text;
-    actions = { retry: view.retry, chooseAnother: view.chooseAnother };
+    line = view.kind === 'busy' ? COPY.busyGaveUp : view.text;
+    actions = { retry: view.retry, chooseAnother: view.chooseAnother, signIn: view.signIn };
   } else if (detectionCount === 0) {
     line = ZERO_TEXT[photo.photoQuality ?? ''] ?? COPY.noCards;
-    actions = { retry: true, chooseAnother: true };
+    // The same photo with too many cards would only be refused again: retake or choose another.
+    actions = { retry: photo.photoQuality !== 'too_many_cards', chooseAnother: true };
   } else {
-    const q = photo.photoQuality && photo.photoQuality !== 'ok' ? qualityLine(photo.photoQuality) : null;
-    line = q ? `${doneLine(detectionCount)} · ${q}` : doneLine(detectionCount);
+    line = doneText(detectionCount, mergedCount, photo.photoQuality);
+    removeNeedsConfirm = true;
   }
+
+  const remove = () => (removeNeedsConfirm ? setConfirmRemove(true) : onRemove());
 
   return (
     <section className="py-3">
@@ -90,8 +113,41 @@ export default function PhotoGroup({
           className={`min-w-0 flex-1 text-sm ${actions ? 'text-foreground' : 'text-muted-foreground'} tabular-nums`}
         >
           {line}
+          {actions?.signIn && (
+            <>
+              {' '}
+              <Link href="/sign-in?redirectTo=/collection/scan" className="font-medium underline underline-offset-4 focus:outline-none">
+                {COPY.signIn}
+              </Link>
+            </>
+          )}
         </p>
+        {editable && !actions && !confirmRemove && (
+          <button type="button" className={`${actionClass} shrink-0 text-muted-foreground`} onClick={remove}>
+            {removeNeedsConfirm ? COPY.removePhoto : COPY.remove}
+          </button>
+        )}
       </div>
+      {editable && confirmRemove && (
+        <div className="mt-1 flex flex-wrap items-center gap-x-1 pl-14">
+          <span className="text-sm">
+            {detectionCount === 1 ? COPY.removePhotoConfirmOne : fill(COPY.removePhotoConfirm, { n: detectionCount })}
+          </span>
+          <button
+            type="button"
+            className={actionClass}
+            onClick={() => {
+              setConfirmRemove(false);
+              onRemove();
+            }}
+          >
+            {COPY.remove}
+          </button>
+          <button type="button" className={actionClass} onClick={() => setConfirmRemove(false)}>
+            {COPY.cancel}
+          </button>
+        </div>
+      )}
       {actions && editable && (
         <div className="mt-1 flex flex-wrap items-center gap-x-1 pl-14">
           {actions.retry && canRetry && (

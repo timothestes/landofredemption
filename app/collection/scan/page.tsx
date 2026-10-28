@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { createClient } from "../../../utils/supabase/server";
 import { canScanForSession } from "../../../lib/scan/gate";
 import { COPY } from "./copy";
@@ -51,7 +50,21 @@ export default async function ScanPage() {
     );
   }
 
-  if (!allowed) notFound();
+  // Signed in but not on the Beta allowlist: say so, rather than a bare 404 after they followed our Sign in link.
+  if (!allowed) {
+    return (
+      <div className="w-full max-w-2xl mx-auto px-4 py-16 text-center">
+        <h1 className="font-cinzel text-3xl font-bold tracking-tight mb-3">{COPY.pageTitle}</h1>
+        <p className="text-muted-foreground text-lg mb-6">{COPY.notOpen} It&rsquo;s in Beta with a small group of testers.</p>
+        <Link
+          href="/collection"
+          className="inline-block px-6 py-3 border border-border rounded-lg font-medium hover:bg-muted transition-colors"
+        >
+          Back to your collection
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-10">
@@ -61,6 +74,7 @@ export default async function ScanPage() {
           {COPY.beta}
         </span>
       </header>
+      <p className="mt-1 text-xs text-muted-foreground">{COPY.betaNote}</p>
       <ScanClient userId={user.id} />
     </div>
   );

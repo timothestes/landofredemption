@@ -380,7 +380,10 @@ export async function adjustCollectionQuantitiesAction(commitId: string): Promis
           .from("scan_commits")
           .select("commit_id", { count: "exact", head: true })
           .eq("user_id", uid)
-          .gt("created_at", createdAt);
+          .gt("created_at", createdAt)
+          // Only a later add that landed and is still live blocks undo: not one undone, or one that never finished.
+          .eq("result->>ok", "true")
+          .is("result->>undoneAt", null);
         if (error) throw error;
         return (count ?? 0) > 0;
       },
@@ -397,6 +400,14 @@ export async function adjustCollectionQuantitiesAction(commitId: string): Promis
           .select("commit_id");
         if (error) throw error;
         return (data ?? []).length === 1;
+      },
+      storeUndoResult: async (id, result) => {
+        const { error } = await admin
+          .from("scan_commits")
+          .update({ result })
+          .eq("commit_id", id)
+          .eq("user_id", userId);
+        if (error) throw error;
       },
       currentQuantities: async (keys) => {
         const out: Record<string, number> = {};

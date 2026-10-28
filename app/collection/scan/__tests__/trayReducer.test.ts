@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countedRows, initialTray, rehydrateTray, trayReducer, trayTotals, type TrayAction, type TrayState } from '../lib/trayReducer';
+import { countedRows, initialTray, isEditable, rehydrateTray, trayReducer, trayTotals, type TrayAction, type TrayState } from '../lib/trayReducer';
 import { buildCommitPayload } from '../lib/outcomes';
 import { cand, det, resp } from './fixtures';
 
@@ -69,7 +69,54 @@ describe('trayReducer', () => {
       { type: 'photoDone', photoId: 'p1', response: resp([
         det(1, { chosenKey: 'A' }), det(2, { chosenKey: 'B', candidates: [cand('B', null)] }), det(3, { chosenKey: null })]) });
     s = run(s, { type: 'setQty', rowId: s.rows[0].rowId, qty: 2 });
-    expect(trayTotals(s)).toEqual({ cards: 3, priced: 7, unpriced: 1, unresolved: 1 });
+    expect(trayTotals(s)).toEqual({ cards: 3, rows: 2, priced: 7, unpriced: 1, unresolved: 1, toCheck: 0 });
+    // A search pick made before the price map loaded is priced from the map at render.
+    expect(trayTotals(s, k => (k === 'B' ? 2 : null))).toMatchObject({ priced: 9, unpriced: 0 });
+  });
+
+  it('a Check read never merges into another row, and counts as to-check until the player picks', () => {
+    let s = run(initialTray('u'), { type: 'photoAdded', photoId: 'p1' }, { type: 'photoAdded', photoId: 'p2' },
+      { type: 'photoDone', photoId: 'p1', response: resp([det(1, { chosenKey: 'X' })]) },
+      { type: 'photoDone', photoId: 'p2', response: resp([det(1, { chosenKey: 'X', status: 'check', printingReason: 'printing_ambiguous', scan: S2 })], S2) });
+    expect(s.rows).toHaveLength(2);
+    expect(s.rows[0].qty).toBe(1);
+    expect(trayTotals(s).toCheck).toBe(1);
+    // Confirming our own guess in the picker settles it.
+    s = run(s, { type: 'setKey', rowId: s.rows[1].rowId, key: 'X', via: 'candidates' });
+    expect(trayTotals(s).toCheck).toBe(0);
+    expect(s.rows[1].corrected).toBe('none');
+  });
+
+  it('two Check reads with the same guess stay separate rows', () => {
+    const s = run(initialTray('u'), { type: 'photoAdded', photoId: 'p1' }, { type: 'photoAdded', photoId: 'p2' },
+      { type: 'photoDone', photoId: 'p1', response: resp([det(1, { chosenKey: 'X', status: 'check' })]) },
+      { type: 'photoDone', photoId: 'p2', response: resp([det(1, { chosenKey: 'X', status: 'check', scan: S2 })], S2) });
+    expect(s.rows).toHaveLength(2);
+  });
+
+  it('a removed row can be restored', () => {
+    let s = run(initialTray('u'), { type: 'photoAdded', photoId: 'p1' },
+      { type: 'photoDone', photoId: 'p1', response: resp([det(1)]) });
+    s = run(s, { type: 'removeRow', rowId: s.rows[0].rowId, as: 'wrong' });
+    expect(countedRows(s)).toHaveLength(0);
+    s = run(s, { type: 'restoreRow', rowId: s.rows[0].rowId });
+    expect(countedRows(s)).toHaveLength(1);
+  });
+
+  it('a failed commit that may have saved keeps its id and locks the tray; a certain failure frees it', () => {
+    const base = run(initialTray('u'), { type: 'photoAdded', photoId: 'p1' },
+      { type: 'photoDone', photoId: 'p1', response: resp([det(1)]) }, { type: 'commitStarted', commitId: 'c1' });
+    const unsure = run(base, { type: 'commitFailed', nothingSaved: false });
+    expect(unsure.pendingCommitId).toBe('c1');
+    expect(isEditable(unsure)).toBe(false);
+    const sure = run(base, { type: 'commitFailed', nothingSaved: true });
+    expect(sure.pendingCommitId).toBeNull();
+    expect(isEditable(sure)).toBe(true);
+  });
+
+  it('rehydrate of a tray saved in an older row shape starts fresh', () => {
+    const old = JSON.stringify({ userId: 'u', photos: [], rows: [{ rowId: 'r', key: 'A', qty: 1 }], phase: 'editing' });
+    expect(rehydrateTray(old, 'u').rows).toEqual([]);
   });
 
   it('setQty clamps to 1..99', () => {

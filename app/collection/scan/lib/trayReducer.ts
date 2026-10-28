@@ -32,6 +32,8 @@ export interface TrayRow {
   candidates: Candidate[];
   qty: number;
   corrected: 'none' | 'printing' | 'name';
+  /** The player picked this row's card in the picker, even if it was our guess: a Check row stops asking. */
+  confirmed?: boolean;
   removedAs: 'wrong' | 'unwanted' | null;
 }
 
@@ -40,6 +42,11 @@ export interface TrayState {
   photos: TrayPhoto[];
   rows: TrayRow[];
   phase: 'editing' | 'committing' | 'committed';
+  /**
+   * Set from the first commit attempt until the server answers for certain. While it is set after a
+   * failed attempt the save may have gone through, so the tray is locked: an edit sent under the same
+   * id would be ignored by the server, and a fresh id could add the cards twice.
+   */
   pendingCommitId: string | null;
   committed: { commitId: string; added: number; scanIds: string[]; undone: boolean } | null;
 }
@@ -54,8 +61,10 @@ export type TrayAction =
   | { type: 'setKey'; rowId: string; key: string; candidates?: Candidate[]; via: 'candidates' | 'search' }
   | { type: 'setQty'; rowId: string; qty: number }
   | { type: 'removeRow'; rowId: string; as: 'wrong' | 'unwanted' }
+  | { type: 'restoreRow'; rowId: string }
   | { type: 'commitStarted'; commitId: string }
-  | { type: 'commitFailed' }
+  /** nothingSaved: the server said for certain nothing was added, so the next attempt may use a fresh id. */
+  | { type: 'commitFailed'; nothingSaved: boolean }
   | { type: 'commitDone'; commitId: string; added: number; scanIds: string[] }
   | { type: 'undoDone' }
   | { type: 'scanMore' }
@@ -108,8 +117,9 @@ export function trayReducer(s: TrayState, a: TrayAction): TrayState {
       if (s.phase !== 'editing') return done;
       const rows = s.rows.map(r => ({ ...r }));
       for (const det of [...a.response.detections].sort(gridOrder)) {
-        const same = det.chosenKey
-          ? rows.find(r => r.removedAs === null && r.key === det.chosenKey)
+        // Only certain reads merge: a Check row's key is a guess, and folding it into another row would hide it.
+        const same = det.chosenKey && det.status === 'matched'
+          ? rows.find(r => r.removedAs === null && r.key === det.chosenKey && isSettled(r))
           : undefined;
         if (same) {
           same.qty = Math.min(99, same.qty + 1);
@@ -163,16 +173,18 @@ export function trayReducer(s: TrayState, a: TrayAction): TrayState {
             : a.via === 'candidates' && r.detection.status !== 'not_found'
               ? 'printing'
               : 'name';
-        return { ...r, key: a.key, candidates: a.candidates ?? r.candidates, corrected };
+        return { ...r, key: a.key, candidates: a.candidates ?? r.candidates, corrected, confirmed: true };
       });
     case 'setQty':
       return patchRow(s, a.rowId, r => ({ ...r, qty: Math.min(99, Math.max(1, Math.round(a.qty) || 1)) }));
     case 'removeRow':
       return patchRow(s, a.rowId, r => ({ ...r, removedAs: a.as }));
+    case 'restoreRow':
+      return patchRow(s, a.rowId, r => ({ ...r, removedAs: null }));
     case 'commitStarted':
       return { ...s, phase: 'committing', pendingCommitId: a.commitId };
     case 'commitFailed':
-      return { ...s, phase: 'editing' };
+      return { ...s, phase: 'editing', pendingCommitId: a.nothingSaved ? null : s.pendingCommitId };
     case 'commitDone':
       return {
         ...s,
@@ -194,24 +206,55 @@ export function trayReducer(s: TrayState, a: TrayAction): TrayState {
   }
 }
 
+/** The tray can be edited: not mid-commit, and no earlier attempt that may have saved. */
+export function isEditable(s: TrayState): boolean {
+  return s.phase === 'editing' && s.pendingCommitId === null;
+}
+
+/** Every read behind the row was certain, or the player picked the card. */
+function isSettled(r: TrayRow): boolean {
+  return r.confirmed === true || r.corrected !== 'none' || r.sources.every(x => x.status === 'matched');
+}
+
+/** A row added on our guess of the printing that the player has not looked at. */
+export function needsCheck(r: TrayRow): boolean {
+  return r.removedAs === null && r.key !== null && !isSettled(r);
+}
+
 export function countedRows(s: TrayState): TrayRow[] {
   return s.rows.filter(r => r.removedAs === null && r.key !== null);
 }
 
-export function rowPrice(r: TrayRow): number | null {
-  return r.candidates.find(c => c.key === r.key)?.price ?? null;
+/** fallback: the catalog price map, for a search pick made before the map had loaded. */
+export function rowPrice(r: TrayRow, fallback?: (key: string) => number | null): number | null {
+  const own = r.candidates.find(c => c.key === r.key)?.price ?? null;
+  return own ?? (r.key && fallback ? fallback(r.key) : null);
 }
 
-export function trayTotals(s: TrayState): { cards: number; priced: number; unpriced: number; unresolved: number } {
+export interface TrayTotals {
+  cards: number;
+  /** Distinct rows the commit would send; the server refuses more than COMMIT_LIMITS.rows. */
+  rows: number;
+  priced: number;
+  unpriced: number;
+  /** Rows with no card picked: not added. */
+  unresolved: number;
+  /** Rows added on a guessed printing the player has not checked. */
+  toCheck: number;
+}
+
+export function trayTotals(s: TrayState, fallback?: (key: string) => number | null): TrayTotals {
   let cards = 0, priced = 0, unpriced = 0;
-  for (const r of countedRows(s)) {
+  const counted = countedRows(s);
+  for (const r of counted) {
     cards += r.qty;
-    const p = rowPrice(r);
+    const p = rowPrice(r, fallback);
     if (p == null) unpriced += r.qty;
     else priced += p * r.qty;
   }
   const unresolved = s.rows.filter(r => r.removedAs === null && r.key === null).length;
-  return { cards, priced, unpriced, unresolved };
+  const toCheck = s.rows.filter(needsCheck).length;
+  return { cards, rows: counted.length, priced, unpriced, unresolved, toCheck };
 }
 
 export function rehydrateTray(raw: unknown, userId: string): TrayState {
@@ -220,6 +263,8 @@ export function rehydrateTray(raw: unknown, userId: string): TrayState {
     if (!v || typeof v !== 'object') return initialTray(userId);
     const o = v as Partial<TrayState>;
     if (o.userId !== userId || !Array.isArray(o.photos) || !Array.isArray(o.rows)) return initialTray(userId);
+    // A tray saved by an older build has a different row shape: start fresh rather than crash on it.
+    if (!o.rows.every(r => r && Array.isArray(r.sources) && r.sources.length > 0 && r.detection)) return initialTray(userId);
     const photos = o.photos.map((p): TrayPhoto =>
       p.status === 'queued' || p.status === 'reading'
         ? { ...p, status: 'failed', startedAt: undefined, busy: undefined, error: { status: 0, body: { code: 'lost_on_reload' } } }

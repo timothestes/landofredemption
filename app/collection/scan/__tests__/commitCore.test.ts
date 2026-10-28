@@ -49,7 +49,7 @@ function makeWorld(scans: StoredScan[], userId = U) {
     loadScans: async ids => scans.filter(s => ids.includes(s.id)).map(s => ({ ...s })),
     insertCommit: async row => {
       if (commits.has(row.commit_id)) return false;
-      commits.set(row.commit_id, { ...row, created_at: new Date(Date.UTC(2026, 0, 1, 0, 0, ++clock)).toISOString(), result: null });
+      commits.set(row.commit_id, { ...row, created_at: new Date(Date.now() + ++clock * 1000).toISOString(), result: null });
       return true;
     },
     getCommit: async id => commits.get(id) ?? null,
@@ -78,13 +78,15 @@ function makeWorld(scans: StoredScan[], userId = U) {
   const undoDeps: UndoDeps = {
     userId,
     getCommit: async id => commits.get(id) ?? null,
-    hasLaterCommit: async (uid, createdAt) => [...commits.values()].some(c => c.user_id === uid && c.created_at > createdAt),
+    hasLaterCommit: async (uid, createdAt) =>
+      [...commits.values()].some(c => c.user_id === uid && c.created_at > createdAt && c.result?.ok === true && !c.result.undoneAt),
     claimUndo: async (id, result) => {
       const c = commits.get(id);
       if (!c || c.result?.undoneAt) return false;
       c.result = result;
       return true;
     },
+    storeUndoResult: async (id, result) => { commits.get(id)!.result = result; },
     currentQuantities: async keys => Object.fromEntries(keys.map(k => [k, collection.get(k) ?? 0])),
     setQuantity,
   };
@@ -215,7 +217,10 @@ describe('runCommit', () => {
     for (const s of scans) s.commit_id = C1;
     w.collection.set(KA, 2);
     w.collection.set(KB, 1);
-    expect(await runCommit(w.deps, C1, payload())).toEqual({ ok: false, code: 'in_progress' });
+    const at = Date.parse('2026-01-01T00:00:00.000Z');
+    expect(await runCommit(w.deps, C1, payload(), () => at + 5_000)).toEqual({ ok: false, code: 'in_progress' });
+    // Long after, the row is abandoned: the player is told to check, not to keep waiting.
+    expect(await runCommit(w.deps, C1, payload(), () => at + 10 * 60_000)).toEqual({ ok: false, code: 'unconfirmed' });
     expect(await runCommit(w.deps, C2, payload())).toEqual({ ok: false, code: 'already_committed' });
     expect(w.collection.get(KA)).toBe(2);
     expect(w.merge).not.toHaveBeenCalled();
@@ -254,6 +259,19 @@ describe('runCommit', () => {
     w.fixMerge();
     expect((await runCommit(w.deps, C2, payload())).ok).toBe(true);
     expect(w.collection.get(KA)).toBe(2);
+  });
+
+  it('a transient storeResult failure is retried, so the retry and undo still work', async () => {
+    const w = makeWorld([scan(S1, 2), scan(S2, 2)]);
+    const real = w.deps.storeResult;
+    let calls = 0;
+    w.deps.storeResult = async (id, r) => { if (++calls === 1) throw new Error('blip'); return real(id, r); };
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const r = await runCommit(w.deps, C1, payload());
+    err.mockRestore();
+    expect(calls).toBe(2);
+    expect(await runCommit(w.deps, C1, payload())).toEqual(r);
+    expect(await runUndo(w.undoDeps, C1)).toEqual({ ok: true, removed: 3 });
   });
 
   it('an outcome write error is not fatal', async () => {
@@ -297,6 +315,30 @@ describe('runUndo', () => {
     expect(b).toEqual({ ok: true, removed: 3 });
     expect(w.collection.get(KA)).toBe(4);
     expect(w.setQuantity).toHaveBeenCalledTimes(2);
+  });
+
+  it('undo after a partial restore re-applies the remaining keys before reporting success', async () => {
+    const w = await committed({ [KA]: 4 });
+    const real = w.undoDeps.setQuantity;
+    let n = 0;
+    const flaky = { ...w.undoDeps, setQuantity: async (k: string, q: number) => { if (++n === 2) throw new Error('timeout'); return real(k, q); } };
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(await runUndo(flaky, C1)).toEqual({ ok: false, code: 'partial' });
+    err.mockRestore();
+    expect(w.collection.get(KB)).toBe(1); // not restored yet
+    expect(await runUndo(w.undoDeps, C1)).toEqual({ ok: true, removed: 3 });
+    expect(w.collection.get(KA)).toBe(4);
+    expect(w.collection.has(KB)).toBe(false);
+    expect(w.commits.get(C1)!.result!.restored).toBe(true);
+  });
+
+  it('undo is not blocked by a later commit that was undone', async () => {
+    const S3 = '33333333-2222-4333-8444-555555555555';
+    const w = makeWorld([scan(S1, 2), scan(S2, 2), scan(S3, 1)]);
+    await runCommit(w.deps, C1, payload());
+    await runCommit(w.deps, C2, { rows: [{ key: KA, qty: 1 }], outcomesByScanId: { [S3]: [outcome(`${S3}:0`, KA)] } });
+    expect((await runUndo(w.undoDeps, C2)).ok).toBe(true);
+    expect(await runUndo(w.undoDeps, C1)).toEqual({ ok: true, removed: 3 });
   });
 
   it('undo clamps at zero and deletes', async () => {
