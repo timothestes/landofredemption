@@ -35,6 +35,7 @@ export default function PrintingPicker({ row, mode, quantities, showPrices, getP
   const latestQuery = useRef('');
   const [query, setQuery] = useState(initialQuery);
   const [hits, setHits] = useState<PickerHit[] | null>(null);
+  const [close, setClose] = useState(false);
   useFocusTrap(trapRef, true);
 
   const title = mode === 'printing' ? COPY.pickerHeader : COPY.pickerNameHeader;
@@ -48,7 +49,9 @@ export default function PrintingPicker({ row, mode, quantities, showPrices, getP
     }
     const mod = await loadSearch();
     if (latestQuery.current !== value) return;
-    setHits(mod.searchPrintings(value));
+    const res = mod.searchPrintings(value);
+    setHits(res.hits);
+    setClose(res.close);
   };
 
   useEffect(() => {
@@ -104,6 +107,9 @@ export default function PrintingPicker({ row, mode, quantities, showPrices, getP
             />
           </DialogHeader>
           <DialogBody className="px-2 py-2">
+            {searching && close && hits.length > 0 && (
+              <p className="px-2 pb-1 text-xs text-muted-foreground">{COPY.pickerClose}</p>
+            )}
             {options.length === 0 ? (
               <p className="px-2 py-6 text-center text-sm text-muted-foreground">
                 {searching ? COPY.pickerEmpty : COPY.pickerSearch}
@@ -129,9 +135,8 @@ export default function PrintingPicker({ row, mode, quantities, showPrices, getP
                           )}
                         </span>
                         <span className="min-w-0 flex-1">
-                          {(mode !== 'printing' || searching) && (
-                            <span className="block truncate text-sm font-medium">{c.name}</span>
-                          )}
+                          {/* Printings of one card often differ only in the name's suffix, e.g. "(GoC UR+)". */}
+                          <span className="block truncate text-sm font-medium">{c.name}</span>
                           <span className="block truncate text-sm">
                             {c.officialSet || c.set}
                             {c.legality && <span className="text-muted-foreground"> · {c.legality}</span>}

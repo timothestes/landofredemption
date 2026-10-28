@@ -5,7 +5,7 @@ import type { ClientOutcome, CommitPayload } from './outcomes';
 
 export type CommitResult =
   | { ok: true; commitId: string; added: number; scanIds: string[] }
-  | { ok: false; code: 'unauthorized' | 'bad_request' | 'in_progress' | 'commit_failed' | 'already_committed' };
+  | { ok: false; code: 'unauthorized' | 'bad_request' | 'in_progress' | 'unconfirmed' | 'commit_failed' | 'already_committed' };
 export type UndoResult =
   | { ok: true; removed: number }
   | { ok: false; code: 'unauthorized' | 'not_found' | 'superseded' | 'partial' | 'undo_failed' };
@@ -22,7 +22,8 @@ export interface CommitRow {
   user_id: string;
   created_at: string;
   deltas: Record<string, number>;
-  result: (CommitResult & { undoneAt?: string; removed?: number }) | null;
+  /** targets/restored: the undo's absolute quantities, so a retry after a partial undo re-applies them. */
+  result: (CommitResult & { undoneAt?: string; removed?: number; targets?: Record<string, number>; restored?: boolean }) | null;
 }
 export interface CommitDeps {
   userId: string;
@@ -49,12 +50,20 @@ export interface UndoDeps {
   hasLaterCommit(userId: string, createdAt: string): Promise<boolean>;
   /** Conditional on result.undoneAt being null; false if already claimed. */
   claimUndo(id: string, result: CommitRow['result']): Promise<boolean>;
+  /** Overwrite result once the restore finished. */
+  storeUndoResult(id: string, result: CommitRow['result']): Promise<void>;
   currentQuantities(keys: string[]): Promise<Record<string, number>>;
   /** qty 0 deletes the row. */
   setQuantity(key: string, qty: number): Promise<void>;
 }
 
 export const COMMIT_LIMITS = { rows: 500, qty: 99, scans: 200, detectionsPerScan: 150 };
+
+/**
+ * A commit row with no result this old was abandoned mid-commit (the function died). Whether its merge
+ * landed is unknown, so the player is told to check their collection rather than told to wait forever.
+ */
+export const ABANDONED_AFTER_MS = 2 * 60_000;
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_KEY_LENGTH = 300;
@@ -137,7 +146,9 @@ export function splitKey(key: string) {
   return { card_name, card_set, card_img_file };
 }
 
-export async function runCommit(deps: CommitDeps, commitId: string, p: CommitPayload): Promise<CommitResult> {
+export async function runCommit(
+  deps: CommitDeps, commitId: string, p: CommitPayload, now: () => number = Date.now,
+): Promise<CommitResult> {
   const scanIds = Object.keys(p.outcomesByScanId);
   const deltas: Record<string, number> = {};
   for (const r of p.rows) deltas[r.key] = (deltas[r.key] ?? 0) + r.qty;
@@ -161,10 +172,11 @@ export async function runCommit(deps: CommitDeps, commitId: string, p: CommitPay
       if (!existing) return { ok: false, code: 'in_progress' }; // deleted by a failed merge between our two calls
       if (existing.user_id !== deps.userId) return { ok: false, code: 'bad_request' };
       if (existing.result) {
-        const { undoneAt: _u, removed: _r, ...result } = existing.result;
+        const { undoneAt: _u, removed: _r, targets: _t, restored: _s, ...result } = existing.result;
         return result as CommitResult;
       }
-      return { ok: false, code: 'in_progress' };
+      const age = now() - new Date(existing.created_at).getTime();
+      return { ok: false, code: age > ABANDONED_AFTER_MS ? 'unconfirmed' : 'in_progress' };
     }
   } catch (e) {
     console.error('[scan commit] before claim', e);
@@ -206,7 +218,15 @@ export async function runCommit(deps: CommitDeps, commitId: string, p: CommitPay
   }
 
   const result: CommitResult = { ok: true, commitId, added: p.rows.reduce((n, r) => n + r.qty, 0), scanIds };
-  try { await deps.storeResult(commitId, result); } catch (e) { console.error('[scan commit] store result', e); }
+  // Without a stored result a retry reads as in progress and undo is unavailable, so try hard.
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await deps.storeResult(commitId, result);
+      break;
+    } catch (e) {
+      console.error('[scan commit] store result, attempt', attempt, e);
+    }
+  }
 
   // R3: outcomes carry the stored read alongside the player's correction.
   const byScan = new Map(scans.map(s => [s.id, new Map((s.detections ?? []).map(d => [d.id, d]))]));
@@ -224,10 +244,18 @@ export async function runCommit(deps: CommitDeps, commitId: string, p: CommitPay
 export async function runUndo(deps: UndoDeps, commitId: string): Promise<UndoResult> {
   let next: Record<string, number>;
   let removed: number;
+  let claimedResult: NonNullable<CommitRow['result']>;
   try {
     const c = await deps.getCommit(commitId);
     if (!c || c.user_id !== deps.userId || c.result?.ok !== true) return { ok: false, code: 'not_found' };
-    if (c.result.undoneAt) return { ok: true, removed: c.result.removed ?? 0 };
+    if (c.result.undoneAt) {
+      // A partial undo recorded its targets: re-apply them (absolute, so repeating is safe) before reporting success.
+      if (c.result.restored === false && c.result.targets) {
+        const done = await restore(deps, commitId, c.result, c.result.targets);
+        if (!done) return { ok: false, code: 'partial' };
+      }
+      return { ok: true, removed: c.result.removed ?? 0 };
+    }
     if (await deps.hasLaterCommit(deps.userId, c.created_at)) return { ok: false, code: 'superseded' };
 
     const keys = Object.keys(c.deltas);
@@ -240,7 +268,8 @@ export async function runUndo(deps: UndoDeps, commitId: string): Promise<UndoRes
       removed += cur - next[k];
     }
 
-    const claimed = await deps.claimUndo(commitId, { ...c.result, undoneAt: new Date().toISOString(), removed });
+    claimedResult = { ...c.result, undoneAt: new Date().toISOString(), removed, targets: next, restored: false };
+    const claimed = await deps.claimUndo(commitId, claimedResult);
     if (!claimed) {
       const again = await deps.getCommit(commitId);
       return { ok: true, removed: again?.result?.removed ?? 0 };
@@ -250,12 +279,25 @@ export async function runUndo(deps: UndoDeps, commitId: string): Promise<UndoRes
     return { ok: false, code: 'undo_failed' };
   }
 
-  // R6: the claim is recorded; a failure here leaves some keys unrestored.
+  // R6: the claim is recorded; a failure here leaves some keys unrestored until Undo is tapped again.
+  if (!(await restore(deps, commitId, claimedResult, next))) return { ok: false, code: 'partial' };
+  return { ok: true, removed };
+}
+
+async function restore(
+  deps: UndoDeps, commitId: string, result: NonNullable<CommitRow['result']>, targets: Record<string, number>,
+): Promise<boolean> {
   try {
-    for (const [k, q] of Object.entries(next)) await deps.setQuantity(k, q);
+    for (const [k, q] of Object.entries(targets)) await deps.setQuantity(k, q);
   } catch (e) {
     console.error('[scan undo] partial', commitId, e);
-    return { ok: false, code: 'partial' };
+    return false;
   }
-  return { ok: true, removed };
+  try {
+    await deps.storeUndoResult(commitId, { ...result, restored: true });
+  } catch (e) {
+    // The quantities are right; a later Undo tap re-applies the same targets harmlessly.
+    console.error('[scan undo] store restored', commitId, e);
+  }
+  return true;
 }

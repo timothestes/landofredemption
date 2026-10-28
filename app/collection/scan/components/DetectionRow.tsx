@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { Minus, Plus, X } from 'lucide-react';
+import { ChevronRight, Minus, Plus, X } from 'lucide-react';
 import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { COPY, fill } from '../copy';
 import { rowPrice, type TrayAction, type TrayRow } from '../lib/trayReducer';
@@ -25,12 +25,10 @@ const chipClass =
 const iconButton =
   'flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50';
 
-function checkReason(row: TrayRow): string | null {
+function checkReason(row: TrayRow, set: string): string | null {
+  // With a provisional key the row is added as our guess unless the player changes it: say what the guess is.
+  if (row.key !== null) return fill(COPY.reasonPrintingGuess, { set });
   switch (row.detection.printingReason) {
-    case 'printing_ambiguous': {
-      const legalities = new Set(row.candidates.map(c => c.legality));
-      return legalities.size > 1 ? COPY.reasonPrintingLegality : COPY.reasonPrintingPrice;
-    }
     case 'identity_ambiguous':
       return COPY.reasonNameAmbiguous;
     case 'reference_missing':
@@ -62,15 +60,15 @@ export default function DetectionRow({
   const notFound = unpicked && row.detection.status !== 'check';
   // A player's correction resolves the row; the detection's own status no longer applies.
   const resolved = row.corrected !== 'none';
-  const isCheck = !notFound && !resolved && row.detection.status === 'check';
+  const isCheck = !notFound && !resolved && !row.confirmed && row.detection.status === 'check';
   // Its candidates are different cards, so it keeps the Which card? picker after a pick too.
   const chooseCard = row.detection.status === 'check' && row.detection.chosenKey === null;
   const pickerMode: PickerMode = notFound ? 'search' : chooseCard ? 'candidates' : 'printing';
   const isFuzzy = !notFound && !resolved && !isCheck && row.detection.nameReason === 'fuzzy';
   const isEquivalent = !notFound && !resolved && !isCheck && row.detection.printingReason === 'equivalent';
-  const reason = isCheck ? checkReason(row) : null;
+  const reason = isCheck ? checkReason(row, set) : null;
 
-  const price = card ? rowPrice(row) : catalogPrice;
+  const price = rowPrice(row) ?? catalogPrice;
   const ownedText = owned > 0 ? ` · ${fill(COPY.owned, { n: owned })}` : '';
 
   const pickerLabel = notFound
@@ -85,14 +83,15 @@ export default function DetectionRow({
   } else if (isCheck) {
     lineTwo = (
       <>
-        <span className={chipClass}>{COPY.chipCheck}</span>
-        {reason && <span className="min-w-0 truncate text-muted-foreground">{reason}</span>}
+        <span className={chipClass}>{unpicked ? COPY.chipPick : COPY.chipCheck}</span>
+        {/* Wraps rather than truncates: on a phone the guess itself is what got cut off. */}
+        {reason && <span className="line-clamp-2 min-w-0 text-muted-foreground">{reason}</span>}
       </>
     );
   } else if (isFuzzy) {
     lineTwo = (
       <span className="min-w-0 truncate text-muted-foreground">
-        Read as &ldquo;{readTitle}&rdquo;{ownedText}
+        {fill(COPY.readAs, { title: readTitle })}{ownedText}
       </span>
     );
   } else {
@@ -108,8 +107,27 @@ export default function DetectionRow({
   // Grid at 358 px: [thumb 44][text 194 = 8 + name | price][qty 64 = 8 + 56][remove 48 = 4 + 44].
   // The picker button is laid over the thumb and both text lines; the price link sits above it on
   // line one, and line two spans the name and price columns so it keeps the full text width.
+  if (row.removedAs !== null) {
+    return (
+      <li id={`scan-row-${row.rowId}`} className="flex min-h-11 items-center justify-between gap-2 py-1 pl-[52px] text-sm text-muted-foreground">
+        <span className="min-w-0 truncate">
+          {COPY.removedRow}: <span className="line-through">{unpicked ? readTitle || '—' : name}</span>
+        </span>
+        {editable && (
+          <button
+            type="button"
+            className="min-h-11 shrink-0 px-2 font-medium text-foreground underline-offset-4 hover:underline focus:outline-none"
+            onClick={() => dispatch({ type: 'restoreRow', rowId: row.rowId })}
+          >
+            {COPY.restore}
+          </button>
+        )}
+      </li>
+    );
+  }
+
   return (
-    <li>
+    <li id={`scan-row-${row.rowId}`}>
       <div className="relative grid grid-cols-[44px_minmax(0,1fr)_auto_64px_48px] grid-rows-[auto_auto] py-2">
         <button
           type="button"
@@ -130,7 +148,7 @@ export default function DetectionRow({
         </span>
         <span
           aria-hidden
-          className="pointer-events-none col-start-2 row-start-1 min-w-0 self-end truncate pl-2 text-sm font-medium"
+          className="pointer-events-none col-start-2 row-start-1 line-clamp-2 min-w-0 self-end break-words pl-2 text-sm font-medium leading-snug"
         >
           {unpicked ? readTitle || '—' : name}
           {isFuzzy && <span className="font-normal text-muted-foreground"> · {set}</span>}
@@ -138,7 +156,10 @@ export default function DetectionRow({
         {showPrices && !unpicked && (
           <span className="relative z-10 col-start-3 row-start-1 self-end pl-2 text-right text-sm tabular-nums">
             {price != null ? (
-              `$${price.toFixed(2)}`
+              <>
+                ${price.toFixed(2)}
+                {row.qty > 1 && <span className="text-xs text-muted-foreground"> {COPY.each}</span>}
+              </>
             ) : (
               <a
                 href={`https://www.yourturngames.biz/search?q=${encodeURIComponent(name)}`}
@@ -157,6 +178,7 @@ export default function DetectionRow({
           className="pointer-events-none col-start-2 col-end-4 row-start-2 mt-0.5 flex min-w-0 items-center gap-2 self-start pl-2 text-xs"
         >
           {lineTwo}
+          {editable && <ChevronRight className="-ml-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />}
         </span>
 
         {unpicked ? (
@@ -171,7 +193,7 @@ export default function DetectionRow({
         ) : (
           <button
             type="button"
-            className="col-start-4 row-start-1 row-end-3 min-h-11 w-14 self-center justify-self-end rounded-md text-sm font-medium tabular-nums hover:bg-muted focus:outline-none disabled:pointer-events-none"
+            className="col-start-4 row-start-1 row-end-3 min-h-11 w-14 self-center justify-self-end rounded-md border border-border text-sm font-medium tabular-nums hover:bg-muted focus:outline-none disabled:pointer-events-none disabled:border-transparent"
             aria-label={`${COPY.quantity} ${row.qty}, change`}
             aria-expanded={stepperOpen}
             disabled={!editable}
@@ -218,21 +240,40 @@ export default function DetectionRow({
       )}
 
       {editable && removeOpen && (
-        <div className="flex items-center justify-end gap-2 pb-2">
+        <div className="space-y-1 pb-2">
+          <p className="text-right text-xs text-muted-foreground">{COPY.removePrompt}</p>
+          <div className="flex items-center justify-end gap-1.5">
           <button
             type="button"
-            className="min-h-11 rounded-md border border-border px-3 text-sm hover:bg-muted focus:outline-none"
-            onClick={() => dispatch({ type: 'removeRow', rowId: row.rowId, as: 'wrong' })}
+            className="min-h-11 rounded-md border border-border px-2.5 text-sm hover:bg-muted focus:outline-none"
+            onClick={() => {
+              setRemoveOpen(false);
+              dispatch({ type: 'removeRow', rowId: row.rowId, as: 'wrong' });
+            }}
           >
             {COPY.removeReasonWrong}
           </button>
           <button
             type="button"
-            className="min-h-11 rounded-md border border-border px-3 text-sm hover:bg-muted focus:outline-none"
-            onClick={() => dispatch({ type: 'removeRow', rowId: row.rowId, as: 'unwanted' })}
+            className="min-h-11 rounded-md border border-border px-2.5 text-sm hover:bg-muted focus:outline-none"
+            onClick={() => {
+              setRemoveOpen(false);
+              dispatch({ type: 'removeRow', rowId: row.rowId, as: 'unwanted' });
+            }}
           >
             {COPY.removeReasonUnwanted}
           </button>
+          <button
+            type="button"
+            className="min-h-11 px-2 text-sm font-medium underline-offset-4 hover:underline focus:outline-none"
+            onClick={() => {
+              setRemoveOpen(false);
+              onOpenPicker(row.rowId, pickerMode);
+            }}
+          >
+            {COPY.removeFixInstead}
+          </button>
+          </div>
         </div>
       )}
     </li>

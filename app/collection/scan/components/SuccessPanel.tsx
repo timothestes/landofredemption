@@ -18,8 +18,8 @@ const buttonClass = 'min-h-11 flex-1 px-2 focus:outline-none focus-visible:ring-
 
 export default function SuccessPanel({ committed, onUndone, onScanMore }: Props) {
   const [busy, setBusy] = useState(false);
-  // `blocked`: the server will not undo this commit from here (superseded, or partly undone already).
-  const [note, setNote] = useState<{ text: string; blocked: boolean } | null>(null);
+  // `blocked`: the server will not undo this commit from here; `signIn`: the session expired.
+  const [note, setNote] = useState<{ text: string; blocked: boolean; signIn?: boolean } | null>(null);
 
   const undo = async () => {
     setBusy(true);
@@ -32,7 +32,10 @@ export default function SuccessPanel({ committed, onUndone, onScanMore }: Props)
         return;
       }
       if (res.code === 'superseded') setNote({ text: COPY.undoSuperseded, blocked: true });
-      else if (res.code === 'partial') setNote({ text: COPY.undoPartial, blocked: true });
+      else if (res.code === 'not_found') setNote({ text: COPY.undoUnavailable, blocked: true });
+      // A partial undo recorded what is left; tapping Undo again finishes it.
+      else if (res.code === 'partial') setNote({ text: COPY.undoPartial, blocked: false });
+      else if (res.code === 'unauthorized') setNote({ text: COPY.commitSignedOut, blocked: false, signIn: true });
       else setNote({ text: COPY.undoFailed, blocked: false });
     } catch {
       setNote({ text: COPY.undoFailed, blocked: false });
@@ -49,7 +52,19 @@ export default function SuccessPanel({ committed, onUndone, onScanMore }: Props)
       <div className="space-y-2 py-3">
         <div role="status" className="space-y-1">
           <p className="text-sm font-medium">{success}</p>
-          {note && <p className="text-xs text-muted-foreground">{note.text}</p>}
+          {note && (
+            <p className="text-xs text-muted-foreground">
+              {note.text}
+              {note.signIn && (
+                <>
+                  {' '}
+                  <Link href="/sign-in?redirectTo=/collection/scan" className="font-medium text-foreground underline underline-offset-4 focus:outline-none">
+                    {COPY.signIn}
+                  </Link>
+                </>
+              )}
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <Button

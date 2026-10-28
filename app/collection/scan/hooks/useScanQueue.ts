@@ -8,6 +8,8 @@ import type { ScanErrorBody, ScanResponse } from '../types';
 
 const MAX_CONCURRENT = 2;
 const MAX_BUSY_RETRIES = 2;
+// Just past the route's maxDuration (90 s): a stalled upload becomes a Retry instead of an endless spinner.
+const REQUEST_TIMEOUT_MS = 100_000;
 
 interface Entry {
   file: File;
@@ -59,7 +61,7 @@ export function useScanQueue(dispatch: React.Dispatch<TrayAction>) {
           e.blob = await prepareImage(e.file);
         } catch (err) {
           if (err instanceof PrepareError) {
-            fail(id, err.kind === 'heif' ? 415 : 413, { code: err.kind === 'heif' ? 'undecodable' : 'too_large' });
+            fail(id, err.kind === 'heif' ? 415 : 413, { code: err.kind });
             return;
           }
           throw err;
@@ -71,11 +73,15 @@ export function useScanQueue(dispatch: React.Dispatch<TrayAction>) {
       const fd = new FormData();
       fd.append('photo', e.blob, 'photo.jpg');
       let res: Response;
+      const ctrl = new AbortController();
+      const timeout = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
       try {
-        res = await fetch('/api/scan', { method: 'POST', body: fd });
+        res = await fetch('/api/scan', { method: 'POST', body: fd, signal: ctrl.signal });
       } catch {
-        fail(id, 0, { code: 'network' });
+        if (entries.current.has(id)) fail(id, 0, { code: ctrl.signal.aborted ? 'timeout' : 'network' });
         return;
+      } finally {
+        clearTimeout(timeout);
       }
       if (!entries.current.has(id)) return;
       if (res.ok) {
@@ -105,7 +111,15 @@ export function useScanQueue(dispatch: React.Dispatch<TrayAction>) {
         return;
       }
       const ra = retryHeader === null || retryHeader.trim() === '' ? undefined : Number(retryHeader);
-      fail(id, res.status, body, Number.isFinite(ra) ? ra : undefined);
+      const retryAfter = Number.isFinite(ra) ? ra : undefined;
+      fail(id, res.status, body, retryAfter);
+      // Over a scan limit, every photo still waiting would upload only to be refused: hold them all
+      // with the same message (each keeps its file, so Retry works once the window reopens).
+      if (view.kind === 'cap_10m' || view.kind === 'cap_24h' || view.kind === 'cap_global' || view.kind === 'credit_out') {
+        const held = waiting.current;
+        waiting.current = [];
+        for (const w of held) fail(w, res.status, body, retryAfter);
+      }
     } catch {
       fail(id, 0, { code: 'internal' });
     } finally {
@@ -122,6 +136,17 @@ export function useScanQueue(dispatch: React.Dispatch<TrayAction>) {
       void run(id);
     }
   };
+
+  // Leaving while a photo is uploading drops its result, though the read still counts toward the limit.
+  useEffect(() => {
+    const warn = (ev: BeforeUnloadEvent) => {
+      if (active.current === 0 && waiting.current.length === 0) return;
+      ev.preventDefault();
+      ev.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, []);
 
   useEffect(() => {
     const sync = () => {

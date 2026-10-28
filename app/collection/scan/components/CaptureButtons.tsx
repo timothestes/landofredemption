@@ -10,16 +10,25 @@ interface Props {
   /** The Choose-from-photos input, so a failed photo's "Choose another" can re-open it. */
   chooseInputRef: RefObject<HTMLInputElement | null>;
   disabled?: boolean;
+  /** False while files must not join the tray (committing, or a picker left open across a commit). */
+  accepting: boolean;
+  /** Runs before the file picker opens: after an add, starts a new batch. */
+  onBeforeOpen?: () => void;
+  hint?: string | null;
+  /** The tips are for a first photo; once the tray has photos they push the review list below the fold. */
+  showTips: boolean;
 }
 
-export default function CaptureButtons({ addFiles, chooseInputRef, disabled = false }: Props) {
+export default function CaptureButtons({
+  addFiles, chooseInputRef, disabled = false, accepting, onBeforeOpen, hint, showTips,
+}: Props) {
   const cameraRef = useRef<HTMLInputElement>(null);
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     const input = e.currentTarget;
     const files = input.files ? Array.from(input.files) : [];
     // A picker opened before a commit can return after it; those photos must not join a committed tray.
-    if (files.length > 0 && !disabled) addFiles(files);
+    if (files.length > 0 && accepting) addFiles(files);
     input.value = '';
   };
 
@@ -30,7 +39,10 @@ export default function CaptureButtons({ addFiles, chooseInputRef, disabled = fa
           type="button"
           className="min-h-11 w-full focus:outline-none sm:flex-1"
           disabled={disabled}
-          onClick={() => cameraRef.current?.click()}
+          onClick={() => {
+            onBeforeOpen?.();
+            cameraRef.current?.click();
+          }}
         >
           <Camera className="mr-2 h-4 w-4" aria-hidden />
           {COPY.capturePrimary}
@@ -40,7 +52,10 @@ export default function CaptureButtons({ addFiles, chooseInputRef, disabled = fa
           variant="outline"
           className="min-h-11 w-full focus:outline-none sm:flex-1"
           disabled={disabled}
-          onClick={() => chooseInputRef.current?.click()}
+          onClick={() => {
+            onBeforeOpen?.();
+            chooseInputRef.current?.click();
+          }}
         >
           <Images className="mr-2 h-4 w-4" aria-hidden />
           {COPY.captureSecondary}
@@ -66,10 +81,13 @@ export default function CaptureButtons({ addFiles, chooseInputRef, disabled = fa
         aria-hidden
         onChange={onChange}
       />
-      <div className="space-y-1 text-xs text-muted-foreground">
-        <p>{COPY.batchTip}</p>
-        <p>{COPY.binderTip}</p>
-      </div>
+      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      {showTips && (
+        <div className="space-y-1 text-xs text-muted-foreground">
+          <p>{COPY.batchTip}</p>
+          <p>{COPY.binderTip}</p>
+        </div>
+      )}
     </div>
   );
 }
