@@ -3,7 +3,7 @@ import TopNav from '@/components/top-nav';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/utils/supabase/server';
 import { getInviteGameStatus } from '@/app/play/actions';
-import { roundNames } from '@/lib/bracket';
+import { shapeOf, stageRoundName } from '@/lib/bracket';
 import type { BracketEntry } from '@/lib/bracket/types';
 import { cn } from '@/lib/utils';
 import { loadBracketAction } from '../../../actions';
@@ -111,7 +111,7 @@ export default async function JoinBracketGamePage({ params }: { params: Params }
   if (liveStatus && liveStatus !== 'waiting') return <Notice text="This game is already full." bracketId={bracket.id} />;
   const hostName = host?.username || 'A player';
   const displayName = profile?.username || user.user_metadata?.display_name || user.email?.split('@')[0] || 'Player';
-  const roundName = roundNames(bracket.size)[match.round - 1] ?? 'bracket';
+  const roundName = stageRoundName({ ...shapeOf(matches), size: bracket.size }, match.stage, match.round);
 
   const bracketParams: BracketGameParams = {
     gameId: game.id,

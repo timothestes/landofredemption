@@ -15,8 +15,12 @@ export interface BracketEntry {
   keyCards: string[];
 }
 
+/** Which part of the bracket a match is in. Single elimination has only 'winners'. */
+export type Stage = 'winners' | 'losers' | 'final';
+
 export interface BracketMatch {
   id: string;
+  stage: Stage;
   round: number;
   position: number;
   entryAId: string | null;
@@ -66,6 +70,12 @@ export interface SeriesState {
 }
 
 export type Slot = { position: number; side: 'a' | 'b' };
+
+/** A match slot anywhere in the bracket. */
+export type Target = Slot & { stage: Stage; round: number };
+
+/** What the match-routing rules need to know about a bracket. */
+export interface Shape { size: BracketSize; losers: boolean }
 
 /** A `match-winner` update with `winnerEntryId: ''` means "clear". */
 export type RowUpdate =

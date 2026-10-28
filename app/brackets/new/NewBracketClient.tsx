@@ -7,7 +7,7 @@ import { Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { buildBracket, sizeFor } from '@/lib/bracket';
+import { buildBracket, MIN_LOSERS_BRACKET_DECKS, sizeFor } from '@/lib/bracket';
 import type { BestOf, Bracket, BracketFormat, BracketMatch } from '@/lib/bracket/types';
 import { getFormatDef } from '@/lib/formats';
 import { DeckPickerContent } from '@/app/play/components/DeckPickerContent';
@@ -24,6 +24,9 @@ const LABEL = 'text-[11px] font-medium uppercase tracking-[0.1em] text-muted-for
 const FORMATS: BracketFormat[] = ['T1', 'T2', 'Paragon'];
 const SERIES: { value: BestOf; label: string }[] = [
   { value: 1, label: 'Bo1' }, { value: 3, label: 'Bo3' }, { value: 5, label: 'Bo5' },
+];
+const LOSERS: { value: 'off' | 'on'; label: string }[] = [
+  { value: 'off', label: 'Off' }, { value: 'on', label: 'On' },
 ];
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -80,7 +83,7 @@ export function NewBracketClient({ initialDecks, missingCount = 0, defaultName, 
   /** Computed on the server so the hydrating client renders the same text. */
   defaultName: string;
   /** Set when rebuilding an existing bracket (no game played yet): saves in place. */
-  editing?: { id: string; format: BracketFormat; bestOf: BestOf };
+  editing?: { id: string; format: BracketFormat; bestOf: BestOf; losersBracket: boolean };
 }) {
   const router = useRouter();
   const [initial] = useState(() => {
@@ -96,6 +99,7 @@ export function NewBracketClient({ initialDecks, missingCount = 0, defaultName, 
   const [name, setName] = useState(defaultName);
   const [format, setFormat] = useState<BracketFormat>(initial.format);
   const [bestOf, setBestOf] = useState<BestOf>(editing?.bestOf ?? 3);
+  const [losersBracket, setLosersBracket] = useState(editing?.losersBracket ?? false);
   const [picked, setPicked] = useState<DraftDeck[]>(initial.picked);
   const [note, setNote] = useState<{ text: string; key: number } | null>(
     initial.note ? { text: initial.note, key: 0 } : null,
@@ -130,21 +134,22 @@ export function NewBracketClient({ initialDecks, missingCount = 0, defaultName, 
     const ids = () => `draft-match-${n++}`;
     const matches: BracketMatch[] = entries.length >= 2
       ? buildBracket(entries, ids)
-      : [{ id: ids(), round: 1, position: 0, entryAId: entries[0]?.id ?? null, entryBId: null, winnerEntryId: null, isBye: false }];
+      : [{ id: ids(), stage: 'winners', round: 1, position: 0, entryAId: entries[0]?.id ?? null, entryBId: null, winnerEntryId: null, isBye: false }];
     const bracket: Bracket = { id: 'draft', name, format, size, bestOf, status: 'active', championEntryId: null };
     const placeholder = entries.length <= size / 2 ? 'Tap a deck' : 'Bye';
-    return buildMatchViews({ bracket, entries, matches, games: [] })[0].map(v => ({
+    return buildMatchViews({ bracket, entries, matches, games: [] }).winners[0].map(v => ({
       ...v,
       placeholderA: v.a ? '' : placeholder,
       placeholderB: v.b ? '' : placeholder,
     }));
   }, [entries, name, format, bestOf]);
 
-  const canStart = picked.length >= 2 && !pending;
+  const minDecks = losersBracket ? MIN_LOSERS_BRACKET_DECKS : 2;
+  const canStart = picked.length >= minDecks && !pending;
   const start = () => {
     setError(null);
     startTransition(async () => {
-      const input = { name, format, bestOf, deckIds: picked.map(d => d.id) };
+      const input = { name, format, bestOf, losersBracket, deckIds: picked.map(d => d.id) };
       const res = editing
         ? await updateBracketAction({ id: editing.id, ...input })
         : await createBracketAction(input);
@@ -182,7 +187,19 @@ export function NewBracketClient({ initialDecks, missingCount = 0, defaultName, 
         </div>
         <ChipRow<BracketFormat> label="Format" options={FORMATS.map(f => ({ value: f, label: f }))} value={format} onChange={changeFormat} />
         <ChipRow<BestOf> label="Series" options={SERIES} value={bestOf} onChange={setBestOf} />
+        <ChipRow<'off' | 'on'>
+          label="Losers bracket"
+          options={LOSERS}
+          value={losersBracket ? 'on' : 'off'}
+          onChange={v => setLosersBracket(v === 'on')}
+        />
       </div>
+      {losersBracket && (
+        <p className="mt-2 text-sm text-muted-foreground">
+          A deck is out after its second loss. The winners of both sides meet in a grand final.
+          {picked.length < minDecks && ` Needs at least ${minDecks} decks.`}
+        </p>
+      )}
       {note && <p key={note.key} role="status" className="mt-3 text-sm text-muted-foreground">{note.text}</p>}
 
       {/* Phone: sticky summary bar under the site header. */}

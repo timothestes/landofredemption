@@ -53,15 +53,15 @@ const threeDeckWon = () => {
 describe('buildMatchViews', () => {
   it('fills placeholders and labels', () => {
     const views = buildMatchViews(fourDeckBo3());
-    expect(views[0][0].label).toBe('SF1');
-    expect(views[1][0].placeholderA).toBe('Winner of SF1');
-    expect(views[1][0].placeholderB).toBe('Winner of SF2');
-    expect(views[0][0].state).toBe('ready');
+    expect(views.winners[0][0].label).toBe('SF1');
+    expect(views.winners[1][0].placeholderA).toBe('Winner of SF1');
+    expect(views.winners[1][0].placeholderB).toBe('Winner of SF2');
+    expect(views.winners[0][0].state).toBe('ready');
   });
   it('marks a bye block', () => {
     const views = buildMatchViews(threeDeck());
-    expect(views[0][1].state).toBe('bye');
-    expect(views[0][1].placeholderB).toBe('Bye');
+    expect(views.winners[0][1].state).toBe('bye');
+    expect(views.winners[0][1].placeholderB).toBe('Bye');
   });
 });
 

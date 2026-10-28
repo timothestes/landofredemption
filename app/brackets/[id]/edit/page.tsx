@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import TopNav from '@/components/top-nav';
 import { createClient } from '@/utils/supabase/server';
-import { canEditBracket } from '@/lib/bracket';
+import { canEditBracket, hasLosersBracket } from '@/lib/bracket';
 import { loadBracketAction } from '../../actions';
 import { loadDraftDecks } from '../../lib/loadDraftDecks';
 import { NewBracketClient } from '../../new/NewBracketClient';
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Edit Gauntlet',
-  description: 'Change the decks, format or series of a bracket before any result is recorded',
+  description: 'Change the decks, format, series or losers bracket of a bracket before any result is recorded',
 };
 
 // The setup screen again, pre-filled. Only the owner may open it, and only
@@ -23,7 +23,7 @@ export default async function EditBracketPage({ params }: { params: Promise<{ id
 
   const res = await loadBracketAction(id);
   if (res.ok === false) notFound();
-  const { isOwner, bracket, entries, games } = res.data;
+  const { isOwner, bracket, entries, matches, games } = res.data;
   if (!isOwner || !canEditBracket(games)) redirect(`/brackets/${id}`);
 
   const ids = [...entries].sort((a, b) => a.seed - b.seed).flatMap(e => (e.deckId ? [e.deckId] : []));
@@ -33,7 +33,7 @@ export default async function EditBracketPage({ params }: { params: Promise<{ id
     <>
       <TopNav />
       <NewBracketClient
-        editing={{ id: bracket.id, format: bracket.format, bestOf: bracket.bestOf }}
+        editing={{ id: bracket.id, format: bracket.format, bestOf: bracket.bestOf, losersBracket: hasLosersBracket(matches) }}
         initialDecks={decks}
         missingCount={missing + (entries.length - ids.length)}
         defaultName={bracket.name}

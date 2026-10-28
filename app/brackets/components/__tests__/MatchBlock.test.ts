@@ -11,7 +11,7 @@ const entry = (id: string, deckName: string): BracketEntry => ({
 });
 
 const doneView: MatchView = {
-  match: { id: 'm1', round: 1, position: 0, entryAId: 'a', entryBId: 'b', winnerEntryId: 'a', isBye: false },
+  match: { id: 'm1', stage: 'winners', round: 1, position: 0, entryAId: 'a', entryBId: 'b', winnerEntryId: 'a', isBye: false },
   label: 'QF1',
   state: 'done',
   series: { winsA: 2, winsB: 0, needed: 2, decided: true, winner: 'a', nextGameNumber: 3, inProgress: null },
@@ -20,6 +20,7 @@ const doneView: MatchView = {
   placeholderA: '',
   placeholderB: '',
   canPlay: true,
+  empty: false,
 };
 
 const readyView: MatchView = {

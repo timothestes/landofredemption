@@ -67,7 +67,7 @@ describe('computeStandings', () => {
     const rows = computeStandings(fourDeckComplete());
     expect(rows.map(r => r.entry.id)).toEqual(['e1', 'e2', 'e3', 'e4']);
     expect(rows.map(r => r.finishLabel)).toEqual(['Champion', 'Runner-up', 'Semifinalist', 'Semifinalist']);
-    expect(rows[2].finish).toEqual({ kind: 'out', place: 3, round: 1 });
+    expect(rows[2].finish).toEqual({ kind: 'out', place: 3, round: 1, stage: 'winners' });
   });
 
   it('totals games, series, and souls from the deck\'s own side', () => {

@@ -7,6 +7,7 @@ import type {
   BracketMatch,
   BracketSize,
   GameMode,
+  Stage,
 } from '@/lib/bracket/types';
 
 export interface DeckBracketRow {
@@ -39,6 +40,7 @@ export interface DeckBracketEntryRow {
 export interface DeckBracketMatchRow {
   id: string;
   bracket_id: string;
+  stage: Stage;
   round: number;
   position: number;
   entry_a_id: string | null;
@@ -95,6 +97,7 @@ export const toEntry = (r: DeckBracketEntryRow): BracketEntry => ({
 
 export const toMatch = (r: DeckBracketMatchRow): BracketMatch => ({
   id: r.id,
+  stage: r.stage,
   round: r.round,
   position: r.position,
   entryAId: r.entry_a_id,

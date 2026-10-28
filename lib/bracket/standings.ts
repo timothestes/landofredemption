@@ -1,5 +1,7 @@
-import type { Bracket, BracketEntry, BracketGame, BracketMatch } from './types';
-import { matchLabel, roundNames, seriesState } from './index';
+import type { Bracket, BracketEntry, BracketGame, BracketMatch, Shape, Stage } from './types';
+import {
+  byPlayOrder, findMatch, labelForMatch, loserTarget, roundNames, seriesState, shapeOf, winnerTarget,
+} from './index';
 
 /**
  * What a bracket's results say, deck by deck.
@@ -7,7 +9,9 @@ import { matchLabel, roundNames, seriesState } from './index';
  * Pure functions over the loaded rows, so the breakdown page can be tested
  * without a database. Single elimination gives tiers rather than places —
  * both semifinal losers finish equal — so a finish is the round a deck went
- * out in, and `place` is the tier's rank (1, 2, 3, 5, 9) for sorting.
+ * out in, and `place` is the tier's rank (1, 2, 3, 5, 9) for sorting. With a
+ * losers bracket a deck is out only after its second loss, and the losers
+ * rounds give 3rd, 4th, then tiers again.
  */
 
 export interface StandingsInput {
@@ -19,7 +23,7 @@ export interface StandingsInput {
 
 export type Finish =
   | { kind: 'champion'; place: 1 }
-  | { kind: 'out'; place: number; round: number }
+  | { kind: 'out'; place: number; round: number; stage: Stage }
   /** Still in: `reached` is the highest round the deck has a seat in. */
   | { kind: 'alive'; reached: number };
 
@@ -75,9 +79,37 @@ export function placeForRound(size: number, round: number): number {
   return size / 2 ** round + 1;
 }
 
+/**
+ * Where a loss in each match puts a deck when a losers bracket is played:
+ * the grand final's loser is 2nd, then each losers round's losers finish
+ * behind everyone still in after it. Byes eliminate no one. A winners-bracket
+ * loss is not an elimination; its worst case is the losers match it drops into.
+ */
+function losersBracketPlaces(matches: BracketMatch[]): Map<string, number> {
+  const shape = shapeOf(matches);
+  const places = new Map<string, number>();
+  let ahead = 1; // the champion
+  const final = matches.find(m => m.stage === 'final');
+  if (final) places.set(final.id, ++ahead);
+  const rounds = [...new Set(matches.filter(m => m.stage === 'losers').map(m => m.round))].sort((x, y) => y - x);
+  for (const round of rounds) {
+    const inRound = matches.filter(m => m.stage === 'losers' && m.round === round);
+    for (const m of inRound) places.set(m.id, ahead + 1);
+    ahead += inRound.filter(m => !m.isBye).length;
+  }
+  for (const m of matches.filter(x => x.stage === 'winners')) {
+    const t = loserTarget(shape, m);
+    const drop = t && findMatch(matches, t);
+    if (drop) places.set(m.id, places.get(drop.id)!);
+  }
+  return places;
+}
+
 export function finishLabel(finish: Finish, size: Bracket['size']): string {
   if (finish.kind === 'champion') return 'Champion';
   if (finish.kind === 'alive') return 'Still in';
+  if (finish.stage === 'final') return 'Runner-up';
+  if (finish.stage === 'losers') return finish.place === 3 ? 'Third' : finish.place === 4 ? 'Fourth' : `Losers round ${finish.round}`;
   const name = roundNames(size)[finish.round - 1];
   if (name === 'Final') return 'Runner-up';
   if (name === 'Semifinals') return 'Semifinalist';
@@ -89,13 +121,17 @@ const soulsDiff = (row: StandingRow) => (row.souls ? row.souls.rescued - row.sou
 
 export function computeStandings(input: StandingsInput): StandingRow[] {
   const { bracket, entries, matches, games } = input;
-  const lastRound = roundNames(bracket.size).length;
+  const shape: Shape = { ...shapeOf(matches), size: bracket.size };
   const byId = new Map(entries.map(e => [e.id, e]));
+  const doublePlaces = shape.losers ? losersBracketPlaces(matches) : null;
+  /** The place a loss in this match means, at worst. */
+  const placeFor = (m: BracketMatch) => doublePlaces?.get(m.id) ?? placeForRound(bracket.size, m.round);
+  const worstCase = new Map<string, number>();
 
   const rows = entries.map((entry): StandingRow => {
     const seated = matches
       .filter(m => m.entryAId === entry.id || m.entryBId === entry.id)
-      .sort((x, y) => x.round - y.round);
+      .sort(byPlayOrder);
 
     const road: SeriesLine[] = [];
     for (const m of seated) {
@@ -119,7 +155,7 @@ export function computeStandings(input: StandingsInput): StandingRow[] {
         }));
       road.push({
         matchId: m.id,
-        label: matchLabel(bracket.size, m.round, m.position),
+        label: labelForMatch(shape, m),
         round: m.round,
         opponentId,
         opponentName: byId.get(opponentId)?.deckName ?? 'Unknown deck',
@@ -131,11 +167,17 @@ export function computeStandings(input: StandingsInput): StandingRow[] {
     }
 
     let finish: Finish;
-    const wonFinal = seated.some(m => m.round === lastRound && m.winnerEntryId === entry.id);
-    const lost = seated.find(m => !m.isBye && m.winnerEntryId !== null && m.winnerEntryId !== entry.id);
+    const wonFinal = seated.some(m => winnerTarget(shape, m) === 'champion' && m.winnerEntryId === entry.id);
+    // A winners-bracket loss with a losers bracket behind it only drops the deck down.
+    const lost = seated.find(m => !m.isBye && m.winnerEntryId !== null && m.winnerEntryId !== entry.id
+      && !loserTarget(shape, m));
     if (bracket.championEntryId === entry.id || wonFinal) finish = { kind: 'champion', place: 1 };
-    else if (lost) finish = { kind: 'out', place: placeForRound(bracket.size, lost.round), round: lost.round };
-    else finish = { kind: 'alive', reached: seated.length ? seated[seated.length - 1].round : 1 };
+    else if (lost) finish = { kind: 'out', place: placeFor(lost), round: lost.round, stage: lost.stage };
+    else {
+      const current = seated.at(-1);
+      finish = { kind: 'alive', reached: current?.round ?? 1 };
+      worstCase.set(entry.id, current ? placeFor(current) : placeForRound(bracket.size, 1));
+    }
 
     const played = road.flatMap(r => r.games);
     const scored = played.filter(g => g.souls !== null);
@@ -160,10 +202,10 @@ export function computeStandings(input: StandingsInput): StandingRow[] {
   // place, a live one by the tier it would drop to if it lost its next series.
   // Matches can be played in any order, so a semifinal loser (3rd at worst)
   // outranks four quarterfinalists who have not played yet (5th at worst).
-  const guaranteed = (f: Finish) =>
-    f.kind === 'champion' ? 1 : f.kind === 'out' ? f.place : placeForRound(bracket.size, f.reached);
+  const guaranteed = (row: StandingRow) =>
+    row.finish.kind === 'champion' ? 1 : row.finish.kind === 'out' ? row.finish.place : worstCase.get(row.entry.id)!;
   return rows.sort((a, b) => (
-    guaranteed(a.finish) - guaranteed(b.finish)
+    guaranteed(a) - guaranteed(b)
     || Number(a.finish.kind === 'out') - Number(b.finish.kind === 'out')
     || b.games.won - a.games.won
     || a.games.lost - b.games.lost
@@ -197,7 +239,8 @@ export function computeMoments(input: StandingsInput): Moment[] {
   const bestOf = bracket.bestOf;
   const name = (id: string | null) => (id && entries.find(e => e.id === id)?.deckName) || 'Unknown deck';
   const matchById = new Map(matches.map(m => [m.id, m]));
-  const label = (m: BracketMatch) => matchLabel(bracket.size, m.round, m.position);
+  const shape: Shape = { ...shapeOf(matches), size: bracket.size };
+  const label = (m: BracketMatch) => labelForMatch(shape, m);
   const where = (m: BracketMatch, g: BracketGame) => (bestOf === 1 ? label(m) : `${label(m)}, game ${g.gameNumber}`);
 
   const decided = games
@@ -205,7 +248,7 @@ export function computeMoments(input: StandingsInput): Moment[] {
     .sort((x, y) => {
       const a = matchById.get(x.matchId)!;
       const b = matchById.get(y.matchId)!;
-      return a.round - b.round || a.position - b.position || x.gameNumber - y.gameNumber;
+      return byPlayOrder(a, b) || x.gameNumber - y.gameNumber;
     });
 
   const scored = decided.flatMap(g => {
@@ -233,7 +276,7 @@ export function computeMoments(input: StandingsInput): Moment[] {
   if (bestOf > 1) {
     const series = matches
       .filter(m => !m.isBye && m.winnerEntryId !== null && m.entryAId && m.entryBId)
-      .sort((x, y) => x.round - y.round || x.position - y.position);
+      .sort(byPlayOrder);
     for (const m of series) {
       const own = decided.filter(g => g.matchId === m.id);
       const s = seriesState(games, m, bestOf);

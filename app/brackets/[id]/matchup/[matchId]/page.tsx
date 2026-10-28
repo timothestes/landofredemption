@@ -2,7 +2,7 @@ import { cache } from 'react';
 import { notFound, redirect } from 'next/navigation';
 import TopNav from '@/components/top-nav';
 import { createClient } from '@/utils/supabase/server';
-import { matchLabel, seriesState } from '@/lib/bracket';
+import { labelForMatch, seriesState, shapeOf } from '@/lib/bracket';
 import type { BracketEntry, BracketMatch } from '@/lib/bracket/types';
 import { CARD_BY_FULL_KEY } from '@/app/decklist/card-search/data/cardIndex';
 import { enrichDeckCards } from '@/app/decklist/[deckId]/enrichDeckCards';
@@ -73,7 +73,7 @@ export default async function MatchupPage({ params }: { params: Params }) {
       <TopNav />
       <MatchupClient
         bracket={{ id: bracket.id, name: bracket.name, bestOf: bracket.bestOf }}
-        label={matchLabel(bracket.size, match.round, match.position)}
+        label={labelForMatch({ ...shapeOf(matches), size: bracket.size }, match)}
         score={score}
         winnerName={winnerName}
         a={toSide(a, deckA)}
