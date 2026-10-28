@@ -63,7 +63,9 @@ export default function DetectionRow({
   // A player's correction resolves the row; the detection's own status no longer applies.
   const resolved = row.corrected !== 'none';
   const isCheck = !notFound && !resolved && row.detection.status === 'check';
-  const pickerMode: PickerMode = notFound ? 'search' : unpicked ? 'candidates' : 'printing';
+  // Its candidates are different cards, so it keeps the Which card? picker after a pick too.
+  const chooseCard = row.detection.status === 'check' && row.detection.chosenKey === null;
+  const pickerMode: PickerMode = notFound ? 'search' : chooseCard ? 'candidates' : 'printing';
   const isFuzzy = !notFound && !resolved && !isCheck && row.detection.nameReason === 'fuzzy';
   const isEquivalent = !notFound && !resolved && !isCheck && row.detection.printingReason === 'equivalent';
   const reason = isCheck ? checkReason(row) : null;
@@ -73,8 +75,8 @@ export default function DetectionRow({
 
   const pickerLabel = notFound
     ? `${COPY.findCard}: ${readTitle}`
-    : unpicked
-      ? `${COPY.pickerNameHeader} ${readTitle}`
+    : chooseCard
+      ? `${COPY.pickerNameHeader} ${unpicked ? readTitle : name}`
       : `Change printing: ${name}, ${set}`;
 
   let lineTwo: React.ReactNode;
