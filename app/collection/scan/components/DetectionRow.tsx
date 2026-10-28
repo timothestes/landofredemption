@@ -84,7 +84,8 @@ export default function DetectionRow({
     lineTwo = (
       <>
         <span className={chipClass}>{unpicked ? COPY.chipPick : COPY.chipCheck}</span>
-        {reason && <span className="min-w-0 truncate text-muted-foreground">{reason}</span>}
+        {/* Wraps rather than truncates: on a phone the guess itself is what got cut off. */}
+        {reason && <span className="line-clamp-2 min-w-0 text-muted-foreground">{reason}</span>}
       </>
     );
   } else if (isFuzzy) {
@@ -177,7 +178,7 @@ export default function DetectionRow({
           className="pointer-events-none col-start-2 col-end-4 row-start-2 mt-0.5 flex min-w-0 items-center gap-2 self-start pl-2 text-xs"
         >
           {lineTwo}
-          {editable && <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />}
+          {editable && <ChevronRight className="-ml-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />}
         </span>
 
         {unpicked ? (
@@ -239,19 +240,26 @@ export default function DetectionRow({
       )}
 
       {editable && removeOpen && (
-        <div className="flex flex-wrap items-center justify-end gap-2 pb-2">
-          <span className="text-xs text-muted-foreground">{COPY.removePrompt}</span>
+        <div className="space-y-1 pb-2">
+          <p className="text-right text-xs text-muted-foreground">{COPY.removePrompt}</p>
+          <div className="flex items-center justify-end gap-1.5">
           <button
             type="button"
-            className="min-h-11 rounded-md border border-border px-3 text-sm hover:bg-muted focus:outline-none"
-            onClick={() => dispatch({ type: 'removeRow', rowId: row.rowId, as: 'wrong' })}
+            className="min-h-11 rounded-md border border-border px-2.5 text-sm hover:bg-muted focus:outline-none"
+            onClick={() => {
+              setRemoveOpen(false);
+              dispatch({ type: 'removeRow', rowId: row.rowId, as: 'wrong' });
+            }}
           >
             {COPY.removeReasonWrong}
           </button>
           <button
             type="button"
-            className="min-h-11 rounded-md border border-border px-3 text-sm hover:bg-muted focus:outline-none"
-            onClick={() => dispatch({ type: 'removeRow', rowId: row.rowId, as: 'unwanted' })}
+            className="min-h-11 rounded-md border border-border px-2.5 text-sm hover:bg-muted focus:outline-none"
+            onClick={() => {
+              setRemoveOpen(false);
+              dispatch({ type: 'removeRow', rowId: row.rowId, as: 'unwanted' });
+            }}
           >
             {COPY.removeReasonUnwanted}
           </button>
@@ -265,6 +273,7 @@ export default function DetectionRow({
           >
             {COPY.removeFixInstead}
           </button>
+          </div>
         </div>
       )}
     </li>

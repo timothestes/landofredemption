@@ -48,7 +48,7 @@ export const COPY: Record<string, string> = {
   chipPick: 'Pick card',
   chipNotFound: 'Not found',
   // Printing guesses name the guess, so the player knows what gets added if they skip it.
-  reasonPrintingGuess: 'Our guess: {set}. Tap to check',
+  reasonPrintingGuess: 'Our guess: {set}',
   reasonNameAmbiguous: 'Two cards share this name. Tap to pick',
   reasonScripture: "Couldn't read the verse. Tap to pick",
   reasonLostSouls: 'Several Lost Souls share this verse. Tap to pick',

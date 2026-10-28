@@ -100,7 +100,11 @@ export default function CommitBar({ state, dispatch, showPrices, onShowPrices, p
 
   const showMe = () => {
     const target = state.rows.find(r => needsCheck(r) || (r.removedAs === null && r.key === null));
-    document.getElementById(`scan-row-${target?.rowId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const el = document.getElementById(`scan-row-${target?.rowId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // A brief amber wash marks which row was meant once it lands mid-screen.
+    el.animate?.([{ backgroundColor: 'rgb(245 158 11 / 0.2)' }, { backgroundColor: 'transparent' }], { duration: 1800, delay: 300 });
   };
 
   const warnings: string[] = [];

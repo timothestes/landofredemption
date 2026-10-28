@@ -18,8 +18,11 @@ describe('searchPrintings', () => {
   });
 
   it('a misread title still finds the card, flagged as a close match', () => {
-    const { hits, close } = searchPrintings('Captve Preist');
-    expect(close).toBe(true);
-    expect(hits.some(h => /captive/i.test(h.name))).toBe(true);
+    for (const misread of ['Captve Preist', 'Captve Priest', 'Captive Preist']) {
+      const { hits, close } = searchPrintings(misread);
+      expect(close).toBe(true);
+      // Ranked first, not just somewhere below the fold: it matches both words.
+      expect(hits[0].name).toMatch(/captive priest/i);
+    }
   });
 });
