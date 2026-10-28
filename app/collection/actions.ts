@@ -1,6 +1,19 @@
 "use server";
 
 import { createClient } from "../../utils/supabase/server";
+import { findCard } from "@/lib/cards/lookup";
+import { getSupabaseAdmin } from "@/lib/pricing/supabase-admin";
+import { pgrestInList } from "@/lib/pricing/helpers";
+import type { ClientOutcome } from "./scan/lib/outcomes";
+import {
+  runCommit,
+  runUndo,
+  validateCommitInput,
+  splitKey,
+  UUID,
+  type CommitResult,
+  type UndoResult,
+} from "./scan/lib/commitCore";
 
 export interface CollectionCardRow {
   card_name: string;
@@ -219,4 +232,209 @@ export async function getOwnedQuantitiesAction(): Promise<{
     console.error("Error in getOwnedQuantitiesAction:", error);
     return { success: false, owned: {} };
   }
+}
+
+// --- Card scanner commit and undo ---
+// Logic lives in ./scan/lib/commitCore.ts. scan_events/scan_commits are
+// SELECT-only for authenticated, so writes go through the service-role client,
+// always filtered by the verified user id; collection_cards uses the user's client.
+
+function isKnownCardKey(k: string): boolean {
+  const [n, s, i] = k.split("|");
+  const c = findCard(n, s, i);
+  return !!c && `${c.name}|${c.set}|${c.imgFile}` === k;
+}
+
+export async function commitScanAction(
+  commitId: string,
+  rows: { key: string; qty: number }[],
+  outcomesByScanId: Record<string, ClientOutcome[]>
+): Promise<CommitResult> {
+  const { user } = await getAuthedClient();
+  if (!user) return { ok: false, code: "unauthorized" };
+  const payload = validateCommitInput(commitId, { rows, outcomesByScanId }, isKnownCardKey);
+  if (!payload) return { ok: false, code: "bad_request" };
+
+  const admin = getSupabaseAdmin();
+  const userId = user.id;
+  return runCommit(
+    {
+      userId,
+      loadScans: async (ids) => {
+        if (ids.length === 0) return [];
+        const { data, error } = await admin
+          .from("scan_events")
+          .select("id, user_id, status, detections, commit_id")
+          .eq("user_id", userId)
+          .in("id", ids);
+        if (error) throw error;
+        return data ?? [];
+      },
+      insertCommit: async (row) => {
+        // INSERT ... ON CONFLICT (commit_id) DO NOTHING RETURNING commit_id
+        const { data, error } = await admin
+          .from("scan_commits")
+          .upsert(row, { onConflict: "commit_id", ignoreDuplicates: true })
+          .select("commit_id");
+        if (error) throw error;
+        return (data ?? []).length === 1;
+      },
+      getCommit: async (id) => {
+        // Not filtered by user: runCommit tells a foreign id (bad_request) from in-progress.
+        const { data, error } = await admin
+          .from("scan_commits")
+          .select("commit_id, user_id, created_at, deltas, result")
+          .eq("commit_id", id)
+          .maybeSingle();
+        if (error) throw error;
+        return data;
+      },
+      deleteCommit: async (id) => {
+        const { error } = await admin
+          .from("scan_commits")
+          .delete()
+          .eq("commit_id", id)
+          .eq("user_id", userId)
+          .is("result", null);
+        if (error) throw error;
+      },
+      claimScans: async (cid, scanIds, undoneIds) => {
+        // Up to three single-statement conditional updates, each
+        //   UPDATE scan_events SET commit_id = $cid
+        //    WHERE user_id = $user AND id IN (...scanIds) AND <one condition> RETURNING id
+        // and the claimed count is their sum. Not one .or(): this project's PostgREST
+        // rejects or=(...) on PATCH (42703 "column scan_events.commit_id does not exist").
+        // Each statement is atomic per row (row lock + WHERE re-check), so a competing
+        // commit cannot take a row we claimed. `= cid` runs FIRST so rows the later
+        // statements move to cid are not counted twice.
+        const conditions: Array<(q: any) => any> = [
+          (q) => q.eq("commit_id", cid),
+          (q) => q.is("commit_id", null),
+        ];
+        if (undoneIds.length > 0) conditions.push((q) => q.in("commit_id", undoneIds));
+        let claimed = 0;
+        for (const where of conditions) {
+          const { data, error } = await where(
+            admin.from("scan_events").update({ commit_id: cid }).eq("user_id", userId).in("id", scanIds)
+          ).select("id");
+          if (error) throw error;
+          claimed += (data ?? []).length;
+        }
+        return claimed;
+      },
+      releaseScans: async (cid) => {
+        const { error } = await admin
+          .from("scan_events")
+          .update({ commit_id: null })
+          .eq("commit_id", cid)
+          .eq("user_id", userId);
+        if (error) throw error;
+      },
+      merge: async (mergeRows) => (await bulkImportCollectionAction(mergeRows, "merge")).success,
+      writeOutcomes: async (scanId, outcomes, cid) => {
+        // commit_id was set by claimScans; write only where this commit still holds the scan.
+        const { error } = await admin
+          .from("scan_events")
+          .update({ outcomes })
+          .eq("id", scanId)
+          .eq("user_id", userId)
+          .eq("commit_id", cid);
+        if (error) throw error;
+      },
+      storeResult: async (id, result) => {
+        const { error } = await admin
+          .from("scan_commits")
+          .update({ result })
+          .eq("commit_id", id)
+          .eq("user_id", userId);
+        if (error) throw error;
+      },
+    },
+    commitId,
+    payload
+  );
+}
+
+export async function adjustCollectionQuantitiesAction(commitId: string): Promise<UndoResult> {
+  const { supabase, user } = await getAuthedClient();
+  if (!user || !supabase) return { ok: false, code: "unauthorized" };
+  if (typeof commitId !== "string" || !UUID.test(commitId)) return { ok: false, code: "not_found" };
+
+  const admin = getSupabaseAdmin();
+  const userId = user.id;
+  return runUndo(
+    {
+      userId,
+      getCommit: async (id) => {
+        const { data, error } = await admin
+          .from("scan_commits")
+          .select("commit_id, user_id, created_at, deltas, result")
+          .eq("commit_id", id)
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (error) throw error;
+        return data;
+      },
+      hasLaterCommit: async (uid, createdAt) => {
+        const { count, error } = await admin
+          .from("scan_commits")
+          .select("commit_id", { count: "exact", head: true })
+          .eq("user_id", uid)
+          .gt("created_at", createdAt);
+        if (error) throw error;
+        return (count ?? 0) > 0;
+      },
+      claimUndo: async (id, result) => {
+        // UPDATE scan_commits SET result = $1
+        //  WHERE commit_id = $2 AND user_id = $3 AND result->>'undoneAt' IS NULL
+        //  RETURNING commit_id
+        const { data, error } = await admin
+          .from("scan_commits")
+          .update({ result })
+          .eq("commit_id", id)
+          .eq("user_id", userId)
+          .is("result->>undoneAt", null)
+          .select("commit_id");
+        if (error) throw error;
+        return (data ?? []).length === 1;
+      },
+      currentQuantities: async (keys) => {
+        const out: Record<string, number> = {};
+        const names = [...new Set(keys.map((k) => splitKey(k).card_name))];
+        // pgrestInList, not .in(): Lost Soul names carry double quotes that .in() drops rows on.
+        for (let i = 0; i < names.length; i += 100) {
+          const { data, error } = await supabase
+            .from("collection_cards")
+            .select("card_name, card_set, card_img_file, quantity")
+            .eq("user_id", userId)
+            .filter("card_name", "in", pgrestInList(names.slice(i, i + 100)));
+          if (error) throw error;
+          for (const r of (data ?? []) as CollectionCardRow[]) {
+            out[`${r.card_name}|${r.card_set}|${r.card_img_file}`] = r.quantity;
+          }
+        }
+        return out;
+      },
+      setQuantity: async (key, qty) => {
+        const { card_name, card_set, card_img_file } = splitKey(key);
+        if (qty <= 0) {
+          const { error } = await supabase
+            .from("collection_cards")
+            .delete()
+            .eq("user_id", userId)
+            .eq("card_name", card_name)
+            .eq("card_set", card_set)
+            .eq("card_img_file", card_img_file);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from("collection_cards").upsert(
+            { user_id: userId, card_name, card_set, card_img_file, quantity: qty, updated_at: new Date().toISOString() },
+            { onConflict: CONFLICT_KEY }
+          );
+          if (error) throw error;
+        }
+      },
+    },
+    commitId
+  );
 }
