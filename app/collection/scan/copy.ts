@@ -72,6 +72,7 @@ export const COPY: Record<string, string> = {
   undoFailed: "Couldn't undo. Try again.",
   footerTooltip: 'Estimated cost to buy these cards at Your Turn Games retail prices — not a resale value.',
   justAdded: 'Just added',
+  retentionSummary: 'How your photos are handled',
   retentionNote:
     'Photos are sent to Anthropic to read the cards. Anthropic deletes them within 30 days unless its safety systems flag them (then up to two years) and does not train on them. We keep the text we read from each card, not the photo.',
   gate: "Sign in to scan cards, see what they're worth at YTG, and add them to your collection.",

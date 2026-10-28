@@ -67,12 +67,17 @@ function ScanTray({ userId }: { userId: string }) {
 
       <div className="space-y-3">
         <CaptureButtons addFiles={queue.addFiles} chooseInputRef={chooseInputRef} disabled={!editable} />
-        <p className="text-xs text-muted-foreground">
-          {COPY.retentionNote}{' '}
-          <Link href="/privacy" className="underline underline-offset-4 hover:text-foreground focus:outline-none">
-            Privacy
-          </Link>
-        </p>
+        <details className="text-xs text-muted-foreground">
+          <summary className="min-h-11 cursor-pointer py-3 hover:text-foreground focus:outline-none">
+            {COPY.retentionSummary}
+          </summary>
+          <p>
+            {COPY.retentionNote}{' '}
+            <Link href="/privacy" className="underline underline-offset-4 hover:text-foreground focus:outline-none">
+              Privacy
+            </Link>
+          </p>
+        </details>
       </div>
 
       <div>
