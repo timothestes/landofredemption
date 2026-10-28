@@ -1,14 +1,25 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "../../utils/supabase/server";
+import { canScan as canScanGate } from "../../lib/scan/gate";
 import CollectionClient from "./client";
+import { justAddedKeys } from "./justAdded";
 
 export const metadata: Metadata = {
   title: "My Collection",
   description: "Track which Redemption cards you own",
 };
 
-export default async function CollectionPage() {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export default async function CollectionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ format?: string | string[]; added?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const format = Array.isArray(params.format) ? params.format[0] : params.format;
+  const added = Array.isArray(params.added) ? params.added.join(",") : params.added;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -51,5 +62,29 @@ export default async function CollectionPage() {
     );
   }
 
-  return <CollectionClient />;
+  const ids = added
+    ? added.split(",").filter((id) => UUID_RE.test(id)).slice(0, 150)
+    : [];
+
+  const [canScan, scanRows] = await Promise.all([
+    canScanGate(user.id, {
+      isSuperuser: async () => {
+        const { data, error } = await supabase.rpc("is_superuser");
+        return !error && data === true;
+      },
+    }),
+    // User client: RLS limits this to the viewer's own scan events.
+    ids.length > 0
+      ? supabase.from("scan_events").select("id, outcomes").in("id", ids)
+      : Promise.resolve({ data: null }),
+  ]);
+
+  // Order by the scan ids' order in the URL.
+  const order = new Map(ids.map((id, i) => [id, i]));
+  const rows = [...(scanRows.data ?? [])].sort(
+    (a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0),
+  );
+  const addedKeys = justAddedKeys(rows.flatMap((row) => (Array.isArray(row.outcomes) ? row.outcomes : [])));
+
+  return <CollectionClient canScan={canScan} initialFormat={format} justAddedKeys={addedKeys} />;
 }

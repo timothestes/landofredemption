@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import type { BuyDeckCard } from "./BuyDeckModal";
 import { computeMissingCards } from "../utils/collectionCheck";
+import { useCanScan } from "../../../collection/hooks/useCanScan";
 import { addWantsAction } from "../../../trades/actions";
 import type { TradeItem } from "../../../trades/lib/tradeList";
 
@@ -32,6 +33,7 @@ export default function CollectionCheckModal({
     () => computeMissingCards(cards, ownedByName),
     [cards, ownedByName]
   );
+  const canScan = useCanScan(collectionAvailable, "collection-check");
   const missingCount = missing.reduce((sum, c) => sum + c.quantity, 0);
 
   // "Add missing to my Wants": any printing, since this check matches by name.
@@ -256,6 +258,11 @@ export default function CollectionCheckModal({
             >
               Close
             </button>
+          )}
+          {canScan && (
+            <p className="mt-2 text-xs text-center text-muted-foreground">
+              <a href="/collection/scan" className="underline hover:text-foreground">Scan your cards</a>
+            </p>
           )}
         </div>
       </div>

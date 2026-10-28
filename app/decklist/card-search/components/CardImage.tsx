@@ -27,9 +27,8 @@ export default function CardImage({ imgFile, alt, className = "", sizes, priorit
       )}
       
       {hasError ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted text-muted-foreground text-xs p-2">
-          <div>🃏</div>
-          <div className="text-center mt-1">Image not found</div>
+        <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground text-xs p-2 text-center">
+          {alt}
         </div>
       ) : (
         <Image

@@ -23,6 +23,7 @@ import { useDeckState } from "./hooks/useDeckState";
 import { useDeckCheck } from "./hooks/useDeckCheck";
 import { useCardImageUrl } from "./hooks/useCardImageUrl";
 import { useCollectionState } from "../../collection/hooks/useCollectionState";
+import { useCanScan } from "../../collection/hooks/useCanScan";
 import { ownedCardNames } from "./utils/collectionCheck";
 import { cycleOwnedMode, parseOwnedMode, ownedModeParam, OWNED_MODE_LABELS, type OwnedFilterMode } from "./ownedFilter";
 import { parseDeckText, generateDeckText, downloadDeckAsFile, downloadDeckAsFileBySet, copyDeckToClipboard } from "./utils/deckImportExport";
@@ -584,6 +585,11 @@ export default function CardSearchClient({
   // signed-out). Gate at the point of use rather than resetting state, so the
   // async auth load doesn't race the URL-restored value back off.
   const activeOwnedMode: OwnedFilterMode = collectionFilterAvailable ? ownedMode : "off";
+  // Scanner entry link lives in the empty owned-filter state; only ask the gate when it shows.
+  const canScan = useCanScan(
+    !!user && collectionAvailable && activeOwnedMode === 'owned' && ownedNames.size === 0,
+    user?.id ?? null,
+  );
 
   // Refs for input fields to enable auto-focus
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -2797,6 +2803,11 @@ export default function CardSearchClient({
                     <a href="/collection" className="underline hover:text-foreground">Add cards to your collection</a>{" "}
                     to build a deck from it.
                   </p>
+                  {canScan && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      <a href="/collection/scan" className="underline hover:text-foreground">Scan your cards</a>
+                    </p>
+                  )}
                 </>
               ) : activeOwnedMode === 'owned' ? (
                 <>
