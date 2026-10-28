@@ -7,6 +7,6 @@ let counter = 0;
 export const ids = () => `m${++counter}`;
 
 export const match = (over: Partial<BracketMatch> = {}): BracketMatch =>
-  ({ id: 'm1', round: 1, position: 0, entryAId: 'e1', entryBId: 'e2', winnerEntryId: null, isBye: false, ...over });
+  ({ id: 'm1', stage: 'winners', round: 1, position: 0, entryAId: 'e1', entryBId: 'e2', winnerEntryId: null, isBye: false, ...over });
 export const game = (n: number, winner: string | null, over: Partial<BracketGame> = {}): BracketGame =>
   ({ id: `g${n}`, matchId: 'm1', gameNumber: n, mode: 'manual', code: null, firstEntryId: null, winnerEntryId: winner, soulsA: null, soulsB: null, hostSide: 'a', startedAt: '2026-10-21T10:00:00Z', finishedAt: null, ...over });

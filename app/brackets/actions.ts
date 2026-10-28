@@ -3,8 +3,9 @@
 import { createClient } from '@/utils/supabase/server';
 import { getFormatDef } from '@/lib/formats';
 import {
-  applyGameResult, buildBracket, canEditBracket, canPlayMatch, currentRoundName,
-  matchState, reconcileUpdates, resetMatchAllowed, resetMatchUpdates, roundNames, seriesState, sizeFor,
+  applyGameResult, buildBracket, byPlayOrder, canAddLosersBracket, canEditBracket, canPlayMatch, currentRoundName,
+  findMatch, losersMatches, matchState, MIN_LOSERS_BRACKET_DECKS, reconcileUpdates, resetMatchAllowed,
+  resetMatchUpdates, seriesState, shapeOf, sizeFor, stageRoundName, winnerTarget,
 } from '@/lib/bracket';
 import type {
   BestOf, Bracket, BracketEntry, BracketFormat, BracketGame, BracketMatch, RowUpdate, SeriesState,
@@ -62,6 +63,7 @@ async function loadAll(supabase: Supabase, bracketId: string): Promise<ActionRes
       .from('deck_bracket_matches')
       .select('*, deck_bracket_games(*)')
       .eq('bracket_id', bracketId)
+      .order('stage', { ascending: false })
       .order('round')
       .order('position')
       .order('game_number', { foreignTable: 'deck_bracket_games' }),
@@ -83,7 +85,7 @@ async function loadAll(supabase: Supabase, bracketId: string): Promise<ActionRes
   };
 }
 
-interface BracketInput { name: string; format: BracketFormat; bestOf: BestOf; deckIds: string[] }
+interface BracketInput { name: string; format: BracketFormat; bestOf: BestOf; deckIds: string[]; losersBracket?: boolean }
 type DeckRow = {
   id: string; name: string; format: string | null; preview_card_1: string | null;
   preview_card_2: string | null; paragon: string | null; user_id: string; is_public: boolean;
@@ -101,6 +103,9 @@ async function resolveBracketInput(
   const deckIds = input.deckIds ?? [];
   if (new Set(deckIds).size !== deckIds.length) return fail('Each deck can only be entered once.');
   if (deckIds.length < 2 || deckIds.length > 16) return fail('Pick between 2 and 16 decks.');
+  if (input.losersBracket && deckIds.length < MIN_LOSERS_BRACKET_DECKS) {
+    return fail(`A losers bracket needs at least ${MIN_LOSERS_BRACKET_DECKS} decks.`);
+  }
 
   const { data: deckRows, error: deckErr } = await supabase
     .from('decks')
@@ -129,7 +134,7 @@ async function resolveBracketInput(
 // Seats the decks (seed = pick order) and writes every round's match rows,
 // byes already decided.
 async function insertEntriesAndMatches(
-  supabase: Supabase, bracketId: string, decks: DeckRow[],
+  supabase: Supabase, bracketId: string, decks: DeckRow[], losersBracket: boolean,
 ): Promise<ActionResult<null>> {
   const { data: entryRows, error: eErr } = await supabase
     .from('deck_bracket_entries')
@@ -148,25 +153,28 @@ async function insertEntriesAndMatches(
 
   let matches: BracketMatch[];
   try {
-    matches = buildBracket((entryRows as DeckBracketEntryRow[]).map(toEntry), () => crypto.randomUUID());
+    matches = buildBracket((entryRows as DeckBracketEntryRow[]).map(toEntry), () => crypto.randomUUID(), losersBracket);
   } catch (e) {
     return fail(message(e));
   }
 
-  const { error: mErr } = await supabase.from('deck_bracket_matches').insert(
-    matches.map(m => ({
-      id: m.id,
-      bracket_id: bracketId,
-      round: m.round,
+  const { error: mErr } = await supabase.from('deck_bracket_matches').insert(matchRows(bracketId, matches));
+  if (mErr) return fail(mErr.message);
+  return { ok: true, data: null };
+}
+
+function matchRows(bracketId: string, matches: BracketMatch[]) {
+  return matches.map(m => ({
+    id: m.id,
+    bracket_id: bracketId,
+    stage: m.stage,
+    round: m.round,
       position: m.position,
       entry_a_id: m.entryAId,
       entry_b_id: m.entryBId,
-      winner_entry_id: m.winnerEntryId,
-      is_bye: m.isBye,
-    })),
-  );
-  if (mErr) return fail(mErr.message);
-  return { ok: true, data: null };
+    winner_entry_id: m.winnerEntryId,
+    is_bye: m.isBye,
+  }));
 }
 
 export async function createBracketAction(input: BracketInput): Promise<ActionResult<{ id: string }>> {
@@ -186,7 +194,7 @@ export async function createBracketAction(input: BracketInput): Promise<ActionRe
   if (bErr || !bracketRow) return fail(bErr?.message ?? 'Could not create the bracket.');
   const bracketId = bracketRow.id as string;
 
-  const seated = await insertEntriesAndMatches(supabase, bracketId, decks);
+  const seated = await insertEntriesAndMatches(supabase, bracketId, decks, !!input.losersBracket);
   if (seated.ok === false) {
     await supabase.from('deck_brackets').delete().eq('id', bracketId);
     return seated;
@@ -227,7 +235,7 @@ export async function updateBracketAction(input: BracketInput & { id: string }):
   const { error: eErr } = await supabase.from('deck_bracket_entries').delete().eq('bracket_id', input.id);
   if (eErr) return fail(eErr.message);
 
-  const seated = await insertEntriesAndMatches(supabase, input.id, decks);
+  const seated = await insertEntriesAndMatches(supabase, input.id, decks, !!input.losersBracket);
   if (seated.ok === false) return seated;
   return { ok: true, data: { id: input.id } };
 }
@@ -380,11 +388,14 @@ function summarise(loaded: Loaded, matchId: string): RecordData {
   const match = matches.find(m => m.id === matchId)!;
   const series = seriesState(games, match, bracket.bestOf);
   const decided = !!match.winnerEntryId;
-  const champion = decided && bracket.championEntryId !== null && match.round === roundNames(bracket.size).length;
+  const shape = { ...shapeOf(matches), size: bracket.size };
+  const target = winnerTarget(shape, match);
+  const champion = decided && bracket.championEntryId !== null && target === 'champion';
   const nameOf = (id: string | null) => entries.find(e => e.id === id)?.deckName ?? '';
   const entriesById = new Map(entries.map(e => [e.id, e]));
+  const nextMatch = target === 'champion' ? undefined : findMatch(matches, target);
   const next = [...matches]
-    .sort((a, b) => a.round - b.round || a.position - b.position)
+    .sort(byPlayOrder)
     .find(m => {
       if (m.id === matchId) return false;
       const st = matchState(m, games, bracket.bestOf);
@@ -395,7 +406,7 @@ function summarise(loaded: Loaded, matchId: string): RecordData {
     matchId,
     decided,
     nextReadyMatch: next ? { id: next.id, deckAName: nameOf(next.entryAId), deckBName: nameOf(next.entryBId) } : null,
-    nextRoundName: decided && !champion ? roundNames(bracket.size)[match.round] ?? null : null,
+    nextRoundName: decided && !champion && nextMatch ? stageRoundName(shape, nextMatch.stage, nextMatch.round) : null,
     champion,
   };
 }
@@ -642,6 +653,36 @@ export async function setKeyCardsAction(entryId: string, keys: string[]): Promis
   const { error } = await supabase.from('deck_bracket_entries').update({ key_cards: unique }).eq('id', entryId);
   if (error) return fail(error.message);
   return { ok: true, data: { keyCards: unique } };
+}
+
+/**
+ * Turns a running single-elimination bracket into double elimination: the
+ * losers bracket and grand final are added, then the reconcile pass seats
+ * every deck that has already lost and passes byes on.
+ */
+export async function addLosersBracketAction(bracketId: string): Promise<ActionResult<null>> {
+  const supabase = await createClient();
+  const owner = await requireBracketOwner(supabase, bracketId);
+  if (owner.ok === false) return owner;
+  const loaded = await loadAll(supabase, bracketId);
+  if (loaded.ok === false) return loaded;
+  const { bracket, entries, matches } = loaded.data;
+  if (!canAddLosersBracket(bracket, entries.length, matches)) {
+    return fail(bracket.status === 'complete'
+      ? 'This bracket is finished.'
+      : `A losers bracket needs at least ${MIN_LOSERS_BRACKET_DECKS} decks and can be added once.`);
+  }
+
+  let added: BracketMatch[];
+  try {
+    added = losersMatches(bracket.size, () => crypto.randomUUID(), matches);
+  } catch (e) {
+    return fail(message(e));
+  }
+  const { error } = await supabase.from('deck_bracket_matches').insert(matchRows(bracketId, added));
+  if (error) return fail(error.message);
+  const after = await reconcileAndLoad(supabase, bracketId);
+  return after.ok === false ? after : { ok: true, data: null };
 }
 
 export async function deleteBracketAction(id: string): Promise<ActionResult<null>> {

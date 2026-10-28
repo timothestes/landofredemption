@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MoreHorizontal, Pencil, Share2 } from 'lucide-react';
-import { nextSlot, resetMatchAllowed, roundCount, canEditBracket } from '@/lib/bracket';
+import {
+  canAddLosersBracket, canEditBracket, findMatch, labelForMatch, loserTarget, resetMatchAllowed, shapeOf, winnerTarget,
+} from '@/lib/bracket';
 import type { BracketGame } from '@/lib/bracket/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,19 +17,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import ToastNotification from '@/components/ui/toast-notification';
 import {
-  abandonBracketGameAction, deleteBracketAction, resetMatchAction, startBracketGameAction,
+  abandonBracketGameAction, addLosersBracketAction, deleteBracketAction, resetMatchAction, startBracketGameAction,
 } from '../actions';
 import { BracketTabs } from '../components/BracketTabs';
 import { BracketView } from '../components/BracketView';
 import { ChampionPanel } from '../components/ChampionPanel';
 import { DECIDED_KEY, stdbFormatFor, writeHostGameParams, writeSoloGameParams } from '../lib/gameParams';
-import { bracketMeta, buildMatchViews, championPath, firstActionableMatchId, type MatchView } from '../lib/view';
+import { allViews, bracketMeta, buildMatchViews, championPath, firstActionableMatchId, type MatchView } from '../lib/view';
 import type { BracketPageData } from '../types';
 import { RecordResultDialog } from './RecordResultDialog';
 
 type Toast = { message: string; type: 'success' | 'error' };
 type Confirm = {
   title: string; body: string; action: string;
+  /** Destructive unless said otherwise. */
+  confirmVariant?: 'default';
   /** `navigated` skips the refresh when the action already left the page. */
   run: () => Promise<{ ok: boolean; error?: string; navigated?: boolean }>;
 };
@@ -45,7 +49,8 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
   const pathname = usePathname();
   const { bracket, entries, matches, games } = data;
   const views = useMemo(() => buildMatchViews(data), [data]);
-  const viewById = useMemo(() => new Map(views.flat().map(v => [v.match.id, v])), [views]);
+  const viewById = useMemo(() => new Map(allViews(views).map(v => [v.match.id, v])), [views]);
+  const shape = useMemo(() => ({ ...shapeOf(matches), size: bracket.size }), [matches, bracket.size]);
 
   // Seeded from ?decided= so the server renders the write-in's "before" look.
   const [decidedMatchId, setDecidedMatchId] = useState<string | null>(searchParams.decided);
@@ -188,15 +193,16 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
   const onReset = (matchId: string) => {
     const view = viewById.get(matchId);
     if (!view) return;
-    const winner = view.match.winnerEntryId === view.a?.id ? view.a : view.b;
+    const [winner, loser] = view.match.winnerEntryId === view.a?.id ? [view.a, view.b] : [view.b, view.a];
     const winnerName = winner?.deckName ?? 'the winner';
-    const body = view.match.round === roundCount(bracket.size)
-      ? `This clears the ${view.label} result and removes ${winnerName} as champion.`
-      : (() => {
-          const next = nextSlot(view.match.round, view.match.position);
-          const nextLabel = views[next.round - 1]?.[next.position]?.label ?? 'the next round';
-          return `This clears the ${view.label} result and removes ${winnerName} from ${nextLabel}.`;
-        })();
+    const next = winnerTarget(shape, view.match);
+    const nextMatch = next === 'champion' ? null : findMatch(matches, next);
+    const drop = loserTarget(shape, view.match);
+    const dropMatch = drop && findMatch(matches, drop);
+    const body = (next === 'champion'
+      ? `This clears the ${view.label} result and removes ${winnerName} as champion`
+      : `This clears the ${view.label} result and removes ${winnerName} from ${nextMatch ? labelForMatch(shape, nextMatch) : 'the next round'}`)
+      + (dropMatch && loser ? ` and ${loser.deckName} from ${labelForMatch(shape, dropMatch)}.` : '.');
     setConfirm({
       title: `Reset ${view.label}?`,
       body,
@@ -207,6 +213,17 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
       },
     });
   };
+
+  const onAddLosersBracket = () => setConfirm({
+    title: 'Add a losers bracket?',
+    body: 'A deck is out after its second loss instead of its first. Decks that already lost drop into the losers bracket, and the winners of both sides meet in a grand final. This cannot be undone.',
+    action: 'Add losers bracket',
+    confirmVariant: 'default',
+    run: async () => {
+      const res = await addLosersBracketAction(bracket.id);
+      return res.ok === false ? { ok: false, error: res.error } : { ok: true };
+    },
+  });
 
   const onDelete = () => setConfirm({
     title: 'Delete this bracket?',
@@ -247,7 +264,7 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
     <ChampionPanel
       entry={champion}
       path={championPath(data, champion.id)}
-      animate={!!decidedView && decidedView.match.round === roundCount(bracket.size)}
+      animate={!!decidedView && winnerTarget(shape, decidedView.match) === 'champion'}
       breakdownHref={`/brackets/${bracket.id}/breakdown`}
     />
   ) : undefined;
@@ -282,6 +299,11 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {canAddLosersBracket(bracket, entries.length, matches) && (
+                  <DropdownMenuItem className="min-h-11" onSelect={onAddLosersBracket}>
+                    Add losers bracket
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem className="min-h-11 text-destructive" onSelect={onDelete}>
                   Delete bracket
                 </DropdownMenuItem>
@@ -295,7 +317,7 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
 
       <BracketView
         views={views}
-        size={bracket.size}
+        shape={shape}
         isOwner={isOwner}
         decidedMatchId={decidedMatchId}
         champion={championPanel}
@@ -330,7 +352,7 @@ export function BracketClient({ data, isOwner, viewer, searchParams }: {
               <Button variant="cancel" className="min-h-11" onClick={() => setConfirm(null)} disabled={confirming}>
                 Cancel
               </Button>
-              <Button variant="destructive" className="min-h-11" onClick={runConfirm} disabled={confirming}>
+              <Button variant={confirm.confirmVariant ?? 'destructive'} className="min-h-11" onClick={runConfirm} disabled={confirming}>
                 {confirm.action}
               </Button>
             </DialogFooter>
