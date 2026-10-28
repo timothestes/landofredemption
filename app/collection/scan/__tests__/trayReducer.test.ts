@@ -122,4 +122,13 @@ describe('trayReducer', () => {
     expect(buildCommitPayload(s).outcomesByScanId[S2]).toBeUndefined();
     expect(trayReducer(trayReducer(merged(), { type: 'photoRemoved', photoId: 'p2' }), { type: 'photoRemoved', photoId: 'p1' }).rows).toHaveLength(0);
   });
+
+  it('busy wait marks the photo queued-busy until it starts again, and a reload drops the flag', () => {
+    const run = (...as: TrayAction[]) => as.reduce(trayReducer, initialTray('u'));
+    const s = run({ type: 'photoAdded', photoId: 'p1' }, { type: 'photoStarted', photoId: 'p1', at: 1 },
+      { type: 'photoRetry', photoId: 'p1', busy: true });
+    expect(s.photos[0]).toMatchObject({ status: 'queued', busy: true });
+    expect(trayReducer(s, { type: 'photoStarted', photoId: 'p1', at: 2 }).photos[0].busy).toBeUndefined();
+    expect(rehydrateTray(JSON.stringify(s), 'u').photos[0]).toMatchObject({ status: 'failed', busy: undefined });
+  });
 });

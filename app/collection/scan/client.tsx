@@ -12,7 +12,7 @@ import { useScanQueue } from './hooks/useScanQueue';
 import CaptureButtons from './components/CaptureButtons';
 import PhotoGroup from './components/PhotoGroup';
 import DetectionRow from './components/DetectionRow';
-import PrintingPicker from './components/PrintingPicker';
+import PrintingPicker, { type PickerMode } from './components/PrintingPicker';
 import CommitBar from './components/CommitBar';
 import SuccessPanel from './components/SuccessPanel';
 
@@ -34,7 +34,7 @@ function ScanTray({ userId }: { userId: string }) {
   const [showPrices] = useShowPrices();
   const { getPrice } = useCardPrices();
   const chooseInputRef = useRef<HTMLInputElement>(null);
-  const [pickerRow, setPickerRow] = useState<{ rowId: string; mode: 'printing' | 'search' } | null>(null);
+  const [pickerRow, setPickerRow] = useState<{ rowId: string; mode: PickerMode } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const closeToast = useCallback(() => setToast(null), []);
 

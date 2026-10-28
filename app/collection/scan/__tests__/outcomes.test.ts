@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { buildCommitPayload } from '../lib/outcomes';
+import { validateCommitInput } from '../lib/commitCore';
 import { initialTray, trayReducer, type TrayAction } from '../lib/trayReducer';
 import { cand, det, resp } from './fixtures';
 
+const S1 = '11111111-2222-3333-4444-555555555555';
 const S2 = 'aaaaaaaa-2222-3333-4444-555555555555';
 const build = (...as: TrayAction[]) => as.reduce(trayReducer, initialTray('u'));
 const two = () => build({ type: 'photoAdded', photoId: 'p1' }, { type: 'photoAdded', photoId: 'p2' },
@@ -30,12 +32,23 @@ describe('buildCommitPayload', () => {
     expect(o).toMatchObject({ unresolved: true, finalKey: null, removed: false });
   });
 
-  it('payload rows sum identical keys across rows', () => {
+  it('payload rows stay unsummed so two rows on one key can total over 99', () => {
     let s = build({ type: 'photoAdded', photoId: 'p1' },
       { type: 'photoDone', photoId: 'p1', response: resp([det(1, { chosenKey: 'A' }), det(2, { chosenKey: 'B' })]) });
     s = trayReducer(s, { type: 'setKey', rowId: s.rows[1].rowId, key: 'A', via: 'search' });
     s = trayReducer(s, { type: 'setQty', rowId: s.rows[1].rowId, qty: 3 });
-    expect(buildCommitPayload(s).rows).toEqual([{ key: 'A', qty: 4 }]);
+    expect(buildCommitPayload(s).rows).toEqual([{ key: 'A', qty: 1 }, { key: 'A', qty: 3 }]);
+    s = trayReducer(s, { type: 'setQty', rowId: s.rows[0].rowId, qty: 60 });
+    s = trayReducer(s, { type: 'setQty', rowId: s.rows[1].rowId, qty: 50 });
+    expect(validateCommitInput('c0c0c0c0-0000-4000-8000-000000000000', buildCommitPayload(s), () => true)).not.toBeNull();
+  });
+
+  it('picking from candidates on a row with no provisional key is a name change', () => {
+    let s = build({ type: 'photoAdded', photoId: 'p1' }, { type: 'photoDone', photoId: 'p1', response: resp([
+      det(1, { chosenKey: null, status: 'check', printingReason: 'identity_ambiguous', candidates: [cand('A', 1), cand('B', 2)] }),
+    ]) });
+    s = trayReducer(s, { type: 'setKey', rowId: s.rows[0].rowId, key: 'B', via: 'candidates' });
+    expect(buildCommitPayload(s).outcomesByScanId[S1][0]).toMatchObject({ finalKey: 'B', nameChanged: true, printingChanged: false });
   });
 
   it('outcome satisfies queries.sql assumptions', () => {
@@ -54,7 +67,6 @@ describe('buildCommitPayload', () => {
     }
   });
 
-  const S1 = '11111111-2222-3333-4444-555555555555';
   const mergeSetup = (second: Parameters<typeof det>[1]) => {
     let s = build({ type: 'photoAdded', photoId: 'p1' }, { type: 'photoAdded', photoId: 'p2' },
       { type: 'photoDone', photoId: 'p1', response: resp([det(1, { chosenKey: 'A', candidates: [cand('A', 1), cand('B', 2)] })]) });

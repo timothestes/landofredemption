@@ -44,6 +44,7 @@ export const COPY: Record<string, string> = {
   findCard: 'Find card',
   pickerHeader: 'Which printing?',
   pickerNameHeader: 'Which card?',
+  pickerChoose: 'Choose',
   pickerSearch: 'Search by card name',
   pickerCurrent: 'Current',
   pickerOwned: '{n} in your collection',

@@ -14,9 +14,12 @@ import type { PickerHit } from '../lib/pickerSearch';
 let searchModule: Promise<typeof import('../lib/pickerSearch')> | null = null;
 const loadSearch = () => (searchModule ??= import('../lib/pickerSearch'));
 
+/** candidates: a Check row with no provisional pick chooses which card among its candidates. */
+export type PickerMode = 'printing' | 'search' | 'candidates';
+
 interface Props {
   row: TrayRow;
-  mode: 'printing' | 'search';
+  mode: PickerMode;
   quantities: Map<string, number>;
   showPrices: boolean;
   getPrice: (key: string) => number | null;
@@ -34,7 +37,7 @@ export default function PrintingPicker({ row, mode, quantities, showPrices, getP
   const [hits, setHits] = useState<PickerHit[] | null>(null);
   useFocusTrap(trapRef, true);
 
-  const title = mode === 'search' ? COPY.pickerNameHeader : COPY.pickerHeader;
+  const title = mode === 'printing' ? COPY.pickerHeader : COPY.pickerNameHeader;
 
   const onSearch = async (value: string) => {
     setQuery(value);
@@ -126,12 +129,12 @@ export default function PrintingPicker({ row, mode, quantities, showPrices, getP
                           )}
                         </span>
                         <span className="min-w-0 flex-1">
-                          {(mode === 'search' || searching) && (
+                          {(mode !== 'printing' || searching) && (
                             <span className="block truncate text-sm font-medium">{c.name}</span>
                           )}
                           <span className="block truncate text-sm">
                             {c.officialSet || c.set}
-                            <span className="text-muted-foreground"> · {c.legality}</span>
+                            {c.legality && <span className="text-muted-foreground"> · {c.legality}</span>}
                           </span>
                           {owned > 0 && (
                             <span className="block text-xs text-muted-foreground">

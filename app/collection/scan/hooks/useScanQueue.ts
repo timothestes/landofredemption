@@ -94,10 +94,11 @@ export function useScanQueue(dispatch: React.Dispatch<TrayAction>) {
       const view = scanErrorView(res.status, body, retryHeader, new Date());
       if (view.kind === 'busy' && e.busyRetries < MAX_BUSY_RETRIES) {
         e.busyRetries++;
+        // Queued with the busy line until the timer re-queues it; photoStarted clears the flag.
+        dispatchRef.current({ type: 'photoRetry', photoId: id, busy: true });
         e.timer = setTimeout(() => {
           e.timer = undefined;
           if (!entries.current.has(id)) return;
-          dispatchRef.current({ type: 'photoRetry', photoId: id });
           waiting.current.push(id);
           pump.current();
         }, (view.autoRetryAfterSec ?? 30) * 1000);

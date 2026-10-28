@@ -3,8 +3,9 @@
 import { useId, useState } from 'react';
 import { Minus, Plus, X } from 'lucide-react';
 import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
-import { COPY } from '../copy';
+import { COPY, fill } from '../copy';
 import { rowPrice, type TrayAction, type TrayRow } from '../lib/trayReducer';
+import type { PickerMode } from './PrintingPicker';
 
 interface Props {
   row: TrayRow;
@@ -15,11 +16,8 @@ interface Props {
   /** False once the tray is committing or committed. */
   editable: boolean;
   dispatch: React.Dispatch<TrayAction>;
-  onOpenPicker: (rowId: string, mode: 'printing' | 'search') => void;
+  onOpenPicker: (rowId: string, mode: PickerMode) => void;
 }
-
-const fill = (s: string, vars: Record<string, string | number>) =>
-  s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
 
 const chipClass =
   'shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400';
@@ -59,10 +57,13 @@ export default function DetectionRow({
   const imgFile = card?.imgFile ?? (row.key ? row.key.split('|')[2] : '');
   const thumbSrc = imgFile ? getCardImageUrl(imgFile) : '';
 
-  const notFound = row.key === null;
+  // A Check row may have no provisional key (identity or reference ambiguous): it is unresolved, not Not found.
+  const unpicked = row.key === null;
+  const notFound = unpicked && row.detection.status !== 'check';
   // A player's correction resolves the row; the detection's own status no longer applies.
   const resolved = row.corrected !== 'none';
   const isCheck = !notFound && !resolved && row.detection.status === 'check';
+  const pickerMode: PickerMode = notFound ? 'search' : unpicked ? 'candidates' : 'printing';
   const isFuzzy = !notFound && !resolved && !isCheck && row.detection.nameReason === 'fuzzy';
   const isEquivalent = !notFound && !resolved && !isCheck && row.detection.printingReason === 'equivalent';
   const reason = isCheck ? checkReason(row) : null;
@@ -70,7 +71,11 @@ export default function DetectionRow({
   const price = card ? rowPrice(row) : catalogPrice;
   const ownedText = owned > 0 ? ` · ${fill(COPY.owned, { n: owned })}` : '';
 
-  const pickerLabel = notFound ? `${COPY.findCard}: ${readTitle}` : `Change printing: ${name}, ${set}`;
+  const pickerLabel = notFound
+    ? `${COPY.findCard}: ${readTitle}`
+    : unpicked
+      ? `${COPY.pickerNameHeader} ${readTitle}`
+      : `Change printing: ${name}, ${set}`;
 
   let lineTwo: React.ReactNode;
   if (notFound) {
@@ -110,7 +115,7 @@ export default function DetectionRow({
           aria-label={pickerLabel}
           aria-describedby={lineTwoId}
           disabled={!editable}
-          onClick={() => onOpenPicker(row.rowId, notFound ? 'search' : 'printing')}
+          onClick={() => onOpenPicker(row.rowId, pickerMode)}
         />
         <span
           aria-hidden
@@ -125,10 +130,10 @@ export default function DetectionRow({
           aria-hidden
           className="pointer-events-none col-start-2 row-start-1 min-w-0 self-end truncate pl-2 text-sm font-medium"
         >
-          {notFound ? readTitle || '—' : name}
+          {unpicked ? readTitle || '—' : name}
           {isFuzzy && <span className="font-normal text-muted-foreground"> · {set}</span>}
         </span>
-        {showPrices && !notFound && (
+        {showPrices && !unpicked && (
           <span className="relative z-10 col-start-3 row-start-1 self-end pl-2 text-right text-sm tabular-nums">
             {price != null ? (
               `$${price.toFixed(2)}`
@@ -152,14 +157,14 @@ export default function DetectionRow({
           {lineTwo}
         </span>
 
-        {notFound ? (
+        {unpicked ? (
           <button
             type="button"
             className="col-start-4 row-start-1 row-end-3 min-h-11 w-14 self-center justify-self-end rounded-md border border-border px-1 text-xs font-medium hover:bg-muted focus:outline-none disabled:pointer-events-none disabled:opacity-50"
             disabled={!editable}
-            onClick={() => onOpenPicker(row.rowId, 'search')}
+            onClick={() => onOpenPicker(row.rowId, pickerMode)}
           >
-            {COPY.findCard}
+            {notFound ? COPY.findCard : COPY.pickerChoose}
           </button>
         ) : (
           <button
@@ -186,7 +191,7 @@ export default function DetectionRow({
         </button>
       </div>
 
-      {editable && stepperOpen && !notFound && (
+      {editable && stepperOpen && !unpicked && (
         <div className="flex items-center justify-end gap-1 pb-2">
           <button
             type="button"

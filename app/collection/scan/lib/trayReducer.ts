@@ -10,6 +10,8 @@ export interface TrayPhoto {
   photoQuality?: string;
   error?: { status: number; body: ScanErrorBody; retryAfter?: number };
   startedAt?: number;
+  /** Queued behind a busy auto-retry. */
+  busy?: boolean;
 }
 
 export interface TraySource {
@@ -48,7 +50,7 @@ export type TrayAction =
   | { type: 'photoDone'; photoId: string; response: ScanResponse }
   | { type: 'photoFailed'; photoId: string; error: TrayPhoto['error'] }
   | { type: 'photoRemoved'; photoId: string }
-  | { type: 'photoRetry'; photoId: string }
+  | { type: 'photoRetry'; photoId: string; busy?: boolean }
   | { type: 'setKey'; rowId: string; key: string; candidates?: Candidate[]; via: 'candidates' | 'search' }
   | { type: 'setQty'; rowId: string; qty: number }
   | { type: 'removeRow'; rowId: string; as: 'wrong' | 'unwanted' }
@@ -93,7 +95,7 @@ export function trayReducer(s: TrayState, a: TrayAction): TrayState {
       return { ...s, photos: [...s.photos, { photoId: a.photoId, n, status: 'queued' }] };
     }
     case 'photoStarted':
-      return patchPhoto(s, a.photoId, { status: 'reading', startedAt: a.at, error: undefined });
+      return patchPhoto(s, a.photoId, { status: 'reading', startedAt: a.at, error: undefined, busy: undefined });
     case 'photoDone': {
       if (!s.photos.some(p => p.photoId === a.photoId)) return s;
       const done = patchPhoto(s, a.photoId, {
@@ -152,7 +154,7 @@ export function trayReducer(s: TrayState, a: TrayAction): TrayState {
       return { ...s, photos: s.photos.filter(p => p.photoId !== a.photoId), rows };
     }
     case 'photoRetry':
-      return patchPhoto(s, a.photoId, { status: 'queued', error: undefined, startedAt: undefined });
+      return patchPhoto(s, a.photoId, { status: 'queued', error: undefined, startedAt: undefined, busy: a.busy || undefined });
     case 'setKey':
       return patchRow(s, a.rowId, r => {
         const corrected: TrayRow['corrected'] =
@@ -220,7 +222,7 @@ export function rehydrateTray(raw: unknown, userId: string): TrayState {
     if (o.userId !== userId || !Array.isArray(o.photos) || !Array.isArray(o.rows)) return initialTray(userId);
     const photos = o.photos.map((p): TrayPhoto =>
       p.status === 'queued' || p.status === 'reading'
-        ? { ...p, status: 'failed', startedAt: undefined, error: { status: 0, body: { code: 'lost_on_reload' } } }
+        ? { ...p, status: 'failed', startedAt: undefined, busy: undefined, error: { status: 0, body: { code: 'lost_on_reload' } } }
         : p,
     );
     return {

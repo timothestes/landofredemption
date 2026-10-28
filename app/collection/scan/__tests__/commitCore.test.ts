@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ClientOutcome, CommitPayload } from '../lib/outcomes';
 import {
-  runCommit, runUndo, validateCommitInput,
+  COMMIT_LIMITS, runCommit, runUndo, validateCommitInput,
   type CommitDeps, type CommitRow, type StoredScan, type UndoDeps,
 } from '../lib/commitCore';
 
@@ -379,7 +379,7 @@ describe('validateCommitInput', () => {
     expect(validateCommitInput(C1, longFinal, () => true)).toBeNull();
     expect(validateCommitInput(C1, { ...ok(), rows: [{ key: longKey, qty: 1 }] }, () => true)).toBeNull();
     const tooMany = ok();
-    tooMany.outcomesByScanId[S1] = Array.from({ length: 41 }, (_, i) => outcome(`${S1}:${i}`, KA));
+    tooMany.outcomesByScanId[S1] = Array.from({ length: COMMIT_LIMITS.detectionsPerScan + 1 }, (_, i) => outcome(`${S1}:${i}`, KA));
     expect(validateCommitInput(C1, tooMany, known)).toBeNull();
   });
 });

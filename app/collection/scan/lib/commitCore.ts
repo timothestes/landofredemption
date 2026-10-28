@@ -54,7 +54,7 @@ export interface UndoDeps {
   setQuantity(key: string, qty: number): Promise<void>;
 }
 
-export const COMMIT_LIMITS = { rows: 500, qty: 99, scans: 200, detectionsPerScan: 40 };
+export const COMMIT_LIMITS = { rows: 500, qty: 99, scans: 200, detectionsPerScan: 150 };
 
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_KEY_LENGTH = 300;

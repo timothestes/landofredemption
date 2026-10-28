@@ -16,9 +16,6 @@ export interface CommitPayload {
 }
 
 export function buildCommitPayload(s: TrayState): CommitPayload {
-  const sums = new Map<string, number>();
-  for (const r of countedRows(s)) sums.set(r.key as string, (sums.get(r.key as string) ?? 0) + r.qty);
-
   const outcomesByScanId: Record<string, ClientOutcome[]> = {};
   for (const r of s.rows) {
     const removed = r.removedAs !== null;
@@ -27,7 +24,9 @@ export function buildCommitPayload(s: TrayState): CommitPayload {
       const scanId = id.split(':')[0];
       const finalKey = removed ? null : r.key;
       const changed = finalKey !== null && finalKey !== src.chosenKey;
-      const printingChanged = changed && src.candidateKeys.includes(finalKey) && src.status !== 'not_found';
+      // With no provisional pick (identity or reference ambiguous) the player chose which card, not which printing.
+      const printingChanged =
+        changed && src.chosenKey !== null && src.candidateKeys.includes(finalKey) && src.status !== 'not_found';
       (outcomesByScanId[scanId] ??= []).push({
         id,
         finalKey,
@@ -39,5 +38,6 @@ export function buildCommitPayload(s: TrayState): CommitPayload {
       });
     }
   }
-  return { rows: [...sums].map(([key, qty]) => ({ key, qty })), outcomesByScanId };
+  // Rows go unsummed: each is capped at 99, the server sums per key, and a summed total over 99 would be refused.
+  return { rows: countedRows(s).map(r => ({ key: r.key as string, qty: r.qty })), outcomesByScanId };
 }

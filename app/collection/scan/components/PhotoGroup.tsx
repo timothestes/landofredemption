@@ -43,7 +43,9 @@ export default function PhotoGroup({
 
   let line: ReactNode;
   let actions: { retry: boolean; chooseAnother: boolean } | null = null;
-  if (reading) {
+  if (photo.busy && photo.status === 'queued') {
+    line = COPY.busy;
+  } else if (reading) {
     // Only "Reading…" is announced; the ticking seconds are hidden so the live region does not repeat.
     const full = readingLine(photo.startedAt ? Math.max(0, now - photo.startedAt) : 0);
     const seconds = full.slice(COPY.reading.length);
@@ -61,7 +63,8 @@ export default function PhotoGroup({
       e?.retryAfter == null ? null : String(e.retryAfter),
       new Date(),
     );
-    line = view.text;
+    // Auto-retries are spent by the time a busy error lands here, so nothing is retrying.
+    line = view.kind === 'busy' ? COPY.generic : view.text;
     actions = { retry: view.retry, chooseAnother: view.chooseAnother };
   } else if (detectionCount === 0) {
     line = ZERO_TEXT[photo.photoQuality ?? ''] ?? COPY.noCards;
