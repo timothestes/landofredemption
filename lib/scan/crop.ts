@@ -1,12 +1,11 @@
 import sharp from 'sharp';
 import type { Box, DeckGroup, DeckRead } from './deckSchema';
+import { fillToTier } from './image';
 
-// Crop pass for deck photos: re-read a group from an upscaled, upright crop. Geometry is pure; cropGroup uses sharp.
+// Crop pass for deck photos: re-read a group from an upright crop scaled to the high tier. Geometry is pure; cropGroup uses sharp.
 
 /** Padding around a group's box, as a fraction of the image's width (left/right) and height (top/bottom). */
 export const CROP_PAD = 0.04;
-/** Long edge of a crop sent to the model, in pixels. */
-export const CROP_EDGE = 1600;
 /** Slack, as a fraction of the image, when checking a crop read's centre against its group's box. */
 export const CROP_FILTER_TOL = 0.015;
 
@@ -67,12 +66,16 @@ export function keepCropRead(read: DeckRead, group: DeckGroup, rect: CropRect, w
   return titleCentreInBox(read.titleBox, rect, group.bbox, width, height);
 }
 
-/** Crops a group's padded box, rotates it upright, and upscales to a CROP_EDGE long edge as JPEG. Two pipelines: sharp rotates before it extracts. */
+/** Crops a group's padded box, rotates it upright, and scales it to fill the high tier's patch budget, as JPEG. Two pipelines: sharp rotates before it extracts. */
 export async function cropGroup(jpeg: Buffer, group: DeckGroup, width: number, height: number): Promise<Buffer> {
-  const cropped = await sharp(jpeg).extract(cropRect(group.bbox, width, height)).toBuffer();
+  const rect = cropRect(group.bbox, width, height);
+  const rotation = rotationFor(group.orientation);
+  const sideways = rotation === 90 || rotation === 270;
+  const size = fillToTier(sideways ? rect.height : rect.width, sideways ? rect.width : rect.height, 'high');
+  const cropped = await sharp(jpeg).extract(rect).toBuffer();
   return sharp(cropped)
-    .rotate(rotationFor(group.orientation))
-    .resize(CROP_EDGE, CROP_EDGE, { fit: 'inside', withoutEnlargement: false, kernel: 'lanczos3' })
+    .rotate(rotation)
+    .resize({ width: size.width, height: size.height, fit: 'fill', kernel: 'lanczos3' })
     .jpeg({ quality: 85, mozjpeg: true })
     .toBuffer();
 }

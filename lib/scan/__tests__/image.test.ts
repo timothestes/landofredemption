@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import sharp from 'sharp';
-import { fitToTier, encodeForScan } from '../image';
+import { fitToTier, fillToTier, encodeForScan } from '../image';
+describe('fillToTier', () => {
+  const patches = (r: { width: number; height: number }) => Math.ceil(r.width / 28) * Math.ceil(r.height / 28);
+  it('enlarges a tall sideways-row crop to just under the high cap', () => { const r = fillToTier(522, 1600, 'high'); expect(r.height).toBeGreaterThan(1600); expect(patches(r)).toBeLessThanOrEqual(4784); expect(patches(r)).toBeGreaterThan(4600); });
+  it('shrinks a huge input', () => { const r = fillToTier(8000, 6000, 'high'); expect(r.width).toBeLessThan(8000); expect(patches(r)).toBeLessThanOrEqual(4784); expect(patches(r)).toBeGreaterThan(4600); });
+  it('preserves aspect within 1 px and the patch rule holds', () => { for (const [w, h] of [[522, 1600], [1600, 522], [400, 160], [8000, 6000], [100, 100], [3000, 200]] as const) for (const t of ['high', 'low'] as const) { const r = fillToTier(w, h, t); expect(r.imageTokens).toBe(patches(r)); expect(r.imageTokens).toBeLessThanOrEqual(t === 'high' ? 4784 : 1568); if (w >= h) expect(Math.abs(r.height - (r.width * h) / w)).toBeLessThanOrEqual(1); else expect(Math.abs(r.width - (r.height * w) / h)).toBeLessThanOrEqual(1); } });
+});
 describe('fitToTier', () => {
   it('4:3 high tier lands at the spec size and token count', () => { const r = fitToTier(4032, 3024, 'high'); expect(r.width).toBeLessThanOrEqual(2212); expect(r.imageTokens).toBeLessThanOrEqual(4784); expect(r.imageTokens).toBeGreaterThan(4600); });
   it('never enlarges', () => expect(fitToTier(600, 800, 'high')).toEqual({ width: 600, height: 800, imageTokens: 22 * 29 }));

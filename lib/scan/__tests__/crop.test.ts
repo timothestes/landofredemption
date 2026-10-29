@@ -52,13 +52,18 @@ describe('keepCropRead', () => {
   });
 });
 describe('cropGroup', () => {
+  const expectFillsBudget = (w: number, h: number) => {
+    const patches = Math.ceil(w / 28) * Math.ceil(h / 28);
+    expect(patches).toBeLessThanOrEqual(4784);
+    expect(patches).toBeGreaterThan(4600);
+  };
   const make = () => sharp({ create: { width: 1000, height: 500, channels: 3, background: '#888' } }).jpeg().toBuffer();
-  it('rotates a sideways group upright and upscales to the long edge', async () => {
+  it('rotates a sideways group upright and fills the high tier patch budget', async () => {
     const out = await cropGroup(await make(), { id: 1, orientation: 'rotated_ccw', bbox: [0.1, 0.1, 0.5, 0.3], cardCount: 5 }, 1000, 500);
     const m = await sharp(out).metadata();
     expect(m.format).toBe('jpeg');
-    expect(Math.max(m.width!, m.height!)).toBe(1600);
     expect(m.height!).toBeGreaterThan(m.width!);
+    expectFillsBudget(m.width!, m.height!);
   });
   // Left half red, right half blue, one group over the whole image. sharp.rotate(90) is clockwise, so the left edge ends on top.
   const halves = () => sharp({ create: { width: 200, height: 100, channels: 3, background: '#0000ff' } })
@@ -88,6 +93,6 @@ describe('cropGroup', () => {
     const out = await cropGroup(await make(), { id: 1, orientation: 'upright', bbox: [0.1, 0.1, 0.5, 0.3], cardCount: 5 }, 1000, 500);
     const m = await sharp(out).metadata();
     expect(m.width!).toBeGreaterThan(m.height!);
-    expect(Math.max(m.width!, m.height!)).toBe(1600);
+    expectFillsBudget(m.width!, m.height!);
   });
 });
