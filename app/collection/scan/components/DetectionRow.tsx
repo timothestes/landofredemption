@@ -5,6 +5,7 @@ import { ChevronRight, Minus, Plus, X } from 'lucide-react';
 import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { COPY, fill } from '../copy';
 import { rowPrice, type TrayAction, type TrayRow } from '../lib/trayReducer';
+import CardViewer from './CardViewer';
 import type { PickerMode } from './PrintingPicker';
 
 interface Props {
@@ -46,6 +47,7 @@ export default function DetectionRow({
   const lineTwoId = useId();
   const [stepperOpen, setStepperOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const card = row.key ? row.candidates.find(c => c.key === row.key) ?? null : null;
   const readTitle = row.detection.read.title ?? '';
@@ -105,8 +107,9 @@ export default function DetectionRow({
   }
 
   // Grid at 358 px: [thumb 44][text 194 = 8 + name | price][qty 64 = 8 + 56][remove 48 = 4 + 44].
-  // The picker button is laid over the thumb and both text lines; the price link sits above it on
-  // line one, and line two spans the name and price columns so it keeps the full text width.
+  // The thumb is its own button, opening the card at full size, and stays live after the add. The
+  // picker button is laid over both text lines; the price link sits above it on line one, and line
+  // two spans the name and price columns so it keeps the full text width.
   if (row.removedAs !== null) {
     return (
       <li id={`scan-row-${row.rowId}`} className="flex min-h-11 items-center justify-between gap-2 py-1 pl-[52px] text-sm text-muted-foreground">
@@ -131,21 +134,25 @@ export default function DetectionRow({
       <div className="relative grid grid-cols-[44px_minmax(0,1fr)_auto_64px_48px] grid-rows-[auto_auto] py-2">
         <button
           type="button"
-          className="col-start-1 col-end-4 row-start-1 row-end-3 min-h-11 rounded-md hover:bg-muted/40 focus:outline-none disabled:pointer-events-none"
+          className="col-start-2 col-end-4 row-start-1 row-end-3 min-h-11 rounded-md hover:bg-muted/40 focus:outline-none disabled:pointer-events-none"
           aria-label={pickerLabel}
           aria-describedby={lineTwoId}
           disabled={!editable}
           onClick={() => onOpenPicker(row.rowId, pickerMode)}
         />
-        <span
-          aria-hidden
-          className="pointer-events-none col-start-1 row-start-1 row-end-3 flex h-[62px] w-11 items-center justify-center overflow-hidden rounded-sm bg-muted"
-        >
-          {thumbSrc && (
-            // eslint-disable-next-line @next/next/no-img-element
+        {thumbSrc ? (
+          <button
+            type="button"
+            className="col-start-1 row-start-1 row-end-3 flex h-[62px] w-11 items-center justify-center overflow-hidden rounded-sm bg-muted focus:outline-none"
+            aria-label={`${COPY.viewCard}: ${name}, ${set}`}
+            onClick={() => setViewerOpen(true)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={thumbSrc} alt="" loading="lazy" className="h-full w-full object-contain" />
-          )}
-        </span>
+          </button>
+        ) : (
+          <span aria-hidden className="col-start-1 row-start-1 row-end-3 h-[62px] w-11 rounded-sm bg-muted" />
+        )}
         <span
           aria-hidden
           className="pointer-events-none col-start-2 row-start-1 line-clamp-2 min-w-0 self-end break-words pl-2 text-sm font-medium leading-snug"
@@ -275,6 +282,19 @@ export default function DetectionRow({
           </button>
           </div>
         </div>
+      )}
+
+      {viewerOpen && thumbSrc && (
+        <CardViewer
+          name={name}
+          set={set}
+          legality={card?.legality ?? ''}
+          imgSrc={thumbSrc}
+          price={price}
+          qty={row.qty}
+          showPrices={showPrices}
+          onClose={() => setViewerOpen(false)}
+        />
       )}
     </li>
   );

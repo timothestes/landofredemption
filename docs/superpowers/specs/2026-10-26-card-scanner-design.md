@@ -672,8 +672,11 @@ printing? Prices differ` (truncate the reason, never the chip), or `3
 printings`. On a `fuzzy` row the set moves to line one after the name
 and line two reads *Read as "Saul"*. The quantity is a tappable "×1" that
 opens a stepper. **Remove** is a visible 44 px control; swipe is a
-shortcut. The thumbnail-plus-name is one 44 px target that opens the
-picker, labeled "Change printing: Son of God, Kings". Owned quantity
+shortcut. The name is a 44 px target that opens the picker, labeled
+"Change printing: Son of God, Kings". The thumbnail is its own 44 px
+target that opens the card at full size with its set and price (a tap
+outside, Close, or Escape dismisses it); it stays live after the add.
+Owned quantity
 comes from `useCollectionState`, which the deck builder already mounts.
 
 Chips:
