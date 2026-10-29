@@ -15,7 +15,9 @@ export interface Arm {
 }
 export const DEFAULT_ARM: Required<Arm> = { model: 'claude-sonnet-5-5', effort: 'low', tier: 'high', thinking: 'default' };
 
-export const DECK_ARM: Required<Arm> = { model: 'claude-sonnet-5-5', effort: 'medium', tier: 'high', thinking: 'default' };
+// Effort high, not medium: at medium Sonnet 5.5 does no thinking on a deck photo and, on dark 1024 px photos, often
+// ends the cards list after the Lost Souls and the fully visible cards (2026-10-29 debug: 15 of 20 medium runs across five wordings, 0 of 8 at high).
+export const DECK_ARM: Required<Arm> = { model: 'claude-sonnet-5-5', effort: 'high', tier: 'high', thinking: 'default' };
 
 /** USD per million tokens. */
 export const MODEL_PRICES: Record<Arm['model'] & string, { input: number; output: number }> = {
@@ -38,7 +40,7 @@ export interface RecognizeMode<T> {
   retryWithinMs: number;
 }
 export const COLLECTION_MODE: RecognizeMode<ScanOutput> = { name: 'collection', instruction: SCAN_INSTRUCTION, schema: SCAN_JSON_SCHEMA, parse: parseScanOutput, retryLongOutput: true, retryWithinMs: Infinity };
-export const DECK_MODE: RecognizeMode<DeckOutput> = { name: 'deck', instruction: DECK_INSTRUCTION, schema: DECK_JSON_SCHEMA, parse: parseDeckOutput, timeoutMs: 60_000, retryLongOutput: false, retryWithinMs: 10_000 };
+export const DECK_MODE: RecognizeMode<DeckOutput> = { name: 'deck', instruction: DECK_INSTRUCTION, schema: DECK_JSON_SCHEMA, parse: parseDeckOutput, timeoutMs: 80_000, retryLongOutput: false, retryWithinMs: 10_000 };
 
 export type RecognizeResult<T = ScanOutput> =
   | { ok: true; output: T; model: string; usage: { inputTokens: number; outputTokens: number }; costUsd: number; latencyMs: number; attempts: number }
