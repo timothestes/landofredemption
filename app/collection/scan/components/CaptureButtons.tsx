@@ -17,10 +17,12 @@ interface Props {
   hint?: string | null;
   /** The tips are for a first photo; once the tray has photos they push the review list below the fold. */
   showTips: boolean;
+  /** Overrides the default collection tips. */
+  tips?: string[];
 }
 
 export default function CaptureButtons({
-  addFiles, chooseInputRef, disabled = false, accepting, onBeforeOpen, hint, showTips,
+  addFiles, chooseInputRef, disabled = false, accepting, onBeforeOpen, hint, showTips, tips = [COPY.batchTip, COPY.binderTip],
 }: Props) {
   const cameraRef = useRef<HTMLInputElement>(null);
 
@@ -84,8 +86,9 @@ export default function CaptureButtons({
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       {showTips && (
         <div className="space-y-1 text-xs text-muted-foreground">
-          <p>{COPY.batchTip}</p>
-          <p>{COPY.binderTip}</p>
+          {tips.map(t => (
+            <p key={t}>{t}</p>
+          ))}
         </div>
       )}
     </div>

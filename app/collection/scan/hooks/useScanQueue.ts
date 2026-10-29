@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { prepareImage, PrepareError } from '../lib/prepareImage';
 import { scanErrorView } from '../copy';
-import type { TrayAction } from '../lib/trayReducer';
 import type { ScanErrorBody, ScanResponse } from '../types';
 
 const MAX_CONCURRENT = 2;
@@ -20,7 +19,19 @@ interface Entry {
   timer?: ReturnType<typeof setTimeout>;
 }
 
-export function useScanQueue(dispatch: React.Dispatch<TrayAction>) {
+export type QueueAction<R> =
+  | { type: 'photoAdded'; photoId: string }
+  | { type: 'photoStarted'; photoId: string; at: number }
+  | { type: 'photoDone'; photoId: string; response: R }
+  | { type: 'photoFailed'; photoId: string; error: { status: number; body: ScanErrorBody; retryAfter?: number } }
+  | { type: 'photoRemoved'; photoId: string }
+  | { type: 'photoRetry'; photoId: string; busy?: boolean };
+
+export function useScanQueue<R = ScanResponse>(
+  dispatch: (a: QueueAction<R>) => void,
+  opts?: { mode?: 'collection' | 'deck' },
+) {
+  const mode = opts?.mode;
   const entries = useRef(new Map<string, Entry>());
   const waiting = useRef<string[]>([]);
   const active = useRef(0);
@@ -72,6 +83,7 @@ export function useScanQueue(dispatch: React.Dispatch<TrayAction>) {
       }
       const fd = new FormData();
       fd.append('photo', e.blob, 'photo.jpg');
+      if (mode === 'deck') fd.append('mode', 'deck');
       let res: Response;
       const ctrl = new AbortController();
       const timeout = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
@@ -85,7 +97,7 @@ export function useScanQueue(dispatch: React.Dispatch<TrayAction>) {
       }
       if (!entries.current.has(id)) return;
       if (res.ok) {
-        dispatchRef.current({ type: 'photoDone', photoId: id, response: (await res.json()) as ScanResponse });
+        dispatchRef.current({ type: 'photoDone', photoId: id, response: (await res.json()) as R });
         return;
       }
       let body: ScanErrorBody = {};
@@ -127,7 +139,7 @@ export function useScanQueue(dispatch: React.Dispatch<TrayAction>) {
       active.current--;
       pump.current();
     }
-  }, [fail, syncThumbs]);
+  }, [fail, syncThumbs, mode]);
 
   pump.current = () => {
     while (active.current < MAX_CONCURRENT && waiting.current.length > 0) {

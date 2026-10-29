@@ -16,6 +16,11 @@ describe('COPY', () => {
 });
 
 describe('scanErrorView', () => {
+  it('422 too_many_cards', () => {
+    const v = scanErrorView(422, { code: 'too_many_cards' }, null, new Date());
+    expect(v).toMatchObject({ kind: 'too_many_cards', retry: false, chooseAnother: true });
+    expect(v.text).toBe(COPY.tooManyCardsDeck);
+  });
   it('maps 401 to signed out, with Retry and a Sign in link', () => {
     expect(scanErrorView(401, null, null, now)).toMatchObject({ kind: 'gate', retry: true, signIn: true });
   });

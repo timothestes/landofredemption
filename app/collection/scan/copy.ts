@@ -23,6 +23,7 @@ export const COPY: Record<string, string> = {
   glare: 'Glare hides the text. Tilt away from the light.',
   noCards: 'No cards found in this photo.',
   tooMany: 'Too many cards for one photo. Try 12 or fewer.',
+  tooManyCardsDeck: 'Too many cards for one photo. Photograph the deck in two halves and add both.',
   heif: 'This photo\'s format can\'t be opened here. Turn off HEIF or "high efficiency" in your camera, or share it as a JPEG.',
   undecodable: "Couldn't open this file as a photo. Try a JPEG or PNG.",
   tooLarge: 'Photo is too large to upload.',
@@ -121,11 +122,12 @@ export const COPY: Record<string, string> = {
   gate: "Sign in to scan cards, see what they're worth at YTG, and add them to your collection.",
   deckBuilderLink: 'Scan your cards',
   beta: 'Beta',
+  crossLinkScanner: 'Scanning a whole deck? Use Deck from photo.',
 };
 
 export type ScanErrorKind =
   | 'gate' | 'forbidden' | 'too_large' | 'heif' | 'undecodable' | 'cap_10m' | 'cap_24h' | 'cap_global'
-  | 'credit_out' | 'busy' | 'network' | 'timeout' | 'server' | 'lost_on_reload' | 'generic' | 'offline';
+  | 'credit_out' | 'busy' | 'network' | 'timeout' | 'server' | 'lost_on_reload' | 'generic' | 'offline' | 'too_many_cards';
 
 export interface ScanErrorView {
   kind: ScanErrorKind;
@@ -160,6 +162,7 @@ export function scanErrorView(
 
   if (status === 401) return { ...view('gate', COPY.signedOut, true), signIn: true };
   if (status === 403) return view('forbidden', COPY.notOpen);
+  if (status === 422 && code === 'too_many_cards') return view('too_many_cards', COPY.tooManyCardsDeck, false, true);
   if (status === 413) return view('too_large', COPY.tooLarge, false, true);
   // 'heif' is the client's own decode failure; the server's 415 is any file it could not open.
   if (status === 415) return code === 'heif' ? view('heif', COPY.heif, false, true) : view('undecodable', COPY.undecodable, false, true);
