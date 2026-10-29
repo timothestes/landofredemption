@@ -96,23 +96,25 @@ const rowEntries = (s: DeckTrayState, rowKey: string) => {
   return { row, ids, entries: s.entries.filter(e => ids.has(e.entryId)) };
 };
 
-function addedEntry(s: DeckTrayState, from: Pick<TrayEntry, 'photoId' | 'group' | 'kind' | 'key' | 'title' | 'type' | 'zone'>): TrayEntry {
+function addedEntry(s: DeckTrayState, from: Pick<TrayEntry, 'photoId' | 'group' | 'kind' | 'key' | 'title' | 'type'> & Partial<Pick<TrayEntry, 'zone' | 'identityCandidates' | 'near' | 'candidates'>>): TrayEntry {
   const scanId = s.photos.find(p => p.photoId === from.photoId)?.scanId ?? from.photoId;
   const e: TrayEntry = {
     entryId: `${scanId}:add:${s.addSeq}`, photoId: from.photoId, group: from.group, kind: from.kind,
-    key: from.key, title: from.title, type: from.type, candidates: [], original: null, removed: false,
+    key: from.key, title: from.title, type: from.type, candidates: from.candidates ?? [], original: null, removed: false,
   };
+  // Copied so an added `which` read keeps the row key (`w:<candidates>`) and merges with its row.
+  if (from.identityCandidates) e.identityCandidates = from.identityCandidates;
+  if (from.near) e.near = from.near;
   if (from.zone) e.zone = from.zone;
   return e;
 }
 
-/** Zone defaults the first time the deck has two or more groups. */
-function withDefaultZones(before: DeckTrayState, after: DeckTrayState): DeckTrayState {
+const groupSizes = (s: DeckTrayState): GroupSize[] => {
   const groups: GroupSize[] = [];
-  for (const p of after.photos) {
+  for (const p of s.photos) {
     if (p.status !== 'done') continue;
     const counts = new Map<number, number>();
-    for (const e of after.entries) if (e.photoId === p.photoId) counts.set(e.group, (counts.get(e.group) ?? 0) + 1);
+    for (const e of s.entries) if (e.photoId === p.photoId) counts.set(e.group, (counts.get(e.group) ?? 0) + 1);
     const seen = new Set<number>();
     for (const g of p.groups) {
       seen.add(g.id);
@@ -122,8 +124,13 @@ function withDefaultZones(before: DeckTrayState, after: DeckTrayState): DeckTray
       if (!seen.has(id)) groups.push({ key: `${p.photoId}:${id}`, orientation: 'upright', count });
     }
   }
-  const wasMulti = before.photos.filter(p => p.status === 'done').reduce((n, p) => n + p.groups.length, 0) >= 2;
-  if (wasMulti || groups.length < 2) return after;
+  return groups;
+};
+
+/** Zone defaults the first time the deck has two or more groups. */
+function withDefaultZones(before: DeckTrayState, after: DeckTrayState): DeckTrayState {
+  const groups = groupSizes(after);
+  if (groupSizes(before).length >= 2 || groups.length < 2) return after;
   const reserve = defaultReserveGroup(groups);
   const groupZones = { ...after.groupZones };
   for (const g of groups) if (!(g.key in groupZones)) groupZones[g.key] = g.key === reserve ? 'reserve' : 'main';
@@ -189,7 +196,8 @@ export function deckTrayReducer(s: DeckTrayState, a: DeckTrayAction): DeckTraySt
     case 'setQty': {
       const r = rowEntries(s, a.rowKey);
       if (!r) return s;
-      const n = Math.min(99, Math.max(0, Math.round(a.qty) || 0));
+      if (!Number.isFinite(a.qty)) return s;
+      const n = Math.min(99, Math.max(0, Math.round(a.qty)));
       const q = r.entries.length;
       if (n === q) return s;
       if (n < q) {
@@ -241,28 +249,45 @@ export function deckTrayReducer(s: DeckTrayState, a: DeckTrayAction): DeckTraySt
 
 const isObj = (v: unknown): v is Record<string, any> => !!v && typeof v === 'object' && !Array.isArray(v);
 
-const validEntry = (e: unknown): e is TrayEntry =>
-  isObj(e) && typeof e.entryId === 'string' && typeof e.photoId === 'string' && typeof e.group === 'number' &&
-  typeof e.kind === 'string' && (e.key === null || typeof e.key === 'string') &&
-  (e.title === null || typeof e.title === 'string') && typeof e.type === 'string' &&
-  Array.isArray(e.candidates) && typeof e.removed === 'boolean' &&
-  (e.original === null || (isObj(e.original) && typeof e.original.kind === 'string'));
+const isStrArr = (v: unknown): v is string[] => Array.isArray(v) && v.every(x => typeof x === 'string');
 
-const validPhoto = (p: unknown): p is DeckPhoto =>
-  isObj(p) && typeof p.photoId === 'string' && typeof p.n === 'number' &&
-  ['queued', 'reading', 'done', 'failed'].includes(p.status) && Array.isArray(p.groups);
+const KINDS = ['matched', 'which', 'read_as', 'not_found', 'unread', 'lost_soul'];
+
+function cleanEntry(e: unknown): TrayEntry | null {
+  if (!(isObj(e) && typeof e.entryId === 'string' && typeof e.photoId === 'string' && Number.isFinite(e.group) &&
+    KINDS.includes(e.kind) && (e.key === null || typeof e.key === 'string') &&
+    (e.title === null || typeof e.title === 'string') && typeof e.type === 'string' && typeof e.removed === 'boolean' &&
+    (e.original === null || (isObj(e.original) && typeof e.original.kind === 'string')) &&
+    (e.identityCandidates === undefined || isStrArr(e.identityCandidates)))) return null;
+  const out = { ...e } as TrayEntry;
+  out.candidates = Array.isArray(e.candidates) ? e.candidates : [];
+  if (e.near !== undefined && !Array.isArray(e.near)) delete out.near;
+  if (e.zone !== 'main' && e.zone !== 'reserve') delete out.zone;
+  return out;
+}
+
+const validGroup = (g: unknown): boolean =>
+  isObj(g) && Number.isFinite(g.id) && typeof g.orientation === 'string' &&
+  Array.isArray(g.bbox) && g.bbox.length === 4 && g.bbox.every((n: unknown) => Number.isFinite(n)) &&
+  Number.isFinite(g.cardCount);
+
+function cleanPhoto(p: unknown): DeckPhoto | null {
+  if (!(isObj(p) && typeof p.photoId === 'string' && typeof p.n === 'number' &&
+    ['queued', 'reading', 'done', 'failed'].includes(p.status) && Array.isArray(p.groups))) return null;
+  return { ...p, groups: p.groups.filter(validGroup) } as DeckPhoto;
+}
 
 export function restoreDeckTray(raw: unknown, userId: string): DeckTrayState {
   try {
     const v = typeof raw === 'string' ? JSON.parse(raw) : raw;
     if (!isObj(v) || v.userId !== userId) return initialDeckTray(userId);
-    const photos = (Array.isArray(v.photos) ? v.photos : []).filter(validPhoto).map((p): DeckPhoto =>
+    const photos = (Array.isArray(v.photos) ? v.photos : []).map(cleanPhoto).filter((p): p is DeckPhoto => p !== null).map((p): DeckPhoto =>
       p.status === 'queued' || p.status === 'reading'
         ? { ...p, status: 'failed', startedAt: undefined, busy: undefined, error: { status: 0, body: { code: 'lost_on_reload' } } }
         : p,
     );
     const ids = new Set(photos.map(p => p.photoId));
-    const entries = (Array.isArray(v.entries) ? v.entries : []).filter(validEntry).filter(e => ids.has(e.photoId));
+    const entries = (Array.isArray(v.entries) ? v.entries : []).map(cleanEntry).filter((e): e is TrayEntry => e !== null && ids.has(e.photoId));
     const groupZones: Record<string, Zone> = {};
     if (isObj(v.groupZones)) {
       for (const [k, z] of Object.entries(v.groupZones)) if ((z === 'main' || z === 'reserve') && ids.has(k.slice(0, k.lastIndexOf(':')))) groupZones[k] = z;

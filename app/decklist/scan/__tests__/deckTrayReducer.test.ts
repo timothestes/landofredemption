@@ -61,6 +61,20 @@ describe('deckTrayReducer', () => {
     expect(trayRows(run(s, { type: 'setQty', rowKey: rk, qty: 0 }))).toEqual([]);
   });
 
+  it('setQty on a which row keeps one row (added entries copy identityCandidates)', () => {
+    let s = withPhoto('p1', deckResponse('s1', [{ group: 1, key: 'A', kind: 'which', identityCandidates: ['A', 'B'] }]));
+    s = run(s, { type: 'setQty', rowKey: trayRows(s)[0].rowKey, qty: 3 });
+    const rows = trayRows(s);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].quantity).toBe(3);
+    expect(s.entries[2].identityCandidates).toEqual(['A', 'B']);
+  });
+
+  it('setQty with a non-finite qty is a no-op', () => {
+    const s = withPhoto('p1', deckResponse('s1', [{ group: 1, key: 'A' }]));
+    expect(run(s, { type: 'setQty', rowKey: trayRows(s)[0].rowKey, qty: NaN })).toBe(s);
+  });
+
   it('removeRow marks the entries removed and undoRemove restores exactly those', () => {
     let s = withPhoto('p1', deckResponse('s1', [{ group: 1, key: 'A' }, { group: 1, key: 'A' }, { group: 1, key: 'B' }]));
     const rk = trayRows(s)[0].rowKey;
@@ -180,6 +194,25 @@ describe('restoreDeckTray', () => {
     const back = restoreDeckTray(bad, U);
     expect(back.entries).toHaveLength(1);
     expect(back.photos).toHaveLength(1);
+  });
+
+  it('survives hostile restored state through trayRows and the next photoDone', () => {
+    const s = withPhoto('p1', deckResponse('s1', [{ group: 1, key: 'A', kind: 'which', identityCandidates: ['A', 'B'] }, { group: 1, key: 'C' }]));
+    const hostile = JSON.parse(JSON.stringify(s));
+    hostile.entries[0].zone = 'x';
+    hostile.entries[0].identityCandidates = 'nope';
+    hostile.entries[1].candidates = 5;
+    hostile.entries[1].near = 5;
+    hostile.entries[1].zone = 'x';
+    hostile.photos[0].groups = [null, { id: 1 }, { id: 1, orientation: 'upright', bbox: [0, 0, 1], cardCount: 1 }];
+    const back = restoreDeckTray(hostile, U);
+    expect(() => trayRows(back)).not.toThrow();
+    expect(back.entries).toHaveLength(1);
+    expect(back.entries[0].zone).toBeUndefined();
+    expect(back.entries[0].candidates).toEqual([]);
+    expect(back.photos[0].groups).toEqual([]);
+    expect(() => run(back, { type: 'photoAdded', photoId: 'p2' },
+      { type: 'photoDone', photoId: 'p2', response: deckResponse('s2', [{ group: 1, key: 'D' }, { group: 2, key: 'E' }], [{ id: 1 }, { id: 2 }]) })).not.toThrow();
   });
 
   it('reopens an interrupted save for editing', () => {

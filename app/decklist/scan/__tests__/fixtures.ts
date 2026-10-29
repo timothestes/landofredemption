@@ -6,6 +6,7 @@ export interface DetSpec {
   title?: string;
   kind?: DeckRowKind;
   type?: string;
+  identityCandidates?: string[];
 }
 
 /** Hand-built deck response; read ids are `${scanId}:${i}`. */
@@ -26,6 +27,7 @@ export function deckResponse(
     chosenKey: d.key,
     kind: d.kind ?? 'matched',
     deckKey: d.key,
+    ...(d.identityCandidates ? { identityCandidates: d.identityCandidates } : {}),
     candidates: [],
     scores: {},
   })) as unknown as DeckDetection[];
