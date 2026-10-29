@@ -91,6 +91,11 @@ function ScanTray({ userId }: { userId: string }) {
           hint={state.phase === 'committed' ? COPY.startNew : null}
           showTips={empty}
         />
+        <p className="text-xs text-muted-foreground">
+          <Link href="/decklist/scan" className="underline underline-offset-4 hover:text-foreground focus:outline-none">
+            {COPY.crossLinkScanner}
+          </Link>
+        </p>
         <details className="text-xs text-muted-foreground">
           <summary className="min-h-11 cursor-pointer py-3 hover:text-foreground focus:outline-none">
             {COPY.retentionSummary}
@@ -165,7 +170,7 @@ function ScanTray({ userId }: { userId: string }) {
       {picked && pickerRow && (
         <PrintingPicker
           key={picked.rowId}
-          row={picked}
+          subject={{ readTitle: picked.detection.read.title, candidates: picked.candidates, currentKey: picked.key }}
           mode={pickerRow.mode}
           quantities={quantities}
           showPrices={showPrices}

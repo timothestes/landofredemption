@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseDeckOutput, DECK_JSON_SCHEMA } from '../deckSchema';
+import { parseDeckOutput, DECK_JSON_SCHEMA, DECK_INSTRUCTION } from '../deckSchema';
 import { FIELD_CAPS } from '../schema';
 
 const card = (p: object = {}) => ({ title: 'Abner', strength: '7', toughness: '6', type: 'Evil Character', brigade: 'Gray', reference: null, group: 1, position: 1, titleBox: [0.1, 0.1, 0.2, 0.12], confidence: 'high', ...p });
@@ -15,4 +15,16 @@ describe('parseDeckOutput', () => {
   it('unknown enums coerce', () => { const o = parseDeckOutput(out({ photoQuality: 'too_many_cards', groups: [{ id: 1, orientation: 'sideways', bbox: [0, 0, 1, 1], cardCount: 1 }], cards: [card({ type: 'Wizard', confidence: 'sure' })] }))!; expect(o.photoQuality).toBe('ok'); expect(o.groups[0].orientation).toBe('upright'); expect(o.cards[0].type).toBe('unknown'); expect(o.cards[0].confidence).toBe('low'); });
   it('a null title is kept (an unread card)', () => expect(parseDeckOutput(out({ cards: [card({ title: null })] }))!.cards[0].title).toBeNull());
   it('the schema requires every card field', () => expect((DECK_JSON_SCHEMA as any).properties.cards.items.required).toEqual(['title', 'strength', 'toughness', 'type', 'brigade', 'reference', 'group', 'position', 'titleBox', 'confidence']));
+});
+
+describe('DECK_INSTRUCTION', () => {
+  it('still forbids inventing cards or naming them from memory', () => {
+    expect(DECK_INSTRUCTION).toContain('Never invent a card you cannot see.');
+    expect(DECK_INSTRUCTION).toContain('Do not identify cards from memory');
+  });
+  // photoCrops turns rotated_cw by -90 and rotated_ccw by +90, so the words must match that.
+  it('describes each sideways orientation by where the card tops point', () => {
+    expect(DECK_INSTRUCTION).toMatch(/rotated_cw when the cards lie sideways with their tops toward the right edge/);
+    expect(DECK_INSTRUCTION).toMatch(/rotated_ccw when the cards lie sideways with their tops toward the left edge/);
+  });
 });

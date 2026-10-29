@@ -1,0 +1,961 @@
+{
+  "scanId": "047aa11f-b1d7-4b04-805c-6290d28ffc31",
+  "mode": "deck",
+  "photoQuality": "ok",
+  "groups": [
+    {
+      "id": 1,
+      "orientation": "upright",
+      "bbox": [
+        0.23,
+        0.07,
+        0.75,
+        0.25
+      ],
+      "cardCount": 10
+    },
+    {
+      "id": 2,
+      "orientation": "upright",
+      "bbox": [
+        0.005,
+        0.24,
+        0.16,
+        0.77
+      ],
+      "cardCount": 8
+    },
+    {
+      "id": 3,
+      "orientation": "upright",
+      "bbox": [
+        0.15,
+        0.25,
+        0.29,
+        0.73
+      ],
+      "cardCount": 8
+    },
+    {
+      "id": 4,
+      "orientation": "upright",
+      "bbox": [
+        0.3,
+        0.26,
+        0.44,
+        0.68
+      ],
+      "cardCount": 7
+    },
+    {
+      "id": 5,
+      "orientation": "upright",
+      "bbox": [
+        0.42,
+        0.26,
+        0.6,
+        0.97
+      ],
+      "cardCount": 14
+    },
+    {
+      "id": 6,
+      "orientation": "upright",
+      "bbox": [
+        0.55,
+        0.24,
+        0.7,
+        0.6
+      ],
+      "cardCount": 5
+    },
+    {
+      "id": 7,
+      "orientation": "upright",
+      "bbox": [
+        0.68,
+        0.24,
+        0.89,
+        0.87
+      ],
+      "cardCount": 10
+    },
+    {
+      "id": 8,
+      "orientation": "upright",
+      "bbox": [
+        0.81,
+        0.23,
+        0.97,
+        0.58
+      ],
+      "cardCount": 4
+    }
+  ],
+  "detections": [
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:0",
+      "group": 2,
+      "position": 8,
+      "titleBox": [
+        0.06,
+        0.52,
+        0.15,
+        0.55
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 8,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:1",
+      "group": 2,
+      "position": 1,
+      "titleBox": [
+        0.05,
+        0.245,
+        0.16,
+        0.275
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 1,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:2",
+      "group": 2,
+      "position": 2,
+      "titleBox": [
+        0.05,
+        0.285,
+        0.16,
+        0.315
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 2,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:3",
+      "group": 2,
+      "position": 3,
+      "titleBox": [
+        0.04,
+        0.325,
+        0.16,
+        0.355
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 3,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:4",
+      "group": 2,
+      "position": 4,
+      "titleBox": [
+        0.04,
+        0.365,
+        0.16,
+        0.395
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 4,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:5",
+      "group": 2,
+      "position": 5,
+      "titleBox": [
+        0.04,
+        0.41,
+        0.15,
+        0.44
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 5,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:6",
+      "group": 2,
+      "position": 6,
+      "titleBox": [
+        0.04,
+        0.455,
+        0.15,
+        0.485
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 6,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:7",
+      "group": 2,
+      "position": 7,
+      "titleBox": [
+        0.04,
+        0.495,
+        0.15,
+        0.525
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 7,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:8",
+      "group": 3,
+      "position": 2,
+      "titleBox": [
+        0.2,
+        0.3,
+        0.29,
+        0.33
+      ],
+      "read": {
+        "title": "The Second Coming",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 2,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "The Second Coming|CoW|The_Second_Coming_(CoW)",
+      "kind": "matched",
+      "deckKey": "The Second Coming|CoW|The_Second_Coming_(CoW)",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "The Second Coming|CoW|The_Second_Coming_(CoW)",
+          "name": "The Second Coming",
+          "set": "CoW",
+          "officialSet": "Cloud of Witnesses",
+          "imgFile": "The_Second_Coming_(CoW)",
+          "legality": "Rotation",
+          "price": 55
+        },
+        {
+          "key": "The Second Coming (CoW AB)|CoW (AB)|CoW_AB_N01-The-Second-Coming-UR",
+          "name": "The Second Coming (CoW AB)",
+          "set": "CoW (AB)",
+          "officialSet": "Cloud of Witnesses (Alternate Border)",
+          "imgFile": "CoW_AB_N01-The-Second-Coming-UR",
+          "legality": "Rotation",
+          "price": 55
+        },
+        {
+          "key": "The Second Coming [Fundraiser]|Fund|FR-The-Second-Coming",
+          "name": "The Second Coming [Fundraiser]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "FR-The-Second-Coming",
+          "legality": "Rotation",
+          "price": 25
+        },
+        {
+          "key": "The Second Coming [Fundraiser - Serialized]|Fund|TSC-FR-WM",
+          "name": "The Second Coming [Fundraiser - Serialized]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "TSC-FR-WM",
+          "legality": "Rotation",
+          "price": 300
+        }
+      ]
+    },
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:9",
+      "group": 3,
+      "position": 6,
+      "titleBox": [
+        0.2,
+        0.455,
+        0.29,
+        0.485
+      ],
+      "read": {
+        "title": "Three Woes",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 6,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "Three Woes (RoJ)|RoJ|01-Three-Woes-UR",
+      "kind": "matched",
+      "deckKey": "Three Woes (RoJ)|RoJ|01-Three-Woes-UR",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Three Woes (RoJ AB)|RoJ (AB)|RoJ_AB_N01-Three-Woes-UR",
+          "name": "Three Woes (RoJ AB)",
+          "set": "RoJ (AB)",
+          "officialSet": "Revelation of John (Alternate Border)",
+          "imgFile": "RoJ_AB_N01-Three-Woes-UR",
+          "legality": "Rotation",
+          "price": 45
+        },
+        {
+          "key": "Three Woes (RoJ)|RoJ|01-Three-Woes-UR",
+          "name": "Three Woes (RoJ)",
+          "set": "RoJ",
+          "officialSet": "Revelation of John",
+          "imgFile": "01-Three-Woes-UR",
+          "legality": "Rotation",
+          "price": 45
+        },
+        {
+          "key": "Three Woes [Fundraiser]|Fund|FR-Three-Woes",
+          "name": "Three Woes [Fundraiser]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "FR-Three-Woes",
+          "legality": "Rotation",
+          "price": 25
+        },
+        {
+          "key": "Three Woes [Fundraiser - Serialized]|Fund|3W-FR-WM",
+          "name": "Three Woes [Fundraiser - Serialized]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "3W-FR-WM",
+          "legality": "Rotation",
+          "price": 300
+        }
+      ]
+    },
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:10",
+      "group": 5,
+      "position": 14,
+      "titleBox": [
+        0.5,
+        0.71,
+        0.59,
+        0.74
+      ],
+      "read": {
+        "title": "Daniel, the Apocalyptist",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "6",
+        "toughness": "7",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 14,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Daniel, the Apocalyptist (PoC)|PoC|LR31-Daniel",
+      "kind": "matched",
+      "deckKey": "Daniel, the Apocalyptist (PoC)|PoC|LR31-Daniel",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Daniel, the Apocalyptist (PoC)|PoC|LR31-Daniel",
+          "name": "Daniel, the Apocalyptist (PoC)",
+          "set": "PoC",
+          "officialSet": "Prophecies of Christ",
+          "imgFile": "LR31-Daniel",
+          "legality": "Rotation",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:11",
+      "group": 6,
+      "position": 5,
+      "titleBox": [
+        0.58,
+        0.38,
+        0.69,
+        0.41
+      ],
+      "read": {
+        "title": "The First Sacrifice",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 5,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "The First Sacrifice|PoC|004-The-First-Sacrifice-R",
+      "kind": "matched",
+      "deckKey": "The First Sacrifice|PoC|004-The-First-Sacrifice-R",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The First Sacrifice|PoC|004-The-First-Sacrifice-R",
+          "name": "The First Sacrifice",
+          "set": "PoC",
+          "officialSet": "Prophecies of Christ",
+          "imgFile": "004-The-First-Sacrifice-R",
+          "legality": "Rotation",
+          "price": 7
+        }
+      ]
+    },
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:12",
+      "group": 7,
+      "position": 10,
+      "titleBox": [
+        0.78,
+        0.6,
+        0.88,
+        0.63
+      ],
+      "read": {
+        "title": "Emperor Claudius",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": "10",
+        "toughness": "11",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 10,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "printing_ambiguous",
+      "chosenKey": "Emperor Claudius [RR2]|RR2|409-Emperor-Claudius",
+      "kind": "matched",
+      "deckKey": "Emperor Claudius [RR2]|RR2|409-Emperor-Claudius",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 4.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Emperor Claudius (PC)|TPC|Emperor_Claudius_(PC)",
+          "name": "Emperor Claudius (PC)",
+          "set": "TPC",
+          "officialSet": "Persecuted Church",
+          "imgFile": "Emperor_Claudius_(PC)",
+          "legality": "Rotation",
+          "price": 12
+        },
+        {
+          "key": "Emperor Claudius [RR2]|RR2|409-Emperor-Claudius",
+          "name": "Emperor Claudius [RR2]",
+          "set": "RR2",
+          "officialSet": "Roots 2",
+          "imgFile": "409-Emperor-Claudius",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:13",
+      "group": 7,
+      "position": 9,
+      "titleBox": [
+        0.78,
+        0.57,
+        0.88,
+        0.6
+      ],
+      "read": {
+        "title": "The Judean Mediums",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 9,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "The Judean Mediums|TPC|The_Judean_Mediums_(PC)",
+      "kind": "matched",
+      "deckKey": "The Judean Mediums|TPC|The_Judean_Mediums_(PC)",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Judean Mediums|TPC|The_Judean_Mediums_(PC)",
+          "name": "The Judean Mediums",
+          "set": "TPC",
+          "officialSet": "Persecuted Church",
+          "imgFile": "The_Judean_Mediums_(PC)",
+          "legality": "Rotation",
+          "price": 25
+        },
+        {
+          "key": "The Judean Mediums [2024 - Regional]|Pmo-P3|The-Judean-Mediums-Regional",
+          "name": "The Judean Mediums [2024 - Regional]",
+          "set": "Pmo-P3",
+          "officialSet": "Promo",
+          "imgFile": "The-Judean-Mediums-Regional",
+          "legality": "Rotation",
+          "price": 30
+        }
+      ]
+    },
+    {
+      "id": "047aa11f-b1d7-4b04-805c-6290d28ffc31:14",
+      "group": 8,
+      "position": 4,
+      "titleBox": [
+        0.85,
+        0.36,
+        0.96,
+        0.39
+      ],
+      "read": {
+        "title": "Allowed to Be Trampled",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": "3",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 4,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "Allowed to Be Trampled|T2C|091-Allowed-to-be-Trampled",
+      "kind": "matched",
+      "deckKey": "Allowed to Be Trampled|T2C|091-Allowed-to-be-Trampled",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Allowed to Be Trampled|T2C|091-Allowed-to-be-Trampled",
+          "name": "Allowed to Be Trampled",
+          "set": "T2C",
+          "officialSet": "Times to Come",
+          "imgFile": "091-Allowed-to-be-Trampled",
+          "legality": "Rotation",
+          "price": 0.75
+        },
+        {
+          "key": "Allowed to Be Trampled [T2C AB]|T2C (AB)|091-Allowed-to-be-Trampled-AB",
+          "name": "Allowed to Be Trampled [T2C AB]",
+          "set": "T2C (AB)",
+          "officialSet": "Times to Come (Alternate Border)",
+          "imgFile": "091-Allowed-to-be-Trampled-AB",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "model": "claude-sonnet-5-5",
+    "latencyMs": 9421,
+    "attempts": 1,
+    "costUsd": 0.023366
+  },
+  "file": "20260604_185149.webp",
+  "status": 200,
+  "latencyMs": 11283,
+  "attempts": 1
+}

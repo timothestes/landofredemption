@@ -1,4 +1,5 @@
 import TopNav from "@/components/top-nav";
+import { DECK_COPY } from "@/app/decklist/scan/copy";
 import SiteFooter from "@/components/site-footer";
 
 export const metadata = {
@@ -25,6 +26,7 @@ export default function PrivacyPage() {
             <li>For each scan we also keep token counts and cost, and the text read from each card stays with your account.</li>
             <li>Text read from photos where no card matched is deleted after 30 days, in a monthly cleanup, so it can take up to two months.</li>
             <li>Scanning requires an account and is limited per user.</li>
+            <li>{DECK_COPY.privacy}</li>
           </ul>
         </section>
       </main>

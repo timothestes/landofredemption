@@ -101,7 +101,8 @@ export function scoreDeckPhoto(label: DeckLabel, resp: DeckScanResponse): DeckPh
     ? reserve === null
     : reserve !== null && sizes.find(g => g.key === reserve)!.count === label.reserveSize;
 
-  const denom = Math.max(0, truthTotal - label.unreadable);
+  // label.cards already leaves out the unreadable cards, so truthTotal is the recall denominator as is.
+  const denom = truthTotal;
   return {
     photo: label.photo,
     precision: predTotal ? hits / predTotal : 1,

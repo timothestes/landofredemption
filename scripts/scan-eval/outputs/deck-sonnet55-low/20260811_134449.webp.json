@@ -1,0 +1,429 @@
+{
+  "scanId": "4a3c994d-6b49-4269-9c3d-3acc1ad7ac14",
+  "mode": "deck",
+  "photoQuality": "ok",
+  "groups": [
+    {
+      "id": 1,
+      "orientation": "upright",
+      "bbox": [
+        0.1,
+        0.08,
+        0.76,
+        0.26
+      ],
+      "cardCount": 10
+    },
+    {
+      "id": 2,
+      "orientation": "upright",
+      "bbox": [
+        0.03,
+        0.25,
+        0.19,
+        0.92
+      ],
+      "cardCount": 7
+    },
+    {
+      "id": 3,
+      "orientation": "upright",
+      "bbox": [
+        0.18,
+        0.26,
+        0.33,
+        0.8
+      ],
+      "cardCount": 7
+    },
+    {
+      "id": 4,
+      "orientation": "upright",
+      "bbox": [
+        0.33,
+        0.25,
+        0.48,
+        0.86
+      ],
+      "cardCount": 8
+    },
+    {
+      "id": 5,
+      "orientation": "upright",
+      "bbox": [
+        0.47,
+        0.27,
+        0.6,
+        0.86
+      ],
+      "cardCount": 9
+    },
+    {
+      "id": 6,
+      "orientation": "upright",
+      "bbox": [
+        0.6,
+        0.28,
+        0.75,
+        0.77
+      ],
+      "cardCount": 6
+    },
+    {
+      "id": 7,
+      "orientation": "upright",
+      "bbox": [
+        0.73,
+        0.28,
+        0.9,
+        0.96
+      ],
+      "cardCount": 10
+    },
+    {
+      "id": 8,
+      "orientation": "upright",
+      "bbox": [
+        0.85,
+        0.28,
+        0.98,
+        0.6
+      ],
+      "cardCount": 3
+    }
+  ],
+  "detections": [
+    {
+      "id": "4a3c994d-6b49-4269-9c3d-3acc1ad7ac14:0",
+      "group": 2,
+      "position": 1,
+      "titleBox": [
+        0.07,
+        0.26,
+        0.19,
+        0.3
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 1,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "4a3c994d-6b49-4269-9c3d-3acc1ad7ac14:1",
+      "group": 2,
+      "position": 2,
+      "titleBox": [
+        0.07,
+        0.3,
+        0.19,
+        0.34
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 2,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "4a3c994d-6b49-4269-9c3d-3acc1ad7ac14:2",
+      "group": 2,
+      "position": 3,
+      "titleBox": [
+        0.07,
+        0.36,
+        0.19,
+        0.4
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 3,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "4a3c994d-6b49-4269-9c3d-3acc1ad7ac14:3",
+      "group": 2,
+      "position": 4,
+      "titleBox": [
+        0.06,
+        0.43,
+        0.18,
+        0.47
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 4,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "4a3c994d-6b49-4269-9c3d-3acc1ad7ac14:4",
+      "group": 2,
+      "position": 5,
+      "titleBox": [
+        0.06,
+        0.49,
+        0.18,
+        0.53
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 5,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "4a3c994d-6b49-4269-9c3d-3acc1ad7ac14:5",
+      "group": 2,
+      "position": 6,
+      "titleBox": [
+        0.05,
+        0.56,
+        0.18,
+        0.6
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 6,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "4a3c994d-6b49-4269-9c3d-3acc1ad7ac14:6",
+      "group": 2,
+      "position": 7,
+      "titleBox": [
+        0.05,
+        0.66,
+        0.17,
+        0.7
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": "Hebrews 12:16",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 7,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    }
+  ],
+  "usage": {
+    "model": "claude-sonnet-5-5",
+    "latencyMs": 6005,
+    "attempts": 1,
+    "costUsd": 0.016266
+  },
+  "file": "20260811_134449.webp",
+  "status": 200,
+  "latencyMs": 7768,
+  "attempts": 1
+}

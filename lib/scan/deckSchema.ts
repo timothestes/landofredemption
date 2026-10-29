@@ -53,7 +53,7 @@ For each card:
 - titleBox: a normalized box [x0, y0, x1, y1] (each 0 to 1, as fractions of the whole photo, origin top-left) around this card's visible title band; null when unsure.
 - confidence: high only when the title is sharp and unambiguous.
 
-Groups: list every visually separate run of cards (a column, a fan, a row) as a group with an integer id starting at 1, its orientation as it appears in the photo (upright, rotated_cw, rotated_ccw or upside_down), a normalized bounding box [x0, y0, x1, y1] (each 0 to 1, as fractions of the whole photo, origin top-left) and an estimated cardCount. A separate row of cards along the top or bottom edge is its own group.
+Groups: list every visually separate run of cards (a column, a fan, a row) as a group with an integer id starting at 1, its orientation (upright when the title text reads left to right across the photo; rotated_cw when the cards lie sideways with their tops toward the right edge, so the title text runs top to bottom; rotated_ccw when the cards lie sideways with their tops toward the left edge, so the title text runs bottom to top; upside_down when the title text is inverted), a normalized bounding box [x0, y0, x1, y1] (each 0 to 1, as fractions of the whole photo, origin top-left) and an estimated cardCount. A separate row of cards along the top or bottom edge is its own group.
 
 Lost Soul cards show only the words "Lost Soul" when fanned; report each one with title "Lost Soul", and its reference when the verse line is visible. Do not identify cards from memory and do not say which card it is: copy what is printed. Never invent a card you cannot see.
 
