@@ -102,12 +102,12 @@ export const FIELD_CAPS: Record<StringField, number> = {
 
 const STRING_LEAVES = Object.keys(FIELD_CAPS).filter(k => k !== 'type') as Exclude<StringField, 'type'>[];
 
-function oneOf<T extends string>(v: unknown, allowed: readonly T[], fallback: T): T {
+export function oneOf<T extends string>(v: unknown, allowed: readonly T[], fallback: T): T {
   return typeof v === 'string' && (allowed as readonly string[]).includes(v) ? (v as T) : fallback;
 }
 
 // Grid default is 1 (the spec numbers positions from 1; a lone card is row 1, col 1).
-function gridIndex(v: unknown): number {
+export function gridIndex(v: unknown): number {
   return typeof v === 'number' && Number.isFinite(v) && v >= 1 ? Math.floor(v) : 1;
 }
 

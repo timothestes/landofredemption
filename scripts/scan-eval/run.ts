@@ -6,6 +6,11 @@
  *     --cookie "$(cat .scan-session)" --photos scripts/scan-eval/photos \
  *     --arm '{"model":"claude-sonnet-5-5","effort":"low","tier":"high"}' \
  *     --out scripts/scan-eval/outputs/sonnet55-low-high [--concurrency 2] [--only <glob>]
+ *
+ * Deck photos (no --arm: the route's DECK_ARM applies; score with deckScore.ts):
+ *   npx tsx scripts/scan-eval/run.ts --base-url https://<preview>.vercel.app \
+ *     --cookie "$(cat .scan-session)" --mode deck --photos scripts/scan-eval/photos-deck \
+ *     --out scripts/scan-eval/outputs/deck-default
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,6 +24,7 @@ export interface RunOptions {
   concurrency: number;
   only: string | null;
   source: string;
+  mode: 'collection' | 'deck';
 }
 
 export interface RunRecord {
@@ -43,6 +49,8 @@ export function parseArgs(argv: string[]): RunOptions {
   }
   if (!f['base-url']) throw new Error('--base-url is required');
   if (!f.cookie) throw new Error('--cookie is required');
+  const mode = f.mode ?? 'collection';
+  if (mode !== 'collection' && mode !== 'deck') throw new Error('--mode must be collection or deck');
   let arm: RunOptions['arm'] = {};
   if (f.arm) {
     try {
@@ -63,6 +71,7 @@ export function parseArgs(argv: string[]): RunOptions {
     concurrency,
     only: f.only ?? null,
     source: 'eval',
+    mode,
   };
 }
 
@@ -126,7 +135,8 @@ async function postRaw(o: RunOptions, file: string) {
   const buf = fs.readFileSync(path.join(o.photos, file));
   const form = new FormData();
   form.append('photo', new Blob([buf], { type: 'image/jpeg' }), file);
-  form.append('arm', JSON.stringify(o.arm));
+  if (o.mode === 'deck') form.append('mode', 'deck');
+  if (o.mode === 'collection' || Object.keys(o.arm).length) form.append('arm', JSON.stringify(o.arm));
   form.append('source', o.source);
   const t0 = Date.now();
   const r = await fetch(`${o.baseUrl}/api/scan`, { method: 'POST', headers: { Cookie: o.cookie }, body: form });

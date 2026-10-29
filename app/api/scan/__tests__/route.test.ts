@@ -9,11 +9,18 @@ vi.mock('@/lib/scan/recognize', async (importOriginal) => ({
   recognize: vi.fn(),
 }));
 vi.mock('@/lib/scan/prices', () => ({ loadPriceMap: vi.fn() }));
+// Pass-through spy, so deck mode can assert the AB pass is skipped.
+vi.mock('@/lib/scan/abCompare', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/scan/abCompare')>();
+  return { ...real, settleAbPairs: vi.fn((...a: Parameters<typeof real.settleAbPairs>) => real.settleAbPairs(...a)) };
+});
 
 import { POST } from '@/app/api/scan/route';
 import { createClient } from '@/utils/supabase/server';
 import { getSupabaseAdmin } from '@/lib/pricing/supabase-admin';
-import { recognize, DEFAULT_ARM } from '@/lib/scan/recognize';
+import { recognize, DEFAULT_ARM, DECK_ARM, DECK_MODE } from '@/lib/scan/recognize';
+import { settleAbPairs } from '@/lib/scan/abCompare';
+import type { DeckRead } from '@/lib/scan/deckSchema';
 import { loadPriceMap } from '@/lib/scan/prices';
 import { FIELD_CAPS, type ScanDetection } from '@/lib/scan/schema';
 import { CARDS } from '@/lib/cards/lookup';
@@ -272,7 +279,7 @@ describe('POST /api/scan', () => {
     const res = await POST(req(jpegBlob()));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(Object.keys(body).sort()).toEqual(['detections', 'photoQuality', 'scanId', 'usage']);
+    expect(Object.keys(body).sort()).toEqual(['detections', 'mode', 'photoQuality', 'scanId', 'usage']);
     expect(body.scanId).toBe(SCAN_ID);
     expect(body.photoQuality).toBe('ok');
     expect(body.usage).toEqual({ model: 'claude-sonnet-5-5', latencyMs: 4200, attempts: 1 });
@@ -313,5 +320,95 @@ describe('POST /api/scan', () => {
     expect(patch.detections[1].read.title).toHaveLength(FIELD_CAPS.title);
     expect(err).toHaveBeenCalled(); // the write failure was logged
     err.mockRestore();
+  });
+});
+
+describe('POST /api/scan deck mode', () => {
+  const read = (p: Partial<DeckRead>): DeckRead => ({
+    title: null, strength: null, toughness: null, type: 'unknown', brigade: null, reference: null,
+    group: 1, position: 1, titleBox: [0, 0, 10, 10], confidence: 'high', ...p,
+  });
+  const group = { id: 1, orientation: 'upright', box: [0, 0, 100, 100] };
+  const deckOk = (cards: DeckRead[]) => ({
+    ok: true, output: { photoQuality: 'ok', groups: [group], cards }, model: 'claude-sonnet-5-5',
+    usage: { inputTokens: 1, outputTokens: 1 }, costUsd: 0.04, latencyMs: 10, attempts: 1,
+  });
+  const priestAndSoul = () => [
+    read({ title: 'Captive Priest', reference: 'Judges 18:27', type: 'Hero' }),
+    read({ title: 'Lost Soul', position: 2 }),
+  ];
+  const postDeck = (extra: Record<string, string> = {}) => POST(req(jpegBlob(), { mode: 'deck', ...extra }));
+
+  it('calls recognize with DECK_MODE and DECK_ARM', async () => {
+    (recognize as Mock).mockResolvedValue(deckOk(priestAndSoul()));
+    await postDeck();
+    expect((recognize as Mock).mock.calls[0][1]).toEqual(DECK_ARM);
+    expect((recognize as Mock).mock.calls[0][3]).toBe(DECK_MODE);
+  });
+
+  it('returns groups and classified detections', async () => {
+    (recognize as Mock).mockResolvedValue(deckOk(priestAndSoul()));
+    const res = await postDeck();
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.mode).toBe('deck');
+    expect(body.groups).toHaveLength(1);
+    expect(body.detections.map((d: any) => d.kind)).toEqual(['matched', 'lost_soul']);
+    expect(body.detections[0]).toMatchObject({ id: `${SCAN_ID}:0`, group: 1, position: 1 });
+    expect(body.detections[0].deckKey).toMatch(/^Captive Priest/);
+    expect(body.detections[1].deckKey).toBeNull();
+  });
+
+  it('caps detections at 300', async () => {
+    (recognize as Mock).mockResolvedValue(deckOk(Array.from({ length: 320 }, (_, i) => read({ title: 'Captive Priest', position: i + 1 }))));
+    const body = await (await postDeck()).json();
+    expect(body.detections).toHaveLength(300);
+  });
+
+  it('skips the AB comparison', async () => {
+    (recognize as Mock).mockResolvedValue(deckOk(priestAndSoul()));
+    await postDeck();
+    expect(settleAbPairs).not.toHaveBeenCalled();
+  });
+
+  it('too_many_cards is 422 and finishes failed with its cost', async () => {
+    (recognize as Mock).mockResolvedValue({ ok: false, code: 'too_many_cards', usage: { inputTokens: 5, outputTokens: 16000 }, costUsd: 0.16, latencyMs: 30000, attempts: 1 });
+    const res = await postDeck();
+    expect(res.status).toBe(422);
+    expect(await res.json()).toEqual({ code: 'too_many_cards', message: 'Too many cards for one photo.' });
+    expect(update.mock.calls.at(-1)![0]).toMatchObject({ status: 'failed', cost_usd: 0.16, mode: 'deck' });
+  });
+
+  it('finish writes mode deck', async () => {
+    (recognize as Mock).mockResolvedValue(deckOk(priestAndSoul()));
+    await postDeck();
+    const patch = update.mock.calls.at(-1)![0];
+    expect(patch.mode).toBe('deck');
+    for (const s of patch.detections) expect(s).not.toHaveProperty('candidates');
+  });
+
+  it('a superuser arm override merges onto DECK_ARM', async () => {
+    session({ superuser: true });
+    (recognize as Mock).mockResolvedValue(deckOk(priestAndSoul()));
+    await postDeck({ arm: JSON.stringify({ effort: 'low' }) });
+    expect((recognize as Mock).mock.calls[0][1]).toEqual({ ...DECK_ARM, effort: 'low' });
+  });
+
+  it('an unknown mode is 400 before reserve', async () => {
+    const res = await postDeck({ mode: 'binder' });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ code: 'bad_request', message: 'mode must be collection or deck.' });
+    expect(reserveCalls()).toHaveLength(0);
+  });
+
+  it('no mode field is collection mode', async () => {
+    (recognize as Mock).mockResolvedValue({ ok: true, output: { photoQuality: 'ok', cards: [] }, model: 'claude-sonnet-5-5', usage: { inputTokens: 1, outputTokens: 1 }, costUsd: 0.001, latencyMs: 10, attempts: 1 });
+    const res = await POST(req(jpegBlob()));
+    const body = await res.json();
+    expect((recognize as Mock).mock.calls[0][1]).toEqual(DEFAULT_ARM);
+    expect((recognize as Mock).mock.calls[0][3]).toBeUndefined();
+    expect(body.mode).toBe('collection');
+    expect('groups' in body).toBe(false);
+    expect(update.mock.calls.at(-1)![0]).not.toHaveProperty('mode'); // column default; migration 124 may not be on prod
   });
 });

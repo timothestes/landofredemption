@@ -19,6 +19,11 @@ describe('run.ts', () => {
     expect(() => parseArgs(['--cookie', 'c'])).toThrow();
     expect(() => parseArgs(['--base-url', 'u', '--cookie', 'c', '--arm', '{nope'])).toThrow();
   });
+  it('parses --mode and rejects other values', () => {
+    expect(parseArgs(['--base-url', 'x', '--cookie', 'c']).mode).toBe('collection');
+    expect(parseArgs(['--base-url', 'x', '--cookie', 'c', '--mode', 'deck']).mode).toBe('deck');
+    expect(() => parseArgs(['--base-url', 'x', '--cookie', 'c', '--mode', 'binder'])).toThrow(/--mode/);
+  });
   it('minimal glob supports * and ?', () => {
     expect(globToRegExp('IMG_*.jpg').test('IMG_001.jpg')).toBe(true);
     expect(globToRegExp('a?.jpg').test('ab.jpg')).toBe(true);

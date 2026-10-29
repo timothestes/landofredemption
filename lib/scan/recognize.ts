@@ -1,6 +1,7 @@
 import Anthropic, { APIConnectionTimeoutError } from '@anthropic-ai/sdk';
 import type { MessageCreateParamsNonStreaming, ThinkingConfigParam } from '@anthropic-ai/sdk/resources/messages/messages';
 import { SCAN_INSTRUCTION, SCAN_JSON_SCHEMA, parseScanOutput, type ScanOutput } from '@/lib/scan/schema';
+import { DECK_INSTRUCTION, DECK_JSON_SCHEMA, parseDeckOutput, type DeckOutput } from '@/lib/scan/deckSchema';
 import type { Tier } from '@/lib/scan/image';
 
 // The one Claude call that transcribes the cards in a photo. Server only.
@@ -14,6 +15,8 @@ export interface Arm {
 }
 export const DEFAULT_ARM: Required<Arm> = { model: 'claude-sonnet-5-5', effort: 'low', tier: 'high', thinking: 'default' };
 
+export const DECK_ARM: Required<Arm> = { model: 'claude-sonnet-5-5', effort: 'medium', tier: 'high', thinking: 'default' };
+
 /** USD per million tokens. */
 export const MODEL_PRICES: Record<Arm['model'] & string, { input: number; output: number }> = {
   'claude-sonnet-5-5': { input: 2, output: 10 },
@@ -24,12 +27,25 @@ export const MODEL_PRICES: Record<Arm['model'] & string, { input: number; output
 /** Why a call failed, for the server log. Never carries request content or the image. */
 export interface FailureDetail { status?: number; errorType?: string; message?: string; stopReason?: string; model?: string }
 
-export type RecognizeResult =
-  | { ok: true; output: ScanOutput; model: string; usage: { inputTokens: number; outputTokens: number }; costUsd: number; latencyMs: number; attempts: number }
-  | { ok: false; code: 'upstream_rate_limit' | 'upstream_overloaded' | 'billing_error' | 'recognizer_failed'; retryAfterSeconds?: number; detail?: FailureDetail; usage?: { inputTokens: number; outputTokens: number }; costUsd?: number; latencyMs: number; attempts: number };
+/** What one recognizer call asks for and how it is timed and retried. */
+export interface RecognizeMode<T> {
+  name: 'collection' | 'deck';
+  instruction: string;
+  schema: Record<string, unknown>;
+  parse: (text: string) => T | null;
+  timeoutMs?: number;
+  retryLongOutput: boolean;
+  retryWithinMs: number;
+}
+export const COLLECTION_MODE: RecognizeMode<ScanOutput> = { name: 'collection', instruction: SCAN_INSTRUCTION, schema: SCAN_JSON_SCHEMA, parse: parseScanOutput, retryLongOutput: true, retryWithinMs: Infinity };
+export const DECK_MODE: RecognizeMode<DeckOutput> = { name: 'deck', instruction: DECK_INSTRUCTION, schema: DECK_JSON_SCHEMA, parse: parseDeckOutput, timeoutMs: 60_000, retryLongOutput: false, retryWithinMs: 10_000 };
 
-export type Create = (params: unknown) => Promise<unknown>;
-interface Deps { create?: Create; sleep?: (ms: number) => Promise<void> }
+export type RecognizeResult<T = ScanOutput> =
+  | { ok: true; output: T; model: string; usage: { inputTokens: number; outputTokens: number }; costUsd: number; latencyMs: number; attempts: number }
+  | { ok: false; code: 'upstream_rate_limit' | 'upstream_overloaded' | 'billing_error' | 'recognizer_failed' | 'too_many_cards'; retryAfterSeconds?: number; detail?: FailureDetail; usage?: { inputTokens: number; outputTokens: number }; costUsd?: number; latencyMs: number; attempts: number };
+
+export type Create = (params: unknown, options?: { timeout?: number }) => Promise<unknown>;
+interface Deps { create?: Create; sleep?: (ms: number) => Promise<void>; now?: () => number }
 
 const MAX_TOKENS = 16_000;
 const MAX_TOKENS_RETRY = 32_000;
@@ -41,7 +57,7 @@ export function getDefaultCreate(): Create {
   const apiKey = process.env.SCANNER_ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('SCANNER_ANTHROPIC_API_KEY is not set; the scanner cannot call Claude.');
   const client = new Anthropic({ apiKey, maxRetries: 0, timeout: 25_000 });
-  defaultCreate = (params) => client.messages.create(params as MessageCreateParamsNonStreaming);
+  defaultCreate = (params, options) => client.messages.create(params as MessageCreateParamsNonStreaming, options);
   return defaultCreate;
 }
 
@@ -53,7 +69,7 @@ function thinkingFor(arm: Required<Arm>): ThinkingConfigParam | undefined {
   return undefined; // Opus 5.5: thinking is always on.
 }
 
-function buildParams(jpeg: Buffer, arm: Required<Arm>, maxTokens: number): MessageCreateParamsNonStreaming {
+function buildParams(jpeg: Buffer, arm: Required<Arm>, maxTokens: number, mode: RecognizeMode<unknown>): MessageCreateParamsNonStreaming {
   const thinking = thinkingFor(arm);
   return {
     model: arm.model,
@@ -63,11 +79,11 @@ function buildParams(jpeg: Buffer, arm: Required<Arm>, maxTokens: number): Messa
         role: 'user',
         content: [
           { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: jpeg.toString('base64') } },
-          { type: 'text', text: SCAN_INSTRUCTION },
+          { type: 'text', text: mode.instruction },
         ],
       },
     ],
-    output_config: { effort: arm.effort, format: { type: 'json_schema', schema: SCAN_JSON_SCHEMA } },
+    output_config: { effort: arm.effort, format: { type: 'json_schema', schema: mode.schema } },
     ...(thinking ? { thinking } : {}),
   };
 }
@@ -125,24 +141,25 @@ function responseDetail(res: { model?: unknown; stop_reason?: unknown }, message
 
 interface ResponseShape { model?: unknown; stop_reason?: unknown; content?: unknown; usage?: { input_tokens?: unknown; output_tokens?: unknown } }
 
-export async function recognize(jpeg: Buffer, arm: Required<Arm>, deps: Deps = {}): Promise<RecognizeResult> {
+export async function recognize<T = ScanOutput>(jpeg: Buffer, arm: Required<Arm>, deps: Deps = {}, mode: RecognizeMode<T> = COLLECTION_MODE as unknown as RecognizeMode<T>): Promise<RecognizeResult<T>> {
   const create = deps.create ?? getDefaultCreate();
   const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
-  const started = Date.now();
+  const now = deps.now ?? Date.now;
+  const started = now();
   const usage = { inputTokens: 0, outputTokens: 0 };
   let attempts = 0;
   let maxTokens = MAX_TOKENS;
   let billed = false; // a response with usage came back, so at least one attempt costs money
   const price = MODEL_PRICES[arm.model];
   const cost = () => (usage.inputTokens * price.input + usage.outputTokens * price.output) / 1_000_000;
-  const fail = (code: Extract<RecognizeResult, { ok: false }>['code'], detail: FailureDetail, retryAfterSeconds?: number): RecognizeResult => ({
+  const fail = (code: Extract<RecognizeResult<T>, { ok: false }>['code'], detail: FailureDetail, retryAfterSeconds?: number): RecognizeResult<T> => ({
     ok: false,
     code,
     ...(retryAfterSeconds !== undefined ? { retryAfterSeconds } : {}),
     detail,
     // Billed failures carry their spend so the 30-day cost cap sees them.
     ...(billed ? { usage: { ...usage }, costUsd: cost() } : {}),
-    latencyMs: Date.now() - started,
+    latencyMs: now() - started,
     attempts,
   });
 
@@ -152,13 +169,13 @@ export async function recognize(jpeg: Buffer, arm: Required<Arm>, deps: Deps = {
     const canRetry = attempts < 2;
     let res: ResponseShape;
     try {
-      res = (await create(buildParams(jpeg, arm, maxTokens))) as ResponseShape;
+      res = (await create(buildParams(jpeg, arm, maxTokens, mode), mode.timeoutMs !== undefined ? { timeout: mode.timeoutMs } : undefined)) as ResponseShape;
     } catch (err) {
       const c = classify(err);
       const detail = errorDetail(err);
       if (c.kind === 'billing') return fail('billing_error', detail);
       if (c.kind === 'rate_limit') return fail('upstream_rate_limit', detail, c.retryAfterSeconds);
-      if (c.kind === 'retryable' && canRetry) {
+      if (c.kind === 'retryable' && canRetry && now() - started < mode.retryWithinMs) {
         await sleep(RETRY_DELAY_MS);
         continue;
       }
@@ -177,15 +194,16 @@ export async function recognize(jpeg: Buffer, arm: Required<Arm>, deps: Deps = {
     }
     if (res.stop_reason === 'refusal') return fail('recognizer_failed', responseDetail(res, 'refusal'));
     if (res.stop_reason === 'max_tokens') {
+      if (!mode.retryLongOutput) return fail('too_many_cards', responseDetail(res, 'max_tokens'));
       if (!canRetry) return fail('recognizer_failed', responseDetail(res, 'max_tokens on the retry'));
       maxTokens = MAX_TOKENS_RETRY;
       continue;
     }
     const blocks = Array.isArray(res.content) ? (res.content as { type?: unknown; text?: unknown }[]) : [];
     const text = blocks.filter((b) => b?.type === 'text' && typeof b.text === 'string').map((b) => b.text as string).join('');
-    const output = parseScanOutput(text);
+    const output = mode.parse(text);
     if (!output) return fail('recognizer_failed', responseDetail(res, 'unparseable output'));
 
-    return { ok: true, output, model: res.model, usage: { ...usage }, costUsd: cost(), latencyMs: Date.now() - started, attempts };
+    return { ok: true, output, model: res.model, usage: { ...usage }, costUsd: cost(), latencyMs: now() - started, attempts };
   }
 }

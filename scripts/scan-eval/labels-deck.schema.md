@@ -1,0 +1,7 @@
+# labels-deck.json
+
+`scripts/scan-eval/labels-deck.json` is a JSON array with one object per deck photo: `{ "photo": "deck1.jpg", "cards": [{ "name": "Captive Priest", "qty": 2 }], "lostSouls": 7, "reserveSize": 10, "unreadable": 1 }`. `photo` is the file name in `scripts/scan-eval/photos-deck/` (the scorer reads `outputs/<arm>/<photo>.json`); `name` is an exact `CardData.name`, and `cards` excludes Lost Souls (count those in `lostSouls`); `reserveSize` is how many cards are in the photographed Reserve (0 when none); `unreadable` is how many cards you cannot read yourself in the photo, which leave the recall denominator.
+
+To run: `npx tsx scripts/scan-eval/run.ts --mode deck --base-url <url> --cookie "$(cat .scan-session)" --photos scripts/scan-eval/photos-deck --out scripts/scan-eval/outputs/deck-<arm>`. Omit `--arm` to use the route's deck arm.
+
+To score: `npx tsx scripts/scan-eval/deckScore.ts --labels scripts/scan-eval/labels-deck.json --outputs scripts/scan-eval/outputs/deck-<arm>/`. Identities compare as multisets; the predicted side counts `matched` and `which` rows at their provisional choice. `invented` is predicted copies whose identity is not in the label; `lostSoulError` is |Lost Soul placeholders + matched Lost Souls - `lostSouls`|; `reserveDefaultRight` checks the app's default Reserve group against `reserveSize`; `groupCountError` is the summed gap between the model's group card counts and the detections in each group.

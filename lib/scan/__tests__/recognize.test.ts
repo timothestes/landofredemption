@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { APIConnectionTimeoutError, APIError } from '@anthropic-ai/sdk';
-import { recognize, DEFAULT_ARM } from '../recognize';
+import { recognize, DEFAULT_ARM, DECK_ARM, DECK_MODE } from '../recognize';
+import { DECK_INSTRUCTION, DECK_JSON_SCHEMA } from '../deckSchema';
 const ok = (text: string, stop = 'end_turn', model = 'claude-sonnet-5-5-20260901') => ({ model, stop_reason: stop, content: [{ type: 'text', text }], usage: { input_tokens: 3000, output_tokens: 200 } });
 const good = JSON.stringify({ photoQuality: 'ok', cards: [] });
 const noSleep = async () => {};
@@ -36,4 +37,13 @@ describe('recognize', () => {
   it('a refusal carries its stop_reason and returned model', async () => { const r = await recognize(Buffer.alloc(10), DEFAULT_ARM, { create: async () => ok('', 'refusal') }); expect(r.ok === false && r.detail).toEqual({ stopReason: 'refusal', model: 'claude-sonnet-5-5-20260901', message: 'refusal' }); });
   it('a model mismatch carries the returned model', async () => { const r = await recognize(Buffer.alloc(10), DEFAULT_ARM, { create: async () => ok(good, 'end_turn', 'claude-opus-5-5') }); expect(r.ok === false && r.detail).toMatchObject({ model: 'claude-opus-5-5', stopReason: 'end_turn' }); });
   it('throws a clear error when the key is missing and no create is injected', async () => { const prev = process.env.SCANNER_ANTHROPIC_API_KEY; delete process.env.SCANNER_ANTHROPIC_API_KEY; try { await expect(recognize(Buffer.alloc(10), DEFAULT_ARM)).rejects.toThrow(/SCANNER_ANTHROPIC_API_KEY/); } finally { if (prev !== undefined) process.env.SCANNER_ANTHROPIC_API_KEY = prev; } });
+});
+const goodDeck = JSON.stringify({ photoQuality: 'ok', groups: [], cards: [] });
+describe('deck mode', () => {
+  it('sends the deck instruction, schema and effort', async () => { let p: any; await recognize(Buffer.alloc(10), DECK_ARM, { create: async (x: any) => { p = x; return ok(goodDeck); } }, DECK_MODE); expect(p.messages[0].content[1].text).toBe(DECK_INSTRUCTION); expect(p.output_config.format.schema).toBe(DECK_JSON_SCHEMA); expect(p.output_config.effort).toBe('medium'); expect(p.max_tokens).toBe(16000); });
+  it('passes a 60 s timeout per call in deck mode and none in collection mode', async () => { const opts: any[] = []; const create = async (_p: any, o?: any) => { opts.push(o); return ok(goodDeck); }; await recognize(Buffer.alloc(10), DECK_ARM, { create }, DECK_MODE); await recognize(Buffer.alloc(10), DEFAULT_ARM, { create: async (_p: any, o?: any) => { opts.push(o); return ok(good); } }); expect(opts[0]).toEqual({ timeout: 60000 }); expect(opts[1]?.timeout).toBeUndefined(); });
+  it('a max_tokens stop in deck mode is too_many_cards with no retry', async () => { let n = 0; const r = await recognize(Buffer.alloc(10), DECK_ARM, { create: async () => { n++; return ok(goodDeck, 'max_tokens'); } }, DECK_MODE); expect(n).toBe(1); expect(r.ok === false && r.code).toBe('too_many_cards'); expect(r.ok === false && r.costUsd).toBeCloseTo(0.008, 6); });
+  it('deck mode retries a quick 5xx once', async () => { let n = 0; const r = await recognize(Buffer.alloc(10), DECK_ARM, { sleep: noSleep, create: async () => { if (++n === 1) throw httpErr(500); return ok(goodDeck); } }, DECK_MODE); expect(r.ok && r.attempts).toBe(2); });
+  it('deck mode does not retry a 5xx after 10 s', async () => { let t = 0, n = 0; const r = await recognize(Buffer.alloc(10), DECK_ARM, { sleep: noSleep, now: () => t, create: async () => { n++; t += 11_000; throw httpErr(503); } }, DECK_MODE); expect(n).toBe(1); expect(r.ok === false && r.code).toBe('recognizer_failed'); });
+  it('deck output is parsed with the deck parser', async () => { const r = await recognize(Buffer.alloc(10), DECK_ARM, { create: async () => ok(JSON.stringify({ photoQuality: 'ok', groups: [{ id: 1, orientation: 'upright', bbox: [0, 0, 1, 1], cardCount: 1 }], cards: [] })) }, DECK_MODE); expect(r.ok && (r.output as any).groups).toHaveLength(1); });
 });
