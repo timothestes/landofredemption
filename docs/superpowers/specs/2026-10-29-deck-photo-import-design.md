@@ -1,0 +1,757 @@
+# Deck photo import — design
+
+Date: 2026-10-29. Status: draft for Tim's approval.
+
+Builds on the card scanner (`docs/superpowers/specs/2026-10-26-card-scanner-design.md`,
+shipped in #538–#546). Everything the scanner spec settled about the Claude call,
+the matcher, caps, events, privacy and the capture path holds here unless this
+document says otherwise. Read that spec's *Constraints*, *Recognition*, *Data*
+and *Retention and privacy* sections first.
+
+## Intent
+
+Players photograph a deck laid out on a table: cards fanned into overlapping
+columns, usually one column per brigade or type, often with the reserve in a
+separate row, sometimes sideways. These photos get posted to Discord and
+Facebook after tournaments. Today the only way to get such a deck into Land of
+Redemption is to type it in.
+
+The feature: give the site that photo (your own, or one saved from a post),
+get a decklist back, fix the few cards it could not read, pick the Lost Souls,
+and open the result in the deck builder.
+
+Why now: the scanner built the machinery (one Claude vision call, a matcher
+from read text to a printing, caps, event logging, a privacy page). A spike on
+2026-10-29 showed that a clean deck photo gives a complete and correct 50-card
+list from one call for about four cents. The remaining work is a different
+prompt, a decklist-shaped collapse, a Lost Soul picker, and a page that hands
+the result to the deck builder.
+
+## Correcting what was read
+
+Tim's requirement, stated up front: fixing a wrong read must be very easy.
+The page is built around the player checking the list against the photo and
+fixing it in place, not around trusting the model. Misreads come in six kinds
+and each has a one- or two-tap fix:
+
+| Wrong | Fix | Taps |
+|---|---|---|
+| Wrong card (misread title, fuzzy hit, Not found, Unread) | Tap the name; the picker opens in search mode with the read title in the field and up to five suggestions ranked by similarity above the results; tap one | 2 |
+| Wrong count (a duplicate missed or doubled) | − and + beside every quantity; the number opens a stepper | 1 |
+| A card missed entirely | *Add a card…* at the end of every group, the same search | 2 |
+| Wrong zone (reserve read as main, or the reverse) | The group's Main deck / Reserve toggle; a row's ⋯ menu moves one card | 1 |
+| A card that is not in the deck (invented, or a stray on the table) | ⋯ → Remove, or swipe; a 5 s *Undo* toast | 1 |
+| Wrong printing | ⋯ → Change printing, the scanner's picker | 2 |
+
+Rules the design follows everywhere:
+
+- **See what it saw.** Each group section opens with a strip: the group's own
+  crop from the photo, rotated upright, beside the rows in the same top-to-
+  bottom order, so the column and the list read together. Where per-card
+  title-band boxes prove reliable in E0, a row's thumbnail is the crop of that
+  card's title band from the photo rather than the catalog image (the catalog
+  thumb one tap away); until then the catalog thumb and the strip. Tap the
+  strip to see it large. Crops are cut on the client from the photo still in
+  memory, so no photo is stored anywhere; after a reload they are gone and
+  the section says *Photo 1*, as the scanner does.
+- **Amber rows stand out.** Check this, Not found and Unread rows carry a
+  2 px amber left edge as well as the chip, so they are visible while
+  scrolling, and the totals line's *3 to check* is a button: each tap scrolls
+  to the next amber row and focuses it, so the player clears them in order
+  without hunting.
+- **Undercounts are visible.** The model estimates each group's size as well
+  as reading its cards; when the two differ the group header says *Read 8 of
+  about 9*, so a missed card is a prompt to use *Add a card…*, not a surprise
+  in the builder.
+- **The field is ready.** Any search opens with the read title selected and
+  the keyboard up, so typing replaces it and a suggestion tap needs no typing.
+- **Keyboard on a laptop.** Rows are focusable; Enter opens the picker, + and
+  − change the quantity, Delete removes, arrow keys move. Posted photos get
+  fixed on a laptop as often as on a phone.
+- **The builder is the full editor.** Anything not worth fixing here is fixed
+  after *Open in deck builder*; corrections here are for speed, and the
+  hand-off never blocks on them except for one confirm when cards are left
+  out.
+- **Corrections are data.** Every name change, printing change, quantity
+  change, zone move, removal and addition is written as that read's outcome;
+  the E3 query *most-corrected read titles* feeds prompt and matcher fixes.
+
+## What the spike showed
+
+Four player-supplied deck photos, the spike script (`tmp/spike-deck-photo.ts`
+on Tim's machine, to be copied into the eval harness in PR 1), one call per
+photo, then the scanner's `matchDetection` on each title-only read.
+
+| Photo | Cards found | Not in catalog | Notes |
+|---|---|---|---|
+| 2048 px, sharp, six fanned columns, 50 cards | 50 of 50 on all five runs (Sonnet 5.5 low ×3, medium, Opus 5.5 medium); identical lists | 0 | Still 50 found after downscaling to 1024 px, one misread |
+| 1024 px, Star Wars mat, 55 cards, a sideways row | 53–55 | 2–5 | The sideways row is where the misses are |
+| 1024 px, dark, a sideways top row of 11 | 61 on every arm | 12–18, all in the sideways row | Opus reports them as `unknown`; Sonnet at low effort invents plausible names ("Fresh Bread", "The Mattithiah") |
+| 1024 px, dark, a sideways top row | Sonnet low: 19, 23, 37 on three runs. Sonnet medium: 59. Opus medium: 61 | 11 | Sonnet at low effort gives up part way with a clean `end_turn` |
+
+Other measurements:
+
+- Cost and latency per photo: Sonnet 5.5 ≈ $0.04 and 16–20 s; Opus 5.5 medium ≈
+  $0.09 and 23–33 s, not more accurate than Sonnet medium.
+- Cropping the sideways row, rotating it and upscaling 3× recovered 9 of its 10
+  cards across the two arms, even though the crop came out upside down.
+- Every "check" row across all twelve runs was either a Lost Soul (only "Lost
+  Soul" is visible when fanned; 7–8 per deck) or a same-title tie. Most ties
+  were printings of one card that the scan identity index keys apart on
+  brigade spelling ("greencrimson" vs "green crimson" for Forest Fire FooF
+  and Roots). One was two different cards with the same title: Amariah, the
+  High Priest (Roots, Clay, Rotation) and Amariah the High Priest (Priests,
+  Teal, not Rotation).
+- Duplicates were counted right (2× Abner, 2× Forest Fire, 7× Lost Soul).
+
+## Vocabulary
+
+- **Deck photo**: a photo of a laid-out deck. Cards overlap so that only the
+  title band and, on characters, the strength/toughness box are visible. One
+  card at the end of each column is usually fully visible.
+- **Group**: one visually separate run of overlapping cards: a column, a fan,
+  a row. The model reports groups; the page assigns a zone (main or reserve)
+  per group.
+- **Read**: what the model transcribed for one physical card. A read with a
+  null title is an **unread card**: the model saw a card and could not read
+  it.
+- **Identity**, **printing**, **stem**: as in the scanner spec. A deck needs
+  the identity; a legal printing is chosen for it.
+- **Lost Soul placeholder**: a counted but unidentified Lost Soul.
+
+## Scope
+
+**v1.0:**
+
+- `/decklist/scan`: take a photo, choose photos, drop, paste.
+- `POST /api/scan` with `mode=deck`: the deck instruction and schema, Sonnet
+  5.5 at effort medium, reads grouped, a second pass over rotated groups.
+- Collapse to a decklist: one row per card name, quantities summed, a
+  Rotation-legal printing chosen; Check this, Not found and Unread rows; Lost
+  Soul placeholders.
+- Correction in place: group strips from the photo, suggestion-first search,
+  − and + on every row, *Add a card…* per group, ⋯ menu (move, remove, change
+  printing), undo on remove, *to check* walker, keyboard on desktop. Per-card
+  title-band crops as row thumbnails if E0 proves the boxes.
+- Groups with a Main deck / Reserve toggle and a sensible default.
+- The Lost Soul sheet: pick the deck's Lost Souls in one place.
+- Open in deck builder (creates the deck and opens it) and Copy as text.
+- Outcomes recorded on the scan events; one sentence on `/privacy`.
+- A labeled set of deck photos and a scorer in the eval harness.
+
+**v1.1:**
+
+- Lost Soul sheet ordered by how often each appears in public decks.
+- Printing preference for a printing the player owns.
+- Paste an image URL (fetch server-side from an allowlist of CDNs).
+- "Add missing cards to my Wants" after hand-off, when a collection exists.
+- Desktop table layout.
+
+## Goals
+
+1. A sharp, upright deck photo gives a decklist whose identities are at least
+   95% right and complete, with every miss visible as a row. Never silent.
+2. A 50–60 card deck goes from photo to deck builder in under two minutes of
+   the player's time, Lost Souls included.
+3. Every misread is fixable in at most two taps from its row, with the photo
+   evidence beside it (*Correcting what was read*).
+4. Nothing invented. An unreadable card is an Unread row, not a guess.
+5. At most $0.06 per photo for a Type 1 deck, inside the scanner's caps and
+   spend ceiling.
+6. Every scan leaves evaluation data (reads, outcomes), as the scanner does.
+
+## Non-goals
+
+- Exact printing identification. The deck builder needs a printing, but any
+  legal one serves; the scanner's printing filters run but their result is a
+  default, not a question.
+- Reading ability text, references on fanned cards, or set icons.
+- Identifying a fanned Lost Soul from the sliver of art. Players pick.
+- Photos of sleeved stacks, binder pages or single cards (the scanner's job).
+- Video, live camera preview, OCR.
+
+## Anti-goals
+
+- Inventing cards. Sonnet at low effort did; the design rules it out by effort
+  and by instruction.
+- Creating decks nobody asked for: no auto-save until the player taps Open in
+  deck builder.
+- Spending the shared monthly credit on a flood of Type 2 photos: the scanner's
+  per-user and global caps apply unchanged.
+- A second UI vocabulary. Chips, picker, capture buttons and copy tone come
+  from the scanner.
+
+## Constraints
+
+- Everything in the scanner spec's *Constraints*: the dedicated
+  `SCANNER_ANTHROPIC_API_KEY` in the Max org (overrun is an outage, not a
+  bill), the 4.5 MB Vercel body cap, caps enforced in Postgres so scanning
+  needs sign-in, mobile first, green the single accent.
+- **Most deck photos are not the player's own.** Discord and Facebook
+  re-encode to about 1024 px on the long edge, and the lighting is whatever
+  the venue had. Design for 1024 px and poor light; a 4000 px phone original
+  is the easy case.
+- **Fanned cards show the title band and stats box only.** The reference,
+  ability, corner code and credit are hidden on every card but the last in a
+  column. Lost Souls show only "Lost Soul".
+- **Sideways rows are common.** Two of the four spike photos had the reserve
+  laid sideways along one edge. The first pass cannot read them; a crop can.
+- **Effort medium is required.** Sonnet 5.5 at low effort returned 19, 23 and
+  37 cards on three runs of the same ~60-card photo.
+- **Output grows with the deck, and the scanner's timeout is too short for
+  it.** About 60 reads cost 3.1–4.5k output tokens and 16–20 s; the
+  recognizer's client timeout is 25 s, sized for a 2–9 s collection scan. A
+  140-card Type 2 deck needs about 10k tokens and 40 s. `max_tokens` 16k
+  covers roughly 230 reads; the recognizer's retry at 32k would run past the
+  function budget and is not used in deck mode.
+- **The deck builder stores a printing per card.** `saveDeckAction` takes
+  rows of `card_name`, `card_set`, `card_img_file`, `quantity`, `zone`;
+  a `Candidate` carries `name`, `set`, `imgFile`, so the mapping is direct.
+- **Deck rules** as the validator enforces them (`lib/formats.ts`, which
+  `checkDeck` uses; `prompt_context/redemption_deck_rules.md` lists wider
+  tournament ranges and the code wins): Type 1 (Limited, Unlimited, Teams)
+  is 50–70 main cards with a reserve of up to 10; Type 2 is 100–140 with a
+  reserve of up to 20; Lost Souls required per main-deck size (7 for 50–56);
+  Dominants and Lost Souls cannot be in the reserve. The deck builder's
+  validator already reports all of this, so the page does not re-validate; it
+  only defaults sensibly and reads its sizes from `lib/formats.ts`.
+- **Lost Soul pool:** 258 printings, 257 distinct names; 153 are
+  Rotation-legal. Names carry the nickname and reference
+  (`Lost Soul "Accusers" [Ezra 4:6]`), which is what players know them by.
+
+## Recognition
+
+### The call
+
+`recognize()` gains a `mode: 'collection' | 'deck'` that selects the
+instruction, the schema, the arm and the timing. Deck arm: `claude-sonnet-5-5`,
+effort `medium`, tier `high`, thinking omitted (the model's default). Same key
+and failure classification. Deck mode uses a per-call timeout of 60 s (the
+scanner keeps 25 s) and `max_tokens` 16,000 with **no retry at 32k**: a
+`max_tokens` stop in deck mode is the failure code `too_many_cards`, and the
+page's copy asks for the deck in two photos, which the tray merges. Opus is
+not used: the spike found no accuracy gain for twice the cost and latency.
+
+### Instruction
+
+Start from the spike's instruction (copied into
+`scripts/scan-eval/deck-instruction.txt` in PR 1) and keep its substance:
+
+- A deck laid out on a table; cards in overlapping columns or fans; only the
+  top band of most cards is visible; one card at the end of each column is
+  usually fully visible.
+- One entry per physical card, duplicates included; count by following each
+  repeated title-band edge; never merge duplicates.
+- Per card: `title` copied as printed (null when it cannot be read, never a
+  guess); `strength` and `toughness` when the box is visible; `type` from the
+  frame and icon; `brigade` as colour words; `reference` only when the verse
+  line is visible (the fully visible card); `group` and `position`;
+  `titleBox`, a normalized box around this card's visible title band (null
+  when unsure); `confidence` high only for a sharp, unambiguous title.
+- Groups: every visually separate run of cards, with `orientation`
+  (`upright`, `rotated_cw`, `rotated_ccw`, `upside_down`), a normalized
+  bounding box `[x0, y0, x1, y1]` and an estimated `cardCount`. A row along
+  the top or bottom edge is its own group.
+- Lost Souls: title "Lost Soul", reference when visible.
+- Do not identify from memory, do not name the card, do not invent a card you
+  cannot see.
+- `photoQuality`: `ok`, `blurry`, `dark`, `glare`, `no_cards`
+  (`too_many_cards` is not an outcome here; a deck is many cards).
+
+### Schema
+
+`lib/scan/deckSchema.ts`, the deck counterpart of `schema.ts`:
+
+```
+{ photoQuality,
+  groups: [{ id, orientation, bbox: [n, n, n, n], cardCount }],
+  cards:  [{ title | null, strength | null, toughness | null, type, brigade | null,
+             reference | null, group, position, titleBox: [n, n, n, n] | null,
+             confidence }] }
+```
+
+`parseDeckOutput` validates shape, clamps every box to 0–1, caps strings as
+`capDetection` does, and drops a card whose `group` names no group (it is
+reassigned to a synthetic group 0, not dropped: the card still exists).
+
+### From reads to rows (`lib/scan/deck.ts`, pure)
+
+Each read with a title becomes a `ScanDetection` (title, stats, type, brigade,
+reference; the rest null; `grid` from group and position) and goes through
+`matchDetection` with the real price map (the route loads it anyway; prices
+only affect which printing is the default). Then:
+
+| Matcher result | Row |
+|---|---|
+| `matched` | Matched; printing by the preference rule |
+| `check`, `reference_missing` (a Lost Soul with no reference) | Lost Soul placeholder, counted per group |
+| `check`, `reference_ambiguous` or a Lost Soul with a read reference that matched | Matched Lost Soul (the fully visible one) |
+| `check`, `identity_ambiguous` (several cards share the title and the read brigade, type and stats did not separate them) | Check this · *Which card?*; the tied identities are the picker's suggestions, each with its brigade colour and set. Never silent. |
+| `check`, `printing_ambiguous` | Matched; printing by the preference rule (decks do not care) |
+| `not_found` | Not found · the read title · **Find card** |
+| read with null title | Unread · **Find card** |
+| `nameReason: fuzzy` and `confidence: low` | Check this · *Read as "…"* (a fuzzy hit on a sharp read stays Matched) |
+
+Same-title ties are real: 608 non-Lost-Soul stems carry more than one
+type, brigade or alignment (Aaron in Green, Teal and Green/Teal; Abiathar in
+Purple and Teal). On a fanned card the frame colour, the type icon and the
+stats box are visible, so the matcher's brigade, type and stats scores
+separate most of them; a tie means the read was null or wrong, and that is
+exactly when a silent pick would put the wrong card in a deck. Most of the
+spike's ties were not this: they were printings of one card that the identity
+index keys apart because the brigade string is spelled differently per set.
+PR 1 fixes that in `stemIndex.ts` by comparing brigades through the `vocab`
+normalizer when it unions identities, re-running the scanner's golden set to
+confirm nothing regresses, and the remaining ties are the genuine ones. E0
+measures the amber-row rate; the target is at most 3 amber rows per sharp
+50-card photo, Lost Souls excluded.
+
+**Printing preference**, among an identity's printings: Rotation-legal first;
+among those the matcher's chosen printing when it is legal, else the first in
+the deck builder's set order (whatever `compareCardsByType` or the builder's
+printing list uses; the builder reuses it). **v1.1:** a printing the player
+owns wins when their collection has one.
+
+Rows merge on the chosen key across groups and photos, quantities summed, as
+the scanner tray does; a merged row remembers which groups contributed so a
+zone change on a group moves its share. Lost Soul placeholders merge into one
+counter per group.
+
+### Groups and zones
+
+Every group is a section with a **Main deck / Reserve** control. Default: all
+main. One group defaults to Reserve when all of these hold: the main total is
+at least 50 without it; the group has at most the reserve size of the format
+the main total implies (`lib/formats.ts`: 10 for Type 1, 20 for Type 2); and
+it is either the only non-upright group or the last group in reading order. A Lost Soul or Dominant read inside a Reserve group is
+shown in that section with a note and counted in main; the deck rules forbid
+them in reserve, and the builder's validator would flag it otherwise.
+
+### Second pass for rotated groups (PR 3)
+
+For each group whose orientation is not `upright`, at most three per photo:
+crop the bbox padded by 8% of the image on each side and clamped to the
+image, rotate to upright by the reported orientation, upscale to a long edge
+of 1600 px (`lanczos3`), JPEG quality 85, and call `recognize` with the same
+deck instruction prefixed by one sentence: "This is one group cropped from a
+larger deck photo; read every card in it." Reads from the crop replace the
+first-pass reads for that group (position renumbered; group id kept). Crops
+run in parallel after the first pass, 25 s each, and only when the first pass
+finished inside 50 s, so the request stays under the 90 s function budget;
+otherwise the groups stay as first-pass reads. The scan event's tokens, cost
+and latency sum every call; `attempts` counts calls. A failed crop call keeps the group's
+first-pass reads and logs the failure. The spike's crop was upside down and
+still read 9 of 10, so a wrong orientation guess degrades, not breaks.
+
+Until PR 3 lands, a non-upright group's unread cards appear as Unread rows and
+the page's tip says to lay the reserve upright.
+
+### Cost and latency
+
+Measured per 50–60 card photo: $0.04 and 16–20 s. A crop pass adds about
+$0.01–0.02 and 10–15 s, in parallel. A 140-card Type 2 photo is estimated at
+$0.10 and 40 s. `maxDuration` stays 90 s: first pass up to 60 s, crops up to
+25 s, only started before the 50 s mark. Type 2 in v1.0 is best effort: one
+photo of up to about 200 cards works within the budget; a bigger or slower
+one fails with `too_many_cards` and the player photographs the deck in two
+halves. The client's request timeout (100 s in `useScanQueue`) already covers
+the budget. Deck mode costs about three times a
+collection scan; at the global cap of 1,500 scans per 30 days the worst case
+is $75 against the $80 ceiling, so the E3 queries watch the deck share of
+spend and the ceiling is the control, not the cap.
+
+## The flow
+
+### Routes and entry points
+
+| Route | Who | What |
+|---|---|---|
+| `/decklist/scan` | signed in and `canScan` | The page. Signed out: the scanner's page-level gate with this page's copy and `redirectTo=/decklist/scan`. Not allowed: the scanner's *not open* copy. A route, not a modal, for the same camera-eviction reason as the scanner. |
+| Deck builder | anyone | The New deck control gains **From a photo**; the Import modal gets one line, *Have a photo of the deck laid out? Read it from a photo*, linking here. |
+| `/decklist/my-decks` | signed in | **New from photo** beside New deck. |
+| `/collection/scan` | signed in | One muted line under the capture buttons: *Scanning a whole deck? Use Deck from photo.* And the reverse line here, pointing at the collection scanner for single cards. |
+| `/privacy` | anyone | One added sentence under Card scanner: deck photos are handled the same way. |
+
+### Capture
+
+The scanner's `CaptureButtons` and `prepareImage` (2576 px long edge, JPEG
+0.85, 3 MB hard stop, `<img>` decode for EXIF), plus two things deck photos
+need because they usually arrive on a desktop from Discord: a page-wide drop
+target (the deck builder's `useExternalDropTarget` pattern) and a document
+`paste` listener that takes `clipboardData.files`. Several photos are
+allowed (a main deck and a reserve photographed separately); rows merge across
+them. Posted as `multipart/form-data` with `mode=deck`.
+
+Tips under the buttons (collapsed after first use): lay every card upright
+with the title band showing; one column per brigade is ideal; put the reserve
+in its own row; good light, no flash glare.
+
+### Processing
+
+The scanner's `PhotoGroup`: thumbnail, *Reading…* with elapsed seconds after
+5 s, then *Read 52 cards in 4 groups*, or a failure string from the scanner's
+Copy with **Retry** and **Remove**; `too_many_cards` gets this page's own
+string and no Retry. During the second pass: *Reading 1 sideways group…*.
+
+### The tray
+
+Sections per group in reading order. Section header: *Group 3 · Read 9 of
+about 9* (the second number is the model's estimate; it is omitted when the
+two agree), a *sideways* note when it was rotated, and the **Main deck |
+Reserve** segmented control. Under the header, the group strip: the group's
+bbox cut from the photo on the client (`<canvas>`, rotated upright, long edge
+capped at 1200 px, kept in memory only), shown at 72 px tall and scrollable
+sideways when the group is a row, tap to open large in the house dialog.
+
+Rows at 390 px (content width 358): `[thumb 44] [8] [text ≥ 150] [8] [− 36]
+[qty 28] [+ 36] [4] [⋯ 44]`. Line one: name. Line two, 12 px: set and
+legality (*Roots · Rotation*), or the chip's reason. The thumbnail is the
+card's title-band crop when `titleBox` is present and E0 proved the boxes,
+else the catalog image; tapping it opens the catalog image large. Tapping the
+name opens the picker in search mode (below). − and + change the quantity
+with no confirm; the number opens a stepper for bigger jumps. The ⋯ menu
+holds **Change printing**, **Move to reserve** / **Move to main deck**, and
+**Remove**; swipe left is a shortcut for Remove; Remove shows a 5 s *Undo*
+toast. Every section ends with an *Add a card…* row that opens the same
+search; the new row joins that group and zone. Amber rows carry a 2 px amber
+left edge.
+
+Chips:
+
+- **Matched**: no chip.
+- **Check this** (amber): *Which card?* with the candidates, or *Read as
+  "Saul"*. The row holds the provisional choice.
+- **Not found** (amber): the read title as text and **Find card**, which opens
+  the picker in search mode with the title prefilled. Not counted until
+  resolved.
+- **Unread** (amber): *Couldn't read this card* and **Find card**. Not counted
+  until resolved. Several unread cards in one group collapse into one row
+  with a count and a stepper, so "3 unread" becomes three picks or a removal.
+- **Lost Souls**: one summary row per group, *Lost Soul ×7 · Pick which*,
+  opening the Lost Soul sheet; after picking, *7 picked* and the picks listed
+  as ordinary rows under it.
+
+Totals line above the footer, `aria-live="polite"`: *Main 50 · Reserve 10 · 7
+Lost Souls to pick · 2 unread*.
+
+The tray persists in `sessionStorage` keyed by user id (`deck-scan-tray:v1:`),
+as the scanner's does: reads, chosen keys, quantities, zones, picks,
+corrections. Not thumbnails, strips or crops: after a reload the catalog
+thumb stands in and the section header says *Photo 1*.
+
+### The Lost Soul sheet
+
+The house dialog as a bottom sheet (the scanner's picker chrome and focus
+trap). Header *Pick your Lost Souls · 3 of 7*. A search field matching
+nickname, reference and set; a list of the 153 Rotation-legal Lost Souls as
+`[thumb 44] nickname · reference · set` rows with a checkbox and a quantity
+stepper (a deck can run two of one Lost Soul). A *Show all printings* toggle
+adds the non-Rotation ones. Prefilled with any Lost Soul whose reference the
+model read (the fully visible card at the end of its column). Picking more
+than the target is allowed; the header turns amber past it. **Done** writes
+the picks as rows; **Skip** leaves the placeholders out, and the deck builder's
+validator will then say the deck is short on Lost Souls, which is the right
+place for that message. Ordered by nickname in v1.0; **v1.1** orders by
+frequency in public decks.
+
+### The picker
+
+The scanner's `PrintingPicker` with search mode as the default on this page.
+It opens with the read title in the field, selected, keyboard up, and a
+**Suggestions** block above the results: up to five identities ranked by
+similarity to the read title, from the matcher's near-miss stems (the fuzzy
+candidates it rejected, in `MatchResult.note` today; PR 1 returns them as a
+`near[]` list of stems with distances) merged with the top `searchCardNames`
+hits, de-duplicated by stem, each row `[thumb] name · set`. One tap on a
+suggestion replaces the card and closes the sheet. Typing filters as the
+scanner's search does. *Which printing?* mode (from ⋯ → Change printing) is
+the scanner's unchanged. Resolution through `findCard` as the scanner does.
+Prices are shown as the scanner shows them; this page defaults `useShowPrices`
+off.
+
+### Hand-off
+
+A sticky footer with two actions:
+
+- **Copy as text**: the deck builder's tab format, one line per row
+  (`qty\tname\tset\timgFile`), a `Reserve:` section when any group is
+  reserve, Lost Soul picks included, placeholders and unresolved rows left
+  out. Toast *Copied*.
+- **Open in deck builder** (primary): `createDeckFromScanAction(rows,
+  outcomesByScanId, meta)` saves the deck through the same path as
+  `saveDeckAction` with name *Deck from photo · Oct 29*, format *Type 1*
+  unless the main total is inside the Type 2 range in `lib/formats.ts`
+  (100–140), then *Type 2*; a total outside both ranges stays Type 1 and the
+  builder's validator says what is wrong; no folder; writes the outcomes
+  in the same call; returns the deck id; the page navigates to
+  `/decklist/card-search?deckId=<id>`. Disabled while in flight and after
+  success. There is no commit table: if a response is lost the player may find
+  a duplicate in My Decks and delete it, which costs nothing; decks are not
+  money.
+
+Unresolved rows (Check this with no pick, Not found, Unread) are left out of
+the deck with a footer line *3 cards left out* and a confirm step: *Open with
+47 cards?* The player can also remove them.
+
+### What is recorded
+
+Per photo, a `scan_events` row with `mode = 'deck'` and the capped reads. On
+hand-off, each read's outcome as the scanner records it: final key, name or
+printing changed, removed, left unresolved, plus the zone and whether it was a
+Lost Soul pick. Rows the player added and Lost Soul picks have no read id;
+the action's validator accepts synthetic ids (`add:<n>`, `ls:<n>`) for them,
+which the scanner's validator does not. Abandonment: a `done` deck-mode row
+with no outcomes within 24 hours.
+
+## Data
+
+### `POST /api/scan` with `mode=deck`
+
+A form field `mode`, `collection` (default) or `deck`. Deck mode switches the
+instruction, schema and arm; raises the detection cap to 300 (`COMMIT_LIMITS.
+detectionsPerScan` is 150 and stays for collection mode); runs the crop pass;
+and returns `groups[]` plus `group`, `position` and `reference` on each
+detection alongside the scanner's fields. Gate, body limits, reserve, finish
+and error codes are unchanged, plus the new `too_many_cards` failure. The
+superuser `arm` override and `source=eval` work as today. The AB frame
+comparison (`settleAbPairs`, #546) is **skipped in deck mode**: exact
+printing is a non-goal, fanned cards hide the frame, and the call would add
+a second Claude request with up to 40 catalog images to most deck photos.
+
+### Migration `124_scan_events_mode.sql`
+
+`alter table scan_events add column mode text not null default 'collection'
+check (mode in ('collection', 'deck'))`, written by `finishScan` (no change to
+`scan_reserve`). An index is not needed; the E3 queries filter small tables.
+Caps unchanged.
+
+### Retention and privacy
+
+Identical to the scanner: no photos kept, reads kept, unmatched reads purged
+on the scanner's schedule. `/privacy` gains one sentence.
+
+## Evaluation
+
+- **Labels**: the four spike photos labeled as an identity multiset per photo
+  (Lost Souls as a count, reserve membership noted), in
+  `scripts/scan-eval/labels-deck.json`. The agent writes them from the photos
+  at full zoom (the sharp photo was already read card by card in the spike);
+  Tim spot-checks ten cards per photo, and any card neither can read is
+  labeled `unreadable` and excluded from recall. Photos in
+  `scripts/scan-eval/photos-deck/` (git-ignored, shared copy beside the
+  scanner's). Tim asks Discord for ten more posted deck photos before PR 2
+  merges.
+- **Recordings**: the spike's outputs use the spike schema and cannot drive
+  the new parser or scorer. PR 1's unit tests use small hand-written fixtures
+  in the new schema. The real recordings are made through the harness
+  (`run.ts --mode deck`) against PR 2's preview with the superuser session,
+  about $0.50 of credit for the four photos across two arms, on Tim's
+  go-ahead, and committed in PR 2 under `scripts/scan-eval/outputs/deck-*/`
+  with a `.gitignore` negation (line 126 ignores `outputs/*/` today).
+- **Scorer** (`scripts/scan-eval/deckScore.ts`): per photo, identity
+  precision and recall over non-Lost-Soul reads; invented count (a Matched row
+  whose identity is not in the photo); Lost Soul count error; reserve-group
+  default right or wrong; group `cardCount` estimate error; cost and latency.
+  `run.ts` gains `--mode deck`.
+- **Box check** (E0, by eye on a contact sheet the scorer renders): the share
+  of group boxes that contain their whole group, and of `titleBox` crops that
+  show the right card's band. Group strips ship when group boxes pass on all
+  four photos. Per-card crops ship in v1.0 only when at least 90% of title
+  boxes are right; otherwise they move to v1.1 and rows use the catalog thumb.
+- **Targets**: sharp upright photos: recall ≥ 95%, invented 0. Posted-grade
+  photos (1024 px, poor light, sideways reserve): recall ≥ 80% after PR 3,
+  invented ≤ 2%.
+- **E3 queries** (`queries.sql`, `mode = 'deck'`): decks created from photos
+  per week, rows corrected or removed per deck, unread rate, cost per deck,
+  deck share of monthly spend.
+- **Kill**: fewer than 10 decks created from photos in the first 60 days
+  removes the entry points and the page in one PR; the route mode, `lib/scan/
+  deck.ts` and migration 124 stay.
+
+## Copy
+
+| Key | Text |
+|---|---|
+| pageTitle | Deck from photo |
+| lead | Photograph a deck laid out on a table, or drop in a photo from Discord, and get a decklist you can open in the deck builder. |
+| tips | Lay every card upright with the title showing. One column per brigade works best. Put the reserve in its own row. |
+| reading | Reading… |
+| readDone | Read {n} cards in {g} groups |
+| readingCrop | Reading {n} sideways group{s}… |
+| tooManyCards | Too many cards for one photo. Photograph the deck in two halves and add both. |
+| groupHeader | Group {i} · Read {n} |
+| groupHeaderEstimate | Group {i} · Read {n} of about {m} |
+| addCard | Add a card… |
+| suggestions | Suggestions |
+| toCheck | {n} to check |
+| menuPrinting / menuToReserve / menuToMain / menuRemove | Change printing / Move to reserve / Move to main deck / Remove |
+| removed | Removed {name} · Undo |
+| stripHint | Tap to enlarge |
+| zoneMain / zoneReserve | Main deck / Reserve |
+| lostSoulRow | Lost Soul ×{n} · Pick which |
+| lostSoulPicked | {n} picked |
+| sheetTitle | Pick your Lost Souls · {picked} of {target} |
+| unread | Couldn't read this card |
+| notFound | Not found: "{title}" |
+| readAs | Read as "{title}" |
+| whichCard | Which card? |
+| totals | Main {m} · Reserve {r} · {ls} Lost Souls to pick · {u} unread |
+| leftOut | {n} cards left out |
+| openConfirm | Open with {n} cards? |
+| open | Open in deck builder |
+| copy | Copy as text |
+| copied | Copied |
+| deckName | Deck from photo · {Mon D} |
+| crossLinkHere | Scanning single cards for your collection? Use the card scanner. |
+| crossLinkScanner | Scanning a whole deck? Use Deck from photo. |
+| privacy | Deck photos are handled the same way: sent to Anthropic to read the cards, not kept. |
+
+Errors, the signed-out gate and the not-open state reuse the scanner's Copy.
+Tone per the design system: plain, short, no exclamation marks.
+
+## Files
+
+- `app/decklist/scan/page.tsx`, `client.tsx`, `copy.ts`, `types.ts`,
+  `components/GroupSection.tsx`, `GroupStrip.tsx`, `DeckRow.tsx`,
+  `RowMenu.tsx`, `AddCardRow.tsx`, `LostSoulSheet.tsx`, `HandoffBar.tsx`,
+  `hooks/useDeckTray.ts`, `hooks/useCheckWalker.ts`,
+  `lib/deckTrayReducer.ts`, `lib/photoCrops.ts` (client canvas crops of
+  groups and title bands from the in-memory photo), `lib/suggest.ts`
+  (suggestion ranking: near-miss stems merged with search hits),
+  `lib/deckText.ts`.
+- Shared with the collection scanner: `CaptureButtons`, `PhotoGroup`,
+  `PrintingPicker`, `useFocusTrap`, `prepareImage`, `pickerSearch`,
+  `useScanQueue`. Builder's call whether they move to `components/scan/` in
+  PR 2 or are imported across routes; moving is preferred and is a pure move.
+- `lib/scan/deckSchema.ts` (instruction, schema, `parseDeckOutput`),
+  `lib/scan/deck.ts` (reads → rows, printing preference, zone defaults, pure),
+  `lib/scan/crop.ts` (bbox padding and clamping, rotate, upscale; sharp),
+  `lib/scan/recognize.ts` (`mode`, per-mode timeout, no 32k retry in deck
+  mode, `too_many_cards`), `lib/scan/stemIndex.ts` (brigade normalization in
+  the union rule; scanner-wide, covered by the golden set),
+  `lib/scan/match.ts` (`near[]` on `MatchResult`), `app/api/scan/route.ts`
+  (`mode`, crop pass, `groups`, `settleAbPairs` skipped).
+- `app/decklist/actions.ts`: `createDeckFromScanAction`.
+- Entry points: `app/decklist/card-search/client.tsx` (New deck menu, Import
+  modal line), `app/decklist/my-decks/`, `app/collection/scan/client.tsx`
+  (cross-link), `app/privacy/page.tsx`.
+- `supabase/migrations/124_scan_events_mode.sql`.
+- `scripts/scan-eval/run.ts` (`--mode`), `deckScore.ts`, `labels-deck.json`,
+  `deck-instruction.txt`, `photos-deck/` (git-ignored), `outputs/deck-*/`
+  (responses recorded through the harness after PR 1, committed with a
+  `.gitignore` negation).
+- `prompt_context/` and CLAUDE.md's Key References gain one row.
+
+## Testing
+
+Unit, with vitest (node only, no DOM):
+
+- `deckSchema`: parse, clamp, cap, synthetic group for an orphan card.
+- `deck.ts`: every row of the matcher-result table above, with hand-written
+  fixtures in the new schema; printing preference; merge across groups with
+  per-group shares; zone defaulting (each condition on and off; Lost Soul in a
+  reserve group).
+- `stemIndex.ts`: Forest Fire FooF and Roots union after the brigade
+  normalization; Amariah Roots and Priests stay two identities; the scanner's
+  golden set (`catalog-sample.json`) unchanged.
+- `recognize.ts`: deck-mode timeout, `too_many_cards` on a `max_tokens`
+  stop with no retry.
+- `crop.ts`: padding, clamping at the edges, rotation mapping for each
+  orientation; the geometry only, sharp mocked.
+- `deckText.ts`: the tab format round-trips through `parseDeckText`.
+- `deckTrayReducer`: pick, skip, zone change for a group and for one row,
+  quantity − and +, remove and undo, add a card to a group, resolve,
+  persistence shape, and that every correction lands in the outcomes.
+- `suggest.ts`: ranking and de-duplication by stem; the near-miss list wins
+  over search hits at equal distance.
+- `photoCrops.ts`: box-to-pixel mapping for each orientation and the cap on
+  the long edge (geometry only; canvas mocked).
+- `useCheckWalker`: next amber row in document order, wrap-around, focus.
+- Route: `mode=deck` with a mocked recognizer, including a failed crop call
+  keeping first-pass reads, and the detection cap.
+- `createDeckFromScanAction`: validation of rows and zones, outcome writes.
+
+No e2e (no CI runs them). Before PR 2 merges: a phone walk on a preview with
+the four spike photos, per the scanner's verification recipe.
+
+## Rollout
+
+1. **PR 1** `feat/deck-scan-lib`: `deckSchema`, `deck.ts`, `recognize` mode
+   and timing, route mode (no crop pass, AB skipped), the `stemIndex` union
+   fix with the golden set re-run, `near[]`, migration 124, eval harness mode,
+   scorer, hand-written fixtures. Mergeable on its own: no key, labels or
+   credit needed. Apply 124 to production before PR 2's preview.
+2. **PR 2** `feat/deck-scan-page`: the page, group strips, suggestion-first
+   search, row menu, add-a-card, check walker, Lost Soul sheet, hand-off,
+   entry points, privacy line, cross-links. E0 on the spike photos through
+   the preview with the labels and recordings described under Evaluation,
+   including the box check that decides per-card crops; the recordings are
+   committed in this PR. Merge behind the existing `canScan` gate (open to all
+   signed-in users since 2026-10-29).
+3. **PR 3** `feat/deck-scan-rotated`: `crop.ts` and the crop pass. Re-run E0
+   on the two sideways photos; the posted-grade target applies from here.
+4. One line in the next What's New; a Discord note asking for deck photos,
+   which doubles as the eval set growing.
+5. Day-30 look at the E3 queries; day-60 kill check.
+
+## Left to the builder
+
+- Exact instruction wording beyond the substance listed; start from the
+  spike's text.
+- Bbox padding and the 1600 px crop edge are starting values; tune on the two
+  sideways photos.
+- The set order used for the printing fallback: reuse whatever the builder
+  already uses to order printings of one name.
+- Component split inside the client as long as the listed pieces exist.
+- Whether shared scan components move or are imported across routes.
+- Hand-rolled validators for the action's rows (the repo has no zod).
+- Lost Soul sheet thumbnail size; 153 rows need no virtualization.
+- Where the New deck "From a photo" control sits in the builder's existing
+  menu, within the design system.
+- Strip height and the enlarge view's zoom behaviour; the 1200 px client crop
+  cap is a starting value.
+- How the near-miss list is surfaced from `lookupStem` (a `near` field on
+  `MatchResult` is the obvious shape).
+
+## Calls I made (for review)
+
+1. Same route and table as the scanner with a `mode` field, not a second
+   route and table: one gate, one set of caps, one event log, one privacy
+   story.
+2. Sonnet 5.5 at effort medium, not low (unstable) and not Opus (no gain).
+3. Groups are the unit of zone assignment, with one conservative Reserve
+   default and a per-group toggle, rather than asking the player to assign
+   every card.
+4. Printing ambiguity is never a question on this page: decks need an
+   identity and a legal printing. Only cross-stem ambiguity, fuzzy low-
+   confidence reads, Not found and Unread ask for attention.
+5. Lost Souls are picked in one sheet with a count target, not seven separate
+   picker trips; Skip is allowed and the builder's validator carries the
+   message.
+6. Open in deck builder creates a real deck immediately and navigates; no
+   commit table, no idempotency token, because a duplicate deck is harmless
+   and deletable.
+7. Drop and paste are v1.0 because the photos come from Discord on a desktop
+   at least as often as from the player's camera.
+8. The crop pass is v1.0 but its own PR, so the page can ship a week earlier
+   with the honest Unread rows.
+9. No URL fetch in v1.0 (abuse surface and CDN auth); paste covers the
+   desktop case.
+10. The page shows no prices by default; this is a deck, not a shopping list.
+11. Correction evidence comes from client-side crops of the photo still in
+    memory, not from stored photos: the privacy story stays "nothing kept",
+    at the cost of losing strips on a reload.
+12. Per-card title-band crops are gated on E0 rather than promised: a crop of
+    the wrong card would mislead more than a catalog thumb.
+13. Remove is in the ⋯ menu with swipe as a shortcut, so the row has room for
+    − and +: count fixes are more common than removals on a deck photo.
+14. A genuine same-title tie is always Check this, never a silent pick, and
+    the false ties are removed at the source (the identity index's brigade
+    spelling) rather than papered over in the deck collapse.
+15. Deck mode gets its own 60 s timeout and no 32k retry; a deck that does
+    not fit one call is two photos, not a two-minute request that bills
+    twice and times out.
+16. The AB frame comparison is skipped in deck mode; printing exactness is
+    not what a deck needs and the call would double most photos' cost.
+17. Deck sizes come from `lib/formats.ts`, which the validator enforces, not
+    from the rules document's wider tournament ranges.
