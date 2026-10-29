@@ -58,6 +58,7 @@ export const COPY: Record<string, string> = {
   owned: 'own {n}',
   unpriced: 'No YTG listing',
   findCard: 'Find card',
+  viewCard: 'View card',
   pickerHeader: 'Which printing?',
   pickerNameHeader: 'Which card?',
   pickerChoose: 'Choose',
