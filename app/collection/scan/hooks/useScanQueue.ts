@@ -7,8 +7,8 @@ import type { ScanErrorBody, ScanResponse } from '../types';
 
 const MAX_CONCURRENT = 2;
 const MAX_BUSY_RETRIES = 2;
-// Just past the route's maxDuration (90 s): a stalled upload becomes a Retry instead of an endless spinner.
-const REQUEST_TIMEOUT_MS = 100_000;
+// Just past the route's maxDuration (150 s): a stalled upload becomes a Retry instead of an endless spinner.
+const REQUEST_TIMEOUT_MS = 170_000;
 
 interface Entry {
   file: File;

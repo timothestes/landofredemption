@@ -42,6 +42,7 @@ export function deckResponse(
       cardCount: g.cardCount ?? dets.filter(d => d.group === g.id).length,
     })),
     detections,
+    crops: { cropped: [], failed: [], skipped: [] },
     usage: { model: 'm', latencyMs: 1, attempts: 1 },
   };
 }

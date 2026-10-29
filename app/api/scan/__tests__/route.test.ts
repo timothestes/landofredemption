@@ -14,13 +14,23 @@ vi.mock('@/lib/scan/abCompare', async (importOriginal) => {
   const real = await importOriginal<typeof import('@/lib/scan/abCompare')>();
   return { ...real, settleAbPairs: vi.fn((...a: Parameters<typeof real.settleAbPairs>) => real.settleAbPairs(...a)) };
 });
+// Pass-through spy over the real crop pass (which calls the mocked recognize); the crop itself is stubbed so sharp never sees it.
+vi.mock('@/lib/scan/cropPass', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@/lib/scan/cropPass')>();
+  return {
+    ...real,
+    runCropPass: vi.fn((...[jpeg, out, image, budgetMs, deps]: Parameters<typeof real.runCropPass>) =>
+      real.runCropPass(jpeg, out, image, budgetMs, { ...deps, crop: async () => Buffer.alloc(1) })),
+  };
+});
 
-import { POST } from '@/app/api/scan/route';
+import { POST, maxDuration } from '@/app/api/scan/route';
 import { createClient } from '@/utils/supabase/server';
 import { getSupabaseAdmin } from '@/lib/pricing/supabase-admin';
 import { recognize, DEFAULT_ARM, DECK_ARM, DECK_MODE } from '@/lib/scan/recognize';
 import { settleAbPairs } from '@/lib/scan/abCompare';
-import type { DeckRead } from '@/lib/scan/deckSchema';
+import { runCropPass, type CropPassResult } from '@/lib/scan/cropPass';
+import type { DeckGroup, DeckRead } from '@/lib/scan/deckSchema';
 import { loadPriceMap } from '@/lib/scan/prices';
 import { FIELD_CAPS, type ScanDetection } from '@/lib/scan/schema';
 import { CARDS } from '@/lib/cards/lookup';
@@ -328,10 +338,10 @@ describe('POST /api/scan deck mode', () => {
     title: null, strength: null, toughness: null, type: 'unknown', brigade: null, reference: null,
     group: 1, position: 1, titleBox: [0, 0, 10, 10], confidence: 'high', ...p,
   });
-  const group = { id: 1, orientation: 'upright', box: [0, 0, 100, 100] };
-  const deckOk = (cards: DeckRead[]) => ({
-    ok: true, output: { photoQuality: 'ok', groups: [group], cards }, model: 'claude-sonnet-5-5',
-    usage: { inputTokens: 1, outputTokens: 1 }, costUsd: 0.04, latencyMs: 10, attempts: 1,
+  const group: DeckGroup = { id: 1, orientation: 'upright', bbox: [0, 0, 0.5, 1], cardCount: 2 };
+  const deckOk = (cards: DeckRead[], groups: DeckGroup[] = [group], over: Record<string, unknown> = {}) => ({
+    ok: true, output: { photoQuality: 'ok', groups, cards }, model: 'claude-sonnet-5-5',
+    usage: { inputTokens: 1, outputTokens: 1 }, costUsd: 0.04, latencyMs: 10, attempts: 1, ...over,
   });
   const priestAndSoul = () => [
     read({ title: 'Captive Priest', reference: 'Judges 18:27', type: 'Hero' }),
@@ -410,5 +420,95 @@ describe('POST /api/scan deck mode', () => {
     expect(body.mode).toBe('collection');
     expect('groups' in body).toBe(false);
     expect(update.mock.calls.at(-1)![0]).not.toHaveProperty('mode'); // column default; migration 124 may not be on prod
+  });
+
+  describe('crop pass', () => {
+    // Group 1 is complete; group 2 has an unread title, so it gets a crop.
+    const group2: DeckGroup = { id: 2, orientation: 'upright', bbox: [0.5, 0, 1, 1], cardCount: 2 };
+    const firstPass = (over: Record<string, unknown> = {}) => deckOk([
+      ...priestAndSoul(),
+      read({ group: 2, title: 'Captive Priest', reference: 'Judges 18:27', type: 'Hero' }),
+      read({ group: 2, position: 2, title: null }),
+    ], [group, group2], over);
+    // A crop reads as a single group 1, with title boxes in crop coordinates (the centre of the crop).
+    const cropOk = () => deckOk([
+      read({ title: 'Lost Soul', titleBox: [0.4, 0.2, 0.6, 0.3] }),
+      read({ title: 'Captive Priest', reference: 'Judges 18:27', type: 'Hero', position: 2, titleBox: [0.4, 0.6, 0.6, 0.7] }),
+    ], [{ id: 1, orientation: 'upright', bbox: [0, 0, 1, 1], cardCount: 2 }], {
+      usage: { inputTokens: 100, outputTokens: 200 }, costUsd: 0.02, latencyMs: 7, attempts: 1,
+    });
+    const cropResult = async (): Promise<CropPassResult> => (runCropPass as Mock).mock.results[0].value;
+
+    it('runs the crop pass on groups that need it and replaces their reads', async () => {
+      (recognize as Mock).mockResolvedValueOnce(firstPass()).mockResolvedValueOnce(cropOk());
+      const res = await postDeck();
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(recognize).toHaveBeenCalledTimes(2);
+      const g2 = body.detections.filter((d: any) => d.group === 2);
+      expect(g2.map((d: any) => [d.read.title, d.position])).toEqual([['Lost Soul', 1], ['Captive Priest', 2]]);
+      expect(body.detections.filter((d: any) => d.group === 1).map((d: any) => d.read.title)).toEqual(['Captive Priest', 'Lost Soul']);
+      expect(body.crops).toEqual({ cropped: [2], failed: [], skipped: [] });
+      expect(update.mock.calls.at(-1)![0].detections.filter((d: any) => d.group === 2).map((d: any) => d.read.title)).toEqual(['Lost Soul', 'Captive Priest']);
+    });
+
+    it('a complete upright photo makes no crop call', async () => {
+      (recognize as Mock).mockResolvedValue(deckOk(priestAndSoul()));
+      const body = await (await postDeck()).json();
+      expect(recognize).toHaveBeenCalledTimes(1);
+      expect(body.crops).toEqual({ cropped: [], failed: [], skipped: [] });
+    });
+
+    it('sums crop spend and calls into the event row and usage', async () => {
+      session({ superuser: true });
+      (recognize as Mock).mockResolvedValueOnce(firstPass()).mockResolvedValueOnce(cropOk());
+      const body = await (await postDeck()).json();
+      const cp = await cropResult();
+      expect(cp.calls).toBe(1);
+      const patch = update.mock.calls.at(-1)![0];
+      expect(patch).toMatchObject({ status: 'done', input_tokens: 101, output_tokens: 201, attempts: 2, latency_ms: 10 + cp.latencyMs });
+      expect(patch.cost_usd).toBeCloseTo(0.06);
+      expect(body.usage.latencyMs).toBe(10 + cp.latencyMs);
+      expect(body.usage.attempts).toBe(2);
+      expect(body.usage.costUsd).toBeCloseTo(0.06);
+    });
+
+    it('a failed crop keeps the first-pass reads and the row is still done', async () => {
+      (recognize as Mock).mockResolvedValueOnce(firstPass()).mockResolvedValueOnce({
+        ok: false, code: 'recognizer_failed', attempts: 2, latencyMs: 5, usage: { inputTokens: 50, outputTokens: 60 }, costUsd: 0.01,
+      });
+      const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const res = await postDeck();
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      const g2 = body.detections.filter((d: any) => d.group === 2);
+      expect(g2.map((d: any) => d.read.title)).toEqual(['Captive Priest', null]);
+      expect(body.crops).toEqual({ cropped: [], failed: [2], skipped: [] });
+      const patch = update.mock.calls.at(-1)![0];
+      expect(patch).toMatchObject({ status: 'done', input_tokens: 51, output_tokens: 61, attempts: 3 });
+      expect(patch.cost_usd).toBeCloseTo(0.05);
+      expect(err).toHaveBeenCalledWith('[scan] crop failed', expect.objectContaining({ scanId: SCAN_ID, group: 2, code: 'recognizer_failed' }));
+      err.mockRestore();
+    });
+
+    it('passes a budget that shrinks with the first pass latency', async () => {
+      (recognize as Mock).mockResolvedValue(deckOk(priestAndSoul(), [group], { latencyMs: 100_000 }));
+      await postDeck();
+      expect((runCropPass as Mock).mock.calls[0][3]).toBe(30_000);
+      expect((runCropPass as Mock).mock.calls[0][2]).toEqual({ width: 64, height: 48 });
+      (runCropPass as Mock).mockClear();
+      (recognize as Mock).mockResolvedValue(deckOk(priestAndSoul(), [group], { latencyMs: 140_000 }));
+      await postDeck();
+      expect((runCropPass as Mock).mock.calls[0][3]).toBe(0);
+    });
+
+    it('collection mode never runs the crop pass', async () => {
+      (recognize as Mock).mockResolvedValue({ ok: true, output: { photoQuality: 'ok', cards: [] }, model: 'claude-sonnet-5-5', usage: { inputTokens: 1, outputTokens: 1 }, costUsd: 0.001, latencyMs: 10, attempts: 1 });
+      const body = await (await POST(req(jpegBlob()))).json();
+      expect(runCropPass).not.toHaveBeenCalled();
+      expect('crops' in body).toBe(false);
+    });
+
+    it('maxDuration is 150', () => expect(maxDuration).toBe(150));
   });
 });

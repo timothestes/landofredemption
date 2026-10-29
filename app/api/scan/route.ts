@@ -9,6 +9,7 @@ import { matchDetection } from '@/lib/scan/match';
 import { settleAbPairs } from '@/lib/scan/abCompare';
 import { capDetection } from '@/lib/scan/schema';
 import { DECK_DETECTION_CAP } from '@/lib/scan/deckSchema';
+import { runCropPass } from '@/lib/scan/cropPass';
 import { deckReadToDetection, classifyDeckRead, type DeckDetection } from '@/lib/scan/deckClassify';
 import { reserveScan, finishScan, type FinishPatch } from '@/lib/scan/events';
 import { COMMIT_LIMITS } from '@/app/collection/scan/lib/commitCore';
@@ -16,10 +17,13 @@ import { COMMIT_LIMITS } from '@/app/collection/scan/lib/commitCore';
 // POST /api/scan: one photo in, matched detections out.
 // Spec: docs/superpowers/specs/2026-10-26-card-scanner-design.md, "POST /api/scan" and "Reserve first, then call".
 // Order: gate → body → reserve → encode → prices → recognize → match → AB frame comparison → finish.
-// mode=deck swaps the recognizer mode and arm, classifies each read into a deck row, and skips the AB pass.
+// mode=deck swaps the recognizer mode and arm, re-reads short groups from crops, classifies each read into a deck row, and skips the AB pass.
 
 export const runtime = 'nodejs';
-export const maxDuration = 90;
+export const maxDuration = 150;
+
+// Deck mode's first pass plus crop pass: 20 s under maxDuration for encode, prices, classify and finish.
+const ROUTE_BUDGET_MS = 130_000;
 
 const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
 const ARM_VALUES = {
@@ -126,8 +130,10 @@ export async function POST(req: Request) {
   let spent: Omit<FinishPatch, 'status'> = { model: arm.model, attempts: 0, latencyMs: 0, ...dbMode };
   try {
     let jpeg: Buffer;
+    let width: number;
+    let height: number;
     try {
-      ({ jpeg } = await encodeForScan(Buffer.from(await photo.arrayBuffer()), arm.tier));
+      ({ jpeg, width, height } = await encodeForScan(Buffer.from(await photo.arrayBuffer()), arm.tier));
     } catch (e) {
       if (!(e instanceof ScanImageError)) throw e;
       await finish({ status: 'failed', attempts: 0, latencyMs: 0, ...dbMode });
@@ -164,7 +170,15 @@ export async function POST(req: Request) {
 
     if (mode === 'deck' && 'groups' in r.output) {
       const out = r.output;
-      const reads = out.cards.slice(0, DECK_DETECTION_CAP);
+      const budgetMs = Math.max(0, ROUTE_BUDGET_MS - r.latencyMs);
+      const cp = await runCropPass(jpeg, out, { width, height }, budgetMs);
+      for (const { group, code, detail } of cp.failures) console.error('[scan] crop failed', { scanId, group, code, detail });
+      const usage = { inputTokens: r.usage.inputTokens + cp.usage.inputTokens, outputTokens: r.usage.outputTokens + cp.usage.outputTokens };
+      const costUsd = r.costUsd + cp.costUsd;
+      const latencyMs = r.latencyMs + cp.latencyMs;
+      const attempts = r.attempts + cp.calls;
+      spent = { ...spent, ...usage, costUsd, latencyMs, attempts };
+      const reads = cp.cards.slice(0, DECK_DETECTION_CAP);
       const detections: DeckDetection[] = reads.map((deckRead, i) => {
         const read = capDetection(deckReadToDetection(deckRead));
         const m = matchDetection(read, prices);
@@ -188,8 +202,8 @@ export async function POST(req: Request) {
         };
       });
       await finish({
-        status: 'done', model: r.model, attempts: r.attempts, latencyMs: r.latencyMs,
-        inputTokens: r.usage.inputTokens, outputTokens: r.usage.outputTokens, costUsd: r.costUsd,
+        status: 'done', model: r.model, attempts, latencyMs,
+        inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, costUsd,
         photoQuality: out.photoQuality, ...dbMode,
         detections: detections.map(({ candidates: _candidates, ...stored }) => stored),
       });
@@ -199,7 +213,8 @@ export async function POST(req: Request) {
         photoQuality: out.photoQuality,
         groups: out.groups,
         detections,
-        usage: { model: r.model, latencyMs: r.latencyMs, attempts: r.attempts, ...(superuser ? { costUsd: r.costUsd } : {}) },
+        crops: { cropped: cp.cropped, failed: cp.failed, skipped: cp.skipped },
+        usage: { model: r.model, latencyMs, attempts, ...(superuser ? { costUsd } : {}) },
       });
     }
 
