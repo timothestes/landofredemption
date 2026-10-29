@@ -38,11 +38,12 @@ describe('scoreDeckPhoto', () => {
     expect(s.invented).toBe(1);
     expect(s.precision).toBeLessThan(1);
   });
-  it('unreadable cards leave the recall denominator', () => {
+  it('unreadable cards are already outside cards, so they do not shrink the recall denominator again', () => {
     const r = resp();
     r.detections.pop();
-    expect(scoreDeckPhoto(label, r).recall).toBeLessThan(1);
-    expect(scoreDeckPhoto({ ...label, unreadable: 1 }, r).recall).toBe(1);
+    // cards lists 3 readable copies; 2 found. unreadable counts cards not in the list at all.
+    expect(scoreDeckPhoto(label, r).recall).toBeCloseTo(2 / 3, 6);
+    expect(scoreDeckPhoto({ ...label, unreadable: 1 }, r).recall).toBeCloseTo(2 / 3, 6);
   });
   it('Lost Soul error counts placeholders and matched Lost Souls', () => {
     const ls = CARDS.find(c => idx.identityOf(c).lostSoul)!;

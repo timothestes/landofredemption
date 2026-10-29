@@ -1,6 +1,6 @@
 # labels-deck.json
 
-`scripts/scan-eval/labels-deck.json` is a JSON array with one object per deck photo: `{ "photo": "deck1.jpg", "cards": [{ "name": "Captive Priest", "qty": 2 }], "lostSouls": 7, "reserveSize": 10, "unreadable": 1 }`. `photo` is the file name in `scripts/scan-eval/photos-deck/` (the scorer reads `outputs/<arm>/<photo>.json`); `name` is an exact `CardData.name`, and `cards` excludes Lost Souls (count those in `lostSouls`); `reserveSize` is how many cards are in the photographed Reserve (0 when none); `unreadable` is how many cards you cannot read yourself in the photo, which leave the recall denominator.
+`scripts/scan-eval/labels-deck.json` is a JSON array with one object per deck photo: `{ "photo": "deck1.jpg", "cards": [{ "name": "Captive Priest", "qty": 2 }], "lostSouls": 7, "reserveSize": 10, "unreadable": 1 }`. `photo` is the file name in `scripts/scan-eval/photos-deck/` (the scorer reads `outputs/<arm>/<photo>.json`); `name` is an exact `CardData.name`, and `cards` excludes Lost Souls (count those in `lostSouls`); `reserveSize` is how many cards are in the photographed Reserve (0 when none); `unreadable` is how many cards you cannot read yourself in the photo; they are not listed in `cards`, so they are already outside the recall denominator (the scorer does not subtract them again).
 
 To run: `npx tsx scripts/scan-eval/run.ts --mode deck --base-url <url> --cookie "$(cat .scan-session)" --photos scripts/scan-eval/photos-deck --out scripts/scan-eval/outputs/deck-<arm>`. Omit `--arm` to use the route's deck arm.
 
