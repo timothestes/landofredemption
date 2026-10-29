@@ -30,7 +30,7 @@ export type NameReason = 'exact' | 'fuzzy' | 'reference' | 'none';
 export type PrintingReason =
   | 'only' | 'default' | 'print_number' | 'ur_plus' | 'legacy_rare' | 'reference' | 'stats'
   | 'illustrator' | 'copyright_year' | 'caption' | 'edition_letter' | 'ability_end' | 'promo_text'
-  | 'equivalent' | 'printing_ambiguous' | 'identity_ambiguous' | 'reference_missing'
+  | 'frame' | 'equivalent' | 'printing_ambiguous' | 'identity_ambiguous' | 'reference_missing'
   | 'reference_ambiguous' | 'none';
 
 export interface MatchResult {
@@ -41,6 +41,8 @@ export interface MatchResult {
   stem?: string;
   chosen?: Candidate;
   candidates: Candidate[];
+  /** Set when the filters left exactly a card and its AB twin: the frame comparison (abCompare.ts) may settle it. */
+  abPair?: { original: Candidate; ab: Candidate };
   identityCandidates?: string[];
   scores: { matchScore: number; runnerUpScore: number; agreeingFields: string[] };
   fuzzyFrom?: string;
@@ -52,7 +54,7 @@ export const PRICE_DELTA_FLOOR = 2.0;
 const FUZZY_MAX = 0.2;
 const FUZZY_SHORT_TITLE = 8;
 
-type Selection = Pick<MatchResult, 'status' | 'printingReason' | 'chosen' | 'candidates'>;
+type Selection = Pick<MatchResult, 'status' | 'printingReason' | 'chosen' | 'candidates' | 'abPair'>;
 
 /** Per-printing cue lookup; the generated table unless a test injects one. */
 export type CueLookup = (cardKey: string) => PrintingCue | undefined;
@@ -291,7 +293,21 @@ function defaultOf(cards: CardData[], survivors: Candidate[]): Candidate {
     ?? survivors[0];
 }
 
+/** A card and its AB twin, and nothing else. */
+function abPairOf(cards: CardData[], prices: PriceMap): MatchResult['abPair'] {
+  if (cards.length !== 2) return undefined;
+  const [x, y] = cards;
+  if (getScanIndex().abTwinKey(cardKey(x)) !== cardKey(y) || isAB(x) === isAB(y)) return undefined;
+  const [original, ab] = isAB(x) ? [y, x] : [x, y];
+  return { original: candidate(original, prices), ab: candidate(ab, prices) };
+}
+
 function collapse(cards: CardData[], all: Candidate[], prices: PriceMap): Selection {
+  const abPair = abPairOf(cards, prices);
+  return abPair ? { ...collapseRules(cards, all, prices), abPair } : collapseRules(cards, all, prices);
+}
+
+function collapseRules(cards: CardData[], all: Candidate[], prices: PriceMap): Selection {
   let removed = false;
   if (!cards.every(isPromo)) {
     const standard = cards.filter(c => !isSpecial(c));

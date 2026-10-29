@@ -100,4 +100,15 @@ describe('collapse', () => {
     expect(r.status).toBe('matched'); expect(r.printingReason).toBe('default'); expect(r.chosen?.legality).toBe('Rotation');
     expect(r.candidates.map(c => c.key).sort()).toEqual(arch.cards.map(cardKey).sort());
   });
+  it('a card and its AB twin left by the filters carry abPair, still defaulting to the original', () => {
+    const r = matchDetection(det({ title: 'Abaddon, the Destroyer', reference: 'Revelation 9:11', printNumber: '116' }), NO);
+    expect(r.chosen?.name).toBe('Abaddon, the Destroyer (RoJ)'); expect(r.printingReason).toBe('default');
+    expect(r.abPair?.original.name).toBe('Abaddon, the Destroyer (RoJ)');
+    expect(r.abPair?.ab.name).toBe('Abaddon, the Destroyer (RoJ AB)');
+  });
+  it('no abPair when a filter separated the twins or no twin is left', () => {
+    const pop = det({ title: 'The Prince of Persia', reference: 'Daniel 10:13', strength: '7', toughness: '8', printNumber: '76', rarityCode: 'UR', copyrightYear: '2026' });
+    expect(matchDetection(pop, NO).printingReason).toBe('copyright_year'); expect(matchDetection(pop, NO).abPair).toBeUndefined();
+    expect(selectPrinting(id, sog, NO).abPair).toBeUndefined();
+  });
 });

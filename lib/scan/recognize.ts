@@ -28,7 +28,7 @@ export type RecognizeResult =
   | { ok: true; output: ScanOutput; model: string; usage: { inputTokens: number; outputTokens: number }; costUsd: number; latencyMs: number; attempts: number }
   | { ok: false; code: 'upstream_rate_limit' | 'upstream_overloaded' | 'billing_error' | 'recognizer_failed'; retryAfterSeconds?: number; detail?: FailureDetail; usage?: { inputTokens: number; outputTokens: number }; costUsd?: number; latencyMs: number; attempts: number };
 
-type Create = (params: unknown) => Promise<unknown>;
+export type Create = (params: unknown) => Promise<unknown>;
 interface Deps { create?: Create; sleep?: (ms: number) => Promise<void> }
 
 const MAX_TOKENS = 16_000;
@@ -36,7 +36,7 @@ const MAX_TOKENS_RETRY = 32_000;
 const RETRY_DELAY_MS = 2_000;
 
 let defaultCreate: Create | null = null;
-function getDefaultCreate(): Create {
+export function getDefaultCreate(): Create {
   if (defaultCreate) return defaultCreate;
   const apiKey = process.env.SCANNER_ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('SCANNER_ANTHROPIC_API_KEY is not set; the scanner cannot call Claude.');

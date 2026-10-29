@@ -554,6 +554,9 @@ and `maxDuration = 90`. Kept only if E0 stage 6 shows lift.
 
 ### Stage A2 (v1.2): art-similarity tiebreaker
 
+The frame-only AB pairs now go to a two-image Claude comparison first
+(decision 21); this stage stays the zero-cost route once crops exist.
+
 A server-side descriptor index of all printings' Blob images (the
 community tool uses a 420-byte color-layout vector per image; ours can
 be that or a small embedding), compared against the card's crop to break
@@ -1631,3 +1634,16 @@ Unrelated finding, flagged once: `scripts/run-claude-matching.ts` calls
 20. Frame-only AB pairs stay on "original wins" at equal price with the
     twin on the printings line; the art tiebreaker (v1.2) is scoped to
     them and to the different-art pairs whose credit was unreadable.
+21. Superseded in part by the AB frame comparison (2026-10-29): when the
+    filters leave exactly a card and its AB twin, the matcher sets
+    `abPair` and a second Claude call (`lib/scan/abCompare.ts`) shows the
+    photo with both catalog images, A and B, and asks which one each card
+    is (`printingReason: 'frame'`); "original wins" remains the fallback
+    when it answers unsure or fails. The rejected `border` field asked for
+    a judgment with no reference; this asks for a choice between two.
+    Each answer describes the photo card, A and B before it picks: without
+    that, synthetic 3x3 spreads scored 44/54, with it 53/54 (93/95 over
+    two seeds, singles 14/14). Cost about $0.023 and 6 to 11 s per spread
+    with AB pairs, $0.006 and 2 to 3 s per single; no call when no pair is
+    left. Real photos remain the test; the pixel tiebreaker (Stage A2) is
+    still the route once crops exist.
