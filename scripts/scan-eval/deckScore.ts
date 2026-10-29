@@ -32,6 +32,8 @@ export interface DeckPhotoScore {
   groupCountError: number;
   costUsd: number | null;
   latencyMs: number | null;
+  /** Groups the crop pass re-read; null when the output predates the crop pass. */
+  crops: number | null;
 }
 
 let byKey: Map<string, (typeof CARDS)[number]> | null = null;
@@ -113,6 +115,7 @@ export function scoreDeckPhoto(label: DeckLabel, resp: DeckScanResponse): DeckPh
     groupCountError: sizes.reduce((n, g, i) => n + Math.abs(resp.groups[i].cardCount - g.count), 0),
     costUsd: typeof resp.usage?.costUsd === 'number' ? resp.usage.costUsd : null,
     latencyMs: typeof resp.usage?.latencyMs === 'number' ? resp.usage.latencyMs : null,
+    crops: Array.isArray(resp.crops?.cropped) ? resp.crops.cropped.length : null,
   };
 }
 
@@ -148,7 +151,7 @@ function main() {
     console.log(
       `${s.photo}  P ${s.precision.toFixed(3)}  R ${s.recall.toFixed(3)}  invented ${s.invented}  LS err ${s.lostSoulError}  ` +
         `reserve ${s.reserveDefaultRight ? 'ok' : 'WRONG'}  group err ${s.groupCountError}  ` +
-        `$${s.costUsd?.toFixed(4) ?? '?'}  ${s.latencyMs ?? '?'}ms`,
+        `crops ${s.crops ?? ''}  $${s.costUsd?.toFixed(4) ?? '?'}  ${s.latencyMs ?? '?'}ms`,
     );
   }
   if (missing.length) console.warn(`labeled photos with no output (${missing.length}): ${missing.join(', ')}`);
