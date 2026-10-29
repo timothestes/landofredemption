@@ -8,6 +8,12 @@ import { DECK_COPY } from '../copy';
 import { cropPlan, cropToUrl } from '../lib/photoCrops';
 import type { DeckPhoto } from '../types';
 
+/**
+ * Off after the E0 box check (2026-10-29): group boxes cut the fully visible card on the sharp photo, and every
+ * sideways row came back `upright`, so its strip showed the titles sideways. Turn back on once the box check passes on every photo.
+ */
+export const SHOW_GROUP_STRIPS = false;
+
 interface Props {
   /** Object URL of the prepared photo (the queue's thumb). */
   photoUrl: string;

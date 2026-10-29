@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { DECK_COPY, fill } from '../copy';
 import type { DeckPhoto, Zone } from '../types';
 import AddCardRow from './AddCardRow';
-import GroupStrip from './GroupStrip';
+import GroupStrip, { SHOW_GROUP_STRIPS } from './GroupStrip';
 
 interface Props {
   /** Display number, in reading order across the tray. */
@@ -63,7 +63,7 @@ export default function GroupSection({
           ))}
         </div>
       </div>
-      {thumb && group && (
+      {SHOW_GROUP_STRIPS && thumb && group && (
         <div className="mt-2">
           <GroupStrip photoUrl={thumb} group={group} label={label} />
         </div>
