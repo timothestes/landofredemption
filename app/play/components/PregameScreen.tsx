@@ -890,11 +890,18 @@ function RollAndChooseArea({
   // Winner name for announcement
   const winnerName = iWonRoll ? 'You win' : `${opponentName} wins`;
 
-  // Show results = dice have landed (we track this via a brief delay)
+  // Show results = dice have landed (we track this via a brief delay).
+  // The timer bar is a one-shot animation, so measure the time left at the
+  // moment it appears — not the secondsLeft captured at mount, which is
+  // ~2s stale by then and made the bar outlast the real deadline.
   const [showResults, setShowResults] = useState(false);
+  const [barRemainingMs, setBarRemainingMs] = useState(0);
   useEffect(() => {
     // Show results after tumble animation completes
-    const timer = setTimeout(() => setShowResults(true), RITUAL_TUMBLE_MS + 700);
+    const timer = setTimeout(() => {
+      setBarRemainingMs(Math.max(0, deadlineMs - Date.now()));
+      setShowResults(true);
+    }, RITUAL_TUMBLE_MS + 700);
     return () => clearTimeout(timer);
   }, []);
 
@@ -924,12 +931,8 @@ function RollAndChooseArea({
     return () => clearInterval(interval);
   }, [showResults, deadlineMs]);
 
-  // Auto-choose when timer expires — winner defaults to going first
-  useEffect(() => {
-    if (secondsLeft === 0 && iWonRoll && mySeat !== undefined) {
-      handleChoose(mySeat);
-    }
-  }, [secondsLeft, iWonRoll]);
+  // No client auto-choose: handle_choose_first_timeout picks for the winner
+  // at choosingDeadlineMicros, so both players see it at the same moment.
 
   const handleChoose = (seat: bigint) => {
     if (hasChosenRef.current) return;
@@ -997,9 +1000,9 @@ function RollAndChooseArea({
       <div className="mt-4">
           <div className="w-full h-[3px] rounded-sm bg-amber-200/[0.08] overflow-hidden">
             <motion.div
-              initial={{ width: `${(secondsLeft / CHOOSE_TIME_LIMIT_S) * 100}%` }}
+              initial={{ width: `${(barRemainingMs / (CHOOSE_TIME_LIMIT_S * 1000)) * 100}%` }}
               animate={{ width: '0%' }}
-              transition={{ duration: secondsLeft, ease: 'linear' }}
+              transition={{ duration: barRemainingMs / 1000, ease: 'linear' }}
               className="h-full rounded-sm"
               style={{
                 backgroundColor: secondsLeft <= 10 ? 'rgba(220, 120, 80, 0.6)' : 'rgba(196, 149, 90, 0.4)',
