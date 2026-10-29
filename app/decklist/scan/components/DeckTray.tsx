@@ -9,7 +9,7 @@ import { DECK_COPY, fill } from '../copy';
 import { useCheckWalker } from '../hooks/useCheckWalker';
 import { trayRows, type DeckTrayAction, type TrayDeckRow } from '../lib/deckTrayReducer';
 import { totals } from '../lib/handoff';
-import type { DeckPhoto, DeckTrayState, TrayEntry, Zone } from '../types';
+import type { Candidate, DeckPhoto, DeckTrayState, TrayEntry, Zone } from '../types';
 import DeckRow, { AMBER_KINDS } from './DeckRow';
 import GroupSection from './GroupSection';
 
@@ -131,16 +131,16 @@ export default function DeckTray({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickerSeq]);
 
-  const onPick = (key: string) => {
+  // A search pick carries its card's printings, so a later Change printing lists the right card.
+  const onPick = (key: string, _via: 'candidates' | 'search', candidates?: Candidate[]) => {
     if (!picker) return;
     if (picker.for === 'add') {
-      dispatch({ type: 'addCard', groupKey: picker.groupKey, key });
-    } else if (pickedRow && pickedRow.kind === 'unread' && pickedRow.quantity > 1) {
-      // "3 unread" becomes three picks: this pick takes one of them and the rest stay unread.
-      dispatch({ type: 'setQty', rowKey: pickedRow.rowKey, qty: pickedRow.quantity - 1 });
-      dispatch({ type: 'addCard', groupKey: pickedRow.groupKey, key });
+      dispatch({ type: 'addCard', groupKey: picker.groupKey, key, candidates });
+    } else if (pickedRow && (pickedRow.kind === 'unread' || pickedRow.kind === 'not_found') && pickedRow.quantity > 1) {
+      // "3 unread" becomes three picks: this pick corrects one read and the rest stay as they were.
+      dispatch({ type: 'setCardOne', rowKey: pickedRow.rowKey, key, candidates });
     } else if (pickedRow) {
-      dispatch({ type: 'setCard', rowKey: pickedRow.rowKey, key });
+      dispatch({ type: 'setCard', rowKey: pickedRow.rowKey, key, candidates });
     }
   };
 

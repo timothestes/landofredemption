@@ -1,22 +1,26 @@
 import type { QueueAction } from '@/app/collection/scan/hooks/useScanQueue';
 import { defaultReserveGroup, mergeDeckRows, type DeckEntry, type DeckRow, type GroupSize } from '@/lib/scan/deck';
 import type { DeckScanResponse } from '@/lib/scan/deckClassify';
-import type { DeckPhoto, DeckTrayState, TrayEntry, Zone } from '../types';
+import type { Candidate, DeckPhoto, DeckTrayState, TrayEntry, Zone } from '../types';
 
 export type DeckTrayAction =
   | QueueAction<DeckScanResponse>
-  | { type: 'setCard'; rowKey: string; key: string }
+  | { type: 'setCard'; rowKey: string; key: string; candidates?: Candidate[] }
+  /** Corrects only the row's first read: one of "3 unread" (or of a Not found ×N) becomes the pick. */
+  | { type: 'setCardOne'; rowKey: string; key: string; candidates?: Candidate[] }
   | { type: 'setQty'; rowKey: string; qty: number }
   | { type: 'removeRow'; rowKey: string }
   | { type: 'undoRemove' }
   | { type: 'moveRow'; rowKey: string; zone: Zone }
   | { type: 'setGroupZone'; groupKey: string; zone: Zone }
-  | { type: 'addCard'; groupKey: string; key: string }
+  | { type: 'addCard'; groupKey: string; key: string; candidates?: Candidate[] }
   | { type: 'setLostSoulPicks'; picks: { key: string; qty: number }[] }
   | { type: 'skipLostSouls' }
   | { type: 'saving' }
   | { type: 'saved'; deckId: string }
   | { type: 'saveFailed' };
+
+export const MAX_QTY = 99;
 
 export type TrayDeckRow = DeckRow & { groupKey: string; zone: Zone };
 
@@ -191,13 +195,18 @@ export function deckTrayReducer(s: DeckTrayState, a: DeckTrayAction): DeckTraySt
     case 'setCard': {
       const r = rowEntries(s, a.rowKey);
       if (!r) return s;
-      return patchEntries(s, r.ids, e => ({ ...e, kind: 'matched', key: a.key }));
+      return patchEntries(s, r.ids, e => ({ ...e, kind: 'matched', key: a.key, ...(a.candidates ? { candidates: a.candidates } : {}) }));
+    }
+    case 'setCardOne': {
+      const r = rowEntries(s, a.rowKey);
+      if (!r) return s;
+      return patchEntries(s, new Set([r.row.readIds[0]]), e => ({ ...e, kind: 'matched', key: a.key, ...(a.candidates ? { candidates: a.candidates } : {}) }));
     }
     case 'setQty': {
       const r = rowEntries(s, a.rowKey);
       if (!r) return s;
       if (!Number.isFinite(a.qty)) return s;
-      const n = Math.min(99, Math.max(0, Math.round(a.qty)));
+      const n = Math.min(MAX_QTY, Math.max(0, Math.round(a.qty)));
       const q = r.entries.length;
       if (n === q) return s;
       if (n < q) {
@@ -231,7 +240,7 @@ export function deckTrayReducer(s: DeckTrayState, a: DeckTrayAction): DeckTraySt
       const photoId = a.groupKey.slice(0, i);
       const group = Number(a.groupKey.slice(i + 1));
       if (!s.photos.some(p => p.photoId === photoId) || !Number.isFinite(group)) return s;
-      const e = addedEntry(s, { photoId, group, kind: 'matched', key: a.key, title: null, type: '' });
+      const e = addedEntry(s, { photoId, group, kind: 'matched', key: a.key, title: null, type: '', candidates: a.candidates });
       return { ...s, entries: [...s.entries, e], addSeq: s.addSeq + 1 };
     }
     case 'setLostSoulPicks':

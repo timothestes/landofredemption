@@ -23,12 +23,15 @@ interface Props {
 export default function GroupStrip({ photoUrl, group, label }: Props) {
   const [url, setUrl] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [x0, y0, x1, y1] = group.bbox;
 
   useEffect(() => {
     let cancelled = false;
     let made: string | null = null;
     const img = new Image();
+    setFailed(false);
+    img.onerror = () => { if (!cancelled) setFailed(true); };
     img.onload = () => {
       if (cancelled) return;
       const plan = cropPlan([x0, y0, x1, y1], { w: img.naturalWidth, h: img.naturalHeight }, group.orientation);
@@ -40,18 +43,21 @@ export default function GroupStrip({ photoUrl, group, label }: Props) {
             setUrl(u);
           }
         },
-        () => { /* no strip: the rows still read on their own */ },
+        // No strip: the rows still read on their own.
+        () => { if (!cancelled) setFailed(true); },
       );
     };
     img.src = photoUrl;
     return () => {
       cancelled = true;
       img.onload = null;
+      img.onerror = null;
       if (made) URL.revokeObjectURL(made);
       setUrl(null);
     };
   }, [photoUrl, x0, y0, x1, y1, group.orientation]);
 
+  if (failed) return null;
   if (!url) return <div aria-hidden className="h-[72px] rounded-sm bg-muted/50" />;
 
   return (

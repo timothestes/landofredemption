@@ -47,6 +47,32 @@ describe('deckTrayReducer', () => {
     expect(s.entries[1].original).toEqual({ kind: 'which', key: 'B' });
   });
 
+  it('setCard with candidates stores them on every patched entry', () => {
+    let s = withPhoto('p1', deckResponse('s1', [{ group: 1, key: 'B', kind: 'read_as' }, { group: 1, key: 'B', kind: 'read_as' }]));
+    const cands = [{ key: 'A', name: 'Alpha', set: 'X', officialSet: 'Xs', imgFile: 'a', legality: 'Rotation', price: null }];
+    s = run(s, { type: 'setCard', rowKey: trayRows(s)[0].rowKey, key: 'A', candidates: cands });
+    expect(s.entries.map(e => e.candidates)).toEqual([cands, cands]);
+  });
+
+  it('setCardOne corrects only the first read of an unread x3 row, keeping its original, removing nothing', () => {
+    let s = withPhoto('p1', deckResponse('s1', rep(3, { group: 1, key: null, kind: 'unread' })));
+    s = run(s, { type: 'setGroupZone', groupKey: 'p1:1', zone: 'reserve' });
+    const rk = trayRows(s)[0].rowKey;
+    const cands = [{ key: 'A', name: 'Alpha', set: 'X', officialSet: 'Xs', imgFile: 'a', legality: 'Rotation', price: null }];
+    s = run(s, { type: 'setCardOne', rowKey: rk, key: 'A', candidates: cands });
+    expect(trayRows(s).map(r => [r.kind, r.key, r.quantity, r.zone])).toEqual([['matched', 'A', 1, 'reserve'], ['unread', null, 2, 'reserve']]);
+    expect(s.entries[0]).toMatchObject({ entryId: 's1:0', photoId: 'p1', group: 1, kind: 'matched', key: 'A', candidates: cands, original: { kind: 'unread', key: null } });
+    expect(s.entries.some(e => e.removed)).toBe(false);
+    expect(s.entries).toHaveLength(3);
+  });
+
+  it('addCard with candidates stores them on the added entry', () => {
+    let s = withPhoto('p1', deckResponse('s1', [{ group: 1, key: 'B' }]));
+    const cands = [{ key: 'A', name: 'Alpha', set: 'X', officialSet: 'Xs', imgFile: 'a', legality: 'Rotation', price: null }];
+    s = run(s, { type: 'addCard', groupKey: 'p1:1', key: 'A', candidates: cands });
+    expect(s.entries[1]).toMatchObject({ key: 'A', candidates: cands, original: null });
+  });
+
   it('setQty adds entries copying the first entry, ids by addSeq, clamped to 0..99', () => {
     let s = withPhoto('p1', deckResponse('s1', [{ group: 1, key: 'A', title: 'Alpha', type: 'Hero' }]));
     const rk = trayRows(s)[0].rowKey;

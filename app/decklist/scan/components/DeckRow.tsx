@@ -6,7 +6,7 @@ import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { COPY } from '@/app/collection/scan/copy';
 import CardViewer from '@/app/collection/scan/components/CardViewer';
 import { DECK_COPY, fill } from '../copy';
-import type { TrayDeckRow } from '../lib/deckTrayReducer';
+import { MAX_QTY, type TrayDeckRow } from '../lib/deckTrayReducer';
 import { rowKeyAction } from '../lib/walker';
 import type { Candidate, Zone } from '../types';
 import RowMenu from './RowMenu';
@@ -14,7 +14,6 @@ import RowMenu from './RowMenu';
 /** Kinds that carry the amber edge and chip, and that the totals line's "N to check" walks. */
 export const AMBER_KINDS = ['which', 'read_as', 'not_found', 'unread'];
 
-const MAX_QTY = 99;
 const SWIPE_PX = 80;
 
 const chipClass =
@@ -125,11 +124,15 @@ export default function DeckRow({
   };
 
   const mainOnlyInReserve = row.mainOnly && groupZone === 'reserve';
+  // A row moved by ⋯ to the other zone than its group's says where it counts.
+  const movedZone = !row.mainOnly && row.zone !== groupZone ? (row.zone === 'reserve' ? DECK_COPY.zoneReserve : DECK_COPY.zoneMain) : null;
 
   return (
     <li>
       <div
         data-row-id={row.rowKey}
+        role="group"
+        aria-label={lostSoul ? fill(DECK_COPY.lostSoulRow, { n: row.quantity }) : `${label} ×${row.quantity}`}
         tabIndex={0}
         onKeyDown={onKeyDown}
         onTouchStart={onTouchStart}
@@ -260,6 +263,7 @@ export default function DeckRow({
       </div>
 
       {mainOnlyInReserve && <p className="pb-1.5 pl-[60px] text-xs text-muted-foreground">Counted in main deck</p>}
+      {movedZone && <p className="pb-1.5 pl-[60px] text-xs text-muted-foreground">{movedZone}</p>}
 
       {viewerOpen && thumbSrc && (
         <CardViewer
