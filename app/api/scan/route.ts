@@ -6,13 +6,14 @@ import { encodeForScan, ScanImageError } from '@/lib/scan/image';
 import { loadPriceMap } from '@/lib/scan/prices';
 import { recognize, DEFAULT_ARM, type Arm } from '@/lib/scan/recognize';
 import { matchDetection } from '@/lib/scan/match';
+import { settleAbPairs } from '@/lib/scan/abCompare';
 import { capDetection } from '@/lib/scan/schema';
 import { reserveScan, finishScan, type FinishPatch } from '@/lib/scan/events';
 import { COMMIT_LIMITS } from '@/app/collection/scan/lib/commitCore';
 
 // POST /api/scan: one photo in, matched detections out.
 // Spec: docs/superpowers/specs/2026-10-26-card-scanner-design.md, "POST /api/scan" and "Reserve first, then call".
-// Order: gate → body → reserve → encode → prices → recognize → match → finish.
+// Order: gate → body → reserve → encode → prices → recognize → match → AB frame comparison → finish.
 
 export const runtime = 'nodejs';
 export const maxDuration = 90;
@@ -153,9 +154,16 @@ export async function POST(req: Request) {
     }
 
     // Capped at what a commit accepts per scan, so a dense photo can always be added.
-    const detections = r.output.cards.slice(0, COMMIT_LIMITS.detectionsPerScan).map((card, i) => {
-      const read = capDetection(card);
-      const m = matchDetection(read, prices);
+    const reads = r.output.cards.slice(0, COMMIT_LIMITS.detectionsPerScan).map(capDetection);
+    const ab = await settleAbPairs(jpeg, reads, reads.map((read) => matchDetection(read, prices)), arm);
+    if (ab.detail) console.error('[scan] AB comparison failed', { scanId, detail: ab.detail });
+    const usage = { inputTokens: r.usage.inputTokens + ab.usage.inputTokens, outputTokens: r.usage.outputTokens + ab.usage.outputTokens };
+    const costUsd = r.costUsd + ab.costUsd;
+    const latencyMs = r.latencyMs + ab.latencyMs;
+    spent = { ...spent, ...usage, costUsd, latencyMs };
+
+    const detections = ab.matches.map((m, i) => {
+      const read = reads[i];
       return {
         id: `${scanId}:${i}`,
         grid: read.grid,
@@ -171,8 +179,8 @@ export async function POST(req: Request) {
     });
 
     await finish({
-      status: 'done', model: r.model, attempts: r.attempts, latencyMs: r.latencyMs,
-      inputTokens: r.usage.inputTokens, outputTokens: r.usage.outputTokens, costUsd: r.costUsd,
+      status: 'done', model: r.model, attempts: r.attempts, latencyMs,
+      inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, costUsd,
       photoQuality: r.output.photoQuality,
       detections: detections.map(({ candidates: _candidates, ...stored }) => stored),
     });
@@ -181,7 +189,7 @@ export async function POST(req: Request) {
       scanId,
       photoQuality: r.output.photoQuality,
       detections,
-      usage: { model: r.model, latencyMs: r.latencyMs, attempts: r.attempts, ...(superuser ? { costUsd: r.costUsd } : {}) },
+      usage: { model: r.model, latencyMs, attempts: r.attempts, ...(superuser ? { costUsd } : {}) },
     });
   } catch (e) {
     // Unexpected (price load, sharp internals): never leave the row pending.
