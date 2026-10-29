@@ -1,6 +1,6 @@
 import { CARDS } from '@/lib/cards/lookup';
 import type { MatchResult } from './match';
-import type { DeckRead } from './deckSchema';
+import type { Box, DeckGroup, DeckOutput, DeckRead } from './deckSchema';
 import type { ScanDetection } from './schema';
 import { getScanIndex } from './stemIndex';
 import { cardKey, isAB, normalizeTitle } from './vocab';
@@ -49,4 +49,33 @@ export function classifyDeckRead(read: DeckRead, m: MatchResult): DeckClass {
   if (!m.identityKey) return { kind: 'not_found', key: null };
   const key = deckPrinting(m.identityKey, m.chosen?.key);
   return { kind: m.nameReason === 'fuzzy' && read.confidence === 'low' ? 'read_as' : 'matched', key };
+}
+
+/** One deck-photo read, matched and classified: the row the review screen shows. */
+export interface DeckDetection {
+  id: string;
+  group: number;
+  position: number;
+  titleBox: Box | null;
+  read: ScanDetection;
+  status: MatchResult['status'];
+  nameReason: MatchResult['nameReason'];
+  printingReason: MatchResult['printingReason'];
+  chosenKey: string | null;
+  kind: DeckRowKind;
+  deckKey: string | null;
+  identityCandidates?: string[];
+  near?: { stem: string; d: number }[];
+  scores: MatchResult['scores'];
+  candidates: MatchResult['candidates'];
+}
+
+/** POST /api/scan response when mode=deck. */
+export interface DeckScanResponse {
+  scanId: string;
+  mode: 'deck';
+  photoQuality: DeckOutput['photoQuality'];
+  groups: DeckGroup[];
+  detections: DeckDetection[];
+  usage: { model: string; latencyMs: number; attempts: number; costUsd?: number };
 }

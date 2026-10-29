@@ -4,16 +4,19 @@ import { getSupabaseAdmin } from '@/lib/pricing/supabase-admin';
 import { canScanForSession } from '@/lib/scan/gate';
 import { encodeForScan, ScanImageError } from '@/lib/scan/image';
 import { loadPriceMap } from '@/lib/scan/prices';
-import { recognize, DEFAULT_ARM, type Arm } from '@/lib/scan/recognize';
+import { recognize, DEFAULT_ARM, DECK_ARM, DECK_MODE, type Arm } from '@/lib/scan/recognize';
 import { matchDetection } from '@/lib/scan/match';
 import { settleAbPairs } from '@/lib/scan/abCompare';
 import { capDetection } from '@/lib/scan/schema';
+import { DECK_DETECTION_CAP } from '@/lib/scan/deckSchema';
+import { deckReadToDetection, classifyDeckRead, type DeckDetection } from '@/lib/scan/deckClassify';
 import { reserveScan, finishScan, type FinishPatch } from '@/lib/scan/events';
 import { COMMIT_LIMITS } from '@/app/collection/scan/lib/commitCore';
 
 // POST /api/scan: one photo in, matched detections out.
 // Spec: docs/superpowers/specs/2026-10-26-card-scanner-design.md, "POST /api/scan" and "Reserve first, then call".
 // Order: gate → body → reserve → encode → prices → recognize → match → AB frame comparison → finish.
+// mode=deck swaps the recognizer mode and arm, classifies each read into a deck row, and skips the AB pass.
 
 export const runtime = 'nodejs';
 export const maxDuration = 90;
@@ -36,8 +39,8 @@ function fail(status: number, code: string, message: string, extra: { resetsAt?:
   );
 }
 
-/** A superuser's arm override: a JSON object of known keys with known values, merged onto the default. null if invalid. */
-function parseArm(raw: string): Required<Arm> | null {
+/** A superuser's arm override: a JSON object of known keys with known values, merged onto the mode's base arm. null if invalid. */
+function parseArm(raw: string, base: Required<Arm>): Required<Arm> | null {
   let v: unknown;
   try {
     v = JSON.parse(raw);
@@ -45,7 +48,7 @@ function parseArm(raw: string): Required<Arm> | null {
     return null;
   }
   if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
-  const arm: Record<string, unknown> = { ...DEFAULT_ARM };
+  const arm: Record<string, unknown> = { ...base };
   for (const [k, val] of Object.entries(v)) {
     const allowed = (ARM_VALUES as Record<string, readonly string[]>)[k];
     if (!allowed || typeof val !== 'string' || !allowed.includes(val)) return null;
@@ -70,15 +73,18 @@ export async function POST(req: Request) {
   const photo = form.get('photo');
   if (!(photo instanceof File)) return fail(400, 'bad_request', 'A photo file is required.');
   if (photo.size > MAX_PHOTO_BYTES) return fail(413, 'too_large', 'The photo is over 3 MB.');
+  const rawMode = form.get('mode');
+  if (rawMode !== null && rawMode !== 'collection' && rawMode !== 'deck') return fail(400, 'bad_request', 'mode must be collection or deck.');
+  const mode: 'collection' | 'deck' = rawMode === 'deck' ? 'deck' : 'collection';
 
   const { data: su, error: suError } = await supabase.rpc('is_superuser');
   const superuser = !suError && su === true;
-  let arm: Required<Arm> = DEFAULT_ARM;
+  let arm: Required<Arm> = mode === 'deck' ? DECK_ARM : DEFAULT_ARM;
   let source: 'player' | 'eval' = 'player';
   if (superuser) {
     const rawArm = form.get('arm');
     if (typeof rawArm === 'string' && rawArm.length > 0) {
-      const parsed = parseArm(rawArm);
+      const parsed = parseArm(rawArm, arm);
       if (!parsed) return fail(400, 'bad_request', 'arm must be a JSON object of model, effort, tier, thinking.');
       arm = parsed;
       source = 'eval'; // an arm override is an experiment: never a player row
@@ -115,14 +121,14 @@ export async function POST(req: Request) {
   };
 
   // What the recognizer billed, so even an unexpected throw after it records the spend.
-  let spent: Omit<FinishPatch, 'status'> = { model: arm.model, attempts: 0, latencyMs: 0 };
+  let spent: Omit<FinishPatch, 'status'> = { model: arm.model, attempts: 0, latencyMs: 0, mode };
   try {
     let jpeg: Buffer;
     try {
       ({ jpeg } = await encodeForScan(Buffer.from(await photo.arrayBuffer()), arm.tier));
     } catch (e) {
       if (!(e instanceof ScanImageError)) throw e;
-      await finish({ status: 'failed', attempts: 0, latencyMs: 0 });
+      await finish({ status: 'failed', attempts: 0, latencyMs: 0, mode });
       return e.code === 'too_large'
         ? fail(413, 'too_large', 'The photo has too many pixels.')
         : fail(415, 'undecodable', 'That file is not a photo the scanner can read.');
@@ -132,24 +138,66 @@ export async function POST(req: Request) {
 
     let r;
     try {
-      r = await recognize(jpeg, arm);
+      r = mode === 'deck' ? await recognize(jpeg, arm, {}, DECK_MODE) : await recognize(jpeg, arm);
     } catch (e) {
       console.error('[scan] recognizer threw:', e);
-      await finish({ status: 'failed', model: arm.model, attempts: 0, latencyMs: 0 });
+      await finish({ status: 'failed', model: arm.model, attempts: 0, latencyMs: 0, mode });
       return fail(502, 'recognizer_failed', 'The scanner could not read that photo.');
     }
 
     spent = {
       model: r.ok === false ? arm.model : r.model, attempts: r.attempts, latencyMs: r.latencyMs,
-      inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, costUsd: r.costUsd,
+      inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, costUsd: r.costUsd, mode,
     };
 
     if (r.ok === false) {
       console.error('[scan] recognizer failed', { scanId, code: r.code, detail: r.detail });
       await finish({ status: 'failed', ...spent }); // billed failures keep their tokens and cost
+      if (r.code === 'too_many_cards') return fail(422, r.code, 'Too many cards for one photo.');
       if (r.code === 'recognizer_failed') return fail(502, r.code, 'The scanner could not read that photo.');
       return fail(503, r.code, 'The scanner is busy. Try again shortly.', {
         retryAfter: r.retryAfterSeconds ?? DEFAULT_RETRY_AFTER[r.code],
+      });
+    }
+
+    if ('groups' in r.output) {
+      const out = r.output;
+      const reads = out.cards.slice(0, DECK_DETECTION_CAP);
+      const detections: DeckDetection[] = reads.map((deckRead, i) => {
+        const read = capDetection(deckReadToDetection(deckRead));
+        const m = matchDetection(read, prices);
+        const c = classifyDeckRead(deckRead, m);
+        return {
+          id: `${scanId}:${i}`,
+          group: deckRead.group,
+          position: deckRead.position,
+          titleBox: deckRead.titleBox,
+          read,
+          status: m.status,
+          nameReason: m.nameReason,
+          printingReason: m.printingReason,
+          chosenKey: m.chosen?.key ?? null,
+          kind: c.kind,
+          deckKey: c.key,
+          ...(c.identityCandidates ? { identityCandidates: c.identityCandidates } : {}),
+          ...(m.near ? { near: m.near } : {}),
+          scores: m.scores,
+          candidates: m.candidates,
+        };
+      });
+      await finish({
+        status: 'done', model: r.model, attempts: r.attempts, latencyMs: r.latencyMs,
+        inputTokens: r.usage.inputTokens, outputTokens: r.usage.outputTokens, costUsd: r.costUsd,
+        photoQuality: out.photoQuality, mode,
+        detections: detections.map(({ candidates: _candidates, ...stored }) => stored),
+      });
+      return NextResponse.json({
+        scanId,
+        mode,
+        photoQuality: out.photoQuality,
+        groups: out.groups,
+        detections,
+        usage: { model: r.model, latencyMs: r.latencyMs, attempts: r.attempts, ...(superuser ? { costUsd: r.costUsd } : {}) },
       });
     }
 
@@ -181,12 +229,13 @@ export async function POST(req: Request) {
     await finish({
       status: 'done', model: r.model, attempts: r.attempts, latencyMs,
       inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, costUsd,
-      photoQuality: r.output.photoQuality,
+      photoQuality: r.output.photoQuality, mode,
       detections: detections.map(({ candidates: _candidates, ...stored }) => stored),
     });
 
     return NextResponse.json({
       scanId,
+      mode,
       photoQuality: r.output.photoQuality,
       detections,
       usage: { model: r.model, latencyMs, attempts: r.attempts, ...(superuser ? { costUsd } : {}) },
