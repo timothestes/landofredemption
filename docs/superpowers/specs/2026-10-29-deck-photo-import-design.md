@@ -106,6 +106,70 @@ Other measurements:
   (Priests, Teal, not Rotation) differ in brigade.
 - Duplicates were counted right (2× Abner, 2× Forest Fire, 7× Lost Soul).
 
+## Amendments after E0 (2026-10-29)
+
+PR 1 (#549) and PR 2 (#550) were built from this document; E0 ran through
+#550's preview with labels for the four spike photos. What it found changes
+four things below, and this section wins where the older text disagrees.
+
+**The spike counted entries, not correct cards.** Its "61 found" on the dark
+photos included Not found and Unread rows and same-title ties; identity-level
+recall was never measured. Labeled, the dark photos are 51 cards each with
+1–2 unreadable.
+
+**Effort medium truncates the list.** On the dark photos at effort medium the
+model returned only the fully visible card at the end of each column plus
+the Lost Souls (15 and 13 of 61 reads) in 15 of 20 runs across five
+instruction wordings, including the spike's; its own group `cardCount` was
+right, so it knew the cards were there. Effort high listed every card in 8
+of 8 runs. **Deck mode runs at effort high** with an 80 s per-call timeout.
+Low is unusable (invents names).
+
+**Gate results at effort high, through the preview** (deck recall counts
+identities; "wrong" is a Matched row whose identity is not in the photo):
+
+| Photo | Precision | Recall | Wrong | Reserve default | Latency | Cost |
+|---|---|---|---|---|---|---|
+| Sharp 2048 px, 43 cards + 7 Lost Souls | 1.00 | 1.00 | 0 | ok | 61 s | $0.115 |
+| Star Wars mat, 1024 px | 1.00 | 0.92 | 0 | wrong | 41 s | $0.082 |
+| Dark 1024 px, sideways reserve (1) | 0.83 | 0.56 | 6 | ok | 42 s | $0.081 |
+| Dark 1024 px, sideways reserve (2) | 0.77 | 0.53 | 8 | ok | 56 s | $0.102 |
+
+Sideways rows are reported `rotated_ccw` on both dark photos after the
+instruction spelled out what each orientation looks like. Dark-photo recall
+is capped by covered title bands at 1024 px: 10–12 reads per photo come back
+with a null title. That is PR 3's job.
+
+**Group strips are off** (`SHOW_GROUP_STRIPS = false`): group boxes passed
+on 26 of 29 groups but cut off cards on 3 of 7 on the sharp photo, which
+fails the box check above. Title boxes were on the right card 93% of the
+time, so per-card title crops as row thumbnails are a cleared follow-up.
+
+**PR 3 is a crop pass over the groups that need it, not only rotated ones.**
+Measured on the dark photos with the first-pass groups: re-reading each
+group from a crop padded by 4% of the image, rotated upright, upscaled to a
+1600 px long edge, keeping a read only when its `titleBox` centre falls
+inside the group's box (upright groups; rotated groups keep every read),
+takes recall from 0.56 / 0.53 to 0.79 / 0.80 at precision 0.80, for +$0.13
+and +8 s per photo with the eight crops in parallel. Effort medium reads a
+crop as well as high (0.78 vs 0.79), so crops run at medium. Two dead ends,
+recorded so nobody repeats them: a 12% pad pulls whole neighbouring columns
+into each crop and triples the reads (precision 0.33); and a groups-only
+first pass cannot see orientation at any effort (every row `upright`, 378
+output tokens at medium and at high alike), so the whole-photo read stays.
+Eight parallel crop calls produced connection errors on two of four
+photos: the pass runs four at a time with one retry. The crop trigger per
+group: any null-title read, fewer reads than `cardCount`, or an orientation
+other than upright. The sharp photo triggers nothing and keeps its $0.115;
+a dark photo costs about $0.22 and 50–70 s in all. `maxDuration` rises to
+150 s (Vercel's default is now 300 s) and the client's request timeout to
+170 s; the "first pass under 50 s" gate is gone.
+
+The remaining dark-photo errors (about nine wrong names and two Lost Soul
+miscounts per photo) are misreads of 1024 px title bands, which the
+correction design exists for; the eval set needs posted photos from Discord
+to size that rate for real.
+
 ## Vocabulary
 
 - **Deck photo**: a photo of a laid-out deck. Cards overlap so that only the
@@ -127,7 +191,7 @@ Other measurements:
 
 - `/decklist/scan`: take a photo, choose photos, drop, paste.
 - `POST /api/scan` with `mode=deck`: the deck instruction and schema, Sonnet
-  5.5 at effort medium, reads grouped, a second pass over rotated groups.
+  5.5 at effort high, reads grouped, a second pass over groups that need it.
 - Collapse to a decklist: one row per card name, quantities summed, a
   Rotation-legal printing chosen; Check this, Not found and Unread rows; Lost
   Soul placeholders.
@@ -198,8 +262,10 @@ Other measurements:
   column. Lost Souls show only "Lost Soul".
 - **Sideways rows are common.** Two of the four spike photos had the reserve
   laid sideways along one edge. The first pass cannot read them; a crop can.
-- **Effort medium is required.** Sonnet 5.5 at low effort returned 19, 23 and
-  37 cards on three runs of the same ~60-card photo.
+- **Effort high is required for the whole-photo read.** Sonnet 5.5 at low
+  effort returned 19, 23 and 37 cards on three runs of the same ~60-card
+  photo; at medium it lists only the fully visible cards on dark photos
+  (*Amendments after E0*). Crops read fine at medium.
 - **Output grows with the deck, and the scanner's timeout is too short for
   it.** About 60 reads cost 3.1–4.5k output tokens and 16–20 s; the
   recognizer's client timeout is 25 s, sized for a 2–9 s collection scan. A
@@ -227,8 +293,9 @@ Other measurements:
 
 `recognize()` gains a `mode: 'collection' | 'deck'` that selects the
 instruction, the schema, the arm and the timing. Deck arm: `claude-sonnet-5-5`,
-effort `medium`, tier `high`, thinking omitted (the model's default). Same key
-and failure classification. Deck mode uses a per-call timeout of 60 s (the
+effort `high` (*Amendments after E0*: medium truncates the list on dark
+photos), tier `high`, thinking omitted (the model's default). Same key
+and failure classification. Deck mode uses a per-call timeout of 80 s (the
 scanner keeps 25 s) and `max_tokens` 16,000 with **no retry at 32k**: a
 `max_tokens` stop in deck mode is the failure code `too_many_cards`, and the
 page's copy asks for the deck in two photos, which the tray merges. Opus is
@@ -330,38 +397,47 @@ it is either the only non-upright group or the last group in reading order. A Lo
 shown in that section with a note and counted in main; the deck rules forbid
 them in reserve, and the builder's validator would flag it otherwise.
 
-### Second pass for rotated groups (PR 3)
+### Second pass over groups that need it (PR 3)
 
-For each group whose orientation is not `upright`, at most three per photo:
-crop the bbox padded by 8% of the image on each side and clamped to the
-image, rotate to upright by the reported orientation, upscale to a long edge
-of 1600 px (`lanczos3`), JPEG quality 85, and call `recognize` with the same
-deck instruction prefixed by one sentence: "This is one group cropped from a
-larger deck photo; read every card in it." Reads from the crop replace the
-first-pass reads for that group (position renumbered; group id kept). Crops
-run in parallel after the first pass, 25 s each, and only when the first pass
-finished inside 50 s, so the request stays under the 90 s function budget;
-otherwise the groups stay as first-pass reads. The scan event's tokens, cost
-and latency sum every call; `attempts` counts calls. A failed crop call keeps the group's
-first-pass reads and logs the failure. The spike's crop was upside down and
-still read 9 of 10, so a wrong orientation guess degrades, not breaks.
+Redesigned after E0 (*Amendments after E0*). After the first pass, a group
+needs a crop when any of its reads has a null title, it has fewer reads than
+its `cardCount`, or its orientation is not `upright`. For each such group:
+crop the bbox padded by 4% of the image on each side and clamped to the
+image (a wider pad pulls neighbouring columns in and duplicates their
+cards), rotate to upright by the reported orientation, upscale to a long
+edge of 1600 px (`lanczos3`), JPEG quality 85, and call `recognize` at
+effort medium with the deck instruction prefixed by: "This is one group
+cropped from a larger deck photo and turned upright; read every card in it.
+Report it as a single group with id 1." For an upright group, keep a crop
+read only when its `titleBox` centre, mapped back to the photo, lies inside
+the group's box plus 1.5%; a rotated group keeps every read. Kept reads
+replace the group's first-pass reads (position renumbered; group id kept).
+Crops run four at a time after the first pass with one retry on a
+connection error or 5xx; a crop that still fails keeps the group's
+first-pass reads and logs it. The scan event's tokens, cost and latency sum
+every call; `attempts` counts calls. Measured on the dark photos: recall
+0.56 / 0.53 → 0.79 / 0.80, precision 0.80, +$0.13, +8 s. The sharp photo
+triggers no crops.
 
-Until PR 3 lands, a non-upright group's unread cards appear as Unread rows and
-the page's tip says to lay the reserve upright.
+Until PR 3 lands, a group's unread cards appear as Unread rows and the
+page's tip says to lay every card upright with the title showing.
 
 ### Cost and latency
 
-Measured per 50–60 card photo: $0.04 and 16–20 s. A crop pass adds about
-$0.01–0.02 and 10–15 s, in parallel. A 140-card Type 2 photo is estimated at
-$0.10 and 40 s. `maxDuration` stays 90 s: first pass up to 60 s, crops up to
-25 s, only started before the 50 s mark. Type 2 in v1.0 is best effort: one
-photo of up to about 200 cards works within the budget; a bigger or slower
-one fails with `too_many_cards` and the player photographs the deck in two
-halves. The client's request timeout (100 s in `useScanQueue`) already covers
-the budget. Deck mode costs about three times a
-collection scan; at the global cap of 1,500 scans per 30 days the worst case
-is $75 against the $80 ceiling, so the E3 queries watch the deck share of
-spend and the ceiling is the control, not the cap.
+Measured through the preview at effort high: $0.08–0.12 and 41–61 s per
+50–60 card photo (the spike's $0.04 and 16–20 s were effort low and medium,
+which do not list every card). The crop pass adds about $0.13 and 8 s to a
+photo that needs it. A 140-card Type 2 photo is estimated at $0.20 and
+90 s. With PR 3, `maxDuration` is 150 s (first pass up to 80 s, crops up to
+30 s four at a time) and the client's request timeout in `useScanQueue`
+rises from 100 s to 170 s. Type 2 in v1.0 is best effort: a photo of up to
+about 200 cards works within the budget; a bigger or slower one fails with
+`too_many_cards` and the player photographs the deck in two halves. Deck
+mode costs five to ten times a collection scan; at the global cap of 1,500
+scans per 30 days the worst case is $150–330 against the $80 ceiling, so the
+ceiling is the control and the E3 queries watch the deck share of spend
+weekly; a deck-mode cap of its own (300 per 30 days) is the first lever if
+the share grows.
 
 ## The flow
 
@@ -688,8 +764,12 @@ the four spike photos, per the scanner's verification recipe.
    including the box check that decides per-card crops; the recordings are
    committed in this PR. Merge behind the existing `canScan` gate (open to all
    signed-in users since 2026-10-29).
-3. **PR 3** `feat/deck-scan-rotated`: `crop.ts` and the crop pass. Re-run E0
-   on the two sideways photos; the posted-grade target applies from here.
+3. **PR 3** `feat/deck-scan-crops`: `crop.ts` and the crop pass over groups
+   that need it, `maxDuration` 150, the client timeout, the deck-mode cap
+   lever. Start from the experiment scripts `tmp/zoom-pass.ts` and
+   `tmp/groups-pass.ts` in the PR 2 worktree (git-ignored; copy them into
+   `scripts/scan-eval/` first). Re-run E0 on all four photos; the
+   posted-grade target applies from here.
 4. One line in the next What's New; a Discord note asking for deck photos,
    which doubles as the eval set growing.
 5. Day-30 look at the E3 queries; day-60 kill check.
@@ -718,7 +798,9 @@ the four spike photos, per the scanner's verification recipe.
 1. Same route and table as the scanner with a `mode` field, not a second
    route and table: one gate, one set of caps, one event log, one privacy
    story.
-2. Sonnet 5.5 at effort medium, not low (unstable) and not Opus (no gain).
+2. Sonnet 5.5 at effort high for the whole-photo read (medium lists only the
+   visible cards on dark photos; low invents) and medium for crops; not Opus
+   (no gain).
 3. Groups are the unit of zone assignment, with one conservative Reserve
    default and a per-group toggle, rather than asking the player to assign
    every card.
