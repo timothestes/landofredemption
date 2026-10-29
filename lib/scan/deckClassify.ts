@@ -38,7 +38,7 @@ export function deckPrinting(identityKey: string, matcherChosenKey?: string): st
 /** The spec's From reads to rows table: a deck read plus its matcher result becomes a row kind and printing. */
 export function classifyDeckRead(read: DeckRead, m: MatchResult): DeckClass {
   if (read.title == null) return { kind: 'unread', key: null };
-  if (normalizeTitle(read.title).startsWith('lost soul') && (m.printingReason === 'reference_missing' || m.status === 'not_found')) return { kind: 'lost_soul', key: null };
+  if (m.printingReason === 'reference_missing' || (normalizeTitle(read.title).startsWith('lost soul') && m.status === 'not_found')) return { kind: 'lost_soul', key: null };
   if (m.printingReason === 'identity_ambiguous') {
     const cands = m.identityCandidates!;
     const legal = cands.filter(k => getScanIndex().identities.get(k)!.cards.some(rotation));
@@ -46,6 +46,7 @@ export function classifyDeckRead(read: DeckRead, m: MatchResult): DeckClass {
   }
   if (m.printingReason === 'reference_ambiguous') return { kind: 'matched', key: deckPrinting(m.identityCandidates![0]) };
   if (m.status === 'not_found') return { kind: 'not_found', key: null };
-  const key = deckPrinting(m.identityKey!, m.chosen?.key);
+  if (!m.identityKey) return { kind: 'not_found', key: null };
+  const key = deckPrinting(m.identityKey, m.chosen?.key);
   return { kind: m.nameReason === 'fuzzy' && read.confidence === 'low' ? 'read_as' : 'matched', key };
 }

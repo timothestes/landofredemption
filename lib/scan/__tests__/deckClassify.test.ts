@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { CARDS } from '@/lib/cards/lookup';
-import { matchDetection } from '../match';
+import { matchDetection, type MatchResult } from '../match';
 import { getScanIndex } from '../stemIndex';
 import { cardKey, isAB } from '../vocab';
 import { classifyDeckRead, deckPrinting, deckReadToDetection } from '../deckClassify';
@@ -43,6 +43,17 @@ describe('classifyDeckRead', () => {
     expect(classify(read({ title: 'Captive Preist', confidence: 'high' })).kind).toBe('matched');
   });
   it("another game's card is not_found", () => { const c = classify(read({ title: 'Lightning Bolt' })); expect(c.kind).toBe('not_found'); expect(c.key).toBeNull(); });
+});
+
+describe('classifyDeckRead edge cases', () => {
+  const hand = (p: Partial<MatchResult>): MatchResult => ({ status: 'check', nameReason: 'exact', printingReason: 'none', candidates: [], scores: { matchScore: 0, runnerUpScore: 0, agreeingFields: [] }, ...p });
+  it('a type-only Lost Soul with a nickname title and no reference is a placeholder', () => expect(classify(read({ title: 'Wandering Soul', type: 'Lost Soul' })).kind).toBe('lost_soul'));
+  it('printing_ambiguous is matched with a key', () => {
+    const id = getScanIndex().identities.get(FALLING_AWAY)!;
+    const c = classifyDeckRead(read({ title: 'Falling Away' }), hand({ printingReason: 'printing_ambiguous', identityKey: FALLING_AWAY, chosen: { key: cardKey(id.cards[0]) } as MatchResult['chosen'] }));
+    expect(c.kind).toBe('matched'); expect(legalityOf(c.key)).toBe('Rotation');
+  });
+  it('a check result with no identityKey is not_found and does not throw', () => expect(classifyDeckRead(read({ title: 'X' }), hand({ printingReason: 'printing_ambiguous' }))).toEqual({ kind: 'not_found', key: null }));
 });
 
 describe('deckPrinting', () => {
