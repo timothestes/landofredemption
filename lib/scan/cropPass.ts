@@ -1,0 +1,101 @@
+import { cropGroup, cropRect, keepCropRead, needsCrop } from './crop';
+import { DECK_INSTRUCTION, type DeckOutput, type DeckRead } from './deckSchema';
+import { DECK_ARM, DECK_MODE, recognize, type Arm, type RecognizeMode, type RecognizeResult } from './recognize';
+
+// Second pass for deck photos: re-read each group the whole-photo read left short from a tight upright crop,
+// CROP_CONCURRENCY at a time within a time budget, and swap that group's reads for the crop's. Server only.
+
+export const CROP_CONCURRENCY = 4;
+export const MAX_CROP_GROUPS = 12;
+export const CROP_CALL_TIMEOUT_MS = 30_000;
+
+export const CROP_PREFIX = 'This is one group cropped from a larger deck photo and turned upright; read every card in it. Report it as a single group with id 1.\n\n';
+export const CROP_MODE: RecognizeMode<DeckOutput> = { ...DECK_MODE, instruction: CROP_PREFIX + DECK_INSTRUCTION, timeoutMs: CROP_CALL_TIMEOUT_MS, retryWithinMs: 15_000 };
+export const CROP_ARM: Required<Arm> = { ...DECK_ARM, effort: 'medium' };
+
+export interface CropPassDeps { recognize?: typeof recognize; crop?: typeof cropGroup; now?: () => number }
+
+export interface CropPassResult {
+  cards: DeckRead[];
+  cropped: number[];
+  failed: number[];
+  skipped: number[];
+  usage: { inputTokens: number; outputTokens: number };
+  costUsd: number;
+  latencyMs: number;
+  calls: number;
+  failures: { group: number; code: string; detail?: unknown }[];
+}
+
+export async function runCropPass(jpeg: Buffer, out: DeckOutput, image: { width: number; height: number }, budgetMs: number, deps: CropPassDeps = {}): Promise<CropPassResult> {
+  const rec = deps.recognize ?? recognize;
+  const crop = deps.crop ?? cropGroup;
+  const now = deps.now ?? Date.now;
+  const started = now();
+  const { width, height } = image;
+  const readsOf = (id: number) => out.cards.filter(c => c.group === id);
+
+  const needy = out.groups.filter(g => needsCrop(g, readsOf(g.id))).sort((a, b) => a.id - b.id);
+  const queue = needy.slice(0, MAX_CROP_GROUPS);
+  const skipped = needy.slice(MAX_CROP_GROUPS).map(g => g.id);
+  const cropped: number[] = [];
+  const failed: number[] = [];
+  const failures: CropPassResult['failures'] = [];
+  const replaced = new Map<number, DeckRead[]>();
+  const usage = { inputTokens: 0, outputTokens: 0 };
+  let costUsd = 0;
+  let calls = 0;
+
+  const worker = async () => {
+    for (let g = queue.shift(); g; g = queue.shift()) {
+      if (now() - started >= budgetMs) {
+        skipped.push(g.id);
+        continue;
+      }
+      try {
+        const buf = await crop(jpeg, g, width, height);
+        const r: RecognizeResult<DeckOutput> = await rec(buf, CROP_ARM, {}, CROP_MODE);
+        calls += r.attempts;
+        if (r.usage) {
+          usage.inputTokens += r.usage.inputTokens;
+          usage.outputTokens += r.usage.outputTokens;
+        }
+        if (typeof r.costUsd === 'number') costUsd += r.costUsd;
+        // tsconfig is strict:false, so `ok` does not narrow the union; `'code' in r` does.
+        if ('code' in r) {
+          failed.push(g.id);
+          failures.push({ group: g.id, code: r.code, ...(r.detail !== undefined ? { detail: r.detail } : {}) });
+        } else {
+          const group = g;
+          const rect = cropRect(group.bbox, width, height);
+          const kept = r.output.cards.filter(read => keepCropRead(read, group, rect, width, height));
+          replaced.set(group.id, kept.map((read, i) => ({ ...read, group: group.id, position: i + 1 })));
+          cropped.push(group.id);
+        }
+      } catch (err) {
+        failed.push(g.id);
+        failures.push({ group: g.id, code: 'crop_failed', detail: { message: err instanceof Error ? err.message : String(err) } });
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(CROP_CONCURRENCY, queue.length) }, worker));
+
+  // Rebuilt in out.groups order; reads of group 0 (and of any group not listed) go last, unchanged.
+  const listed = new Set(out.groups.filter(g => g.id !== 0).map(g => g.id));
+  const cards = [
+    ...out.groups.filter(g => g.id !== 0).flatMap(g => replaced.get(g.id) ?? readsOf(g.id)),
+    ...out.cards.filter(c => !listed.has(c.group)),
+  ];
+  const asc = (a: number, b: number) => a - b;
+  return {
+    cards,
+    cropped: cropped.sort(asc),
+    failed: failed.sort(asc),
+    skipped: skipped.sort(asc),
+    usage,
+    costUsd,
+    latencyMs: now() - started,
+    calls,
+    failures: failures.sort((a, b) => a.group - b.group),
+  };
+}

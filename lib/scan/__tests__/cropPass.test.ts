@@ -1,0 +1,174 @@
+import { describe, it, expect, vi } from 'vitest';
+import {
+  runCropPass, CROP_ARM, CROP_MODE, CROP_PREFIX, CROP_CONCURRENCY, MAX_CROP_GROUPS, CROP_CALL_TIMEOUT_MS,
+  type CropPassDeps,
+} from '../cropPass';
+import { DECK_ARM, DECK_MODE, type recognize } from '../recognize';
+import { DECK_INSTRUCTION, type Box, type DeckGroup, type DeckOutput, type DeckRead } from '../deckSchema';
+
+const read = (p: Partial<DeckRead>): DeckRead => ({
+  title: 'X', strength: null, toughness: null, type: 'unknown', brigade: null, reference: null,
+  group: 1, position: 1, titleBox: null, confidence: 'high', ...p,
+});
+const grp = (id: number, p: Partial<DeckGroup> = {}): DeckGroup => ({ id, orientation: 'upright', bbox: [0.2, 0.2, 0.4, 0.8], cardCount: 1, ...p });
+const g1 = grp(1);
+const okResult = (cards: DeckRead[], p: Record<string, unknown> = {}) => ({
+  ok: true, output: { photoQuality: 'ok', groups: [g1], cards }, model: 'claude-sonnet-5-5',
+  usage: { inputTokens: 1000, outputTokens: 100 }, costUsd: 0.003, latencyMs: 50, attempts: 1, ...p,
+});
+const crop = async () => Buffer.alloc(1);
+const IMAGE = { width: 1000, height: 1000 };
+const JPEG = Buffer.alloc(1);
+
+/** A group that needs a crop: one card expected, none read. */
+const needy = (id: number) => grp(id, { cardCount: 1 });
+/** A group the first pass read fully: one titled read. */
+const fine = (id: number) => grp(id);
+
+function stub(impl: (...args: unknown[]) => unknown) {
+  const fn = vi.fn(impl);
+  return { fn, deps: { recognize: fn as unknown as typeof recognize, crop } satisfies CropPassDeps };
+}
+
+describe('runCropPass', () => {
+  it('crops only the groups that need it, in id order, and caps at MAX_CROP_GROUPS', async () => {
+    const groups = Array.from({ length: 16 }, (_, i) => (i % 8 === 0 ? fine(i + 1) : needy(i + 1)));
+    const out: DeckOutput = { photoQuality: 'ok', groups, cards: [read({ group: 1, title: 'A' }), read({ group: 9, title: 'B' })] };
+    const { fn, deps } = stub(async () => okResult([read({ title: 'C' })]));
+    const res = await runCropPass(JPEG, out, IMAGE, 60_000, deps);
+    const needyIds = groups.filter(g => g.id !== 1 && g.id !== 9).map(g => g.id);
+    expect(needyIds).toHaveLength(14);
+    expect(res.cropped).toEqual(needyIds.slice(0, MAX_CROP_GROUPS));
+    expect(res.skipped).toEqual(needyIds.slice(MAX_CROP_GROUPS));
+    expect(fn).toHaveBeenCalledTimes(MAX_CROP_GROUPS);
+  });
+
+  it('group 0 is never cropped', async () => {
+    const out: DeckOutput = { photoQuality: 'ok', groups: [grp(0, { cardCount: 5, orientation: 'rotated_cw' })], cards: [read({ group: 0, title: null })] };
+    const { fn, deps } = stub(async () => okResult([]));
+    const res = await runCropPass(JPEG, out, IMAGE, 60_000, deps);
+    expect(fn).not.toHaveBeenCalled();
+    expect(res.cropped).toEqual([]);
+    expect(res.skipped).toEqual([]);
+    expect(res.cards).toEqual(out.cards);
+  });
+
+  it('runs at most four crops at a time', async () => {
+    const out: DeckOutput = { photoQuality: 'ok', groups: Array.from({ length: 9 }, (_, i) => needy(i + 1)), cards: [] };
+    let inFlight = 0;
+    let max = 0;
+    const { deps } = stub(async () => {
+      inFlight++;
+      max = Math.max(max, inFlight);
+      await new Promise<void>(r => setTimeout(r, 5));
+      inFlight--;
+      return okResult([]);
+    });
+    const res = await runCropPass(JPEG, out, IMAGE, 60_000, deps);
+    expect(CROP_CONCURRENCY).toBe(4);
+    expect(max).toBe(4);
+    expect(res.cropped).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  });
+
+  it('replaces a cropped group’s reads, renumbers positions, keeps the other groups’ reads in order', async () => {
+    const out: DeckOutput = {
+      photoQuality: 'ok',
+      groups: [fine(1), grp(2, { cardCount: 3 }), fine(3)],
+      cards: [read({ group: 1, title: 'A' }), read({ group: 2, title: null }), read({ group: 3, title: 'D' })],
+    };
+    const { deps } = stub(async () => okResult([read({ title: 'B1', position: 4 }), read({ title: 'B2', position: 9 }), read({ title: 'B3', position: 2 })]));
+    const res = await runCropPass(JPEG, out, IMAGE, 60_000, deps);
+    expect(res.cropped).toEqual([2]);
+    expect(res.cards.map(c => [c.title, c.group, c.position])).toEqual([
+      ['A', 1, 1], ['B1', 2, 1], ['B2', 2, 2], ['B3', 2, 3], ['D', 3, 1],
+    ]);
+  });
+
+  it('keeps a boxless read and drops a neighbour’s', async () => {
+    // Group bbox [0.2,0.2,0.4,0.8] in 1000x1000 → crop rect left 160, top 160, 280 x 680.
+    const out: DeckOutput = { photoQuality: 'ok', groups: [grp(1, { cardCount: 3 })], cards: [] };
+    const inside: Box = [0.4, 0.4, 0.6, 0.6]; // centre maps to x 0.3
+    const outside: Box = [0.9, 0.1, 1, 0.2]; // centre maps to x 0.426, past 0.4 + tol
+    const { deps } = stub(async () => okResult([read({ title: 'Boxless' }), read({ title: 'Inside', titleBox: inside }), read({ title: 'Neighbour', titleBox: outside })]));
+    const res = await runCropPass(JPEG, out, IMAGE, 60_000, deps);
+    expect(res.cards.map(c => [c.title, c.position])).toEqual([['Boxless', 1], ['Inside', 2]]);
+  });
+
+  it('a rotated group keeps every read', async () => {
+    const out: DeckOutput = { photoQuality: 'ok', groups: [grp(1, { orientation: 'rotated_cw' })], cards: [read({ group: 1 })] };
+    const outside: Box = [0.9, 0.1, 1, 0.2];
+    const { deps } = stub(async () => okResult([read({ title: 'P', titleBox: outside }), read({ title: 'Q', titleBox: outside })]));
+    const res = await runCropPass(JPEG, out, IMAGE, 60_000, deps);
+    expect(res.cropped).toEqual([1]);
+    expect(res.cards.map(c => c.title)).toEqual(['P', 'Q']);
+  });
+
+  it('a failed crop keeps the first-pass reads', async () => {
+    const out: DeckOutput = { photoQuality: 'ok', groups: [grp(1, { cardCount: 2 }), fine(2)], cards: [read({ group: 1, title: 'A' }), read({ group: 2, title: 'B' })] };
+    const { deps } = stub(async () => ({ ok: false, code: 'recognizer_failed', detail: { message: 'unparseable output' }, latencyMs: 70, attempts: 2, usage: { inputTokens: 500, outputTokens: 50 }, costUsd: 0.0015 }));
+    const res = await runCropPass(JPEG, out, IMAGE, 60_000, deps);
+    expect(res.cards).toEqual(out.cards);
+    expect(res.failed).toEqual([1]);
+    expect(res.cropped).toEqual([]);
+    expect(res.failures).toEqual([{ group: 1, code: 'recognizer_failed', detail: { message: 'unparseable output' } }]);
+    expect(res.costUsd).toBeCloseTo(0.0015);
+    expect(res.usage).toEqual({ inputTokens: 500, outputTokens: 50 });
+    expect(res.calls).toBe(2);
+  });
+
+  it('a throw from crop is a failure, not a rejection', async () => {
+    const out: DeckOutput = { photoQuality: 'ok', groups: [grp(1, { cardCount: 2 }), needy(2)], cards: [read({ group: 1, title: 'A' })] };
+    const { fn } = stub(async () => okResult([read({ title: 'Z' })]));
+    const deps: CropPassDeps = {
+      recognize: fn as unknown as typeof recognize,
+      crop: async (_j, g) => { if (g.id === 1) throw new Error('bad extract'); return Buffer.alloc(1); },
+    };
+    const res = await runCropPass(JPEG, out, IMAGE, 60_000, deps);
+    expect(res.failed).toEqual([1]);
+    expect(res.cropped).toEqual([2]);
+    expect(res.failures[0].group).toBe(1);
+    expect(res.failures[0].code).toBe('crop_failed');
+    expect(res.cards.map(c => [c.title, c.group])).toEqual([['A', 1], ['Z', 2]]);
+  });
+
+  it('starts no crop after the budget is used up', async () => {
+    // The pool starts four groups at t=0; each recognize call advances the clock 20 s, so later groups find the 30 s budget spent.
+    const out: DeckOutput = { photoQuality: 'ok', groups: Array.from({ length: 8 }, (_, i) => needy(i + 1)), cards: [] };
+    let t = 0;
+    const { fn } = stub(async () => { t += 20_000; return okResult([]); });
+    const res = await runCropPass(JPEG, out, IMAGE, 30_000, { recognize: fn as unknown as typeof recognize, crop, now: () => t });
+    expect(res.cropped).toEqual([1, 2, 3, 4]);
+    expect(res.skipped).toEqual([5, 6, 7, 8]);
+    expect(fn).toHaveBeenCalledTimes(4);
+    expect(res.latencyMs).toBe(80_000);
+  });
+
+  it('sums usage, cost and calls across crops', async () => {
+    const out: DeckOutput = { photoQuality: 'ok', groups: [needy(1), needy(2), needy(3)], cards: [] };
+    const attempts = [1, 2, 1];
+    let i = 0;
+    const { deps } = stub(async () => okResult([], { attempts: attempts[i++] }));
+    const res = await runCropPass(JPEG, out, IMAGE, 60_000, deps);
+    expect(res.calls).toBe(4);
+    expect(res.usage).toEqual({ inputTokens: 3000, outputTokens: 300 });
+    expect(res.costUsd).toBeCloseTo(0.009);
+  });
+
+  it('uses CROP_ARM at effort medium and CROP_MODE with the prefix and 30 s timeout', async () => {
+    const out: DeckOutput = { photoQuality: 'ok', groups: [needy(1)], cards: [] };
+    const buf = Buffer.from([7]);
+    const { fn } = stub(async () => okResult([]));
+    await runCropPass(JPEG, out, IMAGE, 60_000, { recognize: fn as unknown as typeof recognize, crop: async () => buf });
+    const [jpeg, arm, rdeps, mode] = fn.mock.calls[0];
+    expect(jpeg).toBe(buf);
+    expect(arm).toEqual({ ...DECK_ARM, effort: 'medium' });
+    expect(arm).toBe(CROP_ARM);
+    expect(rdeps).toEqual({});
+    expect(mode).toBe(CROP_MODE);
+    expect(CROP_MODE.instruction).toBe(CROP_PREFIX + DECK_INSTRUCTION);
+    expect(CROP_MODE.timeoutMs).toBe(CROP_CALL_TIMEOUT_MS);
+    expect(CROP_CALL_TIMEOUT_MS).toBe(30_000);
+    expect(CROP_MODE.retryWithinMs).toBe(15_000);
+    expect(CROP_MODE.schema).toBe(DECK_MODE.schema);
+  });
+});
