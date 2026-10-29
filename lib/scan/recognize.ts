@@ -1,4 +1,4 @@
-import Anthropic, { APIConnectionTimeoutError } from '@anthropic-ai/sdk';
+import Anthropic, { APIConnectionError, APIConnectionTimeoutError } from '@anthropic-ai/sdk';
 import type { MessageCreateParamsNonStreaming, ThinkingConfigParam } from '@anthropic-ai/sdk/resources/messages/messages';
 import { SCAN_INSTRUCTION, SCAN_JSON_SCHEMA, parseScanOutput, type ScanOutput } from '@/lib/scan/schema';
 import { DECK_INSTRUCTION, DECK_JSON_SCHEMA, parseDeckOutput, type DeckOutput } from '@/lib/scan/deckSchema';
@@ -102,6 +102,7 @@ type Classified = { kind: 'retryable'; overloaded: boolean } | { kind: 'rate_lim
 
 function classify(err: unknown): Classified {
   if (err instanceof APIConnectionTimeoutError) return { kind: 'retryable', overloaded: false };
+  if (err instanceof APIConnectionError) return { kind: 'retryable', overloaded: false };
   const e = (err ?? {}) as { status?: unknown; headers?: unknown; error?: { error?: { type?: unknown; message?: unknown } }; message?: unknown };
   const status = typeof e.status === 'number' ? e.status : undefined;
   const bodyType = e.error?.error?.type;
