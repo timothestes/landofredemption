@@ -79,6 +79,8 @@ export async function POST(req: Request) {
 
   const { data: su, error: suError } = await supabase.rpc('is_superuser');
   const superuser = !suError && su === true;
+  // Collection scans rely on the column default: migration 124 (mode) may not be on prod yet, so only deck scans write it.
+  const dbMode = mode === 'deck' ? { mode } : {};
   let arm: Required<Arm> = mode === 'deck' ? DECK_ARM : DEFAULT_ARM;
   let source: 'player' | 'eval' = 'player';
   if (superuser) {
@@ -121,14 +123,14 @@ export async function POST(req: Request) {
   };
 
   // What the recognizer billed, so even an unexpected throw after it records the spend.
-  let spent: Omit<FinishPatch, 'status'> = { model: arm.model, attempts: 0, latencyMs: 0, mode };
+  let spent: Omit<FinishPatch, 'status'> = { model: arm.model, attempts: 0, latencyMs: 0, ...dbMode };
   try {
     let jpeg: Buffer;
     try {
       ({ jpeg } = await encodeForScan(Buffer.from(await photo.arrayBuffer()), arm.tier));
     } catch (e) {
       if (!(e instanceof ScanImageError)) throw e;
-      await finish({ status: 'failed', attempts: 0, latencyMs: 0, mode });
+      await finish({ status: 'failed', attempts: 0, latencyMs: 0, ...dbMode });
       return e.code === 'too_large'
         ? fail(413, 'too_large', 'The photo has too many pixels.')
         : fail(415, 'undecodable', 'That file is not a photo the scanner can read.');
@@ -141,13 +143,13 @@ export async function POST(req: Request) {
       r = mode === 'deck' ? await recognize(jpeg, arm, {}, DECK_MODE) : await recognize(jpeg, arm);
     } catch (e) {
       console.error('[scan] recognizer threw:', e);
-      await finish({ status: 'failed', model: arm.model, attempts: 0, latencyMs: 0, mode });
+      await finish({ status: 'failed', model: arm.model, attempts: 0, latencyMs: 0, ...dbMode });
       return fail(502, 'recognizer_failed', 'The scanner could not read that photo.');
     }
 
     spent = {
       model: r.ok === false ? arm.model : r.model, attempts: r.attempts, latencyMs: r.latencyMs,
-      inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, costUsd: r.costUsd, mode,
+      inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, costUsd: r.costUsd, ...dbMode,
     };
 
     if (r.ok === false) {
@@ -160,7 +162,7 @@ export async function POST(req: Request) {
       });
     }
 
-    if ('groups' in r.output) {
+    if (mode === 'deck' && 'groups' in r.output) {
       const out = r.output;
       const reads = out.cards.slice(0, DECK_DETECTION_CAP);
       const detections: DeckDetection[] = reads.map((deckRead, i) => {
@@ -188,7 +190,7 @@ export async function POST(req: Request) {
       await finish({
         status: 'done', model: r.model, attempts: r.attempts, latencyMs: r.latencyMs,
         inputTokens: r.usage.inputTokens, outputTokens: r.usage.outputTokens, costUsd: r.costUsd,
-        photoQuality: out.photoQuality, mode,
+        photoQuality: out.photoQuality, ...dbMode,
         detections: detections.map(({ candidates: _candidates, ...stored }) => stored),
       });
       return NextResponse.json({
@@ -229,7 +231,7 @@ export async function POST(req: Request) {
     await finish({
       status: 'done', model: r.model, attempts: r.attempts, latencyMs,
       inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, costUsd,
-      photoQuality: r.output.photoQuality, mode,
+      photoQuality: r.output.photoQuality, ...dbMode,
       detections: detections.map(({ candidates: _candidates, ...stored }) => stored),
     });
 

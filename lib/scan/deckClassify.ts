@@ -1,4 +1,3 @@
-import { CARDS } from '@/lib/cards/lookup';
 import type { MatchResult } from './match';
 import type { Box, DeckGroup, DeckOutput, DeckRead } from './deckSchema';
 import type { ScanDetection } from './schema';

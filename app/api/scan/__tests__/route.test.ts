@@ -18,7 +18,7 @@ vi.mock('@/lib/scan/abCompare', async (importOriginal) => {
 import { POST } from '@/app/api/scan/route';
 import { createClient } from '@/utils/supabase/server';
 import { getSupabaseAdmin } from '@/lib/pricing/supabase-admin';
-import { recognize, DEFAULT_ARM, DECK_ARM, DECK_MODE, COLLECTION_MODE } from '@/lib/scan/recognize';
+import { recognize, DEFAULT_ARM, DECK_ARM, DECK_MODE } from '@/lib/scan/recognize';
 import { settleAbPairs } from '@/lib/scan/abCompare';
 import type { DeckRead } from '@/lib/scan/deckSchema';
 import { loadPriceMap } from '@/lib/scan/prices';
@@ -406,9 +406,9 @@ describe('POST /api/scan deck mode', () => {
     const res = await POST(req(jpegBlob()));
     const body = await res.json();
     expect((recognize as Mock).mock.calls[0][1]).toEqual(DEFAULT_ARM);
-    expect((recognize as Mock).mock.calls[0][3] ?? COLLECTION_MODE).toBe(COLLECTION_MODE);
+    expect((recognize as Mock).mock.calls[0][3]).toBeUndefined();
     expect(body.mode).toBe('collection');
     expect('groups' in body).toBe(false);
-    expect(update.mock.calls.at(-1)![0].mode).toBe('collection');
+    expect(update.mock.calls.at(-1)![0]).not.toHaveProperty('mode'); // column default; migration 124 may not be on prod
   });
 });

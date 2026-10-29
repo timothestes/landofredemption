@@ -85,8 +85,11 @@ export function impliedFamily(mainTotal: number): 'T1' | 'T2' {
 /** The group that defaults to Reserve, or null (spec: Groups and zones). */
 export function defaultReserveGroup(groups: GroupSize[]): string | null {
   if (groups.length < 2) return null;
-  const sideways = groups.filter(g => g.orientation !== 'upright');
-  const cand = sideways.length === 1 ? sideways[0] : groups[groups.length - 1];
+  // Group 0 is the synthetic orphan group (model ids are >= 1): it counts toward the rest but is never Reserve.
+  const real = groups.filter(g => g.key.split(':')[1] !== '0');
+  const sideways = real.filter(g => g.orientation !== 'upright');
+  const cand = sideways.length === 1 ? sideways[0] : real[real.length - 1];
+  if (!cand) return null;
   const others = groups.filter(g => g !== cand).reduce((n, g) => n + g.count, 0);
   if (others < FORMATS.Limited.main.min) return null;
   const max = FORMATS[impliedFamily(others) === 'T2' ? 'T2' : 'Limited'].reserveMax;

@@ -52,6 +52,8 @@ describe('defaultReserveGroup', () => {
   it('no Reserve when the group is over the reserve max', () => expect(defaultReserveGroup([g('0:1', 50), g('0:2', 11)])).toBeNull());
   it('a Type 2 main allows a 20-card reserve', () => expect(defaultReserveGroup([g('0:1', 100), g('0:2', 20)])).toBe('0:2'));
   it('two sideways groups fall back to the last group', () => expect(defaultReserveGroup([g('0:1', 5, 'rotated_cw'), g('0:2', 50), g('0:3', 5, 'rotated_ccw')])).toBe('0:3'));
+  it('a synthetic group 0 is never Reserve, but counts toward the rest', () => expect(defaultReserveGroup([g('0:1', 25), g('0:2', 25), g('0:0', 5)])).toBeNull());
+  it('a synthetic group 0 is skipped for the real last group', () => expect(defaultReserveGroup([g('0:1', 50), g('0:2', 8), g('0:0', 3)])).toBe('0:2'));
   it('one group is never Reserve', () => expect(defaultReserveGroup([g('0:1', 60)])).toBeNull());
 });
 
