@@ -8,8 +8,9 @@ import { scoreDeckPhoto, type DeckLabel } from '@/scripts/scan-eval/deckScore';
 const idx = getScanIndex();
 const pick = CARDS.filter(c => !idx.identityOf(c).lostSoul && !idx.identityOf(c).token);
 const A = pick[0];
-const B = pick.find(c => idx.identityOf(c).key !== idx.identityOf(A).key)!;
-const C = pick.find(c => ![A, B].some(x => idx.identityOf(x).key === idx.identityOf(c).key))!;
+const stem = (c: (typeof CARDS)[number]) => idx.identityOf(c).normalizedStem;
+const B = pick.find(c => stem(c) !== stem(A))!;
+const C = pick.find(c => ![A, B].some(x => stem(x) === stem(c)))!;
 
 let n = 0;
 const det = (group: number, kind: DeckDetection['kind'], card?: (typeof CARDS)[number]): DeckDetection =>
@@ -30,6 +31,13 @@ describe('scoreDeckPhoto', () => {
     expect([s.precision, s.recall, s.invented]).toEqual([1, 1, 0]);
     expect(s.costUsd).toBe(0.05);
     expect(s.latencyMs).toBe(1200);
+  });
+  it('another printing or identity with the labeled name stem counts as a hit', () => {
+    const plain = CARDS.find(c => c.name === "Lot's Wife")!;
+    const fom = CARDS.find(c => c.name === "Lot's Wife (FoM)")!;
+    expect(idx.identityOf(plain).key).not.toBe(idx.identityOf(fom).key);
+    const s = scoreDeckPhoto({ ...label, cards: [{ name: plain.name, qty: 1 }] }, mkResp([det(1, 'which', fom)]));
+    expect([s.precision, s.recall, s.invented]).toEqual([1, 1, 0]);
   });
   it('an invented card counts and lowers precision', () => {
     const r = resp();

@@ -1,6 +1,6 @@
 /**
  * Deck-photo scorer: labels-deck.json against `run.ts --mode deck` outputs.
- * Identity-level multiset precision/recall per photo, Lost Soul and group-size
+ * Name-stem multiset precision/recall per photo (any printing of the labeled card counts), Lost Soul and group-size
  * errors, and whether the default Reserve group is right. Pure apart from main().
  *
  *   npx tsx scripts/scan-eval/deckScore.ts --labels scripts/scan-eval/labels-deck.json \
@@ -57,12 +57,13 @@ export function scoreDeckPhoto(label: DeckLabel, resp: DeckScanResponse): DeckPh
   const idx = getScanIndex();
   const { byKey, byName } = lookups();
 
+  // Keyed by the identity's normalized name stem: a deck needs the card, and the exact printing is a non-goal.
   const truth = new Map<string, number>();
   let truthTotal = 0;
   for (const { name, qty } of label.cards) {
     const card = byName.get(name);
     if (!card) throw new Error(`${label.photo}: unknown card name "${name}"`);
-    add(truth, idx.identityOf(card).key, qty);
+    add(truth, idx.identityOf(card).normalizedStem, qty);
     truthTotal += qty;
   }
 
@@ -82,7 +83,7 @@ export function scoreDeckPhoto(label: DeckLabel, resp: DeckScanResponse): DeckPh
       lostSoulSeen++;
       continue;
     }
-    add(pred, id.key);
+    add(pred, id.normalizedStem);
     predTotal++;
   }
 
