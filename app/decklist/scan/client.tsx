@@ -94,7 +94,7 @@ function DeckScanTray({ userId }: { userId: string }) {
         )}
       </div>
 
-      {!empty && <HandoffBar state={state} dispatch={dispatch} userId={userId} />}
+      {!empty && <HandoffBar state={state} dispatch={dispatch} />}
     </div>
   );
 }

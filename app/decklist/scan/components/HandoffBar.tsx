@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState, type Dispatch } from 'react';
+import { useCallback, useMemo, useRef, useState, type Dispatch } from 'react';
 import { useRouter } from 'next/navigation';
 import ToastNotification from '@/components/ui/toast-notification';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -8,21 +8,21 @@ import { COPY } from '@/app/collection/scan/copy';
 import { createDeckFromScanAction } from '@/app/decklist/actions';
 import { DECK_COPY, fill } from '../copy';
 import { buildDeckText } from '../lib/deckText';
-import { STORAGE_KEY, type DeckTrayAction } from '../lib/deckTrayReducer';
+import type { DeckTrayAction } from '../lib/deckTrayReducer';
 import { deckFormat, deckName, deckOutcomes, saveRows, totals } from '../lib/handoff';
 import type { DeckTrayState } from '../types';
 
 interface Props {
   state: DeckTrayState;
   dispatch: Dispatch<DeckTrayAction>;
-  userId: string;
 }
 
 type Note = { text: string; type: 'success' | 'error'; seq: number };
 
 /** Sticky footer: copy the deck as text, or save it and open it in the deck builder. */
-export default function HandoffBar({ state, dispatch, userId }: Props) {
+export default function HandoffBar({ state, dispatch }: Props) {
   const router = useRouter();
+  const saving = useRef(false);
   const [confirming, setConfirming] = useState(false);
   const [note, setNote] = useState<Note | null>(null);
   const t = useMemo(() => totals(state), [state]);
@@ -42,6 +42,8 @@ export default function HandoffBar({ state, dispatch, userId }: Props) {
 
   const open = async () => {
     setConfirming(false);
+    if (saving.current) return;
+    saving.current = true;
     dispatch({ type: 'saving' });
     try {
       const res = await createDeckFromScanAction({
@@ -52,9 +54,9 @@ export default function HandoffBar({ state, dispatch, userId }: Props) {
       });
       if (!res.ok) throw new Error('save failed');
       dispatch({ type: 'saved', deckId: res.deckId });
-      try { sessionStorage.removeItem(STORAGE_KEY(userId)); } catch { /* storage unavailable */ }
       router.push(`/decklist/card-search?deckId=${res.deckId}`);
     } catch {
+      saving.current = false;
       dispatch({ type: 'saveFailed' });
       notify(COPY.server, 'error');
     }
