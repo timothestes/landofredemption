@@ -906,6 +906,7 @@ function joinGameCore(
   const gameBeforeUpdate = ctx.db.Game.id.find(game.id);
   if (!gameBeforeUpdate) throw new SenderError('Game not found');
   const CHOOSE_DEADLINE_MICROS = 30_000_000n; // 30 seconds from now
+  const chooseDeadline = ctx.timestamp.microsSinceUnixEpoch + CHOOSE_DEADLINE_MICROS;
   ctx.db.Game.id.update({
     ...gameBeforeUpdate,
     status: 'pregame',
@@ -914,8 +915,9 @@ function joinGameCore(
     rollResult1: BigInt(r1),
     rollWinner: winner,
     rngCounter: gameBeforeUpdate.rngCounter + 1n,
-    choosingDeadlineMicros: ctx.timestamp.microsSinceUnixEpoch + CHOOSE_DEADLINE_MICROS,
+    choosingDeadlineMicros: chooseDeadline,
   });
+  scheduleChooseFirstTimeout(ctx, game.id, chooseDeadline);
 
   const winnerSeat = winner === '0' ? 0n : 1n;
   let winnerPlayerId = player.id;
@@ -1182,17 +1184,31 @@ export const pregame_acknowledge_roll = spacetimedb.reducer(
     if (normalizeFormat(latestGame.format) === 'Paragon') {
       initializeSoulDeck(ctx, latestGame);
     }
-
-    // Schedule server-side timeout — auto-choose if winner doesn't pick in 30s
-    const CHOOSE_TIMEOUT_MICROS = 30_000_000n; // 30 seconds
-    const futureTime = ctx.timestamp.microsSinceUnixEpoch + CHOOSE_TIMEOUT_MICROS;
-    ctx.db.ChooseFirstTimeout.insert({
-      scheduledId: 0n,
-      scheduledAt: ScheduleAt.time(futureTime),
-      gameId,
-    });
   }
 );
+
+// ---------------------------------------------------------------------------
+// Choose-first deadline
+//
+// The roll stamps choosingDeadlineMicros and arms this timeout for that same
+// instant, so the server is the only thing that auto-picks. The client used
+// to auto-pick off its own Date.now(), which fired before its own timer bar
+// ran out and, for the opponent, on a different clock entirely.
+// ---------------------------------------------------------------------------
+function scheduleChooseFirstTimeout(ctx: any, gameId: bigint, deadlineMicros: bigint): void {
+  clearChooseFirstTimeout(ctx, gameId);
+  ctx.db.ChooseFirstTimeout.insert({
+    scheduledId: 0n,
+    scheduledAt: ScheduleAt.time(deadlineMicros),
+    gameId,
+  });
+}
+
+function clearChooseFirstTimeout(ctx: any, gameId: bigint): void {
+  for (const timeout of ctx.db.ChooseFirstTimeout.choose_first_timeout_game_id.filter(gameId)) {
+    ctx.db.ChooseFirstTimeout.scheduledId.delete(timeout.scheduledId);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Reducer: pregame_choose_first
@@ -1215,9 +1231,7 @@ export const pregame_choose_first = spacetimedb.reducer(
     }
 
     // Cancel the server-side choose timeout
-    for (const timeout of ctx.db.ChooseFirstTimeout.choose_first_timeout_game_id.filter(gameId)) {
-      ctx.db.ChooseFirstTimeout.scheduledId.delete(timeout.scheduledId);
-    }
+    clearChooseFirstTimeout(ctx, gameId);
 
     // Transition to revealing phase — show who goes first before starting
     const latestGame = ctx.db.Game.id.find(gameId);
@@ -1637,6 +1651,8 @@ export const pregame_skip_to_reveal = spacetimedb.reducer(
       throw new SenderError('Only the roll winner can choose');
     }
 
+    clearChooseFirstTimeout(ctx, gameId);
+
     // Skip rolling acknowledgment + choosing phase → go straight to revealing
     const latestGame = ctx.db.Game.id.find(gameId);
     if (!latestGame) throw new SenderError('Game not found');
@@ -1879,6 +1895,7 @@ export const respond_rematch = spacetimedb.reducer(
 
       // 5. Reset game to pregame/rolling
       const CHOOSE_DEADLINE_MICROS = 30_000_000n;
+      const chooseDeadline = ctx.timestamp.microsSinceUnixEpoch + CHOOSE_DEADLINE_MICROS;
       const gameBeforeReset = ctx.db.Game.id.find(gameId);
       if (!gameBeforeReset) throw new SenderError('Game not found');
       ctx.db.Game.id.update({
@@ -1907,9 +1924,10 @@ export const respond_rematch = spacetimedb.reducer(
         battleState: '',
         battleAttackerSeat: '',
         lastBattlePlayBySeat: '',
-        choosingDeadlineMicros: ctx.timestamp.microsSinceUnixEpoch + CHOOSE_DEADLINE_MICROS,
+        choosingDeadlineMicros: chooseDeadline,
         playingStartedAtMicros: 0n,
       });
+      scheduleChooseFirstTimeout(ctx, gameId, chooseDeadline);
 
       // Phase Stops: rematch reuses the same gameId (in-place reset), so the
       // stop/hold rows must be cleared here or a hold stranded by a mid-hold
@@ -2472,8 +2490,10 @@ export const handle_choose_first_timeout = spacetimedb.reducer(
     const game = ctx.db.Game.id.find(arg.gameId);
     if (!game) return;
 
-    // Only act if game is still in choosing phase
-    if (game.status !== 'pregame' || game.pregamePhase !== 'choosing') return;
+    // Armed at roll time, so the loser may not have acknowledged the roll yet —
+    // 'rolling' counts as still choosing.
+    if (game.status !== 'pregame') return;
+    if (game.pregamePhase !== 'rolling' && game.pregamePhase !== 'choosing') return;
 
     // Auto-choose: roll winner goes first
     const winnerSeat = BigInt(game.rollWinner);
