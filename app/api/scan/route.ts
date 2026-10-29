@@ -22,8 +22,8 @@ import { COMMIT_LIMITS } from '@/app/collection/scan/lib/commitCore';
 export const runtime = 'nodejs';
 export const maxDuration = 150;
 
-// Deck mode's first pass plus crop pass: 20 s under maxDuration for encode, prices, classify and finish.
-const ROUTE_BUDGET_MS = 130_000;
+// Deck mode's crop pass ends by requestStart + this: 10 s under maxDuration for classify, match and finish.
+const CROP_DEADLINE_MS = 140_000;
 
 const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
 const ARM_VALUES = {
@@ -62,6 +62,7 @@ function parseArm(raw: string, base: Required<Arm>): Required<Arm> | null {
 }
 
 export async function POST(req: Request) {
+  const requestStart = Date.now();
   const supabase = await createClient();
   const { user, allowed } = await canScanForSession(supabase);
   if (!user) return fail(401, 'unauthorized', 'Sign in to scan cards.');
@@ -170,8 +171,7 @@ export async function POST(req: Request) {
 
     if (mode === 'deck' && 'groups' in r.output) {
       const out = r.output;
-      const budgetMs = Math.max(0, ROUTE_BUDGET_MS - r.latencyMs);
-      const cp = await runCropPass(jpeg, out, { width, height }, budgetMs);
+      const cp = await runCropPass(jpeg, out, { width, height }, requestStart + CROP_DEADLINE_MS);
       for (const { group, code, detail } of cp.failures) console.error('[scan] crop failed', { scanId, group, code, detail });
       const usage = { inputTokens: r.usage.inputTokens + cp.usage.inputTokens, outputTokens: r.usage.outputTokens + cp.usage.outputTokens };
       const costUsd = r.costUsd + cp.costUsd;

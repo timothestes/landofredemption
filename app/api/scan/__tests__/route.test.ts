@@ -491,15 +491,17 @@ describe('POST /api/scan deck mode', () => {
       err.mockRestore();
     });
 
-    it('passes a budget that shrinks with the first pass latency', async () => {
-      (recognize as Mock).mockResolvedValue(deckOk(priestAndSoul(), [group], { latencyMs: 100_000 }));
-      await postDeck();
-      expect((runCropPass as Mock).mock.calls[0][3]).toBe(30_000);
-      expect((runCropPass as Mock).mock.calls[0][2]).toEqual({ width: 64, height: 48 });
-      (runCropPass as Mock).mockClear();
-      (recognize as Mock).mockResolvedValue(deckOk(priestAndSoul(), [group], { latencyMs: 140_000 }));
-      await postDeck();
-      expect((runCropPass as Mock).mock.calls[0][3]).toBe(0);
+    it('passes a deadline 140 s after the request started', async () => {
+      const requestStart = 1_700_000_000_000;
+      const now = vi.spyOn(Date, 'now').mockReturnValue(requestStart);
+      try {
+        (recognize as Mock).mockResolvedValue(deckOk(priestAndSoul(), [group], { latencyMs: 100_000 }));
+        await postDeck();
+        expect((runCropPass as Mock).mock.calls[0][3]).toBe(requestStart + 140_000);
+        expect((runCropPass as Mock).mock.calls[0][2]).toEqual({ width: 64, height: 48 });
+      } finally {
+        now.mockRestore();
+      }
     });
 
     it('collection mode never runs the crop pass', async () => {

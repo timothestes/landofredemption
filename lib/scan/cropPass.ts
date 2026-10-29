@@ -3,15 +3,23 @@ import { DECK_INSTRUCTION, type DeckOutput, type DeckRead } from './deckSchema';
 import { DECK_ARM, DECK_MODE, recognize, type Arm, type RecognizeMode, type RecognizeResult } from './recognize';
 
 // Second pass for deck photos: re-read each group the whole-photo read left short from a tight upright crop,
-// CROP_CONCURRENCY at a time within a time budget, and swap that group's reads for the crop's. Server only.
+// CROP_CONCURRENCY at a time before a hard deadline, and swap that group's reads for the crop's. Server only.
 
 export const CROP_CONCURRENCY = 4;
 export const MAX_CROP_GROUPS = 12;
 export const CROP_CALL_TIMEOUT_MS = 30_000;
+/** A worker starts no crop with less than this left before the deadline. */
+export const MIN_CROP_REMAINING_MS = 5_000;
 
 export const CROP_PREFIX = 'This is one group cropped from a larger deck photo and turned upright; read every card in it. Report it as a single group with id 1.\n\n';
 export const CROP_MODE: RecognizeMode<DeckOutput> = { ...DECK_MODE, instruction: CROP_PREFIX + DECK_INSTRUCTION, timeoutMs: CROP_CALL_TIMEOUT_MS, retryWithinMs: 15_000 };
 export const CROP_ARM: Required<Arm> = { ...DECK_ARM, effort: 'medium' };
+
+/** Per-call timing so a crop, retry included, ends by the deadline: a retry only when a full second attempt (2 s sleep + timeoutMs) still fits. */
+export function cropCallTiming(remaining: number): { timeoutMs: number; retryWithinMs: number } {
+  const timeoutMs = Math.min(CROP_CALL_TIMEOUT_MS, remaining);
+  return { timeoutMs, retryWithinMs: Math.min(CROP_MODE.retryWithinMs, Math.max(0, remaining - 2_000 - timeoutMs)) };
+}
 
 export interface CropPassDeps { recognize?: typeof recognize; crop?: typeof cropGroup; now?: () => number }
 
@@ -27,7 +35,7 @@ export interface CropPassResult {
   failures: { group: number; code: string; detail?: unknown }[];
 }
 
-export async function runCropPass(jpeg: Buffer, out: DeckOutput, image: { width: number; height: number }, budgetMs: number, deps: CropPassDeps = {}): Promise<CropPassResult> {
+export async function runCropPass(jpeg: Buffer, out: DeckOutput, image: { width: number; height: number }, deadline: number, deps: CropPassDeps = {}): Promise<CropPassResult> {
   const rec = deps.recognize ?? recognize;
   const crop = deps.crop ?? cropGroup;
   const now = deps.now ?? Date.now;
@@ -48,13 +56,14 @@ export async function runCropPass(jpeg: Buffer, out: DeckOutput, image: { width:
 
   const worker = async () => {
     for (let g = queue.shift(); g; g = queue.shift()) {
-      if (now() - started >= budgetMs) {
+      if (deadline - now() < MIN_CROP_REMAINING_MS) {
         skipped.push(g.id);
         continue;
       }
       try {
         const buf = await crop(jpeg, g, width, height);
-        const r: RecognizeResult<DeckOutput> = await rec(buf, CROP_ARM, {}, CROP_MODE);
+        const mode: RecognizeMode<DeckOutput> = { ...CROP_MODE, ...cropCallTiming(deadline - now()) };
+        const r: RecognizeResult<DeckOutput> = await rec(buf, CROP_ARM, {}, mode);
         calls += r.attempts;
         if (r.usage) {
           usage.inputTokens += r.usage.inputTokens;
