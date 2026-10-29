@@ -832,7 +832,7 @@ export default function MyDecksClient() {
               href="/decklist/scan"
               className="flex-shrink-0 px-3 md:px-6 py-2 md:py-3 border border-border bg-card hover:bg-muted rounded-lg text-sm md:text-base font-medium transition-colors"
             >
-              From photo
+              New from photo
             </Link>
             </div>
           </div>

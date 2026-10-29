@@ -5,7 +5,7 @@ import ToastNotification from '@/components/ui/toast-notification';
 import PhotoGroup from '@/app/collection/scan/components/PhotoGroup';
 import PrintingPicker, { type PickerMode } from '@/app/collection/scan/components/PrintingPicker';
 import type { PickerHit } from '@/app/collection/scan/lib/pickerSearch';
-import { DECK_COPY, fill } from '../copy';
+import { DECK_COPY, deckDoneLine, fill } from '../copy';
 import { useCheckWalker } from '../hooks/useCheckWalker';
 import { trayRows, type DeckTrayAction, type TrayDeckRow } from '../lib/deckTrayReducer';
 import { totals } from '../lib/handoff';
@@ -60,7 +60,7 @@ export default function DeckTray({
   const [picker, setPicker] = useState<Picker | null>(null);
   const [pickerSeq, setPickerSeq] = useState(0);
   const [suggestions, setSuggestions] = useState<PickerHit[]>([]);
-  const [removed, setRemoved] = useState<{ name: string; seq: number } | null>(null);
+  const [removed, setRemoved] = useState<{ text: string; seq: number } | null>(null);
   const removeSeq = useRef(0);
   const [lostSoulsOpen, setLostSoulsOpen] = useState(false);
   const closeToast = useCallback(() => setRemoved(null), []);
@@ -112,6 +112,9 @@ export default function DeckTray({
     return null;
   }, [state.photos, sectionsByPhoto]);
 
+  // Picks whose placeholder row is gone (its photo was removed) still show, so they are never saved unseen.
+  const orphanPicks = state.lostSoulPicks.length > 0 && firstLostSoulRow === null;
+
   const pickedRow = picker?.for === 'row' ? rows.find(r => r.rowKey === picker.rowKey) ?? null : null;
   const pickedEntry = pickedRow ? firstEntry(pickedRow) : undefined;
   // A card with no printings on hand (one the player added) changes printing from a search for its name.
@@ -158,11 +161,16 @@ export default function DeckTray({
   const removeRow = (row: TrayDeckRow) => {
     const e = firstEntry(row);
     dispatch({ type: 'removeRow', rowKey: row.rowKey });
-    setRemoved({ name: keyName(row.key) ?? e?.title ?? DECK_COPY.unread, seq: ++removeSeq.current });
+    const text = row.kind === 'unread'
+      ? fill(row.quantity === 1 ? DECK_COPY.removedUnreadOne : DECK_COPY.removedUnread, { n: row.quantity })
+      : row.kind === 'not_found'
+        ? fill(DECK_COPY.removedNotFound, { title: e?.title ?? '' })
+        : fill(DECK_COPY.removed, { name: keyName(row.key) ?? e?.title ?? '' });
+    setRemoved({ text, seq: ++removeSeq.current });
   };
 
   // "Removed {name} · Undo": the message, and the Undo button's label after the last " · ".
-  const removedText = removed ? fill(DECK_COPY.removed, { name: removed.name }) : '';
+  const removedText = removed?.text ?? '';
   const undoAt = removedText.lastIndexOf(' · ');
 
   const totalsLine = fill(DECK_COPY.totals, { m: t.main, r: t.reserve, ls: t.lostSoulsToPick, u: t.unread })
@@ -185,7 +193,7 @@ export default function DeckTray({
               thumb={thumb}
               detectionCount={n}
               mergedCount={0}
-              doneLine={fill(DECK_COPY.readDone, { n, g: photo.groups.length })}
+              doneLine={deckDoneLine(n, photo.groups.length, photo.photoQuality)}
               signInHref="/sign-in?redirectTo=/decklist/scan"
               editable={editable}
               online={online}
@@ -249,7 +257,32 @@ export default function DeckTray({
         })}
       </div>
 
-      {rows.length > 0 && (
+      {orphanPicks && (
+        <div className="mt-3 rounded-lg border border-border">
+          {state.lostSoulPicks.map(p => (
+            <LostSoulPickRow
+              key={p.key}
+              pick={p}
+              editable={editable}
+              onQty={qty => dispatch({
+                type: 'setLostSoulPicks',
+                picks: state.lostSoulPicks.map(x => (x.key === p.key ? { ...x, qty } : x)).filter(x => x.qty > 0),
+              })}
+            />
+          ))}
+          {editable && (
+            <button
+              type="button"
+              onClick={() => setLostSoulsOpen(true)}
+              className="min-h-11 w-full px-3 text-left text-sm font-medium underline-offset-4 hover:underline focus:outline-none"
+            >
+              {DECK_COPY.pickWhich}
+            </button>
+          )}
+        </div>
+      )}
+
+      {(rows.length > 0 || orphanPicks) && (
         <p aria-live="polite" className="mt-3 flex flex-wrap items-center gap-x-2 text-sm tabular-nums text-muted-foreground">
           <span>{totalsLine}</span>
           {t.toCheck > 0 && (

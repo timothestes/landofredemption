@@ -17,7 +17,8 @@ export interface DeckOutcome {
 }
 
 const MAX_QTY = 99;
-const RESOLVED = ['matched', 'which', 'read_as'];
+/** Only a matched row is saved: an unpicked Check this row (which, read_as) is left out. */
+const RESOLVED = ['matched'];
 
 /** `name|set|imgFile`, split on the last two pipes. */
 function splitKey(key: string): { card_name: string; card_set: string; card_img_file: string } | null {
@@ -32,7 +33,7 @@ export function saveRows(s: DeckTrayState): SaveRow[] {
   const out = new Map<string, SaveRow>();
   const add = (key: string, qty: number, zone: Zone) => {
     const parts = splitKey(key);
-    if (!parts || qty < 1) return;
+    if (!parts || !(qty >= 1)) return;
     const k = `${zone}|${key}`;
     const row = out.get(k);
     if (row) row.quantity = Math.min(MAX_QTY, row.quantity + qty);
@@ -41,7 +42,7 @@ export function saveRows(s: DeckTrayState): SaveRow[] {
   for (const r of trayRows(s)) {
     if (RESOLVED.includes(r.kind) && r.key) add(r.key, r.quantity, r.mainOnly ? 'main' : r.zone);
   }
-  for (const p of s.lostSoulPicks) add(p.key, Math.round(p.qty), 'main');
+  for (const p of s.lostSoulPicks) add(p.key, Math.round(p.qty), 'main'); // add() skips NaN and < 1
   return [...out.values()];
 }
 
@@ -57,7 +58,7 @@ export function deckOutcomes(s: DeckTrayState): Record<string, DeckOutcome[]> {
   };
   for (const e of s.entries) {
     const finalKey = !e.removed && RESOLVED.includes(e.kind) ? e.key : null;
-    const changed = !e.removed && e.original !== null && finalKey !== e.original.key;
+    const changed = !e.removed && finalKey !== null && e.original !== null && finalKey !== e.original.key;
     const printingChanged = changed && finalKey !== null && e.original!.key !== null && stem(finalKey) === stem(e.original!.key);
     push(e.entryId, {
       finalKey,
@@ -72,9 +73,12 @@ export function deckOutcomes(s: DeckTrayState): Record<string, DeckOutcome[]> {
   }
   const scanId = s.photos.find(p => p.scanId)?.scanId;
   if (scanId) {
-    s.lostSoulPicks.forEach((p, n) => push(`${scanId}:ls:${n}`, {
-      finalKey: p.key, nameChanged: false, printingChanged: false, removed: false, unresolved: false, zone: 'main', lostSoulPick: true,
-    }));
+    s.lostSoulPicks.forEach((p, n) => {
+      if (!(Math.round(p.qty) >= 1)) return;
+      push(`${scanId}:ls:${n}`, {
+        finalKey: p.key, nameChanged: false, printingChanged: false, removed: false, unresolved: false, zone: 'main', lostSoulPick: true,
+      });
+    });
   }
   return out;
 }
@@ -87,7 +91,7 @@ export function totals(s: DeckTrayState): { main: number; reserve: number; lostS
     if (r.kind === 'lost_soul') placeholders += r.quantity;
     if (['which', 'read_as', 'not_found', 'unread'].includes(r.kind)) t.toCheck += 1;
     if (r.kind === 'unread') t.unread += r.quantity;
-    if (r.kind === 'not_found' || r.kind === 'unread') t.leftOut += r.quantity;
+    if (['not_found', 'unread', 'which', 'read_as'].includes(r.kind)) t.leftOut += r.quantity;
   }
   const picked = s.lostSoulPicks.reduce((n, p) => n + p.qty, 0);
   t.lostSoulsToPick = s.lostSoulsSkipped ? 0 : Math.max(0, placeholders - picked);

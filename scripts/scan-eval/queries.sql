@@ -278,7 +278,8 @@ where source = 'player' and created_at >= now() - interval '3 days';
 -- createDeckFromScanAction when the player opens the deck: scan_events.outcomes is an
 -- array of { id, finalKey, nameChanged, printingChanged, removed, unresolved, zone,
 -- lostSoulPick }, one per read, added card and Lost Soul pick. A deck = a scan_events row
--- with outcomes not null. All filter mode = 'deck' and source = 'player'.
+-- with outcomes not null, so a "deck" below is approximately a deck: a deck built from several
+-- photos writes outcomes on each photo's row and counts once per photo. All filter mode = 'deck' and source = 'player'.
 -- ---------------------------------------------------------------------------------------
 
 -- name: deck_decks_created_per_week

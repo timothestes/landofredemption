@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FORMATS } from '@/lib/formats';
-import { deckTrayReducer, initialDeckTray, type DeckTrayAction } from '../lib/deckTrayReducer';
+import { deckTrayReducer, initialDeckTray, trayRows, type DeckTrayAction } from '../lib/deckTrayReducer';
 import { deckFormat, deckName, deckOutcomes, saveRows, totals } from '../lib/handoff';
 import type { DeckTrayState } from '../types';
 import { deckResponse, rep } from './fixtures';
@@ -49,6 +49,44 @@ describe('saveRows', () => {
     const o = deckOutcomes(s).s1;
     expect(o.filter(x => x.unresolved).map(x => x.id)).toEqual(['s1:1', 's1:2', 's1:3']);
     expect(o.find(x => x.id === 's1:4')!.unresolved).toBe(false);
+  });
+});
+
+describe('unchecked Check this rows', () => {
+  const checkTray = () => tray(deckResponse('s1', [
+    { group: 1, key: K('A') },
+    { group: 1, key: K('W'), kind: 'which', title: 'Dub' },
+    { group: 1, key: K('R'), kind: 'read_as', title: 'Rr' },
+    { group: 1, key: K('R'), kind: 'read_as', title: 'Rr' },
+  ]));
+
+  it('leaves which and read_as rows out, counts their cards and marks them unresolved', () => {
+    const s = checkTray();
+    expect(saveRows(s).map(r => r.card_name)).toEqual(['A']);
+    expect(totals(s)).toMatchObject({ main: 1, leftOut: 3, toCheck: 2 });
+    const o = deckOutcomes(s).s1;
+    expect(o.filter(x => x.unresolved).map(x => x.id)).toEqual(['s1:1', 's1:2', 's1:3']);
+    expect(o[1]).toMatchObject({ finalKey: null, unresolved: true, nameChanged: false, printingChanged: false });
+  });
+
+  it('saves them once picked, even with the provisional card', () => {
+    let s = checkTray();
+    for (const r of trayRows(s).filter(x => x.kind === 'which' || x.kind === 'read_as')) {
+      s = run(s, { type: 'setCard', rowKey: r.rowKey, key: r.key as string });
+    }
+    expect(saveRows(s).map(r => r.card_name).sort()).toEqual(['A', 'R', 'W']);
+    expect(saveRows(s).find(r => r.card_name === 'R')!.quantity).toBe(2);
+    expect(totals(s)).toMatchObject({ main: 4, leftOut: 0, toCheck: 0 });
+    expect(deckOutcomes(s).s1.some(x => x.unresolved)).toBe(false);
+  });
+});
+
+describe('NaN picks', () => {
+  it('skips NaN and sub-1 Lost Soul picks in rows and outcomes', () => {
+    const s = run(tray(deckResponse('s1', [{ group: 1, key: K('A') }])),
+      { type: 'setLostSoulPicks', picks: [{ key: K('L'), qty: NaN }, { key: K('M'), qty: 0.2 }, { key: K('N'), qty: 2 }] });
+    expect(saveRows(s).map(r => r.card_name)).toEqual(['A', 'N']);
+    expect(deckOutcomes(s).s1.filter(x => x.lostSoulPick).map(x => x.finalKey)).toEqual([K('N')]);
   });
 });
 

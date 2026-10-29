@@ -30,11 +30,16 @@ describe('validateHandoff', () => {
     expect(validateHandoff(good({ rows: [row({ card_name: 'Nope' })] }), known)).toBeNull();
     expect(validateHandoff(good({ rows: [row({ zone: 'maybeboard' })] }), known)).toBeNull();
   });
-  it('rejects outcome ids under the wrong scan or malformed', () => {
+  it('drops outcome ids under the wrong scan or malformed, and bad scan-id keys', () => {
     const other = '22222222-2222-4222-8222-222222222222';
-    expect(validateHandoff(good({ outcomesByScanId: { [SID]: [oc(`${other}:0`)] } }), known)).toBeNull();
-    expect(validateHandoff(good({ outcomesByScanId: { [SID]: [oc('x:ls:a')] } }), known)).toBeNull();
-    expect(validateHandoff(good({ outcomesByScanId: { 'not-a-uuid': [] } }), known)).toBeNull();
+    const r1 = validateHandoff(good({ outcomesByScanId: { [SID]: [oc(`${other}:0`), oc(`${SID}:1`)] } }), known);
+    expect(r1?.outcomesByScanId[SID].map(o => o.id)).toEqual([`${SID}:1`]);
+    const r2 = validateHandoff(good({ outcomesByScanId: { [SID]: [oc('x:ls:a')] } }), known);
+    expect(r2?.rows).toHaveLength(1);
+    expect(r2?.outcomesByScanId[SID]).toEqual([]);
+    const r3 = validateHandoff(good({ outcomesByScanId: { 'not-a-uuid': [] } }), known);
+    expect(r3).not.toBeNull();
+    expect(r3?.outcomesByScanId).toEqual({});
   });
   it('rebuilds outcomes, dropping extra keys', () => {
     const r = validateHandoff(good({ outcomesByScanId: { [SID]: [oc(`${SID}:0`, { evil: { a: 1 } })] } }), known);
@@ -42,17 +47,23 @@ describe('validateHandoff', () => {
     expect(Object.keys(r!.outcomesByScanId[SID][0]).sort()).toEqual(
       ['finalKey', 'id', 'lostSoulPick', 'nameChanged', 'printingChanged', 'removed', 'unresolved', 'zone']);
   });
-  it('rejects bad outcome fields', () => {
-    const bad = (o: Record<string, unknown>) => validateHandoff(good({ outcomesByScanId: { [SID]: [oc(`${SID}:0`, o)] } }), known);
-    expect(bad({ finalKey: 'Nope|X|a' })).toBeNull();
-    expect(bad({ removed: 'yes' })).toBeNull();
-    expect(bad({ zone: 'maybeboard' })).toBeNull();
+  it('drops bad outcomes and keeps the payload', () => {
+    const bad = (o: Record<string, unknown>) => validateHandoff(good({ outcomesByScanId: { [SID]: [oc(`${SID}:0`, o), oc(`${SID}:1`)] } }), known);
+    for (const o of [{ finalKey: 'Nope|X|a' }, { removed: 'yes' }, { zone: 'maybeboard' }]) {
+      const r = bad(o);
+      expect(r?.rows).toHaveLength(1);
+      expect(r?.outcomesByScanId[SID].map(x => x.id)).toEqual([`${SID}:1`]);
+    }
   });
-  it('enforces the scan and outcome caps and non-empty rows', () => {
+  it('drops over-cap outcomes instead of rejecting, and still needs non-empty rows', () => {
     const ids = Array.from({ length: 21 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`);
-    expect(validateHandoff(good({ outcomesByScanId: Object.fromEntries(ids.map(i => [i, []])) }), known)).toBeNull();
+    const r1 = validateHandoff(good({ outcomesByScanId: Object.fromEntries(ids.map(i => [i, []])) }), known);
+    expect(r1?.rows).toHaveLength(1);
+    expect(r1?.outcomesByScanId).toEqual({});
     const many = Array.from({ length: 401 }, (_, n) => oc(`${SID}:${n}`));
-    expect(validateHandoff(good({ outcomesByScanId: { [SID]: many } }), known)).toBeNull();
+    const r2 = validateHandoff(good({ outcomesByScanId: { [SID]: many } }), known);
+    expect(r2?.rows).toHaveLength(1);
+    expect(r2?.outcomesByScanId[SID]).toBeUndefined();
     expect(validateHandoff(good({ rows: [] }), known)).toBeNull();
   });
   it('rejects 301 rows, long name, bad format', () => {

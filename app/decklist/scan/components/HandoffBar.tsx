@@ -27,7 +27,9 @@ export default function HandoffBar({ state, dispatch }: Props) {
   const [note, setNote] = useState<Note | null>(null);
   const t = useMemo(() => totals(state), [state]);
   const saved = t.main + t.reserve;
-  const busy = state.phase !== 'editing';
+  // A photo still queued or reading would be dropped from the saved deck: hold both buttons until all are in.
+  const reading = state.photos.some(p => p.status === 'queued' || p.status === 'reading');
+  const busy = state.phase !== 'editing' || reading;
   const closeNote = useCallback(() => setNote(null), []);
   const notify = (text: string, type: Note['type']) => setNote(n => ({ text, type, seq: (n?.seq ?? 0) + 1 }));
 
@@ -36,7 +38,7 @@ export default function HandoffBar({ state, dispatch }: Props) {
       await navigator.clipboard.writeText(buildDeckText(state));
       notify(DECK_COPY.copied, 'success');
     } catch {
-      notify(COPY.server, 'error');
+      notify(DECK_COPY.copyFailed, 'error');
     }
   };
 
