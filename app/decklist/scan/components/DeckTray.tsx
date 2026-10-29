@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type Dispatch } from 'react';
 import ToastNotification from '@/components/ui/toast-notification';
 import PhotoGroup from '@/app/collection/scan/components/PhotoGroup';
 import PrintingPicker, { type PickerMode } from '@/app/collection/scan/components/PrintingPicker';
@@ -12,6 +12,8 @@ import { totals } from '../lib/handoff';
 import type { Candidate, DeckPhoto, DeckTrayState, TrayEntry, Zone } from '../types';
 import DeckRow, { AMBER_KINDS } from './DeckRow';
 import GroupSection from './GroupSection';
+import LostSoulPickRow from './LostSoulPickRow';
+import LostSoulSheet from './LostSoulSheet';
 
 // suggest.ts pulls the card catalog: it loads with the picker, once.
 let suggestModule: Promise<typeof import('../lib/suggest')> | null = null;
@@ -60,7 +62,6 @@ export default function DeckTray({
   const [suggestions, setSuggestions] = useState<PickerHit[]>([]);
   const [removed, setRemoved] = useState<{ name: string; seq: number } | null>(null);
   const removeSeq = useRef(0);
-  // Task 8 renders the Lost Soul sheet from this flag.
   const [lostSoulsOpen, setLostSoulsOpen] = useState(false);
   const closeToast = useCallback(() => setRemoved(null), []);
 
@@ -100,6 +101,16 @@ export default function DeckTray({
   const walk = useCheckWalker(amberIds);
   const t = useMemo(() => totals(state), [state]);
   const lostSoulsPicked = state.lostSoulPicks.reduce((n, p) => n + p.qty, 0);
+  // Picks are deck-wide: they list under the first Lost Soul summary row only.
+  const firstLostSoulRow = useMemo(() => {
+    for (const p of state.photos) {
+      for (const sec of sectionsByPhoto.get(p.photoId) ?? []) {
+        const r = sec.rows.find(x => x.kind === 'lost_soul');
+        if (r) return r.rowKey;
+      }
+    }
+    return null;
+  }, [state.photos, sectionsByPhoto]);
 
   const pickedRow = picker?.for === 'row' ? rows.find(r => r.rowKey === picker.rowKey) ?? null : null;
   const pickedEntry = pickedRow ? firstEntry(pickedRow) : undefined;
@@ -201,8 +212,8 @@ export default function DeckTray({
                     {sec.rows.map(row => {
                       const e = firstEntry(row);
                       return (
+                        <Fragment key={row.rowKey}>
                         <DeckRow
-                          key={row.rowKey}
                           row={row}
                           readTitle={e?.title ?? null}
                           candidates={e?.candidates ?? []}
@@ -216,6 +227,18 @@ export default function DeckTray({
                           onRemove={() => removeRow(row)}
                           onOpenLostSouls={() => setLostSoulsOpen(true)}
                         />
+                        {row.rowKey === firstLostSoulRow && state.lostSoulPicks.map(p => (
+                          <LostSoulPickRow
+                            key={p.key}
+                            pick={p}
+                            editable={editable}
+                            onQty={qty => dispatch({
+                              type: 'setLostSoulPicks',
+                              picks: state.lostSoulPicks.map(x => (x.key === p.key ? { ...x, qty } : x)).filter(x => x.qty > 0),
+                            })}
+                          />
+                        ))}
+                        </Fragment>
                       );
                     })}
                   </GroupSection>
@@ -261,7 +284,16 @@ export default function DeckTray({
         />
       )}
 
-      {lostSoulsOpen && null}
+      {lostSoulsOpen && editable && (
+        <LostSoulSheet
+          trayRows={rows.filter(r => r.kind === 'matched' && r.key).map(r => ({ key: r.key as string, qty: r.quantity }))}
+          placeholders={rows.reduce((n, r) => n + (r.kind === 'lost_soul' ? r.quantity : 0), 0)}
+          picks={state.lostSoulPicks}
+          onDone={picks => dispatch({ type: 'setLostSoulPicks', picks })}
+          onSkip={() => dispatch({ type: 'skipLostSouls' })}
+          onClose={() => setLostSoulsOpen(false)}
+        />
+      )}
 
       <ToastNotification
         key={removed?.seq ?? 0}
