@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { BuyDeckCard } from "./BuyDeckModal";
 import { computeMissingCards } from "../utils/collectionCheck";
-import { useCanScan } from "../../../collection/hooks/useCanScan";
 import { addWantsAction } from "../../../trades/actions";
 import type { TradeItem } from "../../../trades/lib/tradeList";
 
@@ -33,7 +33,6 @@ export default function CollectionCheckModal({
     () => computeMissingCards(cards, ownedByName),
     [cards, ownedByName]
   );
-  const canScan = useCanScan(collectionAvailable, "collection-check");
   const missingCount = missing.reduce((sum, c) => sum + c.quantity, 0);
 
   // "Add missing to my Wants": any printing, since this check matches by name.
@@ -109,13 +108,16 @@ export default function CollectionCheckModal({
   const stillLoading = !collectionAvailable && !loadFailed;
   const ownsEverything = collectionAvailable && missing.length === 0;
 
-  return (
+  // Portaled to <body>: on phones this renders inside the deck view's own stacking
+  // context (z-40), where no z-index can clear the bottom nav (z-70) that was
+  // covering the footer.
+  return createPortal(
     <>
-      {/* Backdrop — above BuyDeckModal's z-[60] so this sits on top if both ever render */}
-      <div className="fixed inset-0 z-[62] bg-black/50" onClick={onClose} />
+      {/* Backdrop — above the mobile bottom nav (z-[70]) and BuyDeckModal (z-[80]) so this sits on top if both ever render */}
+      <div className="fixed inset-0 z-[82] bg-black/50" onClick={onClose} />
 
       <div
-        className="fixed inset-x-0 bottom-0 z-[63] max-h-[85vh] flex flex-col bg-card rounded-t-xl shadow-2xl border border-border md:inset-x-auto md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:mx-auto md:max-w-md md:rounded-xl md:max-h-[80vh] md:inset-x-4 lg:inset-x-0"
+        className="fixed inset-x-0 bottom-0 z-[83] max-h-[85vh] flex flex-col bg-card rounded-t-xl shadow-2xl border border-border pb-[env(safe-area-inset-bottom)] md:pb-0 md:inset-x-auto md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:mx-auto md:max-w-md md:rounded-xl md:max-h-[80vh] md:inset-x-4 lg:inset-x-0"
         style={dragY > 0 ? { transform: `translateY(${dragY}px)`, transition: dragStartY.current !== null ? "none" : "transform 0.2s ease-out" } : undefined}
       >
         {/* Mobile drag handle */}
@@ -259,13 +261,9 @@ export default function CollectionCheckModal({
               Close
             </button>
           )}
-          {canScan && (
-            <p className="mt-2 text-xs text-center text-muted-foreground">
-              <a href="/collection/scan" className="underline hover:text-foreground">Scan your cards</a>
-            </p>
-          )}
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
