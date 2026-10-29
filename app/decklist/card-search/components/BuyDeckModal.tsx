@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { getOwnedQuantitiesAction } from "../../../collection/actions";
 import type { DeckZone } from "../types/deck";
@@ -256,15 +257,18 @@ export default function BuyDeckModal({ cards: allCards, onClose, initialMode }: 
     setExcludedKeys(new Set(result.matched.map(m => m.card_key)));
   };
 
-  return (
+  // Portaled to <body>: on phones this renders inside the deck view's own stacking
+  // context (z-40), where no z-index can clear the bottom nav (z-70) that was
+  // covering the footer.
+  return createPortal(
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-[60] bg-black/50" onClick={onClose} />
+      {/* Backdrop — above the mobile bottom nav (z-[70]), which otherwise covers the sheet's footer */}
+      <div className="fixed inset-0 z-[80] bg-black/50" onClick={onClose} />
 
       {/* Modal — bottom sheet on mobile, centered on desktop */}
       <div
         ref={sheetRef}
-        className="fixed inset-x-0 bottom-0 z-[61] max-h-[85dvh] flex flex-col bg-card rounded-t-xl shadow-2xl border border-border md:inset-x-auto md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:mx-auto md:max-w-md md:rounded-xl md:max-h-[80dvh] md:inset-x-4 lg:inset-x-0"
+        className="fixed inset-x-0 bottom-0 z-[81] max-h-[85dvh] flex flex-col bg-card rounded-t-xl shadow-2xl border border-border pb-[env(safe-area-inset-bottom)] md:pb-0 md:inset-x-auto md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:mx-auto md:max-w-md md:rounded-xl md:max-h-[80dvh] md:inset-x-4 lg:inset-x-0"
         style={dragY > 0 ? { transform: `translateY(${dragY}px)`, transition: dragStartY.current !== null ? 'none' : 'transform 0.2s ease-out' } : undefined}
       >
         {/* Mobile drag handle — swipe down to dismiss */}
@@ -573,6 +577,7 @@ export default function BuyDeckModal({ cards: allCards, onClose, initialMode }: 
           </div>
         )}
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
