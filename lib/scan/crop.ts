@@ -34,10 +34,13 @@ export function rotationFor(orientation: DeckGroup['orientation']): 0 | 90 | 180
   return 0;
 }
 
-/** True when the first pass left a title unread, came up short, or saw the group sideways. Never for the orphan group 0. */
-export function needsCrop(group: DeckGroup, reads: DeckRead[]): boolean {
-  if (group.id === 0) return false;
-  return reads.some(r => r.title === null) || reads.length < group.cardCount || group.orientation !== 'upright';
+/**
+ * True when the first pass saw the group sideways or upside down; never for the orphan group 0.
+ * Upright groups are not cropped, even when short or with unread titles: re-reading them at effort medium was net negative
+ * against the effort-high first pass in two replays, losing as many hits as the sideways crops gained.
+ */
+export function needsCrop(group: DeckGroup): boolean {
+  return group.id !== 0 && group.orientation !== 'upright';
 }
 
 /** Maps a point normalized to the unrotated crop into fractions of the whole image (unclamped). */

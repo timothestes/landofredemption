@@ -15,12 +15,15 @@ describe('rotationFor', () => {
   it('maps orientations to rotations', () => expect(['upright', 'rotated_ccw', 'rotated_cw', 'upside_down'].map(o => rotationFor(o as any))).toEqual([0, 90, 270, 180]));
 });
 describe('needsCrop', () => {
-  it('unread, short, or sideways; never group 0', () => {
-    expect(needsCrop(grp(1, 'upright', 2), [read(1), read(1, null)])).toBe(true);
-    expect(needsCrop(grp(2, 'upright', 4), [read(2), read(2), read(2)])).toBe(true);
-    expect(needsCrop(grp(3, 'rotated_ccw', 2), [read(3), read(3)])).toBe(true);
-    expect(needsCrop(grp(4, 'upright', 2), [read(4), read(4)])).toBe(false);
-    expect(needsCrop(grp(0, 'upright', 2), [read(0, null)])).toBe(false);
+  it('only non-upright groups; never group 0', () => {
+    expect(needsCrop(grp(1, 'rotated_ccw', 2))).toBe(true);
+    expect(needsCrop(grp(2, 'rotated_cw', 2))).toBe(true);
+    expect(needsCrop(grp(3, 'upside_down', 2))).toBe(true);
+    expect(needsCrop(grp(4, 'upright', 2))).toBe(false);
+    expect(needsCrop(grp(0, 'rotated_ccw', 2))).toBe(false);
+  });
+  it('an upright group is not cropped even when short or with unread titles', () => {
+    expect(needsCrop(grp(1, 'upright', 4))).toBe(false);
   });
 });
 describe('titleCentreInBox', () => {

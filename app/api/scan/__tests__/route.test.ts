@@ -423,8 +423,8 @@ describe('POST /api/scan deck mode', () => {
   });
 
   describe('crop pass', () => {
-    // Group 1 is complete; group 2 has an unread title, so it gets a crop.
-    const group2: DeckGroup = { id: 2, orientation: 'upright', bbox: [0.5, 0, 1, 1], cardCount: 2 };
+    // Group 1 is upright; group 2 is sideways, so it gets a crop.
+    const group2: DeckGroup = { id: 2, orientation: 'rotated_ccw', bbox: [0.5, 0, 1, 1], cardCount: 2 };
     const firstPass = (over: Record<string, unknown> = {}) => deckOk([
       ...priestAndSoul(),
       read({ group: 2, title: 'Captive Priest', reference: 'Judges 18:27', type: 'Hero' }),
@@ -491,11 +491,8 @@ describe('POST /api/scan deck mode', () => {
       err.mockRestore();
     });
 
-    it('a crop with only neighbour reads keeps the first-pass reads and logs empty_crop', async () => {
-      // Group 2's crop rect is x 29-64 of 64 px; a box at the crop's left edge centres near x 0.46, left of the group.
-      (recognize as Mock).mockResolvedValueOnce(firstPass()).mockResolvedValueOnce(deckOk([
-        read({ title: 'Neighbour', titleBox: [0, 0.4, 0.01, 0.5] }),
-      ], [{ id: 1, orientation: 'upright', bbox: [0, 0, 1, 1], cardCount: 1 }]));
+    it('a crop that reads no cards keeps the first-pass reads and logs empty_crop', async () => {
+      (recognize as Mock).mockResolvedValueOnce(firstPass()).mockResolvedValueOnce(deckOk([], [{ id: 1, orientation: 'upright', bbox: [0, 0, 1, 1], cardCount: 1 }]));
       const err = vi.spyOn(console, 'error').mockImplementation(() => {});
       const body = await (await postDeck()).json();
       expect(body.detections.filter((d: any) => d.group === 2).map((d: any) => d.read.title)).toEqual(['Captive Priest', null]);

@@ -2,7 +2,7 @@ import { cropBoxToPhoto, cropGroup, cropRect, keepCropRead, needsCrop } from './
 import { DECK_INSTRUCTION, type DeckOutput, type DeckRead } from './deckSchema';
 import { DECK_ARM, DECK_MODE, recognize, type Arm, type RecognizeMode, type RecognizeResult } from './recognize';
 
-// Second pass for deck photos: re-read each group the whole-photo read left short from a tight upright crop,
+// Second pass for deck photos: re-read each sideways or upside-down group from a tight crop turned upright,
 // CROP_CONCURRENCY at a time before a hard deadline, and swap that group's reads for the crop's. Server only.
 
 export const CROP_CONCURRENCY = 4;
@@ -46,7 +46,7 @@ export async function runCropPass(jpeg: Buffer, out: DeckOutput, image: { width:
   const seen = new Set<number>();
   const groups = out.groups.filter(g => !seen.has(g.id) && seen.add(g.id));
 
-  const needy = groups.filter(g => needsCrop(g, readsOf(g.id))).sort((a, b) => a.id - b.id);
+  const needy = groups.filter(g => needsCrop(g)).sort((a, b) => a.id - b.id);
   const queue = needy.slice(0, MAX_CROP_GROUPS);
   const skipped = needy.slice(MAX_CROP_GROUPS).map(g => g.id);
   const cropped: number[] = [];

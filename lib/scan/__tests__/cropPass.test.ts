@@ -22,9 +22,11 @@ const JPEG = Buffer.alloc(1);
 /** A deadline a minute out on the real clock: never reached in these tests. */
 const soon = () => Date.now() + 60_000;
 
-/** A group that needs a crop: one card expected, none read. */
-const needy = (id: number) => grp(id, { cardCount: 1 });
-/** A group the first pass read fully: one titled read. */
+/** A sideways group: the only kind that is cropped. */
+const side = (id: number, p: Partial<DeckGroup> = {}) => grp(id, { orientation: 'rotated_ccw', ...p });
+/** A group that needs a crop: seen sideways. */
+const needy = (id: number) => side(id);
+/** An upright group: never cropped. */
 const fine = (id: number) => grp(id);
 
 function stub(impl: (...args: unknown[]) => unknown) {
@@ -75,7 +77,7 @@ describe('runCropPass', () => {
   it('replaces a cropped group’s reads, renumbers positions, keeps the other groups’ reads in order', async () => {
     const out: DeckOutput = {
       photoQuality: 'ok',
-      groups: [fine(1), grp(2, { cardCount: 3 }), fine(3)],
+      groups: [fine(1), side(2, { cardCount: 3 }), fine(3)],
       cards: [read({ group: 1, title: 'A' }), read({ group: 2, title: null }), read({ group: 3, title: 'D' })],
     };
     const { deps } = stub(async () => okResult([read({ title: 'B1', position: 4 }), read({ title: 'B2', position: 9 }), read({ title: 'B3', position: 2 })]));
@@ -86,30 +88,9 @@ describe('runCropPass', () => {
     ]);
   });
 
-  it('keeps a boxless read and drops a neighbour’s', async () => {
-    // Group bbox [0.2,0.2,0.4,0.8] in 1000x1000 → crop rect left 160, top 160, 280 x 680.
-    const out: DeckOutput = { photoQuality: 'ok', groups: [grp(1, { cardCount: 3 })], cards: [] };
-    const inside: Box = [0.4, 0.4, 0.6, 0.6]; // centre maps to x 0.3
-    const outside: Box = [0.9, 0.1, 1, 0.2]; // centre maps to x 0.426, past 0.4 + tol
-    const { deps } = stub(async () => okResult([read({ title: 'Boxless' }), read({ title: 'Inside', titleBox: inside }), read({ title: 'Neighbour', titleBox: outside })]));
-    const res = await runCropPass(JPEG, out, IMAGE, soon(), deps);
-    expect(res.cards.map(c => [c.title, c.position])).toEqual([['Boxless', 1], ['Inside', 2]]);
-  });
-
-  it('an upright crop read’s title box comes back in whole-photo fractions', async () => {
-    // Rect left 160, top 160, 280 x 680 in 1000 x 1000: x → (160 + x·280)/1000, y → (160 + y·680)/1000.
-    const out: DeckOutput = { photoQuality: 'ok', groups: [grp(1, { cardCount: 2 })], cards: [] };
-    const { deps } = stub(async () => okResult([read({ title: 'Inside', titleBox: [0.4, 0.4, 0.6, 0.6] }), read({ title: 'Boxless' })]));
-    const res = await runCropPass(JPEG, out, IMAGE, soon(), deps);
-    const box = res.cards[0].titleBox!;
-    [0.272, 0.432, 0.328, 0.568].forEach((v, i) => expect(box[i]).toBeCloseTo(v, 9));
-    expect(res.cards[1].titleBox).toBeNull();
-  });
-
-  it('a crop whose reads are all filtered out keeps the first-pass reads and is a failure', async () => {
-    const out: DeckOutput = { photoQuality: 'ok', groups: [grp(1, { cardCount: 2 }), fine(2)], cards: [read({ group: 1, title: null }), read({ group: 2, title: 'B' })] };
-    const outside: Box = [0.9, 0.1, 1, 0.2];
-    const { deps } = stub(async () => okResult([read({ title: 'Neighbour', titleBox: outside }), read({ title: 'Other', titleBox: outside })]));
+  it('a crop that returns no cards keeps the first-pass reads and is a failure', async () => {
+    const out: DeckOutput = { photoQuality: 'ok', groups: [side(1, { cardCount: 2 }), fine(2)], cards: [read({ group: 1, title: null }), read({ group: 2, title: 'B' })] };
+    const { deps } = stub(async () => okResult([]));
     const res = await runCropPass(JPEG, out, IMAGE, soon(), deps);
     expect(res.cards).toEqual(out.cards);
     expect(res.cropped).toEqual([]);
@@ -123,7 +104,7 @@ describe('runCropPass', () => {
   it('a repeated group id is cropped once and its reads are not duplicated', async () => {
     const out: DeckOutput = {
       photoQuality: 'ok',
-      groups: [grp(1, { cardCount: 2 }), grp(1, { cardCount: 2 }), fine(2), fine(2)],
+      groups: [side(1, { cardCount: 2 }), side(1, { cardCount: 2 }), fine(2), fine(2)],
       cards: [read({ group: 1, title: 'A' }), read({ group: 2, title: 'D' })],
     };
     const { fn, deps } = stub(async () => okResult([read({ title: 'B1' }), read({ title: 'B2' })]));
@@ -144,7 +125,7 @@ describe('runCropPass', () => {
   });
 
   it('a failed crop keeps the first-pass reads', async () => {
-    const out: DeckOutput = { photoQuality: 'ok', groups: [grp(1, { cardCount: 2 }), fine(2)], cards: [read({ group: 1, title: 'A' }), read({ group: 2, title: 'B' })] };
+    const out: DeckOutput = { photoQuality: 'ok', groups: [side(1, { cardCount: 2 }), fine(2)], cards: [read({ group: 1, title: 'A' }), read({ group: 2, title: 'B' })] };
     const { deps } = stub(async () => ({ ok: false, code: 'recognizer_failed', detail: { message: 'unparseable output' }, latencyMs: 70, attempts: 2, usage: { inputTokens: 500, outputTokens: 50 }, costUsd: 0.0015 }));
     const res = await runCropPass(JPEG, out, IMAGE, soon(), deps);
     expect(res.cards).toEqual(out.cards);
@@ -157,7 +138,7 @@ describe('runCropPass', () => {
   });
 
   it('a throw from crop is a failure, not a rejection', async () => {
-    const out: DeckOutput = { photoQuality: 'ok', groups: [grp(1, { cardCount: 2 }), needy(2)], cards: [read({ group: 1, title: 'A' })] };
+    const out: DeckOutput = { photoQuality: 'ok', groups: [side(1, { cardCount: 2 }), needy(2)], cards: [read({ group: 1, title: 'A' })] };
     const { fn } = stub(async () => okResult([read({ title: 'Z' })]));
     const deps: CropPassDeps = {
       recognize: fn as unknown as typeof recognize,
