@@ -272,3 +272,59 @@ select count(*) filter (where status = 'done' or (status = 'failed' and attempts
        coalesce(percentile_cont(0.95) within group (order by latency_ms) filter (where status = 'done' and latency_ms is not null) > 20000, false) as latency_kill
 from public.scan_events
 where source = 'player' and created_at >= now() - interval '3 days';
+
+-- ---------------------------------------------------------------------------------------
+-- Deck photo import (mode = 'deck') E3 queries. Deck outcomes are written by
+-- createDeckFromScanAction when the player opens the deck: scan_events.outcomes is an
+-- array of { id, finalKey, nameChanged, printingChanged, removed, unresolved, zone,
+-- lostSoulPick }, one per read, added card and Lost Soul pick. A deck = a scan_events row
+-- with outcomes not null. All filter mode = 'deck' and source = 'player'.
+-- ---------------------------------------------------------------------------------------
+
+-- name: deck_decks_created_per_week
+select date_trunc('week', created_at) as week, count(*) as decks
+from public.scan_events
+where mode = 'deck' and source = 'player' and outcomes is not null
+group by 1 order by 1 desc;
+
+-- name: deck_corrected_or_removed_rows_per_deck
+-- Rows the player changed (name or printing) or removed, per deck. Lost Soul picks are
+-- not reads and are excluded. Read the distribution, not just the mean.
+select e.id as scan_id, e.created_at,
+       count(*) as reads,
+       count(*) filter (where coalesce((o.value ->> 'nameChanged')::boolean, false)
+                          or coalesce((o.value ->> 'printingChanged')::boolean, false)
+                          or coalesce((o.value ->> 'removed')::boolean, false)) as corrected_or_removed
+from public.scan_events e
+cross join lateral jsonb_array_elements(e.outcomes) o
+where e.mode = 'deck' and e.source = 'player' and e.outcomes is not null
+  and o.value ->> 'id' in (select d.value ->> 'id' from jsonb_array_elements(coalesce(e.detections, '[]'::jsonb)) d)
+group by e.id, e.created_at
+order by e.created_at desc;
+
+-- name: deck_unread_rate
+-- Share of reads left unresolved (unread or not found, never fixed, not removed).
+select count(*) as reads,
+       count(*) filter (where coalesce((o.value ->> 'unresolved')::boolean, false)) as unresolved,
+       round(count(*) filter (where coalesce((o.value ->> 'unresolved')::boolean, false))::numeric
+             / nullif(count(*), 0), 3) as unresolved_rate
+from public.scan_events e
+cross join lateral jsonb_array_elements(e.outcomes) o
+where e.mode = 'deck' and e.source = 'player' and e.outcomes is not null
+  and o.value ->> 'id' in (select d.value ->> 'id' from jsonb_array_elements(coalesce(e.detections, '[]'::jsonb)) d);
+
+-- name: deck_cost_per_deck
+-- Cost of every deck photo over decks created: includes photos that never became a deck,
+-- which is the honest per-deck price.
+select round(sum(cost_usd)::numeric, 4) as total_usd,
+       count(*) filter (where outcomes is not null) as decks,
+       round(sum(cost_usd)::numeric / nullif(count(*) filter (where outcomes is not null), 0), 4) as usd_per_deck
+from public.scan_events
+where mode = 'deck' and source = 'player' and created_at >= now() - interval '30 days';
+
+-- name: deck_share_of_30d_spend
+select round(sum(cost_usd) filter (where mode = 'deck')::numeric, 4) as deck_usd,
+       round(sum(cost_usd)::numeric, 4) as all_usd,
+       round(sum(cost_usd) filter (where mode = 'deck')::numeric / nullif(sum(cost_usd), 0), 3) as deck_share
+from public.scan_events
+where source = 'player' and created_at >= now() - interval '30 days';

@@ -6,6 +6,7 @@ import { COPY } from '@/app/collection/scan/copy';
 import { useScanQueue } from '@/app/collection/scan/hooks/useScanQueue';
 import CaptureButtons from '@/app/collection/scan/components/CaptureButtons';
 import DeckTray from './components/DeckTray';
+import HandoffBar from './components/HandoffBar';
 import { DECK_COPY } from './copy';
 import { useDeckTray } from './hooks/useDeckTray';
 import { usePhotoDropPaste } from './hooks/usePhotoDropPaste';
@@ -93,7 +94,7 @@ function DeckScanTray({ userId }: { userId: string }) {
         )}
       </div>
 
-      {/* Task 8+: the Lost Soul sheet and the hand-off bar render in DeckTray / here. */}
+      {!empty && <HandoffBar state={state} dispatch={dispatch} userId={userId} />}
     </div>
   );
 }

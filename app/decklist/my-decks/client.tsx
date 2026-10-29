@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import {
   loadUserDecksAction,
   deleteDeckAction,
@@ -827,6 +828,12 @@ export default function MyDecksClient() {
               + New
               <span className="hidden md:inline"> Deck</span>
             </button>
+            <Link
+              href="/decklist/scan"
+              className="flex-shrink-0 px-3 md:px-6 py-2 md:py-3 border border-border bg-card hover:bg-muted rounded-lg text-sm md:text-base font-medium transition-colors"
+            >
+              From photo
+            </Link>
             </div>
           </div>
 
