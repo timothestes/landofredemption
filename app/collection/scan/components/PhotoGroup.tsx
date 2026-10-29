@@ -21,6 +21,8 @@ interface Props {
   onChooseAnother: () => void;
   /** Replaces the "Read N cards" success line (the deck page counts groups, not cards alone). */
   doneLine?: string;
+  /** Where the signed-out error's Sign in link goes (the page to come back to). */
+  signInHref?: string;
   children?: ReactNode;
 }
 
@@ -47,7 +49,8 @@ function doneText(n: number, merged: number, quality: string | undefined): strin
 }
 
 export default function PhotoGroup({
-  photo, thumb, detectionCount, mergedCount, editable, online, canRetry, onRetry, onRemove, onChooseAnother, doneLine: doneLineOverride, children,
+  photo, thumb, detectionCount, mergedCount, editable, online, canRetry, onRetry, onRemove, onChooseAnother, doneLine: doneLineOverride,
+  signInHref = '/sign-in?redirectTo=/collection/scan', children,
 }: Props) {
   const reading = photo.status === 'reading';
   const [now, setNow] = useState(() => Date.now());
@@ -118,7 +121,7 @@ export default function PhotoGroup({
           {actions?.signIn && (
             <>
               {' '}
-              <Link href="/sign-in?redirectTo=/collection/scan" className="font-medium underline underline-offset-4 focus:outline-none">
+              <Link href={signInHref} className="font-medium underline underline-offset-4 focus:outline-none">
                 {COPY.signIn}
               </Link>
             </>

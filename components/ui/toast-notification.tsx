@@ -10,6 +10,8 @@ interface ToastNotificationProps {
   onClose: () => void;
   type?: "success" | "error" | "warning" | "info";
   duration?: number;
+  /** A button beside the message, e.g. Undo; tapping it closes the toast. */
+  action?: { label: string; onClick: () => void };
 }
 
 const icons = {
@@ -44,6 +46,7 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({
   onClose,
   type = "success",
   duration = 3000,
+  action,
 }) => {
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
@@ -97,6 +100,22 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({
       <p className="flex-1 text-sm font-medium leading-snug text-foreground break-words">
         {message}
       </p>
+      {action && (
+        <button
+          type="button"
+          onClick={() => {
+            action.onClick();
+            setExiting(true);
+            setTimeout(() => {
+              setVisible(false);
+              onClose();
+            }, 200);
+          }}
+          className="-my-1 min-h-11 shrink-0 rounded-md px-2 text-sm font-medium text-foreground underline-offset-4 hover:underline focus:outline-none"
+        >
+          {action.label}
+        </button>
+      )}
       <button
         onClick={() => {
           setExiting(true);
