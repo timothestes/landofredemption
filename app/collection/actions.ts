@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "../../utils/supabase/server";
-import { findCard } from "@/lib/cards/lookup";
+import { isKnownCardKey } from "@/lib/scan/cardKeys";
 import { getSupabaseAdmin } from "@/lib/pricing/supabase-admin";
 import { pgrestInList } from "@/lib/pricing/helpers";
 import type { ClientOutcome } from "./scan/lib/outcomes";
@@ -238,12 +238,6 @@ export async function getOwnedQuantitiesAction(): Promise<{
 // Logic lives in ./scan/lib/commitCore.ts. scan_events/scan_commits are
 // SELECT-only for authenticated, so writes go through the service-role client,
 // always filtered by the verified user id; collection_cards uses the user's client.
-
-function isKnownCardKey(k: string): boolean {
-  const [n, s, i] = k.split("|");
-  const c = findCard(n, s, i);
-  return !!c && `${c.name}|${c.set}|${c.imgFile}` === k;
-}
 
 export async function commitScanAction(
   commitId: string,

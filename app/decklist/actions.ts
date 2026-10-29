@@ -6,6 +6,12 @@ import { checkDeck } from "@/utils/deckcheck";
 import type { DeckCheckCard, DeckCheckResult } from "@/utils/deckcheck/types";
 import type { DeckZone } from "./card-search/types/deck";
 import { deckFormatFilterFor, deckFamilyFilterFor } from "@/lib/api/cache";
+import { findCard } from "@/lib/cards/lookup";
+import { getSupabaseAdmin } from "@/lib/pricing/supabase-admin";
+import { isKnownCardKey } from "@/lib/scan/cardKeys";
+import { validateHandoff } from "./scan/lib/validateHandoff";
+import { forceMainOnly } from "./scan/lib/forceMainOnly";
+import type { DeckOutcome, SaveRow } from "./scan/lib/handoff";
 import { loadDeckTournamentContext, type DeckTournamentContext } from "./deckTournamentContext";
 
 // Three-state deck visibility. Mirrors the `visibility` column on `decks`.
@@ -2229,4 +2235,55 @@ export async function updateDeckDescriptionAction(deckId: string, description: s
     console.error("Error in updateDeckDescriptionAction:", error);
     return { success: false, error: "An unexpected error occurred" };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Deck photo import hand-off
+// ---------------------------------------------------------------------------
+
+export type CreateDeckFromScanResult =
+  | { ok: true; deckId: string }
+  | { ok: false; code: "unauthorized" | "bad_request" | "save_failed" };
+
+/**
+ * Save a scanned deck through saveDeckAction, then record per-read outcomes on
+ * scan_events. scan_events is SELECT-only for authenticated, so the outcome write
+ * uses the service-role client, filtered by the verified user id. A failed outcome
+ * write never fails the hand-off.
+ */
+export async function createDeckFromScanAction(input: {
+  rows: SaveRow[];
+  outcomesByScanId: Record<string, DeckOutcome[]>;
+  name: string;
+  format: "Type 1" | "Type 2";
+}): Promise<CreateDeckFromScanResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, code: "unauthorized" };
+
+  const payload = validateHandoff(input, isKnownCardKey);
+  if (!payload) return { ok: false, code: "bad_request" };
+
+  const cards = forceMainOnly(payload.rows, (r) => findCard(r.card_name, r.card_set, r.card_img_file)?.type);
+  const saved = await saveDeckAction({ name: payload.name, format: payload.format, cards });
+  if (!saved.success || !saved.deckId) return { ok: false, code: "save_failed" };
+
+  try {
+    const admin = getSupabaseAdmin();
+    for (const [scanId, outcomes] of Object.entries(payload.outcomesByScanId)) {
+      const { error } = await admin
+        .from("scan_events")
+        .update({ outcomes })
+        .eq("id", scanId)
+        .eq("user_id", user.id)
+        .eq("mode", "deck");
+      if (error) console.error("createDeckFromScanAction: outcome write failed", scanId, error.message);
+    }
+  } catch (e) {
+    console.error("createDeckFromScanAction: outcome write failed", e);
+  }
+
+  return { ok: true, deckId: saved.deckId };
 }
