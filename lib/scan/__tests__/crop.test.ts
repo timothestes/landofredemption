@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import sharp from 'sharp';
-import { cropRect, rotationFor, needsCrop, titleCentreInBox, keepCropRead, cropGroup } from '../crop';
+import { cropRect, rotationFor, needsCrop, titleCentreInBox, keepCropRead, cropGroup, cropBoxToPhoto } from '../crop';
 import type { Box, DeckGroup, DeckRead } from '../deckSchema';
 
 const read = (group: number, title: string | null = 'X', titleBox: Box | null = null): DeckRead => ({ title, strength: null, toughness: null, type: 'unknown', brigade: null, reference: null, group, position: 1, titleBox, confidence: 'high' });
@@ -33,6 +33,14 @@ describe('titleCentreInBox', () => {
     expect(titleCentreInBox([0.0, 0.4, 0.1, 0.5], rect, bbox, 1000, 500, 0.05)).toBe(true);
   });
 });
+describe('cropBoxToPhoto', () => {
+  it('maps a crop box into whole-photo fractions', () => {
+    // x → (460 + x·180)/1000, y → (230 + y·240)/500.
+    const box = cropBoxToPhoto([0.5, 0.25, 1, 0.5], { left: 460, top: 230, width: 180, height: 240 }, 1000, 500);
+    [0.55, 0.58, 0.64, 0.7].forEach((v, i) => expect(box[i]).toBeCloseTo(v, 9));
+  });
+  it('clamps to 0..1', () => expect(cropBoxToPhoto([-1, -1, 2, 2], { left: 0, top: 0, width: 1000, height: 500 }, 1000, 500)).toEqual([0, 0, 1, 1]));
+});
 describe('keepCropRead', () => {
   it('keeps boxless reads and everything in a rotated group', () => {
     const rect = { left: 460, top: 230, width: 180, height: 240 };
@@ -51,6 +59,30 @@ describe('cropGroup', () => {
     expect(m.format).toBe('jpeg');
     expect(Math.max(m.width!, m.height!)).toBe(1600);
     expect(m.height!).toBeGreaterThan(m.width!);
+  });
+  // Left half red, right half blue, one group over the whole image. sharp.rotate(90) is clockwise, so the left edge ends on top.
+  const halves = () => sharp({ create: { width: 200, height: 100, channels: 3, background: '#0000ff' } })
+    .composite([{ input: { create: { width: 100, height: 100, channels: 3, background: '#ff0000' } }, left: 0, top: 0 }])
+    .jpeg().toBuffer();
+  const rowColour = async (buf: Buffer, edge: 'top' | 'bottom') => {
+    const { data, info } = await sharp(buf).raw().toBuffer({ resolveWithObject: true });
+    const y = edge === 'top' ? 10 : info.height - 10;
+    const i = (y * info.width + Math.floor(info.width / 2)) * info.channels;
+    return { r: data[i], b: data[i + 2] };
+  };
+  it('rotated_ccw turns the left half to the top', async () => {
+    const out = await cropGroup(await halves(), { id: 1, orientation: 'rotated_ccw', bbox: [0, 0, 1, 1], cardCount: 1 }, 200, 100);
+    const top = await rowColour(out, 'top');
+    const bottom = await rowColour(out, 'bottom');
+    expect(top.r).toBeGreaterThan(200); expect(top.b).toBeLessThan(60);
+    expect(bottom.b).toBeGreaterThan(200); expect(bottom.r).toBeLessThan(60);
+  });
+  it('rotated_cw turns the left half to the bottom', async () => {
+    const out = await cropGroup(await halves(), { id: 1, orientation: 'rotated_cw', bbox: [0, 0, 1, 1], cardCount: 1 }, 200, 100);
+    const top = await rowColour(out, 'top');
+    const bottom = await rowColour(out, 'bottom');
+    expect(bottom.r).toBeGreaterThan(200); expect(bottom.b).toBeLessThan(60);
+    expect(top.b).toBeGreaterThan(200); expect(top.r).toBeLessThan(60);
   });
   it('keeps an upright group landscape', async () => {
     const out = await cropGroup(await make(), { id: 1, orientation: 'upright', bbox: [0.1, 0.1, 0.5, 0.3], cardCount: 5 }, 1000, 500);

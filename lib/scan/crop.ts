@@ -41,10 +41,23 @@ export function needsCrop(group: DeckGroup, reads: DeckRead[]): boolean {
   return reads.some(r => r.title === null) || reads.length < group.cardCount || group.orientation !== 'upright';
 }
 
+/** Maps a point normalized to the unrotated crop into fractions of the whole image (unclamped). */
+function cropPointToPhoto(x: number, y: number, rect: CropRect, width: number, height: number): [number, number] {
+  return [(rect.left + x * rect.width) / width, (rect.top + y * rect.height) / height];
+}
+
+const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+
+/** Maps a box normalized to the unrotated crop into fractions of the whole image, clamped to 0..1. */
+export function cropBoxToPhoto(box: Box, rect: CropRect, width: number, height: number): Box {
+  const [x0, y0] = cropPointToPhoto(box[0], box[1], rect, width, height);
+  const [x1, y1] = cropPointToPhoto(box[2], box[3], rect, width, height);
+  return [clamp01(x0), clamp01(y0), clamp01(x1), clamp01(y1)];
+}
+
 /** Maps a crop read's centre (box normalized to the unrotated crop) into the image and tests it against bbox widened by tol. */
 export function titleCentreInBox(titleBox: Box, rect: CropRect, bbox: Box, width: number, height: number, tol = CROP_FILTER_TOL): boolean {
-  const cx = (rect.left + ((titleBox[0] + titleBox[2]) / 2) * rect.width) / width;
-  const cy = (rect.top + ((titleBox[1] + titleBox[3]) / 2) * rect.height) / height;
+  const [cx, cy] = cropPointToPhoto((titleBox[0] + titleBox[2]) / 2, (titleBox[1] + titleBox[3]) / 2, rect, width, height);
   return cx >= bbox[0] - tol && cx <= bbox[2] + tol && cy >= bbox[1] - tol && cy <= bbox[3] + tol;
 }
 

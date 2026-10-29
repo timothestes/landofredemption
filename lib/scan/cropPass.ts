@@ -1,4 +1,4 @@
-import { cropGroup, cropRect, keepCropRead, needsCrop } from './crop';
+import { cropBoxToPhoto, cropGroup, cropRect, keepCropRead, needsCrop } from './crop';
 import { DECK_INSTRUCTION, type DeckOutput, type DeckRead } from './deckSchema';
 import { DECK_ARM, DECK_MODE, recognize, type Arm, type RecognizeMode, type RecognizeResult } from './recognize';
 
@@ -8,8 +8,8 @@ import { DECK_ARM, DECK_MODE, recognize, type Arm, type RecognizeMode, type Reco
 export const CROP_CONCURRENCY = 4;
 export const MAX_CROP_GROUPS = 12;
 export const CROP_CALL_TIMEOUT_MS = 30_000;
-/** A worker starts no crop with less than this left before the deadline. */
-export const MIN_CROP_REMAINING_MS = 5_000;
+/** A worker starts no crop, and sends none to the model, with less than this left before the deadline. */
+export const MIN_CROP_REMAINING_MS = 12_000;
 
 export const CROP_PREFIX = 'This is one group cropped from a larger deck photo and turned upright; read every card in it. Report it as a single group with id 1.\n\n';
 export const CROP_MODE: RecognizeMode<DeckOutput> = { ...DECK_MODE, instruction: CROP_PREFIX + DECK_INSTRUCTION, timeoutMs: CROP_CALL_TIMEOUT_MS, retryWithinMs: 15_000 };
@@ -42,8 +42,11 @@ export async function runCropPass(jpeg: Buffer, out: DeckOutput, image: { width:
   const started = now();
   const { width, height } = image;
   const readsOf = (id: number) => out.cards.filter(c => c.group === id);
+  // The parser can repeat a group id; the first one wins, so a group is cropped and emitted once.
+  const seen = new Set<number>();
+  const groups = out.groups.filter(g => !seen.has(g.id) && seen.add(g.id));
 
-  const needy = out.groups.filter(g => needsCrop(g, readsOf(g.id))).sort((a, b) => a.id - b.id);
+  const needy = groups.filter(g => needsCrop(g, readsOf(g.id))).sort((a, b) => a.id - b.id);
   const queue = needy.slice(0, MAX_CROP_GROUPS);
   const skipped = needy.slice(MAX_CROP_GROUPS).map(g => g.id);
   const cropped: number[] = [];
@@ -62,6 +65,10 @@ export async function runCropPass(jpeg: Buffer, out: DeckOutput, image: { width:
       }
       try {
         const buf = await crop(jpeg, g, width, height);
+        if (deadline - now() < MIN_CROP_REMAINING_MS) {
+          skipped.push(g.id);
+          continue;
+        }
         const mode: RecognizeMode<DeckOutput> = { ...CROP_MODE, ...cropCallTiming(deadline - now()) };
         const r: RecognizeResult<DeckOutput> = await rec(buf, CROP_ARM, {}, mode);
         calls += r.attempts;
@@ -78,8 +85,21 @@ export async function runCropPass(jpeg: Buffer, out: DeckOutput, image: { width:
           const group = g;
           const rect = cropRect(group.bbox, width, height);
           const kept = r.output.cards.filter(read => keepCropRead(read, group, rect, width, height));
-          replaced.set(group.id, kept.map((read, i) => ({ ...read, group: group.id, position: i + 1 })));
-          cropped.push(group.id);
+          if (kept.length === 0) {
+            // Nothing of this group's came back: keep the first-pass reads rather than delete the group's cards.
+            failed.push(group.id);
+            failures.push({ group: group.id, code: 'empty_crop' });
+          } else {
+            // Crop title boxes are in the crop's frame; the contract is fractions of the whole photo. A rotated crop's frame is turned, so its boxes are dropped.
+            const upright = group.orientation === 'upright';
+            replaced.set(group.id, kept.map((read, i) => ({
+              ...read,
+              group: group.id,
+              position: i + 1,
+              titleBox: upright && read.titleBox ? cropBoxToPhoto(read.titleBox, rect, width, height) : null,
+            })));
+            cropped.push(group.id);
+          }
         }
       } catch (err) {
         failed.push(g.id);
@@ -90,9 +110,9 @@ export async function runCropPass(jpeg: Buffer, out: DeckOutput, image: { width:
   await Promise.all(Array.from({ length: Math.min(CROP_CONCURRENCY, queue.length) }, worker));
 
   // Rebuilt in out.groups order; reads of group 0 (and of any group not listed) go last, unchanged.
-  const listed = new Set(out.groups.filter(g => g.id !== 0).map(g => g.id));
+  const listed = new Set(groups.filter(g => g.id !== 0).map(g => g.id));
   const cards = [
-    ...out.groups.filter(g => g.id !== 0).flatMap(g => replaced.get(g.id) ?? readsOf(g.id)),
+    ...groups.filter(g => g.id !== 0).flatMap(g => replaced.get(g.id) ?? readsOf(g.id)),
     ...out.cards.filter(c => !listed.has(c.group)),
   ];
   const asc = (a: number, b: number) => a - b;

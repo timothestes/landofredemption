@@ -64,7 +64,7 @@ describe('runCropPass', () => {
       max = Math.max(max, inFlight);
       await new Promise<void>(r => setTimeout(r, 5));
       inFlight--;
-      return okResult([]);
+      return okResult([read({ title: 'C' })]);
     });
     const res = await runCropPass(JPEG, out, IMAGE, soon(), deps);
     expect(CROP_CONCURRENCY).toBe(4);
@@ -96,6 +96,43 @@ describe('runCropPass', () => {
     expect(res.cards.map(c => [c.title, c.position])).toEqual([['Boxless', 1], ['Inside', 2]]);
   });
 
+  it('an upright crop read’s title box comes back in whole-photo fractions', async () => {
+    // Rect left 160, top 160, 280 x 680 in 1000 x 1000: x → (160 + x·280)/1000, y → (160 + y·680)/1000.
+    const out: DeckOutput = { photoQuality: 'ok', groups: [grp(1, { cardCount: 2 })], cards: [] };
+    const { deps } = stub(async () => okResult([read({ title: 'Inside', titleBox: [0.4, 0.4, 0.6, 0.6] }), read({ title: 'Boxless' })]));
+    const res = await runCropPass(JPEG, out, IMAGE, soon(), deps);
+    const box = res.cards[0].titleBox!;
+    [0.272, 0.432, 0.328, 0.568].forEach((v, i) => expect(box[i]).toBeCloseTo(v, 9));
+    expect(res.cards[1].titleBox).toBeNull();
+  });
+
+  it('a crop whose reads are all filtered out keeps the first-pass reads and is a failure', async () => {
+    const out: DeckOutput = { photoQuality: 'ok', groups: [grp(1, { cardCount: 2 }), fine(2)], cards: [read({ group: 1, title: null }), read({ group: 2, title: 'B' })] };
+    const outside: Box = [0.9, 0.1, 1, 0.2];
+    const { deps } = stub(async () => okResult([read({ title: 'Neighbour', titleBox: outside }), read({ title: 'Other', titleBox: outside })]));
+    const res = await runCropPass(JPEG, out, IMAGE, soon(), deps);
+    expect(res.cards).toEqual(out.cards);
+    expect(res.cropped).toEqual([]);
+    expect(res.failed).toEqual([1]);
+    expect(res.failures).toEqual([{ group: 1, code: 'empty_crop' }]);
+    expect(res.costUsd).toBeCloseTo(0.003);
+    expect(res.usage).toEqual({ inputTokens: 1000, outputTokens: 100 });
+    expect(res.calls).toBe(1);
+  });
+
+  it('a repeated group id is cropped once and its reads are not duplicated', async () => {
+    const out: DeckOutput = {
+      photoQuality: 'ok',
+      groups: [grp(1, { cardCount: 2 }), grp(1, { cardCount: 2 }), fine(2), fine(2)],
+      cards: [read({ group: 1, title: 'A' }), read({ group: 2, title: 'D' })],
+    };
+    const { fn, deps } = stub(async () => okResult([read({ title: 'B1' }), read({ title: 'B2' })]));
+    const res = await runCropPass(JPEG, out, IMAGE, soon(), deps);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(res.cropped).toEqual([1]);
+    expect(res.cards.map(c => [c.title, c.group, c.position])).toEqual([['B1', 1, 1], ['B2', 1, 2], ['D', 2, 1]]);
+  });
+
   it('a rotated group keeps every read', async () => {
     const out: DeckOutput = { photoQuality: 'ok', groups: [grp(1, { orientation: 'rotated_cw' })], cards: [read({ group: 1 })] };
     const outside: Box = [0.9, 0.1, 1, 0.2];
@@ -103,6 +140,7 @@ describe('runCropPass', () => {
     const res = await runCropPass(JPEG, out, IMAGE, soon(), deps);
     expect(res.cropped).toEqual([1]);
     expect(res.cards.map(c => c.title)).toEqual(['P', 'Q']);
+    expect(res.cards.map(c => c.titleBox)).toEqual([null, null]); // the crop was turned, so its boxes are not in the photo's frame
   });
 
   it('a failed crop keeps the first-pass reads', async () => {
@@ -133,16 +171,36 @@ describe('runCropPass', () => {
     expect(res.cards.map(c => [c.title, c.group])).toEqual([['A', 1], ['Z', 2]]);
   });
 
-  it('starts no crop once the deadline is too close', async () => {
-    // The pool starts four groups at t=0; each recognize call advances the clock 20 s, so later groups find the 30 s deadline passed.
+  it('starts no crop once the deadline is too close, and never sends one under the minimum', async () => {
+    // Four workers start at t=0 against a 70 s deadline; each recognize call advances the clock 20 s as it is made.
+    // Groups 1-3 are sent with 70, 50 and 30 s left; group 4's crop finishes with 10 s left, so it is not sent;
+    // groups 5-8 find 10 s left before cropping and are skipped.
     const out: DeckOutput = { photoQuality: 'ok', groups: Array.from({ length: 8 }, (_, i) => needy(i + 1)), cards: [] };
     let t = 0;
-    const { fn } = stub(async () => { t += 20_000; return okResult([]); });
-    const res = await runCropPass(JPEG, out, IMAGE, 30_000, { recognize: fn as unknown as typeof recognize, crop, now: () => t });
-    expect(res.cropped).toEqual([1, 2, 3, 4]);
-    expect(res.skipped).toEqual([5, 6, 7, 8]);
-    expect(fn).toHaveBeenCalledTimes(4);
-    expect(res.latencyMs).toBe(80_000);
+    const timeouts: number[] = [];
+    const { fn } = stub(async (...args: unknown[]) => { timeouts.push((args[3] as typeof CROP_MODE).timeoutMs); t += 20_000; return okResult([read({ title: 'C' })]); });
+    const crops = vi.fn(crop);
+    const res = await runCropPass(JPEG, out, IMAGE, 70_000, { recognize: fn as unknown as typeof recognize, crop: crops, now: () => t });
+    expect(res.cropped).toEqual([1, 2, 3]);
+    expect(res.skipped).toEqual([4, 5, 6, 7, 8]);
+    expect(crops).toHaveBeenCalledTimes(4);
+    expect(fn).toHaveBeenCalledTimes(3);
+    expect(timeouts).toEqual([30_000, 30_000, 30_000]);
+    expect(timeouts.every(ms => ms >= MIN_CROP_REMAINING_MS)).toBe(true);
+    expect(res.latencyMs).toBe(60_000);
+  });
+
+  it('a group whose crop finishes under the minimum is skipped without a recognize call', async () => {
+    const out: DeckOutput = { photoQuality: 'ok', groups: [needy(1)], cards: [read({ group: 1, title: null })] };
+    let t = 0;
+    const { fn } = stub(async () => okResult([read({ title: 'C' })]));
+    const slowCrop = async () => { t = 20_000 - MIN_CROP_REMAINING_MS + 1; return Buffer.alloc(1); };
+    const res = await runCropPass(JPEG, out, IMAGE, 20_000, { recognize: fn as unknown as typeof recognize, crop: slowCrop, now: () => t });
+    expect(fn).not.toHaveBeenCalled();
+    expect(res.skipped).toEqual([1]);
+    expect(res.cropped).toEqual([]);
+    expect(res.failed).toEqual([]);
+    expect(res.cards).toEqual(out.cards);
   });
 
   it('a crop near the deadline gets a shortened timeout and no retry; under MIN_CROP_REMAINING_MS it is skipped', async () => {
@@ -154,7 +212,7 @@ describe('runCropPass', () => {
 
     fn.mockClear();
     const res = await runCropPass(JPEG, out, IMAGE, MIN_CROP_REMAINING_MS - 1, { recognize: fn as unknown as typeof recognize, crop, now: () => 0 });
-    expect(MIN_CROP_REMAINING_MS).toBe(5_000);
+    expect(MIN_CROP_REMAINING_MS).toBe(12_000);
     expect(fn).not.toHaveBeenCalled();
     expect(res.skipped).toEqual([1]);
   });

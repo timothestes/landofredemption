@@ -491,6 +491,19 @@ describe('POST /api/scan deck mode', () => {
       err.mockRestore();
     });
 
+    it('a crop with only neighbour reads keeps the first-pass reads and logs empty_crop', async () => {
+      // Group 2's crop rect is x 29-64 of 64 px; a box at the crop's left edge centres near x 0.46, left of the group.
+      (recognize as Mock).mockResolvedValueOnce(firstPass()).mockResolvedValueOnce(deckOk([
+        read({ title: 'Neighbour', titleBox: [0, 0.4, 0.01, 0.5] }),
+      ], [{ id: 1, orientation: 'upright', bbox: [0, 0, 1, 1], cardCount: 1 }]));
+      const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const body = await (await postDeck()).json();
+      expect(body.detections.filter((d: any) => d.group === 2).map((d: any) => d.read.title)).toEqual(['Captive Priest', null]);
+      expect(body.crops).toEqual({ cropped: [], failed: [2], skipped: [] });
+      expect(err).toHaveBeenCalledWith('[scan] crop failed', expect.objectContaining({ scanId: SCAN_ID, group: 2, code: 'empty_crop' }));
+      err.mockRestore();
+    });
+
     it('passes a deadline 140 s after the request started', async () => {
       const requestStart = 1_700_000_000_000;
       const now = vi.spyOn(Date, 'now').mockReturnValue(requestStart);
