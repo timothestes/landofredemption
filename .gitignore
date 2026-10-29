@@ -125,3 +125,5 @@ scripts/output/deck-mentions-backfill.json
 scripts/scan-eval/photos/
 scripts/scan-eval/photos-deck/
 scripts/scan-eval/outputs/*/
+# Deck-photo E0 recordings are committed (spec: Evaluation).
+!scripts/scan-eval/outputs/deck-*/
