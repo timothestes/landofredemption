@@ -12,6 +12,28 @@ const MAX_ROWS = 300;
 const MAX_SCANS = 20;
 const MAX_OUTCOMES = 400;
 
+/** Rebuild an outcome from its known fields only; null if any field is off. */
+function validDeckOutcome(o: unknown, idRe: RegExp, isKnownKey: (k: string) => boolean): DeckOutcome | null {
+  if (!o || typeof o !== 'object') return null;
+  const r = o as Record<string, unknown>;
+  if (typeof r.id !== 'string' || !idRe.test(r.id)) return null;
+  if (r.finalKey !== null && (typeof r.finalKey !== 'string' || !isKnownKey(r.finalKey))) return null;
+  for (const f of ['nameChanged', 'printingChanged', 'removed', 'unresolved', 'lostSoulPick'] as const) {
+    if (typeof r[f] !== 'boolean') return null;
+  }
+  if (r.zone !== null && r.zone !== 'main' && r.zone !== 'reserve') return null;
+  return {
+    id: r.id,
+    finalKey: r.finalKey as string | null,
+    nameChanged: r.nameChanged as boolean,
+    printingChanged: r.printingChanged as boolean,
+    removed: r.removed as boolean,
+    unresolved: r.unresolved as boolean,
+    zone: r.zone as DeckOutcome['zone'],
+    lostSoulPick: r.lostSoulPick as boolean,
+  };
+}
+
 /** Shape-check the client's hand-off payload. Returns a clean copy, or null if anything is off. */
 export function validateHandoff(input: unknown, isKnownKey: (k: string) => boolean): Handoff | null {
   if (!input || typeof input !== 'object') return null;
@@ -20,7 +42,7 @@ export function validateHandoff(input: unknown, isKnownKey: (k: string) => boole
   if (typeof name !== 'string' || name.length < 1 || name.length > 100) return null;
   if (format !== 'Type 1' && format !== 'Type 2') return null;
 
-  if (!Array.isArray(rows) || rows.length > MAX_ROWS) return null;
+  if (!Array.isArray(rows) || rows.length < 1 || rows.length > MAX_ROWS) return null;
   const cleanRows: SaveRow[] = [];
   for (const r of rows) {
     if (!r || typeof r !== 'object') return null;
@@ -41,11 +63,13 @@ export function validateHandoff(input: unknown, isKnownKey: (k: string) => boole
     const list = (outcomesByScanId as Record<string, unknown>)[scanId];
     if (!Array.isArray(list) || list.length > MAX_OUTCOMES) return null;
     const idRe = new RegExp(`^${scanId}:(\\d+|add:\\d+|ls:\\d+)$`, 'i');
+    const clean: DeckOutcome[] = [];
     for (const o of list) {
-      if (!o || typeof o !== 'object' || typeof (o as { id?: unknown }).id !== 'string') return null;
-      if (!idRe.test((o as { id: string }).id)) return null;
+      const v = validDeckOutcome(o, idRe, isKnownKey);
+      if (!v) return null;
+      clean.push(v);
     }
-    cleanOutcomes[scanId] = list as DeckOutcome[];
+    cleanOutcomes[scanId] = clean;
   }
 
   return { rows: cleanRows, outcomesByScanId: cleanOutcomes, name, format };

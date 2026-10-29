@@ -5,9 +5,12 @@ import { forceMainOnly } from '../lib/forceMainOnly';
 const SID = '11111111-1111-4111-8111-111111111111';
 const known = (k: string) => k.startsWith('Good|');
 const row = (o: Record<string, unknown> = {}) => ({ card_name: 'Good', card_set: 'X', card_img_file: 'a', quantity: 1, zone: 'main', ...o });
+const oc = (id: string, o: Record<string, unknown> = {}) => ({
+  id, finalKey: 'Good|X|a', nameChanged: false, printingChanged: false, removed: false, unresolved: false, zone: 'main', lostSoulPick: false, ...o,
+});
 const good = (o: Record<string, unknown> = {}) => ({
   rows: [row()],
-  outcomesByScanId: { [SID]: [{ id: `${SID}:0`, finalKey: 'Good|X|a' }, { id: `${SID}:add:1` }, { id: `${SID}:ls:2` }] },
+  outcomesByScanId: { [SID]: [oc(`${SID}:0`), oc(`${SID}:add:1`), oc(`${SID}:ls:2`, { finalKey: null, zone: null })] },
   name: 'My deck',
   format: 'Type 1',
   ...o,
@@ -29,9 +32,28 @@ describe('validateHandoff', () => {
   });
   it('rejects outcome ids under the wrong scan or malformed', () => {
     const other = '22222222-2222-4222-8222-222222222222';
-    expect(validateHandoff(good({ outcomesByScanId: { [SID]: [{ id: `${other}:0` }] } }), known)).toBeNull();
-    expect(validateHandoff(good({ outcomesByScanId: { [SID]: [{ id: 'x:ls:a' }] } }), known)).toBeNull();
+    expect(validateHandoff(good({ outcomesByScanId: { [SID]: [oc(`${other}:0`)] } }), known)).toBeNull();
+    expect(validateHandoff(good({ outcomesByScanId: { [SID]: [oc('x:ls:a')] } }), known)).toBeNull();
     expect(validateHandoff(good({ outcomesByScanId: { 'not-a-uuid': [] } }), known)).toBeNull();
+  });
+  it('rebuilds outcomes, dropping extra keys', () => {
+    const r = validateHandoff(good({ outcomesByScanId: { [SID]: [oc(`${SID}:0`, { evil: { a: 1 } })] } }), known);
+    expect(r?.outcomesByScanId[SID][0]).not.toHaveProperty('evil');
+    expect(Object.keys(r!.outcomesByScanId[SID][0]).sort()).toEqual(
+      ['finalKey', 'id', 'lostSoulPick', 'nameChanged', 'printingChanged', 'removed', 'unresolved', 'zone']);
+  });
+  it('rejects bad outcome fields', () => {
+    const bad = (o: Record<string, unknown>) => validateHandoff(good({ outcomesByScanId: { [SID]: [oc(`${SID}:0`, o)] } }), known);
+    expect(bad({ finalKey: 'Nope|X|a' })).toBeNull();
+    expect(bad({ removed: 'yes' })).toBeNull();
+    expect(bad({ zone: 'maybeboard' })).toBeNull();
+  });
+  it('enforces the scan and outcome caps and non-empty rows', () => {
+    const ids = Array.from({ length: 21 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`);
+    expect(validateHandoff(good({ outcomesByScanId: Object.fromEntries(ids.map(i => [i, []])) }), known)).toBeNull();
+    const many = Array.from({ length: 401 }, (_, n) => oc(`${SID}:${n}`));
+    expect(validateHandoff(good({ outcomesByScanId: { [SID]: many } }), known)).toBeNull();
+    expect(validateHandoff(good({ rows: [] }), known)).toBeNull();
   });
   it('rejects 301 rows, long name, bad format', () => {
     expect(validateHandoff(good({ rows: Array.from({ length: 301 }, () => row()) }), known)).toBeNull();
