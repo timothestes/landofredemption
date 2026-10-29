@@ -96,12 +96,14 @@ Other measurements:
 - Cropping the sideways row, rotating it and upscaling 3× recovered 9 of its 10
   cards across the two arms, even though the crop came out upside down.
 - Every "check" row across all twelve runs was either a Lost Soul (only "Lost
-  Soul" is visible when fanned; 7–8 per deck) or a same-title tie. Most ties
-  were printings of one card that the scan identity index keys apart on
-  brigade spelling ("greencrimson" vs "green crimson" for Forest Fire FooF
-  and Roots). One was two different cards with the same title: Amariah, the
-  High Priest (Roots, Clay, Rotation) and Amariah the High Priest (Priests,
-  Teal, not Rotation).
+  Soul" is visible when fanned; 7–8 per deck) or a same-title tie. The ties
+  are different cards with one title: Forest Fire (FooF) and Forest Fire
+  (Roots) share title, type, brigade and verse but not their ability, so
+  the identity index rightly keeps them apart (checked while planning: the
+  spike's "brigade spelling" reading was wrong, and the scanner's own test
+  "a reprint with a different ability stays its own card" pins it); Amariah,
+  the High Priest (Roots, Clay, Rotation) and Amariah the High Priest
+  (Priests, Teal, not Rotation) differ in brigade.
 - Duplicates were counted right (2× Abner, 2× Forest Fire, 7× Lost Soul).
 
 ## Vocabulary
@@ -296,15 +298,16 @@ Same-title ties are real: 608 non-Lost-Soul stems carry more than one
 type, brigade or alignment (Aaron in Green, Teal and Green/Teal; Abiathar in
 Purple and Teal). On a fanned card the frame colour, the type icon and the
 stats box are visible, so the matcher's brigade, type and stats scores
-separate most of them; a tie means the read was null or wrong, and that is
-exactly when a silent pick would put the wrong card in a deck. Most of the
-spike's ties were not this: they were printings of one card that the identity
-index keys apart because the brigade string is spelled differently per set.
-PR 1 fixes that in `stemIndex.ts` by comparing brigades through the `vocab`
-normalizer when it unions identities, re-running the scanner's golden set to
-confirm nothing regresses, and the remaining ties are the genuine ones. E0
-measures the amber-row rate; the target is at most 3 amber rows per sharp
-50-card photo, Lost Souls excluded.
+separate most of them. What they cannot separate is a reprint whose ability
+changed (Forest Fire FooF and Roots: same title, type, brigade, verse), and
+the ability is hidden on a fanned card, so that tie is real and is always
+Check this. The row's provisional choice is the Rotation-legal identity
+when exactly one of the tied identities has a Rotation printing, else the
+first by the matcher's score; the picker lists every tied identity with its
+set and the first words of its ability, so the player can tell them apart.
+The identity index is not changed. E0 measures the amber-row rate; the
+target is at most 3 amber rows per sharp 50-card photo, Lost Souls
+excluded.
 
 **Printing preference**, among an identity's printings: Rotation-legal first;
 among those the matcher's chosen printing when it is legal, else the first in
@@ -627,9 +630,7 @@ Tone per the design system: plain, short, no exclamation marks.
   `lib/scan/deck.ts` (reads → rows, printing preference, zone defaults, pure),
   `lib/scan/crop.ts` (bbox padding and clamping, rotate, upscale; sharp),
   `lib/scan/recognize.ts` (`mode`, per-mode timeout, no 32k retry in deck
-  mode, `too_many_cards`), `lib/scan/stemIndex.ts` (brigade normalization in
-  the union rule; scanner-wide, covered by the golden set),
-  `lib/scan/match.ts` (`near[]` on `MatchResult`), `app/api/scan/route.ts`
+  mode, `too_many_cards`), `lib/scan/match.ts` (`near[]` on `MatchResult`), `app/api/scan/route.ts`
   (`mode`, crop pass, `groups`, `settleAbPairs` skipped).
 - `app/decklist/actions.ts`: `createDeckFromScanAction`.
 - Entry points: `app/decklist/card-search/client.tsx` (New deck menu, Import
@@ -651,9 +652,9 @@ Unit, with vitest (node only, no DOM):
   fixtures in the new schema; printing preference; merge across groups with
   per-group shares; zone defaulting (each condition on and off; Lost Soul in a
   reserve group).
-- `stemIndex.ts`: Forest Fire FooF and Roots union after the brigade
-  normalization; Amariah Roots and Priests stay two identities; the scanner's
-  golden set (`catalog-sample.json`) unchanged.
+- `deck.ts` on the real index: Forest Fire FooF and Roots read by title
+  alone is Check this with both identities; Amariah read with brigade Clay is
+  Matched to the Roots card.
 - `recognize.ts`: deck-mode timeout, `too_many_cards` on a `max_tokens`
   stop with no retry.
 - `crop.ts`: padding, clamping at the edges, rotation mapping for each
@@ -677,8 +678,7 @@ the four spike photos, per the scanner's verification recipe.
 ## Rollout
 
 1. **PR 1** `feat/deck-scan-lib`: `deckSchema`, `deck.ts`, `recognize` mode
-   and timing, route mode (no crop pass, AB skipped), the `stemIndex` union
-   fix with the golden set re-run, `near[]`, migration 124, eval harness mode,
+   and timing, route mode (no crop pass, AB skipped), `near[]`, migration 124, eval harness mode,
    scorer, hand-written fixtures. Mergeable on its own: no key, labels or
    credit needed. Apply 124 to production before PR 2's preview.
 2. **PR 2** `feat/deck-scan-page`: the page, group strips, suggestion-first
@@ -745,9 +745,9 @@ the four spike photos, per the scanner's verification recipe.
     the wrong card would mislead more than a catalog thumb.
 13. Remove is in the ⋯ menu with swipe as a shortcut, so the row has room for
     − and +: count fixes are more common than removals on a deck photo.
-14. A genuine same-title tie is always Check this, never a silent pick, and
-    the false ties are removed at the source (the identity index's brigade
-    spelling) rather than papered over in the deck collapse.
+14. A genuine same-title tie is always Check this, never a silent pick, with
+    the Rotation-legal identity as the provisional choice when only one
+    tied identity is Rotation-legal.
 15. Deck mode gets its own 60 s timeout and no 32k retry; a deck that does
     not fit one call is two photos, not a two-minute request that bills
     twice and times out.
