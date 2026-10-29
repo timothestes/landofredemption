@@ -33,6 +33,7 @@ export interface FinishPatch {
   costUsd?: number;
   photoQuality?: string;
   detections?: unknown[];
+  mode?: 'collection' | 'deck';
 }
 
 /**
@@ -52,6 +53,7 @@ export async function finishScan(
   if (patch.costUsd !== undefined) row.cost_usd = patch.costUsd;
   if (patch.photoQuality !== undefined) row.photo_quality = patch.photoQuality;
   if (patch.detections !== undefined) row.detections = patch.detections;
+  if (patch.mode !== undefined) row.mode = patch.mode;
   try {
     const { error } = await admin.from('scan_events').update(row).eq('id', id);
     if (error) console.error(`[scan] finish ${id} failed:`, { error: error.message, ...spend(patch) });

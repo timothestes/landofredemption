@@ -145,6 +145,7 @@ scan_events (
   cost_usd numeric(8,5),
   photo_quality text,
   detections jsonb,                  -- capped read fields, no candidates
+  mode text not null default 'collection',  -- 'collection' | 'deck' (migration 124)
   outcomes jsonb,                    -- set on commit
   commit_id uuid references scan_commits(commit_id),
   image_pathname text,               -- unwritten until v1.1
