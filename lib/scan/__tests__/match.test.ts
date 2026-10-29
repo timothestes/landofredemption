@@ -112,3 +112,7 @@ describe('collapse', () => {
     expect(selectPrinting(id, sog, NO).abPair).toBeUndefined();
   });
 });
+describe('near stems', () => {
+  it('a stem miss carries near stems, closest first', () => { const m = matchDetection(det({ title: 'Abnar' }), NO); expect(m.status).toBe('not_found'); expect(m.near?.length).toBeGreaterThan(0); expect(m.near!.map(x => x.d)).toEqual([...m.near!.map(x => x.d)].sort((a, b) => a - b)); expect(m.near!.length).toBeLessThanOrEqual(5); });
+  it('an exact hit has no near list', () => expect(matchDetection(det({ title: 'Captive Priest' }), NO).near).toBeUndefined());
+});

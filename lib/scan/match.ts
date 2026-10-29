@@ -46,6 +46,8 @@ export interface MatchResult {
   identityCandidates?: string[];
   scores: { matchScore: number; runnerUpScore: number; agreeingFields: string[] };
   fuzzyFrom?: string;
+  /** Up to 5 nearest stems (normalized, OSA distance ratio, ascending); set when the fuzzy search ran, absent on exact hits. */
+  near?: { stem: string; d: number }[];
   note?: string;
 }
 
@@ -370,7 +372,7 @@ function titleVariants(raw: string): string[] {
   return [...new Set(out.filter(Boolean))];
 }
 
-type StemHit = { ids: ScanIdentity[]; nameReason: 'exact' | 'fuzzy'; fuzzyFrom?: string } | { note: string };
+type StemHit = { ids: ScanIdentity[]; nameReason: 'exact' | 'fuzzy'; fuzzyFrom?: string; near?: { stem: string; d: number }[] } | { note: string; near: { stem: string; d: number }[] };
 
 function lookupStem(rawTitle: string, title: string, det: ScanDetection): StemHit {
   const { byStem, stems } = getScanIndex();
@@ -384,11 +386,13 @@ function lookupStem(rawTitle: string, title: string, det: ScanDetection): StemHi
     if (d <= FUZZY_MAX) near.push({ s, d });
   }
   near.sort((a, b) => a.d - b.d);
+  const nearest = near.slice(0, 5).map(x => ({ stem: x.s, d: x.d }));
   const read = refsOf(det.reference);
   const ok = near.filter(x => numeralTokens(x.s) === numeralTokens(title)
     && (title.length >= FUZZY_SHORT_TITLE || read.some(r => byStem.get(x.s)!.some(id => id.refs.has(r)))));
-  if (ok.length && !(ok.length > 1 && ok[1].d === ok[0].d)) return { ids: byStem.get(ok[0].s)!, nameReason: 'fuzzy', fuzzyFrom: ok[0].s };
+  if (ok.length && !(ok.length > 1 && ok[1].d === ok[0].d)) return { ids: byStem.get(ok[0].s)!, nameReason: 'fuzzy', fuzzyFrom: ok[0].s, near: nearest };
   return {
+    near: nearest,
     note: ok.length ? `fuzzy tie: ${ok.slice(0, 3).map(x => x.s).join(' / ')}`
       : near.length ? `fuzzy rejected: ${near.slice(0, 3).map(x => `${x.s}@${x.d.toFixed(2)}`).join(' / ')}`
       : 'no stem',
@@ -399,7 +403,7 @@ function lookupStem(rawTitle: string, title: string, det: ScanDetection): StemHi
 // The matcher
 
 const NO_SCORES = { matchScore: 0, runnerUpScore: 0, agreeingFields: [] as string[] };
-const notFound = (note: string): MatchResult => ({ status: 'not_found', nameReason: 'none', printingReason: 'none', candidates: [], scores: NO_SCORES, note });
+const notFound = (note: string, near?: { stem: string; d: number }[]): MatchResult => ({ status: 'not_found', nameReason: 'none', printingReason: 'none', candidates: [], scores: NO_SCORES, note, ...(near && { near }) });
 const scoresOf = (ranked: Scored[]) => ({ matchScore: ranked[0].score, runnerUpScore: ranked[1]?.score ?? 0, agreeingFields: ranked[0].fields });
 const cardsOf = (ranked: Scored[], prices: PriceMap) => ranked.flatMap(x => x.id.cards.map(c => candidate(c, prices)));
 
@@ -428,8 +432,8 @@ export function matchDetection(det: ScanDetection, prices: PriceMap): MatchResul
   }
 
   const hit = lookupStem(det.title!, title, det);
-  if ('note' in hit) return notFound(hit.note);
-  const { ids, nameReason, fuzzyFrom } = hit;
+  if ('note' in hit) return notFound(hit.note, hit.near);
+  const { ids, nameReason, fuzzyFrom, near } = hit;
 
   const ranked = rank(ids, det);
   const scores = scoresOf(ranked);
@@ -442,13 +446,13 @@ export function matchDetection(det: ScanDetection, prices: PriceMap): MatchResul
     if (winner.score > ranked[1].score) {
       if (winner.fields.includes('reference') && !winner.fields.includes('ability6') && strongAbility.length) {
         const both = [winner, ...strongAbility];
-        return { status: 'check', nameReason, printingReason: 'identity_ambiguous', stem, identityCandidates: both.map(x => x.id.key), candidates: cardsOf(both, prices), scores, fuzzyFrom, note: 'reference and ability text disagree' };
+        return { status: 'check', nameReason, printingReason: 'identity_ambiguous', stem, identityCandidates: both.map(x => x.id.key), candidates: cardsOf(both, prices), scores, fuzzyFrom, near, note: 'reference and ability text disagree' };
       }
       id = winner.id;
     } else {
       const tied = ranked.filter(x => x.score === winner.score);
-      return { status: 'check', nameReason, printingReason: 'identity_ambiguous', stem, identityCandidates: tied.map(x => x.id.key), candidates: cardsOf(tied, prices), scores, fuzzyFrom };
+      return { status: 'check', nameReason, printingReason: 'identity_ambiguous', stem, identityCandidates: tied.map(x => x.id.key), candidates: cardsOf(tied, prices), scores, fuzzyFrom, near };
     }
   }
-  return { ...selectPrinting(id, det, prices), nameReason, identityKey: id.key, stem: id.stem, scores, fuzzyFrom };
+  return { ...selectPrinting(id, det, prices), nameReason, identityKey: id.key, stem: id.stem, scores, fuzzyFrom, near };
 }
