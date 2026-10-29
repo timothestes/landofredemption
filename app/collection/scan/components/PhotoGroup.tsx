@@ -19,6 +19,8 @@ interface Props {
   onRetry: () => void;
   onRemove: () => void;
   onChooseAnother: () => void;
+  /** Replaces the "Read N cards" success line (the deck page counts groups, not cards alone). */
+  doneLine?: string;
   children?: ReactNode;
 }
 
@@ -45,7 +47,7 @@ function doneText(n: number, merged: number, quality: string | undefined): strin
 }
 
 export default function PhotoGroup({
-  photo, thumb, detectionCount, mergedCount, editable, online, canRetry, onRetry, onRemove, onChooseAnother, children,
+  photo, thumb, detectionCount, mergedCount, editable, online, canRetry, onRetry, onRemove, onChooseAnother, doneLine: doneLineOverride, children,
 }: Props) {
   const reading = photo.status === 'reading';
   const [now, setNow] = useState(() => Date.now());
@@ -91,7 +93,7 @@ export default function PhotoGroup({
     // The same photo with too many cards would only be refused again: retake or choose another.
     actions = { retry: photo.photoQuality !== 'too_many_cards', chooseAnother: true };
   } else {
-    line = doneText(detectionCount, mergedCount, photo.photoQuality);
+    line = doneLineOverride ?? doneText(detectionCount, mergedCount, photo.photoQuality);
     removeNeedsConfirm = true;
   }
 

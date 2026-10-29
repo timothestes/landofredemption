@@ -1,4 +1,5 @@
 import { impliedFamily } from '@/lib/scan/deck';
+import { DECK_COPY } from '../copy';
 import { trayRows } from './deckTrayReducer';
 import type { DeckTrayState, Zone } from '../types';
 
@@ -96,4 +97,4 @@ export function totals(s: DeckTrayState): { main: number; reserve: number; lostS
 export const deckFormat = (mainTotal: number): 'Type 1' | 'Type 2' => (impliedFamily(mainTotal) === 'T2' ? 'Type 2' : 'Type 1');
 
 export const deckName = (now: Date): string =>
-  `Deck from photo · ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  DECK_COPY.deckName.replace('{Mon D}', now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
