@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { youtubeId, isAudioUrl, slugify, SLUG_RE, excerptFromMarkdown, opensCardPicker, flattenCardMentions, parseMention, extractCardMentions, extractImageUrls } from "../markdown";
+import { youtubeId, embeddedYoutubeId, isAudioUrl, slugify, SLUG_RE, excerptFromMarkdown, opensCardPicker, flattenCardMentions, parseMention, extractCardMentions, extractImageUrls } from "../markdown";
 
 describe("youtubeId", () => {
   const ID = "dQw4w9WgXcQ";
@@ -130,5 +130,23 @@ describe("extractImageUrls", () => {
       "![rel](/local.png) [link](https://x.test/not-an-image.png)",
     ].join("\n");
     expect(extractImageUrls(md)).toEqual(["https://x.test/a.png", "https://x.test/b.png"]);
+  });
+});
+
+describe("embeddedYoutubeId", () => {
+  const ID = "pk4dGdX5fEc";
+
+  it("finds the first paragraph that is only a YouTube link, bare or bracketed", () => {
+    expect(embeddedYoutubeId(`Intro text.\n\nhttps://youtu.be/${ID}\n\nMore.`)).toBe(ID);
+    expect(embeddedYoutubeId(`Intro.\n\n  [Watch](https://www.youtube.com/watch?v=${ID}&t=0s)  \n`)).toBe(ID);
+    expect(embeddedYoutubeId(`<https://www.youtube.com/watch?v=${ID}>`)).toBe(ID);
+    expect(embeddedYoutubeId(`https://youtu.be/${ID}\n\nhttps://youtu.be/65hEWhb2S8E`)).toBe(ID);
+  });
+
+  it("ignores links the renderer would not embed", () => {
+    expect(embeddedYoutubeId(`Check out this [Tutorial](https://www.youtube.com/watch?v=${ID}) first.`)).toBeNull();
+    expect(embeddedYoutubeId("```\nhttps://youtu.be/" + ID + "\n```")).toBeNull();
+    expect(embeddedYoutubeId("https://example.com/video")).toBeNull();
+    expect(embeddedYoutubeId("")).toBeNull();
   });
 });

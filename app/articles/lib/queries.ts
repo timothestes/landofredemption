@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { createAnonClient } from "@/utils/supabase/anon";
+import { withVideoCovers } from "./coverImage";
 import { excerptFromMarkdown } from "./markdown";
 
 // Public, cookie-less, cached reads. Every loader is wrapped in unstable_cache
@@ -19,6 +20,8 @@ export interface PublicPost {
   excerpt: string | null;
   body_md: string;
   cover_image_url: string | null;
+  /** Computed by the loaders, not a column: a live embedded video whose thumbnail stands in for a missing cover. */
+  cover_video_id?: string | null;
   tags: string[];
   status: "draft" | "published";
   author_id: string;
@@ -67,7 +70,7 @@ async function loadPublishedPostsFresh(page: number, tag: string | null) {
     }
     throw new Error(`loadPublishedPosts: ${error.message}`);
   }
-  return { posts: (data ?? []) as unknown as PublicPost[], total: count ?? 0 };
+  return { posts: await withVideoCovers((data ?? []) as unknown as PublicPost[]), total: count ?? 0 };
 }
 
 export function loadPublishedPosts(opts: { page?: number; tag?: string | null }) {
@@ -90,7 +93,8 @@ async function loadPostBySlugFresh(slug: string): Promise<PublicPost | null> {
   if (error) {
     throw new Error(`loadPostBySlug: ${error.message}`);
   }
-  return (data as unknown as PublicPost | null) ?? null;
+  const post = data as unknown as PublicPost | null;
+  return post ? (await withVideoCovers([post]))[0] : null;
 }
 
 export function loadPostBySlug(slug: string): Promise<PublicPost | null> {
@@ -144,7 +148,7 @@ async function loadPostsByTagFresh(tag: string, limit: number): Promise<PublicPo
   if (error) {
     throw new Error(`loadPostsByTag: ${error.message}`);
   }
-  return (data ?? []) as unknown as PublicPost[];
+  return withVideoCovers((data ?? []) as unknown as PublicPost[]);
 }
 
 /** Newest `limit` posts in a tag (= series) — the article page's "More in …" strip. */

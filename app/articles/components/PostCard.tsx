@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { coverImageProps } from "../lib/coverImage";
+import { coverImageProps, postCoverUrl } from "../lib/coverImage";
 import { postByline, postExcerpt, type PublicPost } from "../lib/queries";
 
 export function formatPostDate(iso: string | null): string {
@@ -70,13 +70,14 @@ export default function PostCard({ post, variant = "default", priority = false, 
   const byline = [postByline(post), formatPostDate(post.published_at)].filter(Boolean).join(" · ");
   const kicker = post.tags[0];
   const kickerHref = kicker ? `/articles?tag=${encodeURIComponent(kicker)}` : null;
+  const cover = postCoverUrl(post, variant === "default" ? "wide" : "thumb");
 
   if (variant === "compact") {
     return (
       <article className="relative flex gap-3 py-3 first:pt-0">
         <div className="relative aspect-[4/3] w-24 shrink-0 overflow-hidden rounded-sm bg-muted/60 sm:w-28">
-          {post.cover_image_url ? (
-            <CoverImage src={post.cover_image_url} sizes="(min-width: 640px) 112px, 96px" widths={THUMB_WIDTHS} priority={false} />
+          {cover ? (
+            <CoverImage src={cover} sizes="(min-width: 640px) 112px, 96px" widths={THUMB_WIDTHS} priority={false} />
           ) : (
             <CoverPlate title={post.title} />
           )}
@@ -97,8 +98,8 @@ export default function PostCard({ post, variant = "default", priority = false, 
     return (
       <article className="relative flex gap-4 border-t border-border/60 py-4">
         <div className="relative aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-sm bg-muted/60 sm:w-36">
-          {post.cover_image_url ? (
-            <CoverImage src={post.cover_image_url} sizes="(min-width: 640px) 144px, 112px" widths={THUMB_WIDTHS} priority={false} />
+          {cover ? (
+            <CoverImage src={cover} sizes="(min-width: 640px) 144px, 112px" widths={THUMB_WIDTHS} priority={false} />
           ) : (
             <CoverPlate title={post.title} />
           )}
@@ -124,8 +125,8 @@ export default function PostCard({ post, variant = "default", priority = false, 
   return (
     <article className="relative flex flex-col gap-2">
       <div className="relative mb-2 aspect-[16/9] w-full overflow-hidden rounded-sm bg-muted/60">
-        {post.cover_image_url ? (
-          <CoverImage src={post.cover_image_url} sizes="(min-width: 768px) 512px, 100vw" widths={LEAD_WIDTHS} priority={priority} />
+        {cover ? (
+          <CoverImage src={cover} sizes="(min-width: 768px) 512px, 100vw" widths={LEAD_WIDTHS} priority={priority} />
         ) : (
           <CoverPlate title={post.title} />
         )}

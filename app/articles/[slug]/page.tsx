@@ -6,6 +6,7 @@ import SiteFooter from "@/components/site-footer";
 import ArticleView from "../components/ArticleView";
 import { resolveArticleRefs } from "../lib/refs";
 import PostCard from "../components/PostCard";
+import { postCoverUrl } from "../lib/coverImage";
 import {
   listPublishedTags,
   loadPostBySlug,
@@ -36,7 +37,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const post = await loadPostBySlug(slug);
   if (!post) return { title: "Article not found" };
   const description = postExcerpt(post);
-  const images = post.cover_image_url ? [{ url: post.cover_image_url, alt: post.title }] : undefined;
+  const cover = postCoverUrl(post);
+  const images = cover ? [{ url: cover, alt: post.title }] : undefined;
   return {
     title: post.title,
     description,
@@ -63,6 +65,7 @@ export default async function ArticlePage({ params }: PageProps) {
   const { slug } = await params;
   const post = await loadPostBySlug(slug);
   if (!post) notFound();
+  const cover = postCoverUrl(post);
 
   // Tags act as series. Prefer the post's RAREST tag (the author's own series)
   // over a broad category such as "News", which the WordPress import often put
@@ -96,7 +99,7 @@ export default async function ArticlePage({ params }: PageProps) {
               datePublished: post.published_at ?? undefined,
               dateModified: post.updated_at ?? undefined,
               author: { "@type": "Person", name: postByline(post) },
-              ...(post.cover_image_url ? { image: [post.cover_image_url] } : {}),
+              ...(cover ? { image: [cover] } : {}),
             }),
           }}
         />
