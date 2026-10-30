@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { coverImageProps } from "../coverImage";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { coverImageProps, postCoverUrl, withVideoCovers } from "../coverImage";
 
 const BLOB = "https://abc123.public.blob.vercel-storage.com/posts/x/shot name.png";
 
@@ -18,5 +18,46 @@ describe("coverImageProps", () => {
 
   it("leaves non-URLs untouched", () => {
     expect(coverImageProps("/local.png", [128])).toEqual({ src: "/local.png" });
+  });
+});
+
+const VIDEO_ID = "pk4dGdX5fEc";
+const VIDEO = `Watch this:\n\nhttps://youtu.be/${VIDEO_ID}`;
+
+describe("postCoverUrl", () => {
+  it("prefers the post's own cover", () => {
+    expect(postCoverUrl({ cover_image_url: BLOB, cover_video_id: VIDEO_ID })).toBe(BLOB);
+  });
+
+  it("borrows the video's thumbnail when there is no cover", () => {
+    expect(postCoverUrl({ cover_image_url: null, cover_video_id: VIDEO_ID })).toBe(`https://i.ytimg.com/vi/${VIDEO_ID}/hqdefault.jpg`);
+    expect(postCoverUrl({ cover_image_url: "", cover_video_id: VIDEO_ID }, "thumb")).toBe(`https://i.ytimg.com/vi/${VIDEO_ID}/mqdefault.jpg`);
+  });
+
+  it("is null with neither", () => {
+    expect(postCoverUrl({ cover_image_url: null })).toBeNull();
+  });
+});
+
+describe("withVideoCovers", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("sets cover_video_id only for an uncovered post whose video thumbnail exists", async () => {
+    const fetch = vi.fn(async (url: string) => new Response(null, { status: url.includes(VIDEO_ID) ? 200 : 404 }));
+    vi.stubGlobal("fetch", fetch);
+    const posts = await withVideoCovers([
+      { cover_image_url: null, body_md: VIDEO },
+      { cover_image_url: null, body_md: "https://youtu.be/Idkiq6PLzwA" },
+      { cover_image_url: BLOB, body_md: VIDEO },
+      { cover_image_url: null, body_md: "Just words." },
+    ]);
+    expect(posts.map((p) => p.cover_video_id)).toEqual([VIDEO_ID, null, null, null]);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("treats a failed check as no video", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Promise.reject(new Error("offline"))));
+    const [post] = await withVideoCovers([{ cover_image_url: null, body_md: VIDEO }]);
+    expect(post.cover_video_id).toBeNull();
   });
 });

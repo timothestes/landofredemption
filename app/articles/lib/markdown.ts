@@ -138,6 +138,22 @@ export function extractImageUrls(md: string, max = 30): string[] {
   return [...urls];
 }
 
+// A paragraph that is one link and nothing else: bare, `<url>`, or `[text](url)`.
+const SOLE_LINK_RE = /^(?:<(\S+)>|\[[^\]]*\]\((\S+?)\)|(\S+))$/;
+
+/**
+ * Id of the first YouTube video the body embeds, or null. Same rule as the
+ * renderer: only a paragraph that is nothing but the link becomes an embed.
+ */
+export function embeddedYoutubeId(md: string): string | null {
+  for (const para of md.replace(FENCE_RE, "").split(/\n\s*\n/)) {
+    const m = para.trim().match(SOLE_LINK_RE);
+    const id = m ? youtubeId(m[1] ?? m[2] ?? m[3]) : null;
+    if (id) return id;
+  }
+  return null;
+}
+
 /** Distinct mention names (as typed) outside code, in document order, capped. */
 export function extractCardMentions(md: string, max = 200): string[] {
   const seen = new Set<string>();
