@@ -43,6 +43,17 @@ describe('deckTrayReducer', () => {
     expect(s2.groupZones['p2:1']).toBeUndefined();
   });
 
+  it('defaults a row set apart below the columns to Reserve, both of its groups', () => {
+    const resp = deckResponse(
+      's1',
+      [...rep(20, { group: 1, key: 'A' }), ...rep(20, { group: 2, key: 'B' }), ...rep(15, { group: 3, key: 'C' }),
+        ...rep(5, { group: 4, key: 'D' }), ...rep(5, { group: 5, key: 'E' })],
+      [{ id: 1, bbox: [0, 0.05, 0.3, 0.6] }, { id: 2, bbox: [0.3, 0.06, 0.6, 0.6] }, { id: 3, bbox: [0.6, 0.05, 0.9, 0.55] },
+        { id: 4, bbox: [0.1, 0.7, 0.4, 0.95] }, { id: 5, bbox: [0.42, 0.72, 0.7, 0.95] }],
+    );
+    expect(withPhoto('p1', resp).groupZones).toEqual({ 'p1:1': 'main', 'p1:2': 'main', 'p1:3': 'main', 'p1:4': 'reserve', 'p1:5': 'reserve' });
+  });
+
   it('setCard turns every entry of the row into matched with the new key and re-merges', () => {
     let s = withPhoto('p1', deckResponse('s1', [{ group: 1, key: 'A' }, { group: 1, key: 'B', kind: 'which' }, { group: 1, key: 'B', kind: 'which' }]));
     const rk = trayRows(s).find(r => r.kind === 'which')!.rowKey;

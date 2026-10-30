@@ -13,7 +13,7 @@ export interface DetSpec {
 export function deckResponse(
   scanId: string,
   dets: DetSpec[],
-  groups: { id: number; orientation?: string; cardCount?: number }[] = [{ id: 1 }],
+  groups: { id: number; orientation?: string; cardCount?: number; bbox?: [number, number, number, number] }[] = [{ id: 1 }],
 ): DeckScanResponse {
   const detections = dets.map((d, i) => ({
     id: `${scanId}:${i}`,
@@ -40,7 +40,7 @@ export function deckResponse(
     groups: groups.map(g => ({
       id: g.id,
       orientation: (g.orientation ?? 'upright') as 'upright',
-      bbox: [0, 0, 1, 1],
+      bbox: g.bbox ?? [0, 0, 1, 1],
       cardCount: g.cardCount ?? dets.filter(d => d.group === g.id).length,
     })),
     detections,

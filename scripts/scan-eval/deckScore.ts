@@ -11,7 +11,7 @@ import path from 'node:path';
 import { CARDS } from '@/lib/cards/lookup';
 import { getScanIndex } from '@/lib/scan/stemIndex';
 import { cardKey } from '@/lib/scan/vocab';
-import { defaultReserveGroup, type GroupSize } from '@/lib/scan/deck';
+import { defaultReserveGroups, IDENTIFIED_KINDS, type GroupSize } from '@/lib/scan/deck';
 import type { DeckScanResponse } from '@/lib/scan/deckClassify';
 
 export interface DeckLabel {
@@ -98,11 +98,12 @@ export function scoreDeckPhoto(label: DeckLabel, resp: DeckScanResponse): DeckPh
     key: `0:${g.id}`,
     orientation: g.orientation,
     count: resp.detections.filter(d => d.group === g.id).length,
+    bbox: g.bbox,
+    identified: resp.detections.filter(d => d.group === g.id && IDENTIFIED_KINDS.has(d.kind)).length,
   }));
-  const reserve = defaultReserveGroup(sizes);
-  const reserveDefaultRight = label.reserveSize === 0
-    ? reserve === null
-    : reserve !== null && sizes.find(g => g.key === reserve)!.count === label.reserveSize;
+  // By size only: the labels do not say which group is the Reserve, so a wrong group of the right size passes.
+  const reserve = new Set(defaultReserveGroups(sizes));
+  const reserveDefaultRight = sizes.filter(g => reserve.has(g.key)).reduce((n, g) => n + g.count, 0) === label.reserveSize;
 
   // label.cards already leaves out the unreadable cards, so truthTotal is the recall denominator as is.
   const denom = truthTotal;
