@@ -8,6 +8,8 @@
 
 **Tech Stack:** Next.js 15 route handler (Node runtime), sharp (extract, rotate, resize), `@anthropic-ai/sdk` 0.78 through `recognize()`, Vitest (node only; sharp works in tests, see `lib/scan/__tests__/image.test.ts`).
 
+> **As built (2026-10-30):** this plan was executed in #552 with three changes found during review and E0; the spec's *Amendments after PR 3* is the record. `needsCrop` fires only for non-upright groups (upright re-reads were net negative); `CROP_EDGE` was removed and crops fill the high tier's patch budget (`fillToTier`); the pass ends by a hard deadline (`requestStart + 140 s`, `MIN_CROP_REMAINING_MS` 12 s, `cropCallTiming`). #553 added `inferSidewaysRows`. Tests and constants below that say otherwise describe the plan, not the code.
+
 **Spec:** `docs/superpowers/specs/2026-10-29-deck-photo-import-design.md`. Sections this PR implements: *Amendments after E0* (the PR 3 paragraph: measured numbers, pad, filter, concurrency, retry, budget), *Second pass over groups that need it (PR 3)*, *Cost and latency* (`maxDuration` 150, client timeout 170 s), Evaluation (the posted-grade target applies from here), Rollout step 3. Read `lib/scan/recognize.ts`, `lib/scan/deckSchema.ts`, `lib/scan/deckClassify.ts` and the deck branch of `app/api/scan/route.ts` before starting; the experiment that produced the numbers is in the session scratchpad as `zoom-pass.ts` and is reproduced in Task 5.
 
 ## Global Constraints
