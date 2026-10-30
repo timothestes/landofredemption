@@ -193,7 +193,7 @@ export default function DeckTray({
               thumb={thumb}
               detectionCount={n}
               mergedCount={0}
-              doneLine={deckDoneLine(n, photo.groups.length, photo.photoQuality)}
+              doneLine={deckDoneLine(n, photo.groups.length, photo.photoQuality, photo.longEdge)}
               signInHref="/sign-in?redirectTo=/decklist/scan"
               editable={editable}
               online={online}

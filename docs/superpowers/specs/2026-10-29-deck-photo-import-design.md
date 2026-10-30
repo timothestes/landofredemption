@@ -230,6 +230,128 @@ one row; dark 1's upright columns stay at first-pass recall. Both point at
 the same next levers: per-card title crops (cleared above) and posted
 photos from Discord to size the misread rate on real tables.
 
+## Amendments after the Discord photo eval (2026-10-30)
+
+Tim supplied 55 deck photos posted on Discord; two were 32 px blurs and
+were dropped. All 53 ran through production at `9c14862f` (source eval,
+$5.58 in all, no errors or timeouts, 37 s mean). Eight were labeled by hand
+from zoomed tiles and catalog lookups, without seeing scanner output, so
+the labeled set is now 12. This section wins where the older text
+disagrees.
+
+**Resolution decides most of it.** Identified rows (matched, which, read
+as, Lost Soul) over the model's own card count, unlabeled:
+
+| Long edge | Layout | Photos | Identified | Unread share | Cost | Time |
+|---|---|---|---|---|---|---|
+| 1500 px and up | upright | 8 | 0.85 | 0.10 | $0.105 | 55 s |
+| 1500 px and up | turned | 6 | 0.71 | 0.26 | $0.228 | 55 s |
+| 1000–1499 px | upright | 27 | 0.50 | 0.30 | $0.071 | 36 s |
+| under 1000 px | upright | 3 | 0.34 | 0.23 | $0.057 | 19 s |
+| under 1000 px | turned | 9 | 0.03 | 0.92 | $0.143 | 18 s |
+
+Most of these are Discord's shrunken copies; a phone upload reaches the
+route at up to 2576 px. On the six labeled photos at 1500 px and up,
+production scored P 0.97 / R 0.95 on the four upright ones (1.00 / 1.00,
+0.96 / 0.91, 0.98 / 0.98, 1.00 / 0.98) and 0.93 / 0.79 and 0.92 / 0.89 on
+the two turned ones.
+
+**Four failure modes.**
+
+1. *Turned photos.* 19 of 53 were taken with the phone held across the
+   layout, so every card lies sideways. Every group is then cropped, the
+   padded crops overlap, and cards come back twice: `IMG_4649` returned 111
+   rows for 71 cards. At phone size a turned photo cost $0.23 and 55 s.
+2. *The first pass gives up.* On 10 photos it listed groups and their
+   `cardCount` but under half their cards, often none: `IMG_3044` returned 0
+   of 71 in 4 s for $0.01. Nine are 1280 px or smaller; the one at phone
+   size is blurry.
+3. *Nested groups.* Six pairs of group boxes overlapped by more than half
+   the smaller one, three by 80% or more; cropping both reads the inner
+   group's cards twice.
+4. *Small photos.* Under 1000 px a turned photo identified 3% of its cards
+   and still paid $0.14 for crops.
+
+**Turned photos are read again upright** (`lib/scan/turnPass.ts`). When at
+least 75% of the photo's cards, and at least 20 of them, lie in groups of
+one sideways direction, the photo is turned upright and read again at
+effort high before the crop pass; the turned read replaces the first. A
+sideways Reserve row (10–17% of the cards) never qualifies; on the eval set
+the rule fired on exactly the 19 turned photos, and no other photo scored
+above 0.46. The re-read starts only with at least 60 s left before the
+140 s deadline and is timed to end by it; a failure, or a read with
+neither groups nor cards, keeps the first read, and its tokens and cost are
+billed either way. A read that lists groups but no cards is kept, because
+the crop pass reads short groups. The response carries `rotation`
+(clockwise degrees, 0 when the first read stands), and its groups and
+title boxes are in the turned frame; the group strips (still off) would
+have to turn the photo to match.
+
+Against production's crop-every-group path on the six turned photos at
+phone size (turn pass replayed on production's recorded first read, so its
+cost and time leave that read out):
+
+| Photo | Production | Turn pass, after the first read |
+|---|---|---|
+| `20240804_163529` (labeled) | P 0.93 / R 0.79, 66 rows for 61, $0.27, 68 s | P 0.95 / R 0.76, 61 for 61, $0.09, 46 s |
+| `IMG_2745` (labeled) | P 0.92 / R 0.89, 78 rows for 62, $0.27, 79 s | P 0.96 / R 0.87, 61 for 61, $0.11, 59 s |
+| `IMG_3165` | 56 rows for 52, $0.23, 62 s | 51 for 51, $0.09, 46 s |
+| `IMG_4649` | 111 rows for 71, $0.37, 78 s | 69 for 69, $0.11, 52 s |
+| `20231121_094623` (labeled, blurry) | P 1.00 / R 0.06, 5 rows for 60, $0.03 | P 0.85 / R 0.22, 60 rows, $0.19 |
+| `SPOILER_IMG_…` (labeled, blurry: 35 of 68 unreadable by hand) | P 0.80 / R 0.19, 70 rows for 55, $0.20 | P 1.00 / R 0.19, 66 rows, $0.24 |
+
+Precision rises and recall dips by about the first pass's run-to-run
+spread, and the rows a player has to delete mostly go away. The sideways
+first read still runs, so end to end the turn pass costs time: through a
+local dev server `IMG_3165` took 109 s and $0.19, against production's
+62 s and $0.23. A turned photo now waits about 45 s longer for a clean
+list. On `20231121_094623` the first read gave the wrong direction
+(`rotated_ccw`; the cards need 270°), so the photo was turned upside down
+and the re-read gave up; the short-group crops below recovered a quarter
+of it.
+
+A cheap probe could skip the sideways read: one call at the low tier and
+effort low, $0.003 and about 2 s, asking which way the cards face. On all
+53 photos it never called an upright photo turned (0 of 34) and caught 15
+of the 19 turned ones, but gave the wrong direction on 7 of those 15. A
+probe that knows sideways but not direction does not yet save the read;
+that is the next experiment.
+
+**An upright group the first pass listed short is cropped.** `needsCrop`
+is also true for an upright group of 3 or more cards with fewer first-pass
+reads than half its `cardCount`. The finding above (upright crops net
+negative) was measured on groups the first pass had read in full; this
+trigger does not reach those. Replayed on the eight photos with short
+groups at 1280 px or smaller (unlabeled), it took them from 174 to 537 rows
+and from 80 to 162 identified for $0.95; 219 of the 363 new rows are
+Unread, which is what those cards are at that size. It is
+also how a turned read that gave up (the two blurry photos above) gets its
+cards.
+
+**A group nested in a cropped group is absorbed.** A group with at least
+80% of its box inside a bigger group that will be cropped is not cropped
+itself; when the bigger crop comes back, the nested group's reads are
+dropped and the route leaves it out of `groups` (`crops.merged` lists it).
+A failed or skipped container leaves it as read.
+
+**A row the frame cuts off is not inferred sideways.** `inferSidewaysRows`
+skips a group whose box reaches within 1% of the top or bottom edge: a cut
+row of upright cards looks one card-width tall. Once turned, `IMG_2745`'s
+Reserve row ran along the top edge; inferred sideways, its padded crop
+pulled in the column tops below (17 reads for 10 cards).
+
+**Small photos say so.** The response carries `imageSize`, the size of the
+image read. Under a 1500 px long edge the done line reads *Small photo: the
+full-size original reads better* in place of the quality note.
+
+**Known misses.** The Reserve default was right on 2 of the 6 sharp labeled
+photos at phone size (0 of the 2 blurry ones): a Reserve along the top of
+the photo (the default takes the last group), a Reserve fanned in two
+groups, a 2-card pair in the middle of the list, and a row of tokens laid
+after the Reserve. Giving
+`defaultReserveGroup` the group boxes is the next lever. Heavenly Host
+tokens and art cards come back as Not found and Unread rows to delete.
+
 ## Vocabulary
 
 - **Deck photo**: a photo of a laid-out deck. Cards overlap so that only the
@@ -251,7 +373,8 @@ photos from Discord to size the misread rate on real tables.
 
 - `/decklist/scan`: take a photo, choose photos, drop, paste.
 - `POST /api/scan` with `mode=deck`: the deck instruction and schema, Sonnet
-  5.5 at effort high, reads grouped, a second pass over sideways groups.
+  5.5 at effort high, reads grouped, a turned photo read again upright, a
+  second pass over sideways and short groups.
 - Collapse to a decklist: one row per card name, quantities summed, a
   Rotation-legal printing chosen; Check this, Not found and Unread rows; Lost
   Soul placeholders.
@@ -457,13 +580,19 @@ it is either the only non-upright group or the last group in reading order. A Lo
 shown in that section with a note and counted in main; the deck rules forbid
 them in reserve, and the builder's validator would flag it otherwise.
 
-### Second pass over sideways groups (PR 3)
+### Turn pass and second pass over sideways and short groups (PR 3)
 
-Redesigned after E0 and again after PR 3 (*Amendments after PR 3*). Before
-the pass, `inferSidewaysRows` resets to `rotated_ccw` any wide upright
-group no taller than 1.2× the median upright-column width. A group needs a
-crop when its orientation is not `upright` (never group 0). For each such
-group, in id order and at most 12: crop the bbox padded by 4% of the image
+Redesigned after E0, after PR 3 and after the Discord eval (*Amendments
+after PR 3*, *Amendments after the Discord photo eval*). First, a photo
+whose cards nearly all lie one way sideways is turned upright and read
+again (`runTurnPass`); everything below works on the turned image. Before
+the crop pass, `inferSidewaysRows` resets to `rotated_ccw` any wide upright
+group no taller than 1.2× the median upright-column width, unless its box
+touches the top or bottom edge. A group needs a crop when its orientation is
+not `upright`, or when it is an upright group of 3 or more cards the read
+listed under half of (never group 0). A group with 80% of its box inside a
+group that will be cropped is absorbed instead. For each group that needs a
+crop, in id order and at most 12: crop the bbox padded by 4% of the image
 on each side and clamped to the image (a wider pad pulls neighbouring
 columns in and duplicates their cards), rotate to upright by the
 orientation, scale to fill the high tier's patch budget (`lanczos3`), JPEG
@@ -479,8 +608,8 @@ kept). Crops run four at a time after the first pass, end by
 full second attempt still fits; a crop that fails, comes back empty or is
 skipped keeps the group's first-pass reads and logs it. The scan event's
 tokens, cost and latency sum every call; `attempts` counts calls. The
-response carries `crops: { cropped, failed, skipped }`. The sharp photo
-triggers no crops.
+response carries `rotation`, `imageSize` and `crops: { cropped, failed,
+skipped, merged }`. The sharp photo triggers no crops.
 
 An upright group's unread cards appear as Unread rows and the page's tip
 says to lay every card upright with the title showing.
@@ -720,6 +849,7 @@ on the scanner's schedule. `/privacy` gains one sentence.
 | reading | Reading… |
 | readDone | Read {n} cards in {g} groups |
 | readingCrop | Reading {n} sideways group{s}… |
+| smallPhoto | Small photo: the full-size original reads better |
 | tooManyCards | Too many cards for one photo. Photograph the deck in two halves and add both. |
 | groupHeader | Group {i} · Read {n} |
 | groupHeaderEstimate | Group {i} · Read {n} of about {m} |

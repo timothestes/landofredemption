@@ -74,9 +74,13 @@ export interface DeckScanResponse {
   scanId: string;
   mode: 'deck';
   photoQuality: DeckOutput['photoQuality'];
+  /** Clockwise degrees the photo was turned before it was read (turnPass.ts); groups and title boxes are in the turned frame. */
+  rotation: 0 | 90 | 180 | 270;
+  /** Size of the image that was read, in the turned frame: a small one is a copy saved smaller than the camera's original. */
+  imageSize: { width: number; height: number };
   groups: DeckGroup[];
   detections: DeckDetection[];
-  /** Groups the crop pass re-read, could not re-read, and never reached (over MAX_CROP_GROUPS or out of budget). */
-  crops: { cropped: number[]; failed: number[]; skipped: number[] };
+  /** Groups the crop pass re-read, could not re-read, never reached (over MAX_CROP_GROUPS or out of budget), and dropped as nested in a cropped group. */
+  crops: { cropped: number[]; failed: number[]; skipped: number[]; merged: number[] };
   usage: { model: string; latencyMs: number; attempts: number; costUsd?: number };
 }

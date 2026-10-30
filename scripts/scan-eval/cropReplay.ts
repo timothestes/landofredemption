@@ -5,9 +5,11 @@
  *
  *   npx tsx scripts/scan-eval/cropReplay.ts --in scripts/scan-eval/outputs/deck-<arm>/ \
  *     --photos scripts/scan-eval/photos-deck --out scripts/scan-eval/outputs/deck-<arm>-crops/ \
- *     [--only <file>,<file>] [--deadline-ms 140000]
+ *     [--only <file>,<file>] [--deadline-ms 140000] [--skip-cropped 1]
  *
  * --only takes photo file names (e.g. 20260811_134449.webp), comma separated; --deadline-ms is each photo's crop budget.
+ * --skip-cropped leaves the groups the recording already cropped as they are (their reads are crop reads, not a first
+ * pass), so a recording from the route replays only what a changed crop rule adds.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -40,6 +42,7 @@ function parseArgs(argv: string[]) {
     out: f.out ?? `${f.in.replace(/\/+$/, '')}-crops`,
     only: f.only ? new Set(f.only.split(',').map(s => s.trim()).filter(Boolean)) : null,
     deadlineMs,
+    skipCropped: f['skip-cropped'] === '1',
   };
 }
 
@@ -75,7 +78,9 @@ async function main() {
     const { jpeg, width, height } = await encodeForScan(fs.readFileSync(photo), 'high');
     const first = toDeckOutput(rec);
     const out = { ...first, groups: inferSidewaysRows(first.groups, width, height) };
-    const cp = await runCropPass(jpeg, out, { width, height }, Date.now() + o.deadlineMs);
+    // Groups left out of the crop pass's input keep their reads unchanged (runCropPass passes unlisted groups through).
+    const done = new Set<number>(o.skipCropped ? rec.crops?.cropped ?? [] : []);
+    const cp = await runCropPass(jpeg, { ...out, groups: out.groups.filter(g => !done.has(g.id)) }, { width, height }, Date.now() + o.deadlineMs);
     for (const { group, code, detail } of cp.failures) console.error(`  crop failed group ${group}: ${code}`, detail ?? '');
 
     // Classified exactly as the route does, with an empty price map.
@@ -107,15 +112,15 @@ async function main() {
       scanId: rec.scanId,
       mode: 'deck',
       photoQuality: rec.photoQuality,
-      groups: out.groups,
+      groups: out.groups.filter(g => !cp.merged.includes(g.id)),
       detections,
-      crops: { cropped: cp.cropped, failed: cp.failed, skipped: cp.skipped },
+      crops: { cropped: [...done, ...cp.cropped].sort((a, b) => a - b), failed: cp.failed, skipped: cp.skipped, merged: cp.merged },
       usage: { model: rec.usage?.model, latencyMs: cp.latencyMs, attempts: cp.calls, costUsd: cp.costUsd },
       file, status: 200, latencyMs: wall, attempts: cp.calls,
     };
     fs.writeFileSync(path.join(o.out, `${file}.json`), JSON.stringify(record, null, 2));
     total += cp.costUsd;
-    console.log(`${file}  cropped [${cp.cropped}]  failed [${cp.failed}]  skipped [${cp.skipped}]  $${cp.costUsd.toFixed(4)}  ${wall}ms  (total $${total.toFixed(4)})`);
+    console.log(`${file}  cropped [${cp.cropped}]  merged [${cp.merged}]  failed [${cp.failed}]  skipped [${cp.skipped}]  $${cp.costUsd.toFixed(4)}  ${wall}ms  (total $${total.toFixed(4)})`);
   }
 }
 

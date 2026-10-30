@@ -11,6 +11,7 @@ import { capDetection } from '@/lib/scan/schema';
 import { DECK_DETECTION_CAP } from '@/lib/scan/deckSchema';
 import { runCropPass } from '@/lib/scan/cropPass';
 import { inferSidewaysRows } from '@/lib/scan/crop';
+import { runTurnPass } from '@/lib/scan/turnPass';
 import { deckReadToDetection, classifyDeckRead, type DeckDetection } from '@/lib/scan/deckClassify';
 import { reserveScan, finishScan, type FinishPatch } from '@/lib/scan/events';
 import { COMMIT_LIMITS } from '@/app/collection/scan/lib/commitCore';
@@ -18,7 +19,7 @@ import { COMMIT_LIMITS } from '@/app/collection/scan/lib/commitCore';
 // POST /api/scan: one photo in, matched detections out.
 // Spec: docs/superpowers/specs/2026-10-26-card-scanner-design.md, "POST /api/scan" and "Reserve first, then call".
 // Order: gate → body → reserve → encode → prices → recognize → match → AB frame comparison → finish.
-// mode=deck swaps the recognizer mode and arm, re-reads sideways groups from crops, classifies each read into a deck row, and skips the AB pass.
+// mode=deck swaps the recognizer mode and arm, re-reads a turned photo upright and sideways or truncated groups from crops, classifies each read into a deck row, and skips the AB pass.
 
 export const runtime = 'nodejs';
 export const maxDuration = 150;
@@ -171,13 +172,20 @@ export async function POST(req: Request) {
     }
 
     if (mode === 'deck' && 'groups' in r.output) {
-      const out = { ...r.output, groups: inferSidewaysRows(r.output.groups, width, height) };
+      // A photo turned a quarter off is read again upright; from here on the image, groups and boxes are the turned ones.
+      const tp = await runTurnPass(jpeg, r.output, { width, height }, requestStart + CROP_DEADLINE_MS);
+      if (tp.failure) console.error('[scan] turn failed', { scanId, ...tp.failure });
+      ({ jpeg, width, height } = tp);
+      const out = { ...tp.output, groups: inferSidewaysRows(tp.output.groups, width, height) };
       const cp = await runCropPass(jpeg, out, { width, height }, requestStart + CROP_DEADLINE_MS);
       for (const { group, code, detail } of cp.failures) console.error('[scan] crop failed', { scanId, group, code, detail });
-      const usage = { inputTokens: r.usage.inputTokens + cp.usage.inputTokens, outputTokens: r.usage.outputTokens + cp.usage.outputTokens };
-      const costUsd = r.costUsd + cp.costUsd;
-      const latencyMs = r.latencyMs + cp.latencyMs;
-      const attempts = r.attempts + cp.calls;
+      const usage = {
+        inputTokens: r.usage.inputTokens + tp.usage.inputTokens + cp.usage.inputTokens,
+        outputTokens: r.usage.outputTokens + tp.usage.outputTokens + cp.usage.outputTokens,
+      };
+      const costUsd = r.costUsd + tp.costUsd + cp.costUsd;
+      const latencyMs = r.latencyMs + tp.latencyMs + cp.latencyMs;
+      const attempts = r.attempts + tp.calls + cp.calls;
       spent = { ...spent, ...usage, costUsd, latencyMs, attempts };
       const reads = cp.cards.slice(0, DECK_DETECTION_CAP);
       const detections: DeckDetection[] = reads.map((deckRead, i) => {
@@ -212,9 +220,11 @@ export async function POST(req: Request) {
         scanId,
         mode,
         photoQuality: out.photoQuality,
-        groups: out.groups,
+        rotation: tp.rotation,
+        imageSize: { width, height },
+        groups: out.groups.filter(g => !cp.merged.includes(g.id)),
         detections,
-        crops: { cropped: cp.cropped, failed: cp.failed, skipped: cp.skipped },
+        crops: { cropped: cp.cropped, failed: cp.failed, skipped: cp.skipped, merged: cp.merged },
         usage: { model: r.model, latencyMs, attempts, ...(superuser ? { costUsd } : {}) },
       });
     }

@@ -35,6 +35,8 @@ export function deckResponse(
     scanId,
     mode: 'deck',
     photoQuality: 'ok',
+    rotation: 0,
+    imageSize: { width: 2048, height: 1536 },
     groups: groups.map(g => ({
       id: g.id,
       orientation: (g.orientation ?? 'upright') as 'upright',
@@ -42,7 +44,7 @@ export function deckResponse(
       cardCount: g.cardCount ?? dets.filter(d => d.group === g.id).length,
     })),
     detections,
-    crops: { cropped: [], failed: [], skipped: [] },
+    crops: { cropped: [], failed: [], skipped: [], merged: [] },
     usage: { model: 'm', latencyMs: 1, attempts: 1 },
   };
 }

@@ -1,0 +1,4465 @@
+{
+  "scanId": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa",
+  "mode": "deck",
+  "photoQuality": "ok",
+  "groups": [
+    {
+      "id": 1,
+      "orientation": "upright",
+      "bbox": [
+        0.01,
+        0.14,
+        0.17,
+        0.6
+      ],
+      "cardCount": 7
+    },
+    {
+      "id": 2,
+      "orientation": "upright",
+      "bbox": [
+        0.12,
+        0.145,
+        0.25,
+        0.6
+      ],
+      "cardCount": 7
+    },
+    {
+      "id": 3,
+      "orientation": "upright",
+      "bbox": [
+        0.25,
+        0.15,
+        0.35,
+        0.45
+      ],
+      "cardCount": 4
+    },
+    {
+      "id": 4,
+      "orientation": "upright",
+      "bbox": [
+        0.34,
+        0.145,
+        0.45,
+        0.48
+      ],
+      "cardCount": 7
+    },
+    {
+      "id": 5,
+      "orientation": "upright",
+      "bbox": [
+        0.45,
+        0.145,
+        0.55,
+        0.61
+      ],
+      "cardCount": 10
+    },
+    {
+      "id": 6,
+      "orientation": "upright",
+      "bbox": [
+        0.54,
+        0.15,
+        0.63,
+        0.47
+      ],
+      "cardCount": 7
+    },
+    {
+      "id": 7,
+      "orientation": "upright",
+      "bbox": [
+        0.62,
+        0.15,
+        0.73,
+        0.47
+      ],
+      "cardCount": 5
+    },
+    {
+      "id": 8,
+      "orientation": "upright",
+      "bbox": [
+        0.71,
+        0.15,
+        0.81,
+        0.35
+      ],
+      "cardCount": 3
+    },
+    {
+      "id": 9,
+      "orientation": "upright",
+      "bbox": [
+        0.83,
+        0.14,
+        0.96,
+        0.6
+      ],
+      "cardCount": 10
+    },
+    {
+      "id": 10,
+      "orientation": "upright",
+      "bbox": [
+        0.2,
+        0.56,
+        0.43,
+        0.8
+      ],
+      "cardCount": 7
+    },
+    {
+      "id": 11,
+      "orientation": "upright",
+      "bbox": [
+        0.42,
+        0.56,
+        0.64,
+        0.79
+      ],
+      "cardCount": 5
+    },
+    {
+      "id": 12,
+      "orientation": "upright",
+      "bbox": [
+        0.62,
+        0.6,
+        0.92,
+        0.81
+      ],
+      "cardCount": 4
+    }
+  ],
+  "detections": [
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:0",
+      "group": 1,
+      "position": 1,
+      "titleBox": [
+        0.1,
+        0.147,
+        0.13,
+        0.16
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 1,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:1",
+      "group": 1,
+      "position": 2,
+      "titleBox": [
+        0.12,
+        0.18,
+        0.15,
+        0.197
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 2,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:2",
+      "group": 1,
+      "position": 3,
+      "titleBox": [
+        0.088,
+        0.226,
+        0.113,
+        0.242
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 3,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:3",
+      "group": 1,
+      "position": 4,
+      "titleBox": [
+        0.105,
+        0.279,
+        0.13,
+        0.295
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 4,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:4",
+      "group": 1,
+      "position": 5,
+      "titleBox": [
+        0.098,
+        0.317,
+        0.12,
+        0.333
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 5,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:5",
+      "group": 1,
+      "position": 6,
+      "titleBox": [
+        0.09,
+        0.368,
+        0.117,
+        0.384
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 6,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:6",
+      "group": 1,
+      "position": 7,
+      "titleBox": [
+        0.095,
+        0.417,
+        0.12,
+        0.433
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 7,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:7",
+      "group": 2,
+      "position": 1,
+      "titleBox": [
+        0.17,
+        0.147,
+        0.25,
+        0.162
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Dominant",
+        "grid": {
+          "row": 1,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:8",
+      "group": 2,
+      "position": 2,
+      "titleBox": [
+        0.2,
+        0.18,
+        0.23,
+        0.197
+      ],
+      "read": {
+        "title": "The Second Coming",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Dominant",
+        "grid": {
+          "row": 2,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "The Second Coming|CoW|The_Second_Coming_(CoW)",
+      "kind": "matched",
+      "deckKey": "The Second Coming|CoW|The_Second_Coming_(CoW)",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Second Coming|CoW|The_Second_Coming_(CoW)",
+          "name": "The Second Coming",
+          "set": "CoW",
+          "officialSet": "Cloud of Witnesses",
+          "imgFile": "The_Second_Coming_(CoW)",
+          "legality": "Rotation",
+          "price": 55
+        },
+        {
+          "key": "The Second Coming (CoW AB)|CoW (AB)|CoW_AB_N01-The-Second-Coming-UR",
+          "name": "The Second Coming (CoW AB)",
+          "set": "CoW (AB)",
+          "officialSet": "Cloud of Witnesses (Alternate Border)",
+          "imgFile": "CoW_AB_N01-The-Second-Coming-UR",
+          "legality": "Rotation",
+          "price": 55
+        },
+        {
+          "key": "The Second Coming [Fundraiser]|Fund|FR-The-Second-Coming",
+          "name": "The Second Coming [Fundraiser]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "FR-The-Second-Coming",
+          "legality": "Rotation",
+          "price": 25
+        },
+        {
+          "key": "The Second Coming [Fundraiser - Serialized]|Fund|TSC-FR-WM",
+          "name": "The Second Coming [Fundraiser - Serialized]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "TSC-FR-WM",
+          "legality": "Rotation",
+          "price": 300
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:9",
+      "group": 2,
+      "position": 3,
+      "titleBox": [
+        0.19,
+        0.225,
+        0.235,
+        0.24
+      ],
+      "read": {
+        "title": "The Resurrection",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Dominant",
+        "grid": {
+          "row": 3,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "The Resurrection (GoC)|GoC|003-The-Resurrection-UR",
+      "kind": "matched",
+      "deckKey": "The Resurrection (GoC)|GoC|003-The-Resurrection-UR",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Resurrection (GoC)|GoC|003-The-Resurrection-UR",
+          "name": "The Resurrection (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "003-The-Resurrection-UR",
+          "legality": "Rotation",
+          "price": 50
+        },
+        {
+          "key": "The Resurrection [UR+] (GoC)|GoC|003-The-Resurrection-UR+",
+          "name": "The Resurrection [UR+] (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "003-The-Resurrection-UR+",
+          "legality": "Rotation",
+          "price": 70
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:10",
+      "group": 2,
+      "position": 4,
+      "titleBox": [
+        0.19,
+        0.268,
+        0.23,
+        0.283
+      ],
+      "read": {
+        "title": "Ride on Victoriously",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Dominant",
+        "grid": {
+          "row": 4,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Ride on Victoriously / Awesome Things (LoC)|LoC|LoC_002-Ride-Awesome-R",
+      "kind": "matched",
+      "deckKey": "Ride on Victoriously / Awesome Things (LoC)|LoC|LoC_002-Ride-Awesome-R",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Ride on Victoriously / Awesome Things (LoC)|LoC|LoC_002-Ride-Awesome-R",
+          "name": "Ride on Victoriously / Awesome Things (LoC)",
+          "set": "LoC",
+          "officialSet": "Lineage of Christ",
+          "imgFile": "LoC_002-Ride-Awesome-R",
+          "legality": "Rotation",
+          "price": 20
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:11",
+      "group": 2,
+      "position": 5,
+      "titleBox": [
+        0.185,
+        0.32,
+        0.228,
+        0.335
+      ],
+      "read": {
+        "title": "Star of Bethlehem",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Dominant",
+        "grid": {
+          "row": 5,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "Star of Bethlehem (GoC)|GoC|004-Star-of-Bethlehem",
+      "kind": "matched",
+      "deckKey": "Star of Bethlehem (GoC)|GoC|004-Star-of-Bethlehem",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Star of Bethlehem (GoC)|GoC|004-Star-of-Bethlehem",
+          "name": "Star of Bethlehem (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "004-Star-of-Bethlehem",
+          "legality": "Rotation",
+          "price": 3
+        },
+        {
+          "key": "Star of Bethlehem [Fundraiser]|Fund|FR-Star-of-Bethlehem-foil",
+          "name": "Star of Bethlehem [Fundraiser]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "FR-Star-of-Bethlehem-foil",
+          "legality": "Rotation",
+          "price": 33
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:12",
+      "group": 2,
+      "position": 6,
+      "titleBox": [
+        0.17,
+        0.38,
+        0.21,
+        0.395
+      ],
+      "read": {
+        "title": "Crowd's Choice",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Dominant",
+        "grid": {
+          "row": 6,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "Crowd's Choice (GoC)|GoC|001-Crowds-Choice-R",
+      "kind": "matched",
+      "deckKey": "Crowd's Choice (GoC)|GoC|001-Crowds-Choice-R",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Crowd's Choice (GoC)|GoC|001-Crowds-Choice-R",
+          "name": "Crowd's Choice (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "001-Crowds-Choice-R",
+          "legality": "Rotation",
+          "price": 30
+        },
+        {
+          "key": "Crowd's Choice [Fundraiser]|Fund|FR-Crowds-Choice-foil",
+          "name": "Crowd's Choice [Fundraiser]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "FR-Crowds-Choice-foil",
+          "legality": "Rotation",
+          "price": 33
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:13",
+      "group": 2,
+      "position": 7,
+      "titleBox": [
+        0.17,
+        0.425,
+        0.2,
+        0.438
+      ],
+      "read": {
+        "title": "Three Woes",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Dominant",
+        "grid": {
+          "row": 7,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "Three Woes (RoJ)|RoJ|01-Three-Woes-UR",
+      "kind": "matched",
+      "deckKey": "Three Woes (RoJ)|RoJ|01-Three-Woes-UR",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Three Woes (RoJ AB)|RoJ (AB)|RoJ_AB_N01-Three-Woes-UR",
+          "name": "Three Woes (RoJ AB)",
+          "set": "RoJ (AB)",
+          "officialSet": "Revelation of John (Alternate Border)",
+          "imgFile": "RoJ_AB_N01-Three-Woes-UR",
+          "legality": "Rotation",
+          "price": 45
+        },
+        {
+          "key": "Three Woes (RoJ)|RoJ|01-Three-Woes-UR",
+          "name": "Three Woes (RoJ)",
+          "set": "RoJ",
+          "officialSet": "Revelation of John",
+          "imgFile": "01-Three-Woes-UR",
+          "legality": "Rotation",
+          "price": 45
+        },
+        {
+          "key": "Three Woes [Fundraiser]|Fund|FR-Three-Woes",
+          "name": "Three Woes [Fundraiser]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "FR-Three-Woes",
+          "legality": "Rotation",
+          "price": 25
+        },
+        {
+          "key": "Three Woes [Fundraiser - Serialized]|Fund|3W-FR-WM",
+          "name": "Three Woes [Fundraiser - Serialized]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "3W-FR-WM",
+          "legality": "Rotation",
+          "price": 300
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:14",
+      "group": 3,
+      "position": 1,
+      "titleBox": [
+        0.3,
+        0.165,
+        0.35,
+        0.18
+      ],
+      "read": {
+        "title": "Chamber of Angels",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Fortress",
+        "grid": {
+          "row": 1,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Chamber of Angels (GoC)|GoC|026-Chamber-of-Angels-R",
+      "identityCandidates": [
+        "chamber of angels|fortress||good|#Chamber of Angels",
+        "chamber of angels|fortress||good|#Chamber of Angels (GoC)"
+      ],
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Chamber of Angels|AW|Chamber_of_Angels_(AW)",
+          "name": "Chamber of Angels",
+          "set": "AW",
+          "officialSet": "Angel Wars",
+          "imgFile": "Chamber_of_Angels_(AW)",
+          "legality": "",
+          "price": 3
+        },
+        {
+          "key": "Chamber of Angels (GoC)|GoC|026-Chamber-of-Angels-R",
+          "name": "Chamber of Angels (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "026-Chamber-of-Angels-R",
+          "legality": "Rotation",
+          "price": 7
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:15",
+      "group": 3,
+      "position": 2,
+      "titleBox": [
+        0.29,
+        0.192,
+        0.34,
+        0.206
+      ],
+      "read": {
+        "title": "The Church of Christ",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Fortress",
+        "grid": {
+          "row": 2,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "The Church of Christ (GoC)|GoC|027-The-Church-of-Christ-R",
+      "kind": "matched",
+      "deckKey": "The Church of Christ (GoC)|GoC|027-The-Church-of-Christ-R",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Church of Christ (GoC)|GoC|027-The-Church-of-Christ-R",
+          "name": "The Church of Christ (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "027-The-Church-of-Christ-R",
+          "legality": "Rotation",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:16",
+      "group": 3,
+      "position": 3,
+      "titleBox": [
+        0.3,
+        0.216,
+        0.34,
+        0.23
+      ],
+      "read": {
+        "title": "The Empty Tomb",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Fortress",
+        "grid": {
+          "row": 3,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "The Empty Tomb (GoC)|GoC|029-The-Empty-Tomb-R",
+      "kind": "matched",
+      "deckKey": "The Empty Tomb (GoC)|GoC|029-The-Empty-Tomb-R",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Empty Tomb (GoC)|GoC|029-The-Empty-Tomb-R",
+          "name": "The Empty Tomb (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "029-The-Empty-Tomb-R",
+          "legality": "Rotation",
+          "price": 3
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:17",
+      "group": 3,
+      "position": 4,
+      "titleBox": [
+        0.307,
+        0.252,
+        0.337,
+        0.265
+      ],
+      "read": {
+        "title": "Satan's Seat",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Site",
+        "grid": {
+          "row": 4,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Satan’s Seat (Roots)|RR|015-Satans-Seat",
+      "identityCandidates": [
+        "satan's seat|fortress||evil|#Satan's Seat",
+        "satan’s seat|fortress||evil|#Satan’s Seat (Roots)"
+      ],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Satan's Seat|FoOF|Satan's_Seat_(FF)",
+          "name": "Satan's Seat",
+          "set": "FoOF",
+          "officialSet": "Faith of Our Fathers",
+          "imgFile": "Satan's_Seat_(FF)",
+          "legality": "",
+          "price": 0.25
+        },
+        {
+          "key": "Satan’s Seat (Roots)|RR|015-Satans-Seat",
+          "name": "Satan’s Seat (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "015-Satans-Seat",
+          "legality": "Rotation",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:18",
+      "group": 4,
+      "position": 1,
+      "titleBox": [
+        0.383,
+        0.152,
+        0.423,
+        0.166
+      ],
+      "read": {
+        "title": "The Great White Throne",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 1,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "The Great White Throne (RoJ)|RoJ|07-The-Great-White-Throne",
+      "kind": "matched",
+      "deckKey": "The Great White Throne (RoJ)|RoJ|07-The-Great-White-Throne",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "The Great White Throne (RoJ AB)|RoJ (AB)|RoJ_AB_N07-The-Great-White-Throne",
+          "name": "The Great White Throne (RoJ AB)",
+          "set": "RoJ (AB)",
+          "officialSet": "Revelation of John (Alternate Border)",
+          "imgFile": "RoJ_AB_N07-The-Great-White-Throne",
+          "legality": "Rotation",
+          "price": 5
+        },
+        {
+          "key": "The Great White Throne (RoJ)|RoJ|07-The-Great-White-Throne",
+          "name": "The Great White Throne (RoJ)",
+          "set": "RoJ",
+          "officialSet": "Revelation of John",
+          "imgFile": "07-The-Great-White-Throne",
+          "legality": "Rotation",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:19",
+      "group": 4,
+      "position": 2,
+      "titleBox": [
+        0.385,
+        0.185,
+        0.435,
+        0.2
+      ],
+      "read": {
+        "title": "Four-Drachma Coin",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Artifact",
+        "grid": {
+          "row": 2,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "Four-Drachma Coin (GoC)|GoC|011-Four-Drachma-Coin",
+      "kind": "matched",
+      "deckKey": "Four-Drachma Coin (GoC)|GoC|011-Four-Drachma-Coin",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Four-Drachma Coin|Di|Four-Drachma_Coin_(Di)",
+          "name": "Four-Drachma Coin",
+          "set": "Di",
+          "officialSet": "Disciples",
+          "imgFile": "Four-Drachma_Coin_(Di)",
+          "legality": "",
+          "price": 1.5
+        },
+        {
+          "key": "Four-Drachma Coin (GoC)|GoC|011-Four-Drachma-Coin",
+          "name": "Four-Drachma Coin (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "011-Four-Drachma-Coin",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:20",
+      "group": 4,
+      "position": 3,
+      "titleBox": [
+        0.385,
+        0.217,
+        0.433,
+        0.232
+      ],
+      "read": {
+        "title": "Book of the Covenant",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Artifact",
+        "grid": {
+          "row": 3,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Book of the Covenant (PoC)|PoC|036-Book-of-the-Covenant-UR",
+      "identityCandidates": [
+        "book of the covenant|artifact||neutral|#Book of the Covenant",
+        "book of the covenant|artifact||neutral|#Book of the Covenant (PoC)"
+      ],
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Book of the Covenant|Pmo-P1|Book_of_the_Covenant_(Promo)",
+          "name": "Book of the Covenant",
+          "set": "Pmo-P1",
+          "officialSet": "Promo",
+          "imgFile": "Book_of_the_Covenant_(Promo)",
+          "legality": "",
+          "price": 5
+        },
+        {
+          "key": "Book of the Covenant (PoC)|PoC|036-Book-of-the-Covenant-UR",
+          "name": "Book of the Covenant (PoC)",
+          "set": "PoC",
+          "officialSet": "Prophecies of Christ",
+          "imgFile": "036-Book-of-the-Covenant-UR",
+          "legality": "Rotation",
+          "price": 70
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:21",
+      "group": 4,
+      "position": 4,
+      "titleBox": [
+        0.41,
+        0.243,
+        0.43,
+        0.258
+      ],
+      "read": {
+        "title": "Patmos",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Site",
+        "grid": {
+          "row": 4,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Patmos|Ap|Patmos_(Ap)",
+      "kind": "matched",
+      "deckKey": "Patmos|Ap|Patmos_(Ap)",
+      "scores": {
+        "matchScore": 0.75,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "vanilla",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Patmos|Ap|Patmos_(Ap)",
+          "name": "Patmos",
+          "set": "Ap",
+          "officialSet": "Apostles",
+          "imgFile": "Patmos_(Ap)",
+          "legality": "",
+          "price": 0.25
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:22",
+      "group": 4,
+      "position": 5,
+      "titleBox": [
+        0.388,
+        0.275,
+        0.432,
+        0.29
+      ],
+      "read": {
+        "title": "The Repentant Thief",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": "3",
+        "toughness": "4",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 5,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "The Repentant Thief / The Condemned Thief (GoC)|GoC|047-The-Repentant-Thief",
+      "kind": "matched",
+      "deckKey": "The Repentant Thief / The Condemned Thief (GoC)|GoC|047-The-Repentant-Thief",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Repentant Thief / The Condemned Thief (GoC)|GoC|047-The-Repentant-Thief",
+          "name": "The Repentant Thief / The Condemned Thief (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "047-The-Repentant-Thief",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:23",
+      "group": 4,
+      "position": 6,
+      "titleBox": [
+        0.376,
+        0.306,
+        0.432,
+        0.32
+      ],
+      "read": {
+        "title": "Zaccheus, the Repentant",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": "5",
+        "toughness": "6",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 6,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Zaccheus, the Repentant / Zaccheus, Tax Collector (GoC)|GoC|045-Zaccheus-R",
+      "kind": "matched",
+      "deckKey": "Zaccheus, the Repentant / Zaccheus, Tax Collector (GoC)|GoC|045-Zaccheus-R",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Zaccheus, the Repentant / Zaccheus, Tax Collector (GoC)|GoC|045-Zaccheus-R",
+          "name": "Zaccheus, the Repentant / Zaccheus, Tax Collector (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "045-Zaccheus-R",
+          "legality": "Rotation",
+          "price": 3
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:24",
+      "group": 4,
+      "position": 7,
+      "titleBox": [
+        0.393,
+        0.35,
+        0.435,
+        0.368
+      ],
+      "read": {
+        "title": "Judas Iscariot",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": "1",
+        "toughness": "6",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 7,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Judas Iscariot (L)|Main|Judas_Iscariot_(UL)",
+      "kind": "matched",
+      "deckKey": "Judas Iscariot (L)|Main|Judas_Iscariot_(UL)",
+      "scores": {
+        "matchScore": 0.75,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "vanilla",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Judas Iscariot (L)|Main|Judas_Iscariot_(UL)",
+          "name": "Judas Iscariot (L)",
+          "set": "Main",
+          "officialSet": "Main",
+          "imgFile": "Judas_Iscariot_(UL)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Judas Iscariot (UL)|Main UL|Judas_Iscariot_(UL)",
+          "name": "Judas Iscariot (UL)",
+          "set": "Main UL",
+          "officialSet": "Main Unlimited",
+          "imgFile": "Judas_Iscariot_(UL)",
+          "legality": "",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:25",
+      "group": 5,
+      "position": 1,
+      "titleBox": [
+        0.493,
+        0.15,
+        0.53,
+        0.165
+      ],
+      "read": {
+        "title": "Simon Peter",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "12",
+        "toughness": "10",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 1,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Simon Peter / Peter, the Rock (GoC)|GoC|106-Peter-R",
+      "kind": "matched",
+      "deckKey": "Simon Peter / Peter, the Rock (GoC)|GoC|106-Peter-R",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Simon Peter / Peter, the Rock (GoC)|GoC|106-Peter-R",
+          "name": "Simon Peter / Peter, the Rock (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "106-Peter-R",
+          "legality": "Rotation",
+          "price": 9
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:26",
+      "group": 5,
+      "position": 2,
+      "titleBox": [
+        0.488,
+        0.183,
+        0.532,
+        0.197
+      ],
+      "read": {
+        "title": "Matthew the Publican",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "6",
+        "toughness": "4",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 2,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Matthew the Publican / Matthew (Levi) (GoC)|GoC|112-Matthew",
+      "kind": "matched",
+      "deckKey": "Matthew the Publican / Matthew (Levi) (GoC)|GoC|112-Matthew",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Matthew the Publican / Matthew (Levi) (GoC)|GoC|112-Matthew",
+          "name": "Matthew the Publican / Matthew (Levi) (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "112-Matthew",
+          "legality": "Rotation",
+          "price": 9
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:27",
+      "group": 5,
+      "position": 3,
+      "titleBox": [
+        0.474,
+        0.21,
+        0.527,
+        0.225
+      ],
+      "read": {
+        "title": "John, the Fisherman",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "0",
+        "toughness": "11",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 3,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "John, the Fisherman / John, Son of Thunder (GoC)|GoC|109-John-R",
+      "kind": "matched",
+      "deckKey": "John, the Fisherman / John, Son of Thunder (GoC)|GoC|109-John-R",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "John, the Fisherman / John, Son of Thunder (GoC)|GoC|109-John-R",
+          "name": "John, the Fisherman / John, Son of Thunder (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "109-John-R",
+          "legality": "Rotation",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:28",
+      "group": 5,
+      "position": 4,
+      "titleBox": [
+        0.486,
+        0.245,
+        0.527,
+        0.26
+      ],
+      "read": {
+        "title": "Simon the Zealot",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "3",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 4,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Simon the Zealot (Di)|Di|Simon_the_Zealot_(Di)",
+      "kind": "matched",
+      "deckKey": "Simon the Zealot (Di)|Di|Simon_the_Zealot_(Di)",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Simon the Zealot (Di)|Di|Simon_the_Zealot_(Di)",
+          "name": "Simon the Zealot (Di)",
+          "set": "Di",
+          "officialSet": "Disciples",
+          "imgFile": "Simon_the_Zealot_(Di)",
+          "legality": "",
+          "price": 1.5
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:29",
+      "group": 5,
+      "position": 5,
+      "titleBox": [
+        0.493,
+        0.27,
+        0.53,
+        0.285
+      ],
+      "read": {
+        "title": "Mary, Holy Virgin",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "1",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 5,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Mary, Holy Virgin / Mary, Willing Servant (GoC)|GoC|150-Mary-R",
+      "kind": "matched",
+      "deckKey": "Mary, Holy Virgin / Mary, Willing Servant (GoC)|GoC|150-Mary-R",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Mary, Holy Virgin / Mary, Willing Servant (GoC)|GoC|150-Mary-R",
+          "name": "Mary, Holy Virgin / Mary, Willing Servant (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "150-Mary-R",
+          "legality": "Rotation",
+          "price": 12
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:30",
+      "group": 5,
+      "position": 6,
+      "titleBox": [
+        0.488,
+        0.3,
+        0.53,
+        0.315
+      ],
+      "read": {
+        "title": "Joanna, the Generous",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "6",
+        "toughness": "5",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 6,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Joanna, the Generous / Joanna, Wife of Chuza (GoC)|GoC|142-Joanna",
+      "kind": "matched",
+      "deckKey": "Joanna, the Generous / Joanna, Wife of Chuza (GoC)|GoC|142-Joanna",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Joanna, the Generous / Joanna, Wife of Chuza (GoC)|GoC|142-Joanna",
+          "name": "Joanna, the Generous / Joanna, Wife of Chuza (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "142-Joanna",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:31",
+      "group": 5,
+      "position": 7,
+      "titleBox": [
+        0.493,
+        0.33,
+        0.532,
+        0.345
+      ],
+      "read": {
+        "title": "Mary, the Restored",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "7",
+        "toughness": "6",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 7,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Mary, the Restored / Mary Magdalene (GoC)|GoC|143-Mary-Magdalene",
+      "kind": "matched",
+      "deckKey": "Mary, the Restored / Mary Magdalene (GoC)|GoC|143-Mary-Magdalene",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Mary, the Restored / Mary Magdalene (GoC)|GoC|143-Mary-Magdalene",
+          "name": "Mary, the Restored / Mary Magdalene (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "143-Mary-Magdalene",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:32",
+      "group": 5,
+      "position": 8,
+      "titleBox": [
+        0.49,
+        0.366,
+        0.535,
+        0.381
+      ],
+      "read": {
+        "title": "The Heavenly Host",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": "0",
+        "toughness": "11",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 8,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "The Heavenly Host (GoC)|GoC|127-The-Heavenly-Host-R",
+      "kind": "matched",
+      "deckKey": "The Heavenly Host (GoC)|GoC|127-The-Heavenly-Host-R",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Heavenly Host (GoC)|GoC|127-The-Heavenly-Host-R",
+          "name": "The Heavenly Host (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "127-The-Heavenly-Host-R",
+          "legality": "Rotation",
+          "price": 3
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:33",
+      "group": 5,
+      "position": 9,
+      "titleBox": [
+        0.488,
+        0.403,
+        0.542,
+        0.418
+      ],
+      "read": {
+        "title": "Resurrection Revealer",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": "8",
+        "toughness": "6",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 9,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Resurrection Revealer (GoC)|GoC|128-Resurrection-Revealer-R",
+      "kind": "matched",
+      "deckKey": "Resurrection Revealer (GoC)|GoC|128-Resurrection-Revealer-R",
+      "scores": {
+        "matchScore": 4.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Resurrection Revealer (GoC)|GoC|128-Resurrection-Revealer-R",
+          "name": "Resurrection Revealer (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "128-Resurrection-Revealer-R",
+          "legality": "Rotation",
+          "price": 7
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:34",
+      "group": 5,
+      "position": 10,
+      "titleBox": [
+        0.486,
+        0.435,
+        0.54,
+        0.45
+      ],
+      "read": {
+        "title": "Gabriel, Mouth of God",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "3",
+        "toughness": "12",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 10,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "Gabriel, Mouth of God (GoC)|GoC|057-Gabriel-UR",
+      "kind": "matched",
+      "deckKey": "Gabriel, Mouth of God (GoC)|GoC|057-Gabriel-UR",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Gabriel, Mouth of God (GoC)|GoC|057-Gabriel-UR",
+          "name": "Gabriel, Mouth of God (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "057-Gabriel-UR",
+          "legality": "Rotation",
+          "price": 50
+        },
+        {
+          "key": "Gabriel, Mouth of God [UR+] (GoC)|GoC|057-Gabriel-UR+",
+          "name": "Gabriel, Mouth of God [UR+] (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "057-Gabriel-UR+",
+          "legality": "Rotation",
+          "price": 70
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:35",
+      "group": 6,
+      "position": 1,
+      "titleBox": [
+        0.578,
+        0.163,
+        0.615,
+        0.178
+      ],
+      "read": {
+        "title": "The Child is Born",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 1,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "The Child is Born (GoC)|GoC|064-The-Child-is-Born",
+      "kind": "matched",
+      "deckKey": "The Child is Born (GoC)|GoC|064-The-Child-is-Born",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Child is Born (GoC)|GoC|064-The-Child-is-Born",
+          "name": "The Child is Born (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "064-The-Child-is-Born",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:36",
+      "group": 6,
+      "position": 2,
+      "titleBox": [
+        0.593,
+        0.187,
+        0.618,
+        0.2
+      ],
+      "read": {
+        "title": "Virgin Birth",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 2,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Virgin Birth|PoC|089-Virgin-Birth",
+      "kind": "matched",
+      "deckKey": "Virgin Birth|PoC|089-Virgin-Birth",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Virgin Birth|PoC|089-Virgin-Birth",
+          "name": "Virgin Birth",
+          "set": "PoC",
+          "officialSet": "Prophecies of Christ",
+          "imgFile": "089-Virgin-Birth",
+          "legality": "Rotation",
+          "price": 9
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:37",
+      "group": 6,
+      "position": 3,
+      "titleBox": [
+        0.596,
+        0.21,
+        0.62,
+        0.224
+      ],
+      "read": {
+        "title": "Good Seed",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 3,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Good Seed (GoC)|GoC|083-Good-Seed-R",
+      "kind": "matched",
+      "deckKey": "Good Seed (GoC)|GoC|083-Good-Seed-R",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Good Seed (GoC)|GoC|083-Good-Seed-R",
+          "name": "Good Seed (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "083-Good-Seed-R",
+          "legality": "Rotation",
+          "price": 7
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:38",
+      "group": 6,
+      "position": 4,
+      "titleBox": [
+        0.588,
+        0.237,
+        0.625,
+        0.25
+      ],
+      "read": {
+        "title": "Lost Child Found",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "2",
+        "toughness": "4",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 4,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Lost Child Found (GoC)|GoC|156-Lost-Child-Found",
+      "kind": "matched",
+      "deckKey": "Lost Child Found (GoC)|GoC|156-Lost-Child-Found",
+      "scores": {
+        "matchScore": 5,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Lost Child Found (GoC)|GoC|156-Lost-Child-Found",
+          "name": "Lost Child Found (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "156-Lost-Child-Found",
+          "legality": "Rotation",
+          "price": 3
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:39",
+      "group": 6,
+      "position": 5,
+      "titleBox": [
+        0.583,
+        0.263,
+        0.625,
+        0.276
+      ],
+      "read": {
+        "title": "Authority of Christ",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 5,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Authority of Christ (GoC UR+)|GoC|081-Authority-of-Christ-UR+",
+      "identityCandidates": [
+        "authority of christ|ge|claypurple|good|star#Authority of Christ (GoC)",
+        "authority of christ|ge|purple|good|#Authority of Christ (UL)",
+        "authority of christ|ge|purple|good|#Authority of Christ (Promo)"
+      ],
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Authority of Christ (GoC UR+)|GoC|081-Authority-of-Christ-UR+",
+          "name": "Authority of Christ (GoC UR+)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "081-Authority-of-Christ-UR+",
+          "legality": "Rotation",
+          "price": 70
+        },
+        {
+          "key": "Authority of Christ (GoC)|GoC|081-Authority-of-Christ-UR",
+          "name": "Authority of Christ (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "081-Authority-of-Christ-UR",
+          "legality": "Rotation",
+          "price": 50
+        },
+        {
+          "key": "Authority of Christ (L)|Main|Authority_of_Christ_(UL)",
+          "name": "Authority of Christ (L)",
+          "set": "Main",
+          "officialSet": "Main",
+          "imgFile": "Authority_of_Christ_(UL)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Authority of Christ (UL)|Main UL|Authority_of_Christ_(UL)",
+          "name": "Authority of Christ (UL)",
+          "set": "Main UL",
+          "officialSet": "Main Unlimited",
+          "imgFile": "Authority_of_Christ_(UL)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Authority of Christ (Promo)|Pmo-P1|Authority_of_Christ_(Promo)",
+          "name": "Authority of Christ (Promo)",
+          "set": "Pmo-P1",
+          "officialSet": "Promo",
+          "imgFile": "Authority_of_Christ_(Promo)",
+          "legality": "",
+          "price": 12
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:40",
+      "group": 6,
+      "position": 6,
+      "titleBox": [
+        0.588,
+        0.3,
+        0.63,
+        0.313
+      ],
+      "read": {
+        "title": "Love One Another",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 6,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Love One Another (GoC)|GoC|078-Love-One-Another",
+      "kind": "matched",
+      "deckKey": "Love One Another (GoC)|GoC|078-Love-One-Another",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Love One Another (GoC)|GoC|078-Love-One-Another",
+          "name": "Love One Another (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "078-Love-One-Another",
+          "legality": "Rotation",
+          "price": 3
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:41",
+      "group": 6,
+      "position": 7,
+      "titleBox": [
+        0.593,
+        0.33,
+        0.637,
+        0.343
+      ],
+      "read": {
+        "title": "Untouchable",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 7,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Untouchable (GoC)|GoC|084-Untouchable",
+      "kind": "matched",
+      "deckKey": "Untouchable (GoC)|GoC|084-Untouchable",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Untouchable (GoC)|GoC|084-Untouchable",
+          "name": "Untouchable (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "084-Untouchable",
+          "legality": "Rotation",
+          "price": 3
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:42",
+      "group": 7,
+      "position": 1,
+      "titleBox": [
+        0.667,
+        0.17,
+        0.703,
+        0.183
+      ],
+      "read": {
+        "title": "The Sordid Spirit",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 1,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "The Sordid Spirit (GoC)|GoC|248-The-Sordid-Spirit",
+      "kind": "matched",
+      "deckKey": "The Sordid Spirit (GoC)|GoC|248-The-Sordid-Spirit",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Sordid Spirit (GoC)|GoC|248-The-Sordid-Spirit",
+          "name": "The Sordid Spirit (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "248-The-Sordid-Spirit",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:43",
+      "group": 7,
+      "position": 2,
+      "titleBox": [
+        0.686,
+        0.2,
+        0.708,
+        0.213
+      ],
+      "read": {
+        "title": "The Thief",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 2,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "The Thief (GoC)|GoC|160-The-Thief-R",
+      "kind": "matched",
+      "deckKey": "The Thief (GoC)|GoC|160-The-Thief-R",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Thief (GoC)|GoC|160-The-Thief-R",
+          "name": "The Thief (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "160-The-Thief-R",
+          "legality": "Rotation",
+          "price": 7
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:44",
+      "group": 7,
+      "position": 3,
+      "titleBox": [
+        0.684,
+        0.23,
+        0.715,
+        0.243
+      ],
+      "read": {
+        "title": "Plunderers",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 3,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Plunderers (GoC)|GoC|191-Plunderers",
+      "kind": "matched",
+      "deckKey": "Plunderers (GoC)|GoC|191-Plunderers",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Plunderers (GoC)|GoC|191-Plunderers",
+          "name": "Plunderers (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "191-Plunderers",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:45",
+      "group": 7,
+      "position": 4,
+      "titleBox": [
+        0.684,
+        0.262,
+        0.708,
+        0.275
+      ],
+      "read": {
+        "title": "The Highwayman",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 4,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "The Highwayman (GoC)|GoC|192-The-Highwayman-R",
+      "kind": "matched",
+      "deckKey": "The Highwayman (GoC)|GoC|192-The-Highwayman-R",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Highwayman (GoC)|GoC|192-The-Highwayman-R",
+          "name": "The Highwayman (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "192-The-Highwayman-R",
+          "legality": "Rotation",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:46",
+      "group": 7,
+      "position": 5,
+      "titleBox": [
+        0.676,
+        0.295,
+        0.725,
+        0.308
+      ],
+      "read": {
+        "title": "Temple Thieves",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": "6",
+        "toughness": "6",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 5,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Temple Thieves (GoC)|GoC|193-Temple-Thieves",
+      "kind": "matched",
+      "deckKey": "Temple Thieves (GoC)|GoC|193-Temple-Thieves",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Temple Thieves (GoC)|GoC|193-Temple-Thieves",
+          "name": "Temple Thieves (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "193-Temple-Thieves",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:47",
+      "group": 8,
+      "position": 1,
+      "titleBox": [
+        0.757,
+        0.16,
+        0.79,
+        0.173
+      ],
+      "read": {
+        "title": "Hurling Insults",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 1,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Hurling Insults (GoC)|GoC|202-Hurling-Insults",
+      "kind": "matched",
+      "deckKey": "Hurling Insults (GoC)|GoC|202-Hurling-Insults",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Hurling Insults (GoC)|GoC|202-Hurling-Insults",
+          "name": "Hurling Insults (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "202-Hurling-Insults",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:48",
+      "group": 8,
+      "position": 2,
+      "titleBox": [
+        0.75,
+        0.19,
+        0.787,
+        0.203
+      ],
+      "read": {
+        "title": "Seized Babylon",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 2,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "fuzzy",
+      "printingReason": "only",
+      "chosenKey": "Seized by Babylon|PoC|203-Seized-by-Babylon",
+      "kind": "read_as",
+      "deckKey": "Seized by Babylon|PoC|203-Seized-by-Babylon",
+      "near": [
+        {
+          "stem": "seized by babylon",
+          "d": 0.17647058823529413
+        }
+      ],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Seized by Babylon|PoC|203-Seized-by-Babylon",
+          "name": "Seized by Babylon",
+          "set": "PoC",
+          "officialSet": "Prophecies of Christ",
+          "imgFile": "203-Seized-by-Babylon",
+          "legality": "Rotation",
+          "price": 9
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:49",
+      "group": 8,
+      "position": 3,
+      "titleBox": [
+        0.772,
+        0.217,
+        0.8,
+        0.23
+      ],
+      "read": {
+        "title": "Hypocrisy",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 3,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Hypocrisy (EC)|TEC|Hypocrisy_(EC)",
+      "identityCandidates": [
+        "hypocrisy|ee|black|evil|#Hypocrisy (Ap)",
+        "hypocrisy|ee|crimson|evil|territory#Hypocrisy (EC)"
+      ],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Hypocrisy (Ap)|Ap|Hypocrisy_(Ap)",
+          "name": "Hypocrisy (Ap)",
+          "set": "Ap",
+          "officialSet": "Apostles",
+          "imgFile": "Hypocrisy_(Ap)",
+          "legality": "",
+          "price": 0.25
+        },
+        {
+          "key": "Hypocrisy (EC)|TEC|Hypocrisy_(EC)",
+          "name": "Hypocrisy (EC)",
+          "set": "TEC",
+          "officialSet": "Early Church",
+          "imgFile": "Hypocrisy_(EC)",
+          "legality": "Rotation",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:50",
+      "group": 9,
+      "position": 1,
+      "titleBox": [
+        0.874,
+        0.145,
+        0.904,
+        0.157
+      ],
+      "read": {
+        "title": "Send the Helper",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 1,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Send the Helper (GoC)|GoC|019-Send-the-Helper",
+      "kind": "matched",
+      "deckKey": "Send the Helper (GoC)|GoC|019-Send-the-Helper",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Send the Helper (GoC)|GoC|019-Send-the-Helper",
+          "name": "Send the Helper (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "019-Send-the-Helper",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:51",
+      "group": 9,
+      "position": 2,
+      "titleBox": [
+        0.893,
+        0.188,
+        0.92,
+        0.2
+      ],
+      "read": {
+        "title": "Covenant of Prayer",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Covenant",
+        "grid": {
+          "row": 2,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "Covenant of Prayer (RoJ)|RoJ|12-Covenant-of-Prayer-R",
+      "kind": "matched",
+      "deckKey": "Covenant of Prayer (RoJ)|RoJ|12-Covenant-of-Prayer-R",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Covenant of Prayer (RoJ AB)|RoJ (AB)|RoJ_AB_N12-Covenant-of-Prayer-R",
+          "name": "Covenant of Prayer (RoJ AB)",
+          "set": "RoJ (AB)",
+          "officialSet": "Revelation of John (Alternate Border)",
+          "imgFile": "RoJ_AB_N12-Covenant-of-Prayer-R",
+          "legality": "Rotation",
+          "price": 7
+        },
+        {
+          "key": "Covenant of Prayer (RoJ)|RoJ|12-Covenant-of-Prayer-R",
+          "name": "Covenant of Prayer (RoJ)",
+          "set": "RoJ",
+          "officialSet": "Revelation of John",
+          "imgFile": "12-Covenant-of-Prayer-R",
+          "legality": "Rotation",
+          "price": 7
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:52",
+      "group": 9,
+      "position": 3,
+      "titleBox": [
+        0.886,
+        0.22,
+        0.918,
+        0.232
+      ],
+      "read": {
+        "title": "Suicidal Sinner Stampede",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 3,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "fuzzy",
+      "printingReason": "only",
+      "chosenKey": "Suicidal Swine Stampede (GoC)|GoC|158-Suicidal-Swine-Stampede",
+      "kind": "read_as",
+      "deckKey": "Suicidal Swine Stampede (GoC)|GoC|158-Suicidal-Swine-Stampede",
+      "near": [
+        {
+          "stem": "suicidal swine stampede",
+          "d": 0.125
+        }
+      ],
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Suicidal Swine Stampede (GoC)|GoC|158-Suicidal-Swine-Stampede",
+          "name": "Suicidal Swine Stampede (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "158-Suicidal-Swine-Stampede",
+          "legality": "Rotation",
+          "price": 3
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:53",
+      "group": 9,
+      "position": 4,
+      "titleBox": [
+        0.9,
+        0.248,
+        0.928,
+        0.26
+      ],
+      "read": {
+        "title": "Restless Spirit",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 4,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Restless Spirit (GoC)|GoC|249-Restless-Spirit",
+      "kind": "matched",
+      "deckKey": "Restless Spirit (GoC)|GoC|249-Restless-Spirit",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Restless Spirit (GoC)|GoC|249-Restless-Spirit",
+          "name": "Restless Spirit (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "249-Restless-Spirit",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:54",
+      "group": 9,
+      "position": 5,
+      "titleBox": [
+        0.893,
+        0.278,
+        0.928,
+        0.29
+      ],
+      "read": {
+        "title": "Wheat and Tares",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 5,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Wheat and Tares (GoC)|GoC|137-Wheat-and-Tares",
+      "identityCandidates": [
+        "wheat and tares|ge|silver|good|#Wheat and Tares",
+        "wheat and tares|ge|silver|good|territory star#Wheat and Tares (GoC)"
+      ],
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Wheat and Tares|Di|Wheat_and_Tares_(Di)",
+          "name": "Wheat and Tares",
+          "set": "Di",
+          "officialSet": "Disciples",
+          "imgFile": "Wheat_and_Tares_(Di)",
+          "legality": "",
+          "price": 1.5
+        },
+        {
+          "key": "Wheat and Tares (GoC)|GoC|137-Wheat-and-Tares",
+          "name": "Wheat and Tares (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "137-Wheat-and-Tares",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:55",
+      "group": 9,
+      "position": 6,
+      "titleBox": [
+        0.913,
+        0.303,
+        0.94,
+        0.315
+      ],
+      "read": {
+        "title": "The Ascension",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 6,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "The Ascension (GoC)|GoC|090-The-Ascension",
+      "kind": "matched",
+      "deckKey": "The Ascension (GoC)|GoC|090-The-Ascension",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Ascension (GoC)|GoC|090-The-Ascension",
+          "name": "The Ascension (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "090-The-Ascension",
+          "legality": "Rotation",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:56",
+      "group": 9,
+      "position": 7,
+      "titleBox": [
+        0.913,
+        0.333,
+        0.947,
+        0.346
+      ],
+      "read": {
+        "title": "Stone Rolled Away",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 7,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Stone Rolled Away (GoC)|GoC|071-Stone-Rolled-Away-R",
+      "kind": "matched",
+      "deckKey": "Stone Rolled Away (GoC)|GoC|071-Stone-Rolled-Away-R",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Stone Rolled Away (GoC)|GoC|071-Stone-Rolled-Away-R",
+          "name": "Stone Rolled Away (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "071-Stone-Rolled-Away-R",
+          "legality": "Rotation",
+          "price": 3
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:57",
+      "group": 9,
+      "position": 8,
+      "titleBox": [
+        0.91,
+        0.373,
+        0.945,
+        0.386
+      ],
+      "read": {
+        "title": "Teaching in Parables",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 8,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Teaching in Parables (GoC)|GoC|104-Teaching-in-Parables-R",
+      "kind": "matched",
+      "deckKey": "Teaching in Parables (GoC)|GoC|104-Teaching-in-Parables-R",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Teaching in Parables (GoC)|GoC|104-Teaching-in-Parables-R",
+          "name": "Teaching in Parables (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "104-Teaching-in-Parables-R",
+          "legality": "Rotation",
+          "price": 7
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:58",
+      "group": 9,
+      "position": 9,
+      "titleBox": [
+        0.918,
+        0.404,
+        0.952,
+        0.417
+      ],
+      "read": {
+        "title": "Impartial Judgment",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 9,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Impartial Judgment (LoC)|LoC|LoC_142-Impartial-Judgement",
+      "kind": "matched",
+      "deckKey": "Impartial Judgment (LoC)|LoC|LoC_142-Impartial-Judgement",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Impartial Judgment (LoC)|LoC|LoC_142-Impartial-Judgement",
+          "name": "Impartial Judgment (LoC)",
+          "set": "LoC",
+          "officialSet": "Lineage of Christ",
+          "imgFile": "LoC_142-Impartial-Judgement",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:59",
+      "group": 9,
+      "position": 10,
+      "titleBox": [
+        0.926,
+        0.435,
+        0.957,
+        0.45
+      ],
+      "read": {
+        "title": "Jotham, the Mighty",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "12",
+        "toughness": "8",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 10,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Jotham, the Mighty / Jotham, the Upright (LoC)|LoC|LoC_071-Jotham",
+      "kind": "matched",
+      "deckKey": "Jotham, the Mighty / Jotham, the Upright (LoC)|LoC|LoC_071-Jotham",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Jotham, the Mighty / Jotham, the Upright (LoC)|LoC|LoC_071-Jotham",
+          "name": "Jotham, the Mighty / Jotham, the Upright (LoC)",
+          "set": "LoC",
+          "officialSet": "Lineage of Christ",
+          "imgFile": "LoC_071-Jotham",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:60",
+      "group": 10,
+      "position": 1,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": "1",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 1,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:61",
+      "group": 10,
+      "position": 2,
+      "titleBox": null,
+      "read": {
+        "title": "Heavenly Host",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": "1",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 2,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:62",
+      "group": 10,
+      "position": 3,
+      "titleBox": null,
+      "read": {
+        "title": "Heavenly Host",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": "1",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 3,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:63",
+      "group": 10,
+      "position": 4,
+      "titleBox": null,
+      "read": {
+        "title": "Heavenly Host",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": "1",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 4,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:64",
+      "group": 10,
+      "position": 5,
+      "titleBox": null,
+      "read": {
+        "title": "Heavenly Host",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": "1",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 5,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:65",
+      "group": 10,
+      "position": 6,
+      "titleBox": null,
+      "read": {
+        "title": "Heavenly Host",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": "1",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 6,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:66",
+      "group": 10,
+      "position": 7,
+      "titleBox": null,
+      "read": {
+        "title": "Heavenly Host",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": "1",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 7,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:67",
+      "group": 11,
+      "position": 1,
+      "titleBox": null,
+      "read": {
+        "title": "Heavenly Host",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": "1",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 1,
+          "col": 11
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:68",
+      "group": 11,
+      "position": 2,
+      "titleBox": null,
+      "read": {
+        "title": "Heavenly Host",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": "1",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 2,
+          "col": 11
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:69",
+      "group": 11,
+      "position": 3,
+      "titleBox": null,
+      "read": {
+        "title": "Heavenly Host",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": "1",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 3,
+          "col": 11
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:70",
+      "group": 11,
+      "position": 4,
+      "titleBox": [
+        0.535,
+        0.575,
+        0.605,
+        0.595
+      ],
+      "read": {
+        "title": "Heavenly Host",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": "1",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 4,
+          "col": 11
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:71",
+      "group": 11,
+      "position": 5,
+      "titleBox": null,
+      "read": {
+        "title": "Heavenly Host",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": "1",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 5,
+          "col": 11
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:72",
+      "group": 12,
+      "position": 1,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 1,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:73",
+      "group": 12,
+      "position": 2,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 2,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:74",
+      "group": 12,
+      "position": 3,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 3,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "43ee0938-93e6-443f-8d86-54e6d7f4d3fa:75",
+      "group": 12,
+      "position": 4,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 4,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    }
+  ],
+  "crops": {
+    "cropped": [],
+    "failed": [],
+    "skipped": []
+  },
+  "usage": {
+    "model": "claude-sonnet-5-5",
+    "latencyMs": 76392,
+    "attempts": 1,
+    "costUsd": 0.149934
+  },
+  "file": "20240622_125334.webp",
+  "status": 200,
+  "latencyMs": 78237,
+  "attempts": 1
+}

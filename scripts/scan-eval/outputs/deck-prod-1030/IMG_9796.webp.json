@@ -1,0 +1,3175 @@
+{
+  "scanId": "83384cd1-1217-4421-b7fb-349233adc3aa",
+  "mode": "deck",
+  "photoQuality": "ok",
+  "groups": [
+    {
+      "id": 1,
+      "orientation": "upright",
+      "bbox": [
+        0.1,
+        0.03,
+        0.27,
+        0.67
+      ],
+      "cardCount": 5
+    },
+    {
+      "id": 2,
+      "orientation": "upright",
+      "bbox": [
+        0.28,
+        0.06,
+        0.43,
+        0.43
+      ],
+      "cardCount": 5
+    },
+    {
+      "id": 3,
+      "orientation": "upright",
+      "bbox": [
+        0.43,
+        0.01,
+        0.56,
+        0.41
+      ],
+      "cardCount": 6
+    },
+    {
+      "id": 4,
+      "orientation": "upright",
+      "bbox": [
+        0.575,
+        0.02,
+        0.73,
+        0.62
+      ],
+      "cardCount": 10
+    },
+    {
+      "id": 5,
+      "orientation": "upright",
+      "bbox": [
+        0.74,
+        0.03,
+        0.91,
+        0.31
+      ],
+      "cardCount": 2
+    },
+    {
+      "id": 6,
+      "orientation": "upright",
+      "bbox": [
+        0.26,
+        0.46,
+        0.42,
+        1
+      ],
+      "cardCount": 7
+    },
+    {
+      "id": 7,
+      "orientation": "upright",
+      "bbox": [
+        0.41,
+        0.4,
+        0.55,
+        0.66
+      ],
+      "cardCount": 1
+    },
+    {
+      "id": 8,
+      "orientation": "upright",
+      "bbox": [
+        0.75,
+        0.44,
+        0.91,
+        1
+      ],
+      "cardCount": 6
+    },
+    {
+      "id": 9,
+      "orientation": "upright",
+      "bbox": [
+        0.07,
+        0.7,
+        0.26,
+        1
+      ],
+      "cardCount": 2
+    },
+    {
+      "id": 10,
+      "orientation": "upright",
+      "bbox": [
+        0.42,
+        0.68,
+        0.58,
+        1
+      ],
+      "cardCount": 3
+    },
+    {
+      "id": 11,
+      "orientation": "upright",
+      "bbox": [
+        0.58,
+        0.66,
+        0.75,
+        1
+      ],
+      "cardCount": 2
+    }
+  ],
+  "detections": [
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:0",
+      "group": 1,
+      "position": 1,
+      "titleBox": [
+        0.21,
+        0.04,
+        0.25,
+        0.06
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": "Mark 1:40",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 1,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "reference",
+      "printingReason": "default",
+      "chosenKey": "Lost Soul Mark 1:40 (J)|J|Lost_Soul_Mark_1_40_(J)",
+      "kind": "matched",
+      "deckKey": "Lost Soul Mark 1:40 (J)|J|Lost_Soul_Mark_1_40_(J)",
+      "scores": {
+        "matchScore": 9.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "reference",
+          "vanilla",
+          "type",
+          "no_nickname"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Lost Soul (Mark 1:40) (GoC)|GoC|LR60-Lost-Soul-Mark1_40",
+          "name": "Lost Soul (Mark 1:40) (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "LR60-Lost-Soul-Mark1_40",
+          "legality": "Rotation",
+          "price": 5
+        },
+        {
+          "key": "Lost Soul Mark 1:40 (J)|J|Lost_Soul_Mark_1_40_(J)",
+          "name": "Lost Soul Mark 1:40 (J)",
+          "set": "J",
+          "officialSet": "J",
+          "imgFile": "Lost_Soul_Mark_1_40_(J)",
+          "legality": "Rotation",
+          "price": 0.25
+        },
+        {
+          "key": "Lost Soul Mark 1:40 (Kneeling Dude)|Ap|Lost_Soul_Mark_1_40_(Kneeling_Dude)_(Ap)",
+          "name": "Lost Soul Mark 1:40 (Kneeling Dude)",
+          "set": "Ap",
+          "officialSet": "Apostles",
+          "imgFile": "Lost_Soul_Mark_1_40_(Kneeling_Dude)_(Ap)",
+          "legality": "",
+          "price": 0.25
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:1",
+      "group": 1,
+      "position": 2,
+      "titleBox": [
+        0.2,
+        0.25,
+        0.24,
+        0.27
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 2,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:2",
+      "group": 1,
+      "position": 3,
+      "titleBox": [
+        0.2,
+        0.32,
+        0.235,
+        0.335
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 3,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:3",
+      "group": 1,
+      "position": 4,
+      "titleBox": [
+        0.18,
+        0.405,
+        0.235,
+        0.42
+      ],
+      "read": {
+        "title": "King Zedekiah",
+        "reference": "2 Kings 24:17",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": "1",
+        "toughness": "1",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 4,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "King Zedekiah (Roots)|RR|164-King-Zedekiah",
+      "identityCandidates": [
+        "king zedekiah|evil character|brown|evil|warrior#King Zedekiah",
+        "king zedekiah|evil character|brown|evil|warrior#King Zedekiah (Roots)"
+      ],
+      "scores": {
+        "matchScore": 13.25,
+        "runnerUpScore": 13.25,
+        "agreeingFields": [
+          "reference",
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "King Zedekiah|Ki|King_Zedekiah_(Ki)",
+          "name": "King Zedekiah",
+          "set": "Ki",
+          "officialSet": "Kings",
+          "imgFile": "King_Zedekiah_(Ki)",
+          "legality": "",
+          "price": 0.5
+        },
+        {
+          "key": "King Zedekiah (Roots)|RR|164-King-Zedekiah",
+          "name": "King Zedekiah (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "164-King-Zedekiah",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:4",
+      "group": 2,
+      "position": 1,
+      "titleBox": [
+        0.34,
+        0.065,
+        0.4,
+        0.076
+      ],
+      "read": {
+        "title": "Gibeonite Trickery",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": "0",
+        "toughness": "6",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 1,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Gibeonite Trickery (Roots)|RR|157-Gibeonite-Trickery",
+      "identityCandidates": [
+        "gibeonite trickery|ee|black|evil|#Gibeonite Trickery (RoA)",
+        "gibeonite trickery|ee|black|evil|#Gibeonite Trickery (Roots)"
+      ],
+      "scores": {
+        "matchScore": 4,
+        "runnerUpScore": 4,
+        "agreeingFields": [
+          "stats"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Gibeonite Trickery (RoA)|RoA|Gibeonite_Trickery_(RA2)",
+          "name": "Gibeonite Trickery (RoA)",
+          "set": "RoA",
+          "officialSet": "Rock of Ages",
+          "imgFile": "Gibeonite_Trickery_(RA2)",
+          "legality": "",
+          "price": 0.5
+        },
+        {
+          "key": "Gibeonite Trickery (Roots)|RR|157-Gibeonite-Trickery",
+          "name": "Gibeonite Trickery (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "157-Gibeonite-Trickery",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:5",
+      "group": 2,
+      "position": 2,
+      "titleBox": [
+        0.317,
+        0.096,
+        0.397,
+        0.106
+      ],
+      "read": {
+        "title": "Mask of Self-Glorification",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": "3",
+        "toughness": "1",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 2,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Mask of Self-glorification (Roots)|RR|151-Mask-of-Self-Glorification",
+      "identityCandidates": [
+        "mask of self-glorification|ee|black|evil|#Mask of Self-glorification",
+        "mask of self-glorification|ee|black|evil|#Mask of Self-glorification (Roots)"
+      ],
+      "scores": {
+        "matchScore": 1,
+        "runnerUpScore": 1,
+        "agreeingFields": [
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Mask of Self-glorification|War|Mask_of_Self-glorification_(Wa)",
+          "name": "Mask of Self-glorification",
+          "set": "War",
+          "officialSet": "Warriors",
+          "imgFile": "Mask_of_Self-glorification_(Wa)",
+          "legality": "",
+          "price": 0.25
+        },
+        {
+          "key": "Mask of Self-glorification (Roots)|RR|151-Mask-of-Self-Glorification",
+          "name": "Mask of Self-glorification (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "151-Mask-of-Self-Glorification",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:6",
+      "group": 2,
+      "position": 3,
+      "titleBox": [
+        0.35,
+        0.13,
+        0.39,
+        0.14
+      ],
+      "read": {
+        "title": "Abandonment",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": "1",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 3,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Abandonment (EC)|TEC|Abandonment_(EC)",
+      "identityCandidates": [
+        "abandonment|ee|blackgold|evil|#Abandonment (EC)",
+        "abandonment|ee|black|evil|#Abandonment (Roots)"
+      ],
+      "scores": {
+        "matchScore": 1,
+        "runnerUpScore": 1,
+        "agreeingFields": [
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Abandonment (EC)|TEC|Abandonment_(EC)",
+          "name": "Abandonment (EC)",
+          "set": "TEC",
+          "officialSet": "Early Church",
+          "imgFile": "Abandonment_(EC)",
+          "legality": "Rotation",
+          "price": 7
+        },
+        {
+          "key": "Abandonment (Roots)|RR|156-Abandonment",
+          "name": "Abandonment (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "156-Abandonment",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:7",
+      "group": 2,
+      "position": 4,
+      "titleBox": [
+        0.336,
+        0.164,
+        0.4,
+        0.173
+      ],
+      "read": {
+        "title": "Greek Philosophers",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": "4",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 4,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Greek Philosophers|Ap|Greek_Philosophers_(Ap)",
+      "kind": "matched",
+      "deckKey": "Greek Philosophers|Ap|Greek_Philosophers_(Ap)",
+      "scores": {
+        "matchScore": 1.75,
+        "runnerUpScore": 1.25,
+        "agreeingFields": [
+          "brigade",
+          "vanilla",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Greek Philosophers|Ap|Greek_Philosophers_(Ap)",
+          "name": "Greek Philosophers",
+          "set": "Ap",
+          "officialSet": "Apostles",
+          "imgFile": "Greek_Philosophers_(Ap)",
+          "legality": "",
+          "price": 0.25
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:8",
+      "group": 2,
+      "position": 5,
+      "titleBox": [
+        0.332,
+        0.193,
+        0.397,
+        0.203
+      ],
+      "read": {
+        "title": "Greek Philosophers",
+        "reference": "1 Corinthians 1:20",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": "4",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 5,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Greek Philosophers|Ap|Greek_Philosophers_(Ap)",
+      "kind": "matched",
+      "deckKey": "Greek Philosophers|Ap|Greek_Philosophers_(Ap)",
+      "scores": {
+        "matchScore": 9.75,
+        "runnerUpScore": 9.25,
+        "agreeingFields": [
+          "reference",
+          "brigade",
+          "vanilla",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Greek Philosophers|Ap|Greek_Philosophers_(Ap)",
+          "name": "Greek Philosophers",
+          "set": "Ap",
+          "officialSet": "Apostles",
+          "imgFile": "Greek_Philosophers_(Ap)",
+          "legality": "",
+          "price": 0.25
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:9",
+      "group": 3,
+      "position": 1,
+      "titleBox": [
+        0.5,
+        0.025,
+        0.55,
+        0.034
+      ],
+      "read": {
+        "title": "Cup of Wrath",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": "6",
+        "toughness": "0",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 1,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Cup of Wrath (Roots)|RR|178-Cup-of-Wrath",
+      "kind": "matched",
+      "deckKey": "Cup of Wrath (Roots)|RR|178-Cup-of-Wrath",
+      "scores": {
+        "matchScore": 5,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Cup of Wrath (Roots)|RR|178-Cup-of-Wrath",
+          "name": "Cup of Wrath (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "178-Cup-of-Wrath",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:10",
+      "group": 3,
+      "position": 2,
+      "titleBox": [
+        0.5,
+        0.052,
+        0.546,
+        0.06
+      ],
+      "read": {
+        "title": "Cup of Wrath",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": "6",
+        "toughness": "0",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 2,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Cup of Wrath (Roots)|RR|178-Cup-of-Wrath",
+      "kind": "matched",
+      "deckKey": "Cup of Wrath (Roots)|RR|178-Cup-of-Wrath",
+      "scores": {
+        "matchScore": 5,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Cup of Wrath (Roots)|RR|178-Cup-of-Wrath",
+          "name": "Cup of Wrath (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "178-Cup-of-Wrath",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:11",
+      "group": 3,
+      "position": 3,
+      "titleBox": [
+        0.5,
+        0.083,
+        0.546,
+        0.09
+      ],
+      "read": {
+        "title": "Cup of Wrath",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": "6",
+        "toughness": "0",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 3,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Cup of Wrath (Roots)|RR|178-Cup-of-Wrath",
+      "kind": "matched",
+      "deckKey": "Cup of Wrath (Roots)|RR|178-Cup-of-Wrath",
+      "scores": {
+        "matchScore": 5,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Cup of Wrath (Roots)|RR|178-Cup-of-Wrath",
+          "name": "Cup of Wrath (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "178-Cup-of-Wrath",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:12",
+      "group": 3,
+      "position": 4,
+      "titleBox": [
+        0.47,
+        0.112,
+        0.546,
+        0.12
+      ],
+      "read": {
+        "title": "Nergal-sar-ezer, Rab-Mag",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": "7",
+        "toughness": "7",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 4,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Nergal-sar-ezer, Rab-Mag (Roots)|RR|172-Nergalsarezer",
+      "kind": "matched",
+      "deckKey": "Nergal-sar-ezer, Rab-Mag (Roots)|RR|172-Nergalsarezer",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Nergal-sar-ezer, Rab-Mag (Roots)|RR|172-Nergalsarezer",
+          "name": "Nergal-sar-ezer, Rab-Mag (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "172-Nergalsarezer",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:13",
+      "group": 3,
+      "position": 5,
+      "titleBox": [
+        0.5,
+        0.147,
+        0.543,
+        0.154
+      ],
+      "read": {
+        "title": "Unclean Animals",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": "4",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 5,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Unclean Animals [Camels]|IR|104-Unclean-Animals-camel",
+      "kind": "matched",
+      "deckKey": "Unclean Animals [Camels]|IR|104-Unclean-Animals-camel",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 1.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Unclean Animals [Camels]|IR|104-Unclean-Animals-camel",
+          "name": "Unclean Animals [Camels]",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "104-Unclean-Animals-camel",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:14",
+      "group": 3,
+      "position": 6,
+      "titleBox": [
+        0.5,
+        0.178,
+        0.543,
+        0.188
+      ],
+      "read": {
+        "title": "Wild Animals",
+        "reference": "Leviticus 7:24",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": "8",
+        "toughness": "5",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 6,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Wild Animals|IR|103-Wild-Animals",
+      "kind": "matched",
+      "deckKey": "Wild Animals|IR|103-Wild-Animals",
+      "scores": {
+        "matchScore": 13.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "reference",
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Wild Animals|IR|103-Wild-Animals",
+          "name": "Wild Animals",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "103-Wild-Animals",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:15",
+      "group": 4,
+      "position": 1,
+      "titleBox": [
+        0.617,
+        0.036,
+        0.664,
+        0.044
+      ],
+      "read": {
+        "title": "Sprinkled Blood",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "4",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 1,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Sprinkled Blood|IR|010-Sprinkled-Blood",
+      "kind": "matched",
+      "deckKey": "Sprinkled Blood|IR|010-Sprinkled-Blood",
+      "scores": {
+        "matchScore": 5,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Sprinkled Blood|IR|010-Sprinkled-Blood",
+          "name": "Sprinkled Blood",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "010-Sprinkled-Blood",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:16",
+      "group": 4,
+      "position": 2,
+      "titleBox": [
+        0.617,
+        0.073,
+        0.664,
+        0.08
+      ],
+      "read": {
+        "title": "Sprinkled Blood",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "4",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 2,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Sprinkled Blood|IR|010-Sprinkled-Blood",
+      "kind": "matched",
+      "deckKey": "Sprinkled Blood|IR|010-Sprinkled-Blood",
+      "scores": {
+        "matchScore": 5,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Sprinkled Blood|IR|010-Sprinkled-Blood",
+          "name": "Sprinkled Blood",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "010-Sprinkled-Blood",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:17",
+      "group": 4,
+      "position": 3,
+      "titleBox": [
+        0.664,
+        0.11,
+        0.696,
+        0.118
+      ],
+      "read": {
+        "title": "Abeyance",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "1",
+        "toughness": "5",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 3,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Abeyance (Roots)|RR|139-Abeyance",
+      "kind": "matched",
+      "deckKey": "Abeyance (Roots)|RR|139-Abeyance",
+      "scores": {
+        "matchScore": 5,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Abeyance (Roots)|RR|139-Abeyance",
+          "name": "Abeyance (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "139-Abeyance",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:18",
+      "group": 4,
+      "position": 4,
+      "titleBox": [
+        0.635,
+        0.146,
+        0.703,
+        0.155
+      ],
+      "read": {
+        "title": "Increasing Numbers",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "3",
+        "toughness": "4",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 4,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Increasing Numbers [IR]|IR|075-Increasing-Numbers",
+      "kind": "matched",
+      "deckKey": "Increasing Numbers [IR]|IR|075-Increasing-Numbers",
+      "scores": {
+        "matchScore": 5,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Increasing Numbers [IR]|IR|075-Increasing-Numbers",
+          "name": "Increasing Numbers [IR]",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "075-Increasing-Numbers",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:19",
+      "group": 4,
+      "position": 5,
+      "titleBox": [
+        0.642,
+        0.185,
+        0.704,
+        0.193
+      ],
+      "read": {
+        "title": "Quail from Above",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "4",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 5,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Quail from Above|IR|074-Quail-from-Above",
+      "kind": "matched",
+      "deckKey": "Quail from Above|IR|074-Quail-from-Above",
+      "scores": {
+        "matchScore": 5,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Quail from Above|IR|074-Quail-from-Above",
+          "name": "Quail from Above",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "074-Quail-from-Above",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:20",
+      "group": 4,
+      "position": 6,
+      "titleBox": [
+        0.631,
+        0.222,
+        0.7,
+        0.232
+      ],
+      "read": {
+        "title": "Phinehas, the Zealous",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": "10",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 6,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Phinehas, the Zealous|IR|031-Phinehas-the-Zealous-R",
+      "kind": "matched",
+      "deckKey": "Phinehas, the Zealous|IR|031-Phinehas-the-Zealous-R",
+      "scores": {
+        "matchScore": 4.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Phinehas, the Zealous|IR|031-Phinehas-the-Zealous-R",
+          "name": "Phinehas, the Zealous",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "031-Phinehas-the-Zealous-R",
+          "legality": "Rotation",
+          "price": 3
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:21",
+      "group": 4,
+      "position": 7,
+      "titleBox": [
+        0.632,
+        0.268,
+        0.714,
+        0.278
+      ],
+      "read": {
+        "title": "Chenaniah, Chief Singer",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "11",
+        "toughness": "7",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 7,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Chenaniah, Chief Singer (Roots)|RR|125-Chenaniah",
+      "kind": "matched",
+      "deckKey": "Chenaniah, Chief Singer (Roots)|RR|125-Chenaniah",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Chenaniah, Chief Singer (Roots)|RR|125-Chenaniah",
+          "name": "Chenaniah, Chief Singer (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "125-Chenaniah",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:22",
+      "group": 4,
+      "position": 8,
+      "titleBox": [
+        0.647,
+        0.313,
+        0.71,
+        0.323
+      ],
+      "read": {
+        "title": "Bezaleel, the Builder",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "9",
+        "toughness": "12",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 8,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "fuzzy",
+      "printingReason": "only",
+      "chosenKey": "Bezalel, the Builder|IR|065-Bezalel-the-Builder",
+      "kind": "matched",
+      "deckKey": "Bezalel, the Builder|IR|065-Bezalel-the-Builder",
+      "near": [
+        {
+          "stem": "bezalel the builder",
+          "d": 0.05
+        }
+      ],
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Bezalel, the Builder|IR|065-Bezalel-the-Builder",
+          "name": "Bezalel, the Builder",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "065-Bezalel-the-Builder",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:23",
+      "group": 4,
+      "position": 9,
+      "titleBox": [
+        0.65,
+        0.353,
+        0.7,
+        0.36
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "6",
+        "toughness": "4",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 9,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:24",
+      "group": 4,
+      "position": 10,
+      "titleBox": [
+        0.627,
+        0.385,
+        0.696,
+        0.395
+      ],
+      "read": {
+        "title": "The Chosen Warriors",
+        "reference": "Exodus 17:9",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "7",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 10,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "The Chosen Warriors|IR|066-The-Chosen-Warriors",
+      "kind": "matched",
+      "deckKey": "The Chosen Warriors|IR|066-The-Chosen-Warriors",
+      "scores": {
+        "matchScore": 13.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "reference",
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Chosen Warriors|IR|066-The-Chosen-Warriors",
+          "name": "The Chosen Warriors",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "066-The-Chosen-Warriors",
+          "legality": "Rotation",
+          "price": 5
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:25",
+      "group": 5,
+      "position": 1,
+      "titleBox": [
+        0.814,
+        0.049,
+        0.858,
+        0.057
+      ],
+      "read": {
+        "title": "Guilt Offering",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": "4",
+        "toughness": "1",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 1,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Guilt Offering [IR]|IR|059-Guilt-Offering",
+      "kind": "matched",
+      "deckKey": "Guilt Offering [IR]|IR|059-Guilt-Offering",
+      "scores": {
+        "matchScore": 4,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Guilt Offering [IR]|IR|059-Guilt-Offering",
+          "name": "Guilt Offering [IR]",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "059-Guilt-Offering",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:26",
+      "group": 5,
+      "position": 2,
+      "titleBox": [
+        0.825,
+        0.087,
+        0.856,
+        0.095
+      ],
+      "read": {
+        "title": "David",
+        "reference": "1 Samuel 17:37",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "10",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 2,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "David (Roots)|RR|082-David",
+      "identityCandidates": [
+        "david|hero|green|good|#David (Green) (Wa)",
+        "david|hero|green|good|warrior#David (Roots)"
+      ],
+      "scores": {
+        "matchScore": 13.25,
+        "runnerUpScore": 13.25,
+        "agreeingFields": [
+          "reference",
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "David (Green) (Ki)|Ki|David_(green)_(Ki)",
+          "name": "David (Green) (Ki)",
+          "set": "Ki",
+          "officialSet": "Kings",
+          "imgFile": "David_(green)_(Ki)",
+          "legality": "",
+          "price": 0.75
+        },
+        {
+          "key": "David (Green) (Wa)|War|David_(Green)_(Wa)",
+          "name": "David (Green) (Wa)",
+          "set": "War",
+          "officialSet": "Warriors",
+          "imgFile": "David_(Green)_(Wa)",
+          "legality": "",
+          "price": 0.5
+        },
+        {
+          "key": "David (Roots)|RR|082-David",
+          "name": "David (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "082-David",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:27",
+      "group": 6,
+      "position": 1,
+      "titleBox": [
+        0.321,
+        0.47,
+        0.386,
+        0.48
+      ],
+      "read": {
+        "title": "Curse Their Parents",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": "X",
+        "toughness": "X",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 1,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Curse Their Parents|IR|113-Curse-Their-Parents",
+      "kind": "matched",
+      "deckKey": "Curse Their Parents|IR|113-Curse-Their-Parents",
+      "scores": {
+        "matchScore": 5,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Curse Their Parents|IR|113-Curse-Their-Parents",
+          "name": "Curse Their Parents",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "113-Curse-Their-Parents",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:28",
+      "group": 6,
+      "position": 2,
+      "titleBox": [
+        0.334,
+        0.509,
+        0.39,
+        0.519
+      ],
+      "read": {
+        "title": "Sabbath Breaker",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": "0",
+        "toughness": "7",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 2,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Sabbath Breaker [Crimson/Gray]|IR|085-Sabbath-Breaker-crimson",
+      "kind": "matched",
+      "deckKey": "Sabbath Breaker [Crimson/Gray]|IR|085-Sabbath-Breaker-crimson",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 1.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Sabbath Breaker [Crimson/Gray]|IR|085-Sabbath-Breaker-crimson",
+          "name": "Sabbath Breaker [Crimson/Gray]",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "085-Sabbath-Breaker-crimson",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:29",
+      "group": 6,
+      "position": 3,
+      "titleBox": [
+        0.334,
+        0.552,
+        0.39,
+        0.561
+      ],
+      "read": {
+        "title": "Sabbath Breaker",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": "3",
+        "toughness": "4",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 3,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Sabbath Breaker [Black/Gray]|IR|082-Sabbath-Breaker-black",
+      "kind": "matched",
+      "deckKey": "Sabbath Breaker [Black/Gray]|IR|082-Sabbath-Breaker-black",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 1.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Sabbath Breaker [Black/Gray]|IR|082-Sabbath-Breaker-black",
+          "name": "Sabbath Breaker [Black/Gray]",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "082-Sabbath-Breaker-black",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:30",
+      "group": 6,
+      "position": 4,
+      "titleBox": [
+        0.333,
+        0.602,
+        0.388,
+        0.612
+      ],
+      "read": {
+        "title": "Sabbath Breaker",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": "3",
+        "toughness": "4",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 4,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Sabbath Breaker [Black/Gray]|IR|082-Sabbath-Breaker-black",
+      "kind": "matched",
+      "deckKey": "Sabbath Breaker [Black/Gray]|IR|082-Sabbath-Breaker-black",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 1.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Sabbath Breaker [Black/Gray]|IR|082-Sabbath-Breaker-black",
+          "name": "Sabbath Breaker [Black/Gray]",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "082-Sabbath-Breaker-black",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:31",
+      "group": 6,
+      "position": 5,
+      "titleBox": [
+        0.332,
+        0.658,
+        0.398,
+        0.668
+      ],
+      "read": {
+        "title": "Sabbath Breaker",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": "2",
+        "toughness": "5",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 5,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Sabbath Breaker [Brown/Gray]|IR|083-Sabbath-Breaker-brown",
+      "kind": "matched",
+      "deckKey": "Sabbath Breaker [Brown/Gray]|IR|083-Sabbath-Breaker-brown",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 1.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Sabbath Breaker [Brown/Gray]|IR|083-Sabbath-Breaker-brown",
+          "name": "Sabbath Breaker [Brown/Gray]",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "083-Sabbath-Breaker-brown",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:32",
+      "group": 6,
+      "position": 6,
+      "titleBox": [
+        0.32,
+        0.705,
+        0.398,
+        0.714
+      ],
+      "read": {
+        "title": "Laban, the Deal Breaker",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": "2",
+        "toughness": "7",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 6,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Laban, the Deal Breaker (Roots)|RR|143-Laban",
+      "kind": "matched",
+      "deckKey": "Laban, the Deal Breaker (Roots)|RR|143-Laban",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Laban, the Deal Breaker (Roots)|RR|143-Laban",
+          "name": "Laban, the Deal Breaker (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "143-Laban",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:33",
+      "group": 6,
+      "position": 7,
+      "titleBox": [
+        0.333,
+        0.746,
+        0.393,
+        0.755
+      ],
+      "read": {
+        "title": "Sabbath Breaker",
+        "reference": "Numbers 15:32",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": "3",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 7,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Sabbath Breaker (FoM)|FoM|108-Sabbath-Breaker",
+      "identityCandidates": [
+        "sabbath breaker|evil character|gray|evil|#Sabbath Breaker",
+        "sabbath breaker|evil character|gray|evil|#Sabbath Breaker (Roots)"
+      ],
+      "scores": {
+        "matchScore": 13.25,
+        "runnerUpScore": 13.25,
+        "agreeingFields": [
+          "reference",
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Sabbath Breaker|Pri|Sabbath_Breaker_(Pi)",
+          "name": "Sabbath Breaker",
+          "set": "Pri",
+          "officialSet": "Priests",
+          "imgFile": "Sabbath_Breaker_(Pi)",
+          "legality": "",
+          "price": 1.5
+        },
+        {
+          "key": "Sabbath Breaker (FoM)|FoM|108-Sabbath-Breaker",
+          "name": "Sabbath Breaker (FoM)",
+          "set": "FoM",
+          "officialSet": "Fall of Man",
+          "imgFile": "108-Sabbath-Breaker",
+          "legality": "Rotation",
+          "price": 15
+        },
+        {
+          "key": "Sabbath Breaker (Roots)|RR|191-Sabbath-Breaker",
+          "name": "Sabbath Breaker (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "191-Sabbath-Breaker",
+          "legality": "Rotation",
+          "price": 3
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:34",
+      "group": 7,
+      "position": 1,
+      "titleBox": [
+        0.458,
+        0.42,
+        0.496,
+        0.43
+      ],
+      "read": {
+        "title": "Forest Fire",
+        "reference": "Ezekiel 20:47",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green/Crimson",
+        "strength": "2",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 1,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Forest Fire (Roots)|RR|034-Forest-Fire",
+      "identityCandidates": [
+        "forest fire|geee|greencrimson|neutral|#Forest Fire (FooF)",
+        "forest fire|geee|green crimson|neutral|#Forest Fire (Roots)"
+      ],
+      "scores": {
+        "matchScore": 13.25,
+        "runnerUpScore": 13.25,
+        "agreeingFields": [
+          "reference",
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Forest Fire (FooF)|FoOF|Forest_Fire_(FF2)",
+          "name": "Forest Fire (FooF)",
+          "set": "FoOF",
+          "officialSet": "Faith of Our Fathers",
+          "imgFile": "Forest_Fire_(FF2)",
+          "legality": "",
+          "price": 0.5
+        },
+        {
+          "key": "Forest Fire (Roots)|RR|034-Forest-Fire",
+          "name": "Forest Fire (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "034-Forest-Fire",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:35",
+      "group": 8,
+      "position": 1,
+      "titleBox": [
+        0.8,
+        0.47,
+        0.879,
+        0.48
+      ],
+      "read": {
+        "title": "Issachar, Burden Bearer",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": "4",
+        "toughness": "11",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 1,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Issachar, Burden Bearer|IR|041-Issachar-Burden-Bearer",
+      "kind": "matched",
+      "deckKey": "Issachar, Burden Bearer|IR|041-Issachar-Burden-Bearer",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Issachar, Burden Bearer|IR|041-Issachar-Burden-Bearer",
+          "name": "Issachar, Burden Bearer",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "041-Issachar-Burden-Bearer",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:36",
+      "group": 8,
+      "position": 2,
+      "titleBox": [
+        0.8,
+        0.522,
+        0.884,
+        0.532
+      ],
+      "read": {
+        "title": "Naphtali, the Vocal",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": "7",
+        "toughness": "5",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 2,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Naphtali, the Vocal|IR|038-Naphtali-the-Vocal",
+      "kind": "matched",
+      "deckKey": "Naphtali, the Vocal|IR|038-Naphtali-the-Vocal",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Naphtali, the Vocal|IR|038-Naphtali-the-Vocal",
+          "name": "Naphtali, the Vocal",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "038-Naphtali-the-Vocal",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:37",
+      "group": 8,
+      "position": 3,
+      "titleBox": [
+        0.835,
+        0.569,
+        0.886,
+        0.578
+      ],
+      "read": {
+        "title": "Asher, the Rich",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": "5",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 3,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Asher, the Rich|IR|040-Asher-the-Rich",
+      "kind": "matched",
+      "deckKey": "Asher, the Rich|IR|040-Asher-the-Rich",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Asher, the Rich|IR|040-Asher-the-Rich",
+          "name": "Asher, the Rich",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "040-Asher-the-Rich",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:38",
+      "group": 8,
+      "position": 4,
+      "titleBox": [
+        0.81,
+        0.615,
+        0.881,
+        0.625
+      ],
+      "read": {
+        "title": "Dan, Justice of Peace",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": "8",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 4,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Dan, Justice of Peace|IR|037-Dan-Justice-of-Peace",
+      "kind": "matched",
+      "deckKey": "Dan, Justice of Peace|IR|037-Dan-Justice-of-Peace",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Dan, Justice of Peace|IR|037-Dan-Justice-of-Peace",
+          "name": "Dan, Justice of Peace",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "037-Dan-Justice-of-Peace",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:39",
+      "group": 8,
+      "position": 5,
+      "titleBox": [
+        0.83,
+        0.66,
+        0.894,
+        0.67
+      ],
+      "read": {
+        "title": "Levi, the Fierce",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": "10",
+        "toughness": "12",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 5,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Levi, the Fierce|IR|036-Levi-the-Fierce",
+      "kind": "matched",
+      "deckKey": "Levi, the Fierce|IR|036-Levi-the-Fierce",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Levi, the Fierce|IR|036-Levi-the-Fierce",
+          "name": "Levi, the Fierce",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "036-Levi-the-Fierce",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:40",
+      "group": 8,
+      "position": 6,
+      "titleBox": [
+        0.847,
+        0.716,
+        0.908,
+        0.726
+      ],
+      "read": {
+        "title": "Jacob, the Wrestler",
+        "reference": "Genesis 32:24",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": "6",
+        "toughness": "5",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 6,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Jacob, the Wrestler (Roots)|RR|040-Jacob",
+      "kind": "matched",
+      "deckKey": "Jacob, the Wrestler (Roots)|RR|040-Jacob",
+      "scores": {
+        "matchScore": 13.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "reference",
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Jacob, the Wrestler (Roots)|RR|040-Jacob",
+          "name": "Jacob, the Wrestler (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "040-Jacob",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:41",
+      "group": 9,
+      "position": 1,
+      "titleBox": [
+        0.174,
+        0.727,
+        0.227,
+        0.737
+      ],
+      "read": {
+        "title": "Twenty Shekels",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Artifact",
+        "grid": {
+          "row": 1,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "Twenty Shekels|IR|008-Twenty-Sheckels",
+      "kind": "matched",
+      "deckKey": "Twenty Shekels|IR|008-Twenty-Sheckels",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Twenty Shekels|IR|008-Twenty-Sheckels",
+          "name": "Twenty Shekels",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "008-Twenty-Sheckels",
+          "legality": "Rotation",
+          "price": 7
+        },
+        {
+          "key": "Twenty Shekels [2025 - 2nd Place]|Pmo-P3|Twenty-Shekels-2nd-place",
+          "name": "Twenty Shekels [2025 - 2nd Place]",
+          "set": "Pmo-P3",
+          "officialSet": "Promo",
+          "imgFile": "Twenty-Shekels-2nd-place",
+          "legality": "Rotation",
+          "price": 150
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:42",
+      "group": 9,
+      "position": 2,
+      "titleBox": [
+        0.192,
+        0.766,
+        0.228,
+        0.777
+      ],
+      "read": {
+        "title": "Holy Grail",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Artifact",
+        "grid": {
+          "row": 2,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Holy Grail|War|Holy_Grail_(Wa)",
+      "identityCandidates": [
+        "holy grail|artifact||neutral|#Holy Grail",
+        "holy grail|artifact||neutral|#Holy Grail (PC)",
+        "holy grail|artifact||neutral|#Holy Grail [Fundraiser]"
+      ],
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Holy Grail|War|Holy_Grail_(Wa)",
+          "name": "Holy Grail",
+          "set": "War",
+          "officialSet": "Warriors",
+          "imgFile": "Holy_Grail_(Wa)",
+          "legality": "",
+          "price": 9.5
+        },
+        {
+          "key": "Holy Grail (PC)|TPC|Holy_Grail_(PC)",
+          "name": "Holy Grail (PC)",
+          "set": "TPC",
+          "officialSet": "Persecuted Church",
+          "imgFile": "Holy_Grail_(PC)",
+          "legality": "Rotation",
+          "price": 40
+        },
+        {
+          "key": "Holy Grail (Roots)|RR|006-Holy-Grail",
+          "name": "Holy Grail (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "006-Holy-Grail",
+          "legality": "Rotation",
+          "price": 3
+        },
+        {
+          "key": "Holy Grail [Fundraiser]|Fund|Holy-Grail-Fundraiser",
+          "name": "Holy Grail [Fundraiser]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "Holy-Grail-Fundraiser",
+          "legality": "Rotation",
+          "price": 50
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:43",
+      "group": 10,
+      "position": 1,
+      "titleBox": [
+        0.473,
+        0.699,
+        0.56,
+        0.708
+      ],
+      "read": {
+        "title": "Visions of Iddo the Seer",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "7",
+        "toughness": "0",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 1,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Visions of Iddo the Seer (Roots)|RR|089-Visions-of-Iddo-the-Seer",
+      "kind": "matched",
+      "deckKey": "Visions of Iddo the Seer (Roots)|RR|089-Visions-of-Iddo-the-Seer",
+      "scores": {
+        "matchScore": 5,
+        "runnerUpScore": 1,
+        "agreeingFields": [
+          "stats",
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Visions of Iddo the Seer (Roots)|RR|089-Visions-of-Iddo-the-Seer",
+          "name": "Visions of Iddo the Seer (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "089-Visions-of-Iddo-the-Seer",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:44",
+      "group": 10,
+      "position": 2,
+      "titleBox": [
+        0.505,
+        0.738,
+        0.56,
+        0.748
+      ],
+      "read": {
+        "title": "The Watchman",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "4",
+        "toughness": "12",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 2,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "The Watchman (Promo)|Pmo-P2|The-Watchman_(Promo)",
+      "identityCandidates": [
+        "the watchman|hero|green|good|#The Watchman (Promo)",
+        "the watchman|hero|green|good|warrior#The Watchman (Roots)"
+      ],
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 5.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Watchman (Promo)|Pmo-P2|The-Watchman_(Promo)",
+          "name": "The Watchman (Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "The-Watchman_(Promo)",
+          "legality": "Rotation",
+          "price": 25
+        },
+        {
+          "key": "The Watchman (Roots)|RR|087-The-Watchman",
+          "name": "The Watchman (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "087-The-Watchman",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:45",
+      "group": 10,
+      "position": 3,
+      "titleBox": [
+        0.505,
+        0.785,
+        0.562,
+        0.795
+      ],
+      "read": {
+        "title": "The Watchman",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "4",
+        "toughness": "12",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 3,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "The Watchman (Promo)|Pmo-P2|The-Watchman_(Promo)",
+      "identityCandidates": [
+        "the watchman|hero|green|good|#The Watchman (Promo)",
+        "the watchman|hero|green|good|warrior#The Watchman (Roots)"
+      ],
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 5.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Watchman (Promo)|Pmo-P2|The-Watchman_(Promo)",
+          "name": "The Watchman (Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "The-Watchman_(Promo)",
+          "legality": "Rotation",
+          "price": 25
+        },
+        {
+          "key": "The Watchman (Roots)|RR|087-The-Watchman",
+          "name": "The Watchman (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "087-The-Watchman",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:46",
+      "group": 11,
+      "position": 1,
+      "titleBox": [
+        0.648,
+        0.683,
+        0.723,
+        0.693
+      ],
+      "read": {
+        "title": "Generous Giving",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": "4",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 1,
+          "col": 11
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "printing_ambiguous",
+      "chosenKey": "Generous Giving (Roots)|RR|061-Generous-Giving",
+      "kind": "matched",
+      "deckKey": "Generous Giving (Roots)|RR|061-Generous-Giving",
+      "scores": {
+        "matchScore": 4,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Generous Giving|TEC|Generous_Giving_(EC)",
+          "name": "Generous Giving",
+          "set": "TEC",
+          "officialSet": "Early Church",
+          "imgFile": "Generous_Giving_(EC)",
+          "legality": "Rotation",
+          "price": 5
+        },
+        {
+          "key": "Generous Giving (Roots)|RR|061-Generous-Giving",
+          "name": "Generous Giving (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "061-Generous-Giving",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    },
+    {
+      "id": "83384cd1-1217-4421-b7fb-349233adc3aa:47",
+      "group": 11,
+      "position": 2,
+      "titleBox": [
+        0.654,
+        0.739,
+        0.73,
+        0.75
+      ],
+      "read": {
+        "title": "Abiathar, the Survivor",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": "3",
+        "toughness": "4",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 2,
+          "col": 11
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Abiathar, the Survivor|IR|056-Abiathar-the-Survivor",
+      "kind": "matched",
+      "deckKey": "Abiathar, the Survivor|IR|056-Abiathar-the-Survivor",
+      "scores": {
+        "matchScore": 4.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Abiathar, the Survivor|IR|056-Abiathar-the-Survivor",
+          "name": "Abiathar, the Survivor",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "056-Abiathar-the-Survivor",
+          "legality": "Rotation",
+          "price": 0.75
+        }
+      ]
+    }
+  ],
+  "crops": {
+    "cropped": [],
+    "failed": [],
+    "skipped": []
+  },
+  "usage": {
+    "model": "claude-sonnet-5-5",
+    "latencyMs": 53579,
+    "attempts": 1,
+    "costUsd": 0.107484
+  },
+  "file": "IMG_9796.webp",
+  "status": 200,
+  "latencyMs": 57344,
+  "attempts": 1
+}

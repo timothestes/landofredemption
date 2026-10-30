@@ -13,6 +13,8 @@ export interface DeckPhoto {
   status: 'queued' | 'reading' | 'done' | 'failed';
   scanId?: string;
   photoQuality?: string;
+  /** Long edge of the image the scanner read, in px; under SMALL_PHOTO_EDGE the done line says so. */
+  longEdge?: number;
   error?: { status: number; body: ScanErrorBody; retryAfter?: number };
   startedAt?: number;
   /** Queued behind a busy auto-retry. */

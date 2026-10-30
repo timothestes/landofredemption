@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import sharp from 'sharp';
-import { cropRect, rotationFor, needsCrop, titleCentreInBox, keepCropRead, cropGroup, cropBoxToPhoto, inferSidewaysRows } from '../crop';
+import { cropRect, rotationFor, needsCrop, titleCentreInBox, keepCropRead, cropGroup, cropBoxToPhoto, inferSidewaysRows, nestedGroups } from '../crop';
 import type { Box, DeckGroup, DeckRead } from '../deckSchema';
 
 const read = (group: number, title: string | null = 'X', titleBox: Box | null = null): DeckRead => ({ title, strength: null, toughness: null, type: 'unknown', brigade: null, reference: null, group, position: 1, titleBox, confidence: 'high' });
@@ -15,15 +15,36 @@ describe('rotationFor', () => {
   it('maps orientations to rotations', () => expect(['upright', 'rotated_ccw', 'rotated_cw', 'upside_down'].map(o => rotationFor(o as any))).toEqual([0, 90, 270, 180]));
 });
 describe('needsCrop', () => {
-  it('only non-upright groups; never group 0', () => {
-    expect(needsCrop(grp(1, 'rotated_ccw', 2))).toBe(true);
-    expect(needsCrop(grp(2, 'rotated_cw', 2))).toBe(true);
-    expect(needsCrop(grp(3, 'upside_down', 2))).toBe(true);
-    expect(needsCrop(grp(4, 'upright', 2))).toBe(false);
-    expect(needsCrop(grp(0, 'rotated_ccw', 2))).toBe(false);
+  it('non-upright groups; never group 0', () => {
+    expect(needsCrop(grp(1, 'rotated_ccw', 2), 2)).toBe(true);
+    expect(needsCrop(grp(2, 'rotated_cw', 2), 2)).toBe(true);
+    expect(needsCrop(grp(3, 'upside_down', 2), 2)).toBe(true);
+    expect(needsCrop(grp(4, 'upright', 2), 2)).toBe(false);
+    expect(needsCrop(grp(0, 'rotated_ccw', 2), 0)).toBe(false);
   });
-  it('an upright group is not cropped even when short or with unread titles', () => {
-    expect(needsCrop(grp(1, 'upright', 4))).toBe(false);
+  it('an upright group the first pass listed under half of is cropped', () => {
+    expect(needsCrop(grp(1, 'upright', 10), 4)).toBe(true);
+    expect(needsCrop(grp(1, 'upright', 10), 0)).toBe(true);
+    expect(needsCrop(grp(0, 'upright', 10), 0)).toBe(false);
+  });
+  it('an upright group at half or more of its count, or under three cards, is not', () => {
+    expect(needsCrop(grp(1, 'upright', 10), 5)).toBe(false);
+    expect(needsCrop(grp(1, 'upright', 4), 3)).toBe(false);
+    expect(needsCrop(grp(1, 'upright', 2), 0)).toBe(false);
+  });
+});
+describe('nestedGroups', () => {
+  const g = (id: number, bbox: Box): DeckGroup => ({ id, orientation: 'rotated_cw', bbox, cardCount: 5 });
+  it('maps a group mostly inside a bigger one to it (recorded on 20240804_163529)', () => {
+    const gs = [g(7, [0.53, 0.77, 0.88, 0.89]), g(8, [0, 0.57, 0.31, 0.8]), g(9, [0, 0.57, 0.45, 1])];
+    expect([...nestedGroups(gs)]).toEqual([[8, 9]]);
+  });
+  it('leaves neighbours that only touch or overlap a little', () => {
+    expect(nestedGroups([g(1, [0, 0, 0.5, 0.5]), g(2, [0.45, 0, 1, 0.5])]).size).toBe(0);
+  });
+  it('maps to the outermost container and never involves group 0', () => {
+    const gs = [g(0, [0, 0, 1, 1]), g(1, [0.1, 0.1, 0.2, 0.2]), g(2, [0, 0, 0.5, 0.5]), g(3, [0, 0, 0.3, 0.3])];
+    expect([...nestedGroups(gs)].sort()).toEqual([[1, 2], [3, 2]]);
   });
 });
 describe('inferSidewaysRows', () => {
@@ -33,6 +54,12 @@ describe('inferSidewaysRows', () => {
   const starWars = [g(1, [0.02, 0.04, 0.17, 0.73]), g(2, [0.19, 0.05, 0.35, 0.79]), g(3, [0.37, 0.05, 0.53, 0.70]), g(6, [0.10, 0.78, 0.61, 0.98]), g(7, [0.61, 0.75, 0.93, 0.96])];
   it('turns a wide group about one card-width tall to rotated_ccw (dark photo 1)', () => {
     expect(inferSidewaysRows(dark1, 1024, 769).map(x => x.orientation)).toEqual(['rotated_ccw', 'upright', 'upright', 'upright', 'upright']);
+  });
+  it('leaves a row the photo edge cuts off: its height is not a card\'s (IMG_2745, turned upright)', () => {
+    const turned = [g(1, [0, 0, 1, 0.2]), g(2, [0, 0.18, 0.11, 0.86]), g(3, [0.1, 0.17, 0.27, 0.78]), g(4, [0.24, 0.19, 0.4, 0.99]), g(5, [0.4, 0.19, 0.53, 0.72])];
+    expect(inferSidewaysRows(turned, 1536, 1152).map(x => x.orientation)).toEqual(['upright', 'upright', 'upright', 'upright', 'upright']);
+    const bottom = [g(1, [0.1, 0.85, 0.9, 1]), ...turned.slice(1)];
+    expect(inferSidewaysRows(bottom, 1536, 1152)[0].orientation).toBe('upright');
   });
   it('catches both halves of a split sideways row (Star Wars mat)', () => {
     expect(inferSidewaysRows(starWars, 1024, 769).map(x => x.orientation)).toEqual(['upright', 'upright', 'upright', 'rotated_ccw', 'rotated_ccw']);
