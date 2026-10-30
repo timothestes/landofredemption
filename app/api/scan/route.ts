@@ -10,6 +10,7 @@ import { settleAbPairs } from '@/lib/scan/abCompare';
 import { capDetection } from '@/lib/scan/schema';
 import { DECK_DETECTION_CAP } from '@/lib/scan/deckSchema';
 import { runCropPass } from '@/lib/scan/cropPass';
+import { inferSidewaysRows } from '@/lib/scan/crop';
 import { deckReadToDetection, classifyDeckRead, type DeckDetection } from '@/lib/scan/deckClassify';
 import { reserveScan, finishScan, type FinishPatch } from '@/lib/scan/events';
 import { COMMIT_LIMITS } from '@/app/collection/scan/lib/commitCore';
@@ -17,7 +18,7 @@ import { COMMIT_LIMITS } from '@/app/collection/scan/lib/commitCore';
 // POST /api/scan: one photo in, matched detections out.
 // Spec: docs/superpowers/specs/2026-10-26-card-scanner-design.md, "POST /api/scan" and "Reserve first, then call".
 // Order: gate → body → reserve → encode → prices → recognize → match → AB frame comparison → finish.
-// mode=deck swaps the recognizer mode and arm, re-reads short groups from crops, classifies each read into a deck row, and skips the AB pass.
+// mode=deck swaps the recognizer mode and arm, re-reads sideways groups from crops, classifies each read into a deck row, and skips the AB pass.
 
 export const runtime = 'nodejs';
 export const maxDuration = 150;
@@ -170,7 +171,7 @@ export async function POST(req: Request) {
     }
 
     if (mode === 'deck' && 'groups' in r.output) {
-      const out = r.output;
+      const out = { ...r.output, groups: inferSidewaysRows(r.output.groups, width, height) };
       const cp = await runCropPass(jpeg, out, { width, height }, requestStart + CROP_DEADLINE_MS);
       for (const { group, code, detail } of cp.failures) console.error('[scan] crop failed', { scanId, group, code, detail });
       const usage = { inputTokens: r.usage.inputTokens + cp.usage.inputTokens, outputTokens: r.usage.outputTokens + cp.usage.outputTokens };

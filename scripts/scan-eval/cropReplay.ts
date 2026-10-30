@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { config } from 'dotenv';
 import { runCropPass } from '@/lib/scan/cropPass';
+import { inferSidewaysRows } from '@/lib/scan/crop';
 import { encodeForScan } from '@/lib/scan/image';
 import { matchDetection } from '@/lib/scan/match';
 import { capDetection } from '@/lib/scan/schema';
@@ -72,7 +73,8 @@ async function main() {
     }
     const t0 = Date.now();
     const { jpeg, width, height } = await encodeForScan(fs.readFileSync(photo), 'high');
-    const out = toDeckOutput(rec);
+    const first = toDeckOutput(rec);
+    const out = { ...first, groups: inferSidewaysRows(first.groups, width, height) };
     const cp = await runCropPass(jpeg, out, { width, height }, Date.now() + o.deadlineMs);
     for (const { group, code, detail } of cp.failures) console.error(`  crop failed group ${group}: ${code}`, detail ?? '');
 
@@ -105,7 +107,7 @@ async function main() {
       scanId: rec.scanId,
       mode: 'deck',
       photoQuality: rec.photoQuality,
-      groups: rec.groups,
+      groups: out.groups,
       detections,
       crops: { cropped: cp.cropped, failed: cp.failed, skipped: cp.skipped },
       usage: { model: rec.usage?.model, latencyMs: cp.latencyMs, attempts: cp.calls, costUsd: cp.costUsd },

@@ -43,6 +43,27 @@ export function needsCrop(group: DeckGroup): boolean {
   return group.id !== 0 && group.orientation !== 'upright';
 }
 
+/** A wide group no taller than this many upright-column widths is a sideways row: one card's short side, not its long side (about 1.4). */
+export const SIDEWAYS_ROW_MAX_HEIGHT = 1.2;
+
+/**
+ * Overrides "upright" on wide groups whose height is about one card's short side, measured against the median width of the
+ * photo's upright columns. The first pass sometimes calls a sideways row upright, and then nothing crops it. The direction cannot be
+ * seen from the box, so it is taken as rotated_ccw, the one seen in every eval photo. No upright column, no change.
+ */
+export function inferSidewaysRows(groups: DeckGroup[], width: number, height: number): DeckGroup[] {
+  const size = (g: DeckGroup) => ({ w: (g.bbox[2] - g.bbox[0]) * width, h: (g.bbox[3] - g.bbox[1]) * height });
+  const upright = groups.filter(g => g.id !== 0 && g.orientation === 'upright');
+  const columns = upright.map(size).filter(s => s.h > s.w).map(s => s.w).sort((a, b) => a - b);
+  if (columns.length === 0) return groups;
+  const cardWidth = columns[Math.floor(columns.length / 2)];
+  return groups.map(g => {
+    if (!upright.includes(g)) return g;
+    const s = size(g);
+    return s.w > s.h && s.h <= SIDEWAYS_ROW_MAX_HEIGHT * cardWidth ? { ...g, orientation: 'rotated_ccw' } : g;
+  });
+}
+
 /** Maps a point normalized to the unrotated crop into fractions of the whole image (unclamped). */
 function cropPointToPhoto(x: number, y: number, rect: CropRect, width: number, height: number): [number, number] {
   return [(rect.left + x * rect.width) / width, (rect.top + y * rect.height) / height];
