@@ -5,6 +5,7 @@ import TopNav from "@/components/top-nav";
 import SiteFooter from "@/components/site-footer";
 import { loadPublishedPosts, listPublishedTags, PAGE_SIZE } from "./lib/queries";
 import PostCard from "./components/PostCard";
+import NewPostLink from "./components/NewPostLink";
 
 export const metadata: Metadata = {
   title: "Articles",
@@ -64,7 +65,10 @@ export default async function ArticlesPage({ searchParams }: PageProps) {
       <TopNav />
       <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:py-10">
         <header className="mb-6 flex flex-col gap-3 sm:mb-8">
-          <h1 className="font-cinzel text-3xl font-bold tracking-tight sm:text-4xl">Articles</h1>
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="font-cinzel text-3xl font-bold tracking-tight sm:text-4xl">Articles</h1>
+            <NewPostLink />
+          </div>
           <p className="text-sm text-muted-foreground">
             {total.toLocaleString()} {total === 1 ? "article" : "articles"}
             {tag ? ` in “${tag}”` : ""}
