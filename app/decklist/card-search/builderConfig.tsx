@@ -92,6 +92,9 @@ export interface DeckBuilderFeatures {
    *  so exported lists round-trip (import re-resolves them to `forge:<id>`
    *  pool entries). Exports do put forge card names in plain text — accepted. */
   enableImportExport?: boolean;
+  /** Deck-from-photo entry links (/decklist/scan). Off for the Forge — the
+   *  photo page reads the public catalog and opens a public deck. */
+  enablePhotoImport?: boolean;
   /** PDF + deck-image generation (external service builds from public image
    *  URLs). Off for the Forge — forge cards have no public URL and render blank. */
   enablePrintExports?: boolean;
@@ -178,6 +181,7 @@ export const PUBLIC_BUILDER_CONFIG: DeckBuilderConfig = {
     enableSharing: true,
     enableDeckDelete: true,
     enableImportExport: true,
+    enablePhotoImport: true,
     enablePrintExports: true,
     enableShopping: true,
     enableDetailsTab: true,
