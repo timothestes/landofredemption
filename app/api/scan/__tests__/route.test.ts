@@ -452,6 +452,16 @@ describe('POST /api/scan deck mode', () => {
       expect(update.mock.calls.at(-1)![0].detections.filter((d: any) => d.group === 2).map((d: any) => d.read.title)).toEqual(['Lost Soul', 'Captive Priest']);
     });
 
+    it('crops a wide row the first pass called upright, and reports it sideways', async () => {
+      // On the 64 x 48 test photo, group 1 is a column 16 px wide and group 2 a row 14 px tall: one card's short side.
+      const column: DeckGroup = { id: 1, orientation: 'upright', bbox: [0, 0, 0.25, 1], cardCount: 2 };
+      const row: DeckGroup = { id: 2, orientation: 'upright', bbox: [0.3, 0.6, 1, 0.9], cardCount: 2 };
+      (recognize as Mock).mockResolvedValueOnce(firstPass({ output: { ...firstPass().output, groups: [column, row] } })).mockResolvedValueOnce(cropOk());
+      const body = await (await postDeck()).json();
+      expect(body.crops).toEqual({ cropped: [2], failed: [], skipped: [] });
+      expect(body.groups.map((g: DeckGroup) => g.orientation)).toEqual(['upright', 'rotated_ccw']);
+    });
+
     it('a complete upright photo makes no crop call', async () => {
       (recognize as Mock).mockResolvedValue(deckOk(priestAndSoul()));
       const body = await (await postDeck()).json();

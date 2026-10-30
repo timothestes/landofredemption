@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import sharp from 'sharp';
-import { cropRect, rotationFor, needsCrop, titleCentreInBox, keepCropRead, cropGroup, cropBoxToPhoto } from '../crop';
+import { cropRect, rotationFor, needsCrop, titleCentreInBox, keepCropRead, cropGroup, cropBoxToPhoto, inferSidewaysRows } from '../crop';
 import type { Box, DeckGroup, DeckRead } from '../deckSchema';
 
 const read = (group: number, title: string | null = 'X', titleBox: Box | null = null): DeckRead => ({ title, strength: null, toughness: null, type: 'unknown', brigade: null, reference: null, group, position: 1, titleBox, confidence: 'high' });
@@ -24,6 +24,29 @@ describe('needsCrop', () => {
   });
   it('an upright group is not cropped even when short or with unread titles', () => {
     expect(needsCrop(grp(1, 'upright', 4))).toBe(false);
+  });
+});
+describe('inferSidewaysRows', () => {
+  const g = (id: number, bbox: Box, orientation: DeckGroup['orientation'] = 'upright'): DeckGroup => ({ id, orientation, bbox, cardCount: 5 });
+  // First-pass groups recorded on 1024 x 769 eval photos, where the model called a sideways row upright.
+  const dark1 = [g(1, [0.23, 0.07, 0.76, 0.25]), g(2, [0.01, 0.24, 0.17, 0.77]), g(3, [0.15, 0.26, 0.30, 0.73]), g(4, [0.30, 0.26, 0.44, 0.69]), g(5, [0.43, 0.25, 0.62, 0.96])];
+  const starWars = [g(1, [0.02, 0.04, 0.17, 0.73]), g(2, [0.19, 0.05, 0.35, 0.79]), g(3, [0.37, 0.05, 0.53, 0.70]), g(6, [0.10, 0.78, 0.61, 0.98]), g(7, [0.61, 0.75, 0.93, 0.96])];
+  it('turns a wide group about one card-width tall to rotated_ccw (dark photo 1)', () => {
+    expect(inferSidewaysRows(dark1, 1024, 769).map(x => x.orientation)).toEqual(['rotated_ccw', 'upright', 'upright', 'upright', 'upright']);
+  });
+  it('catches both halves of a split sideways row (Star Wars mat)', () => {
+    expect(inferSidewaysRows(starWars, 1024, 769).map(x => x.orientation)).toEqual(['upright', 'upright', 'upright', 'rotated_ccw', 'rotated_ccw']);
+  });
+  it('leaves a row of upright cards side by side (a card-height tall) upright', () => {
+    const row = g(9, [0.1, 0.7, 0.6, 0.7 + (1.4 * 0.16 * 1024) / 769]);
+    expect(inferSidewaysRows([...dark1.slice(1), row], 1024, 769).at(-1)!.orientation).toBe('upright');
+  });
+  it("keeps the model's orientation when it already saw the row sideways", () => {
+    expect(inferSidewaysRows([g(1, [0.25, 0.08, 0.76, 0.26], 'rotated_cw'), ...dark1.slice(1)], 1024, 769)[0].orientation).toBe('rotated_cw');
+  });
+  it('changes nothing without an upright column to measure against, or for group 0', () => {
+    expect(inferSidewaysRows([dark1[0]], 1024, 769)[0].orientation).toBe('upright');
+    expect(inferSidewaysRows([{ ...dark1[0], id: 0 }, ...dark1.slice(1)], 1024, 769)[0].orientation).toBe('upright');
   });
 });
 describe('titleCentreInBox', () => {
