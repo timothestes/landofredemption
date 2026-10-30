@@ -76,5 +76,7 @@ export interface DeckScanResponse {
   photoQuality: DeckOutput['photoQuality'];
   groups: DeckGroup[];
   detections: DeckDetection[];
+  /** Groups the crop pass re-read, could not re-read, and never reached (over MAX_CROP_GROUPS or out of budget). */
+  crops: { cropped: number[]; failed: number[]; skipped: number[] };
   usage: { model: string; latencyMs: number; attempts: number; costUsd?: number };
 }

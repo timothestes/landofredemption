@@ -1,6 +1,6 @@
 /**
  * Deck-photo scorer: labels-deck.json against `run.ts --mode deck` outputs.
- * Identity-level multiset precision/recall per photo, Lost Soul and group-size
+ * Name-stem multiset precision/recall per photo (any printing of the labeled card counts), Lost Soul and group-size
  * errors, and whether the default Reserve group is right. Pure apart from main().
  *
  *   npx tsx scripts/scan-eval/deckScore.ts --labels scripts/scan-eval/labels-deck.json \
@@ -32,6 +32,8 @@ export interface DeckPhotoScore {
   groupCountError: number;
   costUsd: number | null;
   latencyMs: number | null;
+  /** Groups the crop pass re-read; null when the output predates the crop pass. */
+  crops: number | null;
 }
 
 let byKey: Map<string, (typeof CARDS)[number]> | null = null;
@@ -55,12 +57,13 @@ export function scoreDeckPhoto(label: DeckLabel, resp: DeckScanResponse): DeckPh
   const idx = getScanIndex();
   const { byKey, byName } = lookups();
 
+  // Keyed by the identity's normalized name stem: a deck needs the card, and the exact printing is a non-goal.
   const truth = new Map<string, number>();
   let truthTotal = 0;
   for (const { name, qty } of label.cards) {
     const card = byName.get(name);
     if (!card) throw new Error(`${label.photo}: unknown card name "${name}"`);
-    add(truth, idx.identityOf(card).key, qty);
+    add(truth, idx.identityOf(card).normalizedStem, qty);
     truthTotal += qty;
   }
 
@@ -80,7 +83,7 @@ export function scoreDeckPhoto(label: DeckLabel, resp: DeckScanResponse): DeckPh
       lostSoulSeen++;
       continue;
     }
-    add(pred, id.key);
+    add(pred, id.normalizedStem);
     predTotal++;
   }
 
@@ -113,6 +116,7 @@ export function scoreDeckPhoto(label: DeckLabel, resp: DeckScanResponse): DeckPh
     groupCountError: sizes.reduce((n, g, i) => n + Math.abs(resp.groups[i].cardCount - g.count), 0),
     costUsd: typeof resp.usage?.costUsd === 'number' ? resp.usage.costUsd : null,
     latencyMs: typeof resp.usage?.latencyMs === 'number' ? resp.usage.latencyMs : null,
+    crops: Array.isArray(resp.crops?.cropped) ? resp.crops.cropped.length : null,
   };
 }
 
@@ -148,7 +152,7 @@ function main() {
     console.log(
       `${s.photo}  P ${s.precision.toFixed(3)}  R ${s.recall.toFixed(3)}  invented ${s.invented}  LS err ${s.lostSoulError}  ` +
         `reserve ${s.reserveDefaultRight ? 'ok' : 'WRONG'}  group err ${s.groupCountError}  ` +
-        `$${s.costUsd?.toFixed(4) ?? '?'}  ${s.latencyMs ?? '?'}ms`,
+        `crops ${s.crops ?? ''}  $${s.costUsd?.toFixed(4) ?? '?'}  ${s.latencyMs ?? '?'}ms`,
     );
   }
   if (missing.length) console.warn(`labeled photos with no output (${missing.length}): ${missing.join(', ')}`);

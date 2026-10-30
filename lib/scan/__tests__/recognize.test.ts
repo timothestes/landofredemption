@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { APIConnectionTimeoutError, APIError } from '@anthropic-ai/sdk';
+import { APIConnectionError, APIConnectionTimeoutError, APIError } from '@anthropic-ai/sdk';
 import { recognize, DEFAULT_ARM, DECK_ARM, DECK_MODE } from '../recognize';
 import { DECK_INSTRUCTION, DECK_JSON_SCHEMA } from '../deckSchema';
 const ok = (text: string, stop = 'end_turn', model = 'claude-sonnet-5-5-20260901') => ({ model, stop_reason: stop, content: [{ type: 'text', text }], usage: { input_tokens: 3000, output_tokens: 200 } });
@@ -46,4 +46,7 @@ describe('deck mode', () => {
   it('deck mode retries a quick 5xx once', async () => { let n = 0; const r = await recognize(Buffer.alloc(10), DECK_ARM, { sleep: noSleep, create: async () => { if (++n === 1) throw httpErr(500); return ok(goodDeck); } }, DECK_MODE); expect(r.ok && r.attempts).toBe(2); });
   it('deck mode does not retry a 5xx after 10 s', async () => { let t = 0, n = 0; const r = await recognize(Buffer.alloc(10), DECK_ARM, { sleep: noSleep, now: () => t, create: async () => { n++; t += 11_000; throw httpErr(503); } }, DECK_MODE); expect(n).toBe(1); expect(r.ok === false && r.code).toBe('recognizer_failed'); });
   it('deck output is parsed with the deck parser', async () => { const r = await recognize(Buffer.alloc(10), DECK_ARM, { create: async () => ok(JSON.stringify({ photoQuality: 'ok', groups: [{ id: 1, orientation: 'upright', bbox: [0, 0, 1, 1], cardCount: 1 }], cards: [] })) }, DECK_MODE); expect(r.ok && (r.output as any).groups).toHaveLength(1); });
+  it('a connection error retries once, then succeeds', async () => { let n = 0; const r = await recognize(Buffer.alloc(10), DEFAULT_ARM, { sleep: noSleep, create: async () => { if (++n === 1) throw new APIConnectionError({ message: 'Connection error.' }); return ok(good); } }); expect(r.ok && r.attempts).toBe(2); });
+  it('a connection error twice is recognizer_failed and unbilled', async () => { let n = 0; const r = await recognize(Buffer.alloc(10), DEFAULT_ARM, { sleep: noSleep, create: async () => { n++; throw new APIConnectionError({ message: 'Connection error.' }); } }); expect(n).toBe(2); expect(r.ok === false && r.code).toBe('recognizer_failed'); expect('usage' in r).toBe(false); });
+  it('deck mode does not retry a connection error after retryWithinMs', async () => { let t = 0; let n = 0; const r = await recognize(Buffer.alloc(10), DECK_ARM, { now: () => t, sleep: noSleep, create: async () => { n++; t += 11_000; throw new APIConnectionError({ message: 'Connection error.' }); } }, DECK_MODE); expect(n).toBe(1); expect(r.ok).toBe(false); });
 });
