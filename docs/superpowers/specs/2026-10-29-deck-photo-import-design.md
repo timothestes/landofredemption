@@ -352,6 +352,38 @@ after the Reserve. Giving
 `defaultReserveGroup` the group boxes is the next lever. Heavenly Host
 tokens and art cards come back as Not found and Unread rows to delete.
 
+## Amendment: the Reserve default reads the layout (2026-10-30)
+
+`defaultReserveGroups` (was `defaultReserveGroup`) takes each group's box
+and how many of its reads name a card, and can default several groups to
+Reserve. On one photo where every group has a box:
+
+1. The **main band** is the set of columns side by side (within 5% of the
+   width, overlapping under half the narrower) whose tops chain within 6% of
+   the height, so a tilted photo's drifting tops stay one band; the set with
+   the most cards wins.
+2. Groups off the band are joined into **rows** (overlapping in height by
+   over half the shorter, within 5% side to side). The largest row that fits
+   is Reserve (fits: the rest is at least 50 and the row is within the
+   reserve size the rest implies), a later row winning a tie.
+3. Else the last single group off the band that fits.
+4. Else the old rule (the only sideways group, else the last group) over the
+   band and the off-band groups that read a card.
+
+An off-band row that names no card (tokens, art cards, a Lost Soul row) is
+never Reserve. Across photos, or with a group missing its box, the old rule
+applies as before.
+
+Which group the Reserve is, judged from the photos (the scorer only checks
+the size): the old rule was right on 6 of the 12 labeled photos, the new one
+on 10. The misses are a 2-card Reserve set in the middle of a grid
+(`IMG_9796`) and the photo the turn pass left upside down
+(`20231121_094623`). On the 34 unlabeled upright photos the two rules
+differ on 11: the new one is right on 9 by eye (a row of 10 below the
+columns, a Lost Soul row passed over, token rows passed over), and 2 are
+unclear. The scorer's size check now reads 6 of 8 on the Discord recordings
+(was 2) and 3 of 4 on the turn-pass recordings (was 0).
+
 ## Vocabulary
 
 - **Deck photo**: a photo of a laid-out deck. Cards overlap so that only the
@@ -573,10 +605,13 @@ counter per group.
 ### Groups and zones
 
 Every group is a section with a **Main deck / Reserve** control. Default: all
-main. One group defaults to Reserve when all of these hold: the main total is
-at least 50 without it; the group has at most the reserve size of the format
-the main total implies (`lib/formats.ts`: 10 for Type 1, 20 for Type 2); and
-it is either the only non-upright group or the last group in reading order. A Lost Soul or Dominant read inside a Reserve group is
+main. A group, or a row of groups, defaults to Reserve when all of these
+hold: the main total is at least 50 without it; it has at most the reserve
+size of the format the main total implies (`lib/formats.ts`: 10 for Type 1,
+20 for Type 2); and it is the largest row set apart from the main band of
+columns, else a single group set apart, else the only non-upright group or
+the last group in reading order (*Amendment: the Reserve default reads the
+layout*). A Lost Soul or Dominant read inside a Reserve group is
 shown in that section with a note and counted in main; the deck rules forbid
 them in reserve, and the builder's validator would flag it otherwise.
 

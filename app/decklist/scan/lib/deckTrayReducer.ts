@@ -1,5 +1,5 @@
 import type { QueueAction } from '@/app/collection/scan/hooks/useScanQueue';
-import { defaultReserveGroup, mergeDeckRows, type DeckEntry, type DeckRow, type GroupSize } from '@/lib/scan/deck';
+import { defaultReserveGroups, IDENTIFIED_KINDS, mergeDeckRows, type DeckEntry, type DeckRow, type GroupSize } from '@/lib/scan/deck';
 import type { DeckScanResponse } from '@/lib/scan/deckClassify';
 import type { Candidate, DeckPhoto, DeckTrayState, TrayEntry, Zone } from '../types';
 
@@ -118,11 +118,19 @@ const groupSizes = (s: DeckTrayState): GroupSize[] => {
   for (const p of s.photos) {
     if (p.status !== 'done') continue;
     const counts = new Map<number, number>();
-    for (const e of s.entries) if (e.photoId === p.photoId) counts.set(e.group, (counts.get(e.group) ?? 0) + 1);
+    const identified = new Map<number, number>();
+    for (const e of s.entries) {
+      if (e.photoId !== p.photoId) continue;
+      counts.set(e.group, (counts.get(e.group) ?? 0) + 1);
+      if (IDENTIFIED_KINDS.has(e.kind)) identified.set(e.group, (identified.get(e.group) ?? 0) + 1);
+    }
     const seen = new Set<number>();
     for (const g of p.groups) {
       seen.add(g.id);
-      groups.push({ key: `${p.photoId}:${g.id}`, orientation: g.orientation as GroupSize['orientation'], count: counts.get(g.id) ?? 0 });
+      groups.push({
+        key: `${p.photoId}:${g.id}`, orientation: g.orientation as GroupSize['orientation'], count: counts.get(g.id) ?? 0,
+        bbox: g.bbox, identified: identified.get(g.id) ?? 0,
+      });
     }
     for (const [id, count] of counts) {
       if (!seen.has(id)) groups.push({ key: `${p.photoId}:${id}`, orientation: 'upright', count });
@@ -135,9 +143,9 @@ const groupSizes = (s: DeckTrayState): GroupSize[] => {
 function withDefaultZones(before: DeckTrayState, after: DeckTrayState): DeckTrayState {
   const groups = groupSizes(after);
   if (groupSizes(before).length >= 2 || groups.length < 2) return after;
-  const reserve = defaultReserveGroup(groups);
+  const reserve = new Set(defaultReserveGroups(groups));
   const groupZones = { ...after.groupZones };
-  for (const g of groups) if (!(g.key in groupZones)) groupZones[g.key] = g.key === reserve ? 'reserve' : 'main';
+  for (const g of groups) if (!(g.key in groupZones)) groupZones[g.key] = reserve.has(g.key) ? 'reserve' : 'main';
   return { ...after, groupZones };
 }
 
