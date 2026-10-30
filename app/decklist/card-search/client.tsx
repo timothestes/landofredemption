@@ -3146,12 +3146,14 @@ export default function CardSearchClient({
               <p className="text-xs">
                 Add "Reserve:" on its own line to separate reserve cards.
               </p>
+              {config.features?.enablePhotoImport !== false && (
               <p className="text-xs">
                 Have a photo of the deck laid out?{" "}
                 <Link href="/decklist/scan" className="underline underline-offset-4 hover:text-foreground">
                   Read it from a photo
                 </Link>
               </p>
+              )}
             </div>
             <textarea
               id="import-deck-textarea"
@@ -3392,12 +3394,14 @@ export default function CardSearchClient({
                     Cancel
                   </button>
 
+                  {config.features?.enablePhotoImport !== false && (
                   <Link
                     href="/decklist/scan"
                     className="w-full px-4 py-1.5 text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     From a photo
                   </Link>
+                  )}
                 </div>
               )}
             </div>

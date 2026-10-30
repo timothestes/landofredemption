@@ -224,6 +224,7 @@ export function makeForgeBuilderConfig(granted: GrantedForgeCard[]): DeckBuilder
       enableSharing: false,
       enableDeckDelete: true,
       enableImportExport: true,
+      enablePhotoImport: false,
       enablePrintExports: false,
       enableShopping: false,
       enableDetailsTab: false,
