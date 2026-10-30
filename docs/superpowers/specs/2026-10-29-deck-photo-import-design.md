@@ -258,7 +258,7 @@ the two turned ones.
 
 **Four failure modes.**
 
-1. *Turned photos.* 19 of 53 were taken with the phone held across the
+1. *Turned photos.* 15 of 53 were taken with the phone held across the
    layout, so every card lies sideways. Every group is then cropped, the
    padded crops overlap, and cards come back twice: `IMG_4649` returned 111
    rows for 71 cards. At phone size a turned photo cost $0.23 and 55 s.
@@ -277,7 +277,7 @@ least 75% of the photo's cards, and at least 20 of them, lie in groups of
 one sideways direction, the photo is turned upright and read again at
 effort high before the crop pass; the turned read replaces the first. A
 sideways Reserve row (10–17% of the cards) never qualifies; on the eval set
-the rule fired on exactly the 19 turned photos, and no other photo scored
+the rule fired on exactly the 15 turned photos, and no other photo scored
 above 0.46. The re-read starts only with at least 60 s left before the
 140 s deadline and is timed to end by it; a failure, or a read with
 neither groups nor cards, keeps the first read, and its tokens and cost are
@@ -308,12 +308,16 @@ local dev server `IMG_3165` took 109 s and $0.19, against production's
 list. On `20231121_094623` the first read gave the wrong direction
 (`rotated_ccw`; the cards need 270°), so the photo was turned upside down
 and the re-read gave up; the short-group crops below recovered a quarter
-of it.
+of it. (Fixed by a second turn: *Amendment: a turned read that is still
+turned is turned again*.)
 
 A cheap probe could skip the sideways read: one call at the low tier and
 effort low, $0.003 and about 2 s, asking which way the cards face. On all
-53 photos it never called an upright photo turned (0 of 34) and caught 15
-of the 19 turned ones, but gave the wrong direction on 7 of those 15. A
+53 photos it never called an upright photo turned (0 of 38) and caught 11
+of the 15 turned ones, but disagreed with the full read's direction on 7 of
+those 11; where the direction could be checked the full read was right,
+except on `20231121_094623`. (Counts corrected 2026-10-30: an earlier
+version of this section said 19 turned photos.) A
 probe that knows sideways but not direction does not yet save the read;
 that is the next experiment.
 
@@ -378,11 +382,36 @@ Which group the Reserve is, judged from the photos (the scorer only checks
 the size): the old rule was right on 6 of the 12 labeled photos, the new one
 on 10. The misses are a 2-card Reserve set in the middle of a grid
 (`IMG_9796`) and the photo the turn pass left upside down
-(`20231121_094623`). On the 34 unlabeled upright photos the two rules
-differ on 11: the new one is right on 9 by eye (a row of 10 below the
-columns, a Lost Soul row passed over, token rows passed over), and 2 are
-unclear. The scorer's size check now reads 6 of 8 on the Discord recordings
+(`20231121_094623`). On the 38 upright Discord photos (4 of them labeled)
+the two rules differ on 11: the new one is right on 9 by eye (a row of 10
+below the columns, a Lost Soul row passed over, token rows passed over; one
+of the 9 is the labeled `20240622_125334`), and 2 are unclear. The scorer's size check now reads 6 of 8 on the Discord recordings
 (was 2) and 3 of 4 on the turn-pass recordings (was 0).
+
+## Amendment: a turned read that is still turned is turned again (2026-10-30)
+
+The first read often has the direction wrong. Run on all 15 turned
+Discord photos, the turn pass's re-read came back with its groups
+`upside_down` on 6, among them every photo the first read called
+`rotated_ccw`; each of those re-reads gave up in 3–4 s with no cards, and
+the crop pass then cropped every group turned 180°, the overlapping-crops
+problem the turn pass exists to avoid.
+
+`runTurnPass` now checks the re-read the same way it checked the first
+read: when `wholePhotoTurn` of the re-read's groups is not 0, the
+original photo is turned by the sum and read once more (`MAX_TURNS` 2),
+under the same 60 s rule. A failed or empty second read keeps the first
+re-read; `rotation` is the final turn. On a correctly turned photo the
+re-read's groups are upright and no second call is made.
+
+Replayed through the route's passes on the 6 photos (the other 9 are
+unchanged by construction): all 6 end at 270°. On the labeled
+`20231121_094623` (blurry, 2048 px) precision 1.00 and recall 0.37, no
+crops, 65 rows for 60 cards, $0.10 and 48 s, against 0.85 / 0.22 with
+crops at $0.19 before; the other 5 are under 1000 px and stay mostly
+Unread either way. Its Reserve default is still wrong: the Reserve row's
+cards show only their edges, so every read is Unread and the row names no
+card, which the Reserve rule passes over (as it must for token rows).
 
 ## Vocabulary
 
@@ -620,7 +649,8 @@ them in reserve, and the builder's validator would flag it otherwise.
 Redesigned after E0, after PR 3 and after the Discord eval (*Amendments
 after PR 3*, *Amendments after the Discord photo eval*). First, a photo
 whose cards nearly all lie one way sideways is turned upright and read
-again (`runTurnPass`); everything below works on the turned image. Before
+again (`runTurnPass`), and turned once more if that read says it is still
+turned; everything below works on the turned image. Before
 the crop pass, `inferSidewaysRows` resets to `rotated_ccw` any wide upright
 group no taller than 1.2× the median upright-column width, unless its box
 touches the top or bottom edge. A group needs a crop when its orientation is
