@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import sharp from 'sharp';
-import { wholePhotoTurn, turnJpeg, runTurnPass, TURN_MIN_REMAINING_MS, type TurnPassDeps } from '../turnPass';
+import { wholePhotoTurn, turnJpeg, runTurnPass, TURN_MIN_REMAINING_MS, MAX_TURNS, type TurnPassDeps } from '../turnPass';
 import { DECK_ARM, DECK_MODE, type recognize } from '../recognize';
 import type { DeckGroup, DeckOutput, DeckRead } from '../deckSchema';
 
@@ -56,6 +56,45 @@ describe('runTurnPass', () => {
     expect(res.output).toEqual(upright);
     expect([res.width, res.height]).toEqual([20, 40]);
     expect(res).toMatchObject({ calls: 1, costUsd: 0.09, usage: { inputTokens: 1000, outputTokens: 200 }, failure: null });
+  });
+
+  it('a re-read that is still turned (upside down) is turned once more from the original and read again', async () => {
+    // Recorded on 20231121_094623: the first read said rotated_ccw, the 90° turn came back upside down with no cards.
+    const upsideDown = out([grp(1, 'upside_down', 30), grp(2, 'upside_down', 30)], []);
+    const upright = out([grp(1, 'upright', 61)], [read({ title: 'A' })]);
+    const { fn, deps } = stub(async () => ok(upsideDown));
+    fn.mockResolvedValueOnce(ok(upsideDown)).mockResolvedValueOnce(ok(upright));
+    const res = await runTurnPass(await src(), turnedPhoto, IMAGE, later(), deps);
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(res.rotation).toBe(90);
+    expect(res.output).toEqual(upright);
+    expect([res.width, res.height]).toEqual([20, 40]);
+    expect(res).toMatchObject({ calls: 2, failure: null, usage: { inputTokens: 2000, outputTokens: 400 } });
+    expect(res.costUsd).toBeCloseTo(0.18);
+  });
+
+  it(`turns at most ${MAX_TURNS} times`, async () => {
+    const upsideDown = out([grp(1, 'upside_down', 61)], []);
+    const { fn, deps } = stub(async () => ok(upsideDown));
+    const res = await runTurnPass(await src(), turnedPhoto, IMAGE, later(), deps);
+    expect(fn).toHaveBeenCalledTimes(MAX_TURNS);
+    expect(res.rotation).toBe(90);
+    expect(res.output).toEqual(upsideDown);
+  });
+
+  it('without time for a second turn, or when it fails, the first turned read stands', async () => {
+    const upsideDown = out([grp(1, 'upside_down', 61)], [read()]);
+    let t = 0;
+    const slow = stub(async () => { t += 45_000; return ok(upsideDown); });
+    const res = await runTurnPass(await src(), turnedPhoto, IMAGE, 100_000, { ...slow.deps, now: () => t });
+    expect(slow.fn).toHaveBeenCalledTimes(1);
+    expect(res).toMatchObject({ rotation: 270, output: upsideDown, calls: 1, failure: { code: 'no_time' } });
+
+    const failing = stub(async () => ok(upsideDown));
+    failing.fn.mockResolvedValueOnce(ok(upsideDown)).mockResolvedValueOnce({ ok: false, code: 'recognizer_failed', attempts: 1, latencyMs: 5, costUsd: 0.01 });
+    const res2 = await runTurnPass(await src(), turnedPhoto, IMAGE, later(), failing.deps);
+    expect(res2).toMatchObject({ rotation: 270, output: upsideDown, calls: 2, failure: { code: 'recognizer_failed' } });
+    expect(res2.costUsd).toBeCloseTo(0.1);
   });
 
   it('an upright photo makes no call', async () => {

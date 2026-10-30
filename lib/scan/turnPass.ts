@@ -4,7 +4,9 @@ import type { DeckGroup, DeckOutput } from './deckSchema';
 import { DECK_ARM, DECK_MODE, recognize, type RecognizeMode, type RecognizeResult } from './recognize';
 
 // Deck photos taken with the phone held across the layout come in a quarter turn off: every card lies sideways. Cropping
-// each group re-reads overlapping strips and doubles cards, so the whole photo is turned upright and read again. Server only.
+// each group re-reads overlapping strips and doubles cards, so the whole photo is turned upright and read again. The first
+// read often has the direction wrong (6 of 15 turned eval photos came back upside down, and read no cards), so a re-read that
+// is itself turned is turned once more. Server only.
 
 /** Cards in sideways groups of one direction, as a share of the photo's cards, for the photo to count as turned. */
 export const TURN_SHARE = 0.75;
@@ -12,6 +14,8 @@ export const TURN_SHARE = 0.75;
 export const TURN_MIN_CARDS = 20;
 /** The re-read is not started with less than this left before the deadline: a full read takes 45 to 70 s. */
 export const TURN_MIN_REMAINING_MS = 60_000;
+/** Reads after the first at most: a turn, and one more when that read says the photo is still turned. */
+export const MAX_TURNS = 2;
 
 export type Turn = 0 | 90 | 180 | 270;
 
@@ -48,31 +52,47 @@ export interface TurnPassResult {
   failure: { code: string; detail?: unknown } | null;
 }
 
-/** Re-reads a turned photo upright before a hard deadline; any failure keeps the first read, and a billed call is still counted. */
+/**
+ * Re-reads a turned photo upright before a hard deadline, turning once more (from the original) when the re-read says it is
+ * still turned. A failure keeps the last good read; every billed call is counted.
+ */
 export async function runTurnPass(jpeg: Buffer, first: DeckOutput, image: { width: number; height: number }, deadline: number, deps: TurnPassDeps = {}): Promise<TurnPassResult> {
   const rec = deps.recognize ?? recognize;
   const now = deps.now ?? Date.now;
-  const kept: TurnPassResult = { rotation: 0, output: first, jpeg, ...image, usage: { inputTokens: 0, outputTokens: 0 }, costUsd: 0, latencyMs: 0, calls: 0, failure: null };
-  const turn = wholePhotoTurn(first.groups);
-  if (turn === 0) return kept;
   const started = now();
-  if (deadline - started < TURN_MIN_REMAINING_MS) return { ...kept, failure: { code: 'no_time' } };
+  let best = { rotation: 0 as Turn, output: first, jpeg, ...image };
+  const usage = { inputTokens: 0, outputTokens: 0 };
+  let costUsd = 0;
+  let calls = 0;
+  let failure: TurnPassResult['failure'] = null;
 
-  const turned = await turnJpeg(jpeg, turn);
-  // Ends by the deadline: a retry only when a full second attempt (2 s sleep + timeoutMs) still fits.
-  const remaining = deadline - now();
-  const timeoutMs = Math.min(DECK_MODE.timeoutMs ?? remaining, remaining);
-  const mode: RecognizeMode<DeckOutput> = { ...DECK_MODE, timeoutMs, retryWithinMs: Math.min(DECK_MODE.retryWithinMs, Math.max(0, remaining - 2_000 - timeoutMs)) };
-  const r: RecognizeResult<DeckOutput> = await rec(turned.jpeg, DECK_ARM, {}, mode);
-  const billed = {
-    usage: { inputTokens: r.usage?.inputTokens ?? 0, outputTokens: r.usage?.outputTokens ?? 0 },
-    costUsd: typeof r.costUsd === 'number' ? r.costUsd : 0,
-    latencyMs: now() - started,
-    calls: r.attempts,
-  };
-  // tsconfig is strict:false, so `ok` does not narrow the union; `'code' in r` does.
-  if ('code' in r) return { ...kept, ...billed, failure: { code: r.code, ...(r.detail !== undefined ? { detail: r.detail } : {}) } };
-  // Groups with no cards still help: the crop pass re-reads groups the read listed short.
-  if (r.output.groups.length === 0 && r.output.cards.length === 0) return { ...kept, ...billed, failure: { code: 'empty_read' } };
-  return { rotation: turn, output: r.output, ...turned, ...billed, failure: null };
+  for (let turn = wholePhotoTurn(first.groups), n = 0; turn !== 0 && n < MAX_TURNS; turn = wholePhotoTurn(best.output.groups), n++) {
+    const remaining = deadline - now();
+    if (remaining < TURN_MIN_REMAINING_MS) {
+      failure = { code: 'no_time' };
+      break;
+    }
+    const rotation = ((best.rotation + turn) % 360) as Turn;
+    const turned = await turnJpeg(jpeg, rotation);
+    // Ends by the deadline: a retry only when a full second attempt (2 s sleep + timeoutMs) still fits.
+    const timeoutMs = Math.min(DECK_MODE.timeoutMs ?? remaining, remaining);
+    const mode: RecognizeMode<DeckOutput> = { ...DECK_MODE, timeoutMs, retryWithinMs: Math.min(DECK_MODE.retryWithinMs, Math.max(0, remaining - 2_000 - timeoutMs)) };
+    const r: RecognizeResult<DeckOutput> = await rec(turned.jpeg, DECK_ARM, {}, mode);
+    usage.inputTokens += r.usage?.inputTokens ?? 0;
+    usage.outputTokens += r.usage?.outputTokens ?? 0;
+    if (typeof r.costUsd === 'number') costUsd += r.costUsd;
+    calls += r.attempts;
+    // tsconfig is strict:false, so `ok` does not narrow the union; `'code' in r` does.
+    if ('code' in r) {
+      failure = { code: r.code, ...(r.detail !== undefined ? { detail: r.detail } : {}) };
+      break;
+    }
+    // Groups with no cards still help: the crop pass re-reads groups the read listed short.
+    if (r.output.groups.length === 0 && r.output.cards.length === 0) {
+      failure = { code: 'empty_read' };
+      break;
+    }
+    best = { rotation, output: r.output, ...turned };
+  }
+  return { ...best, usage, costUsd, latencyMs: now() - started, calls, failure };
 }
