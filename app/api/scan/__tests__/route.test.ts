@@ -448,7 +448,7 @@ describe('POST /api/scan deck mode', () => {
       const g2 = body.detections.filter((d: any) => d.group === 2);
       expect(g2.map((d: any) => [d.read.title, d.position])).toEqual([['Lost Soul', 1], ['Captive Priest', 2]]);
       expect(body.detections.filter((d: any) => d.group === 1).map((d: any) => d.read.title)).toEqual(['Captive Priest', 'Lost Soul']);
-      expect(body.crops).toEqual({ cropped: [2], failed: [], skipped: [] });
+      expect(body.crops).toEqual({ cropped: [2], failed: [], skipped: [], merged: [] });
       expect(update.mock.calls.at(-1)![0].detections.filter((d: any) => d.group === 2).map((d: any) => d.read.title)).toEqual(['Lost Soul', 'Captive Priest']);
     });
 
@@ -458,15 +458,54 @@ describe('POST /api/scan deck mode', () => {
       const row: DeckGroup = { id: 2, orientation: 'upright', bbox: [0.3, 0.6, 1, 0.9], cardCount: 2 };
       (recognize as Mock).mockResolvedValueOnce(firstPass({ output: { ...firstPass().output, groups: [column, row] } })).mockResolvedValueOnce(cropOk());
       const body = await (await postDeck()).json();
-      expect(body.crops).toEqual({ cropped: [2], failed: [], skipped: [] });
+      expect(body.crops).toEqual({ cropped: [2], failed: [], skipped: [], merged: [] });
       expect(body.groups.map((g: DeckGroup) => g.orientation)).toEqual(['upright', 'rotated_ccw']);
+    });
+
+    it('drops a group nested in a cropped group from the response', async () => {
+      const inner: DeckGroup = { id: 3, orientation: 'rotated_ccw', bbox: [0.6, 0.2, 0.9, 0.6], cardCount: 1 };
+      const first = firstPass();
+      (recognize as Mock).mockResolvedValueOnce({ ...first, output: { ...first.output, groups: [group, group2, inner],
+        cards: [...first.output.cards, read({ group: 3, title: 'Captive Priest', reference: 'Judges 18:27', type: 'Hero' })] } }).mockResolvedValueOnce(cropOk());
+      const body = await (await postDeck()).json();
+      expect(recognize).toHaveBeenCalledTimes(2);
+      expect(body.crops).toEqual({ cropped: [2], failed: [], skipped: [], merged: [3] });
+      expect(body.groups.map((g: DeckGroup) => g.id)).toEqual([1, 2]);
+      expect(body.detections.some((d: any) => d.group === 3)).toBe(false);
+    });
+
+    it('reads a turned photo again upright and returns that read, turned', async () => {
+      session({ superuser: true });
+      const sideways: DeckGroup[] = [1, 2, 3].map(id => ({ id, orientation: 'rotated_cw', bbox: [0.3 * (id - 1), 0, 0.3 * id, 1], cardCount: 8 }));
+      (recognize as Mock).mockResolvedValueOnce(deckOk([read({ title: null })], sideways)).mockResolvedValueOnce(deckOk(priestAndSoul(), [group], { costUsd: 0.05 }));
+      const body = await (await postDeck()).json();
+      expect(recognize).toHaveBeenCalledTimes(2);
+      expect(await sharp((recognize as Mock).mock.calls[1][0] as Buffer).metadata()).toMatchObject({ width: 48, height: 64 });
+      expect(body.rotation).toBe(270);
+      expect(body.groups).toEqual([group]);
+      expect(body.detections.map((d: any) => d.read.title)).toEqual(['Captive Priest', 'Lost Soul']);
+      expect(body.crops).toEqual({ cropped: [], failed: [], skipped: [], merged: [] });
+      expect(body.usage.costUsd).toBeCloseTo(0.09);
+      expect(body.usage.attempts).toBe(2);
+    });
+
+    it('a failed turned read keeps the first read and crops its sideways groups', async () => {
+      const sideways: DeckGroup[] = [1, 2, 3].map(id => ({ id, orientation: 'rotated_cw', bbox: [0.33 * (id - 1), 0, 0.33 * id, 1], cardCount: 8 }));
+      (recognize as Mock)
+        .mockResolvedValueOnce(deckOk([1, 2, 3].map(g => read({ group: g, title: 'Lost Soul' })), sideways))
+        .mockResolvedValueOnce({ ok: false, code: 'recognizer_failed', attempts: 1, latencyMs: 5 })
+        .mockResolvedValue(cropOk());
+      const body = await (await postDeck()).json();
+      expect(body.rotation).toBe(0);
+      expect(body.crops.cropped).toEqual([1, 2, 3]);
+      expect(recognize).toHaveBeenCalledTimes(5);
     });
 
     it('a complete upright photo makes no crop call', async () => {
       (recognize as Mock).mockResolvedValue(deckOk(priestAndSoul()));
       const body = await (await postDeck()).json();
       expect(recognize).toHaveBeenCalledTimes(1);
-      expect(body.crops).toEqual({ cropped: [], failed: [], skipped: [] });
+      expect(body.crops).toEqual({ cropped: [], failed: [], skipped: [], merged: [] });
     });
 
     it('sums crop spend and calls into the event row and usage', async () => {
@@ -493,7 +532,7 @@ describe('POST /api/scan deck mode', () => {
       const body = await res.json();
       const g2 = body.detections.filter((d: any) => d.group === 2);
       expect(g2.map((d: any) => d.read.title)).toEqual(['Captive Priest', null]);
-      expect(body.crops).toEqual({ cropped: [], failed: [2], skipped: [] });
+      expect(body.crops).toEqual({ cropped: [], failed: [2], skipped: [], merged: [] });
       const patch = update.mock.calls.at(-1)![0];
       expect(patch).toMatchObject({ status: 'done', input_tokens: 51, output_tokens: 61, attempts: 3 });
       expect(patch.cost_usd).toBeCloseTo(0.05);
@@ -506,7 +545,7 @@ describe('POST /api/scan deck mode', () => {
       const err = vi.spyOn(console, 'error').mockImplementation(() => {});
       const body = await (await postDeck()).json();
       expect(body.detections.filter((d: any) => d.group === 2).map((d: any) => d.read.title)).toEqual(['Captive Priest', null]);
-      expect(body.crops).toEqual({ cropped: [], failed: [2], skipped: [] });
+      expect(body.crops).toEqual({ cropped: [], failed: [2], skipped: [], merged: [] });
       expect(err).toHaveBeenCalledWith('[scan] crop failed', expect.objectContaining({ scanId: SCAN_ID, group: 2, code: 'empty_crop' }));
       err.mockRestore();
     });

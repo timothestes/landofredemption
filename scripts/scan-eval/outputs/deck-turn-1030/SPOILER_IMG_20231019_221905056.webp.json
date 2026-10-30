@@ -1,0 +1,3241 @@
+{
+  "scanId": "exp",
+  "mode": "deck",
+  "photoQuality": "blurry",
+  "groups": [
+    {
+      "id": 1,
+      "orientation": "upright",
+      "bbox": [
+        0.145,
+        0.065,
+        0.245,
+        0.37
+      ],
+      "cardCount": 7
+    },
+    {
+      "id": 2,
+      "orientation": "upright",
+      "bbox": [
+        0.245,
+        0.065,
+        0.34,
+        0.345
+      ],
+      "cardCount": 7
+    },
+    {
+      "id": 3,
+      "orientation": "upright",
+      "bbox": [
+        0.34,
+        0.065,
+        0.435,
+        0.345
+      ],
+      "cardCount": 8
+    },
+    {
+      "id": 4,
+      "orientation": "upright",
+      "bbox": [
+        0.435,
+        0.065,
+        0.54,
+        0.4
+      ],
+      "cardCount": 10
+    },
+    {
+      "id": 5,
+      "orientation": "upright",
+      "bbox": [
+        0.535,
+        0.065,
+        0.64,
+        0.4
+      ],
+      "cardCount": 9
+    },
+    {
+      "id": 6,
+      "orientation": "upright",
+      "bbox": [
+        0.625,
+        0.065,
+        0.725,
+        0.31
+      ],
+      "cardCount": 6
+    },
+    {
+      "id": 7,
+      "orientation": "upright",
+      "bbox": [
+        0.715,
+        0.065,
+        0.82,
+        0.3
+      ],
+      "cardCount": 6
+    },
+    {
+      "id": 8,
+      "orientation": "upright",
+      "bbox": [
+        0.805,
+        0.065,
+        0.93,
+        0.43
+      ],
+      "cardCount": 10
+    },
+    {
+      "id": 9,
+      "orientation": "upright",
+      "bbox": [
+        0.125,
+        0.405,
+        0.225,
+        0.615
+      ],
+      "cardCount": 3
+    },
+    {
+      "id": 10,
+      "orientation": "upright",
+      "bbox": [
+        0.225,
+        0.405,
+        0.325,
+        0.615
+      ],
+      "cardCount": 3
+    },
+    {
+      "id": 11,
+      "orientation": "upright",
+      "bbox": [
+        0.325,
+        0.395,
+        0.425,
+        0.6
+      ],
+      "cardCount": 3
+    },
+    {
+      "id": 12,
+      "orientation": "upright",
+      "bbox": [
+        0.435,
+        0.405,
+        0.54,
+        0.67
+      ],
+      "cardCount": 5
+    },
+    {
+      "id": 13,
+      "orientation": "upright",
+      "bbox": [
+        0.85,
+        0.435,
+        0.97,
+        0.7
+      ],
+      "cardCount": 5
+    }
+  ],
+  "detections": [
+    {
+      "id": "exp:0",
+      "group": 1,
+      "position": 1,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 1,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:1",
+      "group": 1,
+      "position": 2,
+      "titleBox": [
+        0.180654296875,
+        0.10188925081433226,
+        0.2329052734375,
+        0.11345928338762215
+      ],
+      "read": {
+        "title": "The Accuser",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 2,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:2",
+      "group": 1,
+      "position": 3,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 3,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:3",
+      "group": 1,
+      "position": 4,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 4,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:4",
+      "group": 1,
+      "position": 5,
+      "titleBox": [
+        0.17705078125,
+        0.17130944625407168,
+        0.2076806640625,
+        0.1905928338762215
+      ],
+      "read": {
+        "title": "Chancellor of the Kings",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 5,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:5",
+      "group": 1,
+      "position": 6,
+      "titleBox": [
+        0.17885253906249998,
+        0.21758957654723127,
+        0.216689453125,
+        0.22915960912052116
+      ],
+      "read": {
+        "title": "Cursed's Charm",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 6,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:6",
+      "group": 1,
+      "position": 7,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": null,
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 7,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:7",
+      "group": 2,
+      "position": 1,
+      "titleBox": [
+        0.25732421875,
+        0.06798697068403908,
+        0.33115234375,
+        0.08960260586319217
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 1,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:8",
+      "group": 2,
+      "position": 2,
+      "titleBox": [
+        0.25556640625,
+        0.08960260586319217,
+        0.33115234375,
+        0.1076156351791531
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 2,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:9",
+      "group": 2,
+      "position": 3,
+      "titleBox": [
+        0.25908203125,
+        0.1076156351791531,
+        0.33466796875,
+        0.12923127035830617
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 3,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:10",
+      "group": 2,
+      "position": 4,
+      "titleBox": [
+        0.25732421875,
+        0.12923127035830617,
+        0.33291015625,
+        0.15444951140065147
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 4,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:11",
+      "group": 2,
+      "position": 5,
+      "titleBox": [
+        0.26435546875,
+        0.1688599348534202,
+        0.33994140625,
+        0.1904755700325733
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Red",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 5,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:12",
+      "group": 2,
+      "position": 6,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 6,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:13",
+      "group": 3,
+      "position": 1,
+      "titleBox": [
+        0.3541455078125,
+        0.07519218241042346,
+        0.426015625,
+        0.086
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 1,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:14",
+      "group": 3,
+      "position": 2,
+      "titleBox": [
+        0.40498046875,
+        0.09320521172638437,
+        0.426015625,
+        0.10041042345276872
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 2,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:15",
+      "group": 3,
+      "position": 3,
+      "titleBox": [
+        0.3962158203125,
+        0.125628664495114,
+        0.41900390625,
+        0.13283387622149836
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 3,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:16",
+      "group": 3,
+      "position": 4,
+      "titleBox": [
+        0.39796875,
+        0.14364169381107492,
+        0.4207568359375,
+        0.15444951140065147
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 4,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:17",
+      "group": 3,
+      "position": 5,
+      "titleBox": [
+        0.4032275390625,
+        0.17246254071661238,
+        0.4242626953125,
+        0.18327035830618893
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 5,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:18",
+      "group": 3,
+      "position": 6,
+      "titleBox": [
+        0.401474609375,
+        0.19407817589576545,
+        0.426015625,
+        0.20488599348534203
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 6,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:19",
+      "group": 3,
+      "position": 7,
+      "titleBox": [
+        0.37693359375,
+        0.21929641693811075,
+        0.39796875,
+        0.2265016286644951
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 7,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:20",
+      "group": 4,
+      "position": 1,
+      "titleBox": [
+        0.44091796875,
+        0.07463192182410423,
+        0.51513671875,
+        0.08710097719869705
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 1,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:21",
+      "group": 4,
+      "position": 2,
+      "titleBox": [
+        0.4427734375,
+        0.09125732899022801,
+        0.51884765625,
+        0.10372638436482085
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 2,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:22",
+      "group": 4,
+      "position": 3,
+      "titleBox": [
+        0.44462890625,
+        0.1078827361563518,
+        0.520703125,
+        0.12450814332247558
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 3,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:23",
+      "group": 4,
+      "position": 4,
+      "titleBox": [
+        0.4501953125,
+        0.13282084690553744,
+        0.520703125,
+        0.14944625407166123
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 4,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:24",
+      "group": 4,
+      "position": 5,
+      "titleBox": [
+        0.46875,
+        0.1619153094462541,
+        0.520703125,
+        0.17854071661237786
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 5,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:25",
+      "group": 4,
+      "position": 6,
+      "titleBox": [
+        0.4724609375,
+        0.19100977198697072,
+        0.5244140625,
+        0.20763517915309448
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 6,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:26",
+      "group": 4,
+      "position": 7,
+      "titleBox": [
+        0.47431640625,
+        0.22010423452768726,
+        0.5244140625,
+        0.23672964169381108
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 7,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:27",
+      "group": 4,
+      "position": 8,
+      "titleBox": [
+        0.46875,
+        0.2533550488599349,
+        0.5169921875,
+        0.2616677524429967
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 8,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:28",
+      "group": 4,
+      "position": 9,
+      "titleBox": [
+        0.46875,
+        0.2616677524429967,
+        0.5169921875,
+        0.2741368078175896
+      ],
+      "read": {
+        "title": "Deliverance Moments",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 9,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:29",
+      "group": 5,
+      "position": 1,
+      "titleBox": [
+        0.5595703125,
+        0.07463192182410423,
+        0.615234375,
+        0.09125732899022801
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 1,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:30",
+      "group": 5,
+      "position": 2,
+      "titleBox": [
+        0.56884765625,
+        0.09957003257328989,
+        0.6189453125,
+        0.1161954397394137
+      ],
+      "read": {
+        "title": "Sign of Rebellion",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 2,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:31",
+      "group": 5,
+      "position": 3,
+      "titleBox": [
+        0.56884765625,
+        0.12450814332247558,
+        0.62080078125,
+        0.14113355048859935
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 3,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:32",
+      "group": 5,
+      "position": 4,
+      "titleBox": [
+        0.56513671875,
+        0.14944625407166123,
+        0.6189453125,
+        0.16607166123778502
+      ],
+      "read": {
+        "title": "Alexander's Mercenary",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 4,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:33",
+      "group": 5,
+      "position": 5,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 5,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:34",
+      "group": 5,
+      "position": 6,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 6,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:35",
+      "group": 5,
+      "position": 7,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 7,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:36",
+      "group": 5,
+      "position": 8,
+      "titleBox": [
+        0.55029296875,
+        0.2741368078175896,
+        0.62080078125,
+        0.2866058631921824
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 8,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:37",
+      "group": 6,
+      "position": 1,
+      "titleBox": [
+        0.63541015625,
+        0.08013029315960912,
+        0.70748046875,
+        0.08990228013029317
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 1,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:38",
+      "group": 6,
+      "position": 2,
+      "titleBox": [
+        0.639013671875,
+        0.11596091205211727,
+        0.70748046875,
+        0.1289902280130293
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 2,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:39",
+      "group": 6,
+      "position": 3,
+      "titleBox": [
+        0.639013671875,
+        0.14527687296416938,
+        0.70748046875,
+        0.15830618892508144
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 3,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:40",
+      "group": 6,
+      "position": 4,
+      "titleBox": [
+        0.6426171875,
+        0.16482084690553747,
+        0.70748046875,
+        0.1778501628664495
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 4,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:41",
+      "group": 7,
+      "position": 1,
+      "titleBox": [
+        0.723046875,
+        0.07835830618892509,
+        0.79541015625,
+        0.09727687296416938
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 1,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:42",
+      "group": 7,
+      "position": 2,
+      "titleBox": [
+        0.723046875,
+        0.10042996742671009,
+        0.79541015625,
+        0.11619543973941367
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 2,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:43",
+      "group": 7,
+      "position": 3,
+      "titleBox": [
+        0.723046875,
+        0.11934853420195439,
+        0.79912109375,
+        0.1382671009771987
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 3,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:44",
+      "group": 7,
+      "position": 4,
+      "titleBox": [
+        0.72861328125,
+        0.15087947882736158,
+        0.797265625,
+        0.16349185667752444
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 4,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:45",
+      "group": 7,
+      "position": 5,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 5,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:46",
+      "group": 8,
+      "position": 1,
+      "titleBox": [
+        0.813984375,
+        0.07822801302931597,
+        0.88798828125,
+        0.09605211726384365
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Red",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 1,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:47",
+      "group": 8,
+      "position": 2,
+      "titleBox": [
+        0.818095703125,
+        0.10496416938110749,
+        0.88798828125,
+        0.1272442996742671
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 2,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:48",
+      "group": 8,
+      "position": 3,
+      "titleBox": [
+        0.82220703125,
+        0.13615635179153093,
+        0.892099609375,
+        0.15843648208469055
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 3,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:49",
+      "group": 8,
+      "position": 4,
+      "titleBox": [
+        0.826318359375,
+        0.16289250814332248,
+        0.8962109375,
+        0.18071661237785014
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 4,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:50",
+      "group": 8,
+      "position": 5,
+      "titleBox": [
+        0.8324853515625,
+        0.1851726384364821,
+        0.9003222656250001,
+        0.20299674267100978
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 5,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:51",
+      "group": 8,
+      "position": 6,
+      "titleBox": [
+        0.83865234375,
+        0.2074527687296417,
+        0.90443359375,
+        0.2297328990228013
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 6,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:52",
+      "group": 8,
+      "position": 7,
+      "titleBox": [
+        0.842763671875,
+        0.23864495114006515,
+        0.908544921875,
+        0.2609250814332248
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 7,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:53",
+      "group": 8,
+      "position": 8,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 8,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:54",
+      "group": 8,
+      "position": 9,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 9,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:55",
+      "group": 8,
+      "position": 10,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 10,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:56",
+      "group": 9,
+      "position": 1,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 1,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:57",
+      "group": 9,
+      "position": 2,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 2,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:58",
+      "group": 10,
+      "position": 1,
+      "titleBox": [
+        0.2712890625,
+        0.4084039087947883,
+        0.3001953125,
+        0.42293159609120523
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 1,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:59",
+      "group": 10,
+      "position": 2,
+      "titleBox": [
+        0.26044921875,
+        0.44908143322475574,
+        0.298388671875,
+        0.4607035830618893
+      ],
+      "read": {
+        "title": "Forbidden Fruit",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Dominant",
+        "grid": {
+          "row": 2,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Forbidden Fruit (FoM)|FoM|006-Forbidden-Fruit",
+      "kind": "matched",
+      "deckKey": "Forbidden Fruit (FoM)|FoM|006-Forbidden-Fruit",
+      "scores": {
+        "matchScore": 1,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Forbidden Fruit (FoM)|FoM|006-Forbidden-Fruit",
+          "name": "Forbidden Fruit (FoM)",
+          "set": "FoM",
+          "officialSet": "Fall of Man",
+          "imgFile": "006-Forbidden-Fruit",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:60",
+      "group": 11,
+      "position": 1,
+      "titleBox": [
+        0.362353515625,
+        0.40301628664495115,
+        0.387646484375,
+        0.4230358306188925
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 1,
+          "col": 11
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:61",
+      "group": 11,
+      "position": 2,
+      "titleBox": [
+        0.351513671875,
+        0.4401954397394137,
+        0.40029296875,
+        0.44877524429967425
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 2,
+          "col": 11
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:62",
+      "group": 12,
+      "position": 1,
+      "titleBox": [
+        0.505859375,
+        0.42351791530944627,
+        0.52255859375,
+        0.4304234527687297
+      ],
+      "read": {
+        "title": "Lions",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Red",
+        "strength": "5",
+        "toughness": "4",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 1,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "Lions|CoW|Lions_(CoW)",
+      "kind": "matched",
+      "deckKey": "Lions|CoW|Lions_(CoW)",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Lions|CoW|Lions_(CoW)",
+          "name": "Lions",
+          "set": "CoW",
+          "officialSet": "Cloud of Witnesses",
+          "imgFile": "Lions_(CoW)",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Lions (CoW AB)|CoW (AB)|CoW_AB_N94-Lions-R",
+          "name": "Lions (CoW AB)",
+          "set": "CoW (AB)",
+          "officialSet": "Cloud of Witnesses (Alternate Border)",
+          "imgFile": "CoW_AB_N94-Lions-R",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:63",
+      "group": 12,
+      "position": 2,
+      "titleBox": [
+        0.48544921875,
+        0.4511400651465798,
+        0.520703125,
+        0.46149837133550486
+      ],
+      "read": {
+        "title": "Devouring Lion",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": "3",
+        "toughness": "4",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 2,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Devouring Lion|PoC|087-Devouring-Lion-R",
+      "kind": "matched",
+      "deckKey": "Devouring Lion|PoC|087-Devouring-Lion-R",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Devouring Lion|PoC|087-Devouring-Lion-R",
+          "name": "Devouring Lion",
+          "set": "PoC",
+          "officialSet": "Prophecies of Christ",
+          "imgFile": "087-Devouring-Lion-R",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:64",
+      "group": 12,
+      "position": 3,
+      "titleBox": [
+        0.5021484375,
+        0.47876221498371335,
+        0.52255859375,
+        0.48912052117263843
+      ],
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": "4",
+        "toughness": "5",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 3,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:65",
+      "group": 12,
+      "position": 4,
+      "titleBox": [
+        0.491015625,
+        0.5063843648208469,
+        0.520703125,
+        0.5201954397394137
+      ],
+      "read": {
+        "title": "The Serpent",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Red",
+        "strength": "2",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 4,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "The Serpent (2021 Promo)|Pmo-P2|The-Serpent-Nats",
+      "identityCandidates": [
+        "the serpent|evil character|crimson|evil|#The Serpent",
+        "the serpent|evil character|crimsonorangepale green|evil|#The Serpent (Promo)"
+      ],
+      "scores": {
+        "matchScore": 4.25,
+        "runnerUpScore": 4.25,
+        "agreeingFields": [
+          "stats",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Serpent|Pat|The_Serpent_(Pa)",
+          "name": "The Serpent",
+          "set": "Pat",
+          "officialSet": "Patriarchs",
+          "imgFile": "The_Serpent_(Pa)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "The Serpent (2021 Promo)|Pmo-P2|The-Serpent-Nats",
+          "name": "The Serpent (2021 Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "The-Serpent-Nats",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "The Serpent (Promo)|Pmo-P2|The_Serpent_(Promo)",
+          "name": "The Serpent (Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "The_Serpent_(Promo)",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    }
+  ],
+  "crops": {
+    "cropped": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "failed": [],
+    "skipped": [
+      13
+    ]
+  },
+  "usage": {
+    "model": "claude-sonnet-5-5",
+    "latencyMs": 23983,
+    "attempts": 13,
+    "costUsd": 0.244904
+  },
+  "rotated": 270,
+  "firstPass": {
+    "latencyMs": 6182,
+    "costUsd": 0.018234,
+    "reads": 0
+  },
+  "file": "SPOILER_IMG_20231019_221905056.webp",
+  "status": 200,
+  "latencyMs": 23983,
+  "attempts": 1
+}

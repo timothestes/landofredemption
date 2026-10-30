@@ -1,0 +1,4677 @@
+{
+  "scanId": "exp",
+  "mode": "deck",
+  "photoQuality": "ok",
+  "groups": [
+    {
+      "id": 1,
+      "orientation": "upright",
+      "bbox": [
+        0.18,
+        0,
+        0.94,
+        0.24
+      ],
+      "cardCount": 10
+    },
+    {
+      "id": 2,
+      "orientation": "upright",
+      "bbox": [
+        0,
+        0.26,
+        0.2,
+        0.49
+      ],
+      "cardCount": 3
+    },
+    {
+      "id": 3,
+      "orientation": "upright",
+      "bbox": [
+        0,
+        0.47,
+        0.18,
+        0.66
+      ],
+      "cardCount": 2
+    },
+    {
+      "id": 4,
+      "orientation": "upright",
+      "bbox": [
+        0.2,
+        0.22,
+        0.31,
+        0.62
+      ],
+      "cardCount": 9
+    },
+    {
+      "id": 5,
+      "orientation": "upright",
+      "bbox": [
+        0.3,
+        0.23,
+        0.48,
+        0.66
+      ],
+      "cardCount": 10
+    },
+    {
+      "id": 6,
+      "orientation": "upright",
+      "bbox": [
+        0.42,
+        0.23,
+        0.53,
+        0.41
+      ],
+      "cardCount": 1
+    },
+    {
+      "id": 7,
+      "orientation": "upright",
+      "bbox": [
+        0.53,
+        0.24,
+        0.64,
+        0.45
+      ],
+      "cardCount": 3
+    },
+    {
+      "id": 8,
+      "orientation": "upright",
+      "bbox": [
+        0.53,
+        0.49,
+        0.62,
+        0.66
+      ],
+      "cardCount": 1
+    },
+    {
+      "id": 9,
+      "orientation": "upright",
+      "bbox": [
+        0.64,
+        0.26,
+        0.75,
+        0.55
+      ],
+      "cardCount": 8
+    },
+    {
+      "id": 10,
+      "orientation": "upright",
+      "bbox": [
+        0.74,
+        0.26,
+        0.9,
+        0.78
+      ],
+      "cardCount": 10
+    },
+    {
+      "id": 11,
+      "orientation": "upright",
+      "bbox": [
+        0.16,
+        0.65,
+        0.4,
+        0.83
+      ],
+      "cardCount": 5
+    },
+    {
+      "id": 12,
+      "orientation": "upright",
+      "bbox": [
+        0.55,
+        0.7,
+        0.83,
+        0.9
+      ],
+      "cardCount": 7
+    }
+  ],
+  "detections": [
+    {
+      "id": "exp:0",
+      "group": 1,
+      "position": 1,
+      "titleBox": [
+        0.2,
+        0,
+        0.28,
+        0.02
+      ],
+      "read": {
+        "title": "Subjugating Egyptians",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "10",
+        "toughness": "11",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 1,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Subjugating Egyptians (1st Print - K)|K1P|K53-1P-Subjugating-Egyptians",
+      "kind": "matched",
+      "deckKey": "Subjugating Egyptians (1st Print - K)|K1P|K53-1P-Subjugating-Egyptians",
+      "scores": {
+        "matchScore": 5.75,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "vanilla",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Subjugating Egyptians (1st Print - K)|K1P|K53-1P-Subjugating-Egyptians",
+          "name": "Subjugating Egyptians (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K53-1P-Subjugating-Egyptians",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Subjugating Egyptians [K]|K|K55-Subjugating-Egyptians",
+          "name": "Subjugating Egyptians [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K55-Subjugating-Egyptians",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:1",
+      "group": 1,
+      "position": 2,
+      "titleBox": [
+        0.28,
+        0.03,
+        0.35,
+        0.05
+      ],
+      "read": {
+        "title": "Abandoned",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "5",
+        "toughness": "11",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 2,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Abandoned (1st Print - K)|K1P|K13-1P-Abandoned",
+      "kind": "matched",
+      "deckKey": "Abandoned (1st Print - K)|K1P|K13-1P-Abandoned",
+      "scores": {
+        "matchScore": 1,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Abandoned (1st Print - K)|K1P|K13-1P-Abandoned",
+          "name": "Abandoned (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K13-1P-Abandoned",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Abandoned [K]|K|K13-Abandoned",
+          "name": "Abandoned [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K13-Abandoned",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:2",
+      "group": 1,
+      "position": 3,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Red",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 3,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:3",
+      "group": 1,
+      "position": 4,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Red",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 4,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:4",
+      "group": 1,
+      "position": 5,
+      "titleBox": [
+        0.46,
+        0.06,
+        0.52,
+        0.08
+      ],
+      "read": {
+        "title": "Disrespect",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": "2",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 5,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Disrespect|IR|087-Disrespect",
+      "kind": "matched",
+      "deckKey": "Disrespect|IR|087-Disrespect",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Disrespect|IR|087-Disrespect",
+          "name": "Disrespect",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "087-Disrespect",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:5",
+      "group": 1,
+      "position": 6,
+      "titleBox": [
+        0.55,
+        0.02,
+        0.6,
+        0.04
+      ],
+      "read": {
+        "title": "Pharaoh's Curse",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": "6",
+        "toughness": "6",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Curse",
+        "grid": {
+          "row": 6,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Pharaoh's Curse|K|K52-Pharaohs-Curse",
+      "kind": "matched",
+      "deckKey": "Pharaoh's Curse|K|K52-Pharaohs-Curse",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Pharaoh's Curse|K|K52-Pharaohs-Curse",
+          "name": "Pharaoh's Curse",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K52-Pharaohs-Curse",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:6",
+      "group": 1,
+      "position": 7,
+      "titleBox": [
+        0.6,
+        0.05,
+        0.66,
+        0.07
+      ],
+      "read": {
+        "title": "David's Spies",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "1",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 7,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "David's Spies (1st Print - K)|K1P|K51-1P-Davids-Spies",
+      "kind": "matched",
+      "deckKey": "David's Spies (1st Print - K)|K1P|K51-1P-Davids-Spies",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "David's Spies (1st Print - K)|K1P|K51-1P-Davids-Spies",
+          "name": "David's Spies (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K51-1P-Davids-Spies",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "David's Spies [K]|K|K53-Davids-Spies",
+          "name": "David's Spies [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K53-Davids-Spies",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:7",
+      "group": 1,
+      "position": 8,
+      "titleBox": [
+        0.65,
+        0.06,
+        0.71,
+        0.08
+      ],
+      "read": {
+        "title": "Loyalty to David",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "2",
+        "toughness": "6",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 8,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Loyalty to David (1st Print - K)|K1P|K52-1P-Loyalty-to-David",
+      "kind": "matched",
+      "deckKey": "Loyalty to David (1st Print - K)|K1P|K52-1P-Loyalty-to-David",
+      "scores": {
+        "matchScore": 1,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Loyalty to David (1st Print - K)|K1P|K52-1P-Loyalty-to-David",
+          "name": "Loyalty to David (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K52-1P-Loyalty-to-David",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Loyalty to David [K]|K|K54-Loyalty-to-David",
+          "name": "Loyalty to David [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K54-Loyalty-to-David",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:8",
+      "group": 1,
+      "position": 9,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 9,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:9",
+      "group": 1,
+      "position": 10,
+      "titleBox": [
+        0.84,
+        0.08,
+        0.9,
+        0.1
+      ],
+      "read": {
+        "title": "Egyptian Soothsayers",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "5",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 10,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Egyptian Soothsayers (1st Print - K)|K1P|K40-1P-Egyptian-Soothsayers",
+      "kind": "matched",
+      "deckKey": "Egyptian Soothsayers (1st Print - K)|K1P|K40-1P-Egyptian-Soothsayers",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Egyptian Soothsayers (1st Print - K)|K1P|K40-1P-Egyptian-Soothsayers",
+          "name": "Egyptian Soothsayers (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K40-1P-Egyptian-Soothsayers",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Egyptian Soothsayers [K]|K|K40-Egyptian-Soothsayers",
+          "name": "Egyptian Soothsayers [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K40-Egyptian-Soothsayers",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:10",
+      "group": 2,
+      "position": 1,
+      "titleBox": [
+        0.03,
+        0.31,
+        0.08,
+        0.33
+      ],
+      "read": {
+        "title": "Lord of Armies",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 1,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Lord of Armies (1st Print - K)|K1P|K2-1P-Lord-of-Armies",
+      "kind": "matched",
+      "deckKey": "Lord of Armies (1st Print - K)|K1P|K2-1P-Lord-of-Armies",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Lord of Armies (1st Print - K)|K1P|K2-1P-Lord-of-Armies",
+          "name": "Lord of Armies (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K2-1P-Lord-of-Armies",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Lord of Armies [K]|K|K2-Lord-of-Armies",
+          "name": "Lord of Armies [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K2-Lord-of-Armies",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:11",
+      "group": 2,
+      "position": 2,
+      "titleBox": [
+        0.09,
+        0.29,
+        0.14,
+        0.31
+      ],
+      "read": {
+        "title": "Murderous Command",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 2,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Murderous Command (1st Print - K)|K1P|K3-1P-Murderous-Command",
+      "kind": "matched",
+      "deckKey": "Murderous Command (1st Print - K)|K1P|K3-1P-Murderous-Command",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Murderous Command (1st Print - K)|K1P|K3-1P-Murderous-Command",
+          "name": "Murderous Command (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K3-1P-Murderous-Command",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Murderous Command [K]|K|K3-Murderous-Command",
+          "name": "Murderous Command [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K3-Murderous-Command",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Murderous Command [2025 - 3rd Place]|Pmo-P3|Murderous-Command-3rd-place",
+          "name": "Murderous Command [2025 - 3rd Place]",
+          "set": "Pmo-P3",
+          "officialSet": "Promo",
+          "imgFile": "Murderous-Command-3rd-place",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:12",
+      "group": 2,
+      "position": 3,
+      "titleBox": [
+        0.15,
+        0.27,
+        0.19,
+        0.29
+      ],
+      "read": {
+        "title": "Son of God",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 3,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Son of God \"Manger\" (Promo)|Pmo-P2|Promo_Son-of-God-Christmas",
+      "identityCandidates": [
+        "son of god|dominant||good|#Son of God [2026 - 1st Place]",
+        "son of god|dominant||good|#Son of God (H)"
+      ],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Son of God \"Manger\" (Promo)|Pmo-P2|Promo_Son-of-God-Christmas",
+          "name": "Son of God \"Manger\" (Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Promo_Son-of-God-Christmas",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (1st Print - K)|K1P|K1-1P-Son-of-God",
+          "name": "Son of God (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K1-1P-Son-of-God",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (1st Print - L)|L1P|L1-1P-Son-of-God",
+          "name": "Son of God (1st Print - L)",
+          "set": "L1P",
+          "officialSet": "L Starter (1st Print)",
+          "imgFile": "L1-1P-Son-of-God",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (2016 Promo)|Pmo-P2|Son-of-God-2016-P",
+          "name": "Son of God (2016 Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Son-of-God-2016-P",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (2017 Promo)|Pmo-P2|Son-of-God-2017-P",
+          "name": "Son of God (2017 Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Son-of-God-2017-P",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (2019) (Promo)|Pmo-P2|Promo_Son-of-God-Nationals",
+          "name": "Son of God (2019) (Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Promo_Son-of-God-Nationals",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (2020 Promo)|Pmo-P2|Son-of-God-2020-P",
+          "name": "Son of God (2020 Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Son-of-God-2020-P",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (I)|I|Son_of_God_(I)",
+          "name": "Son of God (I)",
+          "set": "I",
+          "officialSet": "I",
+          "imgFile": "Son_of_God_(I)",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (J)|J|Son_of_God_(J)",
+          "name": "Son of God (J)",
+          "set": "J",
+          "officialSet": "J",
+          "imgFile": "Son_of_God_(J)",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (Promo 2018)|Pmo-P2|Son-of-God-2018",
+          "name": "Son of God (Promo 2018)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Son-of-God-2018",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [2023 - 1st Place]|Pmo-P3|Son-of-God-Textless-Nats-1st",
+          "name": "Son of God [2023 - 1st Place]",
+          "set": "Pmo-P3",
+          "officialSet": "Promo",
+          "imgFile": "Son-of-God-Textless-Nats-1st",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [Fundraiser - Greek]|Fund|Son-of-God-L-Greek",
+          "name": "Son of God [Fundraiser - Greek]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "Son-of-God-L-Greek",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [Fundraiser - Hebrew]|Fund|Son-of-God-K-Hebrew",
+          "name": "Son of God [Fundraiser - Hebrew]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "Son-of-God-K-Hebrew",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [Fundraiser]|Fund|FR-Son-of-God-Baptism-of-Jesus",
+          "name": "Son of God [Fundraiser]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "FR-Son-of-God-Baptism-of-Jesus",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [K]|K|K1-Son-of-God",
+          "name": "Son of God [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K1-Son-of-God",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [L]|L|L1-Son-of-God",
+          "name": "Son of God [L]",
+          "set": "L",
+          "officialSet": "L Starter",
+          "imgFile": "L1-Son-of-God",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [Tomb] [2022 - Seasonal]|Pmo-P3|Son-of-God-Easter",
+          "name": "Son of God [Tomb] [2022 - Seasonal]",
+          "set": "Pmo-P3",
+          "officialSet": "Promo",
+          "imgFile": "Son-of-God-Easter",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [Fundraiser Lion of Judah]|Fund|Son-of-God-Lion-of-Judah-WM",
+          "name": "Son of God [Fundraiser Lion of Judah]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "Son-of-God-Lion-of-Judah-WM",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [2026 - 1st Place]|Pmo-P3|Son-of-God-Nativity-1st-Place",
+          "name": "Son of God [2026 - 1st Place]",
+          "set": "Pmo-P3",
+          "officialSet": "Promo",
+          "imgFile": "Son-of-God-Nativity-1st-Place",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God ( C)|2E|Son_of_God_(C)",
+          "name": "Son of God ( C)",
+          "set": "2E",
+          "officialSet": "2nd Edition",
+          "imgFile": "Son_of_God_(C)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Son of God (A)|1E|Son_of_God_(A)",
+          "name": "Son of God (A)",
+          "set": "1E",
+          "officialSet": "1st Edition",
+          "imgFile": "Son_of_God_(A)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Son of God (B)|1EU|Son_of_God_(A)",
+          "name": "Son of God (B)",
+          "set": "1EU",
+          "officialSet": "1st Edition Unlimited",
+          "imgFile": "Son_of_God_(A)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Son of God (F)|3E|Son_of_God_(F)",
+          "name": "Son of God (F)",
+          "set": "3E",
+          "officialSet": "3rd Edition",
+          "imgFile": "Son_of_God_(F)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Son of God (G)|10A|Son_of_God_(G)",
+          "name": "Son of God (G)",
+          "set": "10A",
+          "officialSet": "10th Anniversary",
+          "imgFile": "Son_of_God_(G)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Son of God (Greek)|3E|Son_of_God_(E)",
+          "name": "Son of God (Greek)",
+          "set": "3E",
+          "officialSet": "3rd Edition",
+          "imgFile": "Son_of_God_(E)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Son of God (H)|10A|Son_of_God_(H)",
+          "name": "Son of God (H)",
+          "set": "10A",
+          "officialSet": "10th Anniversary",
+          "imgFile": "Son_of_God_(H)",
+          "legality": "",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:13",
+      "group": 3,
+      "position": 1,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Red",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 1,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:14",
+      "group": 3,
+      "position": 2,
+      "titleBox": [
+        0.1,
+        0.5,
+        0.15,
+        0.52
+      ],
+      "read": {
+        "title": "David's Harp",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Artifact",
+        "grid": {
+          "row": 2,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "David's Harp|Ki|David's_Harp_(Ki)",
+      "identityCandidates": [
+        "david's harp|artifact||neutral|#David's Harp",
+        "david's harp|artifact||neutral|#David's Harp (1st Print - K)",
+        "david's harp|artifact||neutral|#David's Harp (Promo)",
+        "david's harp|artifact||neutral|#David's Harp [K]"
+      ],
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "David's Harp|Ki|David's_Harp_(Ki)",
+          "name": "David's Harp",
+          "set": "Ki",
+          "officialSet": "Kings",
+          "imgFile": "David's_Harp_(Ki)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "David's Harp|War|David's_Harp_(Wa)",
+          "name": "David's Harp",
+          "set": "War",
+          "officialSet": "Warriors",
+          "imgFile": "David's_Harp_(Wa)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "David's Harp (1st Print - K)|K1P|K4-1P-Davids-Harp",
+          "name": "David's Harp (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K4-1P-Davids-Harp",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "David's Harp (Promo)|Pmo-P2|Davids-Harp-P",
+          "name": "David's Harp (Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Davids-Harp-P",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "David's Harp [K]|K|K4-Davids-Harp",
+          "name": "David's Harp [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K4-Davids-Harp",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:15",
+      "group": 4,
+      "position": 1,
+      "titleBox": [
+        0.23,
+        0.23,
+        0.3,
+        0.25
+      ],
+      "read": {
+        "title": "Company of Prophets",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "3",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 1,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Company of Prophets (1st Print - K)|K1P|K17-1P-Company-of-Prophets",
+      "kind": "matched",
+      "deckKey": "Company of Prophets (1st Print - K)|K1P|K17-1P-Company-of-Prophets",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Company of Prophets (1st Print - K)|K1P|K17-1P-Company-of-Prophets",
+          "name": "Company of Prophets (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K17-1P-Company-of-Prophets",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Company of Prophets [K]|K|K17-Company-of-Prophets",
+          "name": "Company of Prophets [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K17-Company-of-Prophets",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:16",
+      "group": 4,
+      "position": 2,
+      "titleBox": [
+        0.23,
+        0.26,
+        0.3,
+        0.28
+      ],
+      "read": {
+        "title": "Procession of Prophets",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "11",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 2,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Procession of Prophets (1st Print - K)|K1P|K18-1P-Procession-of-Prophets",
+      "kind": "matched",
+      "deckKey": "Procession of Prophets (1st Print - K)|K1P|K18-1P-Procession-of-Prophets",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Procession of Prophets (1st Print - K)|K1P|K18-1P-Procession-of-Prophets",
+          "name": "Procession of Prophets (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K18-1P-Procession-of-Prophets",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Procession of Prophets [K]|K|K18-Procession-of-Prophets",
+          "name": "Procession of Prophets [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K18-Procession-of-Prophets",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:17",
+      "group": 4,
+      "position": 3,
+      "titleBox": [
+        0.23,
+        0.29,
+        0.3,
+        0.31
+      ],
+      "read": {
+        "title": "Gad, David's Chosen",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "4",
+        "toughness": "6",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 3,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Gad, David's Chosen (1st Print - K)|K1P|K19-1P-Gad",
+      "kind": "matched",
+      "deckKey": "Gad, David's Chosen (1st Print - K)|K1P|K19-1P-Gad",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Gad, David's Chosen (1st Print - K)|K1P|K19-1P-Gad",
+          "name": "Gad, David's Chosen (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K19-1P-Gad",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Gad, David's Chosen [K]|K|K19-Gad",
+          "name": "Gad, David's Chosen [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K19-Gad",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:18",
+      "group": 4,
+      "position": 4,
+      "titleBox": [
+        0.23,
+        0.33,
+        0.29,
+        0.35
+      ],
+      "read": {
+        "title": "Hannah",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "4",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 4,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Hannah (1st Print - K)|K1P|K21-1P-Hannah",
+      "identityCandidates": [
+        "hannah|hero|green|good|#Hannah (1st Print - K)",
+        "hannah|hero|green|good|#Hannah [K]"
+      ],
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 5.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Hannah (1st Print - K)|K1P|K21-1P-Hannah",
+          "name": "Hannah (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K21-1P-Hannah",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Hannah [K]|K|K21-Hannah",
+          "name": "Hannah [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K21-Hannah",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:19",
+      "group": 4,
+      "position": 5,
+      "titleBox": [
+        0.23,
+        0.37,
+        0.3,
+        0.39
+      ],
+      "read": {
+        "title": "The Prophet of God",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "6",
+        "toughness": "12",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 5,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "The Prophet of God (1st Print - K)|K1P|K20-1P-The-Prophet-of-God",
+      "kind": "matched",
+      "deckKey": "The Prophet of God (1st Print - K)|K1P|K20-1P-The-Prophet-of-God",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Prophet of God (1st Print - K)|K1P|K20-1P-The-Prophet-of-God",
+          "name": "The Prophet of God (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K20-1P-The-Prophet-of-God",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "The Prophet of God [K]|K|K20-The-Prophet-of-God",
+          "name": "The Prophet of God [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K20-The-Prophet-of-God",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:20",
+      "group": 4,
+      "position": 6,
+      "titleBox": [
+        0.23,
+        0.4,
+        0.3,
+        0.42
+      ],
+      "read": {
+        "title": "Samuel, the Anointer",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "7",
+        "toughness": "5",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 6,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Samuel, the Anointer (1st Print - K)|K1P|K16-1P-Samuel",
+      "kind": "matched",
+      "deckKey": "Samuel, the Anointer (1st Print - K)|K1P|K16-1P-Samuel",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Samuel, the Anointer (1st Print - K)|K1P|K16-1P-Samuel",
+          "name": "Samuel, the Anointer (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K16-1P-Samuel",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Samuel, the Anointer [K]|K|K16-Samuel",
+          "name": "Samuel, the Anointer [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K16-Samuel",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:21",
+      "group": 4,
+      "position": 7,
+      "titleBox": [
+        0.23,
+        0.44,
+        0.3,
+        0.46
+      ],
+      "read": {
+        "title": "Moses the Servant",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "4",
+        "toughness": "10",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 7,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Moses, the Servant|IR|032-Moses-the-Servant-UR",
+      "kind": "matched",
+      "deckKey": "Moses, the Servant|IR|032-Moses-the-Servant-UR",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Moses, the Servant|IR|032-Moses-the-Servant-UR",
+          "name": "Moses, the Servant",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "032-Moses-the-Servant-UR",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:22",
+      "group": 4,
+      "position": 8,
+      "titleBox": [
+        0.24,
+        0.5,
+        0.3,
+        0.52
+      ],
+      "read": {
+        "title": "Aaron, Peacemaker",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": "12",
+        "toughness": "8",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 8,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Aaron, Peacemaker|IR|030-Aaron-Peacemaker-R",
+      "kind": "matched",
+      "deckKey": "Aaron, Peacemaker|IR|030-Aaron-Peacemaker-R",
+      "scores": {
+        "matchScore": 4.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Aaron, Peacemaker|IR|030-Aaron-Peacemaker-R",
+          "name": "Aaron, Peacemaker",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "030-Aaron-Peacemaker-R",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:23",
+      "group": 4,
+      "position": 9,
+      "titleBox": [
+        0.26,
+        0.54,
+        0.31,
+        0.56
+      ],
+      "read": {
+        "title": "Inhabitants Driven Out",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "5",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 9,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Inhabitants Driven Out|IR|073-Inhabitants-Driven-Out",
+      "kind": "matched",
+      "deckKey": "Inhabitants Driven Out|IR|073-Inhabitants-Driven-Out",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Inhabitants Driven Out|IR|073-Inhabitants-Driven-Out",
+          "name": "Inhabitants Driven Out",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "073-Inhabitants-Driven-Out",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:24",
+      "group": 5,
+      "position": 1,
+      "titleBox": [
+        0.4,
+        0.24,
+        0.44,
+        0.26
+      ],
+      "read": {
+        "title": "Abigail",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "0",
+        "toughness": "7",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 1,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Abigail (1st Print - K)|K1P|K29-1P-Abigail",
+      "identityCandidates": [
+        "abigail|hero|purple|good|#Abigail (1st Print - K)",
+        "abigail|hero|purple|good|#Abigail (RoA)",
+        "abigail|hero|purple|good|#Abigail [K]"
+      ],
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 1.25,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Abigail (1st Print - K)|K1P|K29-1P-Abigail",
+          "name": "Abigail (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K29-1P-Abigail",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Abigail (RoA)|RoA|Abigail_(RA2)",
+          "name": "Abigail (RoA)",
+          "set": "RoA",
+          "officialSet": "Rock of Ages",
+          "imgFile": "Abigail_(RA2)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Abigail [K]|K|K29-Abigail",
+          "name": "Abigail [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K29-Abigail",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:25",
+      "group": 5,
+      "position": 2,
+      "titleBox": [
+        0.4,
+        0.27,
+        0.44,
+        0.29
+      ],
+      "read": {
+        "title": "Abiathar",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "2",
+        "toughness": "4",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 2,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Abiathar (1st Print - K)|K1P|K27-1P-Abiathar",
+      "kind": "matched",
+      "deckKey": "Abiathar (1st Print - K)|K1P|K27-1P-Abiathar",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Abiathar (1st Print - K)|K1P|K27-1P-Abiathar",
+          "name": "Abiathar (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K27-1P-Abiathar",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Abiathar [K]|K|K27-Abiathar",
+          "name": "Abiathar [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K27-Abiathar",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:26",
+      "group": 5,
+      "position": 3,
+      "titleBox": [
+        0.4,
+        0.3,
+        0.45,
+        0.32
+      ],
+      "read": {
+        "title": "King Lemuel",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "8",
+        "toughness": "11",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 3,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "King Lemuel (Roots)|RR|095-King-Lemule",
+      "kind": "matched",
+      "deckKey": "King Lemuel (Roots)|RR|095-King-Lemule",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "King Lemuel|RoA|King_Lemuel_(RA)",
+          "name": "King Lemuel",
+          "set": "RoA",
+          "officialSet": "Rock of Ages",
+          "imgFile": "King_Lemuel_(RA)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "King Lemuel (Roots)|RR|095-King-Lemule",
+          "name": "King Lemuel (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "095-King-Lemule",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:27",
+      "group": 5,
+      "position": 4,
+      "titleBox": [
+        0.4,
+        0.32,
+        0.43,
+        0.34
+      ],
+      "read": {
+        "title": "Abishai",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "8",
+        "toughness": "11",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 4,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Abishai (1st Print - K)|K1P|K28-1P-Abishai",
+      "kind": "matched",
+      "deckKey": "Abishai (1st Print - K)|K1P|K28-1P-Abishai",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Abishai (1st Print - K)|K1P|K28-1P-Abishai",
+          "name": "Abishai (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K28-1P-Abishai",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Abishai [K]|K|K28-Abishai",
+          "name": "Abishai [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K28-Abishai",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:28",
+      "group": 5,
+      "position": 5,
+      "titleBox": [
+        0.4,
+        0.4,
+        0.45,
+        0.42
+      ],
+      "read": {
+        "title": "Jonathan, the Devoted",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "10",
+        "toughness": "8",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 5,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Jonathan, the Devoted (1st Print - K)|K1P|K26-1P-Jonathan",
+      "kind": "matched",
+      "deckKey": "Jonathan, the Devoted (1st Print - K)|K1P|K26-1P-Jonathan",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Jonathan, the Devoted (1st Print - K)|K1P|K26-1P-Jonathan",
+          "name": "Jonathan, the Devoted (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K26-1P-Jonathan",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Jonathan, the Devoted [K]|K|K26-Jonathan",
+          "name": "Jonathan, the Devoted [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K26-Jonathan",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:29",
+      "group": 5,
+      "position": 6,
+      "titleBox": [
+        0.37,
+        0.45,
+        0.43,
+        0.47
+      ],
+      "read": {
+        "title": "David's Messengers",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "3",
+        "toughness": "7",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 6,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "David's Messengers (1st Print - K)|K1P|K30-1P-Davids-Messengers",
+      "kind": "matched",
+      "deckKey": "David's Messengers (1st Print - K)|K1P|K30-1P-Davids-Messengers",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "David's Messengers (1st Print - K)|K1P|K30-1P-Davids-Messengers",
+          "name": "David's Messengers (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K30-1P-Davids-Messengers",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "David's Messengers [K]|K|K30-Davids-Messengers",
+          "name": "David's Messengers [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K30-Davids-Messengers",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:30",
+      "group": 5,
+      "position": 7,
+      "titleBox": [
+        0.38,
+        0.47,
+        0.44,
+        0.49
+      ],
+      "read": {
+        "title": "David, Giant Slayer",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "12",
+        "toughness": "10",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 7,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "David, Giant Slayer [K]|K|K14-David-Giant-Slayer",
+      "kind": "matched",
+      "deckKey": "David, Giant Slayer [K]|K|K14-David-Giant-Slayer",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "David, Giant Slayer [Fundraiser]|Fund|FR-David-Giant-Slayer-SBS",
+          "name": "David, Giant Slayer [Fundraiser]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "FR-David-Giant-Slayer-SBS",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "David, Giant Slayer [K]|K|K14-David-Giant-Slayer",
+          "name": "David, Giant Slayer [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K14-David-Giant-Slayer",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:31",
+      "group": 5,
+      "position": 8,
+      "titleBox": [
+        0.4,
+        0.55,
+        0.45,
+        0.57
+      ],
+      "read": {
+        "title": "Given to Israel",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "5",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 8,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Given to Israel (1st Print - K)|K1P|K34-1P-Given-to-Israel",
+      "kind": "matched",
+      "deckKey": "Given to Israel (1st Print - K)|K1P|K34-1P-Given-to-Israel",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Given to Israel (1st Print - K)|K1P|K34-1P-Given-to-Israel",
+          "name": "Given to Israel (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K34-1P-Given-to-Israel",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Given to Israel [K]|K|K34-Given-to-Israel",
+          "name": "Given to Israel [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K34-Given-to-Israel",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:32",
+      "group": 5,
+      "position": 9,
+      "titleBox": [
+        0.4,
+        0.6,
+        0.45,
+        0.62
+      ],
+      "read": {
+        "title": "David's Victory",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "2",
+        "toughness": "1",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 9,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "David's Victory (1st Print - K)|K1P|K31-1P-Davids-Victory",
+      "kind": "matched",
+      "deckKey": "David's Victory (1st Print - K)|K1P|K31-1P-Davids-Victory",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "David's Victory (1st Print - K)|K1P|K31-1P-Davids-Victory",
+          "name": "David's Victory (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K31-1P-Davids-Victory",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "David's Victory [K]|K|K31-Davids-Victory",
+          "name": "David's Victory [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K31-Davids-Victory",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:33",
+      "group": 5,
+      "position": 10,
+      "titleBox": [
+        0.41,
+        0.64,
+        0.47,
+        0.66
+      ],
+      "read": {
+        "title": "Bravery of David",
+        "reference": "1 Samuel 17:45",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "7",
+        "toughness": "0",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 10,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Bravery of David (1st Print - K)|K1P|K33-1P-Bravery-of-David",
+      "kind": "matched",
+      "deckKey": "Bravery of David (1st Print - K)|K1P|K33-1P-Bravery-of-David",
+      "scores": {
+        "matchScore": 13.25,
+        "runnerUpScore": 8.25,
+        "agreeingFields": [
+          "reference",
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Bravery of David (1st Print - K)|K1P|K33-1P-Bravery-of-David",
+          "name": "Bravery of David (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K33-1P-Bravery-of-David",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Bravery of David [K]|K|K33-Bravery-of-David",
+          "name": "Bravery of David [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K33-Bravery-of-David",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:34",
+      "group": 6,
+      "position": 1,
+      "titleBox": [
+        0.48,
+        0.24,
+        0.52,
+        0.26
+      ],
+      "read": {
+        "title": "Hidden Treasures",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Artifact",
+        "grid": {
+          "row": 1,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Hidden Treasures (Roots)|RR|005-Hidden-Treasures",
+      "identityCandidates": [
+        "hidden treasures|artifact||neutral|#Hidden Treasures",
+        "hidden treasures|artifact||neutral|#Hidden Treasures (Roots)"
+      ],
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Hidden Treasures|FoOF|Hidden_Treasures_(FF)",
+          "name": "Hidden Treasures",
+          "set": "FoOF",
+          "officialSet": "Faith of Our Fathers",
+          "imgFile": "Hidden_Treasures_(FF)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Hidden Treasures (Roots)|RR|005-Hidden-Treasures",
+          "name": "Hidden Treasures (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "005-Hidden-Treasures",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:35",
+      "group": 7,
+      "position": 1,
+      "titleBox": [
+        0.58,
+        0.26,
+        0.62,
+        0.28
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 1,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:36",
+      "group": 7,
+      "position": 2,
+      "titleBox": [
+        0.58,
+        0.29,
+        0.62,
+        0.31
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 2,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:37",
+      "group": 7,
+      "position": 3,
+      "titleBox": [
+        0.59,
+        0.33,
+        0.63,
+        0.35
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": "Exodus 15:16",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 3,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "reference",
+      "printingReason": "equivalent",
+      "chosenKey": "Lost Soul \"Dread\" [Exodus 15:16 - K]|K|K6-Lost-Soul-Dread-Exodus-15_16",
+      "kind": "matched",
+      "deckKey": "Lost Soul \"Dread\" [Exodus 15:16 - K]|K|K6-Lost-Soul-Dread-Exodus-15_16",
+      "scores": {
+        "matchScore": 8.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "reference",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Lost Soul \"Dread\" [Exodus 15:16 - K]|K|K6-Lost-Soul-Dread-Exodus-15_16",
+          "name": "Lost Soul \"Dread\" [Exodus 15:16 - K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K6-Lost-Soul-Dread-Exodus-15_16",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Lost Soul \"Dread\" [Exodus 15:16] [1st Print - K]|K1P|K6-1P-Lost-Soul-Dread-Exodus-15_16",
+          "name": "Lost Soul \"Dread\" [Exodus 15:16] [1st Print - K]",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K6-1P-Lost-Soul-Dread-Exodus-15_16",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:38",
+      "group": 8,
+      "position": 1,
+      "titleBox": [
+        0.58,
+        0.5,
+        0.63,
+        0.52
+      ],
+      "read": {
+        "title": "King of Tyrus",
+        "reference": "Ezekiel 28:12",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Orange",
+        "strength": "10",
+        "toughness": "12",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 1,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "King of Tyrus (Roots)|RR|200-King-of-Tyrus",
+      "identityCandidates": [
+        "king of tyrus|evil character|orange|evil|#King of Tyrus (Pi)",
+        "king of tyrus|evil character|orange|evil|warrior#King of Tyrus (Roots)"
+      ],
+      "scores": {
+        "matchScore": 13.25,
+        "runnerUpScore": 13.25,
+        "agreeingFields": [
+          "reference",
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "King of Tyrus (Pi)|Pri|King_of_Tyrus_(Pi)",
+          "name": "King of Tyrus (Pi)",
+          "set": "Pri",
+          "officialSet": "Priests",
+          "imgFile": "King_of_Tyrus_(Pi)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "King of Tyrus (Roots)|RR|200-King-of-Tyrus",
+          "name": "King of Tyrus (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "200-King-of-Tyrus",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:39",
+      "group": 9,
+      "position": 1,
+      "titleBox": [
+        0.67,
+        0.26,
+        0.73,
+        0.28
+      ],
+      "read": {
+        "title": "Egyptian Charioteers",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "6",
+        "toughness": "8",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 1,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Egyptian Charioteers (1st Print - K)|K1P|K38-1P-Egyptian-Charioteers",
+      "kind": "matched",
+      "deckKey": "Egyptian Charioteers (1st Print - K)|K1P|K38-1P-Egyptian-Charioteers",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 4.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Egyptian Charioteers (1st Print - K)|K1P|K38-1P-Egyptian-Charioteers",
+          "name": "Egyptian Charioteers (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K38-1P-Egyptian-Charioteers",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Egyptian Charioteers [K]|K|K38-Egyptian-Charioteers",
+          "name": "Egyptian Charioteers [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K38-Egyptian-Charioteers",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:40",
+      "group": 9,
+      "position": 2,
+      "titleBox": [
+        0.68,
+        0.3,
+        0.74,
+        0.32
+      ],
+      "read": {
+        "title": "Abusive Taskmaster",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "6",
+        "toughness": "9",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 2,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Abusive Taskmaster (1st Print - K)|K1P|K36-1P-Abusive-Taskmaster",
+      "identityCandidates": [
+        "abusive taskmaster|evil character|pale green|evil|#Abusive Taskmaster (1st Print - K)",
+        "abusive taskmaster|evil character|pale green|evil|#Abusive Taskmaster [K]"
+      ],
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 1.25,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Abusive Taskmaster (1st Print - K)|K1P|K36-1P-Abusive-Taskmaster",
+          "name": "Abusive Taskmaster (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K36-1P-Abusive-Taskmaster",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Abusive Taskmaster [K]|K|K36-Abusive-Taskmaster",
+          "name": "Abusive Taskmaster [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K36-Abusive-Taskmaster",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:41",
+      "group": 9,
+      "position": 3,
+      "titleBox": [
+        0.69,
+        0.33,
+        0.74,
+        0.35
+      ],
+      "read": {
+        "title": "Egyptian Archer",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "3",
+        "toughness": "5",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 3,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Egyptian Archer (1st Print - K)|K1P|K39-1P-Egyptian-Archer",
+      "kind": "matched",
+      "deckKey": "Egyptian Archer (1st Print - K)|K1P|K39-1P-Egyptian-Archer",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 4.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Egyptian Archer (1st Print - K)|K1P|K39-1P-Egyptian-Archer",
+          "name": "Egyptian Archer (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K39-1P-Egyptian-Archer",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Egyptian Archer [K]|K|K39-Egyptian-Archer",
+          "name": "Egyptian Archer [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K39-Egyptian-Archer",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:42",
+      "group": 9,
+      "position": 4,
+      "titleBox": [
+        0.69,
+        0.36,
+        0.75,
+        0.38
+      ],
+      "read": {
+        "title": "Egyptian Horsemen",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "7",
+        "toughness": "6",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 4,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Egyptian Horsemen (1st Print - K)|K1P|K37-1P-Egyptian-Horsemen",
+      "identityCandidates": [
+        "egyptian horsemen|evil character|pale green|evil|warrior#Egyptian Horsemen (1st Print - K)",
+        "egyptian horsemen|evil character|pale green|evil|warrior#Egyptian Horsemen [K]"
+      ],
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 5.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Egyptian Horsemen (1st Print - K)|K1P|K37-1P-Egyptian-Horsemen",
+          "name": "Egyptian Horsemen (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K37-1P-Egyptian-Horsemen",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Egyptian Horsemen [K]|K|K37-Egyptian-Horsemen",
+          "name": "Egyptian Horsemen [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K37-Egyptian-Horsemen",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:43",
+      "group": 9,
+      "position": 5,
+      "titleBox": [
+        0.69,
+        0.4,
+        0.74,
+        0.42
+      ],
+      "read": {
+        "title": "Pharaoh's Army",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "9",
+        "toughness": "7",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 5,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Pharaoh's Army (1st Print - K)|K1P|K41-1P-Pharaohs-Army",
+      "kind": "matched",
+      "deckKey": "Pharaoh's Army (1st Print - K)|K1P|K41-1P-Pharaohs-Army",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Pharaoh's Army (1st Print - K)|K1P|K41-1P-Pharaohs-Army",
+          "name": "Pharaoh's Army (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K41-1P-Pharaohs-Army",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Pharaoh's Army [K]|K|K41-Pharaohs-Army",
+          "name": "Pharaoh's Army [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K41-Pharaohs-Army",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:44",
+      "group": 9,
+      "position": 6,
+      "titleBox": [
+        0.69,
+        0.43,
+        0.75,
+        0.45
+      ],
+      "read": {
+        "title": "Pharaoh's Officials",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "2",
+        "toughness": "4",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 6,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Pharaoh's Officials (1st Print - K)|K1P|K43-1P-Pharaohs-Officials",
+      "kind": "matched",
+      "deckKey": "Pharaoh's Officials (1st Print - K)|K1P|K43-1P-Pharaohs-Officials",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Pharaoh's Officials (1st Print - K)|K1P|K43-1P-Pharaohs-Officials",
+          "name": "Pharaoh's Officials (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K43-1P-Pharaohs-Officials",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Pharaoh's Officials [K]|K|K43-Pharaohs-Officials",
+          "name": "Pharaoh's Officials [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K43-Pharaohs-Officials",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:45",
+      "group": 9,
+      "position": 7,
+      "titleBox": [
+        0.68,
+        0.47,
+        0.75,
+        0.49
+      ],
+      "read": {
+        "title": "Pharaoh Ramses II",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "12",
+        "toughness": "12",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 7,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Pharaoh Ramses II (1st Print - K)|K1P|K35-1P-Pharaoh-Ramses-II",
+      "kind": "matched",
+      "deckKey": "Pharaoh Ramses II (1st Print - K)|K1P|K35-1P-Pharaoh-Ramses-II",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Pharaoh Ramses II (1st Print - K)|K1P|K35-1P-Pharaoh-Ramses-II",
+          "name": "Pharaoh Ramses II (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K35-1P-Pharaoh-Ramses-II",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Pharaoh, Ramses II [Fundraiser]|Fund|FR-Pharaoh-Ramses-II-SBS",
+          "name": "Pharaoh, Ramses II [Fundraiser]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "FR-Pharaoh-Ramses-II-SBS",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Pharaoh, Ramses II [K]|K|K35-Pharaoh-Ramses-II",
+          "name": "Pharaoh, Ramses II [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K35-Pharaoh-Ramses-II",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:46",
+      "group": 9,
+      "position": 8,
+      "titleBox": [
+        0.67,
+        0.51,
+        0.74,
+        0.53
+      ],
+      "read": {
+        "title": "The Murdering Pharaoh",
+        "reference": "Exodus 1:8",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "11",
+        "toughness": "10",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 8,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "The Murdering Pharaoh (1st Print - K)|K1P|K42-1P-The-Murdering-Pharaoh",
+      "identityCandidates": [
+        "the murdering pharaoh|evil character|pale green|evil|warrior#The Murdering Pharaoh (1st Print - K)",
+        "the murdering pharaoh|evil character|pale green|evil|warrior#The Murdering Pharaoh [K]"
+      ],
+      "scores": {
+        "matchScore": 13.25,
+        "runnerUpScore": 13.25,
+        "agreeingFields": [
+          "reference",
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Murdering Pharaoh (1st Print - K)|K1P|K42-1P-The-Murdering-Pharaoh",
+          "name": "The Murdering Pharaoh (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K42-1P-The-Murdering-Pharaoh",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "The Murdering Pharaoh [K]|K|K42-The-Murdering-Pharaoh",
+          "name": "The Murdering Pharaoh [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K42-The-Murdering-Pharaoh",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:47",
+      "group": 10,
+      "position": 1,
+      "titleBox": [
+        0.76,
+        0.28,
+        0.83,
+        0.3
+      ],
+      "read": {
+        "title": "Thrown into the Nile",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "1",
+        "toughness": "1",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 1,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Thrown into the Nile (1st Print - K)|K1P|K46-1P-Thrown-into-the-Nile",
+      "kind": "matched",
+      "deckKey": "Thrown into the Nile (1st Print - K)|K1P|K46-1P-Thrown-into-the-Nile",
+      "scores": {
+        "matchScore": 5,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Thrown into the Nile (1st Print - K)|K1P|K46-1P-Thrown-into-the-Nile",
+          "name": "Thrown into the Nile (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K46-1P-Thrown-into-the-Nile",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Thrown into the Nile [K]|K|K46-Thrown-into-the-Nile",
+          "name": "Thrown into the Nile [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K46-Thrown-into-the-Nile",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:48",
+      "group": 10,
+      "position": 2,
+      "titleBox": [
+        0.77,
+        0.31,
+        0.83,
+        0.33
+      ],
+      "read": {
+        "title": "Divination",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "0",
+        "toughness": "6",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 2,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Divination (1st Print - K)|K1P|K44-1P-Divination",
+      "kind": "matched",
+      "deckKey": "Divination (1st Print - K)|K1P|K44-1P-Divination",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 1.75,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Divination (1st Print - K)|K1P|K44-1P-Divination",
+          "name": "Divination (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K44-1P-Divination",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Divination [K]|K|K44-Divination",
+          "name": "Divination [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K44-Divination",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:49",
+      "group": 10,
+      "position": 3,
+      "titleBox": [
+        0.77,
+        0.37,
+        0.84,
+        0.39
+      ],
+      "read": {
+        "title": "Gathering Soothsayers",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "3",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 3,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Gathering Soothsayers (1st Print - K)|K1P|K47-1P-Gathering-Soothsayers",
+      "kind": "matched",
+      "deckKey": "Gathering Soothsayers (1st Print - K)|K1P|K47-1P-Gathering-Soothsayers",
+      "scores": {
+        "matchScore": 5,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Gathering Soothsayers (1st Print - K)|K1P|K47-1P-Gathering-Soothsayers",
+          "name": "Gathering Soothsayers (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K47-1P-Gathering-Soothsayers",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Gathering Soothsayers [K]|K|K47-Gathering-Soothsayers",
+          "name": "Gathering Soothsayers [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K47-Gathering-Soothsayers",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:50",
+      "group": 10,
+      "position": 4,
+      "titleBox": [
+        0.78,
+        0.4,
+        0.83,
+        0.42
+      ],
+      "read": {
+        "title": "Famine in Egypt",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "5",
+        "toughness": "0",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 4,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Famine in Egypt|IR|123-Famine-in-Egypt",
+      "kind": "matched",
+      "deckKey": "Famine in Egypt|IR|123-Famine-in-Egypt",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Famine in Egypt|IR|123-Famine-in-Egypt",
+          "name": "Famine in Egypt",
+          "set": "IR",
+          "officialSet": "Israel's Rebellion",
+          "imgFile": "123-Famine-in-Egypt",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:51",
+      "group": 10,
+      "position": 5,
+      "titleBox": [
+        0.77,
+        0.43,
+        0.84,
+        0.45
+      ],
+      "read": {
+        "title": "Moses Kills Egyptian",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "6",
+        "toughness": "0",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 5,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Moses Kills Egyptian (1st Print - K)|K1P|K45-1P-Moses-Kills-Egyptian",
+      "kind": "matched",
+      "deckKey": "Moses Kills Egyptian (1st Print - K)|K1P|K45-1P-Moses-Kills-Egyptian",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Moses Kills Egyptian (1st Print - K)|K1P|K45-1P-Moses-Kills-Egyptian",
+          "name": "Moses Kills Egyptian (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K45-1P-Moses-Kills-Egyptian",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Moses kills Egyptian [K]|K|K45-Moses-Kills-Egyptian",
+          "name": "Moses kills Egyptian [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K45-Moses-Kills-Egyptian",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:52",
+      "group": 10,
+      "position": 6,
+      "titleBox": [
+        0.78,
+        0.46,
+        0.83,
+        0.48
+      ],
+      "read": {
+        "title": "Ruthless",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "1",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 6,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Ruthless (1st Print - K)|K1P|K50-1P-Ruthless",
+      "kind": "matched",
+      "deckKey": "Ruthless (1st Print - K)|K1P|K50-1P-Ruthless",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Ruthless (1st Print - K)|K1P|K50-1P-Ruthless",
+          "name": "Ruthless (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K50-1P-Ruthless",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Ruthless [K]|K|K50-Ruthless",
+          "name": "Ruthless [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K50-Ruthless",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:53",
+      "group": 10,
+      "position": 7,
+      "titleBox": [
+        0.78,
+        0.5,
+        0.83,
+        0.52
+      ],
+      "read": {
+        "title": "Make Bricks!",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "4",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 7,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Make Bricks! (1st Print - K)|K1P|K49-1P-Make-Bricks",
+      "kind": "matched",
+      "deckKey": "Make Bricks! (1st Print - K)|K1P|K49-1P-Make-Bricks",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Make Bricks! (1st Print - K)|K1P|K49-1P-Make-Bricks",
+          "name": "Make Bricks! (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K49-1P-Make-Bricks",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Make Bricks! [K]|K|K49-Make-Bricks",
+          "name": "Make Bricks! [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K49-Make-Bricks",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:54",
+      "group": 10,
+      "position": 8,
+      "titleBox": [
+        0.79,
+        0.54,
+        0.85,
+        0.56
+      ],
+      "read": {
+        "title": "Egyptian Chariots",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "2",
+        "toughness": "4",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 8,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Egyptian Chariots (1st Print - K)|K1P|K54-1P-Egyptian-Chariots",
+      "kind": "matched",
+      "deckKey": "Egyptian Chariots (1st Print - K)|K1P|K54-1P-Egyptian-Chariots",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Egyptian Chariots (1st Print - K)|K1P|K54-1P-Egyptian-Chariots",
+          "name": "Egyptian Chariots (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K54-1P-Egyptian-Chariots",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Egyptian Chariots [K]|K|K56-Egyptian-Chariots",
+          "name": "Egyptian Chariots [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K56-Egyptian-Chariots",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:55",
+      "group": 10,
+      "position": 9,
+      "titleBox": [
+        0.8,
+        0.58,
+        0.86,
+        0.6
+      ],
+      "read": {
+        "title": "Egyptian Spear",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "5",
+        "toughness": "0",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 9,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Egyptian Spear (1st Print - K)|K1P|K48-1P-Egyptian-Spear",
+      "kind": "matched",
+      "deckKey": "Egyptian Spear (1st Print - K)|K1P|K48-1P-Egyptian-Spear",
+      "scores": {
+        "matchScore": 5.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Egyptian Spear (1st Print - K)|K1P|K48-1P-Egyptian-Spear",
+          "name": "Egyptian Spear (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K48-1P-Egyptian-Spear",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Egyptian Spear [K]|K|K48-Egyptian-Spear",
+          "name": "Egyptian Spear [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K48-Egyptian-Spear",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:56",
+      "group": 10,
+      "position": 10,
+      "titleBox": [
+        0.82,
+        0.61,
+        0.88,
+        0.63
+      ],
+      "read": {
+        "title": "Joseph in Prison",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": "4",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 10,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Joseph in Prison (Roots)|RR|220-Joseph-in-Prison",
+      "kind": "matched",
+      "deckKey": "Joseph in Prison (Roots)|RR|220-Joseph-in-Prison",
+      "scores": {
+        "matchScore": 5,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats",
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Joseph in Prison (Roots)|RR|220-Joseph-in-Prison",
+          "name": "Joseph in Prison (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "220-Joseph-in-Prison",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:57",
+      "group": 11,
+      "position": 1,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "5",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 1,
+          "col": 11
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:58",
+      "group": 11,
+      "position": 2,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "3",
+        "toughness": "3",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 2,
+          "col": 11
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:59",
+      "group": 11,
+      "position": 3,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "5",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 3,
+          "col": 11
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:60",
+      "group": 11,
+      "position": 4,
+      "titleBox": null,
+      "read": {
+        "title": null,
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": "2",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 4,
+          "col": 11
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "unread",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:61",
+      "group": 11,
+      "position": 5,
+      "titleBox": [
+        0.33,
+        0.66,
+        0.38,
+        0.68
+      ],
+      "read": {
+        "title": "David's Music",
+        "reference": "1 Samuel 16:23",
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": "1",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 5,
+          "col": 11
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "David's Music (1st Print - K)|K1P|K23-1P-Davids-Music",
+      "kind": "matched",
+      "deckKey": "David's Music (1st Print - K)|K1P|K23-1P-Davids-Music",
+      "scores": {
+        "matchScore": 13.25,
+        "runnerUpScore": 9.25,
+        "agreeingFields": [
+          "reference",
+          "stats",
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "David's Music (1st Print - K)|K1P|K23-1P-Davids-Music",
+          "name": "David's Music (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K23-1P-Davids-Music",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "David's Music [K]|K|K23-Davids-Music",
+          "name": "David's Music [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K23-Davids-Music",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "exp:62",
+      "group": 12,
+      "position": 1,
+      "titleBox": null,
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 1,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:63",
+      "group": 12,
+      "position": 2,
+      "titleBox": null,
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 2,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:64",
+      "group": 12,
+      "position": 3,
+      "titleBox": null,
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 3,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:65",
+      "group": 12,
+      "position": 4,
+      "titleBox": null,
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 4,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:66",
+      "group": 12,
+      "position": 5,
+      "titleBox": null,
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 5,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:67",
+      "group": 12,
+      "position": 6,
+      "titleBox": null,
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 6,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "exp:68",
+      "group": 12,
+      "position": 7,
+      "titleBox": [
+        0.77,
+        0.74,
+        0.81,
+        0.76
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 7,
+          "col": 12
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    }
+  ],
+  "crops": {
+    "cropped": [],
+    "failed": [],
+    "skipped": []
+  },
+  "usage": {
+    "model": "claude-sonnet-5-5",
+    "latencyMs": 51757,
+    "attempts": 1,
+    "costUsd": 0.106634
+  },
+  "rotated": 270,
+  "firstPass": {
+    "latencyMs": 51197,
+    "costUsd": 0.106634,
+    "reads": 69
+  },
+  "file": "IMG_4649.webp",
+  "status": 200,
+  "latencyMs": 51757,
+  "attempts": 1
+}

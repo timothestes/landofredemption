@@ -13,6 +13,7 @@ export const DECK_COPY = {
   readDoneOneGroup: 'Read {n} cards in 1 group',
   readDoneOne: 'Read 1 card in 1 group',
   readingCrop: 'Reading {n} sideways group{s}…',
+  smallPhoto: 'Small photo: the full-size original reads better',
   tooManyCards: 'Too many cards for one photo. Photograph the deck in two halves and add both.',
   groupHeader: 'Group {i} · Read {n}',
   groupHeaderEstimate: 'Group {i} · Read {n} of about {m}',
@@ -52,13 +53,17 @@ export const DECK_COPY = {
   privacy: 'Deck photos are handled the same way: sent to Anthropic to read the cards, not kept.',
 } as const;
 
-/** The deck photo's done line: singular per noun, plus the scanner's quality note for a poor photo. */
-export function deckDoneLine(n: number, g: number, quality?: string): string {
+/** Under this long edge (px) titles mostly go unread: in the eval, 3% of cards on sideways photos and 34% upright, against 71-85% at 1500 and up. */
+export const SMALL_PHOTO_EDGE = 1500;
+
+/** The deck photo's done line: singular per noun, plus a note for a small photo, else the scanner's quality note for a poor one. */
+export function deckDoneLine(n: number, g: number, quality?: string, longEdge?: number): string {
   const base = n === 1 && g === 1 ? DECK_COPY.readDoneOne
     : n === 1 ? DECK_COPY.readDoneOneCard
     : g === 1 ? DECK_COPY.readDoneOneGroup
     : DECK_COPY.readDone;
   const line = fill(base, { n, g });
+  if (longEdge !== undefined && longEdge < SMALL_PHOTO_EDGE) return `${line} · ${DECK_COPY.smallPhoto}`;
   const q = quality === 'dark' || quality === 'blurry' || quality === 'glare' ? qualityLine(quality) : null;
   return q ? `${line} · ${fill(COPY.qualityCheckNames, { q })}` : line;
 }

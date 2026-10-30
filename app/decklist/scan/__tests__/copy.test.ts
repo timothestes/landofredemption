@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DECK_COPY, deckDoneLine } from '../copy';
+import { DECK_COPY, deckDoneLine, SMALL_PHOTO_EDGE } from '../copy';
 
 const SPEC: Record<string, string> = {
   pageTitle: 'Deck from photo',
@@ -47,6 +47,7 @@ const SPEC: Record<string, string> = {
   crossLinkHere: 'Scanning single cards for your collection? Use the card scanner.',
   crossLinkScanner: 'Scanning a whole deck? Use Deck from photo.',
   privacy: 'Deck photos are handled the same way: sent to Anthropic to read the cards, not kept.',
+  smallPhoto: 'Small photo: the full-size original reads better',
 };
 
 describe('DECK_COPY', () => {
@@ -66,5 +67,10 @@ describe('deckDoneLine', () => {
     expect(deckDoneLine(5, 2, 'dark')).toBe('Read 5 cards in 2 groups · Too dark: check the names below');
     expect(deckDoneLine(5, 2, 'glare')).toContain('Glare: check the names below');
     expect(deckDoneLine(5, 2, 'ok')).toBe('Read 5 cards in 2 groups');
+  });
+  it('says so for a small photo, in place of the quality note', () => {
+    expect(deckDoneLine(5, 2, 'blurry', 1024)).toBe('Read 5 cards in 2 groups · Small photo: the full-size original reads better');
+    expect(deckDoneLine(5, 2, 'ok', SMALL_PHOTO_EDGE)).toBe('Read 5 cards in 2 groups');
+    expect(deckDoneLine(5, 2, 'ok', undefined)).toBe('Read 5 cards in 2 groups');
   });
 });

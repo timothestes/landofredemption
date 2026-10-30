@@ -1,8 +1,8 @@
-import { cropBoxToPhoto, cropGroup, cropRect, keepCropRead, needsCrop } from './crop';
-import { DECK_INSTRUCTION, type DeckOutput, type DeckRead } from './deckSchema';
+import { cropBoxToPhoto, cropGroup, cropRect, keepCropRead, needsCrop, nestedGroups } from './crop';
+import { DECK_INSTRUCTION, type DeckGroup, type DeckOutput, type DeckRead } from './deckSchema';
 import { DECK_ARM, DECK_MODE, recognize, type Arm, type RecognizeMode, type RecognizeResult } from './recognize';
 
-// Second pass for deck photos: re-read each sideways or upside-down group from a tight crop turned upright,
+// Second pass for deck photos: re-read each sideways, upside-down or truncated group from a tight crop turned upright,
 // CROP_CONCURRENCY at a time before a hard deadline, and swap that group's reads for the crop's. Server only.
 
 export const CROP_CONCURRENCY = 4;
@@ -28,6 +28,8 @@ export interface CropPassResult {
   cropped: number[];
   failed: number[];
   skipped: number[];
+  /** Groups nested in a cropped group: their cards came back in its crop, so their own reads were dropped. */
+  merged: number[];
   usage: { inputTokens: number; outputTokens: number };
   costUsd: number;
   latencyMs: number;
@@ -46,7 +48,12 @@ export async function runCropPass(jpeg: Buffer, out: DeckOutput, image: { width:
   const seen = new Set<number>();
   const groups = out.groups.filter(g => !seen.has(g.id) && seen.add(g.id));
 
-  const needy = groups.filter(g => needsCrop(g)).sort((a, b) => a.id - b.id);
+  // A group nested in a group that will be cropped is read by that crop: cropping both would count its cards twice.
+  const nested = nestedGroups(groups);
+  const needs = (g: DeckGroup) => needsCrop(g, readsOf(g.id).length);
+  const willCrop = new Set(groups.filter(needs).map(g => g.id));
+  const absorbedBy = new Map([...nested].filter(([, root]) => willCrop.has(root)));
+  const needy = groups.filter(g => needs(g) && !absorbedBy.has(g.id)).sort((a, b) => a.id - b.id);
   const queue = needy.slice(0, MAX_CROP_GROUPS);
   const skipped = needy.slice(MAX_CROP_GROUPS).map(g => g.id);
   const cropped: number[] = [];
@@ -109,10 +116,14 @@ export async function runCropPass(jpeg: Buffer, out: DeckOutput, image: { width:
   };
   await Promise.all(Array.from({ length: Math.min(CROP_CONCURRENCY, queue.length) }, worker));
 
+  // Nested groups whose container's crop came back are dropped; a failed or skipped container leaves them as read.
+  const merged = [...absorbedBy].filter(([, root]) => replaced.has(root)).map(([id]) => id);
+  const gone = new Set(merged);
+
   // Rebuilt in out.groups order; reads of group 0 (and of any group not listed) go last, unchanged.
   const listed = new Set(groups.filter(g => g.id !== 0).map(g => g.id));
   const cards = [
-    ...groups.filter(g => g.id !== 0).flatMap(g => replaced.get(g.id) ?? readsOf(g.id)),
+    ...groups.filter(g => g.id !== 0 && !gone.has(g.id)).flatMap(g => replaced.get(g.id) ?? readsOf(g.id)),
     ...out.cards.filter(c => !listed.has(c.group)),
   ];
   const asc = (a: number, b: number) => a - b;
@@ -121,6 +132,7 @@ export async function runCropPass(jpeg: Buffer, out: DeckOutput, image: { width:
     cropped: cropped.sort(asc),
     failed: failed.sort(asc),
     skipped: skipped.sort(asc),
+    merged: merged.sort(asc),
     usage,
     costUsd,
     latencyMs: now() - started,

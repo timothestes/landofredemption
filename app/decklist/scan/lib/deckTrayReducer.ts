@@ -155,6 +155,7 @@ export function deckTrayReducer(s: DeckTrayState, a: DeckTrayAction): DeckTraySt
       const r = a.response;
       const done = patchPhoto(s, a.photoId, {
         status: 'done', scanId: r.scanId, photoQuality: r.photoQuality, error: undefined,
+        longEdge: r.imageSize ? Math.max(r.imageSize.width, r.imageSize.height) : undefined,
         groups: r.groups.map(g => ({ id: g.id, orientation: g.orientation, bbox: g.bbox, cardCount: g.cardCount })),
       });
       // A read that lands while saving was not in the saved deck: do not add it to the tray.

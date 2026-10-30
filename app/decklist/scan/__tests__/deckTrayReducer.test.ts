@@ -23,6 +23,11 @@ describe('deckTrayReducer', () => {
     expect(rows[0].shares).toEqual({ 'p1:1': 2 });
   });
 
+  it('stores the long edge of the image the scanner read', () => {
+    expect(withPhoto('p1').photos[0].longEdge).toBe(2048);
+    expect(withPhoto('p1', { ...deckResponse('s1', []), imageSize: { width: 768, height: 1024 } }).photos[0].longEdge).toBe(1024);
+  });
+
   it('sets default zones on the first photoDone that reaches 2 groups, only for groups without a zone', () => {
     const resp = deckResponse(
       's1',

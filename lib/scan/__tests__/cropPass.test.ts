@@ -47,6 +47,45 @@ describe('runCropPass', () => {
     expect(fn).toHaveBeenCalledTimes(MAX_CROP_GROUPS);
   });
 
+  it('crops an upright group the first pass listed under half of', async () => {
+    const out: DeckOutput = { photoQuality: 'ok', groups: [grp(1, { cardCount: 10 }), grp(2, { cardCount: 4, bbox: [0.5, 0.2, 0.7, 0.8] })],
+      cards: [read({ group: 1, title: 'A' }), ...['B', 'C', 'D'].map(title => read({ group: 2, title }))] };
+    const { fn, deps } = stub(async () => okResult([read({ title: 'E' }), read({ title: 'F' })]));
+    const res = await runCropPass(JPEG, out, IMAGE, soon(), deps);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(res.cropped).toEqual([1]);
+    expect(res.cards.map(c => c.title)).toEqual(['E', 'F', 'B', 'C', 'D']);
+  });
+
+  it('a group nested in a cropped group is absorbed: not cropped, its reads dropped, listed in merged', async () => {
+    const out: DeckOutput = { photoQuality: 'ok',
+      groups: [side(8, { bbox: [0, 0.57, 0.31, 0.8] }), side(9, { bbox: [0, 0.57, 0.45, 1] })],
+      cards: [read({ group: 8, title: 'A' }), read({ group: 9, title: 'B' })] };
+    const { fn, deps } = stub(async () => okResult([read({ title: 'A' }), read({ title: 'B' })]));
+    const res = await runCropPass(JPEG, out, IMAGE, soon(), deps);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(res.cropped).toEqual([9]);
+    expect(res.merged).toEqual([8]);
+    expect(res.cards.map(c => [c.group, c.title])).toEqual([[9, 'A'], [9, 'B']]);
+  });
+
+  it('a nested group keeps its reads when its container is not cropped or its crop fails', async () => {
+    const groups = [side(8, { bbox: [0, 0.57, 0.31, 0.8] }), grp(9, { bbox: [0, 0.57, 0.45, 1] })];
+    const cards = [read({ group: 8, title: 'A' }), read({ group: 9, title: 'B' })];
+    const ok = stub(async () => okResult([read({ title: 'C' })]));
+    const kept = await runCropPass(JPEG, { photoQuality: 'ok', groups, cards }, IMAGE, soon(), ok.deps);
+    expect(kept.cropped).toEqual([8]);
+    expect(kept.merged).toEqual([]);
+
+    const failing = stub(async () => ({ ok: false, code: 'recognizer_failed', attempts: 1, latencyMs: 5 }));
+    const both = [side(8, { bbox: [0, 0.57, 0.31, 0.8] }), side(9, { bbox: [0, 0.57, 0.45, 1] })];
+    const res = await runCropPass(JPEG, { photoQuality: 'ok', groups: both, cards }, IMAGE, soon(), failing.deps);
+    expect(failing.fn).toHaveBeenCalledTimes(1);
+    expect(res.failed).toEqual([9]);
+    expect(res.merged).toEqual([]);
+    expect(res.cards).toEqual(cards);
+  });
+
   it('group 0 is never cropped', async () => {
     const out: DeckOutput = { photoQuality: 'ok', groups: [grp(0, { cardCount: 5, orientation: 'rotated_cw' })], cards: [read({ group: 0, title: null })] };
     const { fn, deps } = stub(async () => okResult([]));
