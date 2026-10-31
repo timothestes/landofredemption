@@ -3,13 +3,14 @@
 import { useRef } from 'react';
 import { FlipHorizontal2, ImagePlus, Trash2 } from 'lucide-react';
 import { useGameBackgroundSettings } from '@/app/shared/hooks/useGameBackground';
+import { LobbySettingRow, LobbySwitch, lobbyTextButtonClass } from './LobbySettingRow';
 
 /**
- * Table-background control for the "waiting for an opponent" card — the same
- * per-account store as the in-game gear menu (GameBackgroundSetting), styled
- * to sit with the card's visibility switch. The backdrop behind the card
- * repaints as soon as an upload lands, so this doubles as a preview. Only the
- * player sees their image. Hidden when signed out.
+ * Table-background row for the "waiting for an opponent" card — the same
+ * per-account store as the in-game gear menu (GameBackgroundSetting). The
+ * backdrop behind the card repaints as soon as an upload lands, so this
+ * doubles as a preview. Only the player sees their image. Hidden when signed
+ * out.
  */
 export function WaitingBackgroundControl() {
   const { loaded, signedIn, row, busy, error, uploadFile, flip, setEnabled, remove } = useGameBackgroundSettings();
@@ -18,11 +19,19 @@ export function WaitingBackgroundControl() {
   if (!loaded || !signedIn) return null;
 
   const pick = () => inputRef.current?.click();
-  const linkClass =
-    'inline-flex min-h-[32px] items-center gap-1 px-1 text-[11px] text-amber-200/40 hover:text-amber-200/60 transition-colors disabled:opacity-50';
+  const iconClass =
+    'inline-flex h-8 w-8 items-center justify-center rounded-md text-amber-200/50 hover:bg-amber-200/5 hover:text-amber-200/90 transition-colors disabled:opacity-50';
+
+  const hint = error ? (
+    <span role="alert" className="text-red-300/80">{error}</span>
+  ) : busy ? (
+    row ? 'Saving…' : 'Uploading…'
+  ) : (
+    'Only you see it'
+  );
 
   return (
-    <div className="mt-3">
+    <LobbySettingRow label="Table background" hint={hint}>
       <input
         ref={inputRef}
         type="file"
@@ -35,60 +44,26 @@ export function WaitingBackgroundControl() {
         }}
       />
       {row ? (
-        <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1">
-          {/* Switch + label never wrap apart; the label holds its width while busy. */}
-          <span className="inline-flex items-center gap-2.5">
-          <button
-            role="switch"
-            aria-checked={row.enabled}
-            aria-label="My table background"
-            disabled={busy}
-            onClick={() => setEnabled(!row.enabled)}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:opacity-50 ${
-              row.enabled ? 'bg-primary' : 'bg-amber-200/20'
-            }`}
-          >
-            <span
-              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                row.enabled ? 'translate-x-[19px]' : 'translate-x-[3px]'
-              }`}
-            />
-          </button>
-          <span className="min-w-[104px] text-left text-[11px] text-amber-200/40">
-            {busy ? 'Saving…' : row.enabled ? 'My background on' : 'My background off'}
-          </span>
-          </span>
-          <button onClick={pick} disabled={busy} className={linkClass} title="Upload a different image">
-            <ImagePlus className="h-3 w-3" />
-            Replace
-          </button>
+        <>
           {row.enabled && (
-            <button onClick={flip} disabled={busy} className={linkClass} title="Mirror your background left-to-right">
-              <FlipHorizontal2 className="h-3 w-3" />
-              Flip
+            <button onClick={flip} disabled={busy} className={iconClass} title="Flip" aria-label="Flip background">
+              <FlipHorizontal2 className="h-3.5 w-3.5" />
             </button>
           )}
-          <button onClick={remove} disabled={busy} className={linkClass} title="Delete your background image">
-            <Trash2 className="h-3 w-3" />
-            Remove
+          <button onClick={pick} disabled={busy} className={iconClass} title="Replace" aria-label="Replace background">
+            <ImagePlus className="h-3.5 w-3.5" />
           </button>
-        </div>
+          <button onClick={remove} disabled={busy} className={iconClass} title="Remove" aria-label="Remove background">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+          <LobbySwitch checked={row.enabled} onChange={setEnabled} label="Use my table background" disabled={busy} />
+        </>
       ) : (
-        <button
-          onClick={pick}
-          disabled={busy}
-          className={linkClass}
-          title="Upload an image to play on. Only you see it."
-        >
+        <button onClick={pick} disabled={busy} className={lobbyTextButtonClass}>
           <ImagePlus className="h-3 w-3" />
-          {busy ? 'Uploading…' : 'Upload table background'}
+          Upload
         </button>
       )}
-      {error && (
-        <p role="alert" className="mt-1 text-[11px] text-red-300/70">
-          {error}
-        </p>
-      )}
-    </div>
+    </LobbySettingRow>
   );
 }

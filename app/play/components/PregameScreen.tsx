@@ -2,9 +2,10 @@
 
 import { useGameBackground } from '@/app/shared/hooks/useGameBackground';
 import { WaitingBackgroundControl } from './WaitingBackgroundControl';
+import { LobbySettingRow, LobbySwitch, lobbyTextButtonClass } from './LobbySettingRow';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeftRight } from 'lucide-react';
+import { ArrowLeftRight, Check, Copy, Pencil } from 'lucide-react';
 import TopNav from '@/components/top-nav';
 import { DeckPickerModal } from './DeckPickerModal';
 import { ForgeDeckPickerModal } from '@/app/forge/play/games/ForgeDeckPicker';
@@ -277,39 +278,29 @@ export function GameCodeHeader({ code, inviteUrl }: { code: string; inviteUrl?: 
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // One button for code + caption, so the code sits dead centre (no icon
+  // beside it pushing it left).
   return (
     <div className="mb-5">
       <p className="text-[10px] uppercase tracking-[0.2em] text-amber-200/50 font-cinzel">Game Code</p>
-      <div className="flex items-center justify-center gap-2 mt-1">
-        <p
-          onClick={copyInviteLink}
-          title="Copy invite link"
-          className="font-mono text-4xl sm:text-5xl font-bold tracking-wider text-amber-200/90 cursor-pointer hover:text-amber-200 transition-colors select-none"
-        >
+      <button
+        onClick={copyInviteLink}
+        title="Copy invite link"
+        className="group mx-auto mt-1 flex flex-col items-center"
+      >
+        {/* pl balances tracking-wider's trailing space after the last letter */}
+        <span className="pl-[0.05em] font-mono text-4xl sm:text-5xl font-bold tracking-wider text-amber-200/90 group-hover:text-amber-200 transition-colors select-none">
           {code}
-        </p>
-        <button
-          onClick={copyInviteLink}
-          title="Copy invite link"
-          className="p-1.5 rounded-md text-amber-200/40 hover:text-amber-200/80 transition-colors"
+        </span>
+        <span
+          className={`mt-1.5 inline-flex items-center gap-1.5 text-[11px] transition-colors ${
+            copied ? 'text-green-400' : 'text-amber-200/50 group-hover:text-amber-200/80'
+          }`}
         >
-          {copied ? (
-            <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
-          ) : (
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-            </svg>
-          )}
-        </button>
-      </div>
-      {copied ? (
-        <p className="mt-1 text-[10px] text-green-400 font-cinzel tracking-wide">Invite link copied!</p>
-      ) : (
-        <p className="mt-1 text-[10px] text-amber-200/55 font-cinzel tracking-wide">Tap to copy invite link</p>
-      )}
+          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+          {copied ? 'Invite link copied' : 'Copy invite link'}
+        </span>
+      </button>
     </div>
   );
 }
@@ -482,35 +473,33 @@ function PlayerCards({
           )}
         </div>
 
-        {/* Opponent card */}
-        <div className="rounded-lg border border-[#4a7ab5]/30 bg-black/40 p-3 text-left">
-          {isWaiting || !hasOpponent ? (
-            <>
-              <p className="text-xs font-cinzel text-[#4a7ab5]/60">Waiting</p>
-              <div className="mt-2 flex gap-1">
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#4a7ab5]/50 [animation-delay:-0.3s]" />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#4a7ab5]/50 [animation-delay:-0.15s]" />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#4a7ab5]/50" />
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-xs font-cinzel text-[#4a7ab5] truncate">{opponentName}</p>
+        {/* Opponent card — an open (dashed) seat until someone joins */}
+        {isWaiting || !hasOpponent ? (
+          <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#4a7ab5]/35 bg-black/20 p-3 text-center">
+            <p className="text-xs font-cinzel text-[#4a7ab5]">Waiting for opponent</p>
+            <div className="flex gap-1">
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#4a7ab5]/50 [animation-delay:-0.3s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#4a7ab5]/50 [animation-delay:-0.15s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#4a7ab5]/50" />
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-[#4a7ab5]/30 bg-black/40 p-3 text-left">
+            <p className="text-xs font-cinzel text-[#4a7ab5] truncate">{opponentName}</p>
 
-              {/* Dice during rolling+ phases */}
-              {showDice && (
-                <div className="mt-2 flex justify-center">
-                  <InlineDie
-                    finalValue={opponentRoll}
-                    accentColor="#4a7ab5"
-                    isWinner={!iWonRoll}
-                    revealed={diceRevealed}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            {/* Dice during rolling+ phases */}
+            {showDice && (
+              <div className="mt-2 flex justify-center">
+                <InlineDie
+                  finalValue={opponentRoll}
+                  accentColor="#4a7ab5"
+                  isWinner={!iWonRoll}
+                  revealed={diceRevealed}
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {isForge ? (
@@ -601,7 +590,6 @@ function WaitingActions({
   onTogglePublic?: (isPublic: boolean) => void;
 }) {
   const [message, setMessage] = useState('');
-  const [messageSaved, setMessageSaved] = useState(false);
   const [messageExpanded, setMessageExpanded] = useState(false);
   const [savedMessage, setSavedMessage] = useState('');
   const isTouch = useInputMode() === 'touch';
@@ -610,22 +598,22 @@ function WaitingActions({
     if (!onUpdateMessage) return;
     onUpdateMessage(message);
     setSavedMessage(message);
-    setMessageSaved(true);
     setMessageExpanded(false);
-    setTimeout(() => setMessageSaved(false), 2000);
   }
 
   return (
     <div>
-      {/* Lobby message — pencil icon, expands on click */}
-      {onUpdateMessage && (
-        <div className="mt-2">
-          {messageExpanded ? (
-            <div className="flex gap-2">
+      {/* Settings list — every row is label left, control right. empty:hidden
+          drops the frame when none of the rows apply (signed out, Forge). */}
+      <div className="divide-y divide-amber-200/10 rounded-lg border border-amber-200/10 bg-black/40 empty:hidden">
+        {onUpdateMessage && (
+          messageExpanded ? (
+            <div className="flex min-h-[52px] items-center gap-2 px-3 py-2">
               <input
                 value={message}
                 onChange={(e) => setMessage(e.target.value.slice(0, 100))}
-                placeholder="Lobby message (optional)"
+                placeholder="Lobby message"
+                aria-label="Lobby message"
                 maxLength={100}
                 autoFocus
                 onKeyDown={(e) => {
@@ -635,69 +623,50 @@ function WaitingActions({
                 // 16px on touch — a 14px focused input makes iOS zoom the
                 // whole (unscrollable) page and it doesn't zoom back.
                 style={{ fontSize: isTouch ? 16 : undefined }}
-                className="flex-1 rounded-md border border-amber-200/15 bg-black/40 px-3 py-2 text-sm text-amber-200/80 placeholder:text-amber-200/25 focus-visible:outline-none focus-visible:border-amber-200/30"
+                className="h-8 min-w-0 flex-1 rounded border border-amber-200/15 bg-black/40 px-2.5 text-xs text-amber-200/80 placeholder:text-amber-200/25 focus-visible:outline-none focus-visible:border-amber-200/30"
               />
               <button
                 onClick={handleSaveMessage}
-                className="shrink-0 rounded-md border border-amber-200/15 px-3 py-2 text-sm text-amber-200/60 hover:bg-amber-200/5 transition-colors"
+                className="h-8 shrink-0 rounded border border-amber-200/20 px-3 text-xs text-amber-200/70 hover:bg-amber-200/5 hover:text-amber-200/90 transition-colors"
               >
                 Save
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <LobbySettingRow
+              label="Lobby message"
+              hint={savedMessage ? <span className="italic">&ldquo;{savedMessage}&rdquo;</span> : undefined}
+            >
               <button
-                onClick={() => setMessageExpanded(true)}
-                title="Set lobby message"
-                className="flex items-center gap-1 text-[10px] text-amber-200/30 hover:text-amber-200/50 transition-colors"
+                onClick={() => {
+                  setMessage(savedMessage);
+                  setMessageExpanded(true);
+                }}
+                className={lobbyTextButtonClass}
               >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                </svg>
-                {savedMessage ? (
-                  <span className="max-w-[200px] truncate">{savedMessage}</span>
-                ) : messageSaved ? (
-                  <span className="text-green-400">Saved!</span>
-                ) : (
-                  <span>Set lobby message</span>
-                )}
+                <Pencil className="h-3 w-3" />
+                {savedMessage ? 'Edit' : 'Add'}
               </button>
-            </div>
-          )}
-        </div>
-      )}
+            </LobbySettingRow>
+          )
+        )}
 
-      {/* Visibility toggle — host can flip between public (listed) and private (invite-only) */}
-      {onTogglePublic && (
-        <div className="mt-3 flex items-center justify-center gap-2.5">
-          <button
-            role="switch"
-            aria-checked={!isPublic}
-            onClick={() => onTogglePublic(!isPublic)}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-              isPublic ? 'bg-amber-200/20' : 'bg-primary'
-            }`}
-          >
-            <span
-              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                isPublic ? 'translate-x-[3px]' : 'translate-x-[19px]'
-              }`}
-            />
-          </button>
-          <span className="text-[11px] text-amber-200/40">
-            {isPublic ? 'Public — listed in open games' : 'Private — invite only'}
-          </span>
-        </div>
-      )}
+        {/* Visibility — public games are listed in the lobby; private ones join by invite only */}
+        {onTogglePublic && (
+          <LobbySettingRow label="Public game" hint={isPublic ? 'Listed in open games' : 'Invite link only'}>
+            <LobbySwitch checked={!!isPublic} onChange={onTogglePublic} label="Public game" />
+          </LobbySettingRow>
+        )}
 
-      {/* Your own table background — previews on the backdrop behind this card */}
-      <WaitingBackgroundControl />
+        {/* Your own table background — previews on the backdrop behind this card */}
+        <WaitingBackgroundControl />
+      </div>
 
       {/* Practice */}
       {goldfishDeck && (
         <button
           onClick={onPractice}
-          className="mt-4 w-full py-2.5 rounded-lg border border-amber-200/15 hover:bg-amber-200/5 transition-colors font-cinzel tracking-wide text-sm text-amber-200/60"
+          className="mt-4 w-full py-2.5 rounded-lg border border-amber-200/20 hover:bg-amber-200/5 transition-colors font-cinzel tracking-wide text-sm text-amber-200/75"
         >
           Practice While You Wait
         </button>
