@@ -4,6 +4,7 @@ import { Deck, DeckCard, DeckStats, DeckZone, DeckVisibility } from "../types/de
 import { saveDeckAction, loadDeckByIdAction, DeckCardData } from "../../actions";
 import { CARD_BY_FULL_KEY } from "../data/cardIndex";
 import { buildReplacedHalf, type ReplaceAlignment } from "../utils/replaceHalf";
+import { applyZoneMoves, type ZoneMove } from "../utils/zoneMoves";
 import type { DeckBuilderPersistence } from "../builderConfig";
 
 const STORAGE_KEY = "redemption-deck-builder-current-deck";
@@ -466,6 +467,19 @@ export function useDeckState(
   );
 
   /**
+   * Apply a batch of zone moves in one state update (multi-select drag, the
+   * selection bar, and their undo)
+   */
+  const moveCards = useCallback((moves: ZoneMove[]) => {
+    if (moves.length === 0) return;
+    setDeck((prevDeck) => ({
+      ...prevDeck,
+      cards: applyZoneMoves(prevDeck.cards, moves),
+      updatedAt: new Date(),
+    }));
+  }, []);
+
+  /**
    * Update card quantity directly
    */
   const updateQuantity = useCallback(
@@ -748,6 +762,7 @@ export function useDeckState(
     deferredDeckId,
     addCard,
     removeCard,
+    moveCards,
     updateQuantity,
     setDeckName,
     setDeckDescription,
