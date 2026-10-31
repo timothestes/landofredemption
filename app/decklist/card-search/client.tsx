@@ -509,6 +509,7 @@ export default function CardSearchClient({
     deferredDeckId,
     addCard,
     removeCard,
+    moveCards,
     updateQuantity,
     setDeckName,
     setDeckDescription,
@@ -2976,6 +2977,7 @@ export default function CardSearchClient({
             onRemoveCard={(cardName, cardSet, zone) => {
               removeCard(cardName, cardSet, zone);
             }}
+            onMoveCards={moveCards}
             onExport={handleExportDeck}
             onDownload={handleDownloadDeck}
             onDownloadBySet={handleDownloadDeckBySet}
@@ -3083,6 +3085,7 @@ export default function CardSearchClient({
               onRemoveCard={(cardName, cardSet, zone) => {
                 removeCard(cardName, cardSet, zone);
               }}
+              onMoveCards={moveCards}
               onExport={handleExportDeck}
               onDownload={handleDownloadDeck}
               onDownloadBySet={handleDownloadDeckBySet}

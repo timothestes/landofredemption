@@ -4,6 +4,7 @@ import { DeckCard, DeckZone } from "../types/deck";
 import { Card } from "../utils";
 import { CardThumb } from "./CardThumb";
 import { useCardPrices } from "../hooks/useCardPrices";
+import { DeckSelectionContext, selectionKey } from "./DeckSelectionContext";
 
 /**
  * Wrapper that makes a deck-card row draggable. The activation distance on
@@ -12,6 +13,10 @@ import { useCardPrices } from "../hooks/useCardPrices";
  * handlers inside the row keep working. We deliberately do *not* set
  * `touch-action: none` here so the parent list still scrolls on mobile;
  * TouchSensor's delay/tolerance handles scroll-vs-drag arbitration.
+ *
+ * Also the row's multi-select hook-up: `data-select-key` is what the deck
+ * panel's lasso hit-tests, and Shift/Cmd/Ctrl-click toggles the row in the
+ * selection instead of opening the card.
  */
 function DraggableRow({
   zone,
@@ -24,18 +29,38 @@ function DraggableRow({
   className?: string;
   children: React.ReactNode;
 }) {
+  const key = selectionKey(zone, card);
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `${zone}:${card.name}|${card.set}`,
+    id: key,
     data: { fromZone: zone, card },
   });
+  const selection = React.useContext(DeckSelectionContext);
+  const isSelected = selection?.selected.has(key) ?? false;
+  const isDimmed = isDragging || (isSelected && !!selection?.isDraggingSelection);
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      data-select-key={key}
+      // `.deck-card-enter` fills `both`, so its final opacity:1 would beat
+      // opacity-40; dropping the animation lets the dim show.
+      style={isDimmed ? { animation: "none" } : undefined}
+      onClickCapture={
+        selection
+          ? (e) => {
+              if (!(e.shiftKey || e.metaKey || e.ctrlKey)) return;
+              // Controls inside the row (stepper, menu) keep their own click.
+              if ((e.target as HTMLElement).closest("button, a, input")) return;
+              e.preventDefault();
+              e.stopPropagation();
+              selection.toggle(key);
+            }
+          : undefined
+      }
       className={`${className ?? ""} cursor-grab active:cursor-grabbing group/draggable relative select-none ${
-        isDragging ? "opacity-40" : ""
-      }`}
+        isDimmed ? "opacity-40" : ""
+      } ${isSelected ? "rounded-lg ring-2 ring-primary" : ""}`}
       aria-roledescription="Draggable card"
     >
       {children}

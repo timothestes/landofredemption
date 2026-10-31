@@ -18,7 +18,7 @@ import {
   type DragOverEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { Deck, DeckZone } from "../types/deck";
+import { Deck, DeckCard, DeckZone } from "../types/deck";
 import { useShowPrices } from "../../../../hooks/useShowPrices";
 import { SyncStatus } from "../hooks/useDeckState";
 import DeckCardList from "./DeckCardList";
@@ -61,6 +61,9 @@ import type { DeckCheckResult } from "@/utils/deckcheck/types";
 import { useBudgetPricing } from '../hooks/useBudgetPricing';
 import type { BudgetCard } from '@/lib/pricing/budgetPricing';
 import { useExternalDropTarget, useIsExternalDragActive, combineRefs, type SearchDragPayload } from '../hooks/useExternalDropTarget';
+import { useLassoSelect } from '../hooks/useLassoSelect';
+import { DeckSelectionContext, selectionKey, type DeckSelection } from './DeckSelectionContext';
+import { countCopies, describeZoneMoves, invertZoneMoves, stackMoves, zoneLabel, type ZoneMove } from '../utils/zoneMoves';
 import BrigadeBar from '@/components/decks/BrigadeBar';
 
 function getTagContrastColor(hex: string): string {
@@ -150,6 +153,8 @@ interface DeckBuilderPanelProps {
   onAddCard: (cardName: string, cardSet: string, zone: DeckZone) => void;
   /** Callback to remove a card */
   onRemoveCard: (cardName: string, cardSet: string, zone: DeckZone) => void;
+  /** Apply a batch of zone moves in one update (multi-select move/remove and its undo) */
+  onMoveCards: (moves: ZoneMove[]) => void;
   /** Callback to export deck (copy to clipboard) */
   onExport: () => void;
   /** Callback to download deck as .txt file */
@@ -231,6 +236,7 @@ export default function DeckBuilderPanel({
   onSaveDeck,
   onAddCard,
   onRemoveCard,
+  onMoveCards,
   onExport,
   onDownload,
   onDownloadBySet,
@@ -336,6 +342,10 @@ export default function DeckBuilderPanel({
 
   // ── DnD state + sensors ──────────────────────────────────────────────
   const [activeDragCard, setActiveDragCard] = useState<Card | null>(null);
+  // Multi-select: keys from `selectionKey`. `dragBatch` is the selection being
+  // dragged (set when the grabbed card is one of the selected ones).
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() => new Set());
+  const [dragBatch, setDragBatch] = useState<DeckCard[] | null>(null);
   // Drag-to-remove: drop a deck card to the LEFT of the deck panel (i.e., over
   // the search/filter column) to discard one copy. Tracks live pointer X so
   // the DragGhost can turn red while the pointer is in the remove zone.
@@ -371,11 +381,7 @@ export default function DeckBuilderPanel({
   // (see bottom of file). They CANNOT be set up via useDroppable at the panel
   // level because the panel itself renders DndContext — its own hooks run
   // outside the context provider and never register with the manager.
-
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const card = event.active.data.current?.card as Card | undefined;
-    if (card) setActiveDragCard(card);
-  }, []);
+  // handleDragStart lives with the multi-select code below, which it reads.
 
   // Track pointer X during drag so handleDragEnd can decide "drag to remove"
   // and DragGhost can flip to its red state in the remove zone.
@@ -414,6 +420,7 @@ export default function DeckBuilderPanel({
 
   const handleDragCancel = useCallback(() => {
     setActiveDragCard(null);
+    setDragBatch(null);
   }, []);
 
   // Cover card picker: which slot is open (1, 2, or null)
@@ -741,8 +748,95 @@ export default function DeckBuilderPanel({
     }
   };
 
+  // ── Multi-select ─────────────────────────────────────────────────────
+  // Lasso empty space or Shift/Cmd/Ctrl-click cards in the open zone, then
+  // drag any selected card (or use the selection bar) to move or remove every
+  // copy of every selected card at once. Desktop only, like drag.
+  const activeZone: DeckZone | null =
+    activeTab === "main" ? "main" : activeTab === "reserve" ? "reserve" : activeTab === "maybe" ? "maybeboard" : null;
+  const visibleZoneCards =
+    activeZone === "main" ? visibleMainCards
+    : activeZone === "reserve" ? visibleReserveCards
+    : activeZone === "maybeboard" ? visibleMaybeboardCards
+    : [];
+  // Only cards on screen count, so a card filtered out or moved away drops
+  // out of the selection with no extra bookkeeping.
+  const selectedEntries = visibleZoneCards.filter((dc) => selectedKeys.has(selectionKey(dc.zone, dc.card)));
+  const visibleSelectedKeys = new Set(selectedEntries.map((dc) => selectionKey(dc.zone, dc.card)));
+  const selectedCopies = countCopies(selectedEntries);
+  const hasSelection = selectedEntries.length > 0;
+
+  const lasso = useLassoSelect(contentRef, {
+    enabled: !isMobile && !isExpanded && activeZone !== null,
+    selected: visibleSelectedKeys,
+    onChange: setSelectedKeys,
+  });
+
+  const toggleSelected = useCallback((key: string) => {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  const selectionContext: DeckSelection | null = isMobile
+    ? null
+    : { selected: visibleSelectedKeys, toggle: toggleSelected, isDraggingSelection: dragBatch !== null };
+
+  useEffect(() => {
+    setSelectedKeys((prev) => (prev.size > 0 ? new Set() : prev));
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!hasSelection) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedKeys(new Set());
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [hasSelection]);
+
+  // The last batch, kept briefly so the selection bar can offer Undo.
+  const [lastBatch, setLastBatch] = useState<ZoneMove[] | null>(null);
+  useEffect(() => {
+    if (!lastBatch) return;
+    const timer = setTimeout(() => setLastBatch(null), 6000);
+    return () => clearTimeout(timer);
+  }, [lastBatch]);
+  // Never offer to undo into a different deck.
+  useEffect(() => {
+    setLastBatch(null);
+  }, [deck.id, deck.createdAt]);
+
+  const runBatch = (moves: ZoneMove[]) => {
+    if (moves.length === 0) return;
+    onMoveCards(moves);
+    setSelectedKeys(new Set());
+    setLastBatch(moves);
+  };
+
+  const undoLastBatch = () => {
+    if (!lastBatch) return;
+    onMoveCards(invertZoneMoves(lastBatch));
+    setLastBatch(null);
+  };
+
+  // Grabbing a selected card drags the whole selection.
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const card = event.active.data.current?.card as Card | undefined;
+      if (card) setActiveDragCard(card);
+      const grabbed = String(event.active.id);
+      setDragBatch(selectedEntries.some((dc) => selectionKey(dc.zone, dc.card) === grabbed) ? selectedEntries : null);
+    },
+    [selectedEntries]
+  );
+  const dragBatchCopies = dragBatch ? countCopies(dragBatch) : 0;
+
   // Handle moving card between zones
-  const handleMoveCard = (cardName: string, cardSet: string, fromZone: DeckZone, toZone: DeckZone) => {
+  const handleMoveCard =(cardName: string, cardSet: string, fromZone: DeckZone, toZone: DeckZone) => {
     const deckCard = deck.cards.find(
       (dc) => dc.card.name === cardName && dc.card.set === cardSet && dc.zone === fromZone
     );
@@ -761,18 +855,21 @@ export default function DeckBuilderPanel({
       const active = event.active;
       const over = event.over;
       setActiveDragCard(null);
+      setDragBatch(null);
       const fromZone = active.data.current?.fromZone as DeckZone | undefined;
       const card = active.data.current?.card as Card | undefined;
       if (!fromZone || !card) return;
 
       // Dropped outside any droppable: if released to the LEFT of the deck
       // panel (over the search/filter column) treat as "drag to remove" and
-      // decrement one copy from the source zone. Anywhere else is a silent
-      // no-op (treat like cancel).
+      // decrement one copy from the source zone (a selection drag removes
+      // every selected card). Anywhere else is a silent no-op (treat like
+      // cancel).
       if (!over) {
         const rect = panelRootRef.current?.getBoundingClientRect();
         if (rect && lastPointerXRef.current < rect.left) {
-          onRemoveCard(card.name, card.set, fromZone);
+          if (dragBatch) runBatch(stackMoves(dragBatch, null));
+          else onRemoveCard(card.name, card.set, fromZone);
         }
         return;
       }
@@ -787,12 +884,14 @@ export default function DeckBuilderPanel({
         else if (isTabDrop) toZone = overId.slice(4) as DeckZone;
       }
       if (!toZone || toZone === fromZone) return; // same-zone drop: silent no-op
-      handleMoveCard(card.name, card.set, fromZone, toZone);
+      if (dragBatch) runBatch(stackMoves(dragBatch, toZone));
+      else handleMoveCard(card.name, card.set, fromZone, toZone);
     },
     // handleMoveCard is a stable closure over deck/onRemoveCard/onAddCard
     // captured each render; we don't memoize it, so this callback re-creates
     // each render too — acceptable, DndContext only reads it during a drag.
-    [handleMoveCard, onRemoveCard]
+    // Same for runBatch.
+    [handleMoveCard, onRemoveCard, dragBatch, runBatch]
   );
 
   // Group cards by type
@@ -972,6 +1071,7 @@ export default function DeckBuilderPanel({
         },
       }}
     >
+    <DeckSelectionContext.Provider value={selectionContext}>
     <div ref={panelRootRef} className="w-full h-full flex flex-col bg-background">
       {/* Header */}
       <div className="flex-shrink-0 px-3 py-2 md:p-4 border-b border-border/60 overflow-visible relative z-30">
@@ -2500,7 +2600,7 @@ export default function DeckBuilderPanel({
           )}
 
       {/* Content */}
-      <div ref={contentRef} className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col ${isExpanded ? '' : 'p-4'}`} data-deck-grid>
+      <div ref={contentRef} onPointerDown={lasso.onPointerDown} className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col ${isExpanded ? '' : 'p-4'}`} data-deck-grid>
         {/* Paragon Requirements (only show for Paragon format with a selected Paragon) */}
         {deckType === 'Paragon' && deck.paragon && validation.paragonStats && (activeTab === 'main' || activeTab === 'reserve') && (
           <div className="mb-4">
@@ -2709,7 +2809,7 @@ export default function DeckBuilderPanel({
                     showTypeIcons={false}
                     viewLayout={viewLayout}
                     showPrices={showPrices}
-                    disableHoverPreview={disableHoverPreview || isDragging}
+                    disableHoverPreview={disableHoverPreview || isDragging || lasso.isLassoing}
                   />
                 </div>
               );
@@ -2830,7 +2930,7 @@ export default function DeckBuilderPanel({
                     showTypeIcons={false}
                     viewLayout={viewLayout}
                     showPrices={showPrices}
-                    disableHoverPreview={disableHoverPreview || isDragging}
+                    disableHoverPreview={disableHoverPreview || isDragging || lasso.isLassoing}
                   />
                 </div>
               );
@@ -2912,7 +3012,7 @@ export default function DeckBuilderPanel({
                     showTypeIcons={false}
                     viewLayout={viewLayout}
                     showPrices={showPrices}
-                    disableHoverPreview={disableHoverPreview || isDragging}
+                    disableHoverPreview={disableHoverPreview || isDragging || lasso.isLassoing}
                   />
                 </div>
               );
@@ -3580,6 +3680,59 @@ export default function DeckBuilderPanel({
             </div>
           </div>
         )}
+        {/* Selection bar: sticks to the bottom of the scroll area after the
+            cards, so showing it never shifts a card under the lasso. */}
+        {activeZone && (hasSelection || lastBatch) && (
+          <div className="sticky bottom-0 z-20 mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border bg-card px-3 py-2 text-sm shadow-lg">
+            {hasSelection ? (
+              <>
+                <span className="font-medium text-foreground tabular-nums">
+                  {selectedCopies} {selectedCopies === 1 ? "card" : "cards"} selected
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {(["main", "reserve", "maybeboard"] as const)
+                    .filter((zone) => zone !== activeZone)
+                    .map((zone) => (
+                      <button
+                        key={zone}
+                        type="button"
+                        onClick={() => runBatch(stackMoves(selectedEntries, zone))}
+                        className="px-2.5 py-1 text-xs font-medium rounded-md bg-muted text-foreground hover:bg-muted/70 transition-colors"
+                      >
+                        To {zoneLabel(zone)}
+                      </button>
+                    ))}
+                  <button
+                    type="button"
+                    onClick={() => runBatch(stackMoves(selectedEntries, null))}
+                    className="px-2.5 py-1 text-xs font-medium rounded-md text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
+                    Remove
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedKeys(new Set())}
+                  className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  title="Clear selection (Esc)"
+                >
+                  Clear
+                </button>
+              </>
+            ) : lastBatch ? (
+              <>
+                <span className="text-foreground">{describeZoneMoves(lastBatch)}</span>
+                <button
+                  type="button"
+                  onClick={undoLastBatch}
+                  className="ml-auto px-2.5 py-1 text-xs font-medium rounded-md text-primary hover:bg-primary/10 transition-colors"
+                >
+                  Undo
+                </button>
+              </>
+            ) : null}
+          </div>
+        )}
         </>
         )}
       </div>
@@ -3863,10 +4016,17 @@ export default function DeckBuilderPanel({
         document.body
       )}
     </div>
+    </DeckSelectionContext.Provider>
     {/* DragOverlay: card ghost that follows the pointer during a drag.
         Default dropAnimation lets unresolved drops snap back to the source. */}
     <DragOverlay>
-      {activeDragCard ? <DragGhost card={activeDragCard} willRemove={willRemoveOnDrop} /> : null}
+      {activeDragCard ? (
+        <DragGhost
+          card={activeDragCard}
+          willRemove={willRemoveOnDrop}
+          count={dragBatchCopies > 1 ? dragBatchCopies : undefined}
+        />
+      ) : null}
     </DragOverlay>
     </DndContext>
   );
