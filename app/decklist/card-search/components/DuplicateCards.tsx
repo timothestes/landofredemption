@@ -25,10 +25,10 @@ interface DuplicateCardsProps {
  * Check if a card passes a legality filter.
  * Mirrors the logic in client.tsx lines 795-842.
  */
-function passesLegalityFilter(card: Card, mode: string, format: FormatId): boolean {
+export function passesLegalityFilter(card: Card, mode: string, format: FormatId): boolean {
   if (mode === 'Unlimited') return true;
-  if (mode === 'Limited') return card.legality === 'Rotation';
   // Per-format since DBR 2.0 — see isBannedInFormat.
+  if (mode === 'Limited') return card.legality === 'Rotation' && !isBannedInFormat(card, format);
   if (mode === 'Banned') return isBannedInFormat(card, format);
   if (mode === 'Scrolls') return card.legality !== 'Rotation' && card.legality !== 'Banned';
   if (mode === 'Paragon') {
