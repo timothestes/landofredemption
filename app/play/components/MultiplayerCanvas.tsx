@@ -6260,7 +6260,8 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
   // matching the battle render's split — NOT by hit owner, since the battle
   // hit-test always reports owner 'my' as a formality (see
   // findZoneAtPosition). No seam tracking: battle doesn't have a detach
-  // ("unlink") affordance yet, so these maps are render-only.
+  // ("unlink") icon yet; the context-menu Unequip reads the local map to keep
+  // the detached weapon where it was peeking out.
   const myBattleDerivedWeaponPositions = useMemo(() => {
     const result = new Map<string, { x: number; y: number }>();
     const battle = myCards['battle'] ?? [];
@@ -10196,6 +10197,15 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
           onDetach={
             contextMenu.card.ownerId === 'player1'
               ? (weaponId) => {
+                  // A weapon in the band stores its host's exact posX/posY, so
+                  // detaching without a position would drop it squarely on top
+                  // of the Warrior. Leave it where it was peeking out instead.
+                  const battleDerived = myBattleDerivedWeaponPositions.get(weaponId);
+                  if (battleDerived && battleBandRect) {
+                    const db = toDbPos(battleDerived.x, battleDerived.y, battleBandRect, 'my', { cardWidth, cardHeight });
+                    gameState.detachCard(BigInt(weaponId), String(db.x), String(db.y));
+                    return;
+                  }
                   const derived = myDerivedWeaponPositions.get(weaponId);
                   const myZone = myZones['territory'];
                   if (derived && myZone) {
