@@ -301,7 +301,10 @@ been deleted by `reload_deck`):
    heuristic matches: `/\bplace\b/i` on `specialAbility`, excluding "in place of" /
    "take the place of" phrasings → owner's territory free spot. Tokens whose
    destination is a removal pile go through `deleteTokenWithCounters`, not a move.
-5. **Everything else — Dominants, Artifacts, Curses, Fortresses, unknown types, and all
+   **Dominants** (exact `Dominant` segment) follow the same rule — discard unless the
+   keep heuristic matches. *(Amended 2026-11-01: they were originally in rule 5, which
+   sent a Dominant played from hand back to the hand.)*
+5. **Everything else — Artifacts, Curses, Fortresses, unknown types, and all
    Forge cards (their `specialAbility` is blanked on the public row, so `/place/i` can
    never match) → return to origin, never discard.** Discard is the destructive branch;
    default away from it. Players drag to fix mis-routes.

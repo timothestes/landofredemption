@@ -3171,12 +3171,13 @@ export const end_turn = spacetimedb.reducer(
 //      otherwise a free Territory spot. Hand/reserve/discard-origin
 //      survivors never go back to a hidden zone per REG.
 //   4. Enhancements (exact 'GE'/'EE' segment on cardType, split on '/' and
-//      trimmed — there is no literal "Enhancement" type) -> owner's Discard,
-//      unless the "keep in play" heuristic matches: `specialAbility`
-//      contains "place" wording that ISN'T "in place of" / "take the place
-//      of" -> a free Territory spot, and the card's name is recorded for the
-//      BATTLE_END log.
-//   5. Everything else — Dominants, Artifacts, Curses, Fortresses, unknown
+//      trimmed — there is no literal "Enhancement" type) and Dominants
+//      (exact 'Dominant' segment) -> owner's Discard, unless the "keep in
+//      play" heuristic matches: `specialAbility` contains "place" wording
+//      that ISN'T "in place of" / "take the place of" -> a free Territory
+//      spot, and the card's name is recorded for the BATTLE_END log. A
+//      Dominant played from hand must never return there.
+//   5. Everything else — Artifacts, Curses, Fortresses, unknown
 //      types, and Forge cards (whose specialAbility is blanked on the public
 //      row, so the rule-4 keep heuristic can never match them) -> the card's
 //      stamped origin zone/position when set and isn't 'battle' itself,
@@ -3232,6 +3233,8 @@ function runBattleAutoReturn(ctx: any, gameId: bigint, actingPlayerId: bigint) {
     /\bplace\b/i.test(sa) && !/\bin (the )?place of\b/i.test(sa) && !/take the place of/i.test(sa);
   const enhSegment = (ct: string): boolean =>
     ct.split('/').map((s: string) => s.trim()).some((s: string) => s === 'GE' || s === 'EE');
+  const domSegment = (ct: string): boolean =>
+    ct.split('/').map((s: string) => s.trim()).some((s: string) => s === 'Dominant');
 
   // Occupancy-aware free-spot auto-fan per owner. The blind top-left fan this
   // replaced dropped every non-origin return onto (0.03, 0.05) regardless of
@@ -3262,14 +3265,14 @@ function runBattleAutoReturn(ctx: any, gameId: bigint, actingPlayerId: bigint) {
   }
   // (b) Battle cards that will reclaim their exact Territory origin spot: a
   // character with a Territory origin (rule 3) or a rule-5 card with a
-  // Territory origin. Enhancements never reclaim an origin, and accessories
+  // Territory origin. Enhancements and Dominants never reclaim an origin, and accessories
   // follow their host (pass 2), so neither seeds occupancy here.
   for (const c of inBattle) {
     if (c.equippedToInstanceId !== 0n) continue;
     if (isLostSoulCard(c)) continue;
     const reclaimsOrigin =
       c.originZone === 'territory' &&
-      (isCharacterCard({ cardType: c.cardType }) || !enhSegment(c.cardType));
+      (isCharacterCard({ cardType: c.cardType }) || (!enhSegment(c.cardType) && !domSegment(c.cardType)));
     if (reclaimsOrigin) addOccupied(c.ownerId, c.originPosX, c.originPosY);
   }
 
@@ -3305,7 +3308,7 @@ function runBattleAutoReturn(ctx: any, gameId: bigint, actingPlayerId: bigint) {
       const spot = nextFreeSpot(c.ownerId);
       return { toZone: 'territory', posX: spot.posX, posY: spot.posY, toOwnerId: c.ownerId };
     }
-    if (enhSegment(c.cardType)) {
+    if (enhSegment(c.cardType) || domSegment(c.cardType)) {
       if (isPlaceKeep(c.specialAbility)) {
         keptNames.push(c.cardName);
         const spot = nextFreeSpot(c.ownerId);
@@ -3313,7 +3316,7 @@ function runBattleAutoReturn(ctx: any, gameId: bigint, actingPlayerId: bigint) {
       }
       return { toZone: 'discard', posX: '', posY: '', toOwnerId: c.ownerId };
     }
-    // Rule 5: Dominants/Artifacts/Curses/Fortresses/unknown/Forge-blanked —
+    // Rule 5: Artifacts/Curses/Fortresses/unknown/Forge-blanked —
     // origin if set and not 'battle' itself (defensive; stampBattleEntry
     // never stamps a card already in battle, so this shouldn't occur), else
     // a free Territory spot. Never discard.

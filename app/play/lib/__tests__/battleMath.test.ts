@@ -478,18 +478,35 @@ describe('summarizeAutoReturn', () => {
     expect(summarizeAutoReturn(cards).toDiscard).toBe(1);
   });
 
-  it('everything else (Dominant/Artifact/Curse/Fortress/unknown type) routes to toTerritory', () => {
+  it('everything else (Artifact/Curse/Fortress/unknown type) routes to toTerritory', () => {
     const cards = [
-      mkCard({ cardType: 'Dominant' }),
       mkCard({ cardType: 'Artifact' }),
       mkCard({ cardType: 'Fortress' }),
       mkCard({ cardType: 'SomeUnknownType' }),
     ];
-    expect(summarizeAutoReturn(cards).toTerritory).toBe(4);
+    expect(summarizeAutoReturn(cards).toTerritory).toBe(3);
   });
 
-  it('a catch-all card (Dominant) stamped with a non-territory origin (hand) routes to toOrigin', () => {
-    const cards = [mkCard({ cardType: 'Dominant', originZone: 'hand', cardName: 'Some Dominant' })];
+  it('a Dominant played from hand routes to toDiscard, never back to hand', () => {
+    const cards = [mkCard({ cardType: 'Dominant', originZone: 'hand', specialAbility: 'Discard an Evil Character.', cardName: 'Son of God' })];
+    const summary = summarizeAutoReturn(cards);
+    expect(summary.toDiscard).toBe(1);
+    expect(summary.toOrigin).toBe(0);
+    expect(summary.toTerritory).toBe(0);
+  });
+
+  it('a Dominant whose specialAbility matches the "place" keep heuristic is kept in territory', () => {
+    const cards = [
+      mkCard({ cardType: 'Dominant', originZone: 'hand', specialAbility: 'Place in your territory: when your NT Hero enters battle...', cardName: 'The Holy Spirit' }),
+    ];
+    const summary = summarizeAutoReturn(cards);
+    expect(summary.toDiscard).toBe(0);
+    expect(summary.toTerritory).toBe(1);
+    expect(summary.keptInPlay).toEqual(['The Holy Spirit']);
+  });
+
+  it('a catch-all card (Artifact) stamped with a non-territory origin (hand) routes to toOrigin', () => {
+    const cards = [mkCard({ cardType: 'Artifact', originZone: 'hand', cardName: 'Some Artifact' })];
     const summary = summarizeAutoReturn(cards);
     expect(summary.toOrigin).toBe(1);
     expect(summary.toTerritory).toBe(0);
