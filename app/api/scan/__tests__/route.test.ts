@@ -19,8 +19,10 @@ vi.mock('@/lib/scan/cropPass', async (importOriginal) => {
   const real = await importOriginal<typeof import('@/lib/scan/cropPass')>();
   return {
     ...real,
-    runCropPass: vi.fn((...[jpeg, out, image, budgetMs, deps]: Parameters<typeof real.runCropPass>) =>
-      real.runCropPass(jpeg, out, image, budgetMs, { ...deps, crop: async () => Buffer.alloc(1) })),
+    runCropPass: vi.fn((...[input, out, image, budgetMs, deps]: Parameters<typeof real.runCropPass>) =>
+      real.runCropPass(input, out, image, budgetMs, {
+        ...deps, crop: async () => Buffer.alloc(1), decode: async () => ({ data: Buffer.alloc(3), width: 1, height: 1, channels: 3 as const }),
+      })),
   };
 });
 
@@ -333,6 +335,35 @@ describe('POST /api/scan', () => {
   });
 });
 
+describe('POST /api/scan photo facts', () => {
+  const none = () => ({ ok: true, output: { photoQuality: 'ok', cards: [] }, model: 'claude-sonnet-5-5', usage: { inputTokens: 1, outputTokens: 1 }, costUsd: 0.001, latencyMs: 10, attempts: 1 });
+  it('records what the upload looked like, the client size and the stage times on the event row', async () => {
+    (recognize as Mock).mockResolvedValue(none());
+    await POST(req(jpegBlob(), { originalWidth: '4032', originalHeight: '3024' }));
+    const photo = patchWritten().photo;
+    expect(photo).toMatchObject({ bytes: jpeg.length, width: 64, height: 48, orientation: 1, format: 'jpeg', original: { width: 4032, height: 3024 }, tier: { width: 64, height: 48 } });
+    expect(photo.ms).toMatchObject({ read: 10, ab: expect.any(Number), encode: expect.any(Number), total: expect.any(Number) });
+    expect(photo.ms.total).toBeGreaterThanOrEqual(photo.ms.encode);
+    expect('turn' in photo).toBe(false);
+  });
+  it('a malformed or missing client size is left out', async () => {
+    (recognize as Mock).mockResolvedValue(none());
+    await POST(req(jpegBlob(), { originalWidth: '-1', originalHeight: 'x' }));
+    expect('original' in patchWritten().photo).toBe(false);
+  });
+  it('a failed read still records the photo; an undecodable upload records none', async () => {
+    (recognize as Mock).mockResolvedValue({ ok: false, code: 'recognizer_failed', attempts: 1, latencyMs: 5 });
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await POST(req(jpegBlob()));
+    expect(patchWritten()).toMatchObject({ status: 'failed', photo: { bytes: jpeg.length, ms: { read: 5 } } });
+    vi.clearAllMocks();
+    session();
+    await POST(req(new Blob(['not a photo'], { type: 'text/plain' })));
+    expect('photo' in patchWritten()).toBe(false);
+    err.mockRestore();
+  });
+});
+
 describe('POST /api/scan deck mode', () => {
   const read = (p: Partial<DeckRead>): DeckRead => ({
     title: null, strength: null, toughness: null, type: 'unknown', brigade: null, reference: null,
@@ -487,6 +518,18 @@ describe('POST /api/scan deck mode', () => {
       expect(body.crops).toEqual({ cropped: [], failed: [], skipped: [], merged: [] });
       expect(body.usage.costUsd).toBeCloseTo(0.09);
       expect(body.usage.attempts).toBe(2);
+    });
+
+    it('records the turn and the crops on the event row', async () => {
+      const sideways: DeckGroup[] = [1, 2, 3].map(id => ({ id, orientation: 'rotated_cw', bbox: [0.3 * (id - 1), 0, 0.3 * id, 1], cardCount: 8 }));
+      (recognize as Mock).mockResolvedValueOnce(deckOk([read({ title: null })], sideways)).mockResolvedValueOnce(deckOk(priestAndSoul(), [group]));
+      await postDeck();
+      expect(patchWritten().photo).toMatchObject({
+        turn: 270, tier: { width: 64, height: 48 }, crops: { cropped: [], failed: [], skipped: [], merged: [] },
+        ms: { read: 10, turn: expect.any(Number), crop: expect.any(Number) },
+      });
+      expect((runCropPass as Mock).mock.calls[0][0]).toMatchObject({ turn: 270 });
+      expect(Buffer.isBuffer((runCropPass as Mock).mock.calls[0][0].upload)).toBe(true);
     });
 
     it('a failed turned read keeps the first read and crops its sideways groups', async () => {

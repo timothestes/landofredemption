@@ -18,3 +18,12 @@ describe('finishScan', () => {
     expect('mode' in rows[0]).toBe(false);
   });
 });
+
+describe('finishScan photo', () => {
+  it('writes photo when given', async () => {
+    const rows: any[] = [];
+    const photo = { bytes: 10, width: 4, height: 3, orientation: 1, format: 'jpeg', tier: { width: 4, height: 3 }, ms: { encode: 1, total: 2 } };
+    await finishScan(fakeAdmin(rows), 'id1', { status: 'done', attempts: 1, latencyMs: 5, photo });
+    expect(rows[0].photo).toEqual(photo);
+  });
+});

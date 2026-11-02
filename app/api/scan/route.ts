@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { getSupabaseAdmin } from '@/lib/pricing/supabase-admin';
 import { canScanForSession } from '@/lib/scan/gate';
-import { encodeForScan, ScanImageError } from '@/lib/scan/image';
+import { encodeForScan, ScanImageError, type ScanImage } from '@/lib/scan/image';
 import { loadPriceMap } from '@/lib/scan/prices';
 import { recognize, DEFAULT_ARM, DECK_ARM, DECK_MODE, type Arm } from '@/lib/scan/recognize';
 import { matchDetection } from '@/lib/scan/match';
@@ -13,7 +13,7 @@ import { runCropPass } from '@/lib/scan/cropPass';
 import { inferSidewaysRows } from '@/lib/scan/crop';
 import { runTurnPass } from '@/lib/scan/turnPass';
 import { deckReadToDetection, classifyDeckRead, type DeckDetection } from '@/lib/scan/deckClassify';
-import { reserveScan, finishScan, type FinishPatch } from '@/lib/scan/events';
+import { reserveScan, finishScan, type FinishPatch, type PhotoFacts } from '@/lib/scan/events';
 import { COMMIT_LIMITS } from '@/app/collection/scan/lib/commitCore';
 
 // POST /api/scan: one photo in, matched detections out.
@@ -61,6 +61,18 @@ function parseArm(raw: string, base: Required<Arm>): Required<Arm> | null {
     arm[k] = val;
   }
   return arm as Required<Arm>;
+}
+
+/** The photo's size before the client resized it, from the originalWidth/originalHeight fields; null unless both are sane. */
+function originalSize(form: FormData): { width: number; height: number } | null {
+  const dim = (k: string) => {
+    const v = form.get(k);
+    const n = typeof v === 'string' ? Number(v) : NaN;
+    return Number.isInteger(n) && n > 0 && n <= 100_000 ? n : null;
+  };
+  const width = dim('originalWidth');
+  const height = dim('originalHeight');
+  return width && height ? { width, height } : null;
 }
 
 export async function POST(req: Request) {
@@ -117,8 +129,14 @@ export async function POST(req: Request) {
   }
   const scanId = reserved.id;
 
-  // From here every exit finishes the reserved row.
+  // What the upload looked like and what each stage took (scan_events.photo), from the moment the photo is decoded.
+  let facts: PhotoFacts | undefined;
+  // From here every exit finishes the reserved row, with the photo facts gathered so far.
   const finish = (patch: FinishPatch) => {
+    if (facts) {
+      facts.ms.total = Date.now() - requestStart;
+      patch = { ...patch, photo: facts };
+    }
     let admin;
     try {
       admin = getSupabaseAdmin();
@@ -132,11 +150,14 @@ export async function POST(req: Request) {
   // What the recognizer billed, so even an unexpected throw after it records the spend.
   let spent: Omit<FinishPatch, 'status'> = { model: arm.model, attempts: 0, latencyMs: 0, ...dbMode };
   try {
+    const upload = Buffer.from(await photo.arrayBuffer());
     let jpeg: Buffer;
     let width: number;
     let height: number;
+    let source: ScanImage['source'];
+    const encodeStart = Date.now();
     try {
-      ({ jpeg, width, height } = await encodeForScan(Buffer.from(await photo.arrayBuffer()), arm.tier));
+      ({ jpeg, width, height, source } = await encodeForScan(upload, arm.tier));
     } catch (e) {
       if (!(e instanceof ScanImageError)) throw e;
       await finish({ status: 'failed', attempts: 0, latencyMs: 0, ...dbMode });
@@ -144,6 +165,13 @@ export async function POST(req: Request) {
         ? fail(413, 'too_large', 'The photo has too many pixels.')
         : fail(415, 'undecodable', 'That file is not a photo the scanner can read.');
     }
+    const original = originalSize(form);
+    facts = {
+      bytes: photo.size, width: source.width, height: source.height, orientation: source.orientation, format: source.format,
+      ...(original ? { original } : {}),
+      tier: { width, height },
+      ms: { encode: Date.now() - encodeStart, total: 0 },
+    };
 
     const prices = await loadPriceMap();
 
@@ -160,6 +188,7 @@ export async function POST(req: Request) {
       model: r.ok === false ? arm.model : r.model, attempts: r.attempts, latencyMs: r.latencyMs,
       inputTokens: r.usage?.inputTokens, outputTokens: r.usage?.outputTokens, costUsd: r.costUsd, ...dbMode,
     };
+    facts.ms.read = r.latencyMs;
 
     if (r.ok === false) {
       console.error('[scan] recognizer failed', { scanId, code: r.code, detail: r.detail });
@@ -173,12 +202,17 @@ export async function POST(req: Request) {
 
     if (mode === 'deck' && 'groups' in r.output) {
       // A photo turned a quarter off is read again upright; from here on the image, groups and boxes are the turned ones.
-      const tp = await runTurnPass(jpeg, r.output, { width, height }, requestStart + CROP_DEADLINE_MS);
+      const tp = await runTurnPass(upload, r.output, { width, height }, requestStart + CROP_DEADLINE_MS);
       if (tp.failure) console.error('[scan] turn failed', { scanId, ...tp.failure });
-      ({ jpeg, width, height } = tp);
+      ({ width, height } = tp);
+      facts.turn = tp.rotation;
+      facts.ms.turn = tp.latencyMs;
       const out = { ...tp.output, groups: inferSidewaysRows(tp.output.groups, width, height) };
-      const cp = await runCropPass(jpeg, out, { width, height }, requestStart + CROP_DEADLINE_MS);
+      // Crops are cut from the upload, turned as the read was, not from the JPEG the model read.
+      const cp = await runCropPass({ upload, turn: tp.rotation }, out, { width, height }, requestStart + CROP_DEADLINE_MS);
       for (const { group, code, detail } of cp.failures) console.error('[scan] crop failed', { scanId, group, code, detail });
+      facts.crops = { cropped: cp.cropped, failed: cp.failed, skipped: cp.skipped, merged: cp.merged };
+      facts.ms.crop = cp.latencyMs;
       const usage = {
         inputTokens: r.usage.inputTokens + tp.usage.inputTokens + cp.usage.inputTokens,
         outputTokens: r.usage.outputTokens + tp.usage.outputTokens + cp.usage.outputTokens,
@@ -233,6 +267,7 @@ export async function POST(req: Request) {
     const reads = r.output.cards.slice(0, COMMIT_LIMITS.detectionsPerScan).map(capDetection);
     const ab = await settleAbPairs(jpeg, reads, reads.map((read) => matchDetection(read, prices)), arm);
     if (ab.detail) console.error('[scan] AB comparison failed', { scanId, detail: ab.detail });
+    facts.ms.ab = ab.latencyMs;
     const usage = { inputTokens: r.usage.inputTokens + ab.usage.inputTokens, outputTokens: r.usage.outputTokens + ab.usage.outputTokens };
     const costUsd = r.costUsd + ab.costUsd;
     const latencyMs = r.latencyMs + ab.latencyMs;

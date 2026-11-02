@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import sharp from 'sharp';
-import { cropRect, rotationFor, needsCrop, titleCentreInBox, keepCropRead, cropGroup, cropBoxToPhoto, inferSidewaysRows, nestedGroups } from '../crop';
+import { cropRect, rotationFor, needsCrop, titleCentreInBox, keepCropRead, cropGroup, decodeCropSource, cropBoxToPhoto, inferSidewaysRows, nestedGroups } from '../crop';
 import type { Box, DeckGroup, DeckRead } from '../deckSchema';
 
 const read = (group: number, title: string | null = 'X', titleBox: Box | null = null): DeckRead => ({ title, strength: null, toughness: null, type: 'unknown', brigade: null, reference: null, group, position: 1, titleBox, confidence: 'high' });
@@ -112,7 +112,7 @@ describe('cropGroup', () => {
   };
   const make = () => sharp({ create: { width: 1000, height: 500, channels: 3, background: '#888' } }).jpeg().toBuffer();
   it('rotates a sideways group upright and fills the high tier patch budget', async () => {
-    const out = await cropGroup(await make(), { id: 1, orientation: 'rotated_ccw', bbox: [0.1, 0.1, 0.5, 0.3], cardCount: 5 }, 1000, 500);
+    const out = await cropGroup(await decodeCropSource(await make(), 0), { id: 1, orientation: 'rotated_ccw', bbox: [0.1, 0.1, 0.5, 0.3], cardCount: 5 });
     const m = await sharp(out).metadata();
     expect(m.format).toBe('jpeg');
     expect(m.height!).toBeGreaterThan(m.width!);
@@ -129,23 +129,57 @@ describe('cropGroup', () => {
     return { r: data[i], b: data[i + 2] };
   };
   it('rotated_ccw turns the left half to the top', async () => {
-    const out = await cropGroup(await halves(), { id: 1, orientation: 'rotated_ccw', bbox: [0, 0, 1, 1], cardCount: 1 }, 200, 100);
+    const out = await cropGroup(await decodeCropSource(await halves(), 0), { id: 1, orientation: 'rotated_ccw', bbox: [0, 0, 1, 1], cardCount: 1 });
     const top = await rowColour(out, 'top');
     const bottom = await rowColour(out, 'bottom');
     expect(top.r).toBeGreaterThan(200); expect(top.b).toBeLessThan(60);
     expect(bottom.b).toBeGreaterThan(200); expect(bottom.r).toBeLessThan(60);
   });
   it('rotated_cw turns the left half to the bottom', async () => {
-    const out = await cropGroup(await halves(), { id: 1, orientation: 'rotated_cw', bbox: [0, 0, 1, 1], cardCount: 1 }, 200, 100);
+    const out = await cropGroup(await decodeCropSource(await halves(), 0), { id: 1, orientation: 'rotated_cw', bbox: [0, 0, 1, 1], cardCount: 1 });
     const top = await rowColour(out, 'top');
     const bottom = await rowColour(out, 'bottom');
     expect(bottom.r).toBeGreaterThan(200); expect(bottom.b).toBeLessThan(60);
     expect(top.b).toBeGreaterThan(200); expect(top.r).toBeLessThan(60);
   });
   it('keeps an upright group landscape', async () => {
-    const out = await cropGroup(await make(), { id: 1, orientation: 'upright', bbox: [0.1, 0.1, 0.5, 0.3], cardCount: 5 }, 1000, 500);
+    const out = await cropGroup(await decodeCropSource(await make(), 0), { id: 1, orientation: 'upright', bbox: [0.1, 0.1, 0.5, 0.3], cardCount: 5 });
     const m = await sharp(out).metadata();
     expect(m.width!).toBeGreaterThan(m.height!);
     expectFillsBudget(m.width!, m.height!);
+  });
+});
+describe('decodeCropSource', () => {
+  it('decodes to 3-channel raw pixels, oriented and turned, that a crop is cut from', async () => {
+    // 200 x 100 with the left half red, as PNG with alpha: turned 90 clockwise the red half is on top.
+    const halves = await sharp({ create: { width: 200, height: 100, channels: 4, background: '#0000ffff' } })
+      .composite([{ input: { create: { width: 100, height: 100, channels: 4, background: '#ff0000ff' } }, left: 0, top: 0 }])
+      .png().toBuffer();
+    const src = await decodeCropSource(halves, 90);
+    expect([src.width, src.height, src.channels, src.data.length]).toEqual([100, 200, 3, 100 * 200 * 3]);
+    const top = await cropGroup(src, { id: 1, orientation: 'upright', bbox: [0, 0, 1, 0.5], cardCount: 1 });
+    const { data, info } = await sharp(top).raw().toBuffer({ resolveWithObject: true });
+    const mid = (Math.floor(info.height / 2) * info.width + Math.floor(info.width / 2)) * info.channels;
+    expect(data[mid]).toBeGreaterThan(200);
+    expect(data[mid + 2]).toBeLessThan(60);
+  });
+  it('a greyscale JPEG and an EXIF-tagged JPEG decode to 3 channels at the oriented size', async () => {
+    const grey = await sharp({ create: { width: 40, height: 20, channels: 3, background: '#808080' } }).greyscale().jpeg().toBuffer();
+    expect(await decodeCropSource(grey, 0)).toMatchObject({ width: 40, height: 20, channels: 3 });
+    const tagged = await sharp({ create: { width: 40, height: 20, channels: 3, background: '#808080' } }).jpeg().withMetadata({ orientation: 6 }).toBuffer();
+    expect(await decodeCropSource(tagged, 0)).toMatchObject({ width: 20, height: 40, channels: 3 });
+  });
+});
+describe('cropGroup upside_down', () => {
+  it('turns an upside-down group by 180: the left half ends on the right', async () => {
+    const halves = await sharp({ create: { width: 200, height: 100, channels: 3, background: '#0000ff' } })
+      .composite([{ input: { create: { width: 100, height: 100, channels: 3, background: '#ff0000' } }, left: 0, top: 0 }])
+      .jpeg().toBuffer();
+    const out = await cropGroup(await decodeCropSource(halves, 0), { id: 1, orientation: 'upside_down', bbox: [0, 0, 1, 1], cardCount: 1 });
+    const { data, info } = await sharp(out).raw().toBuffer({ resolveWithObject: true });
+    expect(info.width).toBeGreaterThan(info.height);
+    const at = (x: number) => { const i = (Math.floor(info.height / 2) * info.width + x) * info.channels; return { r: data[i], b: data[i + 2] }; };
+    expect(at(info.width - 10).r).toBeGreaterThan(200);
+    expect(at(10).b).toBeGreaterThan(200);
   });
 });

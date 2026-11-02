@@ -1,6 +1,6 @@
-import sharp from 'sharp';
 import { rotationFor } from './crop';
 import type { DeckGroup, DeckOutput } from './deckSchema';
+import { encodeForScan, type Turn } from './image';
 import { DECK_ARM, DECK_MODE, recognize, type RecognizeMode, type RecognizeResult } from './recognize';
 
 // Deck photos taken with the phone held across the layout come in a quarter turn off: every card lies sideways. Cropping
@@ -17,7 +17,7 @@ export const TURN_MIN_REMAINING_MS = 60_000;
 /** Reads after the first at most: a turn, and one more when that read says the photo is still turned. */
 export const MAX_TURNS = 2;
 
-export type Turn = 0 | 90 | 180 | 270;
+export type { Turn };
 
 /** Clockwise degrees that turn the photo upright when nearly all its cards lie one way; 0 otherwise. Group 0 takes no part. */
 export function wholePhotoTurn(groups: DeckGroup[]): Turn {
@@ -30,10 +30,10 @@ export function wholePhotoTurn(groups: DeckGroup[]): Turn {
   return 0;
 }
 
-/** The scan JPEG turned clockwise by `deg`, re-encoded as encodeForScan does; a quarter turn swaps the sides. */
-export async function turnJpeg(jpeg: Buffer, deg: Turn): Promise<{ jpeg: Buffer; width: number; height: number }> {
-  const { data, info } = await sharp(jpeg).rotate(deg).jpeg({ quality: 82, mozjpeg: true }).toBuffer({ resolveWithObject: true });
-  return { jpeg: data, width: info.width, height: info.height };
+/** The upload turned clockwise by `deg` and encoded for the deck read, once, from the upload's own pixels; a quarter turn swaps the sides. */
+export async function turnJpeg(upload: Buffer, deg: Turn): Promise<{ jpeg: Buffer; width: number; height: number }> {
+  const { jpeg, width, height } = await encodeForScan(upload, DECK_ARM.tier, deg);
+  return { jpeg, width, height };
 }
 
 export interface TurnPassDeps { recognize?: typeof recognize; now?: () => number }
@@ -42,7 +42,6 @@ export interface TurnPassResult {
   /** Clockwise degrees the photo was turned before `output` was read; 0 when the first read stands. */
   rotation: Turn;
   output: DeckOutput;
-  jpeg: Buffer;
   width: number;
   height: number;
   usage: { inputTokens: number; outputTokens: number };
@@ -56,11 +55,11 @@ export interface TurnPassResult {
  * Re-reads a turned photo upright before a hard deadline, turning once more (from the original) when the re-read says it is
  * still turned. A failure keeps the last good read; every billed call is counted.
  */
-export async function runTurnPass(jpeg: Buffer, first: DeckOutput, image: { width: number; height: number }, deadline: number, deps: TurnPassDeps = {}): Promise<TurnPassResult> {
+export async function runTurnPass(upload: Buffer, first: DeckOutput, image: { width: number; height: number }, deadline: number, deps: TurnPassDeps = {}): Promise<TurnPassResult> {
   const rec = deps.recognize ?? recognize;
   const now = deps.now ?? Date.now;
   const started = now();
-  let best = { rotation: 0 as Turn, output: first, jpeg, ...image };
+  let best = { rotation: 0 as Turn, output: first, ...image };
   const usage = { inputTokens: 0, outputTokens: 0 };
   let costUsd = 0;
   let calls = 0;
@@ -73,7 +72,7 @@ export async function runTurnPass(jpeg: Buffer, first: DeckOutput, image: { widt
       break;
     }
     const rotation = ((best.rotation + turn) % 360) as Turn;
-    const turned = await turnJpeg(jpeg, rotation);
+    const turned = await turnJpeg(upload, rotation);
     // Ends by the deadline: a retry only when a full second attempt (2 s sleep + timeoutMs) still fits.
     const timeoutMs = Math.min(DECK_MODE.timeoutMs ?? remaining, remaining);
     const mode: RecognizeMode<DeckOutput> = { ...DECK_MODE, timeoutMs, retryWithinMs: Math.min(DECK_MODE.retryWithinMs, Math.max(0, remaining - 2_000 - timeoutMs)) };
@@ -92,7 +91,7 @@ export async function runTurnPass(jpeg: Buffer, first: DeckOutput, image: { widt
       failure = { code: 'empty_read' };
       break;
     }
-    best = { rotation, output: r.output, ...turned };
+    best = { rotation, output: r.output, width: turned.width, height: turned.height };
   }
   return { ...best, usage, costUsd, latencyMs: now() - started, calls, failure };
 }

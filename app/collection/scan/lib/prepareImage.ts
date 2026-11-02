@@ -37,8 +37,8 @@ function toBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob | null
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
 }
 
-/** Decode, downscale to MAX_EDGE and re-encode as JPEG under MAX_BYTES. DOM-only. */
-export async function prepareImage(file: File): Promise<Blob> {
+/** Decode, downscale to MAX_EDGE and re-encode as JPEG under MAX_BYTES, with the photo's size before the resize. DOM-only. */
+export async function prepareImage(file: File): Promise<{ blob: Blob; width: number; height: number }> {
   const img = await decode(file).catch(() => {
     throw new PrepareError('heif');
   });
@@ -52,7 +52,7 @@ export async function prepareImage(file: File): Promise<Blob> {
   ctx.drawImage(img, 0, 0, w, h);
   for (const q of [0.85, 0.75, 0.65]) {
     const blob = await toBlob(canvas, q);
-    if (blob && blob.size <= MAX_BYTES) return blob;
+    if (blob && blob.size <= MAX_BYTES) return { blob, width: img.naturalWidth, height: img.naturalHeight };
   }
   throw new PrepareError('too_large');
 }

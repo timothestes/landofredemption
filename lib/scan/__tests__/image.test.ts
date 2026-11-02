@@ -25,3 +25,27 @@ describe('encodeForScan', () => {
   it('rejects garbage as undecodable', async () => { await expect(encodeForScan(Buffer.from('not an image'), 'high')).rejects.toMatchObject({ code: 'undecodable' }); });
   it('rejects a 64 MP image over limitInputPixels as too_large', async () => { const png = await sharp({ create: { width: 8000, height: 8000, channels: 3, background: '#888' } }).png({ compressionLevel: 1 }).toBuffer(); await expect(encodeForScan(png, 'high')).rejects.toMatchObject({ code: 'too_large' }); }, 30_000);
 });
+describe('encodeForScan turn', () => {
+  it('turns after the EXIF orientation, fits the turned size, and reports the source', async () => {
+    // 3000 x 1500 with the left half red, tagged orientation 6 (a quarter turn clockwise): oriented it is 1500 x 3000 with
+    // red on top; turned 90 more it is 3000 x 1500 with red on the right.
+    const halves = await sharp({ create: { width: 3000, height: 1500, channels: 3, background: '#0000ff' } })
+      .composite([{ input: { create: { width: 1500, height: 1500, channels: 3, background: '#ff0000' } }, left: 0, top: 0 }])
+      .jpeg().toBuffer();
+    const tagged = await sharp(halves).withMetadata({ orientation: 6 }).jpeg().toBuffer();
+    const r = await encodeForScan(tagged, 'high', 90);
+    expect(r.source).toEqual({ width: 1500, height: 3000, orientation: 6, format: 'jpeg' });
+    const fit = fitToTier(3000, 1500, 'high');
+    expect([r.width, r.height]).toEqual([fit.width, fit.height]);
+    const { data, info } = await sharp(r.jpeg).raw().toBuffer({ resolveWithObject: true });
+    expect([info.width, info.height]).toEqual([fit.width, fit.height]);
+    const px = (x: number, y: number) => { const i = (y * info.width + x) * info.channels; return { r: data[i], b: data[i + 2] }; };
+    expect(px(info.width - 10, Math.floor(info.height / 2)).r).toBeGreaterThan(200);
+    expect(px(10, Math.floor(info.height / 2)).b).toBeGreaterThan(200);
+  });
+  it('an untagged photo reports orientation 1 and its own size', async () => {
+    const r = await encodeForScan(await sharp({ create: { width: 40, height: 30, channels: 3, background: '#888' } }).png().toBuffer(), 'low');
+    expect(r.source).toEqual({ width: 40, height: 30, orientation: 1, format: 'png' });
+    expect([r.width, r.height]).toEqual([40, 30]);
+  });
+});

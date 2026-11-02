@@ -13,6 +13,8 @@ const REQUEST_TIMEOUT_MS = 170_000;
 interface Entry {
   file: File;
   blob?: Blob;
+  /** The photo's size before prepareImage resized it. */
+  size?: { width: number; height: number };
   url?: string;
   busyRetries: number;
   running: boolean;
@@ -69,7 +71,9 @@ export function useScanQueue<R = ScanResponse>(
     try {
       if (!e.blob) {
         try {
-          e.blob = await prepareImage(e.file);
+          const prepared = await prepareImage(e.file);
+          e.blob = prepared.blob;
+          e.size = { width: prepared.width, height: prepared.height };
         } catch (err) {
           if (err instanceof PrepareError) {
             fail(id, err.kind === 'heif' ? 415 : 413, { code: err.kind });
@@ -84,6 +88,11 @@ export function useScanQueue<R = ScanResponse>(
       const fd = new FormData();
       fd.append('photo', e.blob, 'photo.jpg');
       if (mode === 'deck') fd.append('mode', 'deck');
+      // The size before the resize, so scan_events can say how big real photos are.
+      if (e.size) {
+        fd.append('originalWidth', String(e.size.width));
+        fd.append('originalHeight', String(e.size.height));
+      }
       let res: Response;
       const ctrl = new AbortController();
       const timeout = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);

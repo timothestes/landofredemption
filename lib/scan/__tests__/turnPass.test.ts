@@ -103,7 +103,7 @@ describe('runTurnPass', () => {
     const jpeg = await src();
     const res = await runTurnPass(jpeg, first, IMAGE, later(), deps);
     expect(fn).not.toHaveBeenCalled();
-    expect(res).toMatchObject({ rotation: 0, output: first, jpeg, width: 40, height: 20, calls: 0, costUsd: 0, failure: null });
+    expect(res).toMatchObject({ rotation: 0, output: first, width: 40, height: 20, calls: 0, costUsd: 0, failure: null });
   });
 
   it('with too little time left it keeps the first read and makes no call', async () => {
@@ -126,7 +126,7 @@ describe('runTurnPass', () => {
     const failing = stub(async () => ({ ok: false, code: 'recognizer_failed', attempts: 2, latencyMs: 9, usage: { inputTokens: 10, outputTokens: 0 }, costUsd: 0.01 }));
     const jpeg = await src();
     const res = await runTurnPass(jpeg, turnedPhoto, IMAGE, later(), failing.deps);
-    expect(res).toMatchObject({ rotation: 0, output: turnedPhoto, jpeg, width: 40, height: 20, calls: 2, costUsd: 0.01, failure: { code: 'recognizer_failed' } });
+    expect(res).toMatchObject({ rotation: 0, output: turnedPhoto, width: 40, height: 20, calls: 2, costUsd: 0.01, failure: { code: 'recognizer_failed' } });
 
     const empty = stub(async () => ok(out([], [])));
     const res2 = await runTurnPass(jpeg, turnedPhoto, IMAGE, later(), empty.deps);

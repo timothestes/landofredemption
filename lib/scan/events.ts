@@ -23,6 +23,25 @@ export async function reserveScan(
   throw new Error('scan_reserve returned an unexpected shape');
 }
 
+/** What the upload looked like and what each stage took, stored as scan_events.photo (migration 125). No image is kept. */
+export interface PhotoFacts {
+  bytes: number;
+  /** EXIF-oriented size of the upload, its EXIF orientation tag (1 when none) and format. */
+  width: number;
+  height: number;
+  orientation: number;
+  format: string;
+  /** The photo's size before the client resized it, when the client said. */
+  original?: { width: number; height: number };
+  /** The size the model read. */
+  tier: { width: number; height: number };
+  /** Deck mode: clockwise degrees the turn pass turned the photo (0 when it stood), and the crop pass's groups. */
+  turn?: number;
+  crops?: { cropped: number[]; failed: number[]; skipped: number[]; merged: number[] };
+  /** Milliseconds: the encode, each model stage, and request start to finish. */
+  ms: { encode: number; read?: number; turn?: number; crop?: number; ab?: number; total: number };
+}
+
 export interface FinishPatch {
   status: 'done' | 'failed';
   model?: string;
@@ -34,6 +53,7 @@ export interface FinishPatch {
   photoQuality?: string;
   detections?: unknown[];
   mode?: 'collection' | 'deck';
+  photo?: PhotoFacts;
 }
 
 /**
@@ -54,6 +74,7 @@ export async function finishScan(
   if (patch.photoQuality !== undefined) row.photo_quality = patch.photoQuality;
   if (patch.detections !== undefined) row.detections = patch.detections;
   if (patch.mode !== undefined) row.mode = patch.mode;
+  if (patch.photo !== undefined) row.photo = patch.photo;
   try {
     const { error } = await admin.from('scan_events').update(row).eq('id', id);
     if (error) console.error(`[scan] finish ${id} failed:`, { error: error.message, ...spend(patch) });
