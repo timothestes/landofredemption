@@ -63,7 +63,7 @@ export default function PhotoGroup({
   }, [reading]);
 
   let line: ReactNode;
-  let actions: { retry: boolean; chooseAnother: boolean; signIn?: boolean } | null = null;
+  let actions: { retry: boolean; retryLabel?: string; chooseAnother: boolean; signIn?: boolean } | null = null;
   // Remove is always offered while editing; a read photo asks first, since its cards go with it.
   let removeNeedsConfirm = false;
   if (photo.busy && photo.status === 'queued') {
@@ -90,7 +90,7 @@ export default function PhotoGroup({
     );
     // Auto-retries are spent by the time a busy error lands here, so nothing is retrying.
     line = view.kind === 'busy' ? COPY.busyGaveUp : view.text;
-    actions = { retry: view.retry, chooseAnother: view.chooseAnother, signIn: view.signIn };
+    actions = { retry: view.retry, retryLabel: view.retryLabel, chooseAnother: view.chooseAnother, signIn: view.signIn };
   } else if (detectionCount === 0) {
     line = ZERO_TEXT[photo.photoQuality ?? ''] ?? COPY.noCards;
     // The same photo with too many cards would only be refused again: retake or choose another.
@@ -157,7 +157,7 @@ export default function PhotoGroup({
         <div className="mt-1 flex flex-wrap items-center gap-x-1 pl-14">
           {actions.retry && canRetry && (
             <button type="button" className={actionClass} onClick={onRetry}>
-              {COPY.retry}
+              {actions.retryLabel ?? COPY.retry}
             </button>
           )}
           <button type="button" className={actionClass} onClick={onRemove}>
