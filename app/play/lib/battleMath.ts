@@ -21,8 +21,8 @@ export interface BattleCardLike {
   cardName: string;
   equippedToInstanceId?: bigint | number;
   // Stamped origin zone (CardInstance.originZone) — mirrors the server's
-  // runBattleAutoReturn rule 5: catch-all cards (Dominants/Artifacts/
-  // Curses/Fortresses/unknown) return to this zone when set and it isn't
+  // runBattleAutoReturn rule 5: catch-all cards (Artifacts/Curses/
+  // Fortresses/unknown) return to this zone when set and it isn't
   // 'territory', instead of landing in territory.
   originZone?: string;
 }
@@ -301,6 +301,15 @@ function isEnhancementSegment(cardType: string): boolean {
     .some((s) => s === 'GE' || s === 'EE');
 }
 
+// Mirrors the server's domSegment: Dominants are discarded after use like
+// enhancements, never returned to the hand they were played from.
+function isDominantSegment(cardType: string): boolean {
+  return cardType
+    .split('/')
+    .map((s) => s.trim())
+    .some((s) => s === 'Dominant');
+}
+
 /**
  * Client mirror of the server's end-of-battle auto-return routing
  * precedence (spec §7 runBattleAutoReturn), for the pre-resolve confirm
@@ -308,10 +317,10 @@ function isEnhancementSegment(cardType: string): boolean {
  * card in `cards` (everything currently in the battle band) would land:
  * equipped accessories stay attached (weaponsAttached), Lost Souls go to
  * the Land of Bondage, characters go to territory, and GE/EE enhancements
- * go to discard unless their specialAbility matches the "place" keep
- * heuristic, in which case they stay in territory and their name is
- * recorded in keptInPlay. The catch-all "everything else" bucket
- * (Dominants/Artifacts/Curses/Fortresses/unknown/Forge-blanked types)
+ * and Dominants go to discard unless their specialAbility matches the
+ * "place" keep heuristic, in which case they stay in territory and their
+ * name is recorded in keptInPlay. The catch-all "everything else" bucket
+ * (Artifacts/Curses/Fortresses/unknown/Forge-blanked types)
  * mirrors the server's runBattleAutoReturn rule 5: it returns to the
  * card's stamped originZone when one is set and isn't 'territory' (counted
  * in toOrigin), otherwise it lands in territory like today (toTerritory).
@@ -337,7 +346,7 @@ export function summarizeAutoReturn(cards: BattleCardLike[]): AutoReturnSummary 
       toTerritory++;
       continue;
     }
-    if (isEnhancementSegment(c.cardType)) {
+    if (isEnhancementSegment(c.cardType) || isDominantSegment(c.cardType)) {
       if (isPlaceKeep(c.specialAbility)) {
         keptInPlay.push(c.cardName);
         toTerritory++;
