@@ -105,3 +105,10 @@ describe('line helpers', () => {
     expect(footerTotal(10, 0)).toBe('YTG retail est. $10.00');
   });
 });
+
+describe('scanErrorView small_photo', () => {
+  it('names the size, keeps the photo, and labels Retry as Scan anyway', () => {
+    const v = scanErrorView(0, { code: 'small_photo', longEdge: 1100 }, null, new Date());
+    expect(v).toMatchObject({ kind: 'small_photo', text: 'Small photo (1100 px): the full-size original reads better.', retry: true, chooseAnother: true, retryLabel: 'Scan anyway' });
+  });
+});

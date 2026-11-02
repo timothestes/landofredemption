@@ -7,7 +7,7 @@ import { useScanQueue } from '@/app/collection/scan/hooks/useScanQueue';
 import CaptureButtons from '@/app/collection/scan/components/CaptureButtons';
 import DeckTray from './components/DeckTray';
 import HandoffBar from './components/HandoffBar';
-import { DECK_COPY } from './copy';
+import { DECK_COPY, SMALL_PHOTO_EDGE } from './copy';
 import { useDeckTray } from './hooks/useDeckTray';
 import { usePhotoDropPaste } from './hooks/usePhotoDropPaste';
 import type { DeckScanResponse } from './types';
@@ -25,7 +25,8 @@ export default function DeckScanClient({ userId }: { userId: string }) {
 
 function DeckScanTray({ userId }: { userId: string }) {
   const [state, dispatch] = useDeckTray(userId);
-  const queue = useScanQueue<DeckScanResponse>(dispatch, { mode: 'deck' });
+  // Under SMALL_PHOTO_EDGE most titles go unread: the queue stops before the upload until the player says Scan anyway.
+  const queue = useScanQueue<DeckScanResponse>(dispatch, { mode: 'deck', warnUnderEdge: SMALL_PHOTO_EDGE });
   const chooseInputRef = useRef<HTMLInputElement>(null);
 
   const editable = state.phase === 'editing';
@@ -51,7 +52,7 @@ function DeckScanTray({ userId }: { userId: string }) {
           accepting={editable}
           disabled={!editable}
           showTips={empty}
-          tips={[DECK_COPY.tips]}
+          tips={[DECK_COPY.tips, DECK_COPY.captureTip]}
         />
         <p className="text-xs text-muted-foreground">
           <Link href="/collection/scan" className="underline underline-offset-4 hover:text-foreground focus:outline-none">

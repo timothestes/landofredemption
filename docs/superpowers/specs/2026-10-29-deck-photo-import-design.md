@@ -911,10 +911,12 @@ on the scanner's schedule. `/privacy` gains one sentence.
 | pageTitle | Deck from photo |
 | lead | Photograph a deck laid out on a table, or drop in a photo from Discord, and get a decklist you can open in the deck builder. |
 | tips | Lay every card upright with the title showing. One column per brigade works best. Put the reserve in its own row. |
+| captureTip | Hold the phone along the rows. No flash; light from the side. |
 | reading | Reading… |
 | readDone | Read {n} cards in {g} groups |
 | readingCrop | Reading {n} sideways group{s}… |
 | smallPhoto | Small photo: the full-size original reads better |
+| smallPhotoBefore (scanner COPY, shown before the upload with Scan anyway and Choose another) | Small photo ({px} px): the full-size original reads better. |
 | tooManyCards | Too many cards for one photo. Photograph the deck in two halves and add both. |
 | groupHeader | Group {i} · Read {n} |
 | groupHeaderEstimate | Group {i} · Read {n} of about {m} |

@@ -15,6 +15,8 @@ interface Entry {
   blob?: Blob;
   /** The photo's size before prepareImage resized it. */
   size?: { width: number; height: number };
+  /** Scan anyway: the small-photo stop was seen and the player chose to upload. */
+  confirmed?: boolean;
   url?: string;
   busyRetries: number;
   running: boolean;
@@ -31,9 +33,14 @@ export type QueueAction<R> =
 
 export function useScanQueue<R = ScanResponse>(
   dispatch: (a: QueueAction<R>) => void,
-  opts?: { mode?: 'collection' | 'deck' },
+  opts?: {
+    mode?: 'collection' | 'deck';
+    /** Stop before uploading a photo whose long edge is under this many px, until the player says Scan anyway. */
+    warnUnderEdge?: number;
+  },
 ) {
   const mode = opts?.mode;
+  const warnUnderEdge = opts?.warnUnderEdge;
   const entries = useRef(new Map<string, Entry>());
   const waiting = useRef<string[]>([]);
   const active = useRef(0);
@@ -84,6 +91,14 @@ export function useScanQueue<R = ScanResponse>(
         if (!entries.current.has(id)) return;
         e.url = URL.createObjectURL(e.blob);
         syncThumbs();
+      }
+      // A small photo is stopped before the read is paid for; the card offers Scan anyway (Retry) and Choose another.
+      if (warnUnderEdge && e.size && !e.confirmed) {
+        const longEdge = Math.max(e.size.width, e.size.height);
+        if (longEdge < warnUnderEdge) {
+          fail(id, 0, { code: 'small_photo', longEdge });
+          return;
+        }
       }
       const fd = new FormData();
       fd.append('photo', e.blob, 'photo.jpg');
@@ -148,7 +163,7 @@ export function useScanQueue<R = ScanResponse>(
       active.current--;
       pump.current();
     }
-  }, [fail, syncThumbs, mode]);
+  }, [fail, syncThumbs, mode, warnUnderEdge]);
 
   pump.current = () => {
     while (active.current < MAX_CONCURRENT && waiting.current.length > 0) {
@@ -200,6 +215,7 @@ export function useScanQueue<R = ScanResponse>(
     // A pending busy auto-retry already owns this photo; a second upload would take another reserve slot.
     if (!e || e.running || e.timer || waiting.current.includes(id)) return;
     e.busyRetries = 0;
+    e.confirmed = true;
     dispatchRef.current({ type: 'photoRetry', photoId: id });
     waiting.current.push(id);
     pump.current();
