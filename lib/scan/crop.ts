@@ -1,8 +1,9 @@
 import sharp from 'sharp';
 import type { Box, DeckGroup, DeckRead } from './deckSchema';
-import { fillToTier } from './image';
+import { fillToTier, type Turn } from './image';
 
-// Crop pass for deck photos: re-read a group from an upright crop scaled to the high tier. Geometry is pure; cropGroup uses sharp.
+// Crop pass for deck photos: re-read a group from an upright crop scaled to the high tier. Geometry is pure;
+// decodeCropSource and cropGroup use sharp.
 
 /** Padding around a group's box, as a fraction of the image's width (left/right) and height (top/bottom). */
 export const CROP_PAD = 0.04;
@@ -125,16 +126,34 @@ export function keepCropRead(read: DeckRead, group: DeckGroup, rect: CropRect, w
   return titleCentreInBox(read.titleBox, rect, group.bbox, width, height);
 }
 
-/** Crops a group's padded box, rotates it upright, and scales it to fill the high tier's patch budget, as JPEG. Two pipelines: sharp rotates before it extracts. */
-export async function cropGroup(jpeg: Buffer, group: DeckGroup, width: number, height: number): Promise<Buffer> {
-  const rect = cropRect(group.bbox, width, height);
+/** The upload decoded once for the crop pass: raw sRGB pixels, EXIF-oriented and turned as the read was. */
+export interface CropSource { data: Buffer; width: number; height: number; channels: 3 }
+
+/**
+ * Decodes the upload to raw pixels, oriented by EXIF and turned clockwise by `turn`, so every crop is cut from the upload's
+ * own pixels (not the tier JPEG the model read) and encoded once. About 15 MB for a 2,576 px photo.
+ */
+export async function decodeCropSource(upload: Buffer, turn: Turn): Promise<CropSource> {
+  let pipeline = sharp(upload).rotate();
+  if (turn !== 0) pipeline = pipeline.rotate(turn);
+  const { data, info } = await pipeline.removeAlpha().toColourspace('srgb').raw().toBuffer({ resolveWithObject: true });
+  return { data, width: info.width, height: info.height, channels: 3 };
+}
+
+/**
+ * Cuts a group's padded box from the source, scales it to fill the high tier's patch budget and turns it upright, as JPEG.
+ * One pipeline and one encode: sharp extracts, then resizes, then applies a rotate called after them, so the resize is
+ * sized in the unturned frame (a sideways group's sides swapped) and the turn produces the upright size.
+ */
+export async function cropGroup(src: CropSource, group: DeckGroup): Promise<Buffer> {
+  const rect = cropRect(group.bbox, src.width, src.height);
   const rotation = rotationFor(group.orientation);
   const sideways = rotation === 90 || rotation === 270;
   const size = fillToTier(sideways ? rect.height : rect.width, sideways ? rect.width : rect.height, 'high');
-  const cropped = await sharp(jpeg).extract(rect).toBuffer();
-  return sharp(cropped)
+  return sharp(src.data, { raw: { width: src.width, height: src.height, channels: src.channels } })
+    .extract(rect)
+    .resize({ width: sideways ? size.height : size.width, height: sideways ? size.width : size.height, fit: 'fill', kernel: 'lanczos3' })
     .rotate(rotation)
-    .resize({ width: size.width, height: size.height, fit: 'fill', kernel: 'lanczos3' })
     .jpeg({ quality: 85, mozjpeg: true })
     .toBuffer();
 }

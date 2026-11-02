@@ -5,6 +5,8 @@ import sharp, { type Metadata } from 'sharp';
 
 export type Tier = 'high' | 'low';
 export const TIER_PATCH_CAP: Record<Tier, number> = { high: 4784, low: 1568 };
+/** Clockwise degrees a photo is turned before it is read. */
+export type Turn = 0 | 90 | 180 | 270;
 
 const PATCH = 28;
 const LIMIT_INPUT_PIXELS = 60_000_000;
@@ -51,7 +53,20 @@ function toScanImageError(e: unknown): ScanImageError {
   return new ScanImageError(/pixel limit/i.test((e as Error)?.message ?? '') ? 'too_large' : 'undecodable');
 }
 
-export async function encodeForScan(input: Buffer, tier: Tier): Promise<{ jpeg: Buffer; width: number; height: number; imageTokens: number }> {
+export interface ScanImage {
+  jpeg: Buffer;
+  width: number;
+  height: number;
+  imageTokens: number;
+  /** The upload as decoded: its EXIF-oriented size, the EXIF orientation tag (1 when there is none) and format. */
+  source: { width: number; height: number; orientation: number; format: string };
+}
+
+/**
+ * The upload as the recognizer sees it: EXIF-oriented, turned clockwise by `turn`, fitted to the tier and encoded once,
+ * from the upload's own pixels, at q82.
+ */
+export async function encodeForScan(input: Buffer, tier: Tier, turn: Turn = 0): Promise<ScanImage> {
   let meta: Metadata;
   try {
     meta = await sharp(input, { limitInputPixels: LIMIT_INPUT_PIXELS }).metadata();
@@ -60,16 +75,19 @@ export async function encodeForScan(input: Buffer, tier: Tier): Promise<{ jpeg: 
   }
   if (!meta.width || !meta.height || !ALLOWED_FORMATS.has(meta.format ?? '')) throw new ScanImageError('undecodable');
   if (meta.width * meta.height > LIMIT_INPUT_PIXELS) throw new ScanImageError('too_large');
-  // EXIF-oriented size, so the tier fit matches what .rotate() produces.
+  // EXIF-oriented size, then the turn, so the tier fit matches what the rotations produce.
   const oriented = meta.autoOrient ?? { width: meta.width, height: meta.height };
-  const fit = fitToTier(oriented.width, oriented.height, tier);
+  const quarter = turn === 90 || turn === 270;
+  const fit = fitToTier(quarter ? oriented.height : oriented.width, quarter ? oriented.width : oriented.height, tier);
   try {
-    const jpeg = await sharp(input, { limitInputPixels: LIMIT_INPUT_PIXELS })
-      .rotate()
+    // rotate() with no angle orients by EXIF; sharp keeps that when an angle follows it.
+    let pipeline = sharp(input, { limitInputPixels: LIMIT_INPUT_PIXELS }).rotate();
+    if (turn !== 0) pipeline = pipeline.rotate(turn);
+    const jpeg = await pipeline
       .resize({ width: fit.width, height: fit.height, fit: 'fill', withoutEnlargement: true })
       .jpeg({ quality: 82, mozjpeg: true })
       .toBuffer();
-    return { jpeg, ...fit };
+    return { jpeg, ...fit, source: { width: oriented.width, height: oriented.height, orientation: meta.orientation ?? 1, format: meta.format ?? '' } };
   } catch (e) {
     throw toScanImageError(e);
   }

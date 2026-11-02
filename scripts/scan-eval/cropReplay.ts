@@ -9,14 +9,15 @@
  *
  * --only takes photo file names (e.g. 20260811_134449.webp), comma separated; --deadline-ms is each photo's crop budget.
  * --skip-cropped leaves the groups the recording already cropped as they are (their reads are crop reads, not a first
- * pass), so a recording from the route replays only what a changed crop rule adds.
+ * pass), so a recording from the route replays only what a changed crop rule adds. A recording of a turned photo
+ * (`rotation` in the response) is replayed turned the same way.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from 'dotenv';
 import { runCropPass } from '@/lib/scan/cropPass';
 import { inferSidewaysRows } from '@/lib/scan/crop';
-import { encodeForScan } from '@/lib/scan/image';
+import { encodeForScan, type Turn } from '@/lib/scan/image';
 import { matchDetection } from '@/lib/scan/match';
 import { capDetection } from '@/lib/scan/schema';
 import { DECK_DETECTION_CAP, type DeckOutput, type DeckRead } from '@/lib/scan/deckSchema';
@@ -75,12 +76,15 @@ async function main() {
       continue;
     }
     const t0 = Date.now();
-    const { jpeg, width, height } = await encodeForScan(fs.readFileSync(photo), 'high');
+    const bytes = fs.readFileSync(photo);
+    // A recording of a turned photo has its groups in the turned frame: the replay turns the photo the same way.
+    const turn = (rec.rotation ?? 0) as Turn;
+    const { width, height } = await encodeForScan(bytes, 'high', turn);
     const first = toDeckOutput(rec);
     const out = { ...first, groups: inferSidewaysRows(first.groups, width, height) };
     // Groups left out of the crop pass's input keep their reads unchanged (runCropPass passes unlisted groups through).
     const done = new Set<number>(o.skipCropped ? rec.crops?.cropped ?? [] : []);
-    const cp = await runCropPass(jpeg, { ...out, groups: out.groups.filter(g => !done.has(g.id)) }, { width, height }, Date.now() + o.deadlineMs);
+    const cp = await runCropPass({ upload: bytes, turn }, { ...out, groups: out.groups.filter(g => !done.has(g.id)) }, { width, height }, Date.now() + o.deadlineMs);
     for (const { group, code, detail } of cp.failures) console.error(`  crop failed group ${group}: ${code}`, detail ?? '');
 
     // Classified exactly as the route does, with an empty price map.
@@ -112,6 +116,8 @@ async function main() {
       scanId: rec.scanId,
       mode: 'deck',
       photoQuality: rec.photoQuality,
+      rotation: turn,
+      imageSize: { width, height },
       groups: out.groups.filter(g => !cp.merged.includes(g.id)),
       detections,
       crops: { cropped: [...done, ...cp.cropped].sort((a, b) => a - b), failed: cp.failed, skipped: cp.skipped, merged: cp.merged },

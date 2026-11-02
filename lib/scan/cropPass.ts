@@ -1,5 +1,6 @@
-import { cropBoxToPhoto, cropGroup, cropRect, keepCropRead, needsCrop, nestedGroups } from './crop';
+import { cropBoxToPhoto, cropGroup, cropRect, decodeCropSource, keepCropRead, needsCrop, nestedGroups, type CropSource } from './crop';
 import { DECK_INSTRUCTION, type DeckGroup, type DeckOutput, type DeckRead } from './deckSchema';
+import type { Turn } from './image';
 import { DECK_ARM, DECK_MODE, recognize, type Arm, type RecognizeMode, type RecognizeResult } from './recognize';
 
 // Second pass for deck photos: re-read each sideways, upside-down or truncated group from a tight crop turned upright,
@@ -21,7 +22,10 @@ export function cropCallTiming(remaining: number): { timeoutMs: number; retryWit
   return { timeoutMs, retryWithinMs: Math.min(CROP_MODE.retryWithinMs, Math.max(0, remaining - 2_000 - timeoutMs)) };
 }
 
-export interface CropPassDeps { recognize?: typeof recognize; crop?: typeof cropGroup; now?: () => number }
+export interface CropPassDeps { recognize?: typeof recognize; crop?: typeof cropGroup; decode?: typeof decodeCropSource; now?: () => number }
+
+/** The upload as received, and the clockwise turn the read it is cropped against was taken at. */
+export interface CropInput { upload: Buffer; turn: Turn }
 
 export interface CropPassResult {
   cards: DeckRead[];
@@ -37,10 +41,14 @@ export interface CropPassResult {
   failures: { group: number; code: string; detail?: unknown }[];
 }
 
-export async function runCropPass(jpeg: Buffer, out: DeckOutput, image: { width: number; height: number }, deadline: number, deps: CropPassDeps = {}): Promise<CropPassResult> {
+export async function runCropPass(input: CropInput, out: DeckOutput, image: { width: number; height: number }, deadline: number, deps: CropPassDeps = {}): Promise<CropPassResult> {
   const rec = deps.recognize ?? recognize;
   const crop = deps.crop ?? cropGroup;
+  const decode = deps.decode ?? decodeCropSource;
   const now = deps.now ?? Date.now;
+  // The upload is decoded once, by the first crop that needs it; a photo with nothing to crop decodes nothing.
+  let decoded: Promise<CropSource> | undefined;
+  const source = () => (decoded ??= decode(input.upload, input.turn));
   const started = now();
   const { width, height } = image;
   const readsOf = (id: number) => out.cards.filter(c => c.group === id);
@@ -71,7 +79,7 @@ export async function runCropPass(jpeg: Buffer, out: DeckOutput, image: { width:
         continue;
       }
       try {
-        const buf = await crop(jpeg, g, width, height);
+        const buf = await crop(await source(), g);
         if (deadline - now() < MIN_CROP_REMAINING_MS) {
           skipped.push(g.id);
           continue;
