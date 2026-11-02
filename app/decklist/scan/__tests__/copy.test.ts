@@ -5,6 +5,7 @@ const SPEC: Record<string, string> = {
   pageTitle: 'Deck from photo',
   lead: 'Photograph a deck laid out on a table, or drop in a photo from Discord, and get a decklist you can open in the deck builder.',
   tips: 'Lay every card upright with the title showing. One column per brigade works best. Put the reserve in its own row.',
+  captureTip: 'Hold the phone along the rows. No flash; light from the side.',
   reading: 'Reading…',
   readDone: 'Read {n} cards in {g} groups',
   readDoneOneCard: 'Read 1 card in {g} groups',

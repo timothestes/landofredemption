@@ -27,4 +27,6 @@ export interface ScanErrorBody {
   message?: string;
   resetsAt?: string;
   limit?: number;
+  /** small_photo (client-side, before the upload): the photo's long edge in px. */
+  longEdge?: number;
 }

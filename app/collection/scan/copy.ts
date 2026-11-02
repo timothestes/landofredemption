@@ -39,6 +39,9 @@ export const COPY: Record<string, string> = {
   timeout: 'This took too long. Check your connection, then Retry.',
   server: 'Something went wrong on our end. Retry in a moment.',
   lostOnReload: 'The page reloaded before this photo was read. Choose it again.',
+  // Deck mode, before the upload: under SMALL_PHOTO_EDGE most titles go unread, so the player is asked first.
+  smallPhotoBefore: 'Small photo ({px} px): the full-size original reads better.',
+  scanAnyway: 'Scan anyway',
   signedOut: "You've been signed out. Sign in, then Retry. Your tray stays here.",
   notOpen: "The scanner isn't open to your account yet.",
   offline: "You're offline. Photos will wait here until you reconnect.",
@@ -127,12 +130,15 @@ export const COPY: Record<string, string> = {
 
 export type ScanErrorKind =
   | 'gate' | 'forbidden' | 'too_large' | 'heif' | 'undecodable' | 'cap_10m' | 'cap_24h' | 'cap_global'
-  | 'credit_out' | 'busy' | 'network' | 'timeout' | 'server' | 'lost_on_reload' | 'generic' | 'offline' | 'too_many_cards';
+  | 'credit_out' | 'busy' | 'network' | 'timeout' | 'server' | 'lost_on_reload' | 'generic' | 'offline' | 'too_many_cards'
+  | 'small_photo';
 
 export interface ScanErrorView {
   kind: ScanErrorKind;
   text: string;
   retry: boolean;
+  /** What the Retry button says when it is not a retry (small_photo: Scan anyway). */
+  retryLabel?: string;
   chooseAnother: boolean;
   autoRetryAfterSec?: number;
   /** Signed out: show a Sign in link. */
@@ -166,6 +172,8 @@ export function scanErrorView(
   if (status === 413) return view('too_large', COPY.tooLarge, false, true);
   // 'heif' is the client's own decode failure; the server's 415 is any file it could not open.
   if (status === 415) return code === 'heif' ? view('heif', COPY.heif, false, true) : view('undecodable', COPY.undecodable, false, true);
+  // The client's own stop before the upload: the photo is held, so "Retry" is Scan anyway.
+  if (code === 'small_photo') return { ...view('small_photo', fill(COPY.smallPhotoBefore, { px: body?.longEdge ?? '' }), true, true), retryLabel: COPY.scanAnyway };
   if (code === 'network') return view('network', COPY.network, true);
   if (code === 'timeout') return view('timeout', COPY.timeout, true);
   if (code === 'lost_on_reload') return view('lost_on_reload', COPY.lostOnReload, false, true);
