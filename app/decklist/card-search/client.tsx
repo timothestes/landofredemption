@@ -1117,10 +1117,11 @@ export default function CardSearchClient({
         // Legality mode filter
         .filter((c) => {
           if (legalityMode === 'Unlimited') return true;
-          if (legalityMode === 'Limited') return c.legality === 'Rotation';
           // Banned is answered per format, not by the card's own flag: DBR 2.0
           // gave each category its own ban list, so what counts as banned
-          // depends on the deck being built.
+          // depends on the deck being built. Some bans are Rotation-legal
+          // printings (the Imitate Lost Soul), so Limited checks the list too.
+          if (legalityMode === 'Limited') return c.legality === 'Rotation' && !isBannedInFormat(c, normalizeFormat(deck.format));
           if (legalityMode === 'Banned') return isBannedInFormat(c, normalizeFormat(deck.format));
           if (legalityMode === 'Scrolls') return c.legality !== 'Rotation' && c.legality !== 'Banned';
           if (legalityMode === 'Paragon') {
@@ -1314,7 +1315,7 @@ export default function CardSearchClient({
           const matches = postexilicCards.includes(c.name);
           return postexilicNot ? !matches : matches;
         }),
-    [cards, activeOwnedMode, ownedNames, queries, selectedIconFilters, legalityMode, selectedAlignmentFilters, selectedRarityFilters, selectedTestaments, isGospel, altArtMode, noFirstPrint, nativityOnly, hasStarOnly, cloudOnly, angelOnly, demonOnly, danielOnly, postexilicOnly, strengthFilter, strengthOp, toughnessFilter, toughnessOp, iconFilterMode, nativityNot, hasStarNot, cloudNot, angelNot, demonNot, danielNot, postexilicNot, testamentNots, gospelNot]
+    [cards, activeOwnedMode, ownedNames, queries, selectedIconFilters, legalityMode, deck.format, selectedAlignmentFilters, selectedRarityFilters, selectedTestaments, isGospel, altArtMode, noFirstPrint, nativityOnly, hasStarOnly, cloudOnly, angelOnly, demonOnly, danielOnly, postexilicOnly, strengthFilter, strengthOp, toughnessFilter, toughnessOp, iconFilterMode, nativityNot, hasStarNot, cloudNot, angelNot, demonNot, danielNot, postexilicNot, testamentNots, gospelNot]
   );
 
   // Effect to show all cards when any filter is applied
