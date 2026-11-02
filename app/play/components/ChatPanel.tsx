@@ -1712,6 +1712,7 @@ export default function ChatPanel({
   // bottom. Otherwise a "new activity" pill offers the jump.
   const listRef = useRef<HTMLDivElement | null>(null);
   const pinnedRef = useRef(true);
+  const lastScrollTopRef = useRef(0);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
 
   const scrollListToBottom = useCallback((smooth: boolean) => {
@@ -1720,6 +1721,9 @@ export default function ChatPanel({
     if (smooth) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     else el.scrollTop = el.scrollHeight;
     pinnedRef.current = true;
+    // Measure "moved up" from here — after a tab switch the last position
+    // seen belongs to the previous tab's list.
+    lastScrollTopRef.current = el.scrollTop;
     setShowJumpToLatest(false);
   }, []);
 
@@ -1729,8 +1733,18 @@ export default function ChatPanel({
     // pixels short, and a reader who is "basically at the bottom" wants to
     // keep following.
     const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 48;
-    pinnedRef.current = atBottom;
-    setShowJumpToLatest((prev) => (prev === !atBottom ? prev : !atBottom));
+    // Only scrolling UP means the reader left. Our own smooth scroll fires
+    // scroll events too, and when a second entry lands mid-glide (one play
+    // writes several log rows) those frames measure against the taller list
+    // and read as far from the bottom. Unpinning on them skipped the second
+    // entry's follow, the glide stopped at the old bottom, and the list sat
+    // there behind the pill until the player scrolled it themselves.
+    const movedUp = el.scrollTop < lastScrollTopRef.current;
+    lastScrollTopRef.current = el.scrollTop;
+    if (atBottom) pinnedRef.current = true;
+    else if (movedUp) pinnedRef.current = false;
+    const away = !pinnedRef.current;
+    setShowJumpToLatest((prev) => (prev === away ? prev : away));
   }, []);
 
   // What's on screen changed (panel opened, tab switched, search toggled) —
