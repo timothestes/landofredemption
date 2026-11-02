@@ -123,3 +123,25 @@ export function readCornerCode(printNumber: string | null, rarityCode: string | 
   const n = digits ? String(Number(digits)) : null;
   return n && n !== '0' ? n : null;
 }
+
+// ---------------------------------------------------------------------------
+// Stats
+
+/** The values in one stat field: "7" is one; a dual card's "4 (0)", "3(10)" or "4/11" are two. */
+const statTokens = (v: string | null | undefined): string[] => (v ?? '').split(/[\s/()]+/).filter(Boolean);
+
+/**
+ * The printed strength/toughness pairs, in order. A plain card has one. A card printing two stat lines stores both in each
+ * field, so it has two: `4 (0)` / `0 (4)` on a GE/EE, `3(10)` / `2(10)` on a two-sided Hero, `4/11` / `3/10` slash-joined.
+ * 264 of 5,693 printings use a dual or non-numeric form.
+ */
+export function statPairs(strength: string | null | undefined, toughness: string | null | undefined): [string, string][] {
+  const s = statTokens(strength), t = statTokens(toughness);
+  return Array.from({ length: Math.min(s.length, t.length) }, (_, i): [string, string] => [s[i], t[i]]);
+}
+
+/** The read's stats equal one of the card's printed pairs: the model reads one pair from the top-left box, and a dual card has two. */
+export function statsAgree(read: { strength: string | null; toughness: string | null }, c: CardData): boolean {
+  const have = statPairs(c.strength, c.toughness);
+  return statPairs(read.strength, read.toughness).some(([s, t]) => have.some(([cs, ct]) => cs === s && ct === t));
+}

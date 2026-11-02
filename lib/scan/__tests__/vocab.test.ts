@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { CARDS } from '@/lib/cards/lookup';
-import { normalizeTitle, normalizeRef, refsOf, cornerCode, isUrPlus, isPromo, editionLetter, readCornerCode, typeAgrees } from '../vocab';
+import { normalizeTitle, normalizeRef, refsOf, cornerCode, isUrPlus, isPromo, editionLetter, readCornerCode, statPairs, statsAgree, typeAgrees } from '../vocab';
 const byFile = (f: string) => CARDS.find(c => c.imgFile === f)!;
 
 describe('normalizeTitle folds quotes', () => {
@@ -53,4 +53,33 @@ describe('readCornerCode', () => {
 });
 describe('typeAgrees', () => {
   it('maps Enhancement to GE and EE', () => { expect(typeAgrees('Enhancement', byFile('210-A-Royal-Priesthood-R'))).toBe(true); expect(typeAgrees('unknown', byFile('210-A-Royal-Priesthood-R'))).toBe(false); });
+});
+describe('statPairs', () => {
+  it('a plain card has one pair', () => expect(statPairs('7', '8')).toEqual([['7', '8']]));
+  it('a dual card has both, in order', () => {
+    expect(statPairs('4 (0)', '0 (4)')).toEqual([['4', '0'], ['0', '4']]);
+    expect(statPairs('3(10)', '2(10)')).toEqual([['3', '2'], ['10', '10']]);
+    expect(statPairs('4/11', '3/10')).toEqual([['4', '3'], ['11', '10']]);
+  });
+  it('a missing side gives no pair', () => { expect(statPairs('7', null)).toEqual([]); expect(statPairs(null, null)).toEqual([]); expect(statPairs('', '')).toEqual([]); });
+});
+describe('statsAgree', () => {
+  const byName = (n: string) => CARDS.find(c => c.name === n)!;
+  it('either printed pair of a dual card agrees, never a mix of the two', () => {
+    const nebbie = byName('Nebuchadnezzar (PoC)'); // 4/11 and 3/10
+    expect(statsAgree({ strength: '4', toughness: '3' }, nebbie)).toBe(true);
+    expect(statsAgree({ strength: '11', toughness: '10' }, nebbie)).toBe(true);
+    expect(statsAgree({ strength: '4', toughness: '10' }, nebbie)).toBe(false);
+    const abihud = CARDS.find(c => c.name.startsWith('Abihud, the Progeny'))!; // 3(10) and 2(10)
+    expect(statsAgree({ strength: '3', toughness: '2' }, abihud)).toBe(true);
+    expect(statsAgree({ strength: '10', toughness: '10' }, abihud)).toBe(true);
+    expect(statsAgree({ strength: '3(10)', toughness: '2(10)' }, abihud)).toBe(true);
+    expect(statsAgree({ strength: '4', toughness: '0' }, byName('Abandoned [K]'))).toBe(true);
+  });
+  it('a plain card still needs the exact pair, and a half-read never agrees', () => {
+    const soldier = byName('Christian Soldier (A)');
+    expect(statsAgree({ strength: '4', toughness: '4' }, soldier)).toBe(true);
+    expect(statsAgree({ strength: '4', toughness: '5' }, soldier)).toBe(false);
+    expect(statsAgree({ strength: null, toughness: '4' }, soldier)).toBe(false);
+  });
 });
