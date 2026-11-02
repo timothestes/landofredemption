@@ -1,0 +1,4051 @@
+{
+  "scanId": "IMG_2745.webp",
+  "mode": "deck",
+  "arm": {
+    "model": "claude-haiku-5-5",
+    "effort": "high",
+    "tier": "high",
+    "thinking": "default"
+  },
+  "photoQuality": "ok",
+  "rotation": 90,
+  "imageSize": {
+    "width": 1536,
+    "height": 1152
+  },
+  "groups": [
+    {
+      "id": 1,
+      "orientation": "upright",
+      "bbox": [
+        0.05,
+        0.01,
+        0.18,
+        0.46
+      ],
+      "cardCount": 4
+    },
+    {
+      "id": 2,
+      "orientation": "upright",
+      "bbox": [
+        0.2,
+        0.07,
+        0.33,
+        0.31
+      ],
+      "cardCount": 1
+    },
+    {
+      "id": 3,
+      "orientation": "upright",
+      "bbox": [
+        0.22,
+        0.36,
+        0.35,
+        0.79
+      ],
+      "cardCount": 4
+    },
+    {
+      "id": 4,
+      "orientation": "upright",
+      "bbox": [
+        0.35,
+        0.19,
+        0.48,
+        0.8
+      ],
+      "cardCount": 7
+    },
+    {
+      "id": 5,
+      "orientation": "upright",
+      "bbox": [
+        0.48,
+        0.29,
+        0.61,
+        0.8
+      ],
+      "cardCount": 6
+    },
+    {
+      "id": 6,
+      "orientation": "upright",
+      "bbox": [
+        0.61,
+        0.02,
+        0.77,
+        0.81
+      ],
+      "cardCount": 9
+    },
+    {
+      "id": 7,
+      "orientation": "upright",
+      "bbox": [
+        0.75,
+        0.22,
+        0.9,
+        0.82
+      ],
+      "cardCount": 7
+    },
+    {
+      "id": 8,
+      "orientation": "upright",
+      "bbox": [
+        0.9,
+        0.14,
+        1,
+        0.82
+      ],
+      "cardCount": 7
+    },
+    {
+      "id": 9,
+      "orientation": "upright",
+      "bbox": [
+        0,
+        0.81,
+        0.52,
+        1
+      ],
+      "cardCount": 6
+    },
+    {
+      "id": 10,
+      "orientation": "upright",
+      "bbox": [
+        0.51,
+        0.82,
+        1,
+        1
+      ],
+      "cardCount": 5
+    },
+    {
+      "id": 0,
+      "orientation": "upright",
+      "bbox": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "cardCount": 5
+    }
+  ],
+  "detections": [
+    {
+      "id": "IMG_2745.webp:0",
+      "group": 1,
+      "position": 1,
+      "titleBox": [
+        0.06,
+        0.2,
+        0.17,
+        0.23
+      ],
+      "read": {
+        "title": "Dragon",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 1,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:1",
+      "group": 1,
+      "position": 2,
+      "titleBox": [
+        0.06,
+        0.25,
+        0.17,
+        0.3
+      ],
+      "read": {
+        "title": "Temple Veil",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Artifact",
+        "grid": {
+          "row": 2,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Temple Veil (GoC)|GoC|015-Temple-Veil-R",
+      "identityCandidates": [
+        "temple veil|artifact||neutral|#Temple Veil",
+        "temple veil|artifact||neutral|#Temple Veil (GoC)"
+      ],
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Temple Veil|3E|Temple_Veil_(F)",
+          "name": "Temple Veil",
+          "set": "3E",
+          "officialSet": "3rd Edition",
+          "imgFile": "Temple_Veil_(F)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Temple Veil (GoC)|GoC|015-Temple-Veil-R",
+          "name": "Temple Veil (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "015-Temple-Veil-R",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:2",
+      "group": 1,
+      "position": 3,
+      "titleBox": [
+        0.06,
+        0.32,
+        0.17,
+        0.36
+      ],
+      "read": {
+        "title": "Four Drachma Coin",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Artifact",
+        "grid": {
+          "row": 3,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "Four-Drachma Coin (GoC)|GoC|011-Four-Drachma-Coin",
+      "kind": "matched",
+      "deckKey": "Four-Drachma Coin (GoC)|GoC|011-Four-Drachma-Coin",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Four-Drachma Coin|Di|Four-Drachma_Coin_(Di)",
+          "name": "Four-Drachma Coin",
+          "set": "Di",
+          "officialSet": "Disciples",
+          "imgFile": "Four-Drachma_Coin_(Di)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Four-Drachma Coin (GoC)|GoC|011-Four-Drachma-Coin",
+          "name": "Four-Drachma Coin (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "011-Four-Drachma-Coin",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:3",
+      "group": 1,
+      "position": 4,
+      "titleBox": [
+        0.06,
+        0.4,
+        0.17,
+        0.44
+      ],
+      "read": {
+        "title": "Book of the Covenant",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Covenant",
+        "grid": {
+          "row": 4,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Book of the Covenant (PoC)|PoC|036-Book-of-the-Covenant-UR",
+      "identityCandidates": [
+        "book of the covenant|artifact||neutral|#Book of the Covenant",
+        "book of the covenant|artifact||neutral|#Book of the Covenant (PoC)"
+      ],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Book of the Covenant|Pmo-P1|Book_of_the_Covenant_(Promo)",
+          "name": "Book of the Covenant",
+          "set": "Pmo-P1",
+          "officialSet": "Promo",
+          "imgFile": "Book_of_the_Covenant_(Promo)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Book of the Covenant (PoC)|PoC|036-Book-of-the-Covenant-UR",
+          "name": "Book of the Covenant (PoC)",
+          "set": "PoC",
+          "officialSet": "Prophecies of Christ",
+          "imgFile": "036-Book-of-the-Covenant-UR",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:4",
+      "group": 2,
+      "position": 1,
+      "titleBox": [
+        0.21,
+        0.25,
+        0.31,
+        0.28
+      ],
+      "read": {
+        "title": "Jubilee",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "unknown",
+        "grid": {
+          "row": 1,
+          "col": 2
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Jubilee|3E|Jubilee_(E)",
+      "kind": "matched",
+      "deckKey": "Jubilee|3E|Jubilee_(E)",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Jubilee|3E|Jubilee_(E)",
+          "name": "Jubilee",
+          "set": "3E",
+          "officialSet": "3rd Edition",
+          "imgFile": "Jubilee_(E)",
+          "legality": "",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:5",
+      "group": 3,
+      "position": 1,
+      "titleBox": [
+        0.08,
+        0.48,
+        0.19,
+        0.52
+      ],
+      "read": {
+        "title": "The New Covenant",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Covenant",
+        "grid": {
+          "row": 1,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "The New Covenant (I/J+)|I/J+|The-New-Covenant-IJ",
+      "identityCandidates": [
+        "the new covenant|covenant|purple|good|#The New Covenant",
+        "the new covenant|covenant|purple|good|#The New Covenant (I/J+)"
+      ],
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The New Covenant|Di|The_New_Covenant_(Di)",
+          "name": "The New Covenant",
+          "set": "Di",
+          "officialSet": "Disciples",
+          "imgFile": "The_New_Covenant_(Di)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "The New Covenant (I/J+)|I/J+|The-New-Covenant-IJ",
+          "name": "The New Covenant (I/J+)",
+          "set": "I/J+",
+          "officialSet": "I/J+",
+          "imgFile": "The-New-Covenant-IJ",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:6",
+      "group": 3,
+      "position": 2,
+      "titleBox": [
+        0.08,
+        0.56,
+        0.19,
+        0.59
+      ],
+      "read": {
+        "title": "Herod's Temple",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Red",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Site",
+        "grid": {
+          "row": 2,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Herod's Temple (G)|10A|Herod's_Temple_(G)",
+      "kind": "matched",
+      "deckKey": "Herod's Temple (G)|10A|Herod's_Temple_(G)",
+      "scores": {
+        "matchScore": 0.75,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "vanilla",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Herod's Temple (G)|10A|Herod's_Temple_(G)",
+          "name": "Herod's Temple (G)",
+          "set": "10A",
+          "officialSet": "10th Anniversary",
+          "imgFile": "Herod's_Temple_(G)",
+          "legality": "",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:7",
+      "group": 3,
+      "position": 3,
+      "titleBox": [
+        0.09,
+        0.63,
+        0.19,
+        0.66
+      ],
+      "read": {
+        "title": "Nazareth",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Red",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Site",
+        "grid": {
+          "row": 3,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Nazareth|Di|Nazareth_(Di)",
+      "kind": "matched",
+      "deckKey": "Nazareth|Di|Nazareth_(Di)",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Nazareth|Di|Nazareth_(Di)",
+          "name": "Nazareth",
+          "set": "Di",
+          "officialSet": "Disciples",
+          "imgFile": "Nazareth_(Di)",
+          "legality": "",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:8",
+      "group": 3,
+      "position": 4,
+      "titleBox": [
+        0.1,
+        0.7,
+        0.2,
+        0.73
+      ],
+      "read": {
+        "title": "The Ends of the Earth",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Site",
+        "grid": {
+          "row": 4,
+          "col": 3
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "The Ends of the Earth (RoJ)|RoJ|18-The-Ends-of-the-Earth-R",
+      "identityCandidates": [
+        "the ends of the earth|site|multi|neutral|#The Ends of the Earth",
+        "the ends of the earth|site|multi|neutral|#The Ends of the Earth (RoJ)"
+      ],
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Ends of the Earth|AW|The_Ends_of_the_Earth_(AW)",
+          "name": "The Ends of the Earth",
+          "set": "AW",
+          "officialSet": "Angel Wars",
+          "imgFile": "The_Ends_of_the_Earth_(AW)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "The Ends of the Earth (RoJ AB)|RoJ (AB)|RoJ_AB_N18-The-Ends-of-the-Earth-R",
+          "name": "The Ends of the Earth (RoJ AB)",
+          "set": "RoJ (AB)",
+          "officialSet": "Revelation of John (Alternate Border)",
+          "imgFile": "RoJ_AB_N18-The-Ends-of-the-Earth-R",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "The Ends of the Earth (RoJ)|RoJ|18-The-Ends-of-the-Earth-R",
+          "name": "The Ends of the Earth (RoJ)",
+          "set": "RoJ",
+          "officialSet": "Revelation of John",
+          "imgFile": "18-The-Ends-of-the-Earth-R",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:9",
+      "group": 4,
+      "position": 1,
+      "titleBox": [
+        0.24,
+        0.4,
+        0.33,
+        0.44
+      ],
+      "read": {
+        "title": "Destructive Sin",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Orange",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 1,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Destructive Sin (GoC)|GoC|258-Destructive-Sin",
+      "identityCandidates": [
+        "destructive sin|ee|orange|evil|territory#Destructive Sin",
+        "destructive sin|ee|orange|evil|territory star#Destructive Sin (GoC)"
+      ],
+      "scores": {
+        "matchScore": 1,
+        "runnerUpScore": 1,
+        "agreeingFields": [
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Destructive Sin|TxP|Destructive_Sin_(TxP)",
+          "name": "Destructive Sin",
+          "set": "TxP",
+          "officialSet": "Thesaurus ex Preteritus",
+          "imgFile": "Destructive_Sin_(TxP)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Destructive Sin (GoC)|GoC|258-Destructive-Sin",
+          "name": "Destructive Sin (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "258-Destructive-Sin",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:10",
+      "group": 4,
+      "position": 2,
+      "titleBox": [
+        0.24,
+        0.56,
+        0.33,
+        0.6
+      ],
+      "read": {
+        "title": "Scattered Sheep",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 2,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Scattered Sheep|PoC|217-Scattered-Sheep",
+      "kind": "matched",
+      "deckKey": "Scattered Sheep|PoC|217-Scattered-Sheep",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Scattered Sheep|PoC|217-Scattered-Sheep",
+          "name": "Scattered Sheep",
+          "set": "PoC",
+          "officialSet": "Prophecies of Christ",
+          "imgFile": "217-Scattered-Sheep",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:11",
+      "group": 4,
+      "position": 3,
+      "titleBox": [
+        0.24,
+        0.64,
+        0.33,
+        0.68
+      ],
+      "read": {
+        "title": "Heavy Chaos",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 3,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:12",
+      "group": 4,
+      "position": 4,
+      "titleBox": [
+        0.24,
+        0.72,
+        0.33,
+        0.75
+      ],
+      "read": {
+        "title": "Thrusts Will the Son",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 4,
+          "col": 4
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:13",
+      "group": 5,
+      "position": 1,
+      "titleBox": [
+        0.36,
+        0.2,
+        0.46,
+        0.25
+      ],
+      "read": {
+        "title": "Elijah's Wife",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 1,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:14",
+      "group": 5,
+      "position": 2,
+      "titleBox": [
+        0.36,
+        0.43,
+        0.46,
+        0.46
+      ],
+      "read": {
+        "title": "Emperor Attilius",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 2,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:15",
+      "group": 5,
+      "position": 3,
+      "titleBox": [
+        0.36,
+        0.5,
+        0.46,
+        0.53
+      ],
+      "read": {
+        "title": "Saul of Tarsus",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 3,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Saul of Tarsus [2022 - Seasonal]|Pmo-P3|Saul-of-Tarsus",
+      "kind": "matched",
+      "deckKey": "Saul of Tarsus [2022 - Seasonal]|Pmo-P3|Saul-of-Tarsus",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Saul of Tarsus [2022 - Seasonal]|Pmo-P3|Saul-of-Tarsus",
+          "name": "Saul of Tarsus [2022 - Seasonal]",
+          "set": "Pmo-P3",
+          "officialSet": "Promo",
+          "imgFile": "Saul-of-Tarsus",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:16",
+      "group": 5,
+      "position": 4,
+      "titleBox": [
+        0.36,
+        0.56,
+        0.46,
+        0.59
+      ],
+      "read": {
+        "title": "The Terrifying Beast",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 4,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "The Terrifying Beast (PoC)|PoC|163-The-Terrifying-Beast-R",
+      "identityCandidates": [
+        "the terrifying beast|evil character|grayorange|evil|#The Terrifying Beast",
+        "the terrifying beast|evil character|grayorange|evil|warrior#The Terrifying Beast (PoC)"
+      ],
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Terrifying Beast|RoA|The_Terrifying_Beast_(RA)",
+          "name": "The Terrifying Beast",
+          "set": "RoA",
+          "officialSet": "Rock of Ages",
+          "imgFile": "The_Terrifying_Beast_(RA)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "The Terrifying Beast (PoC)|PoC|163-The-Terrifying-Beast-R",
+          "name": "The Terrifying Beast (PoC)",
+          "set": "PoC",
+          "officialSet": "Prophecies of Christ",
+          "imgFile": "163-The-Terrifying-Beast-R",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:17",
+      "group": 5,
+      "position": 5,
+      "titleBox": [
+        0.36,
+        0.63,
+        0.46,
+        0.66
+      ],
+      "read": {
+        "title": "Emperor Otho",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 5,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Emperor Otho (Roots)|RR|190-Emperor-Otho",
+      "identityCandidates": [
+        "emperor otho|evil character|gray|evil|warrior#Emperor Otho",
+        "emperor otho|evil character|gray|evil|warrior#Emperor Otho (Roots)"
+      ],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Emperor Otho|FoOF|Emperor_Otho_(FF)",
+          "name": "Emperor Otho",
+          "set": "FoOF",
+          "officialSet": "Faith of Our Fathers",
+          "imgFile": "Emperor_Otho_(FF)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Emperor Otho (Roots)|RR|190-Emperor-Otho",
+          "name": "Emperor Otho (Roots)",
+          "set": "RR",
+          "officialSet": "Roots",
+          "imgFile": "190-Emperor-Otho",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:18",
+      "group": 5,
+      "position": 6,
+      "titleBox": [
+        0.36,
+        0.7,
+        0.46,
+        0.73
+      ],
+      "read": {
+        "title": "Emperor Claudius",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 6,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Emperor Claudius|Ap|Emperor_Claudius_(Ap)",
+      "kind": "matched",
+      "deckKey": "Emperor Claudius|Ap|Emperor_Claudius_(Ap)",
+      "scores": {
+        "matchScore": 1,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Emperor Claudius|Ap|Emperor_Claudius_(Ap)",
+          "name": "Emperor Claudius",
+          "set": "Ap",
+          "officialSet": "Apostles",
+          "imgFile": "Emperor_Claudius_(Ap)",
+          "legality": "",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:19",
+      "group": 5,
+      "position": 7,
+      "titleBox": [
+        0.37,
+        0.76,
+        0.46,
+        0.79
+      ],
+      "read": {
+        "title": "The Deceiver",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 7,
+          "col": 5
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "The Deceiver (RoJ)|RoJ|121-The-Deceiver-R",
+      "kind": "matched",
+      "deckKey": "The Deceiver (RoJ)|RoJ|121-The-Deceiver-R",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Deceiver (RoJ AB)|RoJ (AB)|RoJ_AB_N121-The-Deceiver-R",
+          "name": "The Deceiver (RoJ AB)",
+          "set": "RoJ (AB)",
+          "officialSet": "Revelation of John (Alternate Border)",
+          "imgFile": "RoJ_AB_N121-The-Deceiver-R",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "The Deceiver (RoJ)|RoJ|121-The-Deceiver-R",
+          "name": "The Deceiver (RoJ)",
+          "set": "RoJ",
+          "officialSet": "Revelation of John",
+          "imgFile": "121-The-Deceiver-R",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:20",
+      "group": 6,
+      "position": 1,
+      "titleBox": [
+        0.5,
+        0.38,
+        0.6,
+        0.41
+      ],
+      "read": {
+        "title": "Virgin Birth",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Dominant",
+        "grid": {
+          "row": 1,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Virgin Birth|PoC|089-Virgin-Birth",
+      "kind": "matched",
+      "deckKey": "Virgin Birth|PoC|089-Virgin-Birth",
+      "scores": {
+        "matchScore": 1,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Virgin Birth|PoC|089-Virgin-Birth",
+          "name": "Virgin Birth",
+          "set": "PoC",
+          "officialSet": "Prophecies of Christ",
+          "imgFile": "089-Virgin-Birth",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:21",
+      "group": 6,
+      "position": 2,
+      "titleBox": [
+        0.49,
+        0.5,
+        0.6,
+        0.53
+      ],
+      "read": {
+        "title": "Spirit as a Dove",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 2,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Spirit as a Dove (GoC)|GoC|087-Spirit-as-a-Dove",
+      "identityCandidates": [
+        "spirit as a dove|ge|white|good|#Spirit as a Dove",
+        "spirit as a dove|ge|clay|good|territory#Spirit as a Dove (GoC)"
+      ],
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Spirit as a Dove|Pmo-P1|Spirit_as_a_Dove_(Promo)",
+          "name": "Spirit as a Dove",
+          "set": "Pmo-P1",
+          "officialSet": "Promo",
+          "imgFile": "Spirit_as_a_Dove_(Promo)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Spirit as a Dove (GoC)|GoC|087-Spirit-as-a-Dove",
+          "name": "Spirit as a Dove (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "087-Spirit-as-a-Dove",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:22",
+      "group": 6,
+      "position": 3,
+      "titleBox": [
+        0.49,
+        0.57,
+        0.6,
+        0.6
+      ],
+      "read": {
+        "title": "The Ascension",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 3,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "The Ascension (GoC)|GoC|090-The-Ascension",
+      "kind": "matched",
+      "deckKey": "The Ascension (GoC)|GoC|090-The-Ascension",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Ascension (GoC)|GoC|090-The-Ascension",
+          "name": "The Ascension (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "090-The-Ascension",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:23",
+      "group": 6,
+      "position": 4,
+      "titleBox": [
+        0.49,
+        0.64,
+        0.6,
+        0.67
+      ],
+      "read": {
+        "title": "Authority of Christ",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 4,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Authority of Christ (GoC UR+)|GoC|081-Authority-of-Christ-UR+",
+      "identityCandidates": [
+        "authority of christ|ge|claypurple|good|star#Authority of Christ (GoC)",
+        "authority of christ|ge|purple|good|#Authority of Christ (UL)",
+        "authority of christ|ge|purple|good|#Authority of Christ (Promo)"
+      ],
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Authority of Christ (GoC UR+)|GoC|081-Authority-of-Christ-UR+",
+          "name": "Authority of Christ (GoC UR+)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "081-Authority-of-Christ-UR+",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Authority of Christ (GoC)|GoC|081-Authority-of-Christ-UR",
+          "name": "Authority of Christ (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "081-Authority-of-Christ-UR",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Authority of Christ (L)|Main|Authority_of_Christ_(UL)",
+          "name": "Authority of Christ (L)",
+          "set": "Main",
+          "officialSet": "Main",
+          "imgFile": "Authority_of_Christ_(UL)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Authority of Christ (UL)|Main UL|Authority_of_Christ_(UL)",
+          "name": "Authority of Christ (UL)",
+          "set": "Main UL",
+          "officialSet": "Main Unlimited",
+          "imgFile": "Authority_of_Christ_(UL)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Authority of Christ (Promo)|Pmo-P1|Authority_of_Christ_(Promo)",
+          "name": "Authority of Christ (Promo)",
+          "set": "Pmo-P1",
+          "officialSet": "Promo",
+          "imgFile": "Authority_of_Christ_(Promo)",
+          "legality": "",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:24",
+      "group": 6,
+      "position": 5,
+      "titleBox": [
+        0.49,
+        0.7,
+        0.6,
+        0.73
+      ],
+      "read": {
+        "title": "Untouchable",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 5,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Untouchable (GoC)|GoC|084-Untouchable",
+      "kind": "matched",
+      "deckKey": "Untouchable (GoC)|GoC|084-Untouchable",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Untouchable (GoC)|GoC|084-Untouchable",
+          "name": "Untouchable (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "084-Untouchable",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:25",
+      "group": 6,
+      "position": 6,
+      "titleBox": [
+        0.49,
+        0.76,
+        0.6,
+        0.79
+      ],
+      "read": {
+        "title": "Love One Another",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 6,
+          "col": 6
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Love One Another (GoC)|GoC|078-Love-One-Another",
+      "kind": "matched",
+      "deckKey": "Love One Another (GoC)|GoC|078-Love-One-Another",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Love One Another (GoC)|GoC|078-Love-One-Another",
+          "name": "Love One Another (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "078-Love-One-Another",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:26",
+      "group": 7,
+      "position": 1,
+      "titleBox": [
+        0.66,
+        0.04,
+        0.74,
+        0.07
+      ],
+      "read": {
+        "title": "Joanna, Wife of Chuza",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": "5",
+        "toughness": "5",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 1,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Joanna, the Generous / Joanna, Wife of Chuza (GoC)|GoC|142-Joanna",
+      "kind": "matched",
+      "deckKey": "Joanna, the Generous / Joanna, Wife of Chuza (GoC)|GoC|142-Joanna",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Joanna, the Generous / Joanna, Wife of Chuza (GoC)|GoC|142-Joanna",
+          "name": "Joanna, the Generous / Joanna, Wife of Chuza (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "142-Joanna",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:27",
+      "group": 7,
+      "position": 2,
+      "titleBox": [
+        0.64,
+        0.27,
+        0.73,
+        0.3
+      ],
+      "read": {
+        "title": "Judas Iscariot",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": null,
+        "toughness": "6",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 2,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Judas Iscariot / Judas, the Betrayer (GoC)|GoC|049-Judas-Iscariot",
+      "kind": "matched",
+      "deckKey": "Judas Iscariot / Judas, the Betrayer (GoC)|GoC|049-Judas-Iscariot",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0.75,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Judas Iscariot / Judas, the Betrayer (GoC)|GoC|049-Judas-Iscariot",
+          "name": "Judas Iscariot / Judas, the Betrayer (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "049-Judas-Iscariot",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:28",
+      "group": 7,
+      "position": 3,
+      "titleBox": [
+        0.64,
+        0.34,
+        0.73,
+        0.37
+      ],
+      "read": {
+        "title": "Simon the Zealous",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": "3",
+        "toughness": "2",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 3,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Simon the Zealous / Saint Simon (GoC)|GoC|115-Simon-the-Zealous",
+      "kind": "matched",
+      "deckKey": "Simon the Zealous / Saint Simon (GoC)|GoC|115-Simon-the-Zealous",
+      "scores": {
+        "matchScore": 4,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "stats"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Simon the Zealous / Saint Simon (GoC)|GoC|115-Simon-the-Zealous",
+          "name": "Simon the Zealous / Saint Simon (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "115-Simon-the-Zealous",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:29",
+      "group": 7,
+      "position": 4,
+      "titleBox": [
+        0.64,
+        0.41,
+        0.73,
+        0.44
+      ],
+      "read": {
+        "title": "Simon Peter",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": "10",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 4,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Simon Peter / Peter, the Rock (GoC)|GoC|106-Peter-R",
+      "kind": "matched",
+      "deckKey": "Simon Peter / Peter, the Rock (GoC)|GoC|106-Peter-R",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Simon Peter / Peter, the Rock (GoC)|GoC|106-Peter-R",
+          "name": "Simon Peter / Peter, the Rock (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "106-Peter-R",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:30",
+      "group": 7,
+      "position": 5,
+      "titleBox": [
+        0.63,
+        0.46,
+        0.73,
+        0.5
+      ],
+      "read": {
+        "title": "Matthias the Fisherman",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": null,
+        "toughness": "4",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 5,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:31",
+      "group": 7,
+      "position": 6,
+      "titleBox": [
+        0.63,
+        0.52,
+        0.73,
+        0.56
+      ],
+      "read": {
+        "title": "Mary, Holy Virgin",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 6,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Mary, Holy Virgin / Mary, Willing Servant (GoC)|GoC|150-Mary-R",
+      "kind": "matched",
+      "deckKey": "Mary, Holy Virgin / Mary, Willing Servant (GoC)|GoC|150-Mary-R",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Mary, Holy Virgin / Mary, Willing Servant (GoC)|GoC|150-Mary-R",
+          "name": "Mary, Holy Virgin / Mary, Willing Servant (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "150-Mary-R",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:32",
+      "group": 7,
+      "position": 7,
+      "titleBox": [
+        0.62,
+        0.58,
+        0.73,
+        0.62
+      ],
+      "read": {
+        "title": "John, the Fisherman",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": null,
+        "toughness": "11",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 7,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "John, the Fisherman / John, Son of Thunder (GoC)|GoC|109-John-R",
+      "kind": "matched",
+      "deckKey": "John, the Fisherman / John, Son of Thunder (GoC)|GoC|109-John-R",
+      "scores": {
+        "matchScore": 1.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "brigade",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "John, the Fisherman / John, Son of Thunder (GoC)|GoC|109-John-R",
+          "name": "John, the Fisherman / John, Son of Thunder (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "109-John-R",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:33",
+      "group": 7,
+      "position": 8,
+      "titleBox": [
+        0.62,
+        0.65,
+        0.73,
+        0.68
+      ],
+      "read": {
+        "title": "Matthew, the Called",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "White",
+        "strength": null,
+        "toughness": "5",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 8,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:34",
+      "group": 7,
+      "position": 9,
+      "titleBox": [
+        0.62,
+        0.72,
+        0.73,
+        0.75
+      ],
+      "read": {
+        "title": "The Angel of the Winds",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 9,
+          "col": 7
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "The Angel of the Winds|CoW|The_Angel_of_the_Winds_(CoW)",
+      "kind": "matched",
+      "deckKey": "The Angel of the Winds|CoW|The_Angel_of_the_Winds_(CoW)",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "The Angel of the Winds|CoW|The_Angel_of_the_Winds_(CoW)",
+          "name": "The Angel of the Winds",
+          "set": "CoW",
+          "officialSet": "Cloud of Witnesses",
+          "imgFile": "The_Angel_of_the_Winds_(CoW)",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "The Angel of the Winds (CoW AB)|CoW (AB)|CoW_AB_N84-The-Angel-of-the-Winds-R",
+          "name": "The Angel of the Winds (CoW AB)",
+          "set": "CoW (AB)",
+          "officialSet": "Cloud of Witnesses (Alternate Border)",
+          "imgFile": "CoW_AB_N84-The-Angel-of-the-Winds-R",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "The Angel of the Winds (Promo)|Pmo-P2|The-Angel-of-the-Winds-P",
+          "name": "The Angel of the Winds (Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "The-Angel-of-the-Winds-P",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:35",
+      "group": 8,
+      "position": 1,
+      "titleBox": [
+        0.78,
+        0.24,
+        0.87,
+        0.27
+      ],
+      "read": {
+        "title": "Awesome Things",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 1,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Ride on Victoriously / Awesome Things (LoC)|LoC|LoC_002-Ride-Awesome-R",
+      "kind": "matched",
+      "deckKey": "Ride on Victoriously / Awesome Things (LoC)|LoC|LoC_002-Ride-Awesome-R",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Ride on Victoriously / Awesome Things (LoC)|LoC|LoC_002-Ride-Awesome-R",
+          "name": "Ride on Victoriously / Awesome Things (LoC)",
+          "set": "LoC",
+          "officialSet": "Lineage of Christ",
+          "imgFile": "LoC_002-Ride-Awesome-R",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:36",
+      "group": 8,
+      "position": 2,
+      "titleBox": [
+        0.78,
+        0.46,
+        0.87,
+        0.49
+      ],
+      "read": {
+        "title": "The Second Coming",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Dominant",
+        "grid": {
+          "row": 2,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "The Second Coming|CoW|The_Second_Coming_(CoW)",
+      "kind": "matched",
+      "deckKey": "The Second Coming|CoW|The_Second_Coming_(CoW)",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Second Coming|CoW|The_Second_Coming_(CoW)",
+          "name": "The Second Coming",
+          "set": "CoW",
+          "officialSet": "Cloud of Witnesses",
+          "imgFile": "The_Second_Coming_(CoW)",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "The Second Coming (CoW AB)|CoW (AB)|CoW_AB_N01-The-Second-Coming-UR",
+          "name": "The Second Coming (CoW AB)",
+          "set": "CoW (AB)",
+          "officialSet": "Cloud of Witnesses (Alternate Border)",
+          "imgFile": "CoW_AB_N01-The-Second-Coming-UR",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "The Second Coming [Fundraiser]|Fund|FR-The-Second-Coming",
+          "name": "The Second Coming [Fundraiser]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "FR-The-Second-Coming",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "The Second Coming [Fundraiser - Serialized]|Fund|TSC-FR-WM",
+          "name": "The Second Coming [Fundraiser - Serialized]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "TSC-FR-WM",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:37",
+      "group": 8,
+      "position": 3,
+      "titleBox": [
+        0.78,
+        0.52,
+        0.87,
+        0.55
+      ],
+      "read": {
+        "title": "The Resurrection",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Dominant",
+        "grid": {
+          "row": 3,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "medium"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "The Resurrection (GoC)|GoC|003-The-Resurrection-UR",
+      "kind": "matched",
+      "deckKey": "The Resurrection (GoC)|GoC|003-The-Resurrection-UR",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "The Resurrection (GoC)|GoC|003-The-Resurrection-UR",
+          "name": "The Resurrection (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "003-The-Resurrection-UR",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "The Resurrection [UR+] (GoC)|GoC|003-The-Resurrection-UR+",
+          "name": "The Resurrection [UR+] (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "003-The-Resurrection-UR+",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:38",
+      "group": 8,
+      "position": 4,
+      "titleBox": [
+        0.78,
+        0.6,
+        0.87,
+        0.63
+      ],
+      "read": {
+        "title": "Angel of the Lord",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 4,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Angel of the Lord (2016 Promo)|Pmo-P2|Angel-of-the-Lord-2016-P",
+      "identityCandidates": [
+        "angel of the lord|dominant||good|#Angel of the Lord (H)",
+        "angel of the lord|dominant||good|#Angel of the Lord (Promo 2018)"
+      ],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Angel of the Lord ( C)|2E|Angel_of_the_Lord_(C)",
+          "name": "Angel of the Lord ( C)",
+          "set": "2E",
+          "officialSet": "2nd Edition",
+          "imgFile": "Angel_of_the_Lord_(C)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Angel of the Lord (A)|1E|Angel_of_the_Lord_(A)",
+          "name": "Angel of the Lord (A)",
+          "set": "1E",
+          "officialSet": "1st Edition",
+          "imgFile": "Angel_of_the_Lord_(A)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Angel of the Lord (B)|1EU|Angel_of_the_Lord_(B)",
+          "name": "Angel of the Lord (B)",
+          "set": "1EU",
+          "officialSet": "1st Edition Unlimited",
+          "imgFile": "Angel_of_the_Lord_(B)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Angel of the Lord (E)|3E|Angel_of_the_Lord_(E)",
+          "name": "Angel of the Lord (E)",
+          "set": "3E",
+          "officialSet": "3rd Edition",
+          "imgFile": "Angel_of_the_Lord_(E)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Angel of the Lord (G)|10A|Angel_of_the_Lord_(G)",
+          "name": "Angel of the Lord (G)",
+          "set": "10A",
+          "officialSet": "10th Anniversary",
+          "imgFile": "Angel_of_the_Lord_(G)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Angel of the Lord (Greek)|3E|Angel_of_the_Lord_(F)",
+          "name": "Angel of the Lord (Greek)",
+          "set": "3E",
+          "officialSet": "3rd Edition",
+          "imgFile": "Angel_of_the_Lord_(F)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Angel of the Lord (H)|10A|Angel_of_the_Lord_(G)",
+          "name": "Angel of the Lord (H)",
+          "set": "10A",
+          "officialSet": "10th Anniversary",
+          "imgFile": "Angel_of_the_Lord_(G)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Angel of the Lord (2016 Promo)|Pmo-P2|Angel-of-the-Lord-2016-P",
+          "name": "Angel of the Lord (2016 Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Angel-of-the-Lord-2016-P",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Angel of the Lord (2017 Promo)|Pmo-P2|Angel-of-the-Lord-2017-P",
+          "name": "Angel of the Lord (2017 Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Angel-of-the-Lord-2017-P",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Angel of the Lord (2020 Promo)|Pmo-P2|Angel-of-the-Lord-2020-P",
+          "name": "Angel of the Lord (2020 Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Angel-of-the-Lord-2020-P",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Angel of the Lord (I)|I|Angel_of_the_Lord_(I)",
+          "name": "Angel of the Lord (I)",
+          "set": "I",
+          "officialSet": "I",
+          "imgFile": "Angel_of_the_Lord_(I)",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Angel of the Lord (J)|J|Angel_of_the_Lord_(J)",
+          "name": "Angel of the Lord (J)",
+          "set": "J",
+          "officialSet": "J",
+          "imgFile": "Angel_of_the_Lord_(J)",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Angel of the Lord (Promo 2018)|Pmo-P2|Angel-of-the-Lord-2018",
+          "name": "Angel of the Lord (Promo 2018)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Angel-of-the-Lord-2018",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:39",
+      "group": 8,
+      "position": 5,
+      "titleBox": [
+        0.78,
+        0.65,
+        0.87,
+        0.68
+      ],
+      "read": {
+        "title": "Son of God",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 5,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Son of God \"Manger\" (Promo)|Pmo-P2|Promo_Son-of-God-Christmas",
+      "identityCandidates": [
+        "son of god|dominant||good|#Son of God [2026 - 1st Place]",
+        "son of god|dominant||good|#Son of God (H)"
+      ],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Son of God \"Manger\" (Promo)|Pmo-P2|Promo_Son-of-God-Christmas",
+          "name": "Son of God \"Manger\" (Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Promo_Son-of-God-Christmas",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (1st Print - K)|K1P|K1-1P-Son-of-God",
+          "name": "Son of God (1st Print - K)",
+          "set": "K1P",
+          "officialSet": "K Starter (1st Print)",
+          "imgFile": "K1-1P-Son-of-God",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (1st Print - L)|L1P|L1-1P-Son-of-God",
+          "name": "Son of God (1st Print - L)",
+          "set": "L1P",
+          "officialSet": "L Starter (1st Print)",
+          "imgFile": "L1-1P-Son-of-God",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (2016 Promo)|Pmo-P2|Son-of-God-2016-P",
+          "name": "Son of God (2016 Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Son-of-God-2016-P",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (2017 Promo)|Pmo-P2|Son-of-God-2017-P",
+          "name": "Son of God (2017 Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Son-of-God-2017-P",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (2019) (Promo)|Pmo-P2|Promo_Son-of-God-Nationals",
+          "name": "Son of God (2019) (Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Promo_Son-of-God-Nationals",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (2020 Promo)|Pmo-P2|Son-of-God-2020-P",
+          "name": "Son of God (2020 Promo)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Son-of-God-2020-P",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (I)|I|Son_of_God_(I)",
+          "name": "Son of God (I)",
+          "set": "I",
+          "officialSet": "I",
+          "imgFile": "Son_of_God_(I)",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (J)|J|Son_of_God_(J)",
+          "name": "Son of God (J)",
+          "set": "J",
+          "officialSet": "J",
+          "imgFile": "Son_of_God_(J)",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God (Promo 2018)|Pmo-P2|Son-of-God-2018",
+          "name": "Son of God (Promo 2018)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Son-of-God-2018",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [2023 - 1st Place]|Pmo-P3|Son-of-God-Textless-Nats-1st",
+          "name": "Son of God [2023 - 1st Place]",
+          "set": "Pmo-P3",
+          "officialSet": "Promo",
+          "imgFile": "Son-of-God-Textless-Nats-1st",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [Fundraiser - Greek]|Fund|Son-of-God-L-Greek",
+          "name": "Son of God [Fundraiser - Greek]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "Son-of-God-L-Greek",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [Fundraiser - Hebrew]|Fund|Son-of-God-K-Hebrew",
+          "name": "Son of God [Fundraiser - Hebrew]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "Son-of-God-K-Hebrew",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [Fundraiser]|Fund|FR-Son-of-God-Baptism-of-Jesus",
+          "name": "Son of God [Fundraiser]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "FR-Son-of-God-Baptism-of-Jesus",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [K]|K|K1-Son-of-God",
+          "name": "Son of God [K]",
+          "set": "K",
+          "officialSet": "K Starter",
+          "imgFile": "K1-Son-of-God",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [L]|L|L1-Son-of-God",
+          "name": "Son of God [L]",
+          "set": "L",
+          "officialSet": "L Starter",
+          "imgFile": "L1-Son-of-God",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [Tomb] [2022 - Seasonal]|Pmo-P3|Son-of-God-Easter",
+          "name": "Son of God [Tomb] [2022 - Seasonal]",
+          "set": "Pmo-P3",
+          "officialSet": "Promo",
+          "imgFile": "Son-of-God-Easter",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [Fundraiser Lion of Judah]|Fund|Son-of-God-Lion-of-Judah-WM",
+          "name": "Son of God [Fundraiser Lion of Judah]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "Son-of-God-Lion-of-Judah-WM",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God [2026 - 1st Place]|Pmo-P3|Son-of-God-Nativity-1st-Place",
+          "name": "Son of God [2026 - 1st Place]",
+          "set": "Pmo-P3",
+          "officialSet": "Promo",
+          "imgFile": "Son-of-God-Nativity-1st-Place",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Son of God ( C)|2E|Son_of_God_(C)",
+          "name": "Son of God ( C)",
+          "set": "2E",
+          "officialSet": "2nd Edition",
+          "imgFile": "Son_of_God_(C)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Son of God (A)|1E|Son_of_God_(A)",
+          "name": "Son of God (A)",
+          "set": "1E",
+          "officialSet": "1st Edition",
+          "imgFile": "Son_of_God_(A)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Son of God (B)|1EU|Son_of_God_(A)",
+          "name": "Son of God (B)",
+          "set": "1EU",
+          "officialSet": "1st Edition Unlimited",
+          "imgFile": "Son_of_God_(A)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Son of God (F)|3E|Son_of_God_(F)",
+          "name": "Son of God (F)",
+          "set": "3E",
+          "officialSet": "3rd Edition",
+          "imgFile": "Son_of_God_(F)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Son of God (G)|10A|Son_of_God_(G)",
+          "name": "Son of God (G)",
+          "set": "10A",
+          "officialSet": "10th Anniversary",
+          "imgFile": "Son_of_God_(G)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Son of God (Greek)|3E|Son_of_God_(E)",
+          "name": "Son of God (Greek)",
+          "set": "3E",
+          "officialSet": "3rd Edition",
+          "imgFile": "Son_of_God_(E)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Son of God (H)|10A|Son_of_God_(H)",
+          "name": "Son of God (H)",
+          "set": "10A",
+          "officialSet": "10th Anniversary",
+          "imgFile": "Son_of_God_(H)",
+          "legality": "",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:40",
+      "group": 8,
+      "position": 6,
+      "titleBox": [
+        0.78,
+        0.72,
+        0.87,
+        0.75
+      ],
+      "read": {
+        "title": "Filling Away",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 6,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "fuzzy",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Falling Away (CoW)|CoW|Falling_Away_(CoW)",
+      "identityCandidates": [
+        "falling away|dominant||evil|#Falling Away",
+        "falling away|dominant||evil|#Falling Away (Promo 2018)"
+      ],
+      "near": [
+        {
+          "stem": "falling away",
+          "d": 0.08333333333333333
+        }
+      ],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Falling Away|Wom|Falling_Away_(Wo)",
+          "name": "Falling Away",
+          "set": "Wom",
+          "officialSet": "Women",
+          "imgFile": "Falling_Away_(Wo)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Falling Away (CoW AB)|CoW (AB)|CoW_AB_N02-Falling-Away-R",
+          "name": "Falling Away (CoW AB)",
+          "set": "CoW (AB)",
+          "officialSet": "Cloud of Witnesses (Alternate Border)",
+          "imgFile": "CoW_AB_N02-Falling-Away-R",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Falling Away (CoW)|CoW|Falling_Away_(CoW)",
+          "name": "Falling Away (CoW)",
+          "set": "CoW",
+          "officialSet": "Cloud of Witnesses",
+          "imgFile": "Falling_Away_(CoW)",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Falling Away (Promo 2018)|Pmo-P2|Falling-Away-Borderless",
+          "name": "Falling Away (Promo 2018)",
+          "set": "Pmo-P2",
+          "officialSet": "Promo",
+          "imgFile": "Falling-Away-Borderless",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:41",
+      "group": 8,
+      "position": 7,
+      "titleBox": [
+        0.78,
+        0.79,
+        0.87,
+        0.82
+      ],
+      "read": {
+        "title": "Three Woes",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Red",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 7,
+          "col": 8
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "default",
+      "chosenKey": "Three Woes (RoJ)|RoJ|01-Three-Woes-UR",
+      "kind": "matched",
+      "deckKey": "Three Woes (RoJ)|RoJ|01-Three-Woes-UR",
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Three Woes (RoJ AB)|RoJ (AB)|RoJ_AB_N01-Three-Woes-UR",
+          "name": "Three Woes (RoJ AB)",
+          "set": "RoJ (AB)",
+          "officialSet": "Revelation of John (Alternate Border)",
+          "imgFile": "RoJ_AB_N01-Three-Woes-UR",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Three Woes (RoJ)|RoJ|01-Three-Woes-UR",
+          "name": "Three Woes (RoJ)",
+          "set": "RoJ",
+          "officialSet": "Revelation of John",
+          "imgFile": "01-Three-Woes-UR",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Three Woes [Fundraiser]|Fund|FR-Three-Woes",
+          "name": "Three Woes [Fundraiser]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "FR-Three-Woes",
+          "legality": "Rotation",
+          "price": null
+        },
+        {
+          "key": "Three Woes [Fundraiser - Serialized]|Fund|3W-FR-WM",
+          "name": "Three Woes [Fundraiser - Serialized]",
+          "set": "Fund",
+          "officialSet": "Fundraiser",
+          "imgFile": "3W-FR-WM",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:42",
+      "group": 9,
+      "position": 1,
+      "titleBox": [
+        0.92,
+        0.15,
+        1,
+        0.19
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 1,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:43",
+      "group": 9,
+      "position": 2,
+      "titleBox": [
+        0.92,
+        0.3,
+        1,
+        0.33
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 2,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:44",
+      "group": 9,
+      "position": 3,
+      "titleBox": [
+        0.92,
+        0.37,
+        1,
+        0.4
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Orange",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 3,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:45",
+      "group": 9,
+      "position": 4,
+      "titleBox": [
+        0.92,
+        0.44,
+        1,
+        0.47
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Red",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 4,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:46",
+      "group": 9,
+      "position": 5,
+      "titleBox": [
+        0.92,
+        0.52,
+        1,
+        0.55
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 5,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:47",
+      "group": 9,
+      "position": 6,
+      "titleBox": [
+        0.92,
+        0.59,
+        1,
+        0.62
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Teal",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 6,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:48",
+      "group": 9,
+      "position": 7,
+      "titleBox": [
+        0.92,
+        0.67,
+        1,
+        0.7
+      ],
+      "read": {
+        "title": "Lost Soul",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Lost Soul",
+        "grid": {
+          "row": 7,
+          "col": 9
+        },
+        "orientation": "upright",
+        "confidence": "high"
+      },
+      "status": "check",
+      "nameReason": "reference",
+      "printingReason": "reference_missing",
+      "chosenKey": null,
+      "kind": "lost_soul",
+      "deckKey": null,
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:49",
+      "group": 10,
+      "position": 1,
+      "titleBox": [
+        0.01,
+        0.9,
+        0.09,
+        0.94
+      ],
+      "read": {
+        "title": "Unsuccessful",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Blue",
+        "strength": "0",
+        "toughness": "0",
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 1,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "check",
+      "nameReason": "exact",
+      "printingReason": "identity_ambiguous",
+      "chosenKey": null,
+      "kind": "which",
+      "deckKey": "Unsuccessful (PoC)|PoC|048-Unsuccessful",
+      "identityCandidates": [
+        "unsuccessful|curse|gray|evil|#Unsuccessful",
+        "unsuccessful|curse|gray|evil|#Unsuccessful (PoC)"
+      ],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": [
+        {
+          "key": "Unsuccessful|Pri|Unsuccessful_(Pi)",
+          "name": "Unsuccessful",
+          "set": "Pri",
+          "officialSet": "Priests",
+          "imgFile": "Unsuccessful_(Pi)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Unsuccessful (PoC)|PoC|048-Unsuccessful",
+          "name": "Unsuccessful (PoC)",
+          "set": "PoC",
+          "officialSet": "Prophecies of Christ",
+          "imgFile": "048-Unsuccessful",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:50",
+      "group": 10,
+      "position": 2,
+      "titleBox": [
+        0.11,
+        0.9,
+        0.19,
+        0.94
+      ],
+      "read": {
+        "title": "Ungodly Roots",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Black",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 2,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:51",
+      "group": 10,
+      "position": 3,
+      "titleBox": [
+        0.21,
+        0.95,
+        0.28,
+        0.98
+      ],
+      "read": {
+        "title": "Goliath",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gray",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 3,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Goliath (L)|Main|Goliath_(UL)",
+      "kind": "matched",
+      "deckKey": "Goliath (L)|Main|Goliath_(UL)",
+      "scores": {
+        "matchScore": 0.5,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "vanilla"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Goliath (L)|Main|Goliath_(UL)",
+          "name": "Goliath (L)",
+          "set": "Main",
+          "officialSet": "Main",
+          "imgFile": "Goliath_(UL)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Goliath (UL)|Main UL|Goliath_(UL)",
+          "name": "Goliath (UL)",
+          "set": "Main UL",
+          "officialSet": "Main Unlimited",
+          "imgFile": "Goliath_(UL)",
+          "legality": "",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:52",
+      "group": 10,
+      "position": 4,
+      "titleBox": [
+        0.31,
+        0.91,
+        0.39,
+        0.94
+      ],
+      "read": {
+        "title": "Eternal Fire",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 4,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:53",
+      "group": 10,
+      "position": 5,
+      "titleBox": [
+        0.42,
+        0.94,
+        0.5,
+        0.97
+      ],
+      "read": {
+        "title": "Good Seed",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Green",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 5,
+          "col": 10
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "only",
+      "chosenKey": "Good Seed (GoC)|GoC|083-Good-Seed-R",
+      "kind": "matched",
+      "deckKey": "Good Seed (GoC)|GoC|083-Good-Seed-R",
+      "scores": {
+        "matchScore": 0.25,
+        "runnerUpScore": 0,
+        "agreeingFields": [
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Good Seed (GoC)|GoC|083-Good-Seed-R",
+          "name": "Good Seed (GoC)",
+          "set": "GoC",
+          "officialSet": "Gospel of Christ",
+          "imgFile": "083-Good-Seed-R",
+          "legality": "Rotation",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:54",
+      "group": 0,
+      "position": 1,
+      "titleBox": [
+        0.52,
+        0.84,
+        0.6,
+        0.87
+      ],
+      "read": {
+        "title": "Hope",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Gold",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 1,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Hope (L)|Main|Hope_(UL)",
+      "kind": "matched",
+      "deckKey": "Hope (L)|Main|Hope_(UL)",
+      "scores": {
+        "matchScore": 0.75,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "vanilla",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Hope (L)|Main|Hope_(UL)",
+          "name": "Hope (L)",
+          "set": "Main",
+          "officialSet": "Main",
+          "imgFile": "Hope_(UL)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Hope (UL)|Main UL|Hope_(UL)",
+          "name": "Hope (UL)",
+          "set": "Main UL",
+          "officialSet": "Main Unlimited",
+          "imgFile": "Hope_(UL)",
+          "legality": "",
+          "price": null
+        }
+      ]
+    },
+    {
+      "id": "IMG_2745.webp:55",
+      "group": 0,
+      "position": 2,
+      "titleBox": [
+        0.63,
+        0.84,
+        0.7,
+        0.87
+      ],
+      "read": {
+        "title": "Son of Hell",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Brown",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Evil Character",
+        "grid": {
+          "row": 2,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:56",
+      "group": 0,
+      "position": 3,
+      "titleBox": [
+        0.77,
+        0.84,
+        0.84,
+        0.87
+      ],
+      "read": {
+        "title": "Brimstone",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Purple",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Enhancement",
+        "grid": {
+          "row": 3,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:57",
+      "group": 0,
+      "position": 4,
+      "titleBox": [
+        0.85,
+        0.84,
+        0.93,
+        0.87
+      ],
+      "read": {
+        "title": "Sanctuary",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Pale Green",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Site",
+        "grid": {
+          "row": 4,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "not_found",
+      "nameReason": "none",
+      "printingReason": "none",
+      "chosenKey": null,
+      "kind": "not_found",
+      "deckKey": null,
+      "near": [],
+      "scores": {
+        "matchScore": 0,
+        "runnerUpScore": 0,
+        "agreeingFields": []
+      },
+      "candidates": []
+    },
+    {
+      "id": "IMG_2745.webp:58",
+      "group": 0,
+      "position": 5,
+      "titleBox": [
+        0.95,
+        0.9,
+        1,
+        0.94
+      ],
+      "read": {
+        "title": "Ruth",
+        "reference": null,
+        "nickname": null,
+        "abilityStart": null,
+        "abilityEnd": null,
+        "identifier": null,
+        "brigade": "Crimson",
+        "strength": null,
+        "toughness": null,
+        "printNumber": null,
+        "rarityCode": null,
+        "promoText": null,
+        "illustrator": null,
+        "copyrightYear": null,
+        "type": "Hero",
+        "grid": {
+          "row": 5,
+          "col": 1
+        },
+        "orientation": "upright",
+        "confidence": "low"
+      },
+      "status": "matched",
+      "nameReason": "exact",
+      "printingReason": "equivalent",
+      "chosenKey": "Ruth (D)|2E|Ruth_(DU)",
+      "kind": "matched",
+      "deckKey": "Ruth (D)|2E|Ruth_(DU)",
+      "scores": {
+        "matchScore": 0.75,
+        "runnerUpScore": 0.25,
+        "agreeingFields": [
+          "vanilla",
+          "type"
+        ]
+      },
+      "candidates": [
+        {
+          "key": "Ruth (D)|2E|Ruth_(DU)",
+          "name": "Ruth (D)",
+          "set": "2E",
+          "officialSet": "2nd Edition",
+          "imgFile": "Ruth_(DU)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Ruth (L)|Main|Ruth_(UL)",
+          "name": "Ruth (L)",
+          "set": "Main",
+          "officialSet": "Main",
+          "imgFile": "Ruth_(UL)",
+          "legality": "",
+          "price": null
+        },
+        {
+          "key": "Ruth (UL)|Main UL|Ruth_(UL)",
+          "name": "Ruth (UL)",
+          "set": "Main UL",
+          "officialSet": "Main Unlimited",
+          "imgFile": "Ruth_(UL)",
+          "legality": "",
+          "price": null
+        }
+      ]
+    }
+  ],
+  "crops": {
+    "cropped": [],
+    "failed": [],
+    "skipped": [],
+    "merged": []
+  },
+  "usage": {
+    "model": "claude-haiku-5-5",
+    "latencyMs": 69188,
+    "attempts": 2,
+    "costUsd": 0.010456899999999998,
+    "inputTokens": 8724,
+    "outputTokens": 19169
+  },
+  "stages": {
+    "encodeMs": 186,
+    "read": {
+      "ms": 34851,
+      "in": 4362,
+      "out": 9634,
+      "cards": 61
+    },
+    "turn": {
+      "ms": 34337,
+      "in": 4362,
+      "out": 9535,
+      "calls": 1,
+      "rotation": 90
+    },
+    "crop": {
+      "ms": 0,
+      "in": 0,
+      "out": 0,
+      "calls": 0
+    }
+  },
+  "file": "IMG_2745.webp",
+  "status": 200,
+  "latencyMs": 69457,
+  "attempts": 2
+}

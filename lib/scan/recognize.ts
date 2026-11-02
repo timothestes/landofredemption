@@ -17,7 +17,10 @@ export const DEFAULT_ARM: Required<Arm> = { model: 'claude-sonnet-5-5', effort: 
 
 // Effort high, not medium: at medium Sonnet 5.5 does no thinking on a deck photo and, on dark 1024 px photos, often
 // ends the cards list after the Lost Souls and the fully visible cards (2026-10-29 debug: 15 of 20 medium runs across five wordings, 0 of 8 at high).
-export const DECK_ARM: Required<Arm> = { model: 'claude-sonnet-5-5', effort: 'high', tier: 'high', thinking: 'default' };
+// Thinking off at effort high keeps the full list and the recall: on the 12 labelled deck photos (2026-11-02) a read took 27 s
+// against 45 to 55 s with thinking, at the same precision and recall, and with thinking a read could pass the 80 s timeout.
+// Haiku 5.5 was tried the same day and read a third fewer cards right; the turn and crop passes take this arm's model and thinking.
+export const DECK_ARM: Required<Arm> = { model: 'claude-sonnet-5-5', effort: 'high', tier: 'high', thinking: 'off' };
 
 /** USD per million tokens. */
 export const MODEL_PRICES: Record<Arm['model'] & string, { input: number; output: number }> = {

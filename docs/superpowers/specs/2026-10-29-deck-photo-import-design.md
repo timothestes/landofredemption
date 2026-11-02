@@ -538,8 +538,11 @@ card, which the Reserve rule passes over (as it must for token rows).
 `recognize()` gains a `mode: 'collection' | 'deck'` that selects the
 instruction, the schema, the arm and the timing. Deck arm: `claude-sonnet-5-5`,
 effort `high` (*Amendments after E0*: medium truncates the list on dark
-photos), tier `high`, thinking omitted (the model's default). Same key
-and failure classification. Deck mode uses a per-call timeout of 80 s (the
+photos), tier `high`, thinking off (`between_tools`; *2026-11-02*: on the 12
+labelled photos a read took 27 s against 45 to 55 s with thinking, at the same
+precision and recall, and a thinking read could pass the 80 s timeout; Haiku
+5.5 read a third fewer cards right). The turn and crop passes take the same
+model and thinking. Same key and failure classification. Deck mode uses a per-call timeout of 80 s (the
 scanner keeps 25 s) and `max_tokens` 16,000 with **no retry at 32k**: a
 `max_tokens` stop in deck mode is the failure code `too_many_cards`, and the
 page's copy asks for the deck in two photos, which the tray merges. Opus is
