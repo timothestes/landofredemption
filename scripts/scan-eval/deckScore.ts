@@ -4,7 +4,10 @@
  * errors, and whether the default Reserve group is right. Pure apart from main().
  *
  *   npx tsx scripts/scan-eval/deckScore.ts --labels scripts/scan-eval/labels-deck.json \
- *     --outputs scripts/scan-eval/outputs/deck-<arm>/
+ *     --outputs scripts/scan-eval/outputs/deck-<arm>/ [--rematch]
+ *
+ * --rematch ignores the recorded match fields and runs the current matcher and classifier over the recorded reads, with no
+ * prices (as cropReplay.ts does), so a matcher change can be scored on saved outputs without a model call.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +15,10 @@ import { CARDS } from '@/lib/cards/lookup';
 import { getScanIndex } from '@/lib/scan/stemIndex';
 import { cardKey } from '@/lib/scan/vocab';
 import { defaultReserveGroups, IDENTIFIED_KINDS, type GroupSize } from '@/lib/scan/deck';
-import type { DeckScanResponse } from '@/lib/scan/deckClassify';
+import { classifyDeckRead, deckReadToDetection, type DeckDetection, type DeckScanResponse } from '@/lib/scan/deckClassify';
+import type { DeckRead } from '@/lib/scan/deckSchema';
+import { matchDetection } from '@/lib/scan/match';
+import { capDetection } from '@/lib/scan/schema';
 
 export interface DeckLabel {
   photo: string;
@@ -121,20 +127,44 @@ export function scoreDeckPhoto(label: DeckLabel, resp: DeckScanResponse): DeckPh
   };
 }
 
+/** The recorded reads matched and classified again by the current code, with no prices; every match field is replaced. */
+export function rematchResponse(resp: DeckScanResponse): DeckScanResponse {
+  const detections: DeckDetection[] = resp.detections.map(d => {
+    const deckRead: DeckRead = {
+      title: d.read.title, strength: d.read.strength, toughness: d.read.toughness, type: d.read.type,
+      brigade: d.read.brigade, reference: d.read.reference,
+      group: d.group, position: d.position, titleBox: d.titleBox, confidence: d.read.confidence,
+    };
+    const read = capDetection(deckReadToDetection(deckRead));
+    const m = matchDetection(read, {});
+    const c = classifyDeckRead(deckRead, m);
+    return {
+      id: d.id, group: d.group, position: d.position, titleBox: d.titleBox, read,
+      status: m.status, nameReason: m.nameReason, printingReason: m.printingReason,
+      chosenKey: m.chosen?.key ?? null, kind: c.kind, deckKey: c.key,
+      ...(c.identityCandidates ? { identityCandidates: c.identityCandidates } : {}),
+      ...(m.near ? { near: m.near } : {}),
+      scores: m.scores, candidates: m.candidates,
+    };
+  });
+  return { ...resp, detections };
+}
+
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
 function parseArgs(argv: string[]) {
-  const f: Record<string, string> = {};
+  const f: Record<string, string | boolean> = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (!a.startsWith('--')) throw new Error(`unexpected argument: ${a}`);
+    if (a === '--rematch') { f.rematch = true; continue; }
     const v = argv[++i];
     if (v === undefined) throw new Error(`missing value for ${a}`);
     f[a.slice(2)] = v;
   }
-  if (!f.labels) throw new Error('--labels is required');
-  if (!f.outputs) throw new Error('--outputs is required');
-  return { labels: f.labels, outputs: f.outputs };
+  if (typeof f.labels !== 'string') throw new Error('--labels is required');
+  if (typeof f.outputs !== 'string') throw new Error('--outputs is required');
+  return { labels: f.labels, outputs: f.outputs, rematch: f.rematch === true };
 }
 
 function main() {
@@ -148,7 +178,8 @@ function main() {
       missing.push(l.photo);
       continue;
     }
-    const s = scoreDeckPhoto(l, JSON.parse(fs.readFileSync(f, 'utf8')));
+    const recorded: DeckScanResponse = JSON.parse(fs.readFileSync(f, 'utf8'));
+    const s = scoreDeckPhoto(l, o.rematch ? rematchResponse(recorded) : recorded);
     scores.push(s);
     console.log(
       `${s.photo}  P ${s.precision.toFixed(3)}  R ${s.recall.toFixed(3)}  invented ${s.invented}  LS err ${s.lostSoulError}  ` +

@@ -10,7 +10,7 @@ import { getScanIndex, type ScanIdentity } from './stemIndex';
 import { cueFor as tableCueFor, creditAgrees, normalizeCaption, normalizeCredit, type PrintingCue } from './cues';
 import {
   brigadeAgrees, cardKey, cornerCode, editionLetter, isAB, isLegacyRare, isPromo, isUrPlus,
-  nicknameOf, normalizeAbility, normalizeTitle, readCornerCode, refsOf, typeAgrees,
+  nicknameOf, normalizeAbility, normalizeTitle, readCornerCode, refsOf, statsAgree, typeAgrees,
 } from './vocab';
 
 export type PriceMap = Record<string, number>;
@@ -77,7 +77,7 @@ function scoreIdentity(id: ScanIdentity, det: ScanDetection): Scored {
   const add = (n: number, f: string) => { score += n; fields.push(f); };
 
   if (refsOf(det.reference).some(r => id.refs.has(r))) add(8, 'reference');
-  if (det.strength && det.toughness && id.cards.some(c => c.strength === det.strength && c.toughness === det.toughness)) add(4, 'stats');
+  if (id.cards.some(c => statsAgree(det, c))) add(4, 'stats');
   const code = readCornerCode(det.printNumber, det.rarityCode);
   if (code && id.cards.some(c => cornerCode(c) === code)) add(3, 'print_number');
 
@@ -173,7 +173,7 @@ function filterReference(cards: CardData[], det: ScanDetection): Step {
 
 function filterStats(cards: CardData[], det: ScanDetection): Step {
   if (!det.strength || !det.toughness || cards.length < 2) return { cards };
-  return narrow(cards, cards.filter(c => c.strength === det.strength && c.toughness === det.toughness), 'stats');
+  return narrow(cards, cards.filter(c => statsAgree(det, c)), 'stats');
 }
 
 function filterCredit(cards: CardData[], det: ScanDetection, cueFor: CueLookup): Step {

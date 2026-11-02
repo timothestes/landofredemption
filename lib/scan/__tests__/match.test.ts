@@ -116,3 +116,16 @@ describe('near stems', () => {
   it('a stem miss carries near stems, closest first', () => { const m = matchDetection(det({ title: 'Abnar' }), NO); expect(m.status).toBe('not_found'); expect(m.near?.length).toBeGreaterThan(0); expect(m.near!.map(x => x.d)).toEqual([...m.near!.map(x => x.d)].sort((a, b) => a - b)); expect(m.near!.length).toBeLessThanOrEqual(5); });
   it('an exact hit has no near list', () => expect(matchDetection(det({ title: 'Captive Priest' }), NO).near).toBeUndefined());
 });
+describe('dual stats', () => {
+  it('a two-sided Hero scores stats on either printed pair', () => {
+    const progeny = det({ title: 'Abihud, the Progeny', reference: 'Matthew 1:13', type: 'Hero' });
+    expect(matchDetection({ ...progeny, strength: '3', toughness: '2' }, NO).scores.agreeingFields).toContain('stats');
+    expect(matchDetection({ ...progeny, strength: '10', toughness: '10' }, NO).scores.agreeingFields).toContain('stats');
+    expect(matchDetection({ ...progeny, strength: '3', toughness: '10' }, NO).scores.agreeingFields).not.toContain('stats');
+  });
+  it('a slash-joined Evil Character scores stats on its second line', () => {
+    const m = matchDetection(det({ title: 'Nebuchadnezzar', reference: 'Daniel 4:37', strength: '11', toughness: '10', type: 'Evil Character' }), NO);
+    expect(m.chosen?.name).toBe('Nebuchadnezzar (PoC)');
+    expect(m.scores.agreeingFields).toContain('stats');
+  });
+});
