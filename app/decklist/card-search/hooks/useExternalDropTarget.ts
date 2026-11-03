@@ -48,6 +48,24 @@ export interface SearchDragPayload {
   set: string;
 }
 
+function hasOurPayload(e: DragEvent): boolean {
+  return !!e.dataTransfer && Array.from(e.dataTransfer.types).includes(SEARCH_DRAG_MIME);
+}
+
+function readPayload(e: DragEvent): SearchDragPayload | null {
+  const raw = e.dataTransfer?.getData(SEARCH_DRAG_MIME);
+  if (!raw) return null;
+  try {
+    const payload = JSON.parse(raw) as SearchDragPayload;
+    if (payload && typeof payload.name === "string" && typeof payload.set === "string") {
+      return payload;
+    }
+  } catch {
+    // Malformed payload — silently ignore.
+  }
+  return null;
+}
+
 /**
  * Wires native HTML5 drop handlers (dragenter/dragover/dragleave/drop) to a
  * DOM node. Coexists with @dnd-kit because dnd-kit listens to PointerEvents,
@@ -93,9 +111,6 @@ export function useExternalDropTarget(
   }, []);
 
   // Stable handlers — read from refs so they don't need to re-bind.
-  const hasOurPayload = (e: DragEvent) =>
-    !!e.dataTransfer && Array.from(e.dataTransfer.types).includes(SEARCH_DRAG_MIME);
-
   function handleEnter(e: DragEvent) {
     if (!hasOurPayload(e)) return;
     enterCountRef.current += 1;
@@ -117,16 +132,8 @@ export function useExternalDropTarget(
     e.preventDefault();
     enterCountRef.current = 0;
     setIsOver(false);
-    const raw = e.dataTransfer?.getData(SEARCH_DRAG_MIME);
-    if (!raw) return;
-    try {
-      const payload = JSON.parse(raw) as SearchDragPayload;
-      if (payload && typeof payload.name === "string" && typeof payload.set === "string") {
-        onDropRef.current?.(payload);
-      }
-    } catch {
-      // Malformed payload — silently ignore.
-    }
+    const payload = readPayload(e);
+    if (payload) onDropRef.current?.(payload);
   }
 
   // Cleanup on unmount.
@@ -144,6 +151,111 @@ export function useExternalDropTarget(
   }, []);
 
   return { setRef, isOver };
+}
+
+/** Where the pointer sat inside the dragged element, captured at dragstart. */
+export interface DragGrab {
+  dx: number;
+  dy: number;
+  width: number;
+  height: number;
+}
+
+/** Share of the dragged card that must be over the panel for a drop to count. */
+export const NEAR_MISS_OVERLAP = 1 / 3;
+
+/**
+ * Whether a drop at (x, y) should land in `panel`: the pointer is inside it,
+ * or at least NEAR_MISS_OVERLAP of the drag ghost is. Native DnD hit-tests
+ * only the pointer, but the ghost (the card tile) hangs off the pointer
+ * wherever it was grabbed — so a card can look like it is over the deck
+ * panel while the pointer is still in the search column.
+ */
+export function isNearMissDrop(
+  x: number,
+  y: number,
+  grab: DragGrab | null,
+  panel: Pick<DOMRect, "left" | "top" | "right" | "bottom">,
+): boolean {
+  if (x >= panel.left && x <= panel.right && y >= panel.top && y <= panel.bottom) return true;
+  if (!grab || grab.width <= 0 || grab.height <= 0) return false;
+  const left = x - grab.dx;
+  const top = y - grab.dy;
+  const overlapX = Math.min(left + grab.width, panel.right) - Math.max(left, panel.left);
+  const overlapY = Math.min(top + grab.height, panel.bottom) - Math.max(top, panel.top);
+  if (overlapX <= 0 || overlapY <= 0) return false;
+  return (overlapX * overlapY) / (grab.width * grab.height) >= NEAR_MISS_OVERLAP;
+}
+
+/**
+ * Forgiving drop target for a whole panel: takes a search-tile drop that
+ * missed every zone but passes `isNearMissDrop`, and hands it to `onDrop`.
+ * Zones inside the panel still win — their drop handler calls
+ * preventDefault, which this skips. Returns true while a drop would land
+ * here and no zone has claimed it, so the caller can light up the zone the
+ * card will go to. Pass `undefined` to switch it off.
+ */
+export function useNearMissDropTarget(
+  panelRef: React.RefObject<HTMLElement | null>,
+  onDrop: ((payload: SearchDragPayload) => void) | undefined,
+): boolean {
+  const [isNear, setIsNear] = React.useState(false);
+  const onDropRef = React.useRef(onDrop);
+  React.useEffect(() => {
+    onDropRef.current = onDrop;
+  }, [onDrop]);
+  const enabled = !!onDrop;
+
+  React.useEffect(() => {
+    if (!enabled) return;
+    let grab: DragGrab | null = null;
+    const near = (e: DragEvent) => {
+      const panel = panelRef.current;
+      return !!panel && isNearMissDrop(e.clientX, e.clientY, grab, panel.getBoundingClientRect());
+    };
+    const onStart = (e: DragEvent) => {
+      if (!hasOurPayload(e) || !(e.target instanceof Element)) return;
+      // The default ghost is a snapshot of the dragged element, held at the
+      // point it was grabbed.
+      const r = e.target.getBoundingClientRect();
+      grab = { dx: e.clientX - r.left, dy: e.clientY - r.top, width: r.width, height: r.height };
+    };
+    const onOver = (e: DragEvent) => {
+      if (!hasOurPayload(e)) return;
+      // A zone under the pointer already took it and shows its own highlight.
+      if (e.defaultPrevented || !near(e)) {
+        setIsNear(false);
+        return;
+      }
+      e.preventDefault(); // required to allow `drop`
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      setIsNear(true);
+    };
+    const onDropEvent = (e: DragEvent) => {
+      setIsNear(false);
+      if (!hasOurPayload(e) || e.defaultPrevented || !near(e)) return;
+      e.preventDefault();
+      const payload = readPayload(e);
+      if (payload) onDropRef.current?.(payload);
+    };
+    const onEnd = () => {
+      grab = null;
+      setIsNear(false);
+    };
+    document.addEventListener("dragstart", onStart);
+    document.addEventListener("dragover", onOver);
+    document.addEventListener("drop", onDropEvent);
+    document.addEventListener("dragend", onEnd);
+    return () => {
+      document.removeEventListener("dragstart", onStart);
+      document.removeEventListener("dragover", onOver);
+      document.removeEventListener("drop", onDropEvent);
+      document.removeEventListener("dragend", onEnd);
+      setIsNear(false);
+    };
+  }, [enabled, panelRef]);
+
+  return isNear;
 }
 
 /**
