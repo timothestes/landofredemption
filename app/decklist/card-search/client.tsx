@@ -421,6 +421,10 @@ export default function CardSearchClient({
   // Deck panel resize state
   const containerRef = useRef<HTMLDivElement>(null);
   const isResizingRef = useRef(false);
+  // A drag that starts on a hide button ends with the button still under the
+  // cursor (the divider follows it), so the browser fires a click on release.
+  // Set once the pointer moves, so that click can be swallowed.
+  const resizeMovedRef = useRef(false);
   const resizeStartXRef = useRef(0);
   const resizeStartWidthRef = useRef(0);
   const currentDeckPanelWidthRef = useRef(38.2);
@@ -438,6 +442,7 @@ export default function CardSearchClient({
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
     isResizingRef.current = true;
+    resizeMovedRef.current = false;
     resizeStartXRef.current = e.clientX;
     resizeStartWidthRef.current = deckPanelWidth;
     document.body.style.cursor = 'ew-resize';
@@ -449,6 +454,7 @@ export default function CardSearchClient({
       if (!isResizingRef.current || !containerRef.current) return;
       const containerWidth = containerRef.current.offsetWidth;
       const deltaX = e.clientX - resizeStartXRef.current;
+      if (Math.abs(deltaX) > 3) resizeMovedRef.current = true;
       const deltaPercent = (deltaX / containerWidth) * 100;
       const newWidth = Math.max(20, Math.min(70, resizeStartWidthRef.current - deltaPercent));
       setDeckPanelWidth(newWidth);
@@ -2844,6 +2850,7 @@ export default function CardSearchClient({
           className="hidden md:flex relative bg-gradient-to-b from-transparent via-border to-transparent hover:via-primary/50 items-center justify-center cursor-ew-resize select-none transition-colors flex-shrink-0 [.jayden_&]:via-primary/30 [.jayden_&]:hover:via-primary/60"
           style={{ width: '6px' }}
           onMouseDown={handleResizeStart}
+          onClickCapture={(e) => { if (resizeMovedRef.current) e.stopPropagation(); }}
           title="Drag to resize panels"
         >
           {/* Toggle buttons container - centered vertically */}
