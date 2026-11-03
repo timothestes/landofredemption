@@ -60,7 +60,7 @@ import DeckLegalityChecklist from "./DeckLegalityChecklist";
 import type { DeckCheckResult } from "@/utils/deckcheck/types";
 import { useBudgetPricing } from '../hooks/useBudgetPricing';
 import type { BudgetCard } from '@/lib/pricing/budgetPricing';
-import { useExternalDropTarget, useIsExternalDragActive, combineRefs, type SearchDragPayload } from '../hooks/useExternalDropTarget';
+import { useExternalDropTarget, useIsExternalDragActive, useNearMissDropTarget, combineRefs, type SearchDragPayload } from '../hooks/useExternalDropTarget';
 import { useLassoSelect } from '../hooks/useLassoSelect';
 import { DeckSelectionContext, selectionKey, type DeckSelection } from './DeckSelectionContext';
 import { countCopies, describeZoneMoves, invertZoneMoves, stackMoves, zoneLabel, type ZoneMove } from '../utils/zoneMoves';
@@ -771,6 +771,16 @@ export default function DeckBuilderPanel({
     selected: visibleSelectedKeys,
     onChange: setSelectedKeys,
   });
+
+  // A search-tile drop that misses every zone but lands on the panel, or
+  // gets most of the way there, goes to the open tab. Off when expanded:
+  // the search column is hidden then.
+  const isNearMiss = useNearMissDropTarget(
+    panelRootRef,
+    !isExpanded && activeZone
+      ? (payload) => onAddCard(payload.name, payload.set, activeZone)
+      : undefined,
+  );
 
   const toggleSelected = useCallback((key: string) => {
     setSelectedKeys((prev) => {
@@ -2753,7 +2763,7 @@ export default function DeckBuilderPanel({
               `space-y-4 rounded transition-colors flex-1 min-h-[240px] ${
                 isDragging ? "md:border-2 md:border-dashed md:border-border/40 md:-m-0.5" : ""
               } ${
-                isOver ? "border-primary bg-primary/5" : ""
+                isOver || isNearMiss ? "border-primary bg-primary/5" : ""
               }`
             }
           >
@@ -2874,7 +2884,7 @@ export default function DeckBuilderPanel({
               `space-y-4 rounded transition-colors flex-1 min-h-[240px] ${
                 isDragging ? "md:border-2 md:border-dashed md:border-border/40 md:-m-0.5" : ""
               } ${
-                isOver ? "border-primary bg-primary/5" : ""
+                isOver || isNearMiss ? "border-primary bg-primary/5" : ""
               }`
             }
           >
@@ -2957,7 +2967,7 @@ export default function DeckBuilderPanel({
               `space-y-4 rounded transition-colors flex-1 min-h-[240px] ${
                 isDragging ? "md:border-2 md:border-dashed md:border-border/40 md:-m-0.5" : ""
               } ${
-                isOver ? "border-primary bg-primary/5" : ""
+                isOver || isNearMiss ? "border-primary bg-primary/5" : ""
               }`
             }
           >
