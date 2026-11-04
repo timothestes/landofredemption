@@ -29,7 +29,7 @@ interface NavTabsProps {
 
 export default function NavTabs({ view, setView }: NavTabsProps) {
   return (
-    <div className="flex gap-1 overflow-x-auto border-b border-border no-scrollbar">
+    <div className="flex gap-1 overflow-x-auto border-b border-border no-scrollbar scroll-fade-x">
       {TABS.map((tab) => (
         <button
           key={tab.id}

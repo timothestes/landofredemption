@@ -217,7 +217,7 @@ export default function RnrsClient({ data }: { data: NormalizedData }) {
       {view === "leaderboard" ? (
         <div className="mt-4 space-y-4">
           {/* Format tabs */}
-          <div className="flex gap-1 overflow-x-auto border-b border-border">
+          <div className="flex gap-1 overflow-x-auto border-b border-border scroll-fade-x">
             {FORMATS.map((f) => (
               <button
                 key={f.key}
