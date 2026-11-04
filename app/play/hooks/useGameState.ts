@@ -185,8 +185,10 @@ export interface GameState {
   pregameResolveStar: (starId: bigint) => void;
   pregameFinishSouls: () => void;
   // Rematch actions
-  requestRematch: (deckId: string, deckData: string, paragon: string, format: string) => void;
-  respondRematch: (accepted: boolean, deckId: string, deckData: string, paragon: string, format: string) => void;
+  // Resolve once the server has answered (refusals are toasted), so the
+  // game-over overlay can hold its "sending" state until then.
+  requestRematch: (deckId: string, deckData: string, paragon: string, format: string) => Promise<void> | undefined;
+  respondRematch: (accepted: boolean, deckId: string, deckData: string, paragon: string, format: string) => Promise<void> | undefined;
   cancelRematch: () => void;
   revealCards: (cardIds: string, context?: string) => void;
   clearRevealedCards: () => void;
@@ -991,13 +993,13 @@ export function useGameState(gameId: bigint, forgeResolver?: ForgeResolverMap | 
     conn?.reducers.pregameFinishSouls({ gameId });
   }, [conn, gameId]);
 
-  const requestRematch = useCallback((deckId: string, deckData: string, paragon: string, format: string) => {
-    conn?.reducers.requestRematch({ gameId, deckId, deckData, paragon, format });
-  }, [conn, gameId]);
+  const requestRematch = useCallback((deckId: string, deckData: string, paragon: string, format: string) =>
+    conn?.reducers.requestRematch({ gameId, deckId, deckData, paragon, format }).catch(toastReducerError),
+  [conn, gameId]);
 
-  const respondRematch = useCallback((accepted: boolean, deckId: string, deckData: string, paragon: string, format: string) => {
-    conn?.reducers.respondRematch({ gameId, accepted, deckId, deckData, paragon, format });
-  }, [conn, gameId]);
+  const respondRematch = useCallback((accepted: boolean, deckId: string, deckData: string, paragon: string, format: string) =>
+    conn?.reducers.respondRematch({ gameId, accepted, deckId, deckData, paragon, format }).catch(toastReducerError),
+  [conn, gameId]);
 
   const cancelRematch = useCallback(() => {
     conn?.reducers.cancelRematch({ gameId });
@@ -1603,8 +1605,8 @@ export function useSpectatorGameState(gameId: bigint | null, forgeResolver?: For
     pregameSubmitStars: useCallback((_cardInstanceIds: bigint[]) => {}, []),
     pregameResolveStar: noopBigint,
     pregameFinishSouls: noop,
-    requestRematch: useCallback((_deckId: string, _deckData: string, _paragon: string, _format: string) => {}, []),
-    respondRematch: useCallback((_accepted: boolean, _deckId: string, _deckData: string, _paragon: string, _format: string) => {}, []),
+    requestRematch: useCallback((_deckId: string, _deckData: string, _paragon: string, _format: string) => undefined, []),
+    respondRematch: useCallback((_accepted: boolean, _deckId: string, _deckData: string, _paragon: string, _format: string) => undefined, []),
     cancelRematch: useCallback(() => {}, []),
     revealCards: useCallback((_cardIds: string, _context?: string) => {}, []),
     clearRevealedCards: noop,

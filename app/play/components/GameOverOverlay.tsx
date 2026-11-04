@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useToastKeyboardNav, toastFocusShadow } from '@/app/shared/components/toastKeyboardNav';
+import { showGameToast } from '@/app/shared/components/GameToast';
 import { DeckPickerModal } from './DeckPickerModal';
 import type { DeckOption } from './DeckPickerCard';
 import { loadDeckForGame } from '../actions';
@@ -29,6 +30,11 @@ interface GameOverOverlayProps {
   /** Bracket games: no rematch request/accept/cancel/change-deck and no
    *  rematch status line — the series decides what comes next. */
   hideRematch?: boolean;
+  /** The opponent is gone (left, closed the tab, or timed out) — no rematch
+   *  is possible, so Play Again / Accept give way to Back to Lobby. */
+  opponentLeft?: boolean;
+  /** Leave the finished game for the lobby. */
+  onLeave?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -67,6 +73,21 @@ function deriveEndReason(
   return { label: 'Game ended', winnerName: '', outcome: 'ended' };
 }
 
+type RematchDeck = { deckData: string; format: string; forgeParagon?: string };
+
+// Forge decks are authorized once per seat at create/join time and reload via
+// loadForgeDeckForGame (which carries their paragon); normal decks reload via
+// loadDeckForGame and use the player's current paragon, applied at send time.
+async function loadRematchDeck(deckId: string, isForge: boolean): Promise<RematchDeck> {
+  if (isForge) {
+    const r = await loadForgeDeckForGame(deckId);
+    if (r.ok === false) throw new Error(r.error);
+    return { deckData: JSON.stringify(r.deckData), format: r.deck.format || 'Type 1', forgeParagon: r.deck.paragon };
+  }
+  const result = await loadDeckForGame(deckId);
+  return { deckData: JSON.stringify(result.deckData), format: result.deck.format || 'Type 1' };
+}
+
 // ---------------------------------------------------------------------------
 // Component — temporary toast + rematch logic (no blocking modal)
 // ---------------------------------------------------------------------------
@@ -82,6 +103,8 @@ export default function GameOverOverlay({
   isForge,
   myDeckId,
   hideRematch = false,
+  opponentLeft = false,
+  onLeave,
 }: GameOverOverlayProps) {
   const { isLoupeVisible } = useCardPreview();
   // Touch: interactive buttons get the 44px minimum target (min-height grows
@@ -115,13 +138,22 @@ export default function GameOverOverlay({
     return () => clearTimeout(timer);
   }, [outcome]);
 
+  // Deck picker state
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'request' | 'respond'>('request');
+  // A request/accept between the click and the server's answer. The modal
+  // closes at once, so this drives the status toast in the gap.
+  const [sending, setSending] = useState<'request' | 'respond' | null>(null);
+
   // Play Again from TurnIndicator — one-tap run-it-back with the last deck
   // (both normal and Forge). "Change deck" lives on the result modal / banner.
   // If the opponent has already requested a rematch, "play again" means
   // accept it — requesting on top of theirs is a server error.
   useEffect(() => {
     if (!playAgainTriggered || hideRematch) return;
-    if (!rematchRequestedBy) {
+    if (sending) {
+      // Already on its way — a second request would be refused.
+    } else if (!rematchRequestedBy) {
       void handleOneTapRematch('request');
     } else if (opponentRequested && !rematchResponse) {
       void handleOneTapRematch('respond');
@@ -129,50 +161,51 @@ export default function GameOverOverlay({
     onPlayAgainHandled?.();
   }, [playAgainTriggered, rematchRequestedBy, onPlayAgainHandled, isForge, hideRematch]);
 
-  // Deck picker state
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerMode, setPickerMode] = useState<'request' | 'respond'>('request');
-  const [isLoading, setIsLoading] = useState(false);
-
   // When rematch is accepted, the server resets the game in-place.
   // The game status changes from 'finished' to 'pregame/rolling' automatically
   // via SpacetimeDB subscription — no navigation needed.
 
-  // One-tap rematch — reuse the deck the player last played (myDeckId), no
-  // picker. This is the primary "run it back" path for both normal and Forge
-  // games. Forge decks are authorized once per seat at create/join time and
-  // reload via loadForgeDeckForGame; normal decks reload via loadDeckForGame
-  // and carry the player's current paragon. If the deck can't be loaded we fall
-  // back to the picker (normal only) so the player is never stuck on a dead
-  // button. request_rematch/respond_rematch don't re-check deck authorization,
-  // so this is the only place enforcing "same deck" for a one-tap rematch.
+  // The deck to run back. Normal games read the server's Player.deckId: a
+  // "Change deck" rematch updates it, while myDeckId (the deck the game was
+  // created with) does not. Forge decks are seat-locked, so myDeckId is it.
+  const lastDeckId = isForge ? myDeckId : (myPlayer?.deckId || myDeckId);
+
+  // Load that deck as soon as the game ends, so Play Again isn't a server
+  // round trip after the click. handleOneTapRematch awaits this.
+  const deckLoadRef = useRef<Promise<RematchDeck> | null>(null);
+  useEffect(() => {
+    deckLoadRef.current = null;
+    if (hideRematch || opponentLeft || !lastDeckId) return;
+    const load = loadRematchDeck(lastDeckId, !!isForge);
+    load.catch(() => {}); // surfaced when Play Again awaits it
+    deckLoadRef.current = load;
+  }, [hideRematch, opponentLeft, lastDeckId, isForge]);
+
+  // One-tap rematch — reuse the deck the player last played, no picker. This
+  // is the primary "run it back" path for both normal and Forge games. If the
+  // deck can't be loaded we fall back to the picker (normal only) so the
+  // player is never stuck on a dead button. request_rematch/respond_rematch
+  // don't re-check deck authorization, so this is the only place enforcing
+  // "same deck" for a one-tap rematch.
   const handleOneTapRematch = async (mode: 'request' | 'respond') => {
-    if (!myDeckId) {
+    if (!lastDeckId) {
       // No known last deck — fall back to the picker (shouldn't happen for Forge).
       handleChangeDeck(mode);
       return;
     }
-    setIsLoading(true);
+    setSending(mode);
     try {
-      if (isForge) {
-        const r = await loadForgeDeckForGame(myDeckId);
-        if (r.ok === false) { console.error('Forge rematch deck load failed:', r.error); return; }
-        const deckData = JSON.stringify(r.deckData);
-        if (mode === 'request') gameState.requestRematch(myDeckId, deckData, r.deck.paragon, r.deck.format || 'Type 1');
-        else gameState.respondRematch(true, myDeckId, deckData, r.deck.paragon, r.deck.format || 'Type 1');
-      } else {
-        const result = await loadDeckForGame(myDeckId);
-        const deckData = JSON.stringify(result.deckData);
-        const paragon = myPlayer?.paragon ?? '';
-        const format = result.deck.format || 'Type 1';
-        if (mode === 'request') gameState.requestRematch(myDeckId, deckData, paragon, format);
-        else gameState.respondRematch(true, myDeckId, deckData, paragon, format);
-      }
+      const deck = await (deckLoadRef.current ?? loadRematchDeck(lastDeckId, !!isForge));
+      const paragon = deck.forgeParagon ?? myPlayer?.paragon ?? '';
+      if (mode === 'request') await gameState.requestRematch(lastDeckId, deck.deckData, paragon, deck.format);
+      else await gameState.respondRematch(true, lastDeckId, deck.deckData, paragon, deck.format);
     } catch (e) {
       console.error('Rematch deck load failed:', e);
-      if (!isForge) handleChangeDeck(mode); // don't strand the player on a dead button
+      deckLoadRef.current = null; // the next try loads fresh
+      if (isForge) showGameToast("Couldn't load your deck for the rematch", 4000);
+      else handleChangeDeck(mode); // don't strand the player on a dead button
     } finally {
-      setIsLoading(false);
+      setSending(null);
     }
   };
 
@@ -187,23 +220,43 @@ export default function GameOverOverlay({
   // Deck selected handler
   const handleDeckSelected = async (deck: DeckOption) => {
     setPickerOpen(false);
-    setIsLoading(true);
+    setSending(pickerMode);
     try {
       const result = await loadDeckForGame(deck.id);
       const deckData = JSON.stringify(result.deckData);
       const paragon = deck.paragon || '';
       const format = deck.format || 'Type 1';
       if (pickerMode === 'request') {
-        gameState.requestRematch(deck.id, deckData, paragon, format);
+        await gameState.requestRematch(deck.id, deckData, paragon, format);
       } else {
-        gameState.respondRematch(true, deck.id, deckData, paragon, format);
+        await gameState.respondRematch(true, deck.id, deckData, paragon, format);
       }
     } catch (e) {
       console.error('Failed to load deck:', e);
+      showGameToast("Couldn't load that deck", 4000);
     } finally {
-      setIsLoading(false);
+      setSending(null);
     }
   };
+
+  // A decline or cancel clears the rematch fields in the same transaction that
+  // records it, so the Game row never shows either — the action log does.
+  // Toast the opponent's, once each; whatever is logged before the first pass
+  // is history.
+  const seenActionIds = useRef<Set<string> | null>(null);
+  useEffect(() => {
+    if (!gameState.isActionsReady) return;
+    const seen = seenActionIds.current;
+    seenActionIds.current = new Set(gameActions.map(a => String(a.id)));
+    if (!seen) return;
+    for (const a of gameActions) {
+      if (seen.has(String(a.id))) continue;
+      if ((a.playerId ?? a.actorId) === myPlayer?.id) continue;
+      const type: string = (a.actionType ?? '').toUpperCase();
+      if (type === 'REMATCH_DECLINED') showGameToast(`${oppName} declined the rematch`, 4000);
+      else if (type === 'REMATCH_CANCELLED') showGameToast(`${oppName} withdrew the rematch`, 4000);
+    }
+  }, [gameActions, gameState.isActionsReady]);
 
   // Show opponent's rematch request as a persistent banner
   // Hidden while the picker is open — the banner would float above the
@@ -213,12 +266,24 @@ export default function GameOverOverlay({
   // on top of the banner (z-800), so Accept was visible but unclickable —
   // elementFromPoint returned the backdrop. While the modal is showing, the
   // request is surfaced inside it instead (Accept Rematch).
+  // Also hidden once the opponent is gone (their request can't be honored)
+  // and while our own answer is sending (the status toast takes the spot).
   const showRematchBanner =
-    !hideRematch && opponentRequested && !rematchResponse && !pickerOpen && (modalDismissed || !showResultModal);
-  // Show waiting status
-  const showWaitingStatus = !hideRematch && iRequested && !rematchResponse;
-  // Show rematch result
-  const showRematchResult = !hideRematch && (rematchResponse === 'declined' || rematchResponse === 'accepted');
+    !hideRematch && !opponentLeft && !sending && opponentRequested && !rematchResponse && !pickerOpen &&
+    (modalDismissed || !showResultModal);
+
+  // Status toast from the click to the outcome. While waiting, the requester
+  // can retract (once the request has landed); if the opponent goes meanwhile,
+  // offer the way out instead.
+  const waiting = !hideRematch && (sending === 'request' || (iRequested && !rematchResponse));
+  const status: { text: string; action?: { label: string; onClick: () => void; disabled?: boolean } } | null =
+    !hideRematch && sending === 'respond'
+      ? { text: 'Starting rematch…' }
+      : waiting && opponentLeft
+        ? { text: `${oppName} left the game.`, action: onLeave && { label: 'Back to lobby', onClick: onLeave } }
+        : waiting
+          ? { text: `Waiting for ${oppName}…`, action: { label: 'Cancel', onClick: () => gameState.cancelRematch(), disabled: sending === 'request' } }
+          : null;
 
   return (
     <>
@@ -228,21 +293,23 @@ export default function GameOverOverlay({
           didWin={didWin}
           label={label}
           oppName={oppName}
-          opponentRequested={!hideRematch && opponentRequested && !rematchResponse}
+          opponentRequested={!hideRematch && !opponentLeft && opponentRequested && !rematchResponse}
+          opponentLeft={opponentLeft}
           isLoupeVisible={isLoupeVisible}
           // If the opponent already requested a rematch while this modal was
           // up, "play again" / "change deck" must RESPOND to their request —
           // firing a second request is a server error.
-          onPlayAgain={hideRematch ? undefined : () => {
+          onPlayAgain={hideRematch || opponentLeft ? undefined : () => {
             setModalDismissed(true);
             void handleOneTapRematch(opponentRequested ? 'respond' : 'request');
           }}
           // Normal games can swap decks between rematches; Forge decks are
           // seat-locked, so the escape hatch is hidden there.
-          onChangeDeck={isForge || hideRematch ? undefined : () => {
+          onChangeDeck={isForge || hideRematch || opponentLeft ? undefined : () => {
             setModalDismissed(true);
             handleChangeDeck(opponentRequested ? 'respond' : 'request');
           }}
+          onLeave={onLeave}
           onDismiss={() => setModalDismissed(true)}
         />
       )}
@@ -289,7 +356,7 @@ export default function GameOverOverlay({
       {showRematchBanner && (
         <RematchRequestBanner
           oppName={oppName}
-          isLoading={isLoading}
+          isLoading={sending !== null}
           onAccept={() => void handleOneTapRematch('respond')}
           // Normal games can accept with a different deck; Forge is seat-locked.
           onChangeDeck={isForge ? undefined : () => handleChangeDeck('respond')}
@@ -297,9 +364,7 @@ export default function GameOverOverlay({
         />
       )}
 
-      {/* Waiting/result status toast. While waiting for the opponent, the
-          requester can cancel and retract the pending rematch. */}
-      {(showWaitingStatus || showRematchResult) && (
+      {status && (
         <div style={{
           position: 'absolute',
           bottom: 70,
@@ -308,7 +373,7 @@ export default function GameOverOverlay({
           zIndex: 800,
           maxWidth: 'calc(100vw - 24px)',
           background: 'rgba(var(--gf-bg-dark-rgb), 0.95)',
-          border: `1px solid ${rematchResponse === 'declined' ? 'rgba(180, 60, 60, 0.3)' : 'rgba(var(--gf-border-rgb), 0.4)'}`,
+          border: '1px solid rgba(var(--gf-border-rgb), 0.4)',
           borderRadius: 8,
           padding: '10px 20px',
           display: 'flex',
@@ -321,21 +386,14 @@ export default function GameOverOverlay({
           <p style={{
             fontFamily: 'Georgia, serif',
             fontSize: 12,
-            color: rematchResponse === 'declined'
-              ? 'rgba(220, 120, 120, 0.6)'
-              : rematchResponse === 'accepted'
-                ? 'rgba(var(--gf-accent-rgb), 0.7)'
-                : 'rgba(var(--gf-accent-rgb), 0.5)',
+            color: 'rgba(var(--gf-accent-rgb), 0.5)',
           }}>
-            {rematchResponse === 'declined'
-              ? (iRequested ? 'Opponent declined.' : 'You declined.')
-              : rematchResponse === 'accepted'
-                ? 'Setting up rematch...'
-                : 'Waiting for opponent...'}
+            {status.text}
           </p>
-          {showWaitingStatus && (
+          {status.action && (
             <button
-              onClick={() => gameState.cancelRematch()}
+              onClick={status.action.onClick}
+              disabled={status.action.disabled}
               style={{
                 padding: '5px 12px',
                 minHeight: isTouch ? 44 : undefined,
@@ -348,11 +406,13 @@ export default function GameOverOverlay({
                 fontWeight: 700,
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                cursor: 'pointer',
+                cursor: status.action.disabled ? 'default' : 'pointer',
+                opacity: status.action.disabled ? 0.5 : 1,
                 whiteSpace: 'nowrap',
                 transition: 'background 0.14s, color 0.14s, border-color 0.14s',
               }}
               onMouseEnter={(e) => {
+                if (status.action?.disabled) return;
                 e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.12)';
                 e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.85)';
                 e.currentTarget.style.borderColor = 'rgba(var(--gf-accent-rgb), 0.4)';
@@ -363,7 +423,7 @@ export default function GameOverOverlay({
                 e.currentTarget.style.borderColor = 'rgba(var(--gf-border-rgb), 0.4)';
               }}
             >
-              Cancel
+              {status.action.label}
             </button>
           )}
         </div>
@@ -413,9 +473,11 @@ function GameOverModal({
   label,
   oppName,
   opponentRequested,
+  opponentLeft,
   isLoupeVisible,
   onPlayAgain,
   onChangeDeck,
+  onLeave,
   onDismiss,
 }: {
   didWin: boolean;
@@ -423,25 +485,35 @@ function GameOverModal({
   oppName: string;
   /** The opponent already asked for a rematch — Play Again becomes Accept. */
   opponentRequested?: boolean;
+  /** The opponent is gone — Back to Lobby takes Play Again's place. */
+  opponentLeft?: boolean;
   isLoupeVisible: boolean;
-  /** Omitted for bracket games: Dismiss is the only option. */
+  /** Omitted for bracket games and once the opponent is gone. */
   onPlayAgain?: () => void;
   /** Normal games only — open the deck picker instead of one-tap reuse. */
   onChangeDeck?: () => void;
+  onLeave?: () => void;
   onDismiss: () => void;
 }) {
   const isTouch = useInputMode() === 'touch';
-  const dismissIndex = onPlayAgain ? 1 : 0;
+  const primary = onPlayAgain
+    ? { label: opponentRequested ? 'Accept Rematch' : 'Play Again', onClick: onPlayAgain }
+    : opponentLeft && onLeave
+      ? { label: 'Back to Lobby', onClick: onLeave }
+      : undefined;
+  const dismissIndex = primary ? 1 : 0;
   const { focusedIndex, setFocusedIndex } = useToastKeyboardNav({
     count: dismissIndex + 1,
     defaultIndex: dismissIndex, // Dismiss
     priority: 2,
-    onSelect: idx => (idx === dismissIndex ? onDismiss() : onPlayAgain?.()),
+    onSelect: idx => (idx === dismissIndex ? onDismiss() : primary?.onClick()),
     onCancel: onDismiss,
   });
 
-  const playAgainFocused = !!onPlayAgain && focusedIndex === 0;
+  const primaryFocused = !!primary && focusedIndex === 0;
   const dismissFocused = focusedIndex === dismissIndex;
+  // Back to lobby as a quiet link whenever it isn't already the primary.
+  const leaveLink = onLeave && primary?.onClick !== onLeave ? onLeave : undefined;
 
   const eyebrow = didWin ? 'Victory' : 'Defeat';
   const title = didWin
@@ -520,11 +592,21 @@ function GameOverModal({
             {oppName} wants to play again
           </p>
         )}
+        {opponentLeft && label !== 'Opponent disconnected' && (
+          <p style={{
+            marginTop: 12,
+            fontFamily: 'Georgia, serif',
+            fontSize: 13,
+            color: 'var(--gf-text-bright)',
+          }}>
+            {oppName} has left the game
+          </p>
+        )}
 
         <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
-          {onPlayAgain && (
+          {primary && (
           <button
-            onClick={onPlayAgain}
+            onClick={primary.onClick}
             onMouseEnter={() => setFocusedIndex(0)}
             style={{
               flex: 1,
@@ -532,7 +614,7 @@ function GameOverModal({
               minHeight: isTouch ? 44 : undefined,
               borderRadius: 4,
               border: '1px solid rgba(var(--gf-accent-rgb), 0.45)',
-              background: playAgainFocused ? 'rgba(var(--gf-accent-rgb), 0.30)' : 'rgba(var(--gf-accent-rgb), 0.15)',
+              background: primaryFocused ? 'rgba(var(--gf-accent-rgb), 0.30)' : 'rgba(var(--gf-accent-rgb), 0.15)',
               color: 'var(--gf-text-bright)',
               fontFamily: 'var(--font-cinzel), Georgia, serif',
               fontSize: 12,
@@ -540,11 +622,11 @@ function GameOverModal({
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
               cursor: 'pointer',
-              boxShadow: playAgainFocused ? toastFocusShadow('rgba(var(--gf-accent-rgb), 0.85)', 'rgba(var(--gf-accent-rgb), 0.4)') : 'none',
+              boxShadow: primaryFocused ? toastFocusShadow('rgba(var(--gf-accent-rgb), 0.85)', 'rgba(var(--gf-accent-rgb), 0.4)') : 'none',
               transition: 'background 0.14s, box-shadow 0.14s, color 0.14s, border-color 0.14s',
             }}
           >
-            {opponentRequested ? 'Accept Rematch' : 'Play Again'}
+            {primary.label}
           </button>
           )}
           <button
@@ -572,30 +654,38 @@ function GameOverModal({
           </button>
         </div>
 
-        {/* Change deck — quiet secondary escape hatch (normal games only). */}
-        {onChangeDeck && (
-          <button
-            onClick={onChangeDeck}
-            style={{
-              marginTop: 14,
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              minHeight: isTouch ? 44 : undefined,
-              color: 'rgba(var(--gf-accent-rgb), 0.5)',
-              fontFamily: 'Georgia, serif',
-              fontSize: 12,
-              letterSpacing: '0.04em',
-              textDecoration: 'underline',
-              textUnderlineOffset: 3,
-              cursor: 'pointer',
-              transition: 'color 0.14s',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.85)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.5)'; }}
-          >
-            Change deck
-          </button>
+        {/* Quiet secondary links: Change deck (normal games only) and Back to
+            lobby (unless it's already the primary button). */}
+        {(onChangeDeck || leaveLink) && (
+          <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', gap: 20 }}>
+            {[
+              onChangeDeck && { label: 'Change deck', onClick: onChangeDeck },
+              leaveLink && { label: 'Back to lobby', onClick: leaveLink },
+            ].filter((link): link is { label: string; onClick: () => void } => !!link).map(link => (
+              <button
+                key={link.label}
+                onClick={link.onClick}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  minHeight: isTouch ? 44 : undefined,
+                  color: 'rgba(var(--gf-accent-rgb), 0.5)',
+                  fontFamily: 'Georgia, serif',
+                  fontSize: 12,
+                  letterSpacing: '0.04em',
+                  textDecoration: 'underline',
+                  textUnderlineOffset: 3,
+                  cursor: 'pointer',
+                  transition: 'color 0.14s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.85)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.5)'; }}
+              >
+                {link.label}
+              </button>
+            ))}
+          </div>
         )}
       </div>
     </div>
