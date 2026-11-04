@@ -104,7 +104,7 @@ export const GAME_BACKGROUND_PENDING_CSS = 'linear-gradient(rgb(30,22,16), rgb(3
 
 /** The built-in table art: Forge decks get the forge, everything else the cave. */
 export function defaultBackgroundUrl(isForge?: boolean): string {
-  return `/gameplay/${isForge ? 'forge_background' : 'cave_background'}.png`;
+  return `/gameplay/${isForge ? 'forge_background' : 'cave_background'}.webp`;
 }
 
 /**
