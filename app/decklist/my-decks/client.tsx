@@ -1661,8 +1661,10 @@ function DeckCard({
         </div>
       ) : (getCardImageUrlOrNull(deck.preview_card_1) || getCardImageUrlOrNull(deck.preview_card_2)) ? (
         <div className="relative h-32 overflow-hidden rounded-t-lg flex items-center justify-center gap-1 px-2 py-2 cursor-pointer" onClick={openCard}>
-          {getCardImageUrlOrNull(deck.preview_card_1) && <img src={getCardImageUrlOrNull(deck.preview_card_1)!} alt="" draggable={false} className="h-full object-contain rounded shadow-md" />}
-          {getCardImageUrlOrNull(deck.preview_card_2) && <img src={getCardImageUrlOrNull(deck.preview_card_2)!} alt="" draggable={false} className="h-full object-contain rounded shadow-md" />}
+          {/* 112px tall inside the py-2 box, 78px wide at the 345x495 card aspect — sized
+              to the rendered box so the optimizer serves the 96/256 variants, not the scan. */}
+          {getCardImageUrlOrNull(deck.preview_card_1) && <Image src={getCardImageUrlOrNull(deck.preview_card_1)!} alt="" width={78} height={112} draggable={false} className="h-full object-contain rounded shadow-md" />}
+          {getCardImageUrlOrNull(deck.preview_card_2) && <Image src={getCardImageUrlOrNull(deck.preview_card_2)!} alt="" width={78} height={112} draggable={false} className="h-full object-contain rounded shadow-md" />}
           {!selectionMode && <button
             onClick={(e) => { e.stopPropagation(); onEditCover(deck.id!); }}
             className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/30 hover:bg-black/50 text-white/60 hover:text-white transition-colors"

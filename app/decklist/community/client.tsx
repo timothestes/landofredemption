@@ -987,8 +987,10 @@ export function DeckCard({ deck, currentUserId, onUsernameClick }: { deck: Publi
         ) : hasPreview ? (
           <div className="relative h-36 overflow-hidden">
             <div className="relative h-full flex items-center justify-center gap-1 px-2 py-2">
-              {img1 && <img src={img1} alt="" className="h-full object-contain rounded-sm group-hover:brightness-90 transition-[filter]" />}
-              {img2 && <img src={img2} alt="" className="h-full object-contain rounded-sm group-hover:brightness-90 transition-[filter]" />}
+              {/* 128px tall inside the py-2 box, 89px wide at the 345x495 card aspect — sized
+                  to the rendered box so the optimizer serves the 96/256 variants, not the scan. */}
+              {img1 && <Image src={img1} alt="" width={89} height={128} className="h-full object-contain rounded-sm group-hover:brightness-90 transition-[filter]" />}
+              {img2 && <Image src={img2} alt="" width={89} height={128} className="h-full object-contain rounded-sm group-hover:brightness-90 transition-[filter]" />}
             </div>
           </div>
         ) : (
