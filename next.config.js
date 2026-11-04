@@ -131,6 +131,18 @@ const nextConfig = {
       { source: '/wp-sitemap.xml', destination: '/sitemap.xml', permanent: true },
       { source: '/wp-sitemap-:rest', destination: '/sitemap.xml', permanent: true },
       { source: '/sitemap_index.xml', destination: '/sitemap.xml', permanent: true },
+      // iOS and link-preview fetchers probe these fixed paths instead of
+      // reading the <link rel="apple-touch-icon"> that app/apple-icon.png emits.
+      { source: '/apple-touch-icon.png', destination: '/apple-icon.png', permanent: true },
+      { source: '/apple-touch-icon-precomposed.png', destination: '/apple-icon.png', permanent: true },
+      // An article whose slug doesn't match its title ("End of Times:
+      // Play-Tester Appreciation Week"); a link built from the title is in
+      // circulation.
+      {
+        source: '/articles/end-of-times-play-tester-appreciation-week',
+        destination: '/articles/end-of-times-significant-cards',
+        permanent: true,
+      },
     ];
   },
 };

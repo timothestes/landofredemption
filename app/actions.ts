@@ -30,7 +30,13 @@ export const signUpAction = async (formData: FormData) => {
 
   if (error) {
     console.error(error.code + " " + error.message);
-    return encodedRedirect("error", "/sign-up", error.message);
+    // Supabase's mailer rejects some addresses the email field accepts (e.g.
+    // "a..b@gmail.com") and reports only that the send failed.
+    const message =
+      error.message === "Error sending confirmation email"
+        ? "We couldn't send a confirmation email to that address. Check it for typos and try again."
+        : error.message;
+    return encodedRedirect("error", "/sign-up", message);
   } else {
     // Supabase deliberately returns no error when the email already belongs to a
     // confirmed account, and sends no verification email — so a bare "check your
