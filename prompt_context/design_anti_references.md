@@ -1,0 +1,118 @@
+# Design anti-references
+
+Sites we have torn down to learn what *not* to build. Each entry records what was seen (with evidence), why it hurts, and the rule we follow instead. The rules point at `design_system.md` (public site) and `goldfish_design_system.md` (table). When a new page here starts to resemble an entry below, that is the signal to stop and simplify.
+
+---
+
+## Topdeck Nexus — topdecknexus.io (reviewed 2026-11-04)
+
+**What it is.** A free fan-made Magic: The Gathering site: card database, deck builder, bot and multiplayer table, daily puzzle, metagame stats. Vite single-page app, dark theme only, serif card-face fonts for all UI. Reviewed at 1440×900 and 390×844 in headless Chromium: home, Explore, Metagame, Sets, card page, deck builder, B&Rdle, card atlas, patron, sign-in, lobby, and a full bot game through turn 2. Network, timing, contrast, target-size and keyboard numbers come from a standalone Playwright audit the same day (single runs, wire bytes).
+
+**One-paragraph verdict.** It is a lot of real engineering wearing a costume. The data is deep (Scryfall-grade card pages, a 20k-deck metagame archive, a working rules engine) but the interface is a fantasy-themed template: blackletter buttons, emoji icons, a glowing black hole, five accent colours, a free-roaming camera on a two-player table, and copy that leaks engine internals. Under the costume the landing page ships 6 MB, the whole app runs inside a scrolling div, and a bad card URL spins forever. It looks like what an AI produces when asked for "a cool MTG site". Nothing here is a reason to copy the look, and most of it is a reason not to.
+
+### What it does well (keep these in mind so we only reject the bad parts)
+
+- **The card page** (`/card/3ed/162/lightning-bolt`): legality grid with date ranges, printings with prices and set symbols, price-source chips, cycle membership, tournament usage chart. Dense, scannable, closest to Scryfall. The one page that follows "function over form".
+- **Plumbing that is right**: zero console errors on every route; strong CSP and HSTS; brotli with immutable hashed filenames for JS and CSS; `font-display: swap`; server-rendered per-route titles and OG tags so card URLs share correctly; `prefers-reduced-motion` honoured (32 animations → 0); every icon-only control has an `aria-label`; the mobile nav collapses to a labelled "Menu" button.
+- **Lobby defaults**: starter decks preloaded, "Paste a list" one click away, spectator rules explained. The *amount* of lobby is the problem, not the ideas.
+
+### Lessons, with evidence
+
+Format: **Don't** → what was seen → **Instead** (our rule).
+
+#### 1. First impression
+
+- **Don't make the home page a decoration.** The hero is a rotating set of card thumbnails from Scryfall arranged in an arc around a glowing "black hole" planet that is itself a hidden "Enter the Nexus" button. 32 card images load by 10 s and 56 by 40 s with no interaction (808 KB); Tab-focusing a card swaps in a 488×680 image (12 focused cards = 1.38 MB). On a phone the arc fills ~60% of the screen and is unreadable; the stage is `position: sticky` and full-viewport, so the home page cannot scroll at all. The search-syntax chips (`t:goblin · o:"draw a card"`) and the "How search works" link overlap the card arc at 1440px. → **Instead:** the masthead carries one task (search or the current event) and the fold shows real content. Decorative imagery appears in exactly one place, is capped, lazy, and never behind controls (`design_system.md` → Imagery).
+- **Don't gradient-fill the wordmark.** "Topdeck Nexus" is Goudy Mediaeval with a white-to-lavender gradient and an 8px superscript "Beta" (the smallest text on the site). The audit's LCP candidate on the home page was that "Beta" badge, because gradient-clipped text and small images leave no meaningful largest element. → **Instead:** flat wordmark, Cinzel only for the H1, no gradient text anywhere outside `.jayden`.
+- **Don't line up three emoji chips as the primary CTAs.** "▶ Play a bot · 🛠 Build a deck · 🎯 B&Rdle" sit at 27px tall beside the tagline, then a second tagline "plus sets, sealed, cubes and a table to play on." → **Instead:** one primary action per view, 44px tall, green, text label.
+
+#### 2. Visual language (the AI-slop tells, all present)
+
+- **Dark-only with glow.** Body is near-black navy with radial purple and blue wallpaper glows; 12 gradients, 6 backdrop-blurs and 42 box-shadows on the home page alone. `prefers-color-scheme: light` changes nothing; there is no `color-scheme` meta and no toggle. → **Instead:** two neutral themes in one hue family, system default; no blur, no glow, no shadow on content.
+- **Five accent colours.** Search button blue, Play green, "+New" purple, Concede red, patron gold gradient; metagame format tabs each get a coloured dot; the Sets page has gold price pills, blue "EXPANSION" and amber "UPCOMING" badges on every row. The brand blue fails contrast with white text everywhere it is used ("Copy link", "Guess": 3.22:1 at 13px). → **Instead:** green is the only accent, amber only for tier and status, red only in the wordmark's R and `destructive`. Test the accent against white once and reuse it.
+- **Emoji as icons.** 🎯 🧭 ▶ 🛠 🔍 📈 📚 🎴 🧊 🃏 🎨 📰 🖌️ 🏆 🤖 ⚰ ☀ 🌙 ⚔ appear in nav buttons, menu rows, Explore tiles (full-colour system emoji above each heading), player badges and the phase bar. They render differently per OS, can't be tinted, and 8 of the 10 emoji buttons on the home page leak the glyph into the accessible name ("hammer and wrench New deck"); the card page has 57 such buttons. → **Instead:** Lucide icons at 16px in `currentColor`, `aria-hidden`, one per nav item, never above headings.
+- **Identical tile grids with text over art.** Metagame is 30 archetype tiles, each a card-art background with the name, share %, three stats and three 10px "decklist ▸" pills on top of it. Explore is 11 tiles whose only purpose is navigation. → **Instead:** hairline rows with a consistent column grid; art, if any, in a fixed-width thumbnail column; never type on top of a painting.
+- **Card-face fonts as UI fonts.** MPlantin (the MTG card body face) is the body font for the whole site; Goudy Mediaeval (a blackletter-ish display face) is on *every* button: "Sign in", "Select deck", "Pass Turn (F6)", "Concede". At 12px the buttons are hard to read and UI chrome becomes indistinguishable from card text. Seven faces ship as TTF (none WOFF2), gzip only, and the two display fonts are `cache-control: no-cache`, so every visit revalidates them. → **Instead:** Geist for everything; Cinzel for the page H1 and article titles only, never on buttons, chips, labels or numbers. WOFF2, subsetted, immutable.
+- **Nested boxes.** Lobby = page → bordered section ("Seats") → bordered seat card → inner bordered deck image → bordered buttons. Sets page = bordered filter box containing a text input, four checkboxes and 16 count-chips. → **Instead:** boxes only for floating things; sections are a small-caps label plus a hairline.
+- **Native dialogs inside a styled app.** Concede fires a browser `confirm()` ("Concede this game? You'll lose immediately.") in the middle of a fully custom table. → **Instead:** the app's own `Dialog`, so the confirmation matches the surface and is keyboard-reachable the same way everything else is.
+
+#### 3. Navigation and information architecture
+
+- **Three different searches.** Home: "Search Magic cards" (cards only). Inner-page header: "Search cards or sets…". Explore page: "Search players, decks, cubes, custom cards", with a note "Looking for a card? Card search lives on the front page." → **Instead:** one search box in one place that searches everything, with typed results grouped.
+- **The header changes per page and disappears entirely** in the deck builder, lobby and game table (the lobby's only way home is a default-blue underlined "Topdeck Nexus" link). `/builder` has zero headings and zero landmarks; the card page and B&Rdle have no `<main>`; no route has a skip link. → **Instead:** `top-nav.tsx` on every public page; tools that must go full-bleed keep one consistent exit control in the same corner; every route has one `h1`, a `<main>`, and the shell landmarks.
+- **A nav page that costs 2.27 MB.** "Explore" is a screen of 11 tiles, centred in a ~480px column on a 1440px display, whose descriptions include "Fly from the homepage's black hole into the card galaxy" and "Which cards the engine implements". Reaching it in-app pulls the 607 KB App chunk and a 1.71 MB card registry compiled into JavaScript. → **Instead:** section indexes are hairline lists with real content in them (`app/page.tsx` site sections); we never ship a page whose only content is more navigation, and a link list is a small chunk.
+- **Nav items are `<button>`s, not links.** No middle-click, no open-in-new-tab, no URL preview on hover, nothing crawlable. → **Instead:** `<Link>` for anything that changes the URL.
+- **Sixteen items in the mobile menu**, three groups, including "Usenet archive" and "Tier list"; "Sign in" appears both in the header and inside the menu. → **Instead:** the mobile drawer mirrors the desktop nav, nothing more.
+- **Thirty decorative buttons ahead of the primary control.** From the top of the document it takes 37 Tab presses to reach the search box (brand, 6 nav items, 30 hero card buttons, 3 CTAs). The search input is autofocused on load, which hides the problem until the first Shift-Tab. → **Instead:** decoration is `aria-hidden` and out of the tab order; the primary action is within the first five tab stops; a skip link exists.
+
+#### 4. Loading, empty and error states
+
+- **A blocking splash that loads the whole database.** `/builder` shows a full-screen "Loading the card database… 32,000 cards, one moment" before any UI renders; on one desktop visit it was still spinning after 10 s. With JavaScript off, every route is a blank `#root` with the word "Topdeck Nexus" and no `<noscript>`; the HTML source itself comments that the white canvas "read as a broken deploy". → **Instead:** render the shell on the server, fetch per view, skeletons in place (`lib/cards/lookup.ts` is static; the deck builder streams).
+- **An error state that never renders.** A bad card slug (`/card/m10-146`) shows "Looking up "m10-146"… / Loading…" forever while the tab title says "Page not found" and the console shows a 404 from Scryfall. A guessed slug like `/card/lightning-bolt` returns HTTP 200 with the home title and a self-referencing canonical. → **Instead:** every fetch has a terminal error branch; unknown slugs return a 404 (or redirect to the canonical) that says what was looked for and offers search.
+- **Empty states that explain the engine.** New deck: "Every Magic card is searchable — cards the game can't run yet are marked ⚡ and listed in the deck-issues panel, ⚠️ means implemented but flagged for review. Your own published cards are in there too, and render with the face the card creator generated. Sign in to save decks to your profile." Then a bottom bar: "Add 3 more cards and suggestions will start drifting in." next to an unlabelled "1x" button and an unlabelled toggle. → **Instead:** one sentence that says what to do ("Search a card to add it"), controls with labels, implementation status kept in admin.
+- **Engine status as a public feature.** The card atlas sidebar lists "Fully implemented 32,795 · Needs review 0 · Missing functionality 1" with a progress bar; Explore has a "Coverage: Which cards the engine implements" tile. → **Instead:** internal metrics live under `/admin`.
+
+#### 5. Mobile
+
+- **The app scrolls inside a div.** `html` and `body` are `overflow: hidden`; `.site-shell` is the scroller (measured: document height 844, shell scroll height 5235 on Metagame). This breaks scroll restoration, find-in-page, pull-to-refresh, tap-status-bar-to-top, and full-page screenshots. → **Instead:** the document scrolls. Inner scrollers only for genuinely nested regions (a drawer, a long select).
+- **Clipped tab strips.** The Metagame format tabs scroll sideways with the selected tab centred, so the first tab reads "ndard" with no edge fade. → **Instead:** tabs wrap, or become a select below ~6 items; any horizontal strip gets an edge fade and starts at the first item.
+- **Sideways reading as the primary mode.** B&Rdle tells phones "Scroll the results sideways to see all clues." for a 12-column grid; the grid of 6 empty rows fills the screen before any guess. → **Instead:** rows adapt (stack the columns, hide the empties), never a sideways table as the main view.
+- **Tiny text and targets.** Smallest rendered text is 8px on home ("Beta"), 10px on Metagame and the card page ("Legal" badges, white on green at 3.41:1), 9.5px on the lobby ("YOU", 1.9:1). On the home page at 390px, 15 of 33 interactive elements are under 44×44 and 6 are under 24×24 (hero cards measure 10×14). → **Instead:** 12px floor for anything a player reads mid-game, 4.5:1 contrast, 44px targets (`min-h-11`).
+
+#### 6. Copy and voice
+
+- **Long explanatory paragraphs where a label should be.** Lobby: "Up to 8 players. Once every seat is taken, a friend opening the link spectates — add a seat first if you want them to play."; the Metagame chart has a 90-word legend paragraph; B&Rdle's legend is nine colour meanings in one run-on line. → **Instead:** labels, a tooltip for the rare case, one short sentence max.
+- **Whimsy in a tool.** "Journey into the Nexus", "Enter the Nexus", "Fly from the homepage's black hole into the card galaxy", "suggestions will start drifting in". → **Instead:** plain verbs. Our brand is "clean, serious, professional".
+- **A button that names a state.** The main action on the table reads "My Turn ▸" when it means "pass to my turn"; the post-game modal offers "Back to lobby" while it is already sitting on the lobby. → **Instead:** every button is a verb phrase that is true where it appears.
+
+#### 7. Engineering that shows through
+
+- **Don't ship the whole app's data to the landing page.** Home transfers 5.93 MB in 25 s on desktop (7.52 MB after a few Tab presses): 2.62 MB of JSON is requested at 0.62 s, before the `load` event, to back a card-atlas search box most visitors never touch (`/api/card-map/atlas` 2.12 MB, `cardnames/usage` 235 KB, `implementation-status` 186 KB, the Scryfall sets list 72 KB). On a 1.5 Mbps / 150 ms throttle the first hero image painted at 4.0 s and the atlas was still downloading at 25 s. → **Instead:** the landing route's critical path is HTML, CSS and the route chunk; feature data loads when the feature opens.
+- **Don't "prefetch" multi-megabyte blobs on idle.** After ~15 s on any light route an inline script prefetches the App chunk (607 KB), the card registry (1.71 MB) and `extra-cards.json` (2.83 MB on the wire, 20.7 MB raw). The static `/patron` marketing page therefore costs 5.41 MB and scores CLS 0.13. Only `saveData` and 2g/3g are exempt. → **Instead:** prefetch only the next likely route's chunk, gated on intent (hover, viewport) and a 4g connection; never a data blob.
+- **Don't compile data into JavaScript.** The 1.71 MB `registryInit` chunk is a card registry shipped as JS, parsed and evaluated on the main thread. → **Instead:** fetched, cacheable JSON or an API; measure parse cost, not just bytes. (Our generated `cardData.ts` is the same shape of risk; keep it tree-shakeable and off the public critical path.)
+- **Don't load a tracker in `<head>` on every route without consent, especially one that is broken.** An Impact affiliate snippet is inline on all pages with no consent UI; the CDN currently returns 403, so it is a failed request on every page for nothing. → **Instead:** third-party scripts load after consent or interaction, only on routes that need them, and are monitored.
+- **Don't stuff `localStorage` on first visit.** 221 KB (the Scryfall sets list, verbatim) is written before any interaction; after Play, a key whose *name* is a pipe-joined list of 14 card names appears. → **Instead:** Cache API or IndexedDB for data, `localStorage` for small preferences, never data in key names.
+- **Don't let an SPA route change leave stale metadata.** In-app navigation to a card sets the title to "Lightning Bolt · Topdeck Nexus" while the server renders "Lightning Bolt (Revised Edition) · Topdeck Nexus", and the meta description stays the home one; the 1,758-URL sitemap has no card pages at all. → **Instead:** one metadata source used by server and client (`generateMetadata`), indexable entities in the sitemap.
+- **Don't fire side effects from a nav click.** Clicking "▶ Play" immediately creates an anonymous game room (`/lobby?game=…`), sets three cookies and writes resume keys. → **Instead:** nav goes to a page; creating a resource is a deliberate second action.
+
+#### 8. The play table (lobby + bot game): the goldfish lessons
+
+This is the part most relevant to `/goldfish` and `/play`. Start to first dealt hand took 3 clicks and a scroll past four lobby sections; the first two turns needed three "Resolve" clicks for one creature.
+
+- **"Play a bot" must play a bot.** The home CTA opens the generic lobby with the bot seat empty; you add a bot, "Ready up" (required even solo), then "Start game". The room created on the Play click then follows you to the deck builder and other pages (console: "joined room … resumed=true"), and opening the same room in a second tab shows "Connecting to your room… Waiting for the server to confirm your membership." forever with only a "Back" button. → **Instead:** one click from "Practice" to a dealt hand; rooms are created on explicit intent only; a second tab gets a clear "this seat is open elsewhere" state.
+- **Leaving is not the primary action.** The two most prominent buttons on the table are a big blue "Back to lobby" and a big red "Concede", top right. Nine controls sit in the top bar (?, Log, turn pill, −, +, Fit table, Full screen, Report bug, Back, Concede). → **Instead:** leave/concede are secondary, behind a menu or small text; the top bar carries game state, not utilities.
+- **No free camera on a two-player table.** "WASD / right-drag: pan · wheel: zoom", plus −/+ and a "Fit table" button. If the table can be mis-framed, the layout is wrong. → **Instead:** the table fits by design (`virtual-canvas-scaling`); a "fit" button is a smell.
+- **One pass control.** The table offers Space, a large state-dependent button ("Resolve ▸" / "End Turn ▸" / "My Turn ▸" / "Move to Combat ⚔ + End Turn" split), "Pass Turn (F6)", an "Auto-pass" checkbox and a "Full Control" toggle. With Auto-pass ON the player still gets "Respond, or pass" and must click Resolve for the opponent's creature, again for its enters-the-battlefield trigger, and again for their own Goblin Guide. → **Instead:** one primary pass button with one keyboard equivalent; auto-pass means auto; stops are opt-in per phase and labelled.
+- **Phase stops are not 13 glyphs.** Two rows (OPP / YOU) × 13 icon-only symbols at ~12px with a hover tooltip; the only explanation is in the "?" overlay ("Dots above the phase bar set your stops"). → **Instead:** phase names as text, 44px toggles, or a single "stop at combat" style control.
+- **Nothing overlaps a zone.** The hint line "Space: pass · Z: undo mana · dots set stops" is painted over the player's library card; the stack preview (a full-size card) covers the opponent's library; on mobile "Move to Combat" and "End Turn" cover the library and graveyard. → **Instead:** zones own their rectangles; previews open in a reserved area or a popover anchored away from the field.
+- **The hand never clips and never goes grey.** The hand is a fanned arc of full cards with the bottom third cut off by the viewport; every card you cannot cast *right now* renders fully desaturated, so the whole hand turns greyscale during the opponent's turn. Hovering a card pops a 260×350 preview straight up over your own battlefield and hides your permanents (verified: a played Mountain was invisible under the preview). → **Instead:** hand cards fully visible at a readable size, castability shown with a thin ring or dimmed border, previews anchored off the field.
+- **Two empty bordered boxes are not a table.** Opponent's and your battlefields are identical dark rectangles with a faint grid; permanents float at the centre; libraries and graveyards sit outside the boxes on the far right with 9px counts. → **Instead:** zones are distinguishable by position and surface (the "No-Line" rule in `goldfish_design_system.md`), library and graveyard sit where a player puts them physically, counts are legible.
+- **Mobile is not desktop shrunk.** At 390px the table is a ~370×400 box with ~45px cards, the top bar is five unlabelled icon buttons (bug, back, concede), "Fit table" becomes a stray button, the hand is a horizontal strip with a scrollbar thumb, and P/T badges cover the thumbnails. 12 of 22 visible controls are under 44px; graveyard buttons are 33×51. → **Instead:** `camera.ts` layouts per viewport, labelled controls, 44px minimum (see the mobile touch spec).
+- **Ceremony in moderation.** Coin flip modal ("Who goes first? Call it in the air") → second modal with a static gold disc ("Guest flips a coin — called heads · TAILS") → keep/mulligan bar; the game log auto-opens over the opponent's battlefield. Conceding goes through a native `confirm()`, then ~5 s of unchanged table, then a bounce to the lobby with a "You lost the match" modal. → **Instead:** one pregame step, dismissed automatically, log closed by default (`pregame-ceremony-design`); conceding gives immediate feedback on the table.
+- **Lobby length.** Invite (URL field + Copy link + two sentences), Seats (deck art cards, Select deck / Paste a list), Spectators (two sentences), Host settings (four selects, two checkboxes, "Turn this lobby into a booster draft"), then Ready / Start / Leave, then the legal footer. A solo bot game scrolls through all of it. → **Instead:** practice mode skips the lobby entirely; the real lobby shows seats and Start above the fold, settings behind a disclosure (`play-lobby-redesign`).
+
+### Smell test (run on any new page before opening a PR)
+
+1. More than one accent colour on the screen?
+2. Any emoji doing an icon's job?
+3. Cinzel (or any display face) on a button, chip, label or number?
+4. Gradient text, backdrop blur, glow, or a shadow on content?
+5. A grid of same-size tiles, or text on top of a photo?
+6. A page whose only content is links to other pages?
+7. Boxes inside boxes?
+8. A native `alert`/`confirm` anywhere?
+9. A full-screen spinner before the shell renders, or a blank page without JavaScript?
+10. A fetch with no error branch, or an error that reads "Loading…"? An unknown slug that returns 200?
+11. Copy that mentions the engine, implementation status, or "the Nexus"?
+12. The document not scrolling (`overflow: hidden` on body)?
+13. A sideways-scrolling strip with no edge fade, or a sideways table as the primary view?
+14. Text under 12px, contrast under 4.5:1, or a target under 44px that a player uses mid-game?
+15. Data the page does not need requested before `load`, or a prefetch over ~200 KB?
+16. Decorative elements in the tab order ahead of the primary action?
+17. A route change that leaves the title or description stale?
+18. A nav click that creates a record, a room, or a cookie?
+19. Leave/Concede/Back as the biggest button on a game screen?
+20. More than one way to pass priority, or an "auto" setting that still asks?
+21. A card preview or hint text that can cover a zone?
+22. A "Fit table" or zoom control on a two-player table?
+23. A button labelled with a state instead of a verb?

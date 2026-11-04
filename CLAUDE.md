@@ -49,6 +49,7 @@ make update-cards        # Download latest carddata.txt and regenerate TypeScrip
 | Official ORDIR (v7) | qrpnuz0u6exnvyt8.public.blob.vercel-storage.com/wp/wp-content/uploads/2026/03/ORDIR_PDF_7.0.0.pdf (`DOCS.ordir`) |
 | Deck Building Rules (v2.0) | qrpnuz0u6exnvyt8.public.blob.vercel-storage.com/wp/wp-content/uploads/2026/08/Deck_Building_Rules_2.0.pdf (`DOCS.deckBuildingRules`) |
 | Design system | `prompt_context/design_system.md` |
+| Design anti-references | `prompt_context/design_anti_references.md` — Topdeck Nexus teardown (Nov 2026): what not to copy, with a 23-point smell test for new pages and the play table |
 | Forge card versioning | `prompt_context/forge_versioning.md` — autosave vs proposals vs versions, who sees what, where the "why" lives |
 | Forge set promotion ("big red button") | `docs/superpowers/specs/2026-08-22-forge-public-set-release-design.md` + `app/forge/lib/promote.ts`; overlay `scripts/data/forge-released.json` via `make pull-forge-releases` |
 | Card aliases (`[[LAFS]]`) | `lib/cards/aliases.ts` + `app/admin/catalog/AliasEditor.tsx`; curated in /admin/catalog, baked into the overlay by `make pull-card-overrides` — an alias is live only after a deploy |
@@ -77,7 +78,7 @@ Competitive and casual Redemption CCG players who need to build decks, register 
 - **Visual tone:** Data-dense and functional, inspired by Moxfield/Archidekt. Information-forward with clear hierarchy. Neutral slate-tinted palette (tokens in `app/globals.css`) with green as the single accent for actions and states; rules in `prompt_context/design_system.md`.
 - **Typography:** Geist Sans for UI, Cinzel for display/headers where biblical gravitas is needed. Prioritize legibility at small sizes on mobile.
 - **Theme:** Light and dark mode (system default). Light mode is near-white with subtle background imagery; dark mode is rich and immersive.
-- **Anti-references:** Avoid overly flashy game UIs (Hearthstone-style heavy textures), generic Bootstrap looks, or cluttered dashboards. No gratuitous animation or decoration.
+- **Anti-references:** Avoid overly flashy game UIs (Hearthstone-style heavy textures), generic Bootstrap looks, or cluttered dashboards. No gratuitous animation or decoration. Worked teardown with evidence: `prompt_context/design_anti_references.md`.
 
 ### Design Principles
 1. **Function over form** — Every UI element must serve a clear purpose. Data density is a feature, not a bug. Optimize for task completion speed.
