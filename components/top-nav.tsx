@@ -26,6 +26,37 @@ import { ResourcesMenu } from "./resources-menu";
 // cause repeated getUser() round-trips, which feeds the refresh-token storm.
 const supabase = createClient();
 
+// `prefetch: false` opts a link out of Next's viewport/hover prefetch. The deck
+// builder routes bundle the whole card catalog (~350 KB brotli), so every page
+// that rendered a prefetching link to them downloaded it.
+export type NavLink = { href: string; label: string; icon: IconType; highlight?: boolean; authRequired?: boolean; isNew?: boolean; prefetch?: false };
+
+export const navLinks: NavLink[] = [
+  // Hidden until Nationals 2026 registration reopens next year — re-enable this link and the NATIONALS_CONFIG import above.
+  // { href: "/register", label: NATIONALS_CONFIG.adminOnly ? `${NATIONALS_CONFIG.displayName} (Admin Only)` : `${NATIONALS_CONFIG.displayName}`, icon: HiUserAdd, highlight: true },
+  { href: "/play", label: "Play", icon: GiCrossedSwords },
+  { href: "/decklist/card-search?new=true", label: "Deck Builder", icon: TbSearch, prefetch: false },
+  { href: "/spoilers", label: "Spoilers", icon: HiSparkles },
+  { href: "/articles", label: "Articles", icon: HiNewspaper },
+];
+
+export const tournamentLinks: NavLink[] = [
+  { href: "/tournaments", label: "Upcoming Events", icon: HiCalendar },
+  { href: "/tournaments/results", label: "Results", icon: HiClipboardList },
+  { href: "/tournaments/rnrs-points", label: "RNRS Points", icon: HiChartBar },
+  { href: "/tournaments/history", label: "Nationals History", icon: FaBookOpen },
+  { href: "/tracker/tournaments", label: "My Tournaments", icon: FaTrophy, authRequired: true },
+  { href: "/brackets", label: "Gauntlets", icon: HiViewList, authRequired: true, isNew: true },
+];
+
+export const deckLinks: NavLink[] = [
+  { href: "/decklist/community", label: "Community Decks", icon: HiGlobeAlt },
+  { href: "/decklist/my-decks", label: "My Decks", icon: TbCardsFilled, authRequired: true },
+  { href: "/collection", label: "My Collection", icon: HiCollection, authRequired: true, isNew: true },
+  { href: "/decklist/generate", label: "Deck Check PDF", icon: TbCardsFilled },
+  { href: "/decklist/card-search/tier-list", label: "Tier List Maker", icon: TbListNumbers, isNew: true, prefetch: false },
+];
+
 const TopNav: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
@@ -125,34 +156,6 @@ const TopNav: React.FC = () => {
 
   const isActive = (path: string) => pathname?.startsWith(path);
 
-  type NavLink = { href: string; label: string; icon: IconType; highlight?: boolean; authRequired?: boolean; isNew?: boolean };
-
-  const navLinks: NavLink[] = [
-    // Hidden until Nationals 2026 registration reopens next year — re-enable this link and the NATIONALS_CONFIG import above.
-    // { href: "/register", label: NATIONALS_CONFIG.adminOnly ? `${NATIONALS_CONFIG.displayName} (Admin Only)` : `${NATIONALS_CONFIG.displayName}`, icon: HiUserAdd, highlight: true },
-    { href: "/play", label: "Play", icon: GiCrossedSwords },
-    { href: "/decklist/card-search?new=true", label: "Deck Builder", icon: TbSearch },
-    { href: "/spoilers", label: "Spoilers", icon: HiSparkles },
-    { href: "/articles", label: "Articles", icon: HiNewspaper },
-  ];
-
-  const tournamentLinks: NavLink[] = [
-    { href: "/tournaments", label: "Upcoming Events", icon: HiCalendar },
-    { href: "/tournaments/results", label: "Results", icon: HiClipboardList },
-    { href: "/tournaments/rnrs-points", label: "RNRS Points", icon: HiChartBar },
-    { href: "/tournaments/history", label: "Nationals History", icon: FaBookOpen },
-    { href: "/tracker/tournaments", label: "My Tournaments", icon: FaTrophy, authRequired: true },
-    { href: "/brackets", label: "Gauntlets", icon: HiViewList, authRequired: true, isNew: true },
-  ];
-
-  const deckLinks: NavLink[] = [
-    { href: "/decklist/community", label: "Community Decks", icon: HiGlobeAlt },
-    { href: "/decklist/my-decks", label: "My Decks", icon: TbCardsFilled, authRequired: true },
-    { href: "/collection", label: "My Collection", icon: HiCollection, authRequired: true, isNew: true },
-    { href: "/decklist/generate", label: "Deck Check PDF", icon: TbCardsFilled },
-    { href: "/decklist/card-search/tier-list", label: "Tier List Maker", icon: TbListNumbers, isNew: true },
-  ];
-
   // The document lists themselves live in lib/resources.ts so this dropdown and
   // the /resources page can never drift apart.
 
@@ -202,6 +205,7 @@ const TopNav: React.FC = () => {
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch={link.prefetch}
                   className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
                     ${isHighlight
                       ? 'border-2 border-primary text-primary hover:bg-primary/10'
@@ -395,6 +399,7 @@ const TopNav: React.FC = () => {
                         <Link
                           key={link.href}
                           href={link.href}
+                          prefetch={link.prefetch}
                           onClick={() => setIsTournamentsOpen(false)}
                           className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         >
@@ -422,6 +427,7 @@ const TopNav: React.FC = () => {
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch={link.prefetch}
                   className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
                     ${isHighlight
                       ? 'border-2 border-primary text-primary hover:bg-primary/10'
@@ -467,6 +473,7 @@ const TopNav: React.FC = () => {
                         <Link
                           key={link.href}
                           href={link.href}
+                          prefetch={link.prefetch}
                           onClick={() => setIsDecksOpen(false)}
                           className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
                         >
@@ -601,6 +608,7 @@ const TopNav: React.FC = () => {
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch={link.prefetch}
                   onClick={closeMobileMenu}
                   className={`flex items-center gap-3 px-3 py-2 rounded-md text-base font-medium transition-colors
                     ${isHighlight
@@ -775,6 +783,7 @@ const TopNav: React.FC = () => {
                       <Link
                         key={link.href}
                         href={link.href}
+                        prefetch={link.prefetch}
                         onClick={closeMobileMenu}
                         className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-muted"
                       >
@@ -820,6 +829,7 @@ const TopNav: React.FC = () => {
                       <Link
                         key={link.href}
                         href={link.href}
+                        prefetch={link.prefetch}
                         onClick={closeMobileMenu}
                         className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-muted"
                       >
@@ -846,6 +856,7 @@ const TopNav: React.FC = () => {
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch={link.prefetch}
                   onClick={closeMobileMenu}
                   className={`flex items-center gap-3 px-3 py-2 rounded-md text-base font-medium transition-colors
                     ${isHighlight

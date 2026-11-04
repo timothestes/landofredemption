@@ -96,6 +96,7 @@ export default async function Index(props: {
           <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
             <Link
               href="/decklist/card-search?new=true"
+              prefetch={false}
               className="inline-flex min-h-11 items-center rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Build a deck

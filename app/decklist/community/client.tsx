@@ -1107,6 +1107,7 @@ export function DeckCard({ deck, currentUserId, onUsernameClick }: { deck: Publi
         {currentUserId && (isOwner ? (
           <Link
             href={`/decklist/card-search?deckId=${deck.id}`}
+            prefetch={false}
             className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm border border-border rounded-lg hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors font-medium"
           >
             <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

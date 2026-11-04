@@ -15,15 +15,17 @@ import { SPONSORS } from "@/lib/sponsors";
 // adopt the same pattern.
 const HIDE_ON_PATHS = new Set<string>(["/decklist/card-search"]);
 
-type FooterLink = { label: string; href: string };
+// `prefetch: false` keeps the deck builder's card-catalog chunk off every page;
+// see NavLink in top-nav.tsx.
+type FooterLink = { label: string; href: string; prefetch?: false };
 
-const COLUMNS: { heading: string; links: FooterLink[] }[] = [
+export const COLUMNS: { heading: string; links: FooterLink[] }[] = [
   {
     heading: "Build",
     links: [
-      { label: "Deck Builder", href: "/decklist/card-search?new=true" },
+      { label: "Deck Builder", href: "/decklist/card-search?new=true", prefetch: false },
       { label: "Community decks", href: "/decklist/community" },
-      { label: "Tier list", href: "/decklist/card-search/tier-list" },
+      { label: "Tier list", href: "/decklist/card-search/tier-list", prefetch: false },
     ],
   },
   {
@@ -110,6 +112,7 @@ export default function SiteFooter() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
+                      prefetch={link.prefetch}
                       className="flex min-h-11 items-center py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground sm:min-h-0"
                     >
                       {link.label}

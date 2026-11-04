@@ -98,6 +98,7 @@ function ActionErrorNotice({ res, deckId }: { res: FailedResult; deckId?: string
         {deckId && (
           <Link
             href={`/decklist/card-search?deckId=${deckId}`}
+            prefetch={false}
             className="mt-2 inline-block text-primary hover:underline"
           >
             Open in deck builder
