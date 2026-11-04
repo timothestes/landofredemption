@@ -22,6 +22,21 @@ export const updateSession = async (request: NextRequest) => {
       },
     });
 
+    const pathname = request.nextUrl.pathname;
+
+    // Only touch Supabase when we actually need it: protected routes need
+    // getUser() to enforce the sign-in redirect. For everything else,
+    // anonymous fan-out (RSC payloads, prefetches across Edge regions) was
+    // hammering /auth/v1/user. Return BEFORE creating the client: just
+    // creating it makes @supabase/ssr refresh an expired session in the
+    // background, after this response has gone out, so the rotated cookies
+    // were dropped and the frozen fetch logged "fetch failed".
+    const requiresAuth = needsAuth(pathname);
+
+    if (!requiresAuth) {
+      return response;
+    }
+
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -44,18 +59,6 @@ export const updateSession = async (request: NextRequest) => {
         },
       },
     );
-
-    const pathname = request.nextUrl.pathname;
-
-    // Only call getUser() when we actually need it: protected routes need it
-    // to enforce the sign-in redirect. For everything else, anonymous fan-out
-    // (RSC payloads, prefetches across Edge regions) was hammering
-    // /auth/v1/user. Pass through cleanly instead.
-    const requiresAuth = needsAuth(pathname);
-
-    if (!requiresAuth) {
-      return response;
-    }
 
     const {
       data: { user },
