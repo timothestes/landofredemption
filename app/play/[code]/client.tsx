@@ -2071,6 +2071,8 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                 onPlayAgainHandled={() => setPlayAgainTriggered(false)}
                 isForge={isForge}
                 myDeckId={gameParams?.deckId}
+                opponentLeft={opponentDisconnected}
+                onLeave={handleReturnToLobby}
               />
               )}
             </div>
@@ -2213,6 +2215,8 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                 gameState={gameState}
                 isForge={isForge}
                 myDeckId={gameParams?.deckId}
+                opponentLeft={opponentDisconnected}
+                onLeave={handleReturnToLobby}
               />
             )}
           </div>
