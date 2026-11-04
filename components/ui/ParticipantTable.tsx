@@ -11,9 +11,17 @@ import {
   removeParticipantWithBlockAction,
 } from "../../app/tracker/tournaments/actions";
 import ConfirmationDialog from "./confirmation-dialog";
-import SubmissionModal, { LegalityDot } from "./SubmissionModal";
+import { LegalityDot } from "./LegalityDot";
 import ToastNotification from "./toast-notification";
 import { Dialog, DialogContent, DialogHeader, DialogFooter } from "./dialog";
+import dynamic from "next/dynamic";
+
+// The submission modal reaches the whole card catalog through lib/cards/lookup
+// (findCard, to group the snapshot by type). It loads on demand so the catalog
+// stays out of the host view's static bundle. The dialog is mounted (closed)
+// with the table, so the chunk is fetched on mount rather than on the first
+// open — no loading placeholder needed.
+const SubmissionModal = dynamic(() => import("./SubmissionModal"), { ssr: false });
 
 interface Participant {
   id: string;
