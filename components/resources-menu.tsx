@@ -48,7 +48,7 @@ export function ResourcesMenu({
       indented ? (isMobile ? "pl-8" : "pl-10") : ""
     }`;
     return resource.internal ? (
-      <Link key={resource.href} href={resource.href} onClick={onNavigate} className={className}>
+      <Link key={resource.href} href={resource.href} prefetch={resource.prefetch} onClick={onNavigate} className={className}>
         {content}
       </Link>
     ) : (
