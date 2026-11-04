@@ -1,7 +1,7 @@
 import TopNav from "@/components/top-nav";
 import SiteFooter from "@/components/site-footer";
-import { loadUpcomingListings } from "./actions";
-import TournamentsClient from "./tournaments-client";
+import { loadUpcomingListings } from "../actions";
+import TournamentsClient from "../tournaments-client";
 
 export const metadata = {
   title: "Upcoming Tournaments",
