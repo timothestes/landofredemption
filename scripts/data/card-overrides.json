@@ -25,6 +25,14 @@
       "note": "Errata"
     },
     {
+      "name": "Naaman (PoC)",
+      "set": "PoC",
+      "fields": {
+        "specialAbility": "If Naaman is discarded, heal and convert him to a red Hero. Limit once. O.T. Enhancements used by Naaman cannot be negated."
+      },
+      "note": "Negated was mispelled"
+    },
+    {
       "name": "The Roman Jailer",
       "set": "TEC",
       "fields": {
