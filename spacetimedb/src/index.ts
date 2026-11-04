@@ -31,6 +31,7 @@ import {
 } from './pregameFlow';
 import { TURN_PHASES, STOP_PHASES, gateBoundaryIndex, parseStops, toggleStop, firstStopInRange } from './stopFlow';
 import { pickSoloRow, type SeatHint } from './soloSeat';
+import { rematchRequestOutcome, pregameSinceMicros } from './rematchFlow';
 
 // Auto-reveal duration for cards that land in a hand via a move whose log
 // payload reveals the card identity (cross-player moves, face-up moves, etc.).
@@ -1723,6 +1724,136 @@ export const pregame_change_deck = spacetimedb.reducer(
 // ===========================================================================
 
 // ---------------------------------------------------------------------------
+// Helper: startRematch
+// Accepts the pending rematch for `player` and resets the game in place.
+// Shared by respond_rematch (Accept) and request_rematch (the second seat
+// pressing Play Again). Callers validate format and deck data first.
+// ---------------------------------------------------------------------------
+function startRematch(ctx: any, game: any, player: any, deckId: string, deckData: string, paragon: string) {
+  const gameId = game.id;
+  // Store the accepting seat's deck data
+  const updates: any = { ...game, rematchResponse: 'accepted' };
+  if (player.seat === 0n) {
+    updates.rematchDeckId0 = deckId;
+    updates.rematchDeckData0 = deckData;
+    updates.rematchParagon0 = paragon;
+  } else {
+    updates.rematchDeckId1 = deckId;
+    updates.rematchDeckData1 = deckData;
+    updates.rematchParagon1 = paragon;
+  }
+  ctx.db.Game.id.update(updates);
+
+  // ---- Reset the game in-place ----
+
+  // 1. Delete all existing cards and counters
+  for (const card of [...ctx.db.CardInstance.card_instance_game_id.filter(gameId)]) {
+    // Delete counters for this card
+    for (const counter of [...ctx.db.CardCounter.card_counter_card_instance_id.filter(card.id)]) {
+      ctx.db.CardCounter.id.delete(counter.id);
+    }
+    ctx.db.CardInstance.id.delete(card.id);
+  }
+
+  // 2. Update players with new deck data
+  const allPlayers: any[] = [...ctx.db.Player.player_game_id.filter(gameId)];
+  for (const p of allPlayers) {
+    const latestGame = ctx.db.Game.id.find(gameId);
+    if (!latestGame) throw new SenderError('Game not found');
+    const newDeckId = p.seat === 0n ? latestGame.rematchDeckId0 : latestGame.rematchDeckId1;
+    const newDeckData = p.seat === 0n ? latestGame.rematchDeckData0 : latestGame.rematchDeckData1;
+    const newParagon = p.seat === 0n ? latestGame.rematchParagon0 : latestGame.rematchParagon1;
+    // Rematch reuses the same Player rows (in-place reset), so per-game
+    // reveal state must be cleared here or it leaks into the new game —
+    // e.g. The Foretelling Angel's top-deck toggle would flip the fresh
+    // deck's top card face up, and a revealed hand would expose the new
+    // opening hand.
+    ctx.db.Player.id.update({
+      ...p,
+      deckId: newDeckId,
+      paragon: newParagon,
+      pendingDeckData: '',
+      handRevealed: false,
+      handRevealSnapshot: '',
+      reserveRevealed: false,
+      revealedCards: '',
+      topDeckRevealed: false,
+      keepOneUndo: '',
+    });
+
+    // 3. Insert new cards, shuffle, draw opening hand
+    const currentGame = ctx.db.Game.id.find(gameId);
+    if (!currentGame) throw new SenderError('Game not found');
+    insertCardsShuffleDraw(ctx, currentGame, p, newDeckData);
+  }
+
+  // 4. Roll dice for first player
+  const gameAfterCards = ctx.db.Game.id.find(gameId);
+  if (!gameAfterCards) throw new SenderError('Game not found');
+  const seed = makeSeed(
+    ctx.timestamp.microsSinceUnixEpoch,
+    gameId,
+    0n,
+    gameAfterCards.rngCounter
+  );
+  const rng = xorshift64(seed);
+
+  let r0: number, r1: number;
+  do {
+    r0 = Number(rng.next() % 20n) + 1;
+    r1 = Number(rng.next() % 20n) + 1;
+  } while (r0 === r1);
+
+  const winner = r0 > r1 ? '0' : '1';
+
+  // 5. Reset game to pregame/rolling
+  const CHOOSE_DEADLINE_MICROS = 30_000_000n;
+  const chooseDeadline = ctx.timestamp.microsSinceUnixEpoch + CHOOSE_DEADLINE_MICROS;
+  const gameBeforeReset = ctx.db.Game.id.find(gameId);
+  if (!gameBeforeReset) throw new SenderError('Game not found');
+  ctx.db.Game.id.update({
+    ...gameBeforeReset,
+    status: 'pregame',
+    pregamePhase: 'rolling',
+    currentTurn: 0n,
+    currentPhase: 'draw',
+    turnNumber: 0n,
+    lastDiceRoll: '',
+    pregameReady0: false,
+    pregameReady1: false,
+    rollResult0: BigInt(r0),
+    rollResult1: BigInt(r1),
+    rollWinner: winner,
+    rngCounter: gameBeforeReset.rngCounter + 1n,
+    rematchRequestedBy: '',
+    rematchDeckId0: '',
+    rematchDeckData0: '',
+    rematchDeckId1: '',
+    rematchDeckData1: '',
+    rematchParagon0: '',
+    rematchParagon1: '',
+    rematchResponse: '',
+    rematchCode: '',
+    battleState: '',
+    battleAttackerSeat: '',
+    lastBattlePlayBySeat: '',
+    choosingDeadlineMicros: chooseDeadline,
+    playingStartedAtMicros: 0n,
+  });
+  scheduleChooseFirstTimeout(ctx, gameId, chooseDeadline);
+
+  // Phase Stops: rematch reuses the same gameId (in-place reset), so the
+  // stop/hold rows must be cleared here or a hold stranded by a mid-hold
+  // concede/win wedges the next game (spec §6.6, E11). This is what
+  // enforces "all stops off each game."
+  clearStopHoldRows(ctx, gameId);
+
+  logAction(ctx, gameId, player.id, 'REMATCH_STARTED',
+    JSON.stringify({ result0: r0, result1: r1, winner }),
+    0n, 'pregame');
+}
+
+// ---------------------------------------------------------------------------
 // Reducer: request_rematch
 // ---------------------------------------------------------------------------
 export const request_rematch = spacetimedb.reducer(
@@ -1737,9 +1868,10 @@ export const request_rematch = spacetimedb.reducer(
     const game = ctx.db.Game.id.find(gameId);
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'finished') throw new SenderError('Game is not finished');
-    if (game.rematchRequestedBy !== '') throw new SenderError('Rematch already requested');
 
     const player = findPlayerBySender(ctx, gameId);
+    const outcome = rematchRequestOutcome(game.rematchRequestedBy, game.rematchResponse, player.seat.toString());
+    if (outcome === 'duplicate') throw new SenderError('Rematch already requested');
 
     // Reject rematch with a deck in a different format than the original game
     const requesterFormat = normalizeFormat(format);
@@ -1756,6 +1888,13 @@ export const request_rematch = spacetimedb.reducer(
       if (!Array.isArray(parsed) || parsed.length === 0) throw new Error();
     } catch {
       throw new SenderError('Invalid deck data');
+    }
+
+    // The opponent asked first and is still waiting: both pressed Play Again,
+    // so start the rematch rather than refuse this as a duplicate.
+    if (outcome === 'accept') {
+      startRematch(ctx, game, player, deckId, deckData, paragon);
+      return;
     }
 
     const updates: any = { ...game, rematchRequestedBy: player.seat.toString() };
@@ -1818,126 +1957,7 @@ export const respond_rematch = spacetimedb.reducer(
         throw new SenderError('Invalid deck data');
       }
 
-      // Store responder's deck data
-      const updates: any = { ...game, rematchResponse: 'accepted' };
-      if (player.seat === 0n) {
-        updates.rematchDeckId0 = deckId;
-        updates.rematchDeckData0 = deckData;
-        updates.rematchParagon0 = paragon;
-      } else {
-        updates.rematchDeckId1 = deckId;
-        updates.rematchDeckData1 = deckData;
-        updates.rematchParagon1 = paragon;
-      }
-      ctx.db.Game.id.update(updates);
-
-      // ---- Reset the game in-place ----
-
-      // 1. Delete all existing cards and counters
-      for (const card of [...ctx.db.CardInstance.card_instance_game_id.filter(gameId)]) {
-        // Delete counters for this card
-        for (const counter of [...ctx.db.CardCounter.card_counter_card_instance_id.filter(card.id)]) {
-          ctx.db.CardCounter.id.delete(counter.id);
-        }
-        ctx.db.CardInstance.id.delete(card.id);
-      }
-
-      // 2. Update players with new deck data
-      const allPlayers: any[] = [...ctx.db.Player.player_game_id.filter(gameId)];
-      for (const p of allPlayers) {
-        const latestGame = ctx.db.Game.id.find(gameId);
-        if (!latestGame) throw new SenderError('Game not found');
-        const newDeckId = p.seat === 0n ? latestGame.rematchDeckId0 : latestGame.rematchDeckId1;
-        const newDeckData = p.seat === 0n ? latestGame.rematchDeckData0 : latestGame.rematchDeckData1;
-        const newParagon = p.seat === 0n ? latestGame.rematchParagon0 : latestGame.rematchParagon1;
-        // Rematch reuses the same Player rows (in-place reset), so per-game
-        // reveal state must be cleared here or it leaks into the new game —
-        // e.g. The Foretelling Angel's top-deck toggle would flip the fresh
-        // deck's top card face up, and a revealed hand would expose the new
-        // opening hand.
-        ctx.db.Player.id.update({
-          ...p,
-          deckId: newDeckId,
-          paragon: newParagon,
-          pendingDeckData: '',
-          handRevealed: false,
-          handRevealSnapshot: '',
-          reserveRevealed: false,
-          revealedCards: '',
-          topDeckRevealed: false,
-          keepOneUndo: '',
-        });
-
-        // 3. Insert new cards, shuffle, draw opening hand
-        const currentGame = ctx.db.Game.id.find(gameId);
-        if (!currentGame) throw new SenderError('Game not found');
-        insertCardsShuffleDraw(ctx, currentGame, p, newDeckData);
-      }
-
-      // 4. Roll dice for first player
-      const gameAfterCards = ctx.db.Game.id.find(gameId);
-      if (!gameAfterCards) throw new SenderError('Game not found');
-      const seed = makeSeed(
-        ctx.timestamp.microsSinceUnixEpoch,
-        gameId,
-        0n,
-        gameAfterCards.rngCounter
-      );
-      const rng = xorshift64(seed);
-
-      let r0: number, r1: number;
-      do {
-        r0 = Number(rng.next() % 20n) + 1;
-        r1 = Number(rng.next() % 20n) + 1;
-      } while (r0 === r1);
-
-      const winner = r0 > r1 ? '0' : '1';
-
-      // 5. Reset game to pregame/rolling
-      const CHOOSE_DEADLINE_MICROS = 30_000_000n;
-      const chooseDeadline = ctx.timestamp.microsSinceUnixEpoch + CHOOSE_DEADLINE_MICROS;
-      const gameBeforeReset = ctx.db.Game.id.find(gameId);
-      if (!gameBeforeReset) throw new SenderError('Game not found');
-      ctx.db.Game.id.update({
-        ...gameBeforeReset,
-        status: 'pregame',
-        pregamePhase: 'rolling',
-        currentTurn: 0n,
-        currentPhase: 'draw',
-        turnNumber: 0n,
-        lastDiceRoll: '',
-        pregameReady0: false,
-        pregameReady1: false,
-        rollResult0: BigInt(r0),
-        rollResult1: BigInt(r1),
-        rollWinner: winner,
-        rngCounter: gameBeforeReset.rngCounter + 1n,
-        rematchRequestedBy: '',
-        rematchDeckId0: '',
-        rematchDeckData0: '',
-        rematchDeckId1: '',
-        rematchDeckData1: '',
-        rematchParagon0: '',
-        rematchParagon1: '',
-        rematchResponse: '',
-        rematchCode: '',
-        battleState: '',
-        battleAttackerSeat: '',
-        lastBattlePlayBySeat: '',
-        choosingDeadlineMicros: chooseDeadline,
-        playingStartedAtMicros: 0n,
-      });
-      scheduleChooseFirstTimeout(ctx, gameId, chooseDeadline);
-
-      // Phase Stops: rematch reuses the same gameId (in-place reset), so the
-      // stop/hold rows must be cleared here or a hold stranded by a mid-hold
-      // concede/win wedges the next game (spec §6.6, E11). This is what
-      // enforces "all stops off each game."
-      clearStopHoldRows(ctx, gameId);
-
-      logAction(ctx, gameId, player.id, 'REMATCH_STARTED',
-        JSON.stringify({ result0: r0, result1: r1, winner }),
-        0n, 'pregame');
+      startRematch(ctx, game, player, deckId, deckData, paragon);
     } else {
       // Decline — clear all rematch fields so either player can re-initiate
       ctx.db.Game.id.update({
@@ -2305,10 +2325,12 @@ export const leave_as_spectator = spacetimedb.reducer(
 // Called by the client whenever the game page is mounted AND the WebSocket
 // is connected — initially and after every reconnect. Revives isConnected,
 // cancels any pending DisconnectTimeout, and clears disconnectTimeoutFired.
-// Silent no-op if the sender isn't in the game or the game is finished; this
-// is the explicit signal that replaces the old blanket revive in
-// clientConnected (which used to keep orphaned lobbies alive whenever the
-// creator hit any other page on the site).
+// Silent no-op if the sender isn't in the game; this is the explicit signal
+// that replaces the old blanket revive in clientConnected (which used to keep
+// orphaned lobbies alive whenever the creator hit any other page on the site).
+// Finished games revive too: a refresh on the game-over screen otherwise left
+// the player marked gone (the opponent lost Play Again), and the uncancelled
+// 30s DisconnectTimeout ended any rematch started inside that window.
 // ---------------------------------------------------------------------------
 export const register_presence = spacetimedb.reducer(
   {
@@ -2316,7 +2338,7 @@ export const register_presence = spacetimedb.reducer(
   },
   (ctx, { gameId }) => {
     const game = ctx.db.Game.id.find(gameId);
-    if (!game || game.status === 'finished') return;
+    if (!game) return;
 
     // Revive EVERY row the sender holds — a solo game has two.
     let found = false;
@@ -2769,8 +2791,12 @@ export const cleanup_stale_games = spacetimedb.reducer(
         continue;
       }
 
-      // 2. Abandon pregame games older than 30 minutes
-      if (game.status === 'pregame' && age > THIRTY_MIN_MICROS) {
+      // 2. Abandon pregame games older than 30 minutes — aged from when THIS
+      // pre-game began, since a rematch reuses the row and its createdAt.
+      if (
+        game.status === 'pregame' &&
+        now - pregameSinceMicros(game.createdAt.microsSinceUnixEpoch, game.choosingDeadlineMicros) > THIRTY_MIN_MICROS
+      ) {
         ctx.db.Game.id.update({ ...game, status: 'finished' });
         continue;
       }
