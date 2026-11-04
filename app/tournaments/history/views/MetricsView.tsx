@@ -1,6 +1,7 @@
 "use client";
 
 import { useReducer, useMemo, useRef, useEffect, useCallback, useState } from "react";
+import { BarChart3, TriangleAlert } from "lucide-react";
 import { useSeed } from "../seed-context";
 import type { ViewId } from "../NavTabs";
 import { SectionTitle } from "../components/SectionTitle";
@@ -600,7 +601,10 @@ export function MetricsView({ setView }: MetricsViewProps) {
 
       {/* Data coverage disclaimer — not all years/formats have full data */}
       <div className="mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border bg-muted/50 px-3.5 py-2.5 text-xs text-muted-foreground">
-        <span>⚠️ Data not available for all years and formats.</span>
+        <span className="inline-flex items-center gap-1">
+          <TriangleAlert className="h-3 w-3 shrink-0" aria-hidden />
+          Data not available for all years and formats.
+        </span>
         <button
           type="button"
           onClick={() => setCoverageOpen(true)}
@@ -978,7 +982,7 @@ export function MetricsView({ setView }: MetricsViewProps) {
       {/* Table / empty state */}
       {rows.length === 0 ? (
         <EmptyState
-          icon="📊"
+          icon={BarChart3}
           title={
             filters.mode === "vsp" && !filters.vspTarget
               ? "Search for a player above to see records against them."

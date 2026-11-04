@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
+import { ClipboardList, User } from "lucide-react";
 import type { ViewId } from "../NavTabs";
 import { useSeed } from "../seed-context";
 import { playerProfile } from "@/lib/nationals/selectors";
@@ -67,7 +68,7 @@ export function PlayerProfileView({
   }, [playerName]);
 
   if (!profile) {
-    return <EmptyState icon="👤" title="Player not found" />;
+    return <EmptyState icon={User} title="Player not found" />;
   }
 
   const {
@@ -777,7 +778,7 @@ export function PlayerProfileView({
 
       {/* Empty state for players with no data at all */}
       {placements.length === 0 && !hasMatchData && !hasMulti && (
-        <EmptyState icon="📋" title="No recorded history for this player" />
+        <EmptyState icon={ClipboardList} title="No recorded history for this player" />
       )}
     </div>
   );

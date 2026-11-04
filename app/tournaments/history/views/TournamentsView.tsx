@@ -1,5 +1,6 @@
 "use client";
 
+import { Landmark } from "lucide-react";
 import type { ViewId } from "../NavTabs";
 import { useSeed } from "../seed-context";
 import { FormatBadge } from "../components/FormatBadge";
@@ -18,7 +19,7 @@ export function TournamentsView({ setView }: TournamentsViewProps) {
   const sorted = [...seed.tournaments].sort((a, b) => b.year - a.year);
 
   if (!sorted.length) {
-    return <EmptyState icon="🏛️" title="No tournaments yet" />;
+    return <EmptyState icon={Landmark} title="No tournaments yet" />;
   }
 
   return (
