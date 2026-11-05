@@ -15,6 +15,7 @@ import { findCard } from "@/lib/cards/lookup";
 import { getCardImageUrl } from "@/app/shared/utils/cardImageUrl";
 import CardTile from "./CardTile";
 import CardEnlargeModal from "./CardEnlargeModal";
+import { LegalityDot } from "./LegalityDot";
 import type { DeckSnapshot, DeckSnapshotCard } from "@/lib/tournament/deckSubmission";
 import type { DeckCheckIssue } from "@/utils/deckcheck";
 
@@ -33,25 +34,6 @@ interface SubmissionDetail {
   submittedAt: string;
   source: "player" | "host";
   submittedByUsername: string | null;
-}
-
-/** green/red/gray for true/false/null — shared between the participant table's
- * decklist cell and this modal's header so the two never drift apart. */
-export function LegalityDot({ isLegal }: { isLegal: boolean | null }) {
-  const color =
-    isLegal === true
-      ? "bg-primary"
-      : isLegal === false
-        ? "bg-destructive"
-        : "bg-muted-foreground/50";
-  const label = isLegal === true ? "Legal" : isLegal === false ? "Illegal" : "Legality unknown";
-  return (
-    <span
-      className={`inline-block h-2 w-2 flex-shrink-0 rounded-full ${color}`}
-      title={label}
-      aria-label={label}
-    />
-  );
 }
 
 function groupByType(cards: DeckSnapshotCard[]): { type: string; cards: DeckSnapshotCard[] }[] {
