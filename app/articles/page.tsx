@@ -79,7 +79,7 @@ export default async function ArticlesPage({ searchParams }: PageProps) {
                 Browse by series
               </p>
               {/* One row that scrolls on phones (no visible scrollbar), wraps from sm up. */}
-              <ul className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+              <ul className="no-scrollbar max-sm:scroll-fade-x -mx-4 flex gap-2 overflow-x-auto px-4 max-sm:pr-7 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
                 {tag && (
                   <li className="shrink-0">
                     <Link

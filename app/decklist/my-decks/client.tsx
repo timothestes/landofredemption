@@ -687,7 +687,7 @@ export default function MyDecksClient() {
 
       {/* Mobile folder strip (hidden on lg+) */}
       <div className="lg:hidden mb-4">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 pr-7 no-scrollbar scroll-fade-x">
           <button
             onClick={() => setSelectedFolder(null)}
             {...deckDropHandlers("uncat", null)}
@@ -913,7 +913,7 @@ export default function MyDecksClient() {
 
           {/* Controls */}
           <div className="flex items-center justify-between mb-3 gap-2 md:gap-4">
-            <div className="flex items-center gap-1.5 md:gap-2 min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 md:gap-2 min-w-0 flex-1 overflow-x-auto no-scrollbar sm:overflow-visible">
               <label className="text-sm text-muted-foreground hidden md:inline flex-shrink-0">Sort by:</label>
               <select
                 value={sortBy}

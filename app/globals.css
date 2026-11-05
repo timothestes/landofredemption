@@ -5,6 +5,11 @@
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  /* Right-edge fade on a sideways-scrolling strip: the cue that more exists past the edge. */
+  .scroll-fade-x {
+    -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, black 0, black calc(100% - 28px), transparent);
+  }
 }
 
 @layer base {
