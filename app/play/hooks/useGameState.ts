@@ -1305,7 +1305,7 @@ export function useSpectatorGameState(gameId: bigint | null, forgeResolver?: For
   const [allChat, spectatorChatLoading] = useTable(
     tables.ChatMessage.where((m) => m.gameId.eq(effectiveGameId)),
   ) as [ChatMessageRow[], boolean];
-  const [allActions] = useTable(
+  const [allActions, spectatorActionsLoading] = useTable(
     tables.GameAction.where((a) => a.gameId.eq(effectiveGameId)),
   ) as [GameActionRow[], boolean];
   const [allSpectators] = useTable(
@@ -1518,6 +1518,7 @@ export function useSpectatorGameState(gameId: bigint | null, forgeResolver?: For
     chatMessages,
     isChatReady: spectatorChatLoading,
     gameActions,
+    isActionsReady: effectiveGameId !== BigInt(0) && spectatorActionsLoading,
     spectators,
     soulsRescued,
     zoneSearchRequests,

@@ -6,6 +6,8 @@ import type Konva from 'konva';
 import KonvaLib from 'konva';
 
 import { useGameState, useSpectatorGameState } from '../hooks/useGameState';
+import { useDeckShuffleTicks } from '../hooks/useDeckShuffleTicks';
+import { SOUL_DECK } from '../lib/deckShuffleSignal';
 import { useSpacetimeDB } from 'spacetimedb/react';
 import { useSpreadHand } from '../contexts/SpreadHandContext';
 import {
@@ -25,7 +27,7 @@ import {
   cardBackListeners,
   cardBackLoaded,
 } from '../../shared/components/GameCardNode';
-import { DeckStackUnderlay } from '../../shared/components/DeckStack';
+import { DeckShuffleEffect, DeckStackUnderlay } from '../../shared/components/DeckStack';
 import { fitDeckStackCardHeight, layoutDeckStack } from '../../shared/layout/deckStack';
 import { useSelectionState, type CardBound } from '../../goldfish/hooks/useSelectionState';
 import type { GameCard, Counter } from '../../goldfish/types';
@@ -576,6 +578,12 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
   const playerGameState = useGameState(viewerKind === 'spectator' ? 0n : gameId, forgeResolver);
   const spectatorGameState = useSpectatorGameState(viewerKind === 'spectator' ? gameId : null, forgeResolver);
   const gameState = viewerKind === 'spectator' ? spectatorGameState : playerGameState;
+  // Shuffles seen since the game loaded, per deck. A pile animates when its
+  // number goes up.
+  const deckShuffleTicks = useDeckShuffleTicks(gameState.gameActions, gameState.isActionsReady, [
+    gameState.myPlayer?.id,
+    gameState.opponentPlayer?.id,
+  ]);
   // Solo (Deck Bracket): one human holds both seats, so nothing is hidden and
   // every two-human consent prompt is moot. Spectators never get this.
   const isSolo = viewerKind !== 'spectator' && playerGameState.isSolo;
@@ -8558,6 +8566,19 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                     cardHeight={pileHeight}
                     nextCard={soulBack}
                   />
+                  {/* The pile sits between the board's edge and the first
+                      Lost Soul, so its cards slide only as far as that. */}
+                  <DeckShuffleEffect
+                    tick={deckShuffleTicks[SOUL_DECK] ?? 0}
+                    count={count}
+                    cardWidth={pileWidth}
+                    cardHeight={pileHeight}
+                    back={soulBack}
+                    room={{
+                      left: px,
+                      right: (mpLayout.zones.sharedLob?.x ?? zone.x + zone.width) - (px + pileWidth),
+                    }}
+                  />
                 </Group>
                 {/* Only the top card drags; the rest of the stack, the count
                     and the label stay where the deck is. */}
@@ -9067,6 +9088,16 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                         nextCard={<CardBackShape width={cellCardW} height={cellCardH} />}
                       />
                     )}
+                    {deckStack && (
+                      <DeckShuffleEffect
+                        key={String(gameState.myPlayer?.id)}
+                        tick={deckShuffleTicks[String(gameState.myPlayer?.id)] ?? 0}
+                        count={count}
+                        cardWidth={cellCardW}
+                        cardHeight={cellCardH}
+                        back={<CardBackShape width={cellCardW} height={cellCardH} />}
+                      />
+                    )}
                     {/* Shadow card for depth if multiple — hide when showing face-up */}
                     {!deckStack && count > 1 && !showFace && (
                       <Group x={-2} y={-2}>
@@ -9386,6 +9417,20 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                           </Group>
                         }
                       />
+                    )}
+                    {/* Turned with their cards, so it is the same shuffle
+                        seen from across the table. */}
+                    {deckStack && (
+                      <Group x={cellCardW} y={cellCardH} rotation={180}>
+                        <DeckShuffleEffect
+                          key={String(gameState.opponentPlayer?.id)}
+                          tick={deckShuffleTicks[String(gameState.opponentPlayer?.id)] ?? 0}
+                          count={count}
+                          cardWidth={cellCardW}
+                          cardHeight={cellCardH}
+                          back={<CardBackShape width={cellCardW} height={cellCardH} />}
+                        />
+                      </Group>
                     )}
                     {!deckStack && count > 1 && !showFace && (
                       <Group x={cellCardW - 2} y={cellCardH - 2} rotation={180}>
