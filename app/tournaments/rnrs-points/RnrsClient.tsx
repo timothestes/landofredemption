@@ -217,32 +217,34 @@ export default function RnrsClient({ data }: { data: NormalizedData }) {
       {view === "leaderboard" ? (
         <div className="mt-4 space-y-4">
           {/* Format tabs */}
-          <div className="flex gap-1 overflow-x-auto border-b border-border scroll-fade-x">
-            {FORMATS.map((f) => (
+          <div className="border-b border-border">
+            <div className="flex gap-1 overflow-x-auto pr-7 no-scrollbar scroll-fade-x">
+              {FORMATS.map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setFormat(f.key)}
+                  className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm transition-colors ${
+                    format === f.key
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
               <button
-                key={f.key}
                 type="button"
-                onClick={() => setFormat(f.key)}
+                onClick={() => setFormat("all")}
                 className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm transition-colors ${
-                  format === f.key
+                  format === "all"
                     ? "border-primary text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {f.label}
+                All Formats
               </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setFormat("all")}
-              className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm transition-colors ${
-                format === "all"
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              All Formats
-            </button>
+            </div>
           </div>
 
           <PointSystemKey />

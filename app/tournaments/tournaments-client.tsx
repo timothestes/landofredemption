@@ -664,7 +664,7 @@ export default function TournamentsClient({
 
       {/* State filter */}
       {states.length > 1 && (
-        <div className="no-scrollbar scroll-fade-x mb-6 flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="no-scrollbar scroll-fade-x mb-6 flex items-center gap-2 overflow-x-auto pb-1 pr-7">
           <button
             onClick={() => setStateFilter("all")}
             className={`${CHIP} ${stateFilter === "all" ? CHIP_ACTIVE : CHIP_IDLE}`}

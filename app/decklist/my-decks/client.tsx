@@ -687,7 +687,7 @@ export default function MyDecksClient() {
 
       {/* Mobile folder strip (hidden on lg+) */}
       <div className="lg:hidden mb-4">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar scroll-fade-x">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 pr-7 no-scrollbar scroll-fade-x">
           <button
             onClick={() => setSelectedFolder(null)}
             {...deckDropHandlers("uncat", null)}
