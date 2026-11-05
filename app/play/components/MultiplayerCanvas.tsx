@@ -8564,7 +8564,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                     layers={pile.layers}
                     cardWidth={pileWidth}
                     cardHeight={pileHeight}
-                    nextCard={soulBack}
+                    back={soulBack}
                   />
                   {/* The pile sits between the board's edge and the first
                       Lost Soul, so its cards slide only as far as that. */}
@@ -9085,7 +9085,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                         layers={deckStack.layers}
                         cardWidth={cellCardW}
                         cardHeight={cellCardH}
-                        nextCard={<CardBackShape width={cellCardW} height={cellCardH} />}
+                        back={<CardBackShape width={cellCardW} height={cellCardH} />}
                       />
                     )}
                     {deckStack && (
@@ -9411,7 +9411,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                         layers={deckStack.layers}
                         cardWidth={cellCardW}
                         cardHeight={cellCardH}
-                        nextCard={
+                        back={
                           <Group x={cellCardW} y={cellCardH} rotation={180}>
                             <CardBackShape width={cellCardW} height={cellCardH} />
                           </Group>

@@ -6,6 +6,7 @@ import {
   deckShuffleDuration,
   deckShufflePose,
   deckStackLayers,
+  deckStackShade,
   fitDeckStackCardHeight,
   layoutDeckStack,
 } from '../deckStack';
@@ -110,6 +111,38 @@ describe('layoutDeckStack', () => {
       expect(layer.x).toBeCloseTo(small.layers[i].x * 2);
       expect(layer.y).toBeCloseTo(small.layers[i].y * 2);
     });
+  });
+});
+
+describe('deckStackShade', () => {
+  const below = Array.from({ length: DECK_STACK_MAX_LAYERS - 1 }, (_, i) => deckStackShade(i + 1));
+
+  it('leaves the card under the top one as it is, since a drag shows it in full', () => {
+    expect(deckStackShade(0)).toBe(0);
+  });
+
+  it('draws every layer below that in shadow, well darker than the top card', () => {
+    for (const shade of below) {
+      expect(shade).toBeGreaterThanOrEqual(0.4);
+    }
+  });
+
+  it('never goes so dark that the layer stops reading as a card', () => {
+    for (const shade of below) {
+      expect(shade).toBeLessThanOrEqual(0.8);
+    }
+  });
+
+  it('tells neighbouring layers apart', () => {
+    for (let i = 1; i < below.length; i++) {
+      expect(Math.abs(below[i] - below[i - 1])).toBeGreaterThanOrEqual(0.08);
+    }
+  });
+
+  it('gets darker toward the bottom of the stack', () => {
+    for (let i = 2; i < below.length; i++) {
+      expect(below[i]).toBeGreaterThan(below[i - 2]);
+    }
   });
 });
 
