@@ -821,7 +821,10 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     if (!gameParams) {
       console.log('[game-debug] no gameParams — showing error');
       didCallReducer.current = true;
-      setErrorMessage('No game parameters found. Please return to the lobby.');
+      // A direct visit to /play/<code> with no lobby session for it: a bad or
+      // stale link, not a connection failure. The error view reads !gameParams
+      // for its heading.
+      setErrorMessage('Create or join a game from the lobby.');
       setLifecycle('error');
       return;
     }
@@ -1422,7 +1425,11 @@ function GameInner({ code, isConnected }: GameInnerProps) {
         </div>
       );
     }
-    const title = isSelfJoin ? "You're hosting this game" : 'Connection Error';
+    const title = isSelfJoin
+      ? "You're hosting this game"
+      : !gameParams
+        ? "This game link isn't valid"
+        : 'Connection Error';
     const body = isSelfJoin
       ? 'Share the code with an opponent so they can join.'
       : (errorMessage ?? 'An unexpected error occurred.');
