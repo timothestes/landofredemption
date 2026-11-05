@@ -25,6 +25,8 @@ import {
   cardBackListeners,
   cardBackLoaded,
 } from '../../shared/components/GameCardNode';
+import { DeckStackUnderlay } from '../../shared/components/DeckStack';
+import { fitDeckStackCardHeight, layoutDeckStack } from '../../shared/layout/deckStack';
 import { useSelectionState, type CardBound } from '../../goldfish/hooks/useSelectionState';
 import type { GameCard, Counter } from '../../goldfish/types';
 import { COUNTER_COLORS } from '../../goldfish/types';
@@ -203,6 +205,24 @@ type DropZoneKey = string;
 /** Check if a point (px, py) is inside a ZoneRect. */
 function pointInRect(px: number, py: number, rect: ZoneRect): boolean {
   return px >= rect.x && px <= rect.x + rect.width && py >= rect.y && py <= rect.y + rect.height;
+}
+
+/**
+ * Paragon: where the Soul Deck's top card sits inside its zone, and the stack
+ * drawn under it. The render and the drag-to-draw drop both read this, so the
+ * dropped soul lands where the dragged card was.
+ */
+function soulDeckPile(zone: ZoneRect, maxCardWidth: number, count: number) {
+  const width = Math.min(maxCardWidth, zone.width - 4);
+  const height = Math.round(width * 1.4);
+  const stack = layoutDeckStack(count, width, height);
+  return {
+    width,
+    height,
+    layers: stack.layers,
+    x: zone.x + (zone.width - stack.width) / 2 + stack.top.x,
+    y: zone.y + (zone.height - stack.height) / 2 + stack.top.y,
+  };
 }
 
 /** Determine if a zone key is a free-form zone (cards positioned at arbitrary x/y). */
@@ -3068,10 +3088,10 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     [mpLayout, myZones, opponentZones, myHandRect, opponentHandRect, normalizedFormat, battleActive],
   );
 
-  // Dragging the Soul Deck pile: capture the top soul's ID at drag-start,
-  // hit-test the drop point at drag-end, move the top soul into the shared
-  // LoB if dropped there. Pile always snaps back to (0,0) since its inner
-  // shapes carry absolute coords.
+  // Dragging the Soul Deck's top card: capture the top soul's ID at
+  // drag-start, hit-test the drop point at drag-end, move the top soul into
+  // the shared LoB if dropped there. The dragged group always snaps back to
+  // (0,0) since its inner shapes carry absolute coords.
   const handleSoulDeckPileDragStart = useCallback(
     (_e: Konva.KonvaEventObject<DragEvent>) => {
       const sorted = [...(sharedCards['soul-deck'] ?? [])].sort(
@@ -3096,15 +3116,14 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
       const soulDeckZone = mpLayout?.zones.soulDeck;
       if (!sharedLobRect || !soulDeckZone) return;
 
-      const pileWidth = Math.min(lobCard.cardWidth, soulDeckZone.width - 4);
-      const pileHeight = Math.round(pileWidth * 1.4);
-      const centerX = soulDeckZone.x + (soulDeckZone.width - pileWidth) / 2 + pileWidth / 2 + dragX;
-      const centerY = soulDeckZone.y + (soulDeckZone.height - pileHeight) / 2 + pileHeight / 2 + dragY;
+      const pile = soulDeckPile(soulDeckZone, lobCard.cardWidth, sharedCards['soul-deck']?.length ?? 0);
+      const centerX = pile.x + pile.width / 2 + dragX;
+      const centerY = pile.y + pile.height / 2 + dragY;
 
       const hit = findZoneAtPosition(centerX, centerY);
       if (!hit || hit.owner !== 'shared' || hit.zone !== 'land-of-bondage') return;
 
-      const db = toDbPos(centerX - pileWidth / 2, centerY - pileHeight / 2, sharedLobRect, 'my', {
+      const db = toDbPos(centerX - pile.width / 2, centerY - pile.height / 2, sharedLobRect, 'my', {
         cardWidth: lobCard.cardWidth,
         cardHeight: lobCard.cardHeight,
       });
@@ -8498,78 +8517,57 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
           {normalizedFormat === 'Paragon' && mpLayout?.zones.soulDeck && (sharedCards['soul-deck']?.length ?? 0) > 0 && (() => {
             const zone = mpLayout.zones.soulDeck!;
             const count = sharedCards['soul-deck']?.length ?? 0;
-            const pileWidth = Math.min(lobCard.cardWidth, zone.width - 4);
-            const pileHeight = Math.round(pileWidth * 1.4);
-            const px = zone.x + (zone.width - pileWidth) / 2;
-            const py = zone.y + (zone.height - pileHeight) / 2;
+            const pile = soulDeckPile(zone, lobCard.cardWidth, count);
+            const pileWidth = pile.width;
+            const pileHeight = pile.height;
+            const px = pile.x;
+            const py = pile.y;
+            const soulBack = soulDeckBackReady && soulDeckBackRef.current ? (
+              <KonvaImage
+                image={soulDeckBackRef.current}
+                width={pileWidth}
+                height={pileHeight}
+                cornerRadius={4}
+                perfectDrawEnabled={false}
+              />
+            ) : (
+              <Rect
+                width={pileWidth}
+                height={pileHeight}
+                fill="#3a1e18"
+                stroke="#c4955a"
+                strokeWidth={1}
+                cornerRadius={4}
+                perfectDrawEnabled={false}
+              />
+            );
             return (
               <Group
                 key="soul-deck-pile"
-                draggable={true}
                 onContextMenu={handleSharedSoulDeckContextMenu}
                 // Touch path to the soul-deck menu; the fire-time movement
                 // re-check in beginZonePress keeps drag-to-draw intact.
                 onTouchStart={isTouch && !isSpectator ? (e: Konva.KonvaEventObject<TouchEvent>) => beginZonePress(e, (pt) => { closeAllMenus(); setSoulDeckMenu(pt); }) : undefined}
                 onTouchMove={isTouch ? moveZonePress : undefined}
                 onTouchEnd={isTouch ? clearZonePress : undefined}
-                onDragStart={handleSoulDeckPileDragStart}
-                onDragEnd={handleSoulDeckPileDragEnd}
-                hitFunc={(ctx: any, shape: any) => {
-                  ctx.beginPath();
-                  ctx.rect(px - 2, py - 2, pileWidth, pileHeight);
-                  ctx.closePath();
-                  ctx.fillStrokeShape(shape);
-                }}
               >
-                {count > 1 && (
-                  soulDeckBackReady && soulDeckBackRef.current ? (
-                    <KonvaImage
-                      image={soulDeckBackRef.current}
-                      x={px - 2}
-                      y={py - 2}
-                      width={pileWidth}
-                      height={pileHeight}
-                      cornerRadius={4}
-                      opacity={0.85}
-                      perfectDrawEnabled={false}
-                    />
-                  ) : (
-                    <Rect
-                      x={px - 2}
-                      y={py - 2}
-                      width={pileWidth}
-                      height={pileHeight}
-                      fill="#2a1410"
-                      stroke="#6b4e27"
-                      strokeWidth={1}
-                      cornerRadius={4}
-                      perfectDrawEnabled={false}
-                    />
-                  )
-                )}
-                {soulDeckBackReady && soulDeckBackRef.current ? (
-                  <KonvaImage
-                    image={soulDeckBackRef.current}
-                    x={px}
-                    y={py}
-                    width={pileWidth}
-                    height={pileHeight}
-                    cornerRadius={4}
-                    perfectDrawEnabled={false}
+                <Group x={px} y={py}>
+                  <DeckStackUnderlay
+                    layers={pile.layers}
+                    cardWidth={pileWidth}
+                    cardHeight={pileHeight}
+                    nextCard={soulBack}
                   />
-                ) : (
-                  <Rect
-                    x={px}
-                    y={py}
-                    width={pileWidth}
-                    height={pileHeight}
-                    fill="#3a1e18"
-                    stroke="#c4955a"
-                    strokeWidth={1}
-                    cornerRadius={4}
-                    perfectDrawEnabled={false}
-                  />
-                )}
+                </Group>
+                {/* Only the top card drags; the rest of the stack, the count
+                    and the label stay where the deck is. */}
+                <Group
+                  draggable={true}
+                  onDragStart={handleSoulDeckPileDragStart}
+                  onDragEnd={handleSoulDeckPileDragEnd}
+                >
+                  <Group x={px} y={py}>{soulBack}</Group>
+                </Group>
                 <Group x={px + pileWidth - 30} y={py + 4}>
                   <Rect width={28} height={20} fill="#2a1f12" cornerRadius={4} stroke="#c4955a" strokeWidth={1} perfectDrawEnabled={false} />
                   <Text
@@ -8860,10 +8858,20 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             const badgeX = zone.x + zone.width - bw - 6;
             const badgeY = useCompactLayout ? Math.round(zone.y + 4 + fs(11) + 3) : zone.y + 2;
             const headerH = useCompactLayout ? Math.round(4 + fs(11) + 3 + bh + 3) : Math.max(18, bh + 4);
-            const cellCardH = Math.max(12, Math.min(pileCardHeight, zone.height - headerH - 2));
+            // The deck is drawn as a stack of cards, so its card gives up a
+            // little height to leave room for the layers under it. The stack
+            // sits in a box that never changes size; the top card moves
+            // inside it as the deck empties.
+            const cellMaxH = zone.height - headerH - 2;
+            const cellCardH = Math.max(12, zoneKey === 'deck'
+              ? fitDeckStackCardHeight(pileCardHeight, cellMaxH)
+              : Math.min(pileCardHeight, cellMaxH));
             const cellCardW = Math.round(cellCardH / 1.4);
-            const cx = zone.x + zone.width / 2 - cellCardW / 2;
-            const cy = zone.y + headerH + Math.max(0, (zone.height - headerH - cellCardH) / 2);
+            const deckStack = zoneKey === 'deck' ? layoutDeckStack(count, cellCardW, cellCardH) : null;
+            const artW = deckStack ? deckStack.width : cellCardW;
+            const artH = deckStack ? deckStack.height : cellCardH;
+            const cx = zone.x + zone.width / 2 - artW / 2 + (deckStack ? deckStack.top.x : 0);
+            const cy = zone.y + headerH + Math.max(0, (zone.height - headerH - artH) / 2) + (deckStack ? deckStack.top.y : 0);
 
             // Discard, LOR, and Reserve show top card face-up; everything else shows card back
             // Reserve always shows face-up to the owner regardless of isFlipped
@@ -9050,8 +9058,17 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                 {/* Pile visual — only if zone has cards (non-LOR) */}
                 {zoneKey !== 'land-of-redemption' && count > 0 && (
                   <Group x={cx} y={cy}>
+                    {/* Deck: the rest of the stack, under the top card. */}
+                    {deckStack && (
+                      <DeckStackUnderlay
+                        layers={deckStack.layers}
+                        cardWidth={cellCardW}
+                        cardHeight={cellCardH}
+                        nextCard={<CardBackShape width={cellCardW} height={cellCardH} />}
+                      />
+                    )}
                     {/* Shadow card for depth if multiple — hide when showing face-up */}
-                    {count > 1 && !showFace && (
+                    {!deckStack && count > 1 && !showFace && (
                       <Group x={-2} y={-2}>
                         <CardBackShape width={cellCardW} height={cellCardH} />
                       </Group>
@@ -9191,10 +9208,20 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             const badgeX = zone.x + zone.width - bw - 6;
             const badgeY = useCompactLayout ? Math.round(zone.y + 4 + fs(11) + 3) : zone.y + 2;
             const headerH = useCompactLayout ? Math.round(4 + fs(11) + 3 + bh + 3) : Math.max(18, bh + 4);
-            const cellCardH = Math.max(12, Math.min(pileCardHeight, zone.height - headerH - 2));
+            // The deck is drawn as a stack of cards, so its card gives up a
+            // little height to leave room for the layers under it. The stack
+            // sits in a box that never changes size; the top card moves
+            // inside it as the deck empties.
+            const cellMaxH = zone.height - headerH - 2;
+            const cellCardH = Math.max(12, zoneKey === 'deck'
+              ? fitDeckStackCardHeight(pileCardHeight, cellMaxH)
+              : Math.min(pileCardHeight, cellMaxH));
             const cellCardW = Math.round(cellCardH / 1.4);
-            const cx = zone.x + zone.width / 2 - cellCardW / 2;
-            const cy = zone.y + headerH + Math.max(0, (zone.height - headerH - cellCardH) / 2);
+            const deckStack = zoneKey === 'deck' ? layoutDeckStack(count, cellCardW, cellCardH) : null;
+            const artW = deckStack ? deckStack.width : cellCardW;
+            const artH = deckStack ? deckStack.height : cellCardH;
+            const cx = zone.x + zone.width / 2 - artW / 2 + (deckStack ? deckStack.top.x : 0);
+            const cy = zone.y + headerH + Math.max(0, (zone.height - headerH - artH) / 2) + (deckStack ? deckStack.top.y : 0);
 
             const oppReserveRevealed = gameState.opponentPlayer?.reserveRevealed ?? false;
             const nowMicrosForReveal = BigInt(Date.now()) * 1000n;
@@ -9346,7 +9373,21 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                 {/* Non-LOR pile visual — rotated 180° for opponent */}
                 {zoneKey !== 'land-of-redemption' && count > 0 && (
                   <Group x={cx} y={cy}>
-                    {count > 1 && !showFace && (
+                    {/* Deck: the rest of the stack, under the top card. It
+                        stays put when their top card is revealed face up. */}
+                    {deckStack && (
+                      <DeckStackUnderlay
+                        layers={deckStack.layers}
+                        cardWidth={cellCardW}
+                        cardHeight={cellCardH}
+                        nextCard={
+                          <Group x={cellCardW} y={cellCardH} rotation={180}>
+                            <CardBackShape width={cellCardW} height={cellCardH} />
+                          </Group>
+                        }
+                      />
+                    )}
+                    {!deckStack && count > 1 && !showFace && (
                       <Group x={cellCardW - 2} y={cellCardH - 2} rotation={180}>
                         <CardBackShape width={cellCardW} height={cellCardH} />
                       </Group>
