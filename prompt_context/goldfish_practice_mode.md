@@ -242,7 +242,7 @@ Brief notifications appear at the bottom-center of the screen and auto-dismiss a
 
 The board uses a dark, immersive cave-themed aesthetic:
 
-- **Background**: Cave image (`/gameplay/cave_background.png`) with CSS `cover`, floor-biased positioning, torch glow radial gradient overlay, and strong vignette at edges
+- **Background**: Cave image (`/gameplay/cave_background.webp`) with CSS `cover`, floor-biased positioning, torch glow radial gradient overlay, and strong vignette at edges
 - **Color palette**: Near-black warm browns, sandy gold accents, aged parchment UI elements. Custom CSS variables (`--gf-bg`, `--gf-border`, `--gf-text`, `--gf-accent`, `--gf-gold`, etc.)
 - **Typography**: Cinzel (Google Fonts) for all game UI text — Roman capitals with ancient weight. Georgia serif fallback.
 - **Card rendering**: Full card images from Vercel Blob storage. Face-down cards show a card back (`/gameplay/cardback.webp`). Selected cards have a golden glow. Hover produces a warm amber glow effect.

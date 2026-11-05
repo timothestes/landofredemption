@@ -53,9 +53,9 @@ describe('isAllowedBackgroundUrl', () => {
 
 describe('gameBackgroundCss', () => {
   it('uses the default art without a valid custom URL', () => {
-    expect(gameBackgroundCss(false, null)).toBe('url(/gameplay/cave_background.png)');
-    expect(gameBackgroundCss(true, undefined)).toBe('url(/gameplay/forge_background.png)');
-    expect(gameBackgroundCss(false, `${good}")`)).toBe('url(/gameplay/cave_background.png)');
+    expect(gameBackgroundCss(false, null)).toBe('url(/gameplay/cave_background.webp)');
+    expect(gameBackgroundCss(true, undefined)).toBe('url(/gameplay/forge_background.webp)');
+    expect(gameBackgroundCss(false, `${good}")`)).toBe('url(/gameplay/cave_background.webp)');
   });
 
   it('dims a custom image', () => {
