@@ -301,6 +301,7 @@ function CardRow({
               alt=""
               width={32}
               height={44}
+              sizes="32px"
               className="h-full w-full object-cover object-top"
             />
           )}
