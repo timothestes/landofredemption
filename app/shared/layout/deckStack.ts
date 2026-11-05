@@ -94,3 +94,85 @@ export function layoutDeckStack(count: number, cardWidth: number, cardHeight: nu
     layers,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Shuffle animation: a few cards slide out from under the top card, one after
+// another to alternate sides, and tuck back in. Each slides less far than the
+// one before, so the pile settles.
+// ---------------------------------------------------------------------------
+
+/** Most cards that slide out of a pile when it is shuffled. */
+const SHUFFLE_CARDS = 3;
+/** How long one card takes to slide out and back, in ms. */
+const SHUFFLE_CARD_MS = 360;
+/** Delay between one card starting and the next, in ms. */
+const SHUFFLE_STAGGER_MS = 120;
+/** How far the first card slides out, as a share of the card's width. */
+const SHUFFLE_TRAVEL = 0.35;
+/** Each card slides this share of the distance of the one before it. */
+const SHUFFLE_DECAY = 0.82;
+/** How far a card rises at the end of its slide, as a share of its height. */
+const SHUFFLE_LIFT = 0.03;
+/** How far a card tilts at the end of its slide, in degrees. */
+const SHUFFLE_TILT = 5;
+/** Above 1, a card leaves quickly and tucks back in more slowly. */
+const SHUFFLE_WARP = 1.35;
+
+/**
+ * How many cards slide out of a pile of `count` when it is shuffled. The top
+ * card stays put, so a single card has nothing to shuffle.
+ */
+export function deckShuffleCards(count: number): number {
+  if (!(count > 1)) return 0;
+  return Math.min(SHUFFLE_CARDS, Math.floor(count) - 1);
+}
+
+/** How long the shuffle of `cards` sliding cards takes, in ms. */
+export function deckShuffleDuration(cards: number): number {
+  return cards > 0 ? SHUFFLE_CARD_MS + (cards - 1) * SHUFFLE_STAGGER_MS : 0;
+}
+
+/** Free space beside the top card, in the same units as the card's size. */
+export interface ShuffleRoom {
+  left: number;
+  right: number;
+}
+
+export interface ShufflePose {
+  x: number;
+  y: number;
+  /** Degrees, clockwise, about the card's centre. */
+  rotation: number;
+}
+
+/**
+ * Where sliding card `index` is `elapsedMs` into the shuffle, relative to its
+ * place under the top card. It rests there before its turn and after it.
+ *
+ * Give `room` for a pile with close neighbours: the card then slides no
+ * further than the free space on its side, down to a tilt in place.
+ */
+export function deckShufflePose(
+  index: number,
+  elapsedMs: number,
+  cardWidth: number,
+  cardHeight: number,
+  room?: ShuffleRoom,
+): ShufflePose {
+  const progress = Math.min(1, Math.max(0, (elapsedMs - index * SHUFFLE_STAGGER_MS) / SHUFFLE_CARD_MS));
+  const warped = 1 - Math.pow(1 - progress, SHUFFLE_WARP);
+  // 0 → peak → 0, at rest at both ends and at the turn.
+  const out = (Math.pow(SHUFFLE_DECAY, index) * (1 - Math.cos(2 * Math.PI * warped))) / 2;
+  const side = index % 2 === 0 ? 1 : -1;
+  let reach = SHUFFLE_TRAVEL * cardWidth;
+  if (room) {
+    // A tilted card's corners stick out sideways by this much.
+    const overhang = Math.sin((SHUFFLE_TILT * Math.PI) / 180) * (cardHeight / 2);
+    reach = Math.max(0, Math.min(reach, (side > 0 ? room.right : room.left) - overhang));
+  }
+  return {
+    x: side * reach * out,
+    y: -SHUFFLE_LIFT * cardHeight * out,
+    rotation: side * SHUFFLE_TILT * out,
+  };
+}
