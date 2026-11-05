@@ -62,7 +62,7 @@ function ResourceRow({ link }: { link: ResourceLink }) {
     "group block rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary/50 hover:bg-muted/40";
 
   return link.internal ? (
-    <Link href={link.href} className={className}>
+    <Link href={link.href} prefetch={link.prefetch} className={className}>
       {body}
     </Link>
   ) : (
@@ -126,6 +126,7 @@ export default function ResourcesPage() {
               <Link
                 key={tool.href}
                 href={tool.href}
+                prefetch={tool.prefetch}
                 className="group block rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary/50 hover:bg-muted/40"
               >
                 <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">

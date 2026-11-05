@@ -541,6 +541,7 @@ function RulingsPageContent() {
                             <h2 className="font-semibold text-foreground">{highlightMatch(cardName, search)}</h2>
                             <Link
                               href={`/decklist/card-search?q=${encodeURIComponent(cardName)}&field=name`}
+                              prefetch={false}
                               className="-my-3 flex min-h-11 shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors sm:my-0 sm:min-h-0"
                             >
                               View Card

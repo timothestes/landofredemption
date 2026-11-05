@@ -18,6 +18,8 @@ export type ResourceLink = {
   /** Internal routes render as next/link; everything else opens in a new tab. */
   internal?: boolean;
   icon?: IconType;
+  /** Opt out of Next's prefetch — the deck builder routes bundle the whole card catalog. */
+  prefetch?: false;
 };
 
 export type ResourceSection = {
@@ -61,6 +63,7 @@ export const RESOURCE_SECTIONS: ResourceSection[] = [
           "Rank any cards into tiers and export the board as a shareable image.",
         internal: true,
         icon: TbListNumbers,
+        prefetch: false,
       },
       {
         href: "/decklist/generate",
@@ -211,11 +214,12 @@ export const RESOURCE_SECTIONS: ResourceSection[] = [
 ];
 
 /** Site tools worth pointing a first-time visitor at, shown at the foot of /resources. */
-export const RESOURCE_APP_TOOLS: { href: string; label: string; description: string }[] = [
+export const RESOURCE_APP_TOOLS: { href: string; label: string; description: string; prefetch?: false }[] = [
   {
     href: "/decklist/card-search?new=true",
     label: "Deck Builder",
     description: "Search every card and build a legal deck.",
+    prefetch: false,
   },
   {
     href: "/decklist/community",
