@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { getCardImageUrl } from "@/app/shared/utils/cardImageUrl";
 import type { BreakdownDeck } from "@/lib/tournament/breakdown";
 import type { DerivedCard } from "@/lib/tournament/derive";
@@ -295,11 +296,12 @@ function CardRow({
 
         <span className="relative h-11 w-8 shrink-0 overflow-hidden rounded bg-muted/60">
           {imageUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={imageUrl}
               alt=""
-              loading="lazy"
+              width={32}
+              height={44}
+              sizes="32px"
               className="h-full w-full object-cover object-top"
             />
           )}
