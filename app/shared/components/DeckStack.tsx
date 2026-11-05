@@ -7,14 +7,11 @@ import {
   deckShuffleCards,
   deckShuffleDuration,
   deckShufflePose,
+  deckStackShade,
   type ShuffleRoom,
   type StackPoint,
 } from '../layout/deckStack';
 
-// Card edges seen from the side. Two tones alternate so neighbouring layers
-// read as separate cards.
-const EDGE_LIGHT = '#ddd3b8';
-const EDGE_DARK = '#8f8468';
 // How dark the cards that slide out during a shuffle are drawn, so they read
 // as lying under the top card.
 const SLIDING_CARD_SHADE = 0.35;
@@ -28,37 +25,41 @@ const SHUFFLE_STALE_MS = 1000;
  * The cards under the top card of a face-down pile, drawn as a stack.
  *
  * Place it at the top card's top-left corner and draw the top card after it.
- * `layers` comes from `layoutDeckStack`. `nextCard` is the back of the card
- * directly under the top one, which shows in full when the top card is
- * dragged away.
+ * `layers` comes from `layoutDeckStack`. `back` is one card back, drawn from
+ * its own top-left corner. Every layer is that back, and all but the first
+ * are darkened, so the stack reads as more of the same cards in shadow.
  */
 export function DeckStackUnderlay({
   layers,
   cardWidth,
   cardHeight,
-  nextCard,
+  back,
 }: {
   layers: StackPoint[];
   cardWidth: number;
   cardHeight: number;
-  nextCard: ReactNode;
+  back: ReactNode;
 }) {
   if (layers.length === 0) return null;
   const bottom = layers[layers.length - 1];
   const shadow = cardHeight * 0.015;
-  const edges: ReactNode[] = [];
-  for (let i = layers.length - 1; i >= 1; i--) {
-    edges.push(
-      <Rect
-        key={i}
-        x={layers[i].x}
-        y={layers[i].y}
-        width={cardWidth}
-        height={cardHeight}
-        fill={i % 2 === 1 ? EDGE_LIGHT : EDGE_DARK}
-        cornerRadius={4}
-        perfectDrawEnabled={false}
-      />,
+  const cards: ReactNode[] = [];
+  for (let i = layers.length - 1; i >= 0; i--) {
+    const shade = deckStackShade(i);
+    cards.push(
+      <Group key={i} x={layers[i].x} y={layers[i].y}>
+        {back}
+        {shade > 0 && (
+          <Rect
+            width={cardWidth}
+            height={cardHeight}
+            fill="#000000"
+            opacity={shade}
+            cornerRadius={4}
+            perfectDrawEnabled={false}
+          />
+        )}
+      </Group>,
     );
   }
   return (
@@ -75,8 +76,7 @@ export function DeckStackUnderlay({
         listening={false}
         perfectDrawEnabled={false}
       />
-      {edges}
-      <Group x={layers[0].x} y={layers[0].y}>{nextCard}</Group>
+      {cards}
     </Group>
   );
 }

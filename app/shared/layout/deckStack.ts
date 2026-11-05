@@ -47,6 +47,27 @@ export function deckStackLayers(count: number): number {
   return Math.min(DECK_STACK_MAX_LAYERS, grouped);
 }
 
+/** How dark the first layer in shadow is drawn, from 0 (as it is) to 1 (black). */
+const SHADE_FIRST = 0.45;
+
+/** How much darker a layer is than the one two above it. */
+const SHADE_STEP = 0.03;
+
+/** Extra darkness on every second layer, so neighbours read as separate cards. */
+const SHADE_ALTERNATE = 0.15;
+
+/**
+ * How dark to draw layer `layer` of a stack, from 0 (as it is) to 1 (black).
+ * Layer 0 is the card straight under the top one.
+ *
+ * That card is not darkened, because dragging the top card away shows it in
+ * full. Every layer below it lies in shadow, darker toward the bottom.
+ */
+export function deckStackShade(layer: number): number {
+  if (!(layer > 0)) return 0;
+  return SHADE_FIRST + (layer - 1) * SHADE_STEP + (layer % 2 === 0 ? SHADE_ALTERNATE : 0);
+}
+
 /** How far a stack of `layers` layers drops below its top card. */
 function stackDrop(layers: number, cardHeight: number): number {
   if (layers <= 0) return 0;
