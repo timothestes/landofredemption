@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { User } from "lucide-react";
 import type { ViewId } from "../NavTabs";
 import { useSeed } from "../seed-context";
 import { SectionTitle } from "../components/SectionTitle";
@@ -51,7 +52,7 @@ export function PlayersView({ setView }: PlayersViewProps) {
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon="👤" title="No players found" />
+        <EmptyState icon={User} title="No players found" />
       ) : (
         <div className="rounded-lg border border-border bg-card overflow-hidden">
           <table className="w-full text-sm">

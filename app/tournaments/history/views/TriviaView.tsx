@@ -1,6 +1,7 @@
 "use client";
 
 import { useReducer, useState } from "react";
+import { Check, Flame, X } from "lucide-react";
 import { useSeed } from "../seed-context";
 import { buildTriviaQuestions } from "@/lib/nationals/trivia";
 import type { Question } from "@/lib/nationals/trivia";
@@ -90,11 +91,11 @@ function triviaReducer(state: TriviaState, action: TriviaAction): TriviaState {
 // ── Score messages ────────────────────────────────────────────────────────────
 
 const MSGS = [
-  "Keep studying the history! 📚",
-  "Not bad — you know your Nats! 👍",
-  "Solid knowledge! 🎯",
-  "Excellent! You really know your stuff! 🌟",
-  "Redemption historian! Perfect score! 🏆",
+  "Keep studying the history!",
+  "Not bad — you know your Nats!",
+  "Solid knowledge!",
+  "Excellent! You really know your stuff!",
+  "Redemption historian! Perfect score!",
 ];
 
 function scoreMessage(score: number): string {
@@ -189,7 +190,7 @@ export function TriviaView({ initialLeaderboard }: TriviaViewProps) {
     if (result.ok === true) {
       setLeaderboard(result.leaderboard);
       dispatch({ type: "MARK_DONE" });
-      showToast("Score submitted! 🏆");
+      showToast("Score submitted!");
     } else {
       setSubmitError(result.error);
     }
@@ -251,8 +252,9 @@ export function TriviaView({ initialLeaderboard }: TriviaViewProps) {
             />
           </div>
           {state.streak >= 2 && (
-            <p className="text-xs text-amber-600 dark:text-amber-400 font-semibold">
-              🔥 {state.streak} streak
+            <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-semibold">
+              <Flame className="h-3 w-3" aria-hidden />
+              {state.streak} streak
             </p>
           )}
         </div>
@@ -294,7 +296,7 @@ export function TriviaView({ initialLeaderboard }: TriviaViewProps) {
         {state.answered && (
           <div
             aria-live="polite"
-            className={`rounded-lg px-4 py-2.5 text-sm font-medium border ${
+            className={`flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-medium border ${
               q.options[state.selectedIdx!] === q.correct
                 ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
                 : "bg-red-500/15 border-red-500/40 text-red-700 dark:text-red-300"
@@ -302,12 +304,12 @@ export function TriviaView({ initialLeaderboard }: TriviaViewProps) {
           >
             {q.options[state.selectedIdx!] === q.correct ? (
               state.streak >= 2 ? (
-                <>🔥 Correct! +{10 + 5} (streak bonus!)</>
+                <><Flame className="h-3.5 w-3.5 shrink-0" aria-hidden /><span>Correct! +{10 + 5} (streak bonus!)</span></>
               ) : (
-                <>✓ Correct! +10</>
+                <><Check className="h-3.5 w-3.5 shrink-0" aria-hidden /><span>Correct! +10</span></>
               )
             ) : (
-              <>✗ Incorrect. Answer: {q.correct}</>
+              <><X className="h-3.5 w-3.5 shrink-0" aria-hidden /><span>Incorrect. Answer: {q.correct}</span></>
             )}
           </div>
         )}

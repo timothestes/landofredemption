@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { Search } from "lucide-react";
 import type { ViewId } from "../NavTabs";
 import { useSeed } from "../seed-context";
 import { SectionTitle } from "../components/SectionTitle";
@@ -42,11 +43,11 @@ export function SearchView({ setView }: SearchViewProps) {
       </div>
 
       {!hasQuery && (
-        <EmptyState icon="🔍" title="Type to search players and tournaments" />
+        <EmptyState icon={Search} title="Type to search players and tournaments" />
       )}
 
       {hasQuery && !hasResults && (
-        <EmptyState icon="🔍" title={`No results for "${query.trim()}"`} />
+        <EmptyState icon={Search} title={`No results for "${query.trim()}"`} />
       )}
 
       {hasResults && (

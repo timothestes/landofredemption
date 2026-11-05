@@ -12,7 +12,7 @@ interface FantasyDraftModalProps {
   onClose: () => void;
 }
 
-const MEDALS = ["🥇", "🥈", "🥉"];
+const PLACES = ["1st", "2nd", "3rd"];
 
 /** Amber/gold accent for 1st; muted silver for 2nd; bronze-ish for 3rd; plain for rest. */
 function rankScoreClass(index: number): string {
@@ -36,7 +36,7 @@ function RosterRow({ team, rank }: { team: FantasyTeam; rank: number }) {
         aria-expanded={open}
       >
         <span className="flex items-center gap-2 min-w-0">
-          <span className="shrink-0 text-base leading-none">{MEDALS[rank] ?? `${rank + 1}th`}</span>
+          <span className="shrink-0 text-base leading-none">{PLACES[rank] ?? `${rank + 1}th`}</span>
           <span className="font-medium text-foreground truncate">{team.gm}</span>
         </span>
         <span className="flex items-center gap-3 shrink-0">
@@ -107,7 +107,7 @@ export function FantasyDraftModal({ year, fantasyDraft, open, onClose }: Fantasy
                   const top = [...team.players].sort((a, b) => b.pts - a.pts)[0];
                   return (
                     <tr key={team.gm} className="border-b border-border last:border-0 odd:bg-muted/20">
-                      <td className="px-3 py-2 text-sm">{MEDALS[i] ?? `${i + 1}th`}</td>
+                      <td className="px-3 py-2 text-sm">{PLACES[i] ?? `${i + 1}th`}</td>
                       <td className="px-3 py-2 font-medium text-foreground">{team.gm}</td>
                       <td className={`px-3 py-2 text-right ${rankScoreClass(i)}`}>{team.pts}</td>
                       <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">

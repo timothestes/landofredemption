@@ -2,6 +2,7 @@
 
 import { useState, useEffect, type ReactNode } from "react";
 import Link from "next/link";
+import { Calendar, ClipboardList, Gamepad2, Landmark, MapPin, Trophy, Users, WalletCards } from "lucide-react";
 import type { ViewId } from "../NavTabs";
 import { useSeed } from "../seed-context";
 import type { MatchEntry } from "@/lib/nationals/types";
@@ -246,7 +247,7 @@ export function TournamentDetailView({
   }, [tournamentId]);
 
   if (!tournament) {
-    return <EmptyState icon="🏛️" title="Tournament not found" />;
+    return <EmptyState icon={Landmark} title="Tournament not found" />;
   }
 
   // Prev/next tournament sorted by year
@@ -344,32 +345,32 @@ export function TournamentDetailView({
         {/* Meta row */}
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground mb-3">
           {tournament.location && (
-            <span>
-              <span className="mr-1">📍</span>
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="h-3.5 w-3.5" aria-hidden />
               <span className="font-medium text-foreground">
                 {tournament.location}
               </span>
             </span>
           )}
           {tournament.venue && (
-            <span>
-              <span className="mr-1">🏛️</span>
+            <span className="inline-flex items-center gap-1">
+              <Landmark className="h-3.5 w-3.5" aria-hidden />
               <span className="font-medium text-foreground">
                 {tournament.venue}
               </span>
             </span>
           )}
           {tournament.dates && (
-            <span>
-              <span className="mr-1">📅</span>
+            <span className="inline-flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5" aria-hidden />
               <span className="font-medium text-foreground">
                 {tournament.dates}
               </span>
             </span>
           )}
           {tournament.attendance && (
-            <span>
-              <span className="mr-1">👥</span>
+            <span className="inline-flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" aria-hidden />
               <span className="font-medium text-foreground">
                 {tournament.attendance} players
               </span>
@@ -387,17 +388,19 @@ export function TournamentDetailView({
           {promosForYear(tournament.year).length > 0 && (
             <button
               onClick={() => setPromoOpen(true)}
-              className="px-3 py-1.5 text-xs text-muted-foreground border border-border rounded-md hover:text-foreground hover:border-primary transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground border border-border rounded-md hover:text-foreground hover:border-primary transition"
             >
-              🎴 Promo Cards
+              <WalletCards className="h-3 w-3" aria-hidden />
+              Promo Cards
             </button>
           )}
           {tournament.fantasyDraft && (
             <button
               onClick={() => setFantasyOpen(true)}
-              className="px-3 py-1.5 text-xs text-muted-foreground border border-border rounded-md hover:text-foreground hover:border-primary transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground border border-border rounded-md hover:text-foreground hover:border-primary transition"
             >
-              🏆 Fantasy Draft
+              <Trophy className="h-3 w-3" aria-hidden />
+              Fantasy Draft
             </button>
           )}
         </div>
@@ -512,7 +515,7 @@ export function TournamentDetailView({
             </table>
           </div>
         ) : (
-          <EmptyState icon="📋" title="No standings recorded" />
+          <EmptyState icon={ClipboardList} title="No standings recorded" />
         )}
       </div>
 
@@ -574,7 +577,7 @@ export function TournamentDetailView({
                 ))}
               </div>
             ) : (
-              <EmptyState icon="🎮" title="No match data recorded" />
+              <EmptyState icon={Gamepad2} title="No match data recorded" />
             )}
           </div>
         </>

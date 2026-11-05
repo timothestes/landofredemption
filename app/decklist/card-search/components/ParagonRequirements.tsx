@@ -19,7 +19,6 @@ export default function ParagonRequirements({ paragonName, stats }: ParagonRequi
       required: paragon.primaryGood,
       current: stats?.primaryGood || 0,
       color: "blue",
-      icon: "⚔️",
       description: `${paragon.primaryGood} good-aligned cards with ${paragon.goodBrigade} brigade`,
     },
     {
@@ -27,7 +26,6 @@ export default function ParagonRequirements({ paragonName, stats }: ParagonRequi
       required: paragon.otherGood,
       current: stats?.otherGood || 0,
       color: "green",
-      icon: "🛡️",
       description: `${paragon.otherGood} good-aligned cards from any brigade except ${paragon.goodBrigade}`,
     },
     {
@@ -35,7 +33,6 @@ export default function ParagonRequirements({ paragonName, stats }: ParagonRequi
       required: paragon.neutral,
       current: stats?.neutral || 0,
       color: "gray",
-      icon: "⭐",
       description: `${paragon.neutral} neutral-aligned cards`,
     },
     {
@@ -43,7 +40,6 @@ export default function ParagonRequirements({ paragonName, stats }: ParagonRequi
       required: paragon.primaryEvil,
       current: stats?.primaryEvil || 0,
       color: "red",
-      icon: "⚔️",
       description: `${paragon.primaryEvil} evil-aligned cards with ${paragon.evilBrigade} brigade`,
     },
     {
@@ -51,7 +47,6 @@ export default function ParagonRequirements({ paragonName, stats }: ParagonRequi
       required: paragon.otherEvil,
       current: stats?.otherEvil || 0,
       color: "orange",
-      icon: "🗡️",
       description: `${paragon.otherEvil} evil-aligned cards from any brigade except ${paragon.evilBrigade}`,
     },
     {
@@ -59,7 +54,6 @@ export default function ParagonRequirements({ paragonName, stats }: ParagonRequi
       required: 7,
       current: stats?.dominants || 0,
       color: "purple",
-      icon: "👑",
       description: "Maximum 7 Dominants allowed in Paragon format",
       isMax: true,
     },

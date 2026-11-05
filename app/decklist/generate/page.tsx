@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "flowbite-react";
+import { Camera, FileText } from "lucide-react";
 import ToastNotification from "../../../components/ui/toast-notification";
 import DeckSourcePicker from "./DeckSourcePicker";
 import { decklistPdfDownloadUrl } from "../card-search/utils/pdfDownloadUrl";
@@ -238,23 +239,25 @@ export default function GenerateDeckList() {
         <div className="flex space-x-1 rounded-lg bg-muted p-1 mb-6">
           <button
             onClick={() => setActiveTab('pdf')}
-            className={`flex-1 rounded-md py-2 px-4 text-sm font-medium transition-colors ${
+            className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-md py-2 px-4 text-sm font-medium transition-colors ${
               activeTab === 'pdf'
                 ? 'bg-card text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            📄 Tournament PDF
+            <FileText className="h-4 w-4" aria-hidden />
+            Tournament PDF
           </button>
           <button
             onClick={() => setActiveTab('screenshot')}
-            className={`flex-1 rounded-md py-2 px-4 text-sm font-medium transition-colors ${
+            className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-md py-2 px-4 text-sm font-medium transition-colors ${
               activeTab === 'screenshot'
                 ? 'bg-card text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            📸 Visual Screenshot
+            <Camera className="h-4 w-4" aria-hidden />
+            Visual Screenshot
           </button>
         </div>
 
@@ -512,7 +515,8 @@ export default function GenerateDeckList() {
                 size="lg"
                 className="font-semibold"
               >
-                📄 Download PDF
+                <FileText className="mr-2 h-4 w-4 self-center" aria-hidden />
+                Download PDF
               </Button>
             </div>
           </div>
@@ -543,7 +547,8 @@ export default function GenerateDeckList() {
                   size="lg"
                   className="font-semibold"
                 >
-                  📸 View Screenshot
+                  <Camera className="mr-2 h-4 w-4 self-center" aria-hidden />
+                  View Screenshot
                 </Button>
               </div>
             </div>

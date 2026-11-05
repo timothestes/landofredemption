@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { Trophy } from "lucide-react";
 import type { ViewId } from "../NavTabs";
 import { useSeed } from "../seed-context";
 import { buildChampionData, getAllFormats } from "@/lib/nationals/selectors";
@@ -70,7 +71,7 @@ export function ChampionsView({ setView }: ChampionsViewProps) {
   }, [filtered, sort]);
 
   if (!champions.length) {
-    return <EmptyState icon="🏆" title="No champions yet" />;
+    return <EmptyState icon={Trophy} title="No champions yet" />;
   }
 
   return (
@@ -117,7 +118,7 @@ export function ChampionsView({ setView }: ChampionsViewProps) {
       </div>
 
       {sorted.length === 0 ? (
-        <EmptyState icon="🏆" title={`No champions in ${format}`} />
+        <EmptyState icon={Trophy} title={`No champions in ${format}`} />
       ) : (
         <div className="grid gap-4 justify-start [grid-template-columns:repeat(auto-fill,minmax(210px,300px))]">
           {sorted.map((c) => (

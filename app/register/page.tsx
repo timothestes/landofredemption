@@ -12,6 +12,7 @@ import { getUserSafe } from "../../utils/supabase/getUserSafe";
 import { NATIONALS_CONFIG } from "../config/nationals";
 import { useIsAdmin } from "../../hooks/useIsAdmin";
 import { Turnstile } from "../../components/turnstile";
+import { ClipboardList, CreditCard, Plus } from "lucide-react";
 
 export default function RegistrationPage() {
   const [user, setUser] = useState(null);
@@ -283,7 +284,7 @@ export default function RegistrationPage() {
                   Registration Complete!
                 </h2>
                 <p className="text-xl text-foreground">
-                  Thank you for registering{formData.firstName ? `, ${formData.firstName}` : ''}! 🎉
+                  Thank you for registering{formData.firstName ? `, ${formData.firstName}` : ''}!
                 </p>
                 <p className="text-sm text-muted-foreground">
                   We're excited to see you at Nationals {NATIONALS_CONFIG.year}
@@ -292,8 +293,9 @@ export default function RegistrationPage() {
 
               {/* What's Next Section */}
               <div className="bg-muted p-6 rounded-xl shadow-md border border-border">
-                <p className="font-bold text-lg mb-4 text-foreground">
-                  📋 What's next?
+                <p className="flex items-center justify-center gap-2 font-bold text-lg mb-4 text-foreground">
+                  <ClipboardList className="h-5 w-5" aria-hidden />
+                  What's next?
                 </p>
                 <ul className="text-left space-y-3 max-w-md mx-auto">
                   <li className="flex items-start gap-3 text-foreground">
@@ -372,7 +374,8 @@ export default function RegistrationPage() {
                   className="font-semibold px-8 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
                   size="lg"
                 >
-                  ➕ Register Another Person
+                  <Plus className="mr-2 h-4 w-4" aria-hidden />
+                  Register Another Person
                 </Button>
               </div>
             </div>
@@ -909,7 +912,7 @@ export default function RegistrationPage() {
                 Payment Information
               </h2>
               <div className="p-4 bg-primary/10 text-foreground rounded-lg border border-primary/30">
-                <p className="font-medium mb-2">💳 Payment at Venue</p>
+                <p className="flex items-center gap-2 font-medium mb-2"><CreditCard className="h-4 w-4" aria-hidden />Payment at Venue</p>
                 <p className="text-sm">
                   Payment is to be received at the venue (no pre-payment options). Accepted payment methods:
                 </p>

@@ -4,6 +4,7 @@ import React, { useEffect, useLayoutEffect, useState, useMemo, useRef } from "re
 const BATCH_SIZE = 60;
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Check, Dices, Link2 } from "lucide-react";
 import ModalWithClose from "./ModalWithClose";
 import FilterGrid from "./components/FilterGrid";
 import DeckBuilderPanel, { TabType } from "./components/DeckBuilderPanel";
@@ -2060,7 +2061,7 @@ export default function CardSearchClient({
                 affordance, so it follows the enableSharing gate. */}
             {config.features?.enableSharing !== false && (
             <button
-              className={`px-4 rounded border transition font-medium shadow-sm text-center relative h-9 sm:h-11 ${
+              className={`inline-flex items-center justify-center px-4 rounded border transition font-medium shadow-sm text-center relative h-9 sm:h-11 ${
                 queries.filter(q => q.text.trim()).length > 1
                   ? 'bg-muted text-muted-foreground/50 border-border cursor-not-allowed opacity-50'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground border-border'
@@ -2072,17 +2073,18 @@ export default function CardSearchClient({
                   : copyLinkNotification ? 'Link copied!' : 'Copy search link'
               }
               disabled={queries.filter(q => q.text.trim()).length > 1}
+              aria-label={copyLinkNotification ? 'Link copied' : 'Copy search link'}
             >
-              {copyLinkNotification ? '✓' : '🔗'}
+              {copyLinkNotification ? <Check className="h-4 w-4" aria-hidden /> : <Link2 className="h-4 w-4" aria-hidden />}
             </button>
             )}
             <button
-              className="px-4 rounded bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground border border-border transition font-medium shadow-sm text-center h-9 sm:h-11"
+              className="inline-flex items-center justify-center px-4 rounded bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground border border-border transition font-medium shadow-sm text-center h-9 sm:h-11"
               onClick={() => router.push('/decklist/card-search/random')}
               title="Random card"
               aria-label="Show a random card"
             >
-              🎲
+              <Dices className="h-4 w-4" aria-hidden />
             </button>
             </div>
             {/* Sort + Filter collapse — desktop only, right-aligned via flex */}
