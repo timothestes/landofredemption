@@ -83,6 +83,12 @@ export interface GameState {
    *  value means the menu should offer "Gather Deck". Named apart from the
    *  hand's `isSpreadHand` fan/unfan toggle. */
   deckSpread?: Record<string, DeckSpreadOrigin>;
+  /** Times the deck was shuffled this game. The canvas plays the shuffle
+   *  animation when this goes up. Optional so states saved before the field
+   *  existed load cleanly. */
+  deckShuffles?: number;
+  /** The same count for the Paragon Soul Deck. */
+  soulDeckShuffles?: number;
   /** Logged-in user's profile username (null when not signed in). Used only to
    *  gate the per-user cycling-token easter egg; everything else ignores it. */
   currentUsername?: string | null;

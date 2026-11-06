@@ -15,6 +15,7 @@ import { preloadImitateSouls } from '@/app/shared/utils/preloadImitateSouls';
 import { computeHandBrigades } from '@/app/shared/utils/handBrigades';
 import { GameCard, ZoneId, ZONE_LABELS, ALL_ZONES } from '../types';
 import { GameCardNode, CardBackShape, cardBackListeners, cardBackLoaded } from '../../shared/components/GameCardNode';
+import { DeckShuffleEffect } from '../../shared/components/DeckStack';
 import { PhaseBar } from './PhaseBar';
 import { GameToolbar } from './GameToolbar';
 import { CardContextMenu } from '@/app/shared/components/CardContextMenu';
@@ -2153,6 +2154,22 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
                       <CardBackShape width={sidebarCardWidth} height={sidebarCardHeight} />
                     </Group>
                   )}
+                  {/* Cards slide out from under the top card when the deck
+                      is shuffled, once any cards being dealt from it have
+                      landed. Keyed by the game, so a new game stops a shuffle
+                      in mid-play instead of running it under the opening
+                      deal. */}
+                  <Group x={px} y={py} rotation={rot} offsetX={oX} offsetY={oY}>
+                    <DeckShuffleEffect
+                      key={state.sessionId}
+                      tick={state.deckShuffles ?? 0}
+                      dealing={dealingIds.size > 0 || soulDeals.size > 0}
+                      count={cards.length}
+                      cardWidth={sidebarCardWidth}
+                      cardHeight={sidebarCardHeight}
+                      back={<CardBackShape width={sidebarCardWidth} height={sidebarCardHeight} />}
+                    />
+                  </Group>
                   {revealedTop ? (
                     <GameCardNode
                       key={revealedTop.instanceId}
@@ -2601,6 +2618,27 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
                     />
                   )
                 )}
+                {/* Cards slide out from under the top card when the Soul Deck
+                    is shuffled, no further than the board's edge on the left
+                    and the Land of Bondage on the right. */}
+                <Group x={px} y={py}>
+                  <DeckShuffleEffect
+                    key={state.sessionId}
+                    tick={state.soulDeckShuffles ?? 0}
+                    dealing={soulDeals.size > 0}
+                    count={count}
+                    cardWidth={pileWidth}
+                    cardHeight={pileHeight}
+                    back={
+                      soulDeckBackReady && soulDeckBackRef.current ? (
+                        <KonvaImage image={soulDeckBackRef.current} width={pileWidth} height={pileHeight} cornerRadius={4} />
+                      ) : (
+                        <Rect width={pileWidth} height={pileHeight} fill="#3a1e18" stroke="#c4955a" strokeWidth={1} cornerRadius={4} />
+                      )
+                    }
+                    room={{ left: px, right: zoneLayout['land-of-bondage'].x - (px + pileWidth) }}
+                  />
+                </Group>
                 {soulDeckBackReady && soulDeckBackRef.current ? (
                   <KonvaImage
                     image={soulDeckBackRef.current}

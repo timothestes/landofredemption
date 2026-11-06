@@ -4,9 +4,11 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { Group, Rect } from 'react-konva';
 import Konva from 'konva';
 import {
+  DECK_SHUFFLE_STALE_MS,
   deckShuffleCards,
   deckShuffleDuration,
   deckShufflePose,
+  deckShuffleStart,
   deckStackShade,
   type ShuffleRoom,
   type StackPoint,
@@ -17,9 +19,6 @@ import {
 const SLIDING_CARD_SHADE = 0.35;
 // How much smaller than the top card they are drawn, in px across.
 const SLIDING_CARD_INSET = 3;
-// A shuffle older than this when its turn to play comes is skipped. It means
-// the tab was in the background, and the moment has passed.
-const SHUFFLE_STALE_MS = 1000;
 
 /**
  * The cards under the top card of a face-down pile, drawn as a stack.
@@ -82,7 +81,7 @@ export function DeckStackUnderlay({
 }
 
 /**
- * Plays a short shuffle on a pile each time `tick` changes: a few cards slide
+ * Plays a short shuffle on a pile each time `tick` goes up: a few cards slide
  * out from under the top card and tuck back in. Hidden in between.
  *
  * Place it at the top card's top-left corner, after the underlay and before
@@ -97,6 +96,7 @@ export function DeckShuffleEffect({
   cardHeight,
   back,
   room,
+  dealing = false,
 }: {
   tick: number;
   /** Cards in the pile. */
@@ -106,22 +106,44 @@ export function DeckShuffleEffect({
   back: ReactNode;
   /** Free space beside the top card, for a pile with close neighbours. */
   room?: ShuffleRoom;
+  /** Cards are flying out of this pile right now. A shuffle waits for them
+   *  to land before it plays. */
+  dealing?: boolean;
 }) {
   const groupRef = useRef<Konva.Group | null>(null);
   const animationRef = useRef<Konva.Animation | null>(null);
   const seenTick = useRef(tick);
-  // When a shuffle landed while one was playing. It plays right after that
-  // one: restarting instead would snap the sliding cards back to rest.
-  const queuedAt = useRef<number | null>(null);
-  // Read by the running animation, so a resize does not restart it.
-  const size = useRef({ cardWidth, cardHeight, room });
-  size.current = { cardWidth, cardHeight, room };
+  // A shuffle landed while one was waiting or playing. It plays right after
+  // that one: restarting instead would snap the sliding cards back to rest.
+  const queued = useRef(false);
+  // True while a shuffle is waiting for a deal to land and has not started.
+  const waiting = useRef(false);
+  // Read by the running animation every frame, so a resize does not restart
+  // it and it sees a deal that began in the same update as the shuffle.
+  const live = useRef({ cardWidth, cardHeight, room, dealing });
+  live.current = { cardWidth, cardHeight, room, dealing };
 
   // The animation places the sliding cards itself, every frame. They take no
   // position from props, so a re-render mid-shuffle cannot move them.
   useEffect(() => {
-    if (tick === seenTick.current) return;
+    const previous = seenTick.current;
     seenTick.current = tick;
+    if (tick < previous) {
+      // Shuffles were undone, newest first. The queued one goes first, then
+      // one still waiting to start. One already playing finishes.
+      let undone = previous - tick;
+      if (queued.current) {
+        queued.current = false;
+        undone--;
+      }
+      if (undone > 0 && waiting.current) {
+        animationRef.current?.stop();
+        animationRef.current = null;
+        waiting.current = false;
+      }
+      return;
+    }
+    if (tick === previous) return;
     const group = groupRef.current;
     const reduceMotion =
       typeof window !== 'undefined' &&
@@ -129,33 +151,47 @@ export function DeckShuffleEffect({
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!group || reduceMotion) return;
     if (animationRef.current) {
-      queuedAt.current = performance.now();
+      queued.current = true;
       return;
     }
-    const requestedAt = performance.now();
+    let requestedAt = performance.now();
+    let lastFrameAt = requestedAt;
     let startedAt = -1;
     // Cards sliding in this run. One added mid-run waits at rest for the next.
     let cards = 0;
     const animation = new Konva.Animation((frame) => {
       const now = performance.now();
-      if (startedAt < 0) {
-        // The clock starts on the first frame, so a slow start does not eat
-        // into the slide.
-        startedAt = frame.time;
-        cards = now - requestedAt < SHUFFLE_STALE_MS ? group.getChildren().length : 0;
-      }
-      let elapsed = frame.time - startedAt;
-      if (elapsed >= deckShuffleDuration(cards) && queuedAt.current !== null) {
-        const fresh = now - queuedAt.current < SHUFFLE_STALE_MS;
-        queuedAt.current = null;
-        if (fresh) {
-          startedAt = frame.time;
-          cards = group.getChildren().length;
-          elapsed = 0;
+      // A long gap since the last frame means the tab was in the background.
+      const sinceLastFrame = now - lastFrameAt;
+      lastFrameAt = now;
+      if (startedAt >= 0 && frame.time - startedAt >= deckShuffleDuration(cards) && queued.current) {
+        // This run is over and another shuffle is queued behind it. That one
+        // waits for a deal like any other, and is dropped if the tab was in
+        // the background.
+        queued.current = false;
+        if (sinceLastFrame < DECK_SHUFFLE_STALE_MS) {
+          startedAt = -1;
+          requestedAt = now;
+          waiting.current = true;
         }
       }
+      if (startedAt < 0) {
+        const start = deckShuffleStart(live.current.dealing, now - requestedAt, sinceLastFrame);
+        if (start === 'wait') {
+          // The cards are at rest under the top card; hide them while it waits.
+          if (!group.visible()) return false;
+          group.visible(false);
+          return;
+        }
+        waiting.current = false;
+        // The clock starts on the frame it plays from, so neither a slow
+        // start nor a wait eats into the slide.
+        startedAt = frame.time;
+        cards = start === 'play' ? group.getChildren().length : 0;
+      }
+      const elapsed = frame.time - startedAt;
       const done = elapsed >= deckShuffleDuration(cards);
-      const { cardWidth: width, cardHeight: height, room: space } = size.current;
+      const { cardWidth: width, cardHeight: height, room: space } = live.current;
       group.getChildren().forEach((node, i) => {
         const pose = deckShufflePose(i, i < cards ? elapsed : 0, width, height, space);
         node.setAttrs({
@@ -172,6 +208,7 @@ export function DeckShuffleEffect({
       }
     }, group.getLayer());
     animationRef.current = animation;
+    waiting.current = true;
     animation.start();
   }, [tick]);
 
@@ -179,7 +216,8 @@ export function DeckShuffleEffect({
     () => () => {
       animationRef.current?.stop();
       animationRef.current = null;
-      queuedAt.current = null;
+      queued.current = false;
+      waiting.current = false;
     },
     [],
   );

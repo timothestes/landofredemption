@@ -445,7 +445,7 @@ function shuffleAndDrawInState(
     zones.hand.push(card);
   }
 
-  return { ...state, zones, history };
+  return { ...state, zones, history, deckShuffles: (state.deckShuffles ?? 0) + 1 };
 }
 
 function drawBottomOfDeckInState(
@@ -707,7 +707,7 @@ function threeNailsResetInState(
     zones.hand.push(card);
   }
 
-  return { ...state, zones, history };
+  return { ...state, zones, history, deckShuffles: (state.deckShuffles ?? 0) + 1 };
 }
 
 function drawAndTopdeckSelfInState(
@@ -1075,12 +1075,12 @@ function reduceGame(state: GameState, action: GameAction): GameState {
 
     case 'SHUFFLE_DECK': {
       zones.deck = shuffleArray(zones.deck);
-      return { ...state, zones, history };
+      return { ...state, zones, history, deckShuffles: (state.deckShuffles ?? 0) + 1 };
     }
 
     case 'SHUFFLE_SOUL_DECK': {
       zones['soul-deck'] = shuffleArray(zones['soul-deck']);
-      return { ...state, zones, history };
+      return { ...state, zones, history, soulDeckShuffles: (state.soulDeckShuffles ?? 0) + 1 };
     }
 
     case 'MOVE_TO_TOP_OF_DECK': {

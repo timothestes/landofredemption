@@ -8570,6 +8570,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                       Lost Soul, so its cards slide only as far as that. */}
                   <DeckShuffleEffect
                     tick={deckShuffleTicks[SOUL_DECK] ?? 0}
+                    dealing={sharedDeals.size > 0}
                     count={count}
                     cardWidth={pileWidth}
                     cardHeight={pileHeight}
@@ -9092,6 +9093,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                       <DeckShuffleEffect
                         key={String(gameState.myPlayer?.id)}
                         tick={deckShuffleTicks[String(gameState.myPlayer?.id)] ?? 0}
+                        dealing={dealingIds.size > 0 || myDeals.size > 0}
                         count={count}
                         cardWidth={cellCardW}
                         cardHeight={cellCardH}
@@ -9425,6 +9427,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                         <DeckShuffleEffect
                           key={String(gameState.opponentPlayer?.id)}
                           tick={deckShuffleTicks[String(gameState.opponentPlayer?.id)] ?? 0}
+                          dealing={oppDealingIds.size > 0 || oppDeals.size > 0}
                           count={count}
                           cardWidth={cellCardW}
                           cardHeight={cellCardH}
