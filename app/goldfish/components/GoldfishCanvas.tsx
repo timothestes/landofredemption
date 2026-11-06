@@ -15,7 +15,8 @@ import { preloadImitateSouls } from '@/app/shared/utils/preloadImitateSouls';
 import { computeHandBrigades } from '@/app/shared/utils/handBrigades';
 import { GameCard, ZoneId, ZONE_LABELS, ALL_ZONES } from '../types';
 import { GameCardNode, CardBackShape, cardBackListeners, cardBackLoaded } from '../../shared/components/GameCardNode';
-import { DeckShuffleEffect } from '../../shared/components/DeckStack';
+import { DeckShuffleEffect, DeckStackUnderlay } from '../../shared/components/DeckStack';
+import { fitDeckStackCardHeight, layoutDeckStack } from '../../shared/layout/deckStack';
 import { PhaseBar } from './PhaseBar';
 import { GameToolbar } from './GameToolbar';
 import { CardContextMenu } from '@/app/shared/components/CardContextMenu';
@@ -2131,12 +2132,19 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
               const zone = zoneLayout[zoneId];
               const cx = zone.x + zone.width / 2;
               const cy = zone.y + zone.height / 2;
+              // The deck is drawn as a stack of cards, so its card gives up a
+              // little height to leave room for the layers under it. The stack
+              // sits in a box that never changes size; the top card moves
+              // inside it as the deck empties.
+              const deckCardHeight = fitDeckStackCardHeight(sidebarCardHeight, zone.height - 26);
+              const deckCardWidth = Math.round(deckCardHeight / CARD_ASPECT_RATIO);
+              const stack = layoutDeckStack(cards.length, deckCardWidth, deckCardHeight);
               const rot = rotateSidebarPiles ? -90 : 0;
-              const oX = rotateSidebarPiles ? sidebarCardWidth / 2 : 0;
-              const oY = rotateSidebarPiles ? sidebarCardHeight / 2 : 0;
+              const oX = rotateSidebarPiles ? deckCardWidth / 2 : 0;
+              const oY = rotateSidebarPiles ? deckCardHeight / 2 : 0;
               // When not rotated, position top-left so card sits below the label
-              const px = rotateSidebarPiles ? cx : zone.x + zone.width / 2 - sidebarCardWidth / 2;
-              const py = rotateSidebarPiles ? cy : zone.y + 24;
+              const px = rotateSidebarPiles ? cx : zone.x + (zone.width - stack.width) / 2 + stack.top.x;
+              const py = rotateSidebarPiles ? cy : zone.y + 24 + stack.top.y;
               // Deck cards sit face-down (isFlipped) — force the revealed top
               // card face up, same as the multiplayer pile's effectiveTop.
               const rawTop = state.topDeckRevealed ? cards[0] : undefined;
@@ -2145,40 +2153,55 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
                 : undefined;
               // GameCardNode has no offset props, so the rotated layout's
               // center pivot is rebased onto the node's top-left origin.
-              const revealedX = rotateSidebarPiles ? cx - sidebarCardHeight / 2 : px;
-              const revealedY = rotateSidebarPiles ? cy + sidebarCardWidth / 2 : py;
+              const revealedX = rotateSidebarPiles ? cx - deckCardHeight / 2 : px;
+              const revealedY = rotateSidebarPiles ? cy + deckCardWidth / 2 : py;
               return (
                 <Group key={zoneId}>
-                  {cards.length > 1 && (
-                    <Group x={px - 2} y={py - 2} rotation={rot} offsetX={oX} offsetY={oY}>
-                      <CardBackShape width={sidebarCardWidth} height={sidebarCardHeight} />
-                    </Group>
-                  )}
-                  {/* Cards slide out from under the top card when the deck
-                      is shuffled, once any cards being dealt from it have
-                      landed. Keyed by the game, so a new game stops a shuffle
-                      in mid-play instead of running it under the opening
-                      deal. */}
-                  <Group x={px} y={py} rotation={rot} offsetX={oX} offsetY={oY}>
+                  {/* The whole pile takes the menu, not just the top card, so
+                      the edges of the stack answer like the rest of the deck.
+                      Touch has no right-click: without a tap handler the deck
+                      pile did nothing at all on a phone — no draw, no search,
+                      no shuffle. */}
+                  <Group
+                    x={px}
+                    y={py}
+                    rotation={rot}
+                    offsetX={oX}
+                    offsetY={oY}
+                    onContextMenu={handleDeckContextMenu}
+                    onTap={(e) => handleDeckLongPress({ x: e.evt.changedTouches?.[0]?.clientX ?? 0, y: e.evt.changedTouches?.[0]?.clientY ?? 0 })}
+                  >
+                    <DeckStackUnderlay
+                      layers={stack.layers}
+                      cardWidth={deckCardWidth}
+                      cardHeight={deckCardHeight}
+                      back={<CardBackShape width={deckCardWidth} height={deckCardHeight} />}
+                    />
+                    {/* Cards slide out from under the top card when the deck
+                        is shuffled, once any cards being dealt from it have
+                        landed. Keyed by the game, so a new game stops a shuffle
+                        in mid-play instead of running it under the opening
+                        deal. */}
                     <DeckShuffleEffect
                       key={state.sessionId}
                       tick={state.deckShuffles ?? 0}
                       dealing={dealingIds.size > 0 || soulDeals.size > 0}
                       count={cards.length}
-                      cardWidth={sidebarCardWidth}
-                      cardHeight={sidebarCardHeight}
-                      back={<CardBackShape width={sidebarCardWidth} height={sidebarCardHeight} />}
+                      cardWidth={deckCardWidth}
+                      cardHeight={deckCardHeight}
+                      back={<CardBackShape width={deckCardWidth} height={deckCardHeight} />}
                     />
+                    {!revealedTop && <CardBackShape width={deckCardWidth} height={deckCardHeight} />}
                   </Group>
-                  {revealedTop ? (
+                  {revealedTop && (
                     <GameCardNode
                       key={revealedTop.instanceId}
                       card={revealedTop}
                       x={revealedX}
                       y={revealedY}
                       rotation={rot}
-                      cardWidth={sidebarCardWidth}
-                      cardHeight={sidebarCardHeight}
+                      cardWidth={deckCardWidth}
+                      cardHeight={deckCardHeight}
                       image={getImage(revealedTop.cardImgFile)}
                       {...(getTargetingProps(revealedTop) ?? {})}
                       isSelected={selectedIds.has(revealedTop.instanceId)}
@@ -2201,21 +2224,6 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
                       onMouseEnter={handleCardMouseEnter}
                       onMouseLeave={handleCardMouseLeave}
                     />
-                  ) : (
-                    <Group
-                      x={px}
-                      y={py}
-                      rotation={rot}
-                      offsetX={oX}
-                      offsetY={oY}
-                      onContextMenu={handleDeckContextMenu}
-                      // Touch has no right-click: without a tap handler the
-                      // deck pile did nothing at all on a phone — no draw, no
-                      // search, no shuffle.
-                      onTap={(e) => handleDeckLongPress({ x: e.evt.changedTouches?.[0]?.clientX ?? 0, y: e.evt.changedTouches?.[0]?.clientY ?? 0 })}
-                    >
-                      <CardBackShape width={sidebarCardWidth} height={sidebarCardHeight} />
-                    </Group>
                   )}
                 </Group>
               );
@@ -2582,46 +2590,34 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
             const zone = zoneLayout['soul-deck'];
             if (!zone || zone.width <= 0) return null;
             const count = state.zones['soul-deck'].length;
-            // Fit the card inside the narrow soul-deck column.
-            const pileWidth = Math.min(cardWidth, zone.width - 4);
+            // Fit the card inside the narrow soul-deck column, at the size of
+            // the Lost Souls beside it, which leaves the stack room in the row.
+            const pileWidth = Math.min(lobCardWidth, zone.width - 4);
             const pileHeight = Math.round(pileWidth * CARD_ASPECT_RATIO);
-            const px = zone.x + (zone.width - pileWidth) / 2;
-            const py = zone.y + (zone.height - pileHeight) / 2;
+            const stack = layoutDeckStack(count, pileWidth, pileHeight);
+            const px = zone.x + (zone.width - stack.width) / 2 + stack.top.x;
+            const py = zone.y + (zone.height - stack.height) / 2 + stack.top.y;
+            const soulBack = soulDeckBackReady && soulDeckBackRef.current ? (
+              <KonvaImage image={soulDeckBackRef.current} width={pileWidth} height={pileHeight} cornerRadius={4} />
+            ) : (
+              <Rect width={pileWidth} height={pileHeight} fill="#3a1e18" stroke="#c4955a" strokeWidth={1} cornerRadius={4} />
+            );
             // TODO: drag-from-Soul-Deck — right-click reveal is the primary path for now.
             return (
               <Group
                 key="soul-deck-pile"
                 onContextMenu={handleSoulDeckContextMenu}
               >
-                {/* Back-stack hint — a slight offset shows depth when there's more than one */}
-                {count > 1 && (
-                  soulDeckBackReady && soulDeckBackRef.current ? (
-                    <KonvaImage
-                      image={soulDeckBackRef.current}
-                      x={px - 2}
-                      y={py - 2}
-                      width={pileWidth}
-                      height={pileHeight}
-                      cornerRadius={4}
-                      opacity={0.85}
-                    />
-                  ) : (
-                    <Rect
-                      x={px - 2}
-                      y={py - 2}
-                      width={pileWidth}
-                      height={pileHeight}
-                      fill="#2a1410"
-                      stroke="#6b4e27"
-                      strokeWidth={1}
-                      cornerRadius={4}
-                    />
-                  )
-                )}
-                {/* Cards slide out from under the top card when the Soul Deck
-                    is shuffled, no further than the board's edge on the left
-                    and the Land of Bondage on the right. */}
                 <Group x={px} y={py}>
+                  <DeckStackUnderlay
+                    layers={stack.layers}
+                    cardWidth={pileWidth}
+                    cardHeight={pileHeight}
+                    back={soulBack}
+                  />
+                  {/* Cards slide out from under the top card when the Soul Deck
+                      is shuffled, no further than the board's edge on the left
+                      and the Land of Bondage on the right. */}
                   <DeckShuffleEffect
                     key={state.sessionId}
                     tick={state.soulDeckShuffles ?? 0}
@@ -2629,37 +2625,11 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
                     count={count}
                     cardWidth={pileWidth}
                     cardHeight={pileHeight}
-                    back={
-                      soulDeckBackReady && soulDeckBackRef.current ? (
-                        <KonvaImage image={soulDeckBackRef.current} width={pileWidth} height={pileHeight} cornerRadius={4} />
-                      ) : (
-                        <Rect width={pileWidth} height={pileHeight} fill="#3a1e18" stroke="#c4955a" strokeWidth={1} cornerRadius={4} />
-                      )
-                    }
+                    back={soulBack}
                     room={{ left: px, right: zoneLayout['land-of-bondage'].x - (px + pileWidth) }}
                   />
+                  {soulBack}
                 </Group>
-                {soulDeckBackReady && soulDeckBackRef.current ? (
-                  <KonvaImage
-                    image={soulDeckBackRef.current}
-                    x={px}
-                    y={py}
-                    width={pileWidth}
-                    height={pileHeight}
-                    cornerRadius={4}
-                  />
-                ) : (
-                  <Rect
-                    x={px}
-                    y={py}
-                    width={pileWidth}
-                    height={pileHeight}
-                    fill="#3a1e18"
-                    stroke="#c4955a"
-                    strokeWidth={1}
-                    cornerRadius={4}
-                  />
-                )}
                 {/* Count badge anchored to the top-right of the pile */}
                 <Group x={px + pileWidth - 30} y={py + 4}>
                   <Rect width={28} height={20} fill="#2a1f12" cornerRadius={4} stroke="#c4955a" strokeWidth={1} />
