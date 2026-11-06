@@ -5,6 +5,7 @@ import {
   deckShuffleCards,
   deckShuffleDuration,
   deckShufflePose,
+  deckShuffleStart,
   deckStackLayers,
   deckStackShade,
   fitDeckStackCardHeight,
@@ -270,5 +271,31 @@ describe('deck shuffle animation', () => {
     expect(Math.abs(deckShufflePose(0, early, 67, 94).x)).toBeGreaterThan(0);
     expect(deckShufflePose(1, early, 67, 94).x).toBeCloseTo(0);
     expect(deckShufflePose(2, early, 67, 94).x).toBeCloseTo(0);
+  });
+});
+
+describe('deckShuffleStart', () => {
+  it('plays at once when nothing is being dealt from the pile', () => {
+    expect(deckShuffleStart(false, 0, 0)).toBe('play');
+    expect(deckShuffleStart(false, 16, 16)).toBe('play');
+  });
+
+  it('waits while cards are being dealt from the pile, then plays', () => {
+    expect(deckShuffleStart(true, 0, 0)).toBe('wait');
+    expect(deckShuffleStart(true, 1600, 16)).toBe('wait');
+    // The deal has landed. However long the wait was, it plays.
+    expect(deckShuffleStart(false, 1616, 16)).toBe('play');
+    expect(deckShuffleStart(false, 2900, 16)).toBe('play');
+  });
+
+  it('gives up on a deal that never lands', () => {
+    expect(deckShuffleStart(true, 2999, 16)).toBe('wait');
+    expect(deckShuffleStart(true, 3000, 16)).toBe('skip');
+  });
+
+  it('is skipped when the tab was in the background', () => {
+    expect(deckShuffleStart(false, 5000, 5000)).toBe('skip');
+    expect(deckShuffleStart(true, 5000, 5000)).toBe('skip');
+    expect(deckShuffleStart(false, 999, 999)).toBe('play');
   });
 });

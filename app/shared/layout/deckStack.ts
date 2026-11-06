@@ -139,6 +139,29 @@ const SHUFFLE_TILT = 5;
 /** Above 1, a card leaves quickly and tucks back in more slowly. */
 const SHUFFLE_WARP = 1.35;
 
+/** A gap between frames this long means the tab was in the background. */
+export const DECK_SHUFFLE_STALE_MS = 1000;
+/** Longest a shuffle waits for cards being dealt from its pile to land. */
+const SHUFFLE_MAX_WAIT_MS = 3000;
+
+/**
+ * What a shuffle that has not started yet does on this frame.
+ *
+ * It waits while cards are being dealt from its pile, then plays: a deal and
+ * a shuffle at once is too much. It is skipped once the moment has passed,
+ * which is when the last frame was long ago (the tab was in the background)
+ * or the deal has kept it waiting too long.
+ */
+export function deckShuffleStart(
+  dealing: boolean,
+  waitedMs: number,
+  sinceLastFrameMs: number,
+): 'play' | 'wait' | 'skip' {
+  if (sinceLastFrameMs >= DECK_SHUFFLE_STALE_MS) return 'skip';
+  if (!dealing) return 'play';
+  return waitedMs < SHUFFLE_MAX_WAIT_MS ? 'wait' : 'skip';
+}
+
 /**
  * How many cards slide out of a pile of `count` when it is shuffled. The top
  * card stays put, so a single card has nothing to shuffle.
