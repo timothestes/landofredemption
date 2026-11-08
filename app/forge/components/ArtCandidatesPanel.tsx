@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Link2, Loader2, Trash2 } from "lucide-react";
 import { upload } from "@vercel/blob/client";
@@ -9,6 +9,7 @@ import CropCandidateModal from "@/app/forge/components/CropCandidateModal";
 import SourceLinkDialog from "@/app/forge/components/SourceLinkDialog";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 import { addArtCandidate, deleteArtCandidate, type ArtCandidate } from "@/app/forge/lib/artCandidates";
+import { pendingTiles, uploadHint, type UploadBatch } from "@/app/forge/lib/artUploadProgress";
 
 // Candidate blobs are immutable (a row is written once, never replaced), so a
 // constant t cache-buster is enough for the proxy's immutable caching.
@@ -22,7 +23,7 @@ export default function ArtCandidatesPanel({
   cardName: string | null;
 }) {
   const router = useRouter();
-  const [progress, setProgress] = useState<{ done: number; total: number; name: string } | null>(null);
+  const [progress, setProgress] = useState<UploadBatch | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [cropping, setCropping] = useState<string | null>(null); // candidate id
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
@@ -31,8 +32,9 @@ export default function ArtCandidatesPanel({
   async function onFiles(files: File[]) {
     setErr(null);
     const errors: string[] = [];
+    const before = candidates.length;
     for (let i = 0; i < files.length; i++) {
-      setProgress({ done: i, total: files.length, name: files[i].name });
+      setProgress({ done: i, total: files.length, name: files[i].name, failed: errors.length, before });
       try {
         const blob = await upload(`forge-art-raw/${files[i].name}`, files[i], {
           access: "private",
@@ -50,9 +52,19 @@ export default function ArtCandidatesPanel({
         errors.push(`${files[i].name}: ${e instanceof Error ? e.message : "Upload failed"}`);
       }
     }
-    setProgress(null);
     if (errors.length > 0) setErr(errors.join(" · "));
-    router.refresh();
+    if (errors.length === files.length) {
+      setProgress(null);
+      router.refresh();
+      return;
+    }
+    // In one commit with the refreshed page, so the spinner turns into the image. Cleared any
+    // earlier, it left seconds with no spinner and the old count, which looked like a failed upload.
+    setProgress({ done: files.length, total: files.length, name: "", failed: errors.length, before });
+    startTransition(() => {
+      setProgress(null);
+      router.refresh();
+    });
   }
 
   async function onDelete(id: string) {
@@ -66,9 +78,7 @@ export default function ArtCandidatesPanel({
     <div>
       <FilePicker label="Add images…" accept="image/jpeg,image/png,image/webp,.tif,.tiff,image/tiff" multiple
         disabled={progress !== null} onFiles={onFiles}
-        hint={progress
-          ? `Uploading ${progress.done + 1} of ${progress.total} — ${progress.name}`
-          : `${candidates.length}/12 · click an image to crop`} />
+        hint={progress ? uploadHint(progress) : `${candidates.length}/12 · click an image to crop`} />
       {err && <p className="mt-2 text-sm text-destructive">{err}</p>}
 
       {(candidates.length > 0 || progress !== null) && (
@@ -79,7 +89,7 @@ export default function ArtCandidatesPanel({
                 aria-label={c.isActiveSource ? "Re-crop the current artwork's source" : "Crop this image"}>
                 {/* eslint-disable-next-line @next/next/no-img-element -- forge art must use the authed proxy, never next/image */}
                 <img src={candidateUrl(cardId, c.id)} alt="" loading="lazy" decoding="async"
-                  className={`aspect-square w-full rounded-md border object-cover ${c.isActiveSource ? "ring-2 ring-primary" : ""}`} />
+                  className={`aspect-square w-full rounded-md border bg-muted/40 object-cover ${c.isActiveSource ? "ring-2 ring-primary" : ""}`} />
               </button>
               {c.isActiveSource ? (
                 // On touch the link button below is larger and always shown, so this label moves
@@ -102,7 +112,7 @@ export default function ArtCandidatesPanel({
           {/* One skeleton per not-yet-landed file: the active upload spins, queued
               ones pulse. Replaced by real thumbnails as each per-file refresh lands. */}
           {progress !== null &&
-            Array.from({ length: progress.total - progress.done }, (_, i) => (
+            Array.from({ length: pendingTiles(progress, candidates.length) }, (_, i) => (
               <li key={`uploading-${i}`} aria-hidden="true"
                 className="flex aspect-square w-full animate-pulse items-center justify-center rounded-md border border-dashed bg-muted/40">
                 {i === 0 && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden="true" />}

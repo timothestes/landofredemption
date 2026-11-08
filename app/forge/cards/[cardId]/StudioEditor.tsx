@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Download, ChevronLeft, ChevronRight, Loader2, Check, AlertTriangle, Eye, EyeOff } from "lucide-react";
@@ -258,13 +258,20 @@ export default function StudioEditor({
         handleUploadUrl: "/forge/api/art/upload-token",
       });
       const r = await uploadFinished(card.id, blob.pathname);
-      if (r.ok === false) setErr(r.error ?? "Upload failed");
-      else router.refresh();
+      if (r.ok === false) {
+        setErr(r.error ?? "Upload failed");
+        setUploading(null);
+        return;
+      }
+      // "Uploading…" clears in one commit with the refreshed page, so it lasts until the new face.
+      startTransition(() => {
+        setUploading(null);
+        router.refresh();
+      });
     } catch (e) {
       // Previously uncaught: the spinner cleared (finally still ran) but nothing told
       // the user it failed — a silent no-op. Now it does.
       setErr(e instanceof Error ? e.message : "Upload failed");
-    } finally {
       setUploading(null);
     }
   }
