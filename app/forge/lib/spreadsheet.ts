@@ -6,7 +6,7 @@
 // strings, formula string results, numbers, and sparse rows/cells.
 
 import { unzipSync } from "fflate";
-import { auditLackeyRow, lackeyRowToDesignCard, type LackeyRow } from "./lackey";
+import { auditLackeyRow, lackeyDerivedFields, lackeyRowToDesignCard, type LackeyRow } from "./lackey";
 import type { DesignCard } from "./designCard";
 
 // ---------------------------------------------------------------------------
@@ -251,6 +251,7 @@ export interface SpreadsheetCard {
   name: string;
   imageFile: string;   // cleaned Image column value ("" when absent)
   snapshot: DesignCard;
+  derived: string[];   // snapshot keys with no cell behind them (see lackeyDerivedFields)
   warnings: string[];  // per-card data-quality warnings (values that were dropped)
   rowIndex: number;    // 1-based row in the user's file (header = row 1)
 }
@@ -315,7 +316,7 @@ export function tableToCards(rows: string[][], mapping: ColumnMapping): {
     if (scripture) snapshot.scripture = scripture;
 
     cards.push({
-      name, imageFile: get("image"), snapshot,
+      name, imageFile: get("image"), snapshot, derived: lackeyDerivedFields(lackeyRow),
       warnings: auditLackeyRow(lackeyRow), rowIndex: i + 1,
     });
   }

@@ -14,9 +14,10 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 import { cn } from "@/lib/utils";
-import { saveCard, uploadFinished, setPlaceholder, type ForgeCardFull } from "@/app/forge/lib/cards";
+import { saveCardFields, uploadFinished, setPlaceholder, type ForgeCardFull } from "@/app/forge/lib/cards";
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
+import { createCardSaver, incomingAction } from "@/app/forge/lib/cardSave";
 import type { ArtCandidate } from "@/app/forge/lib/artCandidates";
 import LifecycleControls from "./LifecycleControls";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
@@ -72,8 +73,16 @@ export default function StudioEditor({
   const firstRender = useRef(true);
   const fieldsDirty = useRef(false);
   const latest = useRef(snapshot);       // most recent edit (for flush-on-leave)
-  const lastSaved = useRef(snapshot);    // last snapshot the server accepted
+  // This session's view of the server, and the base of every save's diff. Moves when a save
+  // is accepted or a write from elsewhere is adopted, never just because the props changed.
+  // That is what keeps a field another elder changed out of this session's saves.
+  const lastSaved = useRef(snapshot);
   const savedRef = useRef(saved);
+  const [saver] = useState(() => createCardSaver({
+    latest,
+    lastSaved,
+    send: (patch) => saveCardFields(card.id, patch),
+  }));
   const [pendingFinished, setPendingFinished] = useState<File | null>(null);
   const [uploading, setUploading] = useState<"finished" | null>(null);
   // The verse finder's candidate excerpt, drawn on the preview face only. Never saved.
@@ -86,22 +95,30 @@ export default function StudioEditor({
     { userId: currentUser.userId, displayName: currentUser.displayName, editing: false },
   );
 
+  // Every save goes through here, so the pill can't be left on "Saving…": the saver resolves
+  // false instead of throwing when the connection drops. The edit stays in the editor, and
+  // diffing against lastSaved keeps its fields in the next attempt.
+  const runSave = useCallback(async () => {
+    if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+    setSaved("saving");
+    const ok = await saver.flush();
+    if (ok && sameSnapshot(latest.current, lastSaved.current)) setDirty(false);
+    setSaved(ok ? "saved" : "error");
+    return ok;
+  }, [saver]);
+
   // Debounced autosave — fires only after the user edits (skips mount).
   useEffect(() => {
     latest.current = snapshot;
     if (firstRender.current) { firstRender.current = false; return; }
     // Content, not identity: update() always builds a new object, and an adopted snapshot
-    // must not be echoed straight back to the server.
-    if (sameSnapshot(snapshot, lastSaved.current)) return;
+    // must not be echoed straight back to the server. Against what the server will hold, not
+    // lastSaved: an edit undone while its save is in flight still needs saving.
+    if (sameSnapshot(snapshot, saver.target())) return;
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(async () => {
-      setSaved("saving");
-      const r = await saveCard(card.id, snapshot);
-      if (r.ok) { lastSaved.current = snapshot; setDirty(false); }
-      setSaved(r.ok ? "saved" : "error");
-    }, 700);
+    timer.current = setTimeout(() => { void runSave(); }, 700);
     return () => { if (timer.current) clearTimeout(timer.current); };
-  }, [snapshot, card.id]);
+  }, [snapshot, card.id, saver, runSave]);
 
   useEffect(() => { savedRef.current = saved; }, [saved]);
 
@@ -110,22 +127,27 @@ export default function StudioEditor({
   // another elder saving — used to be invisible here, and the next keystroke autosaved the
   // stale copy back over it. Compared by content: revalidatePath means card.updatedAt
   // changes on every autosave, so a timestamp guard would fire every 700ms.
+  // A save merges into the row, so what comes back can hold more than this session sent.
+  // That is another elder's field, adopted here once this session has nothing unsaved.
   useEffect(() => {
     const incoming = card.snapshot ?? {};
-    if (sameSnapshot(incoming, lastSaved.current)) return;   // nothing new, or our own write
-    if (!sameSnapshot(latest.current, lastSaved.current)) { setStale(true); return; }
+    const action = incomingAction({
+      incoming, latest: latest.current, lastSaved: lastSaved.current, busy: saver.busy(),
+    });
+    if (action === "ignore") return;   // nothing new, or our own write
+    if (action === "stale") { setStale(true); return; }
     lastSaved.current = incoming;
     latest.current = incoming;
     setSnapshot(incoming);
     setStale(false);
-  }, [card.snapshot]);
+  }, [card.snapshot, saver]);
 
   // Clicking a nav link within the debounce window unmounts this editor before the
   // timer fires — flush the pending edit so it isn't silently dropped. A hard
   // unload (close tab, reload) gets the browser's leave prompt instead.
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!sameSnapshot(latest.current, lastSaved.current) || savedRef.current === "saving") {
+      if (!saver.clean()) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -133,9 +155,16 @@ export default function StudioEditor({
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => {
       window.removeEventListener("beforeunload", onBeforeUnload);
-      if (!sameSnapshot(latest.current, lastSaved.current)) void saveCard(card.id, latest.current);
+      saver.leave(window);
     };
-  }, [card.id]);
+  }, [card.id, saver]);
+
+  // A save that failed offline goes out by itself on reconnect, with no keystroke or Retry.
+  useEffect(() => {
+    const onOnline = () => { if (savedRef.current === "error") void runSave(); };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [runSave]);
 
   // Arrow keys step to the prev/next card in the set — but only when focus is
   // outside a field, so they still move the text cursor while editing.
@@ -167,26 +196,15 @@ export default function StudioEditor({
 
   // "Save failed" used to be a dead end: no retry, and nothing announced it. Retries the
   // newest edit through the same state machine the debounce uses.
-  const retrySave = async () => {
-    const pending = latest.current;
-    setSaved("saving");
-    const r = await saveCard(card.id, pending);
-    if (r.ok) { lastSaved.current = pending; setDirty(false); }
-    setSaved(r.ok ? "saved" : "error");
-  };
+  const retrySave = () => { void runSave(); };
 
   // Handed to the review column so Apply/Accept can land on top of this session's edits
   // instead of racing the 700ms debounce. See StudioSyncContext for why it must be context.
   const flushPending = useCallback(async () => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
-    const pending = latest.current;
-    if (sameSnapshot(pending, lastSaved.current)) return { ok: true };
-    setSaved("saving");
-    const r = await saveCard(card.id, pending);
-    if (r.ok) { lastSaved.current = pending; setDirty(false); }
-    setSaved(r.ok ? "saved" : "error");
-    return { ok: !!r.ok };
-  }, [card.id]);
+    if (saver.clean()) return { ok: true };
+    return { ok: await runSave() };
+  }, [saver, runSave]);
 
   // Memoized: a fresh value object would force every context consumer to re-render on
   // each keystroke, which is exactly the re-render the stable `review` element avoids.
@@ -200,6 +218,7 @@ export default function StudioEditor({
     setSnapshot(incoming);
     setStale(false);
     setDirty(false);
+    setSaved((s) => (s === "error" ? "idle" : s));   // nothing of this session's is left to fail
   };
 
   async function onUpload(file: File, kind: "finished") {

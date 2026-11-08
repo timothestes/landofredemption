@@ -271,6 +271,14 @@ export function lackeyRowToDesignCard(row: LackeyRow): DesignCard {
   return card;
 }
 
+/** Snapshot keys lackeyRowToDesignCard fills in with no cell behind them. A new card wants
+ *  them; an overwrite must not write them over what a designer chose. Same condition as
+ *  rowAlignment: with nothing readable in the cell, the alignment comes from the card types.
+ *  Pure. */
+export function lackeyDerivedFields(row: LackeyRow): (keyof DesignCard)[] {
+  return normalizeAlignment(row.alignment) ? [] : ["alignment"];
+}
+
 // ---------------------------------------------------------------------------
 // Export: the inverse of lackeyRowToDesignCard — DesignCard → carddata.txt row.
 // The column order matches the canonical Lackey export so `parseCarddata` (which

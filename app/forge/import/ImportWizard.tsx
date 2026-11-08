@@ -14,6 +14,7 @@ import { unzipSync } from "fflate";
 import { createSet, type ForgeSetSummary } from "@/app/forge/lib/sets";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,8 @@ import {
 } from "@/components/ui/dialog";
 import LackeySourcePanel from "./LackeySourcePanel";
 import SpreadsheetSourcePanel from "./SpreadsheetSourcePanel";
-import { useImportRunner, mimeFor, type RunCard } from "./useImportRunner";
+import { useImportRunner, previewOverwrite, mimeFor, type RunCard } from "./useImportRunner";
+import { overwriteConfirmCopy, type OverwritePreview } from "./overwrite";
 import type { SourceSelection } from "./selection";
 
 // Cap on decompressed object-URL previews — a 200-card zip of ~1MB PNGs would
@@ -57,13 +59,15 @@ export default function ImportWizard({
   // Covers the createSet round-trip BEFORE the runner flips `running` — without it a
   // double-click on "Create set & import" creates two sets.
   const [creating, setCreating] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [confirmOverwrite, setConfirmOverwrite] = useState<OverwritePreview | null>(null);
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
   const [previewError, setPreviewError] = useState(false);
   const [previewCount, setPreviewCount] = useState(PREVIEW_CHUNK);
 
   const runner = useImportRunner();
   const { items, doneSetId, counts, finished } = runner;
-  const running = runner.running || creating;
+  const running = runner.running || creating || checking;
   const cards = selection?.cards ?? [];
 
   // A different selection (new file, filter, sheet, or mapping) starts fresh.
@@ -163,7 +167,7 @@ export default function ImportWizard({
       if (!setId) { setRunError("Pick a destination set."); return; }
 
       const work: RunCard[] = cards.map((c) => ({
-        name: c.name, snapshot: c.snapshot, entryName: c.entryName, status: "queued",
+        name: c.name, snapshot: c.snapshot, derived: c.derived, entryName: c.entryName, status: "queued",
       }));
       await runner.run(setId, work, selection.zipBytes, selection.sizes, overwrite);
     } catch (e) {
@@ -172,6 +176,27 @@ export default function ImportWizard({
       setCreating(false);
     }
   }
+
+  // An overwrite run says how many existing cards it will change before it changes them. With
+  // none to change there's nothing to confirm: it only reports them and adds any new cards.
+  async function checkOverwrite() {
+    if (running || cards.length === 0) return;
+    if (!existingSetId) { setRunError("Pick a destination set."); return; }
+    setRunError(null);
+    setChecking(true);
+    try {
+      const preview = await previewOverwrite(existingSetId, cards);
+      if (preview.changed > 0) { setConfirmOverwrite(preview); return; }
+    } catch (e) {
+      setRunError(e instanceof Error ? e.message : "Couldn\u2019t check the existing cards.");
+      return;
+    } finally {
+      setChecking(false);
+    }
+    await runImport();
+  }
+
+  const overwriteCopy = confirmOverwrite && overwriteConfirmCopy(confirmOverwrite);
 
   return (
     <div className="mx-auto max-w-4xl p-4">
@@ -264,30 +289,31 @@ export default function ImportWizard({
           <legend className="px-1 text-sm font-medium">5 · Destination</legend>
           <div className="space-y-2 text-sm">
             <label className="flex items-center gap-2">
-              <input type="radio" name="dest" checked={mode === "new"}
+              <input type="radio" name="dest" checked={mode === "new"} disabled={running}
                 onChange={() => { setMode("new"); setOverwrite(false); }} />
               Create a new set
             </label>
             <label className="flex items-center gap-2">
               <input type="radio" name="dest" checked={mode === "existing"} onChange={() => setMode("existing")}
-                disabled={sets.length === 0} />
+                disabled={running || sets.length === 0} />
               Add to an existing set
             </label>
             {mode === "existing" && (
               <>
-                <select value={existingSetId} onChange={(e) => setExistingSetId(e.target.value)}
+                <select value={existingSetId} onChange={(e) => setExistingSetId(e.target.value)} disabled={running}
                   aria-label="Existing set" className="ml-6 w-64 rounded-md border bg-background px-2 py-1 text-sm">
                   {sets.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
                 <label className="mt-2 flex items-start gap-2 text-sm">
-                  <Checkbox checked={overwrite} onCheckedChange={(v) => setOverwrite(v === true)}
+                  <Checkbox checked={overwrite} onCheckedChange={(v) => setOverwrite(v === true)} disabled={running}
                     className="mt-0.5" />
                   <span>
                     <span className="font-medium">Overwrite existing cards</span>
                     <span className="block text-xs text-muted-foreground">
-                      Cards whose names already exist in the set get their text and finished
-                      image replaced (a new testing version — release the update when ready).
-                      Cards not in this import are untouched.
+                      Cards with the same name in this set take the values in this file, plus its
+                      finished image if it has one. Blank cells and columns not in this file leave
+                      a card’s values alone. This edits the draft: playtesters see nothing until
+                      you release the update. Cards not in this file are untouched.
                     </span>
                   </span>
                 </label>
@@ -296,9 +322,9 @@ export default function ImportWizard({
           </div>
           {runError && <p className="mt-2 text-sm text-destructive">{runError}</p>}
           <Button type="button" className="mt-3"
-            onClick={() => (mode === "new" ? setNewSetDialogOpen(true) : runImport())}
+            onClick={() => (mode === "new" ? setNewSetDialogOpen(true) : overwrite ? checkOverwrite() : runImport())}
             disabled={running || cards.length === 0}>
-            {cards.length === 1 ? "Import 1 card" : `Import ${cards.length} cards`}
+            {checking ? "Checking existing cards…" : cards.length === 1 ? "Import 1 card" : `Import ${cards.length} cards`}
           </Button>
         </fieldset>
       )}
@@ -335,13 +361,26 @@ export default function ImportWizard({
         </DialogContent>
       </Dialog>
 
+      <ConfirmationDialog
+        open={confirmOverwrite !== null}
+        onOpenChange={(o) => { if (!o) setConfirmOverwrite(null); }}
+        onConfirm={() => { void runImport(); }}
+        variant="warning"
+        title={overwriteCopy?.title ?? ""}
+        confirmLabel={overwriteCopy?.confirmLabel ?? ""}
+      >
+        <ul className="space-y-2 text-sm text-muted-foreground">
+          {overwriteCopy?.notes.map((note) => <li key={note}>{note}</li>)}
+        </ul>
+      </ConfirmationDialog>
+
       {/* 6 — progress + summary */}
       {items && (
         <fieldset className="mt-4 rounded-md border p-3">
           <legend className="px-1 text-sm font-medium">6 · Import</legend>
           <p className="text-sm">
             {overwrite ? (
-              <>Imported {counts.imported} · Updated {counts.updated} · Skipped {counts.skipped} · Failed {counts.failed}</>
+              <>Imported {counts.imported} · Updated {counts.updated} · Unchanged {counts.unchanged} · Failed {counts.failed}</>
             ) : (
               <>Imported {counts.imported} · Skipped {counts.skipped} · Failed {counts.failed}</>
             )}

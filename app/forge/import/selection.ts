@@ -3,6 +3,7 @@ import type { DesignCard } from "@/app/forge/lib/designCard";
 export interface SelectedCard {
   name: string;
   snapshot: DesignCard;
+  derived: string[];        // snapshot keys with no cell behind them; an overwrite skips these
   entryName: string | null; // image entry in the source zip, if matched
   warnings: string[];       // data-quality notes surfaced in the preview
 }

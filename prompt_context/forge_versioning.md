@@ -37,10 +37,28 @@ creates a version; decisions do.
 `forge_cards.working_snapshot` is the live editing surface. The studio
 autosaves ~700ms after the last keystroke (plus a flush when you navigate
 away) so work is never lost and presence/collaboration sees fresh state.
-Each save **overwrites** the previous one — there is deliberately no
+Each save **overwrites** the fields it changed — there is deliberately no
 keystroke-level history. If a change is worth remembering, checkpoint it by
 proposing it. **Solo designers included:** propose → self-accept is the
 intended way to record your own iteration; nothing else will.
+
+**Saves merge by field (migration 126).** A save sends only the fields this
+session changed, diffed against `lastSaved` (this session's own view of the
+server, not the props), and `forge_save_card_fields` merges them into the row.
+Two elders on different fields both keep their edits; on the same field the
+last write wins. What comes back is adopted once the session has nothing
+unsaved. With an unsaved edit the studio shows the "changed elsewhere" banner
+instead, and the next save still sends only this session's fields. One save
+runs at a time per session (`createCardSaver` in `app/forge/lib/cardSave.ts`).
+`forge_save_card` still writes whole snapshots, for a newly imported card and
+the promote preflight rename only.
+
+**Import "Overwrite existing cards" edits the working draft the same way.** It
+merges only the fields the file carries (`overwritePatch` in
+`app/forge/import/overwrite.ts`): a blank cell or a missing column leaves the
+card's value alone, and a file can't clear a field. A row that changes nothing
+writes nothing. It mints no version and leaves no record in History, so an
+overwrite can't be undone; a wizard confirm step says how many cards will change.
 
 ## How each version status comes to exist
 
@@ -120,7 +138,7 @@ pipeline + manual Lackey export).
 
 | What | Where |
 |---|---|
-| Working draft + autosave | `app/forge/cards/[cardId]/StudioEditor.tsx` (`saveCard` → `forge_save_card`) |
+| Working draft + autosave | `app/forge/cards/[cardId]/StudioEditor.tsx` (`createCardSaver` + `saveCardFields` → `forge_save_card_fields`, migration `126`) |
 | Propose UI + review panel | `app/forge/cards/[cardId]/ReviewPanel.tsx`, `ProposalDiff.tsx` |
 | History timeline | `CardHistory.tsx` + pure assembly in `app/forge/lib/historyView.ts` |
 | Readers | `app/forge/lib/versions.ts` (listVersions / listCardEvents / listSetActivity) |
