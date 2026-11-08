@@ -82,16 +82,18 @@ export default function ArtCandidatesPanel({
                   className={`aspect-square w-full rounded-md border object-cover ${c.isActiveSource ? "ring-2 ring-primary" : ""}`} />
               </button>
               {c.isActiveSource ? (
-                <span className="absolute bottom-1 left-1 rounded bg-background/85 px-1 text-[10px] font-medium">Artwork source</span>
+                // On touch the link button below is larger and always shown, so this label moves
+                // to the corner a source tile leaves free (it has no Delete).
+                <span className="absolute bottom-1 left-1 rounded bg-background/85 px-1 text-[10px] font-medium [@media(hover:none)]:bottom-auto [@media(hover:none)]:top-1">Artwork source</span>
               ) : (
                 <button type="button" aria-label="Delete image"
-                  className="absolute right-1 top-1 rounded-md border bg-background/85 p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus:opacity-100 active:opacity-100 group-hover:opacity-100"
+                  className="absolute right-1 top-1 rounded-md border bg-background/85 p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus:opacity-100 active:opacity-100 group-hover:opacity-100 [@media(hover:none)]:p-2.5 [@media(hover:none)]:opacity-100"
                   onClick={() => setPendingDelete(c.id)}>
                   <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               )}
               <button type="button" aria-label={c.sourceUrl ? "Edit source link" : "Add source link"}
-                className={`absolute bottom-1 right-1 rounded-md border bg-background/85 p-1 text-muted-foreground transition-opacity hover:text-foreground focus:opacity-100 active:opacity-100 group-hover:opacity-100 ${c.sourceUrl ? "opacity-100" : "opacity-0"}`}
+                className={`absolute bottom-1 right-1 rounded-md border bg-background/85 p-1 text-muted-foreground transition-opacity hover:text-foreground focus:opacity-100 active:opacity-100 group-hover:opacity-100 [@media(hover:none)]:p-2.5 [@media(hover:none)]:opacity-100 ${c.sourceUrl ? "opacity-100" : "opacity-0"}`}
                 onClick={() => setEditingSource(c.id)}>
                 <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
