@@ -2,28 +2,36 @@ import { notFound, redirect } from "next/navigation";
 import { requireForge } from "@/app/forge/lib/auth";
 import { getCard } from "@/app/forge/lib/cards";
 import { listArtCandidates } from "@/app/forge/lib/artCandidates";
-import { getSet, listWritableSets, listSetCards, canDesignSet } from "@/app/forge/lib/sets";
+import { getSet, listWritableSets, listSetSiblings, canDesignSet } from "@/app/forge/lib/sets";
 import { canWriteCard } from "@/app/forge/lib/setAccess";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
+import { filterQuery, gridHref, parseCardFilters, walkSet } from "@/app/forge/lib/cardFilters";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import { getOpenProposalDiffs, listProposals } from "@/app/forge/lib/proposals";
 import { listComments } from "@/app/forge/lib/comments";
-import { listVersions, listCardEvents, artChangedSince, getShelvedRecord } from "@/app/forge/lib/versions";
+import { listVersions, listCardEvents, listSetActivity, artChangedSince, getShelvedRecord } from "@/app/forge/lib/versions";
 import { pickStudioVersion } from "@/app/forge/lib/studioVersion";
 import StudioEditor from "./StudioEditor";
 import ReviewPanel from "./ReviewPanel";
 
 export const dynamic = "force-dynamic";
 
-export default async function StudioPage({ params }: { params: Promise<{ cardId: string }> }) {
+export default async function StudioPage({ params, searchParams }: {
+  params: Promise<{ cardId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const ctx = await requireForge();
   if (!ctx) notFound();
   if (ctx.role === "playtester") redirect("/forge/play");
   const { cardId } = await params;
+  // The filters of the grid you came from, kept on the way along the arrows and back.
+  const filters = parseCardFilters(await searchParams);
   const card = await getCard(cardId);
   if (!card) notFound();
-  const artCandidates = await listArtCandidates(cardId);
-  const set = card.setId ? await getSet(card.setId) : null;
+  const [artCandidates, set] = await Promise.all([
+    listArtCandidates(cardId),
+    card.setId ? getSet(card.setId) : null,
+  ]);
 
   const inSet = card.setId !== null;
   const sets = inSet ? [] : await listWritableSets();
@@ -34,7 +42,7 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
         listComments(cardId),
         listVersions(cardId),
         listCardEvents(cardId),
-        listSetCards(card.setId!),
+        listSetSiblings(card.setId!),
       ])
     : [[], [], [], [], [], []];
   // Which controls to offer. The RPCs check again, and they are what actually decides.
@@ -82,29 +90,19 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
       : await artChangedSince(cardId, releasedId);
   const version = pickStudioVersion(card, versions, moved);
 
-  // Prev/next arrows on the card face walk the set in the same order as the grid.
-  // No wrap: the boundary card gets null and hides that arrow.
+  // Prev/next arrows on the card face walk the list the grid showed: its filter, in its order.
+  // No wrap: the boundary card gets null and hides that arrow. The position is shown under the
+  // face so walking a set tells you where you are, and so the ←/→ shortcut is discoverable at all.
   const ordered = sortSetCards(siblings);
-  const idx = ordered.findIndex((c) => c.id === cardId);
-  const prevId = idx > 0 ? ordered[idx - 1].id : null;
-  const nextId = idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1].id : null;
-  // Shown under the face so walking a set tells you where you are, and so the ←/→
-  // shortcut is discoverable at all.
-  const position = idx >= 0 && ordered.length > 1 ? { index: idx + 1, total: ordered.length } : null;
+  const releases = inSet && filters.since ? await listSetActivity(ordered.map((c) => c.id)) : undefined;
+  const { prevId, nextId, position } = walkSet(ordered, cardId, filters, releases);
 
-  const { data: meRow } = await ctx.supabase
-    .from("playtest_members")
-    .select("display_name")
-    .eq("user_id", ctx.user.id)
-    .single();
+  // The second is the "Created by" line in the studio header. Same member-readable name lookup as History.
+  const [{ data: meRow }, { data: creatorRow }] = await Promise.all([
+    ctx.supabase.from("playtest_members").select("display_name").eq("user_id", ctx.user.id).single(),
+    ctx.supabase.from("playtest_members").select("display_name").eq("user_id", card.creatorId).maybeSingle(),
+  ]);
   const currentUser = { userId: ctx.user.id, displayName: meRow?.display_name ?? null };
-
-  // "Created by" line in the studio header. Same member-readable name lookup as History.
-  const { data: creatorRow } = await ctx.supabase
-    .from("playtest_members")
-    .select("display_name")
-    .eq("user_id", card.creatorId)
-    .maybeSingle();
   const creator = { name: creatorRow?.display_name ?? "Forge member", at: card.createdAt };
 
   // ReviewPanel is passed INTO the studio rather than rendered after it: a sticky element
@@ -120,6 +118,8 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
       setName={set?.name ?? null}
       prevId={prevId}
       nextId={nextId}
+      walkQuery={filterQuery(filters)}
+      gridHref={gridHref(card.setId, cardId, filters)}
       position={position}
       artCandidates={artCandidates}
       openProposals={openProposals}

@@ -1,12 +1,14 @@
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
 import { compareCardsDefault, compareCardsEndOfTimes, type SortableCard } from "@/lib/cards/defaultSort";
 
+type OrderableCard = Pick<ForgeCardFull, "title" | "snapshot" | "setId">;
+
 // Adapt a forge card snapshot (array-valued cardType/brigades, numeric-or-string
 // strength) to the canonical comparator's shape. Cards with no primary type get
 // an empty type string, which the comparator sends to the trailing misc section
 // — preserving the old "missing primary type sorts last" behavior, since every
 // typed forge card lands in an earlier section.
-function toSortable(c: ForgeCardFull): SortableCard {
+function toSortable(c: OrderableCard): SortableCard {
   const s = c.snapshot;
   return {
     name: c.title ?? "",
@@ -37,7 +39,7 @@ function dominantOverrideRank(title: string): number {
   return idx === -1 ? END_OF_TIMES_DOMINANT_ORDER.length : idx;
 }
 
-function compareEndOfTimesSetCards(a: ForgeCardFull, b: ForgeCardFull): number {
+function compareEndOfTimesSetCards(a: OrderableCard, b: OrderableCard): number {
   const diff = dominantOverrideRank(a.title ?? "") - dominantOverrideRank(b.title ?? "");
   if (diff !== 0) return diff;
   return compareCardsEndOfTimes(toSortable(a), toSortable(b));
@@ -47,10 +49,10 @@ function compareEndOfTimesSetCards(a: ForgeCardFull, b: ForgeCardFull): number {
 // brigades → strength → name). Shared by the set grid (SetCardsBrowser) and the
 // single-card detail view's prev/next arrows so both walk the set in the same
 // order.
-export function sortSetCards(cards: ForgeCardFull[]): ForgeCardFull[] {
+export function sortSetCards<C extends OrderableCard>(cards: C[]): C[] {
   const isEndOfTimes = cards.some((c) => c.setId === END_OF_TIMES_SET_ID);
   const compare = isEndOfTimes
     ? compareEndOfTimesSetCards
-    : (a: ForgeCardFull, b: ForgeCardFull) => compareCardsDefault(toSortable(a), toSortable(b));
+    : (a: OrderableCard, b: OrderableCard) => compareCardsDefault(toSortable(a), toSortable(b));
   return [...cards].sort(compare);
 }

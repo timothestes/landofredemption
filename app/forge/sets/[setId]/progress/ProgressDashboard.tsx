@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ProgressModel } from "@/app/forge/lib/progress";
 import { STATUS_LABEL } from "@/app/forge/lib/lifecycleCopy";
+import { typeLabel, brigadeLabel } from "@/app/forge/lib/filterIcons";
 
 const STATUS_ORDER = ["draft", "playtesting", "approved"];
 const STATUS_COLOR: Record<string, string> = { draft: "bg-muted-foreground/40", playtesting: "bg-amber-500", approved: "bg-primary" };
@@ -77,7 +78,7 @@ export default function ProgressDashboard({
             <thead>
               <tr>
                 <th className="sticky left-0 bg-background p-1 text-left">Type \ Brigade</th>
-                {model.brigades.map((b) => <th key={b} className="p-1 font-normal">{b}</th>)}
+                {model.brigades.map((b) => <th key={b} className="p-1 font-normal">{brigadeLabel(b)}</th>)}
                 <th className="border-l p-1 font-normal">Total</th>
               </tr>
             </thead>
@@ -86,7 +87,7 @@ export default function ProgressDashboard({
                 const { actual: rowActual, target: rowTarget } = model.typeTotals[t];
                 return (
                   <tr key={t}>
-                    <th className="sticky left-0 bg-background p-1 text-left font-normal">{t}</th>
+                    <th className="sticky left-0 bg-background p-1 text-left font-normal">{typeLabel(t)}</th>
                     {model.brigades.map((b) => {
                       const cell = model.cells.find((c) => c.type === t && c.brigade === b)!;
                       return (
@@ -119,7 +120,7 @@ export default function ProgressDashboard({
               <thead>
                 <tr>
                   <th className="sticky left-0 bg-background p-1 text-left">Keyword \ Brigade</th>
-                  {model.brigades.map((b) => <th key={b} className="p-1 font-normal">{b}</th>)}
+                  {model.brigades.map((b) => <th key={b} className="p-1 font-normal">{brigadeLabel(b)}</th>)}
                   <th className="border-l p-1 font-normal">Total</th>
                 </tr>
               </thead>
@@ -149,7 +150,7 @@ export default function ProgressDashboard({
           <ul className="space-y-0.5 text-sm text-muted-foreground">
             {model.checklist.map((c) => (
               <li key={`${c.type}-${c.brigade}`}>
-                {c.remaining} more {c.brigade === "none" ? "" : `${c.brigade} `}{c.type}
+                {c.remaining} more {c.brigade === "none" ? "" : `${brigadeLabel(c.brigade)} `}{typeLabel(c.type)}
               </li>
             ))}
           </ul>
