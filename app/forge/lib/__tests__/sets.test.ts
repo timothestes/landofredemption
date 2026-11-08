@@ -5,6 +5,7 @@ vi.mock("@/app/forge/lib/auth", () => ({ requireForge: vi.fn(), requireElder: vi
 
 import { requireForge, requireElder } from "@/app/forge/lib/auth";
 import { revalidatePath } from "next/cache";
+import { cappedQuery } from "./fixtures/cappedQuery";
 import { createSet, saveSetNotes, listSets, listWritableSets, grantSet, revokeSet, bulkDeleteSets, renameSet } from "../sets";
 
 function ctx(opts: { rpc?: any; rows?: any[] } = {}) {
@@ -80,6 +81,57 @@ describe("listSets", () => {
     (requireForge as any).mockResolvedValue(null);
     expect(await listSets()).toEqual([]);
   });
+
+  const member = (cards: ReturnType<typeof cappedQuery>) => ({
+    role: "superadmin",
+    user: { id: "u1" },
+    supabase: {
+      from: (table: string) =>
+        table === "forge_cards"
+          ? cards.start()
+          : {
+              select: () => ({
+                order: async () => ({
+                  data: [
+                    { id: "a", name: "Set A", slug: "a", status: "open", target_counts: { total: 2000 }, is_private: false },
+                    { id: "b", name: "Set B", slug: "b", status: "open", target_counts: null, is_private: true },
+                  ],
+                  error: null,
+                }),
+              }),
+            },
+    },
+  });
+  const rows = (n: number, set_id: string | null, status: string) => Array.from({ length: n }, () => ({ set_id, status }));
+
+  it("counts every card, not only the first 1000", async () => {
+    const cards = cappedQuery([...rows(1500, "a", "draft"), ...rows(700, "b", "draft"), ...rows(5, "b", "archived"), ...rows(3, null, "private_idea")]);
+    (requireForge as any).mockResolvedValue(member(cards));
+    const out = await listSets();
+    expect(out.map((s) => [s.id, s.total])).toEqual([["a", 1500], ["b", 700]]);
+    expect(out[0].statusCounts).toEqual({ draft: 1500 });
+    expect(out[1].statusCounts).toEqual({ draft: 700, archived: 5 });
+  });
+
+  it("pages over a stable order and stops at the first short page", async () => {
+    const cards = cappedQuery(rows(1132, "a", "draft"));
+    (requireForge as any).mockResolvedValue(member(cards));
+    await listSets();
+    expect(cards.requests.map((r) => r.range)).toEqual([[0, 999], [1000, 1999]]);
+    expect(cards.requests.map((r) => r.orders.map(([column]) => column))).toEqual([["id"], ["id"]]);
+  });
+
+  it("gets past a total that is an exact multiple of the page size", async () => {
+    const cards = cappedQuery(rows(1000, "a", "draft"));
+    (requireForge as any).mockResolvedValue(member(cards));
+    expect((await listSets())[0].total).toBe(1000);
+    expect(cards.requests).toHaveLength(2);
+  });
+
+  it.each([["first", 0], ["later", 1]])("throws instead of counting what arrived when the %s page fails", async (_, failRequest) => {
+    (requireForge as any).mockResolvedValue(member(cappedQuery(rows(1500, "a", "draft"), { failRequest })));
+    await expect(listSets()).rejects.toThrow(/card counts/);
+  });
 });
 
 describe("grantSet / revokeSet", () => {
@@ -128,7 +180,7 @@ describe("listWritableSets", () => {
       select: vi.fn(() => {
         if (table === "forge_set_elders") return { eq: vi.fn(async () => ({ data: roster, error: null })) };
         if (table === "forge_sets") return { order: vi.fn(async () => ({ data: rows, error: null })) };
-        return Promise.resolve({ data: [], error: null });
+        return { order: vi.fn(() => ({ range: vi.fn(async () => ({ data: [], error: null })) })) };
       }),
     })),
   });

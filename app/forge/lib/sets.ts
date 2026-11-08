@@ -30,10 +30,25 @@ export async function listSets(): Promise<ForgeSetSummary[]> {
     .from("forge_sets")
     .select("id, name, slug, status, target_counts, is_private")
     .order("created_at", { ascending: false });
-  const { data: cards } = await ctx.supabase.from("forge_cards").select("set_id, status");
+  // PostgREST caps each request at 1000 rows with no error, and forge_cards is past that.
+  // Pages need a stable order, or they can skip and repeat rows.
+  const PAGE_SIZE = 1000;
+  const cards: { set_id: string | null; status: string }[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await ctx.supabase
+      .from("forge_cards")
+      .select("set_id, status")
+      .order("id")
+      .range(from, from + PAGE_SIZE - 1);
+    // Throw rather than count what arrived: these totals are in the delete-set confirmation,
+    // where a low number reads as safe to delete. app/forge/error.tsx offers a retry.
+    if (error) throw new Error(`listSets: could not read card counts: ${error.message}`);
+    cards.push(...(data ?? []));
+    if (!data || data.length < PAGE_SIZE) break;
+  }
   const counts = new Map<string, number>();
   const statusCounts = new Map<string, Record<string, number>>();
-  for (const c of cards ?? []) {
+  for (const c of cards) {
     if (!c.set_id) continue;
     if (c.status !== "archived") counts.set(c.set_id, (counts.get(c.set_id) ?? 0) + 1);
     const m = statusCounts.get(c.set_id) ?? {};
