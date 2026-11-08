@@ -1,7 +1,8 @@
 // Pure assembly of the card History timeline — isomorphic (no "use server"),
 // imported by client components and unit tests alike.
 
-import { diffCards, type FieldChange } from "@/app/forge/lib/cardDiff";
+import { diffCards, displayValue, FIELD_LABELS, type FieldChange } from "@/app/forge/lib/cardDiff";
+import type { DesignCard } from "@/app/forge/lib/designCard";
 import { STATUS_BADGE_CLASS } from "@/app/forge/lib/lifecycleCopy";
 import type { ProposalRow } from "@/app/forge/lib/proposals";
 import type { VersionRow, CardEventRow } from "@/app/forge/lib/versions";
@@ -10,6 +11,7 @@ import type { CommentRow } from "@/app/forge/lib/comments";
 export type HistoryEvent =
   | { kind: "version"; at: string; version: VersionRow; changes: FieldChange[] }
   | { kind: "proposal"; at: string; proposal: ProposalRow; reasons: CommentRow[]; supersededBy: string | null; resultingVersionNumber: number | null }
+  | { kind: "suggestion"; at: string; comment: CommentRow; applied: AppliedSuggestion }
   | { kind: "lifecycle"; at: string; event: CardEventRow };
 
 export const EVENT_LABEL: Record<string, string> = {
@@ -52,9 +54,65 @@ export function deriveSupersededBy(p: ProposalRow, all: ProposalRow[]): string |
   return winner ? (winner.summary ?? "an accepted proposal") : null;
 }
 
+// An applied suggestion, as far as it can be worked out. forge_apply_suggestion writes the
+// draft and marks the comment resolved and records nothing else: not who applied it, not
+// when, not the value it replaced. A suggestion dismissed with Resolve looks identical in the
+// row, so this calls one applied if its value differs from the version at the time and has
+// since landed in a later version or the draft. Dismissing one and typing the same value by
+// hand reads as applied too, which is near enough. Applying one and then editing the field
+// again before any version captures it reads as dismissed.
+export type AppliedSuggestion = {
+  commentId: string;
+  change: FieldChange;
+  baseVersion: number | null; // the newest version when it was suggested, and so the source of change.before
+  inVersion: number | null;   // the first later version holding the value; null = only in the draft
+};
+
+type VersionData = Pick<VersionRow, "versionNumber" | "createdAt" | "data">;
+
+export function appliedSuggestion(c: CommentRow, versions: VersionData[], draft: DesignCard): AppliedSuggestion | null {
+  if (!c.resolved || !c.field) return null;
+  const field = c.field as keyof DesignCard;
+  const after = displayValue(c.suggestedValue);
+  if (after === null) return null;
+  const at = Date.parse(c.createdAt);
+  const ascending = [...versions].sort((a, b) => a.versionNumber - b.versionNumber);
+  const base = ascending.filter((v) => Date.parse(v.createdAt) <= at).pop() ?? null;
+  const before = base ? displayValue(base.data[field]) : null;
+  if (before === after) return null;
+  const landed = ascending.find((v) => Date.parse(v.createdAt) > at && displayValue(v.data[field]) === after) ?? null;
+  if (!landed && displayValue(draft[field]) !== after) return null;
+  return {
+    commentId: c.id,
+    change: { field, label: FIELD_LABELS[c.field] ?? c.field, kind: before === null ? "added" : "changed", before, after },
+    baseVersion: base?.versionNumber ?? null,
+    inVersion: landed?.versionNumber ?? null,
+  };
+}
+
+export function appliedSuggestions(
+  comments: CommentRow[],
+  versions: VersionData[],
+  draft: DesignCard
+): Map<string, AppliedSuggestion> {
+  const out = new Map<string, AppliedSuggestion>();
+  for (const c of comments) {
+    const a = appliedSuggestion(c, versions, draft);
+    if (a) out.set(c.id, a);
+  }
+  return out;
+}
+
+export function appliedSuggestionNote(a: AppliedSuggestion): string {
+  const where = a.inVersion === null
+    ? "In the working draft: playtesters won’t see it until the next release."
+    : `Included in v${a.inVersion}.`;
+  return a.baseVersion === null || a.change.before === null ? where : `Old value as of v${a.baseVersion}. ${where}`;
+}
+
 // Newest-first merged timeline. Ties (an accept freezes a version and closes
 // the proposal at the same instant) order version above its proposal entry.
-const KIND_RANK: Record<HistoryEvent["kind"], number> = { lifecycle: 0, version: 1, proposal: 2 };
+const KIND_RANK: Record<HistoryEvent["kind"], number> = { lifecycle: 0, version: 1, proposal: 2, suggestion: 3 };
 
 // PRECONDITION: `versions` must be the FULL elder-visible list (all statuses,
 // draft included). A status-filtered list creates versionNumber gaps and the
@@ -63,7 +121,8 @@ export function buildHistory(
   versions: VersionRow[],
   proposals: ProposalRow[],
   events: CardEventRow[],
-  comments: CommentRow[]
+  comments: CommentRow[],
+  draft: DesignCard = {}
 ): HistoryEvent[] {
   const byNumber = new Map(versions.map((v) => [v.versionNumber, v]));
   const out: HistoryEvent[] = [];
@@ -84,6 +143,11 @@ export function buildHistory(
     });
   }
   for (const e of events) out.push({ kind: "lifecycle", at: e.at, event: e });
+  const applied = appliedSuggestions(comments, versions, draft);
+  for (const c of comments) {
+    const a = applied.get(c.id);
+    if (a) out.push({ kind: "suggestion", at: c.createdAt, comment: c, applied: a });
+  }
   return out.sort(
     (a, b) => Date.parse(b.at) - Date.parse(a.at) || KIND_RANK[a.kind] - KIND_RANK[b.kind]
   );

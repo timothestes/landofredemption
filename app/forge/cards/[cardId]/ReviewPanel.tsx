@@ -8,7 +8,7 @@ import CardHistory from "./CardHistory";
 import { useStudioDraft, useStudioSync } from "./StudioSyncContext";
 import FieldChanges from "./FieldChanges";
 import { Button } from "@/components/ui/button";
-import { buildHistory } from "@/app/forge/lib/historyView";
+import { appliedSuggestions, buildHistory } from "@/app/forge/lib/historyView";
 import { diffCards } from "@/app/forge/lib/cardDiff";
 import { runProposeSubmit } from "@/app/forge/lib/proposeFlow";
 import { keepHeldProposal } from "@/app/forge/lib/reviewView";
@@ -73,7 +73,7 @@ export default function ReviewPanel({
   const t = Date.parse(card.updatedAt) || 0;
   const artUrl = card.hasArt ? `/forge/api/art/${card.id}?t=${t}` : null;
   const finishedUrl = card.hasFinished ? `/forge/api/art/${card.id}?kind=finished&t=${t}` : null;
-  const history = buildHistory(versions, proposals, events, comments);
+  const history = buildHistory(versions, proposals, events, comments, card.snapshot ?? {});
 
   // Proposing lives beside the proposals it creates. The proposal freezes the
   // card's saved working draft server-side (see createProposal).
@@ -210,6 +210,8 @@ export default function ReviewPanel({
           comments={comments}
           canApply={canReview}
           versions={versions.map((v) => ({ versionNumber: v.versionNumber, createdAt: v.createdAt, status: v.status }))}
+          applied={appliedSuggestions(comments, versions, card.snapshot ?? {})}
+          savedDraft={card.snapshot ?? {}}
         />
       </section>
 
