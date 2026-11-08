@@ -5,7 +5,7 @@ vi.mock("@/app/forge/lib/auth", () => ({ requireForge: vi.fn(), requireElder: vi
 
 import { requireForge, requireElder } from "@/app/forge/lib/auth";
 import { revalidatePath } from "next/cache";
-import { createSet, saveSetNotes, listSets, grantSet, revokeSet, bulkDeleteSets, renameSet } from "../sets";
+import { createSet, saveSetNotes, listSets, listWritableSets, grantSet, revokeSet, bulkDeleteSets, renameSet } from "../sets";
 
 function ctx(opts: { rpc?: any; rows?: any[] } = {}) {
   const order = vi.fn(async () => ({ data: opts.rows ?? [], error: null }));
@@ -119,5 +119,36 @@ describe("bulkDeleteSets", () => {
   it("rejects more than 100 ids", async () => {
     (requireElder as any).mockResolvedValue({ role: "elder", user: { id: "u1" }, supabase: { rpc: vi.fn() } });
     expect((await bulkDeleteSets(Array.from({ length: 101 }, (_, i) => `s${i}`))).ok).toBe(false);
+  });
+});
+
+describe("listWritableSets", () => {
+  const client = (rows: any[], roster: any[]) => ({
+    from: vi.fn((table: string) => ({
+      select: vi.fn(() => {
+        if (table === "forge_set_elders") return { eq: vi.fn(async () => ({ data: roster, error: null })) };
+        if (table === "forge_sets") return { order: vi.fn(async () => ({ data: rows, error: null })) };
+        return Promise.resolve({ data: [], error: null });
+      }),
+    })),
+  });
+  const rows = [
+    { id: "open", name: "Open", slug: "open", status: "open", is_private: false },
+    { id: "mine", name: "Mine", slug: "mine", status: "open", is_private: true },
+    { id: "granted", name: "Granted", slug: "granted", status: "open", is_private: true },
+    { id: "released", name: "Released", slug: "released", status: "released", is_private: false },
+  ];
+
+  it("returns nothing to a non-member", async () => {
+    (requireForge as any).mockResolvedValue(null);
+    expect(await listWritableSets()).toEqual([]);
+  });
+  it("offers an elder the open sets and their own private ones", async () => {
+    (requireForge as any).mockResolvedValue({ role: "elder", user: { id: "u1" }, supabase: client(rows, [{ set_id: "mine" }]) });
+    expect((await listWritableSets()).map((s) => s.id)).toEqual(["open", "mine"]);
+  });
+  it("offers a superadmin every set still taking cards", async () => {
+    (requireForge as any).mockResolvedValue({ role: "superadmin", user: { id: "u1" }, supabase: client(rows, []) });
+    expect((await listWritableSets()).map((s) => s.id)).toEqual(["open", "mine", "granted"]);
   });
 });

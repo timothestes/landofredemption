@@ -184,6 +184,16 @@ export function denyDraftPlan({
   return { ...plan, offer: true, defaultRestore: !movedOn };
 }
 
+// The Share dialog. Sharing takes a card out of a private sketchpad, so it says who can see it next.
+export function shareCopy(set: { name: string; isPrivate: boolean } | null): string {
+  if (!set) return "Moves this card out of your Ideas and into the set you choose.";
+  const who = set.isPrivate ? "Only that set’s designers can see and edit it there." : "Every elder can see and edit it there.";
+  return `Moves this card out of your Ideas and into ${set.name}. ${who} Playtesters see nothing until it’s released.`;
+}
+
+export const SHARE_NO_SETS = "There are no sets you can add cards to yet.";
+export const SHARE_FAILED = "Couldn’t share this card. Check your connection and try again.";
+
 const ACTION_ELIGIBLE: Record<LifecycleAction, readonly string[]> = {
   release: ["draft", "playtesting"],
   markFinal: ["playtesting"],

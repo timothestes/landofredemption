@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { grantKey, buildGrantKeySet, NEW_SET_PRIVATE_DEFAULT } from "@/app/forge/lib/setAccess";
+import { grantKey, buildGrantKeySet, NEW_SET_PRIVATE_DEFAULT, canWriteSet, setsTakingCards } from "@/app/forge/lib/setAccess";
 
 describe("grantKey", () => {
   it("joins userId and setId with a separator", () => {
@@ -38,5 +38,42 @@ describe("buildGrantKeySet", () => {
 describe("NEW_SET_PRIVATE_DEFAULT", () => {
   it("starts a new set private: Forge cards are secret by default", () => {
     expect(NEW_SET_PRIVATE_DEFAULT).toBe(true);
+  });
+});
+
+// Mirrors is_forge_set_elder (migration 071). The database stays the real gate.
+describe("canWriteSet", () => {
+  it("lets every elder write to a set that isn't private, on the roster or not", () => {
+    expect(canWriteSet({ role: "elder", isPrivate: false, onRoster: false })).toBe(true);
+  });
+  it("keeps a private set to its roster", () => {
+    expect(canWriteSet({ role: "elder", isPrivate: true, onRoster: false })).toBe(false);
+    expect(canWriteSet({ role: "elder", isPrivate: true, onRoster: true })).toBe(true);
+  });
+  it("lets a superadmin write anywhere", () => {
+    expect(canWriteSet({ role: "superadmin", isPrivate: true, onRoster: false })).toBe(true);
+  });
+  it("gives a playtester nothing without a roster row", () => {
+    expect(canWriteSet({ role: "playtester", isPrivate: false, onRoster: false })).toBe(false);
+  });
+});
+
+describe("setsTakingCards", () => {
+  const open = { id: "open", isPrivate: false, status: "open" };
+  const mine = { id: "mine", isPrivate: true, status: "open" };
+  const theirs = { id: "theirs", isPrivate: true, status: "open" };
+  const released = { id: "released", isPrivate: false, status: "released" };
+  const all = [open, mine, theirs, released];
+  const ids = (sets: { id: string }[]) => sets.map((s) => s.id);
+
+  it("hides a private set you only hold a grant on", () => {
+    expect(ids(setsTakingCards(all, "elder", new Set(["mine"])))).toEqual(["open", "mine"]);
+  });
+  it("shows a superadmin every set that can still take cards", () => {
+    expect(ids(setsTakingCards(all, "superadmin", new Set()))).toEqual(["open", "mine", "theirs"]);
+  });
+  it("hides a released set from everyone, because the database refuses it for everyone", () => {
+    expect(setsTakingCards([released], "elder", new Set(["released"]))).toEqual([]);
+    expect(setsTakingCards([released], "superadmin", new Set())).toEqual([]);
   });
 });

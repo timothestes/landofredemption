@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { requireForge } from "@/app/forge/lib/auth";
 import { getCard } from "@/app/forge/lib/cards";
 import { listArtCandidates } from "@/app/forge/lib/artCandidates";
-import { getSet, listSets, listSetCards } from "@/app/forge/lib/sets";
+import { getSet, listWritableSets, listSetCards } from "@/app/forge/lib/sets";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import { getOpenProposalDiffs, listProposals } from "@/app/forge/lib/proposals";
@@ -25,7 +25,7 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
   const set = card.setId ? await getSet(card.setId) : null;
 
   const inSet = card.setId !== null;
-  const sets = inSet ? [] : await listSets();
+  const sets = inSet ? [] : await listWritableSets();
   const [openDiffs, proposals, comments, versions, events, siblings] = inSet
     ? await Promise.all([
         getOpenProposalDiffs(cardId),

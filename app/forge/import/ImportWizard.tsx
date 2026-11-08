@@ -53,7 +53,7 @@ export default function ImportWizard({
   const [mode, setMode] = useState<"new" | "existing">(preselected ? "existing" : "new");
   const [newSetName, setNewSetName] = useState("");
   const [newSetPrivate, setNewSetPrivate] = useState(NEW_SET_PRIVATE_DEFAULT);
-  const [existingSetId, setExistingSetId] = useState(preselected ?? sets[0]?.id ?? "");
+  const [existingSetId, setExistingSetId] = useState(preselected ?? "");
   const [overwrite, setOverwrite] = useState(false);
   const [newSetDialogOpen, setNewSetDialogOpen] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
@@ -303,6 +303,7 @@ export default function ImportWizard({
               <>
                 <select value={existingSetId} onChange={(e) => setExistingSetId(e.target.value)} disabled={running}
                   aria-label="Existing set" className="ml-6 w-64 rounded-md border bg-background px-2 py-1 text-sm">
+                  <option value="" disabled>Choose a set…</option>
                   {sets.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
                 <label className="mt-2 flex items-start gap-2 text-sm">

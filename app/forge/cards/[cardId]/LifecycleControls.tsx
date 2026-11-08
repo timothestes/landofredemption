@@ -4,8 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 import { shareToSet, sendToPrivate, publish, approve, unapprove, archive, unarchive, deleteCard } from "@/app/forge/lib/lifecycle";
-import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, deleteCopy, releaseBlockers, releaseBlockedNote, isReleaseUnchanged, releaseUnchangedNote, restoreCopy, releasePreview, RELEASE_FLUSH_FAILED, type ReleaseBase, type RestoreTarget } from "@/app/forge/lib/lifecycleCopy";
+import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, deleteCopy, releaseBlockers, releaseBlockedNote, isReleaseUnchanged, releaseUnchangedNote, restoreCopy, releasePreview, shareCopy, SHARE_NO_SETS, SHARE_FAILED, RELEASE_FLUSH_FAILED, type ReleaseBase, type RestoreTarget } from "@/app/forge/lib/lifecycleCopy";
 import { flushThen } from "@/app/forge/lib/proposeFlow";
+import { withDeadline } from "@/app/forge/lib/withDeadline";
 import FieldChanges from "./FieldChanges";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
@@ -57,6 +58,7 @@ export default function LifecycleControls({
   const router = useRouter();
   const [pending, start] = useTransition();
   const [picking, setPicking] = useState(false);
+  const [shareSetId, setShareSetId] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmReturn, setConfirmReturn] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState(false);
@@ -87,6 +89,19 @@ export default function LifecycleControls({
       router.refresh();
     });
 
+  // Stays open until the page has turned into the set's copy of the card: the inner transition
+  // puts the close and the refreshed page in one commit, so there is no gap that looks like a miss.
+  const doShare = () =>
+    start(async () => {
+      const r = await withDeadline(shareToSet(card.id, shareSetId), { ok: false, error: SHARE_FAILED });
+      if (r.ok === false) { alert(r.error ?? SHARE_FAILED); return; }
+      start(() => {
+        setPicking(false);
+        setShareSetId("");
+        router.refresh();
+      });
+    });
+
   // Delete navigates away (the card no longer exists) — refreshing in place would 404.
   const onDelete = () =>
     start(async () => {
@@ -104,6 +119,7 @@ export default function LifecycleControls({
   const blockedNote = releaseBlockedNote(blockers);
   const releaseUnchanged = releaseNoOp || isReleaseUnchanged(draft, releaseBase);
   const preview = releasePreview(draft, releaseBase);
+  const shareTarget = sets.find((s) => s.id === shareSetId) ?? null;
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -167,14 +183,7 @@ export default function LifecycleControls({
         </>
       ) : (
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          {picking ? (
-            <select autoFocus disabled={pending} value="" onChange={(e) => e.target.value && run(() => shareToSet(card.id, e.target.value))} className="rounded-md border bg-background px-2 py-1">
-              <option value="" disabled>Share into set…</option>
-              {sets.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          ) : (
-            <Button size="sm" variant="outline" className="h-7 px-3 text-xs" onClick={() => setPicking(true)}>Share to a set</Button>
-          )}
+          <Button size="sm" variant="outline" className="h-7 px-3 text-xs" disabled={pending} onClick={() => setPicking(true)}>Share to a set</Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={pending} aria-label="More actions">
@@ -229,6 +238,29 @@ export default function LifecycleControls({
             </Button>
             {!releaseUnchanged && (
               <Button disabled={pending || blockers.length > 0} onClick={doRelease}>Release</Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={picking} onOpenChange={(o) => { if (pending) return; setPicking(o); if (!o) setShareSetId(""); }}>
+        <DialogContent size="sm">
+          <DialogHeader>
+            <DialogTitle>Share to a set</DialogTitle>
+            <DialogDescription>{sets.length > 0 ? shareCopy(shareTarget) : SHARE_NO_SETS}</DialogDescription>
+          </DialogHeader>
+          {sets.length > 0 && (
+            <DialogBody>
+              <select aria-label="Set to share into" disabled={pending} value={shareSetId} onChange={(e) => setShareSetId(e.target.value)}
+                className="w-full rounded-md border bg-background px-2 py-1.5 text-sm">
+                <option value="" disabled>Choose a set…</option>
+                {sets.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </DialogBody>
+          )}
+          <DialogFooter>
+            <Button variant="outline" disabled={pending} onClick={() => { setPicking(false); setShareSetId(""); }}>Cancel</Button>
+            {sets.length > 0 && (
+              <Button disabled={pending || !shareTarget} onClick={doShare}>{pending ? "Sharing…" : "Share"}</Button>
             )}
           </DialogFooter>
         </DialogContent>
