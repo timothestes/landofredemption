@@ -16,14 +16,20 @@ export default function NewIdeaTile() {
     if (busy) return;
     setBusy(true);
     setError(null);
-    const r = await createCard("");
-    if (r.ok === false) {
+    try {
+      const r = await createCard("");
+      if (r.ok === false) {
+        setBusy(false);
+        setError(r.error);
+        return;
+      }
+      // Keep busy through navigation: a second tap would create a second card.
+      router.push(`/forge/cards/${r.id}`);
+    } catch {
+      // A server action rejects when the network drops, rather than returning ok: false.
       setBusy(false);
-      setError(r.error);
-      return;
+      setError("Could not create card. Try again.");
     }
-    // Keep busy through navigation: a second tap would create a second card.
-    router.push(`/forge/cards/${r.id}`);
   }
 
   return (
