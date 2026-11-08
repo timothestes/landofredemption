@@ -5,7 +5,7 @@ import {
   STATUS_LABEL, ACTION_LABEL, releaseLabel, isEligible, BULK_DONE_VERB, releaseProposalNotice,
   returnToIdeasCopy, deleteCopy, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice,
   releaseBlockers, releaseBlockedNote, bulkBlockedNotice, bulkSummary,
-  releaseUnchangedNote, isReleaseUnchanged, restoreCopy, releasePreview, denyDraftPlan,
+  releaseUnchangedNote, isReleaseUnchanged, restoreCopy, releasePreview, denyDraftPlan, shareCopy, readOnlyCardNote,
 } from "../lifecycleCopy";
 
 describe("lifecycleCopy", () => {
@@ -450,5 +450,30 @@ describe("draftMovedOnNote", () => {
 
   it("doesn't count a field typed into and erased", () => {
     expect(draftMovedOnNote({ ...proposed, reference: "" }, proposed)).toBeNull();
+  });
+});
+
+describe("shareCopy", () => {
+  it("names the set and says who will see the card", () => {
+    const open = shareCopy({ name: "Invented Set", isPrivate: false });
+    expect(open).toContain("Invented Set");
+    expect(open).toContain("Every elder can see and edit it");
+    const closed = shareCopy({ name: "Invented Set", isPrivate: true });
+    expect(closed).toContain("Only that set’s designers");
+    expect(closed).not.toContain("Every elder");
+  });
+  it("says playtesters see nothing until a release", () => {
+    expect(shareCopy({ name: "Invented Set", isPrivate: false })).toContain("Playtesters see nothing until it’s released");
+  });
+  it("still says what sharing does before a set is chosen", () => {
+    expect(shareCopy(null)).toContain("out of your Ideas");
+  });
+});
+
+describe("readOnlyCardNote", () => {
+  it("says why a card can't be changed", () => {
+    expect(readOnlyCardNote("draft")).toContain("only its set’s designers");
+    expect(readOnlyCardNote("promoted")).toContain("public");
+    expect(readOnlyCardNote("promoted")).not.toContain("designers");
   });
 });
