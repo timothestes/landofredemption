@@ -30,8 +30,8 @@ test.describe("forge lackey set import", () => {
     await page.getByLabel("Choose zip…").setInputFiles({
       name: "Test Plugin V1.zip", mimeType: "application/zip", buffer: buildFixtureZip(),
     });
-    await page.getByLabel("Set filter").fill("TST");
-    await expect(page.getByText("3 cards match")).toBeVisible();
+    await page.getByRole("checkbox", { name: /TST/ }).check();
+    await expect(page.getByText("3 cards selected")).toBeVisible();
   }
 
   test("anonymous visitors get a 404", async ({ page }) => {
@@ -60,7 +60,7 @@ test.describe("forge lackey set import", () => {
       // preview: 3 matched, 1 flagged without image
       await expect(page.getByText("1 without an image")).toBeVisible();
 
-      // destination: new set (name is prefilled with the filter "TST")
+      // destination: new set (name is prefilled from the ticked set)
       const setName = `E2E Import ${Date.now()}`;
       await page.getByRole("button", { name: "Import 3 cards" }).click();
       await page.getByLabel("New set name").fill(setName);
@@ -81,20 +81,21 @@ test.describe("forge lackey set import", () => {
         .poll(() => img.evaluate((el) => (el as HTMLImageElement).naturalWidth), { timeout: 15_000 })
         .toBeGreaterThan(0);
 
-      // idempotent re-run into the same (now-existing) set: everything skips
+      // idempotent re-run into the same (now-existing) set: nothing to do, and it says so
       await uploadFixture(page);
       await page.getByLabel("Add to an existing set").check();
       await page.getByLabel("Existing set", { exact: true }).selectOption({ label: setName });
-      await page.getByRole("button", { name: "Import 3 cards" }).click();
-      await expect(page.getByText("Imported 0 · Skipped 3 · Failed 0")).toBeVisible({ timeout: 120_000 });
+      await expect(page.getByRole("button", { name: "Nothing new to import" })).toBeDisabled({ timeout: 30_000 });
+      await expect(page.getByText("All 3 are already in this set.", { exact: false })).toBeVisible();
 
-      // overwrite re-run into the same set: everything updates instead of skipping
+      // overwrite re-run into the same set: the two rows with images count as changes, the third matches
       await uploadFixture(page);
       await page.getByLabel("Add to an existing set").check();
       await page.getByLabel("Existing set", { exact: true }).selectOption({ label: setName });
       await page.getByLabel("Overwrite existing cards").check();
-      await page.getByRole("button", { name: "Import 3 cards" }).click();
-      await expect(page.getByText("Imported 0 · Updated 3 · Skipped 0 · Failed 0")).toBeVisible({ timeout: 120_000 });
+      await page.getByRole("button", { name: "Overwrite 2 cards" }).click();
+      await page.getByRole("button", { name: "Overwrite 2 cards" }).last().click(); // the confirm dialog's
+      await expect(page.getByText("Imported 0 · Updated 2 · Unchanged 1 · Failed 0")).toBeVisible({ timeout: 120_000 });
     } finally {
       await cleanupForgeMember(seed);
     }

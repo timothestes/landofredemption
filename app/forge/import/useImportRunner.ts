@@ -51,16 +51,20 @@ async function errorMessage(res: Response): Promise<string> {
   return `Import failed (${res.status})`;
 }
 
-// Asks the route what an overwrite run would do. No images go up and nothing is written. Throws
-// if any batch can't be read: an overwrite must not go ahead on a count it doesn't have.
-export async function previewOverwrite(
+type PreviewCard = { name: string; snapshot: DesignCard; derived: string[]; entryName: string | null };
+
+// Asks the route what each row would do in this set, in row order. No images go up and nothing
+// is written. Throws if any batch can't be read: nothing should act on a partial answer.
+export async function previewRows(
   setId: string,
-  cards: { name: string; snapshot: DesignCard; derived: string[]; entryName: string | null }[],
-): Promise<OverwritePreview> {
-  const rows: { preview?: RowPreview; hasImage: boolean }[] = [];
+  cards: PreviewCard[],
+  signal?: AbortSignal,
+): Promise<(RowPreview | undefined)[]> {
+  const rows = new Array<RowPreview | undefined>(cards.length);
   let cursor = 0;
   const runOne = async () => {
     for (;;) {
+      signal?.throwIfAborted();
       const start = cursor;
       cursor += BATCH_SIZE;
       if (start >= cards.length) return;
@@ -70,14 +74,20 @@ export async function previewOverwrite(
         setId, overwrite: true, preview: true,
         cards: batch.map((c) => ({ name: c.name, snapshot: c.snapshot, derived: c.derived })),
       }));
-      const res = await fetch("/forge/api/import", { method: "POST", body: fd });
+      const res = await fetch("/forge/api/import", { method: "POST", body: fd, signal });
       if (!res.ok) throw new Error(await errorMessage(res));
       const body = (await res.json()) as { results?: BatchCardResult[] };
-      batch.forEach((c, j) => rows.push({ preview: body.results?.[j]?.preview, hasImage: !!c.entryName }));
+      batch.forEach((_, j) => { rows[start + j] = body.results?.[j]?.preview; });
     }
   };
   await Promise.all(Array.from({ length: BATCH_CONCURRENCY }, runOne));
-  return summarizeOverwritePreview(rows);
+  return rows;
+}
+
+// What an overwrite run would do, counted for its confirm step.
+export async function previewOverwrite(setId: string, cards: PreviewCard[]): Promise<OverwritePreview> {
+  const rows = await previewRows(setId, cards);
+  return summarizeOverwritePreview(rows.map((preview, i) => ({ preview, hasImage: !!cards[i].entryName })));
 }
 
 // Greedy chunking: ≤ BATCH_SIZE cards and ≤ MAX_BATCH_BYTES of (uncompressed) image

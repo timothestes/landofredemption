@@ -94,12 +94,12 @@ test.describe("forge spreadsheet set import", () => {
         .poll(() => img.evaluate((el) => (el as HTMLImageElement).naturalWidth), { timeout: 15_000 })
         .toBeGreaterThan(0);
 
-      // idempotent re-run into the same set (no zip needed): everything skips
+      // idempotent re-run into the same set (no zip needed): nothing to do, and it says so
       await uploadFixture(page);
       await page.getByLabel("Add to an existing set").check();
       await page.getByLabel("Existing set", { exact: true }).selectOption({ label: setName });
-      await page.getByRole("button", { name: "Import 2 cards" }).click();
-      await expect(page.getByText("Imported 0 · Skipped 2 · Failed 0")).toBeVisible({ timeout: 120_000 });
+      await expect(page.getByRole("button", { name: "Nothing new to import" })).toBeDisabled({ timeout: 30_000 });
+      await expect(page.getByText("All 2 are already in this set.", { exact: false })).toBeVisible();
     } finally {
       await cleanupForgeMember(seed);
     }
