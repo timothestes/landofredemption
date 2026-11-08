@@ -156,9 +156,10 @@ iteration).
   tile and in the modal, and nothing else. The payload carries nothing about
   the working draft, not even a "moved on" flag.
 - **Set page grid**: the status pill carries the latest version
-  ("Draft · v2", "In playtest · v3"); the "Updated since" date filter shows
-  cards with any version activity since the cutoff (badge marks draft
-  iterations as "v2 draft · Jul 7").
+  ("Draft · v2", "In playtest · v3"); the "New version since" date filter shows
+  cards with a version minted since the cutoff, meaning a release or an accepted
+  proposal (badge marks draft iterations as "v2 draft · Jul 7"). Saved edits
+  don't count, because autosave mints no version.
 
 ## Visibility rules (RLS, migration 057 + 074)
 

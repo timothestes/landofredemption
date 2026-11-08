@@ -106,8 +106,8 @@ export default function CardDetailsFields({
   // Collapsed once there is a type (the block is tall); the summary previews what's set
   // so the card stays readable at a glance without opening it.
   const preview = [
-    ...types,
-    ...brigadeLabels(snapshot.brigades ?? []),
+    ...types.map(typeLabel),
+    ...brigadeLabels(snapshot.brigades ?? []).map(brigadeLabel),
     snapshot.strength || snapshot.toughness
       ? `${snapshot.strength ?? "—"}/${snapshot.toughness ?? "—"}`
       : null,
