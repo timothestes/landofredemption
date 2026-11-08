@@ -9,6 +9,15 @@ const render = (model: ReturnType<typeof computeProgress>) =>
     .replace(/<[^>]+>/g, "|");
 
 describe("ProgressDashboard", () => {
+  it("shows types and brigades in words, in the heatmap and in What's left", () => {
+    const cards = [{ snapshot: { cardType: ["EvilCharacter"], brigades: ["PaleGreen"] }, status: "draft" }];
+    const text = render(computeProgress(cards, { cells: { LostSoul: { GoodGold: 2 } } }));
+    expect(text).toContain("|Pale Green|");
+    expect(text).toContain("|Evil Character|");
+    expect(text).toContain("2 more Good Gold Lost Soul");
+    expect(text).not.toMatch(/PaleGreen|EvilCharacter|GoodGold|LostSoul/);
+  });
+
   it("shows the same count in a type's Total and in What's left", () => {
     const cards = [
       { snapshot: { cardType: ["Hero"], brigades: ["Silver"] }, status: "draft" },

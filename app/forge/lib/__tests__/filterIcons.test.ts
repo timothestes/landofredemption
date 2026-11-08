@@ -70,4 +70,15 @@ describe("filterIcons", () => {
     expect(brigadeLabel("PaleGreen")).toBe("Pale Green");
     expect(brigadeLabel("Blue")).toBe("Blue");
   });
+
+  it("leaves no run-together value in any type or brigade label", () => {
+    for (const t of CARD_TYPES) expect(typeLabel(t), t).not.toMatch(/[a-z][A-Z]/);
+    for (const b of BRIGADES) expect(brigadeLabel(b), b).not.toMatch(/[a-z][A-Z]/);
+  });
+
+  it("names the targets' brigade-less bucket and passes anything else through", () => {
+    expect(brigadeLabel("none")).toBe("No brigade");
+    expect(brigadeLabel("Good Multi")).toBe("Good Multi");
+    expect(typeLabel("Legacy Type")).toBe("Legacy Type");
+  });
 });
