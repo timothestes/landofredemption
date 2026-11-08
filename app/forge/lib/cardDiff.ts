@@ -17,9 +17,9 @@ export type FieldChange = {
 export const FIELD_LABELS: Record<string, string> = {
   name: "Name", rawText: "Card text", cardType: "Type", alignment: "Alignment",
   brigades: "Brigade", strength: "Strength", toughness: "Toughness", class: "Class",
-  icons: "Icons", identifiers: "Identifiers", specialAbility: "Special ability",
-  reference: "Reference", legality: "Legality", rarity: "Rarity", scripture: "Scripture",
-  artistCredit: "Artist", cardFrame: "Card frame",
+  icons: "Icons", territoryPlate: "Territory plate", identifiers: "Identifiers",
+  specialAbility: "Special ability", reference: "Reference", legality: "Legality",
+  rarity: "Rarity", scripture: "Scripture", artistCredit: "Artist", cardFrame: "Card frame",
 };
 
 // The real editing surface (StudioEditor name + rawText, CardDetailsFields for the
@@ -28,7 +28,7 @@ export const FIELD_LABELS: Record<string, string> = {
 // intentionally excluded so a body edit no longer reads "No field changes".
 export const DIFF_FIELDS: (keyof DesignCard)[] = [
   "name", "rawText", "cardType", "alignment", "brigades", "strength", "toughness",
-  "class", "icons", "identifiers", "reference", "scripture", "rarity",
+  "class", "icons", "territoryPlate", "identifiers", "reference", "scripture", "rarity",
 ];
 
 // Fields a comment may anchor a suggestion to. Must mirror the SQL allowlist

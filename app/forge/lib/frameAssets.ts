@@ -253,7 +253,10 @@ function brigadeBox(card: DesignCard, side: Side, withStats: boolean): IconBox {
 
 export type ClassIcon = { src: string; rect: IconRect };
 /** Class icons under the left box: the shield(s), then the territory plate, stacked down
- *  the left edge at the template's sizes. */
+ *  the left edge at the template's sizes. A dual-alignment card prints its shield(s) under
+ *  both boxes (Joab, the General); its territory plate goes where the card says
+ *  (`territoryPlate`) — print has it on the good side (Healing Naaman), the evil side (Woe
+ *  to Chemosh) and both (7 Years of Famine) — the good side when unset. */
 export function classIcons(card: DesignCard): ClassIcon[] {
   const slugs: ("warrior" | "weapon" | "territory")[] = [];
   for (const c of card.class ?? []) slugs.push(c === "Warrior" ? "warrior" : "weapon");
@@ -265,11 +268,14 @@ export function classIcons(card: DesignCard): ClassIcon[] {
     next = rect.y + rect.h + 6;
     return { slug: s, src: `${KIT}/icons/${s}.png`, rect };
   });
-  const out: ClassIcon[] = icons.map(({ src, rect }) => ({ src, rect }));
-  // A dual-alignment character prints its shield(s) under both boxes (Joab, the General);
-  // the territory plate stays on the left.
-  if (isDualAlignment(card)) {
-    for (const c of icons) if (c.slug !== "territory") out.push({ src: c.src, rect: mirror(c.rect) });
+  if (!isDualAlignment(card)) return icons.map(({ src, rect }) => ({ src, rect }));
+  const plateSide = card.territoryPlate ?? "good";
+  const out: ClassIcon[] = [];
+  for (const c of icons) {
+    const left = c.slug !== "territory" || plateSide !== "evil";
+    const right = c.slug !== "territory" || plateSide !== "good";
+    if (left) out.push({ src: c.src, rect: c.rect });
+    if (right) out.push({ src: c.src, rect: mirror(c.rect) });
   }
   return out;
 }

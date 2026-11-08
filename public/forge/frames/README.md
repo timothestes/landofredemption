@@ -23,9 +23,12 @@ stores icons without alpha, so it is rebuilt at extraction: only the flat color 
 raster's edge is background (flood fill), which keeps dark outlines and interiors — the dragon
 sits on black in the template. `warrior` / `weapon` are one shield with opposite halves lit;
 their union is the silhouette, so each ships whole with its faded half opaque, as printed.
-`territory` is an opaque rounded plate with the print's dark outline. Where each icon sits
-(and the lower slot used when stats print) is `ICON_RECTS` in `frameGeometry.ts`, from the
-template's placement matrices; the cross is scaled to 75% of its slot, the size it prints.
+`territory` is rebuilt as it prints, not as the template draws it: the oasis sketch is lifted off
+the template's map (ink and cream highlights only) onto a flat tan fill, inside a thick
+near-black outline with corners ~0.4x the height, at 4x the printed size. Its rect is measured
+from scans (`PRINT_RECTS` in the script: the class shield's width, 89 x 50 canvas px) rather
+than taken from the template. Where each icon sits (and the lower slot used when stats print)
+is `ICON_RECTS` in `frameGeometry.ts`, from the template's placement matrices; the cross is scaled to 75% of its slot, the size it prints.
 
 ## `badges/` — box-filling composites (WebP)
 `artifact` (chalice), `lamb` / `reaper` (Good / Evil Dominant), `good-dom` / `evil-dom` (the

@@ -22,6 +22,8 @@ export const RECTS = {
 // Where the type and class icons sit, from the template's raster placements: type
 // icons inside the top-left box (`…Stats` = the lower slot under strength/toughness),
 // the class shield and territory plate below it. Rects are the rasters' own aspect.
+// Except territory: the plate's printed size and place, measured on scans (the
+// print is a different rendition of the template's plate; PRINT_RECTS in the script).
 export const ICON_RECTS = {
   cross: {x: 83.4, y: 72.8, w: 71.5, h: 81.4},
   dragon: {x: 59.4, y: 67.2, w: 122.4, h: 96.6},
@@ -32,7 +34,7 @@ export const ICON_RECTS = {
   fortress: {x: 56.7, y: 62.4, w: 125.1, h: 63.9},
   site: {x: 44.4, y: 58.3, w: 146.0, h: 72.0},
   shield: {x: 33.9, y: 179.5, w: 88.9, h: 104.3},
-  territory: {x: 25.5, y: 182.0, w: 106.5, h: 46.8},
+  territory: {x: 33.4, y: 180.4, w: 89.0, h: 50.0},
 } as const;
 
 // Ability box gradient: light until `light`% of the box, black from `dark`%.

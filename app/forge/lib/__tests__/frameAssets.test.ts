@@ -303,9 +303,29 @@ describe("dual alignment", () => {
     expect(shields[0].rect).toEqual(ICON_RECTS.shield);
     expect(shields[1].rect.x).toBeCloseTo(CANVAS.w - ICON_RECTS.shield.x - ICON_RECTS.shield.w, 6);
     expect(shields[1].rect.y).toBe(shields[0].rect.y);
-    // The territory plate stays on the left.
-    const withPlate = classIcons({ ...JOAB, icons: ["Territory"] });
-    expect(withPlate.filter((c) => c.src.endsWith("territory.png"))).toHaveLength(1);
+  });
+
+  // Print puts the plate on either side or both: Healing Naaman (RR2) left only, Woe to
+  // Chemosh (II) right only, 7 Years of Famine (RR2) both. So the card chooses.
+  it("prints the territory plate on the side the card chooses: the good side unless told otherwise, the evil side, or both", () => {
+    const plate = (card: DesignCard) => classIcons(card).filter((c) => c.src.endsWith("territory.png")).map((c) => c.rect);
+    const T = ICON_RECTS.territory;
+    const left = { x: ICON_RECTS.shield.x, y: T.y, w: T.w, h: T.h };
+    const right = { x: CANVAS.w - ICON_RECTS.shield.x - T.w, y: T.y, w: T.w, h: T.h };
+    const card: DesignCard = { cardType: ["GE", "EE"], brigades: ["Green", "Gray"], icons: ["Territory"] };
+    expect(plate(card)).toEqual([left]);
+    expect(plate({ ...card, territoryPlate: "good" })).toEqual([left]);
+    expect(plate({ ...card, territoryPlate: "evil" })).toEqual([right]);
+    expect(plate({ ...card, territoryPlate: "both" })).toEqual([left, right]);
+    // Under the shield on each side, the way the shields stack (Joab).
+    const under = ICON_RECTS.shield.y + ICON_RECTS.shield.h + 6;
+    expect(plate({ ...JOAB, icons: ["Territory"], territoryPlate: "both" }).map((r) => r.y)).toEqual([under, under]);
+    // A single-alignment card has one side; the choice is ignored.
+    const single: DesignCard = { cardType: ["GE"], brigades: ["Green"], icons: ["Territory"] };
+    expect(plate({ ...single, territoryPlate: "evil" })).toEqual([left]);
+    expect(plate({ ...single, territoryPlate: "both" })).toEqual([left]);
+    // Without the icon there is no plate, whatever the side says.
+    expect(plate({ ...card, icons: [], territoryPlate: "both" })).toEqual([]);
   });
 
   it("a dual Dominant takes the lamb on the left and the reaper on the right, over the two nebulae", () => {

@@ -71,6 +71,11 @@ export function brigadeLabels(brigades: readonly Brigade[]): string[] {
 
 export const CLASSES = ["Warrior", "Weapon"] as const;
 export const ICONS = ["Territory", "Star", "Cloud"] as const;
+// Which side(s) of a dual-alignment card carry the territory plate. Print does all three
+// (Healing Naaman: good side; Woe to Chemosh: evil side; 7 Years of Famine: both), so the
+// card chooses; unset means the good side. Ignored on a single-alignment card.
+export const TERRITORY_PLATE_SIDES = ["good", "evil", "both"] as const;
+export type TerritoryPlateSide = (typeof TERRITORY_PLATE_SIDES)[number];
 export const LEGALITIES = ["Rotation", "Classic", "Scrolls", "Paragon", "Banned"] as const;
 export const RARITIES = ["Common", "Uncommon", "Rare", "Ultra Rare", "Promo"] as const;
 
@@ -94,6 +99,7 @@ export type DesignCard = {
   toughness?: StatValue;
   class?: (typeof CLASSES)[number][];
   icons?: (typeof ICONS)[number][];
+  territoryPlate?: TerritoryPlateSide;
   identifiers?: string[];
   specialAbility?: string;
   reference?: string;
