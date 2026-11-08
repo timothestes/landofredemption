@@ -76,7 +76,7 @@ export default function ForgeCardGrid({
               {release && (
                 <span
                   className="absolute bottom-1 left-1 z-10 rounded-full border bg-background/90 px-1.5 py-0.5 text-[10px] font-medium text-foreground shadow-sm backdrop-blur-sm"
-                  title={`Latest update ${release}`}
+                  title={`Latest version ${release}`}
                 >
                   {release}
                 </span>

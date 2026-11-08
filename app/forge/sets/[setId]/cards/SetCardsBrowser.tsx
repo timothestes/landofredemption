@@ -152,13 +152,13 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
           <option value="">All brigades</option>
           {BRIGADES.map((b) => <option key={b} value={b}>{brigadeLabel(b)}</option>)}
         </select>
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          Updated since
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground" title="A release or an accepted proposal. Saved edits don't make a new version.">
+          New version since
           <input
             type="date"
             value={since}
             onChange={(e) => setSince(e.target.value)}
-            aria-label="Show cards released since date"
+            aria-label="Show cards with a new version since date"
             className={selectClass}
           />
         </label>
