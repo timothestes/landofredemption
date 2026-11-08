@@ -6,6 +6,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { applyCrop, activateCandidate } from "@/app/forge/lib/artCandidates";
 import { cropBackgroundStyle, type CropRect } from "@/app/forge/lib/cropPreview";
+import { withDeadline } from "@/app/forge/lib/withDeadline";
 
 // Redemption card art is square or portrait (never landscape), so those are the
 // two frame shapes on offer. Square default.
@@ -13,6 +14,8 @@ const ASPECTS = [
   { key: "square", label: "Square", value: 1 },
   { key: "portrait", label: "Portrait", value: 3 / 4 },
 ] as const;
+
+const APPLY_FAILED = "Couldn’t save that. Check your connection and try again.";
 
 export default function CropCandidateModal({
   cardId, candidateId, imageUrl, cardName, onClose, onApplied,
@@ -36,16 +39,19 @@ export default function CropCandidateModal({
     if (kind === "crop" && !rect) return;
     setErr(null);
     setBusy(kind);
-    const r = kind === "crop"
-      ? await applyCrop(cardId, candidateId, rect!)
-      : await activateCandidate(cardId, candidateId);
+    const r = await withDeadline(
+      kind === "crop" ? applyCrop(cardId, candidateId, rect!) : activateCandidate(cardId, candidateId),
+      { ok: false, error: APPLY_FAILED },
+    );
     setBusy(null);
     if (r.ok === false) setErr(r.error ?? "Something went wrong");
     else onApplied();
   }
 
   return (
-    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
+    // Cancel is off while saving, so Esc and the backdrop are too: closing can't stop the save,
+    // and it would take away the only sign of it.
+    <Dialog open={true} onOpenChange={(open) => { if (!open && busy === null) onClose(); }}>
       <div
         className="flex max-h-[90vh] w-full max-w-lg flex-col gap-3 overflow-y-auto rounded-lg border bg-background p-4 shadow-lg"
         onClick={(e) => e.stopPropagation()}
