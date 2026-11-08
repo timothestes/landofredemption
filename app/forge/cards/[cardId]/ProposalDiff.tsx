@@ -18,7 +18,7 @@ import { acceptProposal, denyProposal, type ProposalRow } from "@/app/forge/lib/
 import { addComment } from "@/app/forge/lib/comments";
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
 import { denyDraftPlan, DENY_FLUSH_FAILED } from "@/app/forge/lib/lifecycleCopy";
-import { flushThen } from "@/app/forge/lib/proposeFlow";
+import { flushThen, runAcceptProposal } from "@/app/forge/lib/proposeFlow";
 import FieldChanges from "./FieldChanges";
 import { useStudioDraft, useStudioSync } from "./StudioSyncContext";
 
@@ -137,6 +137,7 @@ export default function ProposalDiff({
   latestVersion?: { versionNumber: number; data: DesignCard } | null;
 }) {
   const router = useRouter();
+  const { flushPending } = useStudioSync();
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [acceptOpen, setAcceptOpen] = useState(false);
@@ -153,10 +154,13 @@ export default function ProposalDiff({
   const doAccept = () =>
     start(async () => {
       setErr(null);
-      const r = await acceptProposal(proposal.id);
+      const r = await runAcceptProposal({
+        flush: flushPending,
+        accept: () => acceptProposal(proposal.id),
+        note,
+        addNote: (body) => addComment({ cardId: proposal.cardId, proposalId: proposal.id, body }),
+      });
       if (!r.ok) { setErr(r.error ?? "Could not accept proposal"); return; }
-      // Optional accept note → stored as a proposal-anchored comment, mirroring deny.
-      if (note.trim()) await addComment({ cardId: proposal.cardId, proposalId: proposal.id, body: note });
       setAcceptOpen(false);
       setNote("");
       router.refresh();

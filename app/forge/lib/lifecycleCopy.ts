@@ -145,6 +145,8 @@ export const RELEASE_FLUSH_FAILED =
   "Couldn’t save your latest edits, so nothing was released. Check your connection and try again.";
 export const DENY_FLUSH_FAILED =
   "Couldn’t save your latest edits, so the proposal wasn’t denied. Check your connection and try again.";
+export const ACCEPT_FLUSH_FAILED =
+  "Couldn’t save your latest edits, so the proposal wasn’t accepted. Check your connection and try again.";
 
 // The choice in the Deny dialog. A proposal freezes the one shared draft, so denying can't
 // simply undo it: going back to vN throws away everything since vN, not just the proposal.
