@@ -81,6 +81,11 @@ describe("sameSnapshot", () => {
     expect(sameSnapshot(a, b)).toBe(false);
   });
 
+  it("treats an undefined key as absent, as JSON and jsonb do, but not null", () => {
+    expect(sameSnapshot({ name: "David", rarity: undefined }, { name: "David" })).toBe(true);
+    expect(sameSnapshot({ strength: null }, {})).toBe(false);
+  });
+
   it("treats an empty snapshot as equal only to another empty one", () => {
     expect(sameSnapshot({}, {})).toBe(true);
     expect(sameSnapshot({}, { name: "David" })).toBe(false);

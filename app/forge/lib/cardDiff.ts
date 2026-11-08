@@ -69,7 +69,10 @@ function canonicalJson(v: unknown): string {
   if (v === null || typeof v !== "object") return JSON.stringify(v) ?? "null";
   if (Array.isArray(v)) return `[${v.map(canonicalJson).join(",")}]`;
   const o = v as Record<string, unknown>;
+  // An undefined key is absent: JSON drops it on the way to the server, so an editor holding
+  // `reference: undefined` and a row with no reference are the same snapshot.
   return `{${Object.keys(o)
+    .filter((k) => o[k] !== undefined)
     .sort()
     .map((k) => `${JSON.stringify(k)}:${canonicalJson(o[k])}`)
     .join(",")}}`;

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireForge, requireElder } from "@/app/forge/lib/auth";
 import { validateArtFile, uploadForgeArt, uploadForgeFinished, readForgeUpload, deleteForgeArt } from "@/app/forge/lib/art";
 import type { DesignCard } from "@/app/forge/lib/designCard";
+import type { SnapshotPatch } from "@/app/forge/lib/cardSave";
 
 export async function createCard(
   title: string
@@ -159,15 +160,18 @@ function toFull(row: any): ForgeCardFull {
 
 const CARD_COLS = "id, title, working_snapshot, working_art_key, working_art_is_placeholder, working_finished_key, status, updated_at, set_id, published_version_id, approved_version_id, owner_id, creator_id, created_at";
 
-export async function saveCard(
+// Merges only the changed fields into the row, so a save can't revert what another elder
+// saved in a different field. See app/forge/lib/cardSave.ts.
+export async function saveCardFields(
   cardId: string,
-  snapshot: DesignCard
+  patch: SnapshotPatch
 ): Promise<{ ok: boolean; error?: string; updatedAt?: string }> {
   const ctx = await requireElder();
   if (!ctx) return { ok: false, error: "Not authorized" };
-  const { data, error } = await ctx.supabase.rpc("forge_save_card", {
+  const { data, error } = await ctx.supabase.rpc("forge_save_card_fields", {
     p_card_id: cardId,
-    p_snapshot: snapshot,
+    p_set: patch.set,
+    p_remove: patch.remove,
   });
   if (error) return { ok: false, error: "Could not save card" };
   revalidatePath(`/forge/cards/${cardId}`);
