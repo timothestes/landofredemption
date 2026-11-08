@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { saveSetTargets } from "@/app/forge/lib/sets";
 import type { TargetCounts } from "@/app/forge/lib/progress";
 import { CARD_TYPES } from "@/app/forge/lib/designCard";
+import { typeLabel, brigadeLabel } from "@/app/forge/lib/filterIcons";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -132,7 +133,7 @@ export default function TargetsEditor({ setId, initial }: { setId: string; initi
               {CARD_TYPES.map((t) => (
                 <li key={t} className="py-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium">{t}</span>
+                    <span className="text-sm font-medium">{typeLabel(t)}</span>
                     {advanced ? (
                       <span className="text-xs text-muted-foreground">{typeTotal(t)}</span>
                     ) : (
@@ -143,7 +144,7 @@ export default function TargetsEditor({ setId, initial }: { setId: string; initi
                         onChange={(e) =>
                           setPerType((p) => ({ ...p, [t]: Number(e.target.value) }))
                         }
-                        aria-label={`${t} total`}
+                        aria-label={`${typeLabel(t)} total`}
                         className={`${inputClass} w-20`}
                       />
                     )}
@@ -152,13 +153,13 @@ export default function TargetsEditor({ setId, initial }: { setId: string; initi
                     <div className="mt-2 flex flex-wrap gap-2">
                       {BRIGADES.map((b) => (
                         <label key={b} className="flex items-center gap-1 text-xs text-muted-foreground">
-                          {b}
+                          {brigadeLabel(b)}
                           <input
                             type="number"
                             min={0}
                             value={cells[t]?.[b] ?? 0}
                             onChange={(e) => setCell(t, b, Number(e.target.value))}
-                            aria-label={`${t} ${b}`}
+                            aria-label={`${typeLabel(t)} ${brigadeLabel(b)}`}
                             className="w-14 rounded-md border border-input bg-background px-1 py-0.5 text-xs"
                           />
                         </label>

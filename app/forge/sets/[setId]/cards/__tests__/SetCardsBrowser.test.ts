@@ -3,7 +3,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {}, push: () => {} }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => {}, push: () => {} }), useSearchParams: () => new URLSearchParams() }));
 vi.mock("@/app/forge/lib/lifecycle", () => ({ bulkLifecycle: vi.fn() }));
 vi.mock("@/app/forge/lib/cards", () => ({ createCardInSet: vi.fn() }));
 

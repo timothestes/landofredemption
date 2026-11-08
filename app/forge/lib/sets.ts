@@ -148,6 +148,23 @@ export async function removeSetElder(setId: string, userId: string): Promise<Res
 
 const CARD_COLS = "id, title, working_snapshot, working_art_key, working_art_is_placeholder, working_finished_key, status, updated_at, set_id, published_version_id, approved_version_id, owner_id, creator_id, created_at";
 
+// What the card page's arrows need from the rest of the set, which it reads on every step. No
+// art keys or lifecycle pointers: on a 224-card set that drops about a third of the response.
+export type SetSibling = Pick<ForgeCardFull, "id" | "title" | "status" | "setId" | "snapshot">;
+
+export async function listSetSiblings(setId: string): Promise<SetSibling[]> {
+  const ctx = await requireForge();
+  if (!ctx) return [];
+  const { data } = await ctx.supabase
+    .from("forge_cards")
+    .select("id, title, status, set_id, working_snapshot")
+    .eq("set_id", setId)
+    .order("updated_at", { ascending: false });
+  return (data ?? []).map((row: any): SetSibling => ({
+    id: row.id, title: row.title, status: row.status, setId: row.set_id ?? null, snapshot: (row.working_snapshot ?? {}) as DesignCard,
+  }));
+}
+
 export async function listSetCards(setId: string): Promise<ForgeCardFull[]> {
   const ctx = await requireForge();
   if (!ctx) return [];

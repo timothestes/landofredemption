@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 // Descoped card face (2026-07-03): replaces the ForgeCardPreview composite on the
 // studio + display surfaces. Priority: finished-card image → text tile (name +
 // raw text, with artwork at the top when present). Plain <img> only (never
@@ -5,7 +9,7 @@
 // authed /forge/api/art proxy).
 
 // eslint-disable-next-line @next/next/no-img-element
-const Img = (p: React.ImgHTMLAttributes<HTMLImageElement>) => (
+const Img = (p: React.ComponentProps<"img">) => (
   <img alt="" loading="lazy" decoding="async" {...p} />
 );
 
@@ -18,12 +22,21 @@ export default function ForgeCardFace({
   artUrl: string | null;
   className?: string;
 }) {
+  // A grey card holds the place until the image paints, then goes, so a picture that isn't
+  // quite 5:7 doesn't end up sitting on a plate. The ref catches an image already in the
+  // browser's cache, whose load event can fire before React is listening.
+  const [loaded, setLoaded] = useState(false);
   const box = { aspectRatio: "750 / 1050", width: "100%", containerType: "inline-size" as const };
 
   if (finishedUrl) {
     return (
-      <div className={className} style={box}>
-        <Img src={finishedUrl} style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "4%" }} />
+      <div className={`${loaded ? "" : "rounded-[4%] bg-muted [.jayden_&]:bg-card/90"} ${className ?? ""}`} style={box}>
+        <Img
+          src={finishedUrl}
+          ref={(el) => { if (el?.complete && el.naturalWidth > 0) setLoaded(true); }}
+          onLoad={() => setLoaded(true)}
+          style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "4%" }}
+        />
       </div>
     );
   }

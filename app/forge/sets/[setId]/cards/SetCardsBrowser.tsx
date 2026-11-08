@@ -5,31 +5,31 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import ForgeCardGrid from "@/app/forge/components/ForgeCardGrid";
+import NoFilterMatches from "@/app/forge/components/NoFilterMatches";
 import AddCardTile from "./AddCardTile";
 import { bulkLifecycle, type BulkResult } from "@/app/forge/lib/lifecycle";
 import {
   STATUS_LABEL, ACTION_LABEL, isEligible, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice, bulkBlockedNotice, bulkSummary, releaseBlockers, READ_ONLY_SET_NOTE,
   type LifecycleAction, type BulkAction, type BulkConfirmAction,
 } from "@/app/forge/lib/lifecycleCopy";
-import { cardRawText, CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
+import { CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
+import { SET_STATUSES, visibleSetCards, noMatchCopy } from "@/app/forge/lib/cardFilters";
+import { useGridPlace } from "@/app/forge/lib/useGridPlace";
+import { typeLabel, brigadeLabel } from "@/app/forge/lib/filterIcons";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
 import type { ReleaseInfo } from "@/app/forge/lib/versions";
 import { Button } from "@/components/ui/button";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 
-const SET_STATUSES = ["draft", "playtesting", "approved", "archived"] as const;
 const BULK_ACTIONS: BulkAction[] = ["release", "markFinal", "shelve", "restore", "returnToIdeas", "delete"];
 const selectClass = "rounded-md border bg-background px-2 py-1.5 text-sm";
 
 export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts, proposalCounts, releases }: { cards: ForgeCardFull[]; setId: string; canCreate: boolean; commentCounts?: Record<string, number>; proposalCounts?: Record<string, number>; releases?: Record<string, ReleaseInfo> }) {
   const router = useRouter();
   const searchRef = useRef<HTMLInputElement>(null);
-  const [q, setQ] = useState("");
-  const [status, setStatus] = useState("");
-  const [type, setType] = useState<CardType | "">("");
-  const [brigade, setBrigade] = useState<Brigade | "">("");
-  const [since, setSince] = useState("");
+  const { filters, query, update, typeSearch, clear } = useGridPlace();
+  const { q, status, type, brigade, since } = filters;
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [busy, setBusy] = useState<LifecycleAction | null>(null);
@@ -43,42 +43,20 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
       const el = document.activeElement as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable)) return;
       e.preventDefault();
-      setQ("");
+      update({ q: "" });
       searchRef.current?.focus();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [update]);
 
   // Default order: the design team's print order (compareCardsDefault — sections,
   // multi-first brigade groups, strength). Shared with the single-card detail
   // view's prev/next arrows via sortSetCards.
   const sorted = useMemo(() => sortSetCards(cards), [cards]);
 
-  const filtered = useMemo(() => sorted.filter((c) => {
-    const s = c.snapshot ?? {};
-    if (q) {
-      const needle = q.toLowerCase();
-      const hay = `${c.title ?? ""}\n${cardRawText(s)}`.toLowerCase();
-      if (!hay.includes(needle)) return false;
-    }
-    if (status && c.status !== status) return false;
-    if (type && !(s.cardType ?? []).includes(type)) return false;
-    if (brigade && !(s.brigades ?? []).includes(brigade)) return false;
-    if (since) {
-      const cutoff = Date.parse(since);
-      const rel = releases?.[c.id];
-      if (!rel || Date.parse(rel.releasedAt) < cutoff) return false;
-    }
-    return true;
-  }), [sorted, q, status, type, brigade, since, releases]);
-
-  const shown = useMemo(() => {
-    if (!since) return filtered;
-    return [...filtered].sort(
-      (a, b) => Date.parse(releases?.[b.id]?.releasedAt ?? "") - Date.parse(releases?.[a.id]?.releasedAt ?? "")
-    );
-  }, [filtered, since, releases]);
+  // The same list the card page's arrows walk.
+  const filtered = useMemo(() => visibleSetCards(sorted, filters, releases), [sorted, filters, releases]);
 
   const byId = useMemo(() => new Map(cards.map((c) => [c.id, c])), [cards]);
   const ids = [...selected];
@@ -129,46 +107,51 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
     <div className="relative pb-28 sm:pb-20">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="relative">
-          <input ref={searchRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or text… (press /)"
+          <input ref={searchRef} value={q} onChange={(e) => typeSearch(e.target.value)} placeholder="Search name or text… (press /)" aria-label="Search cards by name or text"
             className="rounded-md border bg-background px-3 py-1.5 pr-8 text-sm" />
           {q && (
             <button type="button" aria-label="Clear search"
-              onClick={() => { setQ(""); searchRef.current?.focus(); }}
+              onClick={() => { update({ q: "" }); searchRef.current?.focus(); }}
               className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:text-foreground">
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className={selectClass} aria-label="Filter by status">
+        <select value={status} onChange={(e) => update({ status: e.target.value })} className={selectClass} aria-label="Filter by status">
           <option value="">All statuses</option>
           {SET_STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
         </select>
-        <select value={type} onChange={(e) => setType(e.target.value as CardType | "")} className={selectClass} aria-label="Filter by type">
+        <select value={type} onChange={(e) => update({ type: e.target.value as CardType | "" })} className={selectClass} aria-label="Filter by type">
           <option value="">All types</option>
-          {CARD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          {CARD_TYPES.map((t) => <option key={t} value={t}>{typeLabel(t)}</option>)}
         </select>
-        <select value={brigade} onChange={(e) => setBrigade(e.target.value as Brigade | "")} className={selectClass} aria-label="Filter by brigade">
+        <select value={brigade} onChange={(e) => update({ brigade: e.target.value as Brigade | "" })} className={selectClass} aria-label="Filter by brigade">
           <option value="">All brigades</option>
-          {BRIGADES.map((b) => <option key={b} value={b}>{b}</option>)}
+          {BRIGADES.map((b) => <option key={b} value={b}>{brigadeLabel(b)}</option>)}
         </select>
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          Updated since
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground" title="A release or an accepted proposal. Saved edits don't make a new version.">
+          New version since
           <input
             type="date"
             value={since}
-            onChange={(e) => setSince(e.target.value)}
-            aria-label="Show cards released since date"
+            onChange={(e) => update({ since: e.target.value })}
+            aria-label="Show cards with a new version since date"
             className={selectClass}
           />
         </label>
         <span className="text-xs text-muted-foreground">{filtered.length} of {cards.length}</span>
+        {query && filtered.length > 0 && (
+          <Button size="sm" variant="ghost" className="h-8 px-2 text-xs text-muted-foreground" onClick={clear}>
+            Clear filters
+          </Button>
+        )}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {selecting && (
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="font-medium text-foreground">{selected.size} selected</span>
               <button type="button" className="hover:text-foreground hover:underline"
-                onClick={() => setSelected(new Set(shown.map((c) => c.id)))}>
-                Select all ({shown.length})
+                onClick={() => setSelected(new Set(filtered.map((c) => c.id)))}>
+                Select all ({filtered.length})
               </button>
               <button type="button" className="hover:text-foreground hover:underline" onClick={() => setSelected(new Set())}>
                 Clear
@@ -203,24 +186,29 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
         <div aria-live="polite" className="mb-3 text-xs text-foreground">{summary}</div>
       )}
 
-      <ForgeCardGrid
-        cards={shown}
-        showStatus
-        commentCounts={commentCounts}
-        proposalCounts={proposalCounts}
-        releaseBadges={since ? Object.fromEntries(
-          shown.flatMap((c) => {
-            const rel = releases?.[c.id];
-            // Draft iterations count as activity but must not read as releases.
-            return rel ? [[c.id, `v${rel.versionNumber}${rel.status === "draft" ? " draft" : ""} · ${new Date(rel.releasedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`]] : [];
-          })
-        ) : undefined}
-        versionNumbers={Object.fromEntries(
-          Object.entries(releases ?? {}).map(([id, r]) => [id, r.versionNumber])
-        )}
-        selection={{ active: selecting, selected, onToggle: toggle }}
-        leading={canCreate ? <AddCardTile setId={setId} disabled={selecting} /> : undefined}
-      />
+      {filtered.length === 0 ? (
+        <NoFilterMatches message={noMatchCopy("cards", filters)} onClear={clear} />
+      ) : (
+        <ForgeCardGrid
+          cards={filtered}
+          cardQuery={query}
+          showStatus
+          commentCounts={commentCounts}
+          proposalCounts={proposalCounts}
+          releaseBadges={since ? Object.fromEntries(
+            filtered.flatMap((c) => {
+              const rel = releases?.[c.id];
+              // Draft iterations count as activity but must not read as releases.
+              return rel ? [[c.id, `v${rel.versionNumber}${rel.status === "draft" ? " draft" : ""} · ${new Date(rel.releasedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`]] : [];
+            })
+          ) : undefined}
+          versionNumbers={Object.fromEntries(
+            Object.entries(releases ?? {}).map(([id, r]) => [id, r.versionNumber])
+          )}
+          selection={{ active: selecting, selected, onToggle: toggle }}
+          leading={canCreate ? <AddCardTile setId={setId} disabled={selecting} /> : undefined}
+        />
+      )}
 
       {selecting && selected.size > 0 && (
         <div className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-fit max-w-[95vw] flex-wrap items-center justify-center gap-2 rounded-lg border bg-background/95 p-2 shadow-lg backdrop-blur">
