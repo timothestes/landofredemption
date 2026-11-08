@@ -4,7 +4,8 @@
 The source .ai is CONFIDENTIAL and gitignored (tmp/). Only derived rasters and numbers
 leave this script. See docs/superpowers/specs/2026-09-09-forge-live-card-preview-design.md.
 
-Requires: Python 3.11+, Pillow (with LittleCMS), the `zstd` CLI and poppler (`pdftoppm`).
+Requires: Python 3.11+, Pillow (with LittleCMS), numpy, scipy, the `zstd` CLI and poppler
+(`pdftoppm`).
 
     python3.11 scripts/forge-extract-template.py --ai tmp/Card_Template-SHUFFLED_3.7.ai
 
@@ -48,7 +49,9 @@ from collections import deque
 from pathlib import Path
 from typing import NamedTuple
 
+import numpy as np
 from PIL import Image, ImageChops, ImageCms, ImageDraw, ImageFilter
+from scipy import ndimage
 
 # ----------------------------------------------------------------------------- geometry
 # Artboard is 198x270 pt (origin bottom-left). Trim box = 9..189 x 9..261 (2.5 x 3.5 in).
@@ -120,6 +123,19 @@ PLACEMENTS = {
     "bibleStats": "Bible_w_x2F_Stats", "fortress": "Fortress_Icon", "site": "icon_x5F_site",
     "shield": "Warrior_small", "territory": "Territory_small",
 }
+# The territory plate prints as a different rendition of the template's raster, measured on 12
+# scans across IR / RR2 / II / T2C / PoC / GoC (2026-11-07): the class shield's width, a thick
+# near-black outline (3.5-3.9 px) with corners ~0.4x the height, a flat tan fill (the map behind
+# the oasis does not print) and the oasis at the template's own size, so it fills more of the
+# narrower plate. These replace the template's placement (25.5, 182.0, 106.5 x 46.8) in
+# ICON_RECTS; x/y/w/h are the outline's outer edge. w / h must equal the PNG's aspect.
+PRINT_RECTS = {"territory": {"x": 33.4, "y": 180.4, "w": 89.0, "h": 50.0}}
+PLATE_OVERSAMPLE = 4             # PNG px per canvas px: 356 x 200
+PLATE_STROKE = 3.75              # outline width, canvas px
+PLATE_RADIUS = 20.0              # outer corner radius, canvas px
+PLATE_ART_SCALE = 0.51           # canvas px per raster px (the template places it at 0.507)
+PLATE_ART_OFFSET = (1.0, 0.5)    # canvas px right / down of centred: best fit to the scans
+PLATE_OUTLINE = (35, 31, 32)
 # Rasters converted with black-point compensation. Without it SWOP's rich black lands at sRGB
 # ~36, and the chalice's black stripes came out grey next to printed artifacts (RR2 / T2C / II
 # scans: 5th-percentile lightness 44 against the prints' 17; compensated gives 12). The brigade
@@ -392,16 +408,66 @@ def key_shields(warrior: Image.Image, weapon: Image.Image) -> tuple[Image.Image,
     return outs[0], outs[1]
 
 
+def oasis(im: Image.Image) -> tuple[np.ndarray, np.ndarray]:
+    """The territory raster's oasis sketch without the map behind it: (RGB, alpha) arrays.
+    The ink (< 110) and the cream highlights (> 200) are darker / lighter than anything on the
+    map (137-193), so alpha is a soft ramp on each, gated to the sketch's silhouette (the big
+    ink components, closed and hole-filled) so stray map specks drop out. The ink is deepened:
+    it prints heavier than the raster."""
+    a = np.asarray(im.convert("RGB"), dtype=float)
+    lum = a.mean(axis=2)
+    ink = np.clip((160 - lum) / 65, 0, 1)
+    light = np.clip((lum - 200) / 20, 0, 1)
+    core = lum < 110
+    lab, n = ndimage.label(core, structure=np.ones((3, 3)))
+    sizes = ndimage.sum(core, lab, range(1, n + 1))
+    keep = np.isin(lab, 1 + np.flatnonzero(sizes >= 60))
+    yy, xx = np.ogrid[-4:5, -4:5]
+    closed = ndimage.binary_closing(np.pad(keep, 6), structure=xx * xx + yy * yy <= 16)
+    sil = ndimage.binary_fill_holes(closed)[6:-6, 6:-6] | keep
+    gate = ndimage.gaussian_filter(ndimage.binary_dilation(sil).astype(float), 0.7)
+    rgb = np.where((ink > light)[..., None], a * 0.55, a)
+    return rgb, np.clip(np.maximum(ink, light) * gate, 0, 1)
+
+
+def rounded_cover(w: int, h: int, inset: float, radius: float, ss: int = 4) -> np.ndarray:
+    """Anti-aliased coverage (0-1) of a rounded rect inset from a w x h box, drawn at ss x."""
+    big = Image.new("L", (w * ss, h * ss), 0)
+    ImageDraw.Draw(big).rounded_rectangle(
+        [inset * ss, inset * ss, (w - inset) * ss - 1, (h - inset) * ss - 1],
+        radius=max(radius - inset, 0) * ss, fill=255)
+    return np.asarray(big.resize((w, h), Image.BOX), dtype=float) / 255
+
+
 def plate(im: Image.Image) -> Image.Image:
-    """Opaque rounded plate with the print's dark outline (the territory map)."""
-    im = im.convert("RGBA")
-    w, h = im.size
-    r = round(h * 0.16)
-    mask = Image.new("L", im.size, 0)
-    ImageDraw.Draw(mask).rounded_rectangle([0, 0, w - 1, h - 1], radius=r, fill=255)
-    ImageDraw.Draw(im).rounded_rectangle([0, 0, w - 1, h - 1], radius=r, outline=(35, 31, 32), width=3)
-    im.putalpha(mask)
-    return im
+    """The territory plate as it prints (see PRINT_RECTS): the template's oasis lifted off its
+    map onto a flat fill of the map's own tan, inside a thick rounded outline."""
+    rgb, alpha = oasis(im)
+    fill = np.median(np.asarray(im.convert("RGB"), dtype=float)[alpha == 0], axis=0)
+    rect, k = PRINT_RECTS["territory"], PLATE_OVERSAMPLE
+    w, h = round(rect["w"] * k), round(rect["h"] * k)
+    ys, xs = np.nonzero(alpha > 0.05)
+    crop = (slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))
+    s = PLATE_ART_SCALE * k
+    aw, ah = round((xs.max() + 1 - xs.min()) * s), round((ys.max() + 1 - ys.min()) * s)
+
+    def up(ch: np.ndarray) -> np.ndarray:
+        im = Image.fromarray(ch.astype(np.float32), "F")
+        return np.asarray(im.resize((aw, ah), Image.LANCZOS))
+
+    # Premultiplied resample, then "over" the flat fill.
+    art_a = np.clip(up(alpha[crop]), 0, 1)[..., None]
+    art = np.stack([up(rgb[crop][..., c] * alpha[crop]) for c in range(3)], axis=-1)
+    out = np.empty((h, w, 3)); out[:] = fill
+    ox = round((w - aw) / 2 + PLATE_ART_OFFSET[0] * k)
+    oy = round((h - ah) / 2 + PLATE_ART_OFFSET[1] * k)
+    region = out[oy:oy + ah, ox:ox + aw]
+    region[:] = region * (1 - art_a) + art
+    inner = rounded_cover(w, h, PLATE_STROKE * k, PLATE_RADIUS * k)[..., None]
+    out = out * inner + np.array(PLATE_OUTLINE, dtype=float) * (1 - inner)
+    cover = rounded_cover(w, h, 0, PLATE_RADIUS * k)
+    rgba = np.dstack([np.clip(out, 0, 255), cover * 255]).round().astype(np.uint8)
+    return Image.fromarray(rgba, "RGBA")
 
 
 def raster_to_image(doc: Doc, r: Raster) -> Image.Image:
@@ -467,6 +533,8 @@ def write_geometry(path: Path, brigade_hex: dict[str, str], synthesized: dict[st
               "// Where the type and class icons sit, from the template's raster placements: type",
               "// icons inside the top-left box (`…Stats` = the lower slot under strength/toughness),",
               "// the class shield and territory plate below it. Rects are the rasters' own aspect.",
+              "// Except territory: the plate's printed size and place, measured on scans (the",
+              "// print is a different rendition of the template's plate; PRINT_RECTS in the script).",
               "export const ICON_RECTS = {"]
     for k, r in icon_rects.items():
         lines.append(f"  {k}: {json.dumps(r).replace(chr(34), '')},")
@@ -580,6 +648,7 @@ def main():
     weapon.save(out / "icons" / "weapon.png", optimize=True)
     print(f"  shields warrior + weapon: {warrior.size[0]}x{warrior.size[1]}")
     icon_rects = {k: canvas_rect(chosen[name]) for k, name in PLACEMENTS.items()}
+    icon_rects.update(PRINT_RECTS)
 
     # --- brigade colors + geometry
     hexes = {c.lower().replace("_", "-"): doc.brigade_fill(c) for c in BRIGADE_BOX_NAMES}

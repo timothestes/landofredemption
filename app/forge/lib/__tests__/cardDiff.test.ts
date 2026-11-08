@@ -19,6 +19,12 @@ describe("diffCards", () => {
     expect(d[0]).toMatchObject({ field: "rawText", label: "Card text", kind: "changed" });
   });
 
+  it("diffs the territory plate's side, labelled for the review", () => {
+    const d = diffCards({ icons: ["Territory"] }, { icons: ["Territory"], territoryPlate: "both" });
+    expect(d).toHaveLength(1);
+    expect(d[0]).toMatchObject({ field: "territoryPlate", label: "Territory plate", kind: "added", after: "both" });
+  });
+
   it("compares array fields by joined display value", () => {
     const same = diffCards({ brigades: ["Blue", "Green"] }, { brigades: ["Blue", "Green"] });
     expect(same).toHaveLength(0);

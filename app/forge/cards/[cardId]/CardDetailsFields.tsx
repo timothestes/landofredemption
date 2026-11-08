@@ -1,10 +1,11 @@
 "use client";
 
 import {
-  CARD_TYPES, ALIGNMENTS, CLASSES, ICONS, RARITIES, MULTI_BRIGADES,
+  CARD_TYPES, ALIGNMENTS, CLASSES, ICONS, RARITIES, MULTI_BRIGADES, TERRITORY_PLATE_SIDES,
   deriveAlignmentFromTypes, toggleMultiBrigade, brigadeLabels,
-  type DesignCard, type CardType, type Brigade,
+  type DesignCard, type CardType, type Brigade, type TerritoryPlateSide,
 } from "@/app/forge/lib/designCard";
+import { isDualAlignment } from "@/app/forge/lib/frameAssets";
 import StatInput from "./StatInput";
 import IdentifiersInput from "./IdentifiersInput";
 import {
@@ -14,6 +15,8 @@ import {
 
 type ClassName = (typeof CLASSES)[number];
 type IconName = (typeof ICONS)[number];
+
+const PLATE_SIDE_LABEL: Record<TerritoryPlateSide, string> = { good: "Good side", evil: "Evil side", both: "Both sides" };
 
 function toggle<T>(arr: T[] | undefined, v: T): T[] {
   const a = arr ?? [];
@@ -213,6 +216,31 @@ export default function CardDetailsFields({
               onClick={() => update({ icons: toggle<IconName>(snapshot.icons, ic) })} />
           ))}
         </div>
+        {/* Where a dual-alignment card prints its territory plate — print does either side
+            or both, so the card chooses. The good side (unset) is the default. */}
+        {isDualAlignment(snapshot) && (snapshot.icons ?? []).includes("Territory") && (
+          <div className="mt-2">
+            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Territory plate
+            </span>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Territory plate side">
+              {TERRITORY_PLATE_SIDES.map((s) => {
+                const selected = (snapshot.territoryPlate ?? "good") === s;
+                return (
+                  <button key={s} type="button" title={s} aria-pressed={selected}
+                    onClick={() => update({ territoryPlate: s === "good" ? undefined : s })}
+                    className={`rounded border px-2 py-1 text-[11px] font-medium transition-colors ${
+                      selected
+                        ? "border-primary/40 bg-primary/15 text-primary"
+                        : "border-transparent bg-muted/40 text-muted-foreground hover:border-border hover:bg-muted"
+                    }`}>
+                    {PLATE_SIDE_LABEL[s]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Identifier(s) */}

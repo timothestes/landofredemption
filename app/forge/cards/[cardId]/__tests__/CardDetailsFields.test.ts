@@ -65,6 +65,19 @@ describe("CardDetailsFields icon tiles", () => {
     expect(tile(html, "Cloud")).toContain("/forge/frames/icons/cloud.png");
   });
 
+  it("lets a dual-alignment Territory card choose the plate's side, the good side pressed by default", () => {
+    const dual: DesignCard = { cardType: ["GE", "EE"], brigades: ["Green", "Gray"], icons: ["Territory"] };
+    const html = render(dual);
+    expect(tile(html, "good")).toMatch(/aria-pressed="true"/);
+    expect(tile(html, "evil")).toMatch(/aria-pressed="false"/);
+    expect(tile(html, "both")).toMatch(/aria-pressed="false"/);
+    expect(tile(html, "both")).toContain("Both sides");
+    expect(tile(render({ ...dual, territoryPlate: "both" }), "both")).toMatch(/aria-pressed="true"/);
+    // Only a dual-alignment card with the icon has a choice to make.
+    expect(render({ ...dual, icons: ["Star"] })).not.toContain('title="both"');
+    expect(render({ cardType: ["GE"], brigades: ["Green"], icons: ["Territory"] })).not.toContain('title="both"');
+  });
+
   it("never leaves selection to color alone, and defers the art until opened", () => {
     const html = render({ cardType: ["Hero"], brigades: ["Blue"] });
     // 12 types + 16 brigades + 2 Multi + 2 classes + 3 icons.
