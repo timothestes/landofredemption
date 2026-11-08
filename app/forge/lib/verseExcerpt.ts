@@ -84,6 +84,31 @@ export function snapHandle(verses: Verse[], h: Handles, which: "start" | "end", 
   return resolve(verses, s, Math.max(i, s + 1));
 }
 
+/** Puts a handle on word `i` of the chapter's word axis, keeping that word in the excerpt. It cannot cross the other handle. */
+export function placeHandle(verses: Verse[], h: Handles, which: "start" | "end", i: number): Handles {
+  const { rows, total } = layout(verses);
+  const s = toLinear(rows, total, h.start);
+  const e = toLinear(rows, total, h.end);
+  return which === "start" ? resolve(verses, Math.min(i, e - 1), e) : resolve(verses, s, Math.max(i + 1, s + 1));
+}
+
+/** Index of the word box closest to a point: the closest line first, then the closest word on it. */
+export function nearestWord(boxes: { left: number; right: number; top: number; bottom: number }[], x: number, y: number): number {
+  let best = 0;
+  let bestY = Infinity;
+  let bestX = Infinity;
+  boxes.forEach((b, i) => {
+    const dy = Math.max(b.top - y, 0, y - b.bottom);
+    const dx = Math.max(b.left - x, 0, x - b.right);
+    if (dy < bestY || (dy === bestY && dx < bestX)) {
+      best = i;
+      bestY = dy;
+      bestX = dx;
+    }
+  });
+  return best;
+}
+
 export function excerpt(verses: Verse[], h: Handles): { text: string; from: number; to: number } {
   const { rows, total } = layout(verses);
   const c = clampHandles(verses, h);

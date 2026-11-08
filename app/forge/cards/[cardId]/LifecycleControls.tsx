@@ -144,43 +144,43 @@ export default function LifecycleControls({
             {(card.status === "draft" || card.status === "playtesting") && (
               <>
                 {blockedNote && <span className="text-muted-foreground">{blockedNote}</span>}
-                <Button size="sm" className="h-7 px-3 text-xs" disabled={pending || blockers.length > 0} onClick={() => { setReleaseNoOp(false); setReleaseOpen(true); }}>
+                <Button size="sm" className="h-11 px-4 sm:h-7 sm:px-3 sm:text-xs" disabled={pending || blockers.length > 0} onClick={() => { setReleaseNoOp(false); setReleaseOpen(true); }}>
                   {releaseLabel(card.status)}
                 </Button>
               </>
             )}
             {card.status === "playtesting" && (
-              <Button size="sm" variant="outline" className="h-7 px-3 text-xs" disabled={pending} onClick={() => run(() => approve(card.id))}>
+              <Button size="sm" variant="outline" className="h-11 px-4 sm:h-7 sm:px-3 sm:text-xs" disabled={pending} onClick={() => run(() => approve(card.id))}>
                 {ACTION_LABEL.markFinal}
               </Button>
             )}
             {card.status === "approved" && (
-              <Button size="sm" variant="outline" className="h-7 px-3 text-xs" disabled={pending} onClick={() => run(() => unapprove(card.id))}>
+              <Button size="sm" variant="outline" className="h-11 px-4 sm:h-7 sm:px-3 sm:text-xs" disabled={pending} onClick={() => run(() => unapprove(card.id))}>
                 {ACTION_LABEL.reopen}
               </Button>
             )}
             {card.status === "archived" && (
-              <Button size="sm" variant="outline" className="h-7 px-3 text-xs" disabled={pending} onClick={() => setConfirmRestore(true)}>
+              <Button size="sm" variant="outline" className="h-11 px-4 sm:h-7 sm:px-3 sm:text-xs" disabled={pending} onClick={() => setConfirmRestore(true)}>
                 {ACTION_LABEL.restore}
               </Button>
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={pending} aria-label="More actions">
+                <Button size="sm" variant="outline" className="h-11 w-11 p-0 sm:h-7 sm:w-7" disabled={pending} aria-label="More actions">
                   <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {card.status !== "archived" && (
-                  <DropdownMenuItem onSelect={() => run(() => archive(card.id))}>
+                  <DropdownMenuItem className="min-h-11 sm:min-h-0" onSelect={() => run(() => archive(card.id))}>
                     {ACTION_LABEL.shelve}
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onSelect={() => setConfirmReturn(true)}>
+                <DropdownMenuItem className="min-h-11 sm:min-h-0" onSelect={() => setConfirmReturn(true)}>
                   {ACTION_LABEL.returnToIdeas}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setConfirmDelete(true)}>
+                <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive sm:min-h-0" onSelect={() => setConfirmDelete(true)}>
                   {ACTION_LABEL.delete}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -190,15 +190,15 @@ export default function LifecycleControls({
         </>
       ) : (
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" className="h-7 px-3 text-xs" disabled={pending} onClick={() => setPicking(true)}>Share to a set</Button>
+          <Button size="sm" variant="outline" className="h-11 px-4 sm:h-7 sm:px-3 sm:text-xs" disabled={pending} onClick={() => setPicking(true)}>Share to a set</Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={pending} aria-label="More actions">
+              <Button size="sm" variant="outline" className="h-11 w-11 p-0 sm:h-7 sm:w-7" disabled={pending} aria-label="More actions">
                 <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setConfirmDelete(true)}>
+              <DropdownMenuItem className="min-h-11 text-destructive focus:text-destructive sm:min-h-0" onSelect={() => setConfirmDelete(true)}>
                 {ACTION_LABEL.delete}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -235,16 +235,16 @@ export default function LifecycleControls({
                 value={releaseNote}
                 onChange={(e) => setReleaseNote(e.target.value)}
                 placeholder="Shown in the card’s history…"
-                className="h-24 w-full rounded-md border bg-background px-2 py-1 text-sm"
+                className="h-24 w-full rounded-md border bg-background px-2 py-1 text-base sm:text-sm"
               />
             </DialogBody>
           )}
           <DialogFooter>
-            <Button variant="outline" disabled={pending} onClick={() => setReleaseOpen(false)}>
+            <Button variant="outline" className="h-11 sm:h-10" disabled={pending} onClick={() => setReleaseOpen(false)}>
               {releaseUnchanged ? "Close" : "Cancel"}
             </Button>
             {!releaseUnchanged && (
-              <Button disabled={pending || blockers.length > 0} onClick={doRelease}>Release</Button>
+              <Button className="h-11 sm:h-10" disabled={pending || blockers.length > 0} onClick={doRelease}>Release</Button>
             )}
           </DialogFooter>
         </DialogContent>
@@ -258,16 +258,16 @@ export default function LifecycleControls({
           {sets.length > 0 && (
             <DialogBody>
               <select aria-label="Set to share into" disabled={pending} value={shareSetId} onChange={(e) => setShareSetId(e.target.value)}
-                className="w-full rounded-md border bg-background px-2 py-1.5 text-sm">
+                className="min-h-11 w-full rounded-md border bg-background px-2 py-1.5 text-base sm:min-h-0 sm:text-sm">
                 <option value="" disabled>Choose a set…</option>
                 {sets.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </DialogBody>
           )}
           <DialogFooter>
-            <Button variant="outline" disabled={pending} onClick={() => { setPicking(false); setShareSetId(""); }}>Cancel</Button>
+            <Button variant="outline" className="h-11 sm:h-10" disabled={pending} onClick={() => { setPicking(false); setShareSetId(""); }}>Cancel</Button>
             {sets.length > 0 && (
-              <Button disabled={pending || !shareTarget} onClick={doShare}>{pending ? "Sharing…" : "Share"}</Button>
+              <Button className="h-11 sm:h-10" disabled={pending || !shareTarget} onClick={doShare}>{pending ? "Sharing…" : "Share"}</Button>
             )}
           </DialogFooter>
         </DialogContent>

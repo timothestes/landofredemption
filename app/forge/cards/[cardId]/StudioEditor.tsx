@@ -298,7 +298,7 @@ export default function StudioEditor({
   // Follows the local draft too (never previewCard: a verse being previewed is not an edit).
   const pill = card.setId ? versionPill(card.status, version, snapshot) : null;
   const versionBadge = pill && (
-    <span title={pill.title} className={cn("whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] tabular-nums", STATUS_BADGE_CLASS[card.status])}>
+    <span title={pill.title} className={cn("whitespace-nowrap rounded-full border px-2 py-0.5 text-xs tabular-nums sm:text-[11px] sm:leading-[inherit]", STATUS_BADGE_CLASS[card.status])}>
       {pill.label}
     </span>
   );
@@ -356,7 +356,7 @@ export default function StudioEditor({
             role="status"
             aria-live="polite"
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground",
+              "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs text-muted-foreground sm:text-[11px] sm:leading-[inherit]",
               saved === "idle" && !dirty && "hidden",
               saved === "error" && "border-destructive/40 text-destructive",
             )}
@@ -491,7 +491,7 @@ export default function StudioEditor({
 
             <textarea value={snapshot.rawText ?? ""} onChange={(e) => update({ rawText: e.target.value })}
               placeholder="Type the card's special ability."
-              className="max-h-[60vh] min-h-40 w-full rounded-md border bg-background px-3 py-2 text-sm [field-sizing:content]" />
+              className="max-h-[60vh] min-h-40 w-full rounded-md border bg-background px-3 py-2 text-base [field-sizing:content] sm:text-sm" />
 
             <ScriptureFields snapshot={snapshot} update={update} onPreview={setPreviewScripture} />
 

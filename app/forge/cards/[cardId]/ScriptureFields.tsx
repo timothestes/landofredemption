@@ -49,7 +49,7 @@ export default function ScriptureFields({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
         {/* Reference — scripture citation printed on the card */}
         <label className="block min-w-0 flex-1">
           <span className="mb-1 block text-sm font-medium">Reference</span>
@@ -57,7 +57,7 @@ export default function ScriptureFields({
             value={snapshot.reference ?? ""}
             onChange={(e) => edit({ reference: e.target.value || undefined })}
             placeholder="e.g. Revelation 19:15"
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm" />
+            className="min-h-11 w-full rounded-md border bg-background px-3 py-2 text-base sm:min-h-0 sm:text-sm" />
           <span className="mt-1 block text-xs text-muted-foreground">The scripture reference printed on the card.</span>
           {reference !== "" &&
             (testament ? (
@@ -73,8 +73,9 @@ export default function ScriptureFields({
               </span>
             ))}
         </label>
-        {/* mt-6 lines the button up with the input under the label. */}
-        <Button ref={toggleRef} type="button" variant="outline" size="sm" className="mt-6 shrink-0" aria-expanded={open}
+        {/* From sm, mt-6 lines the button up with the input under the label. On a phone it takes its
+            own row, so a label that grows with the reference can't squeeze the field. */}
+        <Button ref={toggleRef} type="button" variant="outline" size="sm" className="h-11 shrink-0 sm:mt-6 sm:h-9" aria-expanded={open}
           onClick={() => (open ? closeToToggle() : setOpen(true))}>
           {buttonLabel}
         </Button>
@@ -87,7 +88,7 @@ export default function ScriptureFields({
           value={snapshot.scripture ?? ""}
           onChange={(e) => edit({ scripture: e.target.value || undefined })}
           placeholder="The scripture text printed on the card."
-          className="h-20 w-full rounded-md border bg-background px-3 py-2 text-sm" />
+          className="h-20 w-full rounded-md border bg-background px-3 py-2 text-base sm:text-sm" />
       </label>
 
       {/* Mounted only while open, so every open starts from the card's current reference. */}
