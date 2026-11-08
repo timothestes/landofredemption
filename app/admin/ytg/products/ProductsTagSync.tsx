@@ -299,7 +299,7 @@ export default function ProductsTagSync() {
             <Button
               onClick={() => runApply(effectiveChanges)}
               disabled={busy || isStale || effectiveChanges.length === 0}
-              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary/90"
             >
               {applying ? "Applying…" : `Apply to ${effectiveChanges.length.toLocaleString()} product${effectiveChanges.length === 1 ? "" : "s"}`}
             </Button>
