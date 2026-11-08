@@ -35,6 +35,10 @@ creates a version; decisions do.
                      that same version; anything else goes back to Draft (no new version)
 ```
 
+**Release needs a name and a type** (migration 127), at the database and in the UI.
+Missing art stays allowed: art-less playtest releases are normal. A bulk release counts
+a blocked card as skipped and says why.
+
 ## Why autosave exists (and why it is NOT versioning)
 
 `forge_cards.working_snapshot` is the live editing surface. The studio
@@ -128,6 +132,6 @@ pipeline + manual Lackey export).
 | History timeline | `CardHistory.tsx` + pure assembly in `app/forge/lib/historyView.ts` |
 | Readers | `app/forge/lib/versions.ts` (listVersions / listCardEvents / listSetActivity) |
 | Server actions | `app/forge/lib/proposals.ts`, `lifecycle.ts` |
-| RPCs (current bodies) | migrations `127` (**current `forge_archive_card` and `forge_unarchive_card`**), `083` (**current `forge_publish_card`** — resolves open proposals), `072` (publish note + audit events + undeletable reasons), `075` (draft versions, unified base/guard, sweep exclusions) |
+| RPCs (current bodies) | migrations `127` (**current `forge_publish_card`**, `forge_archive_card` and `forge_unarchive_card`), `083` (publish resolves open proposals), `072` (publish note + audit events + undeletable reasons), `075` (draft versions, unified base/guard, sweep exclusions) |
 | Enum + backfill | `074` (`version_status` gains 'draft'), `076` (backfilled the one 073-era lost accept) |
 | Design history | `docs/superpowers/specs/2026-07-06-forge-version-history-design.md` (incl. addendum) |

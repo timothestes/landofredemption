@@ -2,6 +2,8 @@
 // action. Pure and isomorphic — imported by client components and server actions.
 // Eligibility mirrors the guards in migration 052's RPCs; keep them in sync.
 
+import type { DesignCard } from "@/app/forge/lib/designCard";
+
 export const STATUS_LABEL: Record<string, string> = {
   private_idea: "Idea",
   draft: "Draft",
@@ -87,6 +89,20 @@ export function releaseProposalNotice(openCount: number, hasMatch: boolean): str
     notices.push(`${closed} open proposals will be closed as out of date. Review them first if you still want them.`);
   }
   return notices;
+}
+
+// What stops a card being released. Mirrors the guard in forge_publish_card (migration
+// 127), which is the real gate. Name and type only: art-less playtest releases are normal.
+export function releaseBlockers(snapshot: DesignCard): ("name" | "type")[] {
+  const blockers: ("name" | "type")[] = [];
+  if (!snapshot.name?.trim()) blockers.push("name");
+  if (!snapshot.cardType?.length) blockers.push("type");
+  return blockers;
+}
+
+export function releaseBlockedNote(blockers: ("name" | "type")[]): string | null {
+  if (blockers.length === 0) return null;
+  return `Add ${blockers.map((b) => `a ${b}`).join(" and ")} to release.`;
 }
 
 const ACTION_ELIGIBLE: Record<LifecycleAction, readonly string[]> = {
@@ -200,4 +216,24 @@ export function bulkProposalNotice(openCount: number): string[] {
       ? "1 open proposal on these cards will be closed. If it matches its card’s draft it’s recorded as accepted by the release; otherwise it’s closed as out of date. Review it first if you still want it."
       : `${openCount} open proposals on these cards will be closed. One that matches its card’s draft is recorded as accepted by the release; the rest are closed as out of date. Review them first if you still want them.`,
   ];
+}
+
+export function bulkBlockedNotice(blocked: number): string[] {
+  if (blocked <= 0) return [];
+  return [`${cardCount(blocked)} ${blocked === 1 ? "has" : "have"} no name or type and will be skipped.`];
+}
+
+export type BulkSkipReason = "noNameOrType";
+
+// The line under the grid after a bulk action. Skips with a known reason say so.
+export function bulkSummary(
+  action: LifecycleAction,
+  r: { done: number; skipped: number; failed: number; reasons?: Partial<Record<BulkSkipReason, number>> },
+): string {
+  const noNameOrType = r.reasons?.noNameOrType ?? 0;
+  const parts = noNameOrType > 0 ? [`${noNameOrType} no name or type`] : [];
+  const other = r.skipped - noNameOrType;
+  if (parts.length > 0 && other > 0) parts.push(`${other} not eligible`);
+  const why = parts.length > 0 ? ` (${parts.join(", ")})` : "";
+  return `${BULK_DONE_VERB[action]} ${r.done} · ${r.skipped} skipped${why} · ${r.failed} failed`;
 }

@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   STATUS_LABEL, ACTION_LABEL, releaseLabel, isEligible, BULK_DONE_VERB, releaseProposalNotice,
   returnToIdeasCopy, deleteCopy, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice,
+  releaseBlockers, releaseBlockedNote, bulkBlockedNotice, bulkSummary,
 } from "../lifecycleCopy";
 
 describe("lifecycleCopy", () => {
@@ -220,5 +221,58 @@ describe("bulkProposalNotice", () => {
     expect(one).toMatch(/recorded as accepted/);
     expect(one).toMatch(/out of date/);
     expect(bulkProposalNotice(4)[0]).toMatch(/^4 open proposals on these cards will be closed/);
+  });
+});
+
+describe("releaseBlockers", () => {
+  it("passes a card with a name and a type, with no art or anything else", () => {
+    expect(releaseBlockers({ name: "Invented", cardType: ["Hero"] })).toEqual([]);
+  });
+
+  it("flags what's missing", () => {
+    expect(releaseBlockers({})).toEqual(["name", "type"]);
+    expect(releaseBlockers({ cardType: ["Hero"] })).toEqual(["name"]);
+    expect(releaseBlockers({ name: "Invented" })).toEqual(["type"]);
+    expect(releaseBlockers({ name: "Invented", cardType: [] })).toEqual(["type"]);
+  });
+
+  it("treats a blank name as missing, as the database does", () => {
+    expect(releaseBlockers({ name: "   ", cardType: ["Hero"] })).toEqual(["name"]);
+  });
+});
+
+describe("releaseBlockedNote", () => {
+  it("is silent when nothing blocks", () => {
+    expect(releaseBlockedNote([])).toBeNull();
+  });
+
+  it("names what to add", () => {
+    expect(releaseBlockedNote(["name", "type"])).toBe("Add a name and a type to release.");
+    expect(releaseBlockedNote(["name"])).toBe("Add a name to release.");
+    expect(releaseBlockedNote(["type"])).toBe("Add a type to release.");
+  });
+});
+
+describe("bulkBlockedNotice", () => {
+  it("says how many will be skipped and why", () => {
+    expect(bulkBlockedNotice(0)).toEqual([]);
+    expect(bulkBlockedNotice(1)).toEqual(["1 card has no name or type and will be skipped."]);
+    expect(bulkBlockedNotice(3)).toEqual(["3 cards have no name or type and will be skipped."]);
+  });
+});
+
+describe("bulkSummary", () => {
+  it("keeps the plain form when no reasons are known", () => {
+    expect(bulkSummary("shelve", { done: 2, skipped: 1, failed: 0 })).toBe("Shelved 2 \u00b7 1 skipped \u00b7 0 failed");
+  });
+
+  it("gives the reason for cards skipped for having no name or type", () => {
+    expect(bulkSummary("release", { done: 2, skipped: 1, failed: 0, reasons: { noNameOrType: 1 } }))
+      .toBe("Released 2 \u00b7 1 skipped (1 no name or type) \u00b7 0 failed");
+  });
+
+  it("accounts for the rest when only some skips have a reason", () => {
+    expect(bulkSummary("release", { done: 0, skipped: 3, failed: 0, reasons: { noNameOrType: 1 } }))
+      .toBe("Released 0 \u00b7 3 skipped (1 no name or type, 2 not eligible) \u00b7 0 failed");
   });
 });

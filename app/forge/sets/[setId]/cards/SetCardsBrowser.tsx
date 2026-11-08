@@ -8,7 +8,7 @@ import ForgeCardGrid from "@/app/forge/components/ForgeCardGrid";
 import AddCardTile from "./AddCardTile";
 import { bulkLifecycle, type BulkResult } from "@/app/forge/lib/lifecycle";
 import {
-  STATUS_LABEL, ACTION_LABEL, BULK_DONE_VERB, isEligible, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice,
+  STATUS_LABEL, ACTION_LABEL, isEligible, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice, bulkBlockedNotice, bulkSummary, releaseBlockers,
   type LifecycleAction, type BulkAction, type BulkConfirmAction,
 } from "@/app/forge/lib/lifecycleCopy";
 import { cardRawText, CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
@@ -103,18 +103,26 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
     const r: BulkResult = await bulkLifecycle(action, targetIds);
     setBusy(null);
     if (r.ok === false) { setSummary(r.error); return; }
-    setSummary(`${BULK_DONE_VERB[action]} ${r.done} · ${r.skipped} skipped · ${r.failed} failed`);
+    setSummary(bulkSummary(action, r));
     setSelected(new Set());
     router.refresh();
   }
 
-  const confirmCards = confirming === "releaseAll"
+  const confirmingRelease = confirming === "release" || confirming === "releaseAll";
+  const confirmEligible = confirming === "releaseAll"
     ? filtered.filter((c) => c.status === "draft")
     : eligibleCards(confirming ?? "delete");
+  // A release skips cards with no name or type, so they don't count as being released.
+  const confirmCards = confirmingRelease
+    ? confirmEligible.filter((c) => releaseBlockers(c.snapshot ?? {}).length === 0)
+    : confirmEligible;
   const confirmCopy = bulkConfirmCopy(confirming ?? "delete", { names: confirmCards.map((c) => c.title) });
   // Release closes open proposals (migration 083), so say so before it happens.
-  const confirmNotices = confirming === "release" || confirming === "releaseAll"
-    ? bulkProposalNotice(confirmCards.reduce((sum, c) => sum + (proposalCounts?.[c.id] ?? 0), 0))
+  const confirmNotices = confirmingRelease
+    ? [
+        ...bulkBlockedNotice(confirmEligible.length - confirmCards.length),
+        ...bulkProposalNotice(confirmCards.reduce((sum, c) => sum + (proposalCounts?.[c.id] ?? 0), 0)),
+      ]
     : [];
 
   return (

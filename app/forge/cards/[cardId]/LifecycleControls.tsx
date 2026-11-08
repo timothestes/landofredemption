@@ -4,9 +4,10 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 import { shareToSet, sendToPrivate, publish, approve, unapprove, archive, unarchive, deleteCard } from "@/app/forge/lib/lifecycle";
-import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, deleteCopy } from "@/app/forge/lib/lifecycleCopy";
+import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, deleteCopy, releaseBlockers, releaseBlockedNote } from "@/app/forge/lib/lifecycleCopy";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
+import type { DesignCard } from "@/app/forge/lib/designCard";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -28,10 +29,13 @@ import {
 
 export default function LifecycleControls({
   card,
+  draft,
   sets,
   openProposals = { count: 0, hasMatch: false },
 }: {
   card: ForgeCardFull;
+  // The editor's live draft. `card.snapshot` trails it by a save and a refresh.
+  draft: DesignCard;
   sets: ForgeSetSummary[];
   // Releasing closes the card's open proposals (migration 083). `hasMatch` =
   // one of them is exactly this draft, so the release records it as accepted
@@ -74,7 +78,9 @@ export default function LifecycleControls({
   const inSet = card.setId !== null;
   const releaseNotices = releaseProposalNotice(openProposals.count, openProposals.hasMatch);
   const returnCopy = returnToIdeasCopy(1);
-  const delCopy = deleteCopy([card.title]);
+  const delCopy = deleteCopy([draft.name]);
+  const blockers = releaseBlockers(draft);
+  const blockedNote = releaseBlockedNote(blockers);
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -91,9 +97,12 @@ export default function LifecycleControls({
           </ol>
           <div className="ml-auto flex flex-wrap items-center gap-2">
             {(card.status === "draft" || card.status === "playtesting") && (
-              <Button size="sm" className="h-7 px-3 text-xs" disabled={pending} onClick={() => setReleaseOpen(true)}>
-                {releaseLabel(card.status)}
-              </Button>
+              <>
+                {blockedNote && <span className="text-muted-foreground">{blockedNote}</span>}
+                <Button size="sm" className="h-7 px-3 text-xs" disabled={pending || blockers.length > 0} onClick={() => setReleaseOpen(true)}>
+                  {releaseLabel(card.status)}
+                </Button>
+              </>
             )}
             {card.status === "playtesting" && (
               <Button size="sm" variant="outline" className="h-7 px-3 text-xs" disabled={pending} onClick={() => run(() => approve(card.id))}>
@@ -186,7 +195,7 @@ export default function LifecycleControls({
             <Button variant="outline" disabled={pending} onClick={() => setReleaseOpen(false)}>
               Cancel
             </Button>
-            <Button disabled={pending} onClick={doRelease}>Release</Button>
+            <Button disabled={pending || blockers.length > 0} onClick={doRelease}>Release</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
