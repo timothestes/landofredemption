@@ -11,6 +11,12 @@ export const FORGE_DATALINE_PREFIX = "forge:";
 export function forgeDataLine(cardId: string): string { return FORGE_DATALINE_PREFIX + cardId; }
 export function isForgeDataLine(dataLine: string): boolean { return dataLine.startsWith(FORGE_DATALINE_PREFIX); }
 export function cardIdFromDataLine(dataLine: string): string { return dataLine.slice(FORGE_DATALINE_PREFIX.length); }
+// Any Forge card in the builder. A save drops dataLine, so a card the deck can no longer
+// resolve keeps the marker only in imgFile. A localStorage draft comes back unvalidated,
+// so either field can be missing on a public card.
+export function isForgeCard(card: Pick<Card, "dataLine" | "imgFile">): boolean {
+  return isForgeDataLine(card.dataLine ?? "") || isForgeDataLine(card.imgFile ?? "");
+}
 
 // DesignCard type enum → the public card index's canonical `type` value. The public
 // data abbreviates only GE/EE (every other type is spelled out), so we match that

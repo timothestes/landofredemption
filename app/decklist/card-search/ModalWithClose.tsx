@@ -10,6 +10,7 @@ import { useIsAdmin } from "../../../hooks/useIsAdmin";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { createRuling, updateRuling, deleteRuling } from "../../admin/rulings/actions";
 import { DuplicateCards, DuplicateCardsMobile } from "./components/DuplicateCards";
+import { isForgeCard } from "@/app/forge/lib/deckAdapter";
 import type { FormatId } from "@/lib/formats";
 import type { Card } from "./utils";
 import type { DeckZone } from "./types/deck";
@@ -561,10 +562,13 @@ export default function ModalWithClose({
   collectionSignedOut?: boolean;
 }) {
   const { getPrice, getProductUrl } = useCardPrices();
-  const { rulings, refetch: refetchRulings } = useCardRulings(modalCard?.name ?? null);
+  // An unreleased Forge card's name stays in this modal: no store link, no rulings
+  // lookup, and no way to add a ruling, since card_rulings is public.
+  const forgeCard = !!modalCard && isForgeCard(modalCard);
+  const { rulings, refetch: refetchRulings } = useCardRulings(forgeCard ? null : modalCard?.name ?? null);
   const { siblings: duplicateSiblings } = useDuplicateCards(modalCard?.name ?? null);
   const { isAdmin, permissions } = useIsAdmin();
-  const canManageRulings = isAdmin && permissions.includes('manage_rulings');
+  const canManageRulings = isAdmin && permissions.includes('manage_rulings') && !forgeCard;
   // Drag-to-deck from the modal image is disabled on mobile (touch drag is unreliable).
   const isMobile = useMediaQuery("(max-width: 767px)");
   const canDragToDeck = !!onAddCard && !isMobile;
@@ -855,10 +859,11 @@ export default function ModalWithClose({
 
   // Mobile footer needs row 2 when minus buttons are showing or the collection stepper is present.
   // Versions/rulings moved to the header details sheet, so they no longer force a taller footer.
+  // Minus buttons only push Shop down to row 2, and a Forge card has no Shop.
   const hasMinusButtons = quantityInDeck > 0 || quantityInReserve > 0;
   const hasDuplicates = duplicateSiblings && duplicateSiblings.length > 0;
   const hasCollection = !!(collectionQuantities && onAdjustCollection);
-  const needsFooterRow2 = hasMinusButtons || hasCollection;
+  const needsFooterRow2 = (hasMinusButtons && !forgeCard) || hasCollection;
 
   return (
     <div
@@ -1162,7 +1167,7 @@ export default function ModalWithClose({
               <div className="flex-1 min-w-0" />
             )}
             {/* Shop button — inline in row 1 when no row 2 content */}
-            {!needsFooterRow2 && (() => {
+            {!needsFooterRow2 && !forgeCard && (() => {
               const cardKey = `${modalCard.name}|${modalCard.set}|${modalCard.imgFile}`;
               const priceInfo = getPrice(cardKey);
               const productUrl = getProductUrl(cardKey);
@@ -1230,7 +1235,7 @@ export default function ModalWithClose({
                 })()}
               </div>
               {/* Shop button */}
-              {(() => {
+              {!forgeCard && (() => {
                 const cardKey = `${modalCard.name}|${modalCard.set}|${modalCard.imgFile}`;
                 const priceInfo = getPrice(cardKey);
                 const productUrl = getProductUrl(cardKey);
@@ -1644,7 +1649,7 @@ export default function ModalWithClose({
                 )}
               </div>
             )}
-            {isFundraiser ? (
+            {forgeCard ? null : isFundraiser ? (
               <button
                 onClick={() => window.open('https://cactus-game-design-inc.square.site/s/shop', '_blank')}
                 className="px-4 h-10 border border-emerald-600/30 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-lg flex items-center gap-1.5 font-medium transition-colors text-sm whitespace-nowrap active:translate-y-[1px] [.jayden_&]:border-blue-500/30 [.jayden_&]:bg-blue-950/30 [.jayden_&]:text-blue-300 [.jayden_&]:hover:bg-blue-900/40"
