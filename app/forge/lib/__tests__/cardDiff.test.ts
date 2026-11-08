@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { diffCards, summarizeDiff, coerceFieldValue, sameSnapshot, draftMovedOn } from "../cardDiff";
+import { diffCards, summarizeDiff, coerceFieldValue, sameSnapshot, sameCardContent } from "../cardDiff";
 
 describe("diffCards", () => {
   it("detects a changed scalar field", () => {
@@ -81,32 +81,39 @@ describe("sameSnapshot", () => {
     expect(sameSnapshot(a, b)).toBe(false);
   });
 
+  it("treats an undefined key as absent, as JSON and jsonb do, but not null", () => {
+    expect(sameSnapshot({ name: "David", rarity: undefined }, { name: "David" })).toBe(true);
+    expect(sameSnapshot({ strength: null }, {})).toBe(false);
+  });
+
   it("treats an empty snapshot as equal only to another empty one", () => {
     expect(sameSnapshot({}, {})).toBe(true);
     expect(sameSnapshot({}, { name: "David" })).toBe(false);
   });
 });
 
-describe("draftMovedOn", () => {
-  it("is false for the same content in any key order", () => {
-    expect(draftMovedOn({ name: "A", strength: 7 }, { strength: 7, name: "A" })).toBe(false);
+// Mirrors _forge_snapshot_content in migration 127, which decides whether a release
+// mints a version. The same cases are run against the SQL.
+describe("sameCardContent", () => {
+  it("ignores key order", () => {
+    expect(sameCardContent({ name: "A", rawText: "x" }, { rawText: "x", name: "A" })).toBe(true);
   });
-  it("sees an edited field", () => {
-    expect(draftMovedOn({ rawText: "Draw 2." }, { rawText: "Draw 3." })).toBe(true);
+
+  it("treats an emptied field as no field, since a typed-then-erased edit changes nothing", () => {
+    expect(sameCardContent({ name: "A" }, { name: "A", reference: "", brigades: [], strength: undefined })).toBe(true);
+    expect(sameCardContent({ name: "A" }, { name: "A", strength: null as never })).toBe(true);
   });
-  it("sees a field added or emptied", () => {
-    expect(draftMovedOn({}, { reference: "1 Sam 17" })).toBe(true);
-    expect(draftMovedOn({ reference: "1 Sam 17" }, { reference: "" })).toBe(true);
+
+  it("does not treat a zero stat as empty", () => {
+    expect(sameCardContent({ name: "A" }, { name: "A", strength: 0 })).toBe(false);
   });
-  // The editor writes "" and [] when a field is touched and cleared. Nothing changed on the card.
-  it("does not count a touched and cleared field as a change", () => {
-    expect(draftMovedOn({ name: "A" }, { name: "A", scripture: "", identifiers: [] })).toBe(false);
+
+  it("sees a real change, including in fields the diff doesn't list", () => {
+    expect(sameCardContent({ rawText: "Draw 2." }, { rawText: "Draw 3." })).toBe(false);
+    expect(sameCardContent({ name: "A" }, { name: "A", legality: "Rotation" })).toBe(false);
   });
-  // diffCards skips these: they have no studio editor, but an import can still change them.
-  it("sees a change in a field diffCards skips", () => {
-    expect(draftMovedOn({ legality: "Rotation" }, { legality: "Banned" })).toBe(true);
-  });
-  it("sees reordered brigades, which change the printed bands", () => {
-    expect(draftMovedOn({ brigades: ["Blue", "Red"] }, { brigades: ["Red", "Blue"] })).toBe(true);
+
+  it("is order-sensitive inside a list, as jsonb is", () => {
+    expect(sameCardContent({ brigades: ["Blue", "Red"] }, { brigades: ["Red", "Blue"] })).toBe(false);
   });
 });

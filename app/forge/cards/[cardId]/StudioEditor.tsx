@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Download, ChevronLeft, ChevronRight, Loader2, Check, AlertTriangle } from "lucide-react";
+import { Download, ChevronLeft, ChevronRight, Loader2, Check, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import { upload } from "@vercel/blob/client";
 import ForgeCardFace from "@/app/forge/components/ForgeCardFace";
 import ForgeCardPreview from "@/app/forge/components/ForgeCardPreview";
@@ -14,18 +14,20 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 import { cn } from "@/lib/utils";
-import { saveCard, uploadFinished, setPlaceholder, type ForgeCardFull } from "@/app/forge/lib/cards";
+import { saveCardFields, uploadFinished, setPlaceholder, type ForgeCardFull } from "@/app/forge/lib/cards";
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
+import { createCardSaver, incomingAction } from "@/app/forge/lib/cardSave";
 import { STATUS_BADGE_CLASS } from "@/app/forge/lib/lifecycleCopy";
 import { versionPill, type StudioVersion } from "@/app/forge/lib/studioVersion";
 import type { ArtCandidate } from "@/app/forge/lib/artCandidates";
+import type { ReleaseBase, RestoreTarget } from "@/app/forge/lib/lifecycleCopy";
 import LifecycleControls from "./LifecycleControls";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
 import { forgeCardTopic } from "@/app/forge/lib/realtime";
 import { useForgeCardChannel } from "@/app/forge/lib/useForgeRealtime";
 import PresenceBar from "./PresenceBar";
-import { StudioSyncProvider } from "./StudioSyncContext";
+import { StudioDraftProvider, StudioSyncProvider } from "./StudioSyncContext";
 import CardDetailsFields from "./CardDetailsFields";
 import CopyCardImageButton from "./CopyCardImageButton";
 import ScriptureFields from "./ScriptureFields";
@@ -36,13 +38,13 @@ import ScriptureFields from "./ScriptureFields";
 // The composite renderer (ForgeCardPreview) came back on 2026-09-10 (#387): while
 // there is no finished-card image, it draws the live snapshot in the design team's frame.
 
-// Prev/next arrows overlaid on the card face edges. Inside the edges (not the
-// gutter) so they never clip on mobile.
+// Prev/next arrows on the card face. From sm up they sit inside its edges; on a phone the
+// face is narrow enough to leave a gutter each side, so they sit there, off the small card.
 const arrowClass =
   "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground";
 
 export default function StudioEditor({
-  card, sets, currentUser, creator, setId, setName, prevId, nextId, position, artCandidates, openProposals, version = null, review,
+  card, sets, currentUser, creator, setId, setName, prevId, nextId, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, review,
 }: {
   card: ForgeCardFull;
   sets: ForgeSetSummary[];
@@ -58,6 +60,10 @@ export default function StudioEditor({
   artCandidates: ArtCandidate[];
   // Passed straight to LifecycleControls for the release dialog's heads-up.
   openProposals?: { count: number; hasMatch: boolean };
+  // Also for the release dialog: what the draft is compared against.
+  releaseBase?: ReleaseBase | null;
+  // For the Restore dialog on a shelved card: where it will go back to.
+  restoreTarget?: RestoreTarget | null;
   version?: StudioVersion | null;
   // The review column (proposals / history / comments), rendered inside this component's
   // grid so the sticky card face keeps travelling alongside it. Built in the server
@@ -75,12 +81,21 @@ export default function StudioEditor({
   const firstRender = useRef(true);
   const fieldsDirty = useRef(false);
   const latest = useRef(snapshot);       // most recent edit (for flush-on-leave)
-  const lastSaved = useRef(snapshot);    // last snapshot the server accepted
+  // This session's view of the server, and the base of every save's diff. Moves when a save
+  // is accepted or a write from elsewhere is adopted, never just because the props changed.
+  // That is what keeps a field another elder changed out of this session's saves.
+  const lastSaved = useRef(snapshot);
   const savedRef = useRef(saved);
+  const [saver] = useState(() => createCardSaver({
+    latest,
+    lastSaved,
+    send: (patch) => saveCardFields(card.id, patch),
+  }));
   const [pendingFinished, setPendingFinished] = useState<File | null>(null);
   const [uploading, setUploading] = useState<"finished" | null>(null);
   // The verse finder's candidate excerpt, drawn on the preview face only. Never saved.
   const [previewScripture, setPreviewScripture] = useState<string | null>(null);
+  const [peeking, setPeeking] = useState(false); // the large face over the form, below lg
   const router = useRouter();
 
   const { others, setEditing } = useForgeCardChannel(
@@ -88,22 +103,30 @@ export default function StudioEditor({
     { userId: currentUser.userId, displayName: currentUser.displayName, editing: false },
   );
 
+  // Every save goes through here, so the pill can't be left on "Saving…": the saver resolves
+  // false instead of throwing when the connection drops. The edit stays in the editor, and
+  // diffing against lastSaved keeps its fields in the next attempt.
+  const runSave = useCallback(async () => {
+    if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+    setSaved("saving");
+    const ok = await saver.flush();
+    if (ok && sameSnapshot(latest.current, lastSaved.current)) setDirty(false);
+    setSaved(ok ? "saved" : "error");
+    return ok;
+  }, [saver]);
+
   // Debounced autosave — fires only after the user edits (skips mount).
   useEffect(() => {
     latest.current = snapshot;
     if (firstRender.current) { firstRender.current = false; return; }
     // Content, not identity: update() always builds a new object, and an adopted snapshot
-    // must not be echoed straight back to the server.
-    if (sameSnapshot(snapshot, lastSaved.current)) return;
+    // must not be echoed straight back to the server. Against what the server will hold, not
+    // lastSaved: an edit undone while its save is in flight still needs saving.
+    if (sameSnapshot(snapshot, saver.target())) return;
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(async () => {
-      setSaved("saving");
-      const r = await saveCard(card.id, snapshot);
-      if (r.ok) { lastSaved.current = snapshot; setDirty(false); }
-      setSaved(r.ok ? "saved" : "error");
-    }, 700);
+    timer.current = setTimeout(() => { void runSave(); }, 700);
     return () => { if (timer.current) clearTimeout(timer.current); };
-  }, [snapshot, card.id]);
+  }, [snapshot, card.id, saver, runSave]);
 
   useEffect(() => { savedRef.current = saved; }, [saved]);
 
@@ -112,22 +135,27 @@ export default function StudioEditor({
   // another elder saving — used to be invisible here, and the next keystroke autosaved the
   // stale copy back over it. Compared by content: revalidatePath means card.updatedAt
   // changes on every autosave, so a timestamp guard would fire every 700ms.
+  // A save merges into the row, so what comes back can hold more than this session sent.
+  // That is another elder's field, adopted here once this session has nothing unsaved.
   useEffect(() => {
     const incoming = card.snapshot ?? {};
-    if (sameSnapshot(incoming, lastSaved.current)) return;   // nothing new, or our own write
-    if (!sameSnapshot(latest.current, lastSaved.current)) { setStale(true); return; }
+    const action = incomingAction({
+      incoming, latest: latest.current, lastSaved: lastSaved.current, busy: saver.busy(),
+    });
+    if (action === "ignore") return;   // nothing new, or our own write
+    if (action === "stale") { setStale(true); return; }
     lastSaved.current = incoming;
     latest.current = incoming;
     setSnapshot(incoming);
     setStale(false);
-  }, [card.snapshot]);
+  }, [card.snapshot, saver]);
 
   // Clicking a nav link within the debounce window unmounts this editor before the
   // timer fires — flush the pending edit so it isn't silently dropped. A hard
   // unload (close tab, reload) gets the browser's leave prompt instead.
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!sameSnapshot(latest.current, lastSaved.current) || savedRef.current === "saving") {
+      if (!saver.clean()) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -135,9 +163,16 @@ export default function StudioEditor({
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => {
       window.removeEventListener("beforeunload", onBeforeUnload);
-      if (!sameSnapshot(latest.current, lastSaved.current)) void saveCard(card.id, latest.current);
+      saver.leave(window);
     };
-  }, [card.id]);
+  }, [card.id, saver]);
+
+  // A save that failed offline goes out by itself on reconnect, with no keystroke or Retry.
+  useEffect(() => {
+    const onOnline = () => { if (savedRef.current === "error") void runSave(); };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [runSave]);
 
   // Arrow keys step to the prev/next card in the set — but only when focus is
   // outside a field, so they still move the text cursor while editing.
@@ -169,26 +204,15 @@ export default function StudioEditor({
 
   // "Save failed" used to be a dead end: no retry, and nothing announced it. Retries the
   // newest edit through the same state machine the debounce uses.
-  const retrySave = async () => {
-    const pending = latest.current;
-    setSaved("saving");
-    const r = await saveCard(card.id, pending);
-    if (r.ok) { lastSaved.current = pending; setDirty(false); }
-    setSaved(r.ok ? "saved" : "error");
-  };
+  const retrySave = () => { void runSave(); };
 
   // Handed to the review column so Apply/Accept can land on top of this session's edits
   // instead of racing the 700ms debounce. See StudioSyncContext for why it must be context.
   const flushPending = useCallback(async () => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
-    const pending = latest.current;
-    if (sameSnapshot(pending, lastSaved.current)) return { ok: true };
-    setSaved("saving");
-    const r = await saveCard(card.id, pending);
-    if (r.ok) { lastSaved.current = pending; setDirty(false); }
-    setSaved(r.ok ? "saved" : "error");
-    return { ok: !!r.ok };
-  }, [card.id]);
+    if (saver.clean()) return { ok: true };
+    return { ok: await runSave() };
+  }, [saver, runSave]);
 
   // Memoized: a fresh value object would force every context consumer to re-render on
   // each keystroke, which is exactly the re-render the stable `review` element avoids.
@@ -202,6 +226,7 @@ export default function StudioEditor({
     setSnapshot(incoming);
     setStale(false);
     setDirty(false);
+    setSaved((s) => (s === "error" ? "idle" : s));   // nothing of this session's is left to fail
   };
 
   async function onUpload(file: File, kind: "finished") {
@@ -240,6 +265,17 @@ export default function StudioEditor({
     </span>
   );
 
+  const face = card.hasFinished ? (
+    <ForgeCardFace
+      name={snapshot.name ?? null}
+      rawText={cardRawText(snapshot)}
+      finishedUrl={`/forge/api/art/${card.id}?kind=finished&t=${t}`}
+      artUrl={card.hasArt ? `/forge/api/art/${card.id}?t=${t}` : null}
+    />
+  ) : (
+    <ForgeCardPreview card={previewCard} artUrl={card.hasArt ? `/forge/api/art/${card.id}?t=${t}` : null} />
+  );
+
   return (
     <div className="mx-auto max-w-5xl p-4">
       <PresenceBar others={others} />
@@ -260,7 +296,8 @@ export default function StudioEditor({
           of the padded wrapper; inside the flex-col below it would unstick immediately. */}
       <div className="sticky top-[var(--forge-chrome)] z-30 -mx-4 mb-2 flex items-center justify-between gap-3 border-b bg-background px-4 py-2">
         <ForgeBreadcrumbs
-          className="mb-0 min-w-0 text-sm"
+          className="mb-0 min-w-0 flex-1 text-sm"
+          oneLine
           items={
             card.setId
               ? [
@@ -305,6 +342,13 @@ export default function StudioEditor({
               row has no room for it: it sits on the Created by line, out of the sticky chrome. */}
           {versionBadge && <span className="hidden lg:inline-flex">{versionBadge}</span>}
         </div>
+        {/* Below lg the face sits above the form and scrolls away; this brings it back without
+            losing your place. In this row, not over the form, so it never covers a field. The
+            negative margin keeps a 36px target from making the row taller. */}
+        <Button variant="ghost" aria-label={peeking ? "Hide card" : "Show card"} title={peeking ? "Hide card" : "Show card"}
+          className="-my-2 -mr-2 h-9 w-9 shrink-0 p-0 text-muted-foreground lg:hidden" onClick={() => setPeeking(!peeking)}>
+          {peeking ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+        </Button>
       </div>
 
       <div className="mb-3 flex flex-col gap-2 text-sm">
@@ -318,13 +362,20 @@ export default function StudioEditor({
           </p>
           {versionBadge && <span className="inline-flex shrink-0 leading-4 lg:hidden">{versionBadge}</span>}
         </div>
-        <LifecycleControls card={card} sets={sets} openProposals={openProposals} />
+        <LifecycleControls card={card} draft={snapshot} flushPending={flushPending} releaseBase={releaseBase} restoreTarget={restoreTarget} sets={sets} openProposals={openProposals} />
         {card.setId && (
           <p className="text-xs text-muted-foreground">
             Releases are visible to Forge playtesters only — they don’t change the public card database.
           </p>
         )}
       </div>
+
+      {/* As large as fits under the chrome, at the card's aspect ratio. */}
+      {peeking && (
+        <div className="fixed right-4 top-[calc(var(--forge-chrome)+3rem)] z-20 w-[min(100vw-2rem,24rem,(100svh-11rem)*0.714)] rounded-lg shadow-lg lg:hidden">
+          {face}
+        </div>
+      )}
 
       {/* lg, not md: at 768–1023px a 360px face track left the review column at 352px and
           shrank ProposalDiff's paired faces to 157px. Below lg this is one column. */}
@@ -337,34 +388,29 @@ export default function StudioEditor({
         <div className="lg:sticky lg:top-[calc(var(--forge-chrome)+3rem)] lg:self-start lg:max-h-[calc(100dvh-var(--forge-chrome)-4rem)] lg:overflow-y-auto">
           {/* Capped in the single-column range so a full-width face isn't 1030px of card to
               scroll past before reaching the name field. Uncapped in the lg grid, where it
-              fills the 360px track. */}
-          <div className="relative mx-auto max-w-sm lg:max-w-none">
-            {card.hasFinished ? (
-              <ForgeCardFace
-                name={snapshot.name ?? null}
-                rawText={cardRawText(snapshot)}
-                finishedUrl={`/forge/api/art/${card.id}?kind=finished&t=${t}`}
-                artUrl={card.hasArt ? `/forge/api/art/${card.id}?t=${t}` : null}
-              />
-            ) : (
-              <ForgeCardPreview card={previewCard} artUrl={card.hasArt ? `/forge/api/art/${card.id}?t=${t}` : null} />
-            )}
+              fills the 360px track. On a phone, sized from the screen height so Name still
+              starts on the first screen; tap it for the large view. */}
+          <div className="relative mx-auto w-[28svh] sm:w-auto sm:max-w-sm lg:max-w-none">
+            {face}
+            <button type="button" aria-label="Show the card larger" className="absolute inset-0 sm:hidden"
+              onClick={() => setPeeking(true)} />
             {/* Prev/next within the set — same order as the grid, no wrap at ends. */}
             {prevId && (
-              <Link href={`/forge/cards/${prevId}`} aria-label="Previous card in set" className={arrowClass + " left-1.5"}>
+              <Link href={`/forge/cards/${prevId}`} aria-label="Previous card in set" className={arrowClass + " -left-11 sm:left-1.5"}>
                 <ChevronLeft className="h-5 w-5" aria-hidden="true" />
               </Link>
             )}
             {nextId && (
-              <Link href={`/forge/cards/${nextId}`} aria-label="Next card in set" className={arrowClass + " right-1.5"}>
+              <Link href={`/forge/cards/${nextId}`} aria-label="Next card in set" className={arrowClass + " -right-11 sm:right-1.5"}>
                 <ChevronRight className="h-5 w-5" aria-hidden="true" />
               </Link>
             )}
             {/* Copy the face as a PNG to share. Tucked into the bottom-right corner, small
-                enough to sit over the frame's blank corner. The draft is flushed first so the
-                server renders what is on screen, not the last autosave. */}
+                enough to sit over the frame's blank corner (in the gutter on a phone, with the
+                arrows). The draft is flushed first so the server renders what is on screen,
+                not the last autosave. */}
             <CopyCardImageButton
-              className="absolute bottom-1.5 right-1.5 z-10"
+              className="absolute bottom-0 -right-10 z-10 sm:bottom-1.5 sm:right-1.5"
               src={card.hasFinished
                 ? `/forge/api/art/${card.id}?kind=finished&t=${t}`
                 : `/forge/api/art/${card.id}?kind=rendered&v=working`}
@@ -448,7 +494,9 @@ export default function StudioEditor({
               )}
             </fieldset>
           </div>
-          <StudioSyncProvider value={syncValue}>{review}</StudioSyncProvider>
+          <StudioSyncProvider value={syncValue}>
+            <StudioDraftProvider value={snapshot}>{review}</StudioDraftProvider>
+          </StudioSyncProvider>
         </div>
       </div>
 

@@ -7,8 +7,8 @@ import { sortSetCards } from "@/app/forge/lib/cardOrder";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import { getOpenProposalDiffs, listProposals } from "@/app/forge/lib/proposals";
 import { listComments } from "@/app/forge/lib/comments";
-import { listVersions, listCardEvents } from "@/app/forge/lib/versions";
-import { imagesMoved, pickStudioVersion, type VersionImages, type WorkingImages } from "@/app/forge/lib/studioVersion";
+import { listVersions, listCardEvents, artChangedSince, getShelvedRecord } from "@/app/forge/lib/versions";
+import { pickStudioVersion } from "@/app/forge/lib/studioVersion";
 import StudioEditor from "./StudioEditor";
 import ReviewPanel from "./ReviewPanel";
 
@@ -46,23 +46,36 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
     hasMatch: openDiffs.some((d) => sameSnapshot(d.proposal.proposedSnapshot, card.snapshot ?? {})),
   };
 
+  // The newest version playtesters have seen; draft iterations never reached them.
+  // versions is newest first. The release dialog compares the live draft against it.
+  const lastRelease = versions.find((v) => v.status !== "draft") ?? null;
+  const releaseBase = lastRelease
+    ? {
+        versionNumber: lastRelease.versionNumber,
+        data: lastRelease.data,
+        live: lastRelease.id === card.publishedVersionId,
+        artChanged: await artChangedSince(cardId, lastRelease.id),
+      }
+    : null;
+
+  // Where Restore will put a shelved card, for its dialog. Wording only; the RPC decides.
+  const shelved = card.status === "archived" ? await getShelvedRecord(cardId) : null;
+  const restoreTarget = shelved
+    ? {
+        status: shelved.status,
+        versionNumber: versions.find((v) => v.id === shelved.versionId)?.versionNumber ?? null,
+      }
+    : null;
+
   // The header's version pill. The text is compared on the client against the live draft; the
-  // images only here, so their blob keys stay on the server. Same composite-FK embed shape as
-  // the art route: an object or null at runtime, whatever supabase-js infers.
-  let moved = false;
-  if (card.approvedVersionId ?? card.publishedVersionId) {
-    const { data: images } = await ctx.supabase
-      .from("forge_cards")
-      .select(
-        "working_art_key, working_art_is_placeholder, working_finished_key, " +
-          "approved:card_versions!fk_approved(art_key, art_is_placeholder, finished_key), " +
-          "published:card_versions!fk_published(art_key, art_is_placeholder, finished_key)",
-      )
-      .eq("id", cardId)
-      .maybeSingle();
-    const row = images as unknown as (WorkingImages & { approved: VersionImages | null; published: VersionImages | null }) | null;
-    moved = imagesMoved(row, row?.approved ?? row?.published ?? null);
-  }
+  // images only here, so their blob keys stay on the server. A Final card's released version
+  // can be older than lastRelease, so it may need its own comparison.
+  const releasedId = card.approvedVersionId ?? card.publishedVersionId;
+  const moved = !releasedId
+    ? false
+    : releasedId === lastRelease?.id
+      ? !!releaseBase?.artChanged
+      : await artChangedSince(cardId, releasedId);
   const version = pickStudioVersion(card, versions, moved);
 
   // Prev/next arrows on the card face walk the set in the same order as the grid.
@@ -106,6 +119,8 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
       position={position}
       artCandidates={artCandidates}
       openProposals={openProposals}
+      releaseBase={releaseBase}
+      restoreTarget={restoreTarget}
       version={version}
       review={
         inSet ? (

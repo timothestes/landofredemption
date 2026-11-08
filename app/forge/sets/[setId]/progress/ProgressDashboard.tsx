@@ -83,9 +83,7 @@ export default function ProgressDashboard({
             </thead>
             <tbody>
               {model.types.map((t) => {
-                const rowCells = model.cells.filter((c) => c.type === t);
-                const rowActual = rowCells.reduce((sum, c) => sum + c.actual, 0);
-                const rowTarget = rowCells.reduce((sum, c) => sum + c.target, 0);
+                const { actual: rowActual, target: rowTarget } = model.typeTotals[t];
                 return (
                   <tr key={t}>
                     <th className="sticky left-0 bg-background p-1 text-left font-normal">{t}</th>

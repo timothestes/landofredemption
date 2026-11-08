@@ -69,6 +69,38 @@ export function brigadeLabels(brigades: readonly Brigade[]): string[] {
   return [`${side} Multi`, ...brigades.filter((b) => !MULTI_BRIGADES[side].includes(b))];
 }
 
+/** The alignments whose brigades fit a card. A Hero or GE is a good card and an Evil Character
+ *  or EE an evil one; both kinds of type, or alignment set to Good/Evil, offers both, and so do
+ *  types that say nothing (Site, Dominant) and no type yet. As in isDualAlignment, the types
+ *  decide before a single alignment does. Print agrees: no single-type Hero, GE or EE in the
+ *  catalog crosses over, and the five Evil Characters filed with a good brigade ("Gray (Red)")
+ *  print as two-box cards, which is alignment Good/Evil here. Pure. */
+export function brigadeSides(card: Pick<DesignCard, "cardType" | "alignment">): MultiSide[] {
+  const types = card.cardType ?? [];
+  const good = types.some((t) => GOOD_TYPES.includes(t));
+  const evil = types.some((t) => EVIL_TYPES.includes(t));
+  if (card.alignment === "Good_Evil" || good === evil) return ["Good", "Evil"];
+  return good ? ["Good"] : ["Evil"];
+}
+
+/** The patch for clicking a type. Alignment follows the types unless it was picked by hand: it
+ *  only moves when unset, or still equal to what the previous types would derive. A brigade the
+ *  new types can't carry is cleared, so a GE that was GE + EE doesn't keep its Crimson. Pure. */
+export function toggleCardType(card: DesignCard, t: CardType): Partial<DesignCard> {
+  const types = card.cardType ?? [];
+  const cardType = types.includes(t) ? types.filter((x) => x !== t) : [...types, t];
+  const nextAlignment = deriveAlignmentFromTypes(cardType);
+  const patch: Partial<DesignCard> = { cardType };
+  if (nextAlignment !== null && (!card.alignment || card.alignment === deriveAlignmentFromTypes(types))) {
+    patch.alignment = nextAlignment;
+  }
+  const sides = brigadeSides({ cardType, alignment: patch.alignment ?? card.alignment });
+  const brigades = card.brigades ?? [];
+  const kept = brigades.filter((b) => sides.some((side) => MULTI_BRIGADES[side].includes(b)));
+  if (kept.length !== brigades.length) patch.brigades = kept;
+  return patch;
+}
+
 export const CLASSES = ["Warrior", "Weapon"] as const;
 export const ICONS = ["Territory", "Star", "Cloud"] as const;
 // Which side(s) of a Good/Evil card carry each class icon. Print does all three for each of

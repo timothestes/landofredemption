@@ -48,6 +48,32 @@ describe("apiBible", () => {
     expect(stripNasbMarkers("5 * 3 and *x")).toBe("5 * 3 and x");
   });
 
+  it("drops the source's paragraph mark from chapter text, at the start of a verse and mid-verse", () => {
+    expect(splitChapterText(" [5] ¶Every word is pure [6] a passing shadow. ¶Bend down [7] ¶ Spaced out")).toEqual([
+      { n: 5, text: "Every word is pure" },
+      { n: 6, text: "a passing shadow. Bend down" },
+      { n: 7, text: "Spaced out" },
+    ]);
+  });
+
+  it("drops the source's paragraph mark from search text", () => {
+    expect(repairSearchText("¶Every word is pure")).toBe("Every word is pure");
+    expect(repairSearchText("a passing shadow. ¶ Bend down")).toBe("a passing shadow. Bend down");
+  });
+
+  it("no paragraph mark reaches a caller of the lookup or the search", async () => {
+    process.env.API_BIBLE_KEY = "k";
+    const chapterBody = { ...genesis6, data: { ...genesis6.data, content: " [1] ¶In the beginning [2] ¶And then ¶more" } };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(chapterBody), { status: 200 })));
+    const c = await fetchChapter("GEN.6");
+    expect(c.verses.map((v) => v.text)).toEqual(["In the beginning", "And then more"]);
+
+    const searchBody = { data: { total: 1, verses: [{ id: "PRO.30.5", reference: "Proverbs 30:5", text: "¶Every word" }] } };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(searchBody), { status: 200 })));
+    const s = await searchVerses("every word", {});
+    expect(s.verses[0].text).toBe("Every word");
+  });
+
   it("repairs small-caps artefacts and doubled spaces for display", () => {
     expect(repairSearchText("to the L ord ; and  then")).toBe("to the Lord; and then");
     expect(repairSearchText("Says the Lord  G od .")).toBe("Says the Lord God.");

@@ -1,6 +1,6 @@
 // What the studio header says about a card's versions. Pure and isomorphic. Elders only: the
 // playtester's page gets a version number and nothing else, so nothing here may reach it.
-import { draftMovedOn } from "@/app/forge/lib/cardDiff";
+import { sameCardContent } from "@/app/forge/lib/cardDiff";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 import { STATUS_LABEL } from "@/app/forge/lib/lifecycleCopy";
 
@@ -9,24 +9,9 @@ export type StudioVersion = {
   // The snapshot playtesters are reading. Null when nothing is released, so the number is
   // only the card's latest iteration, as on the set grid's pill.
   releasedData: DesignCard | null;
+  // Worked out on the server (artChangedSince), so blob keys never reach a client.
   imagesMoved: boolean;
 };
-
-export type VersionImages = { art_key: string | null; art_is_placeholder: boolean | null; finished_key: string | null };
-export type WorkingImages = {
-  working_art_key: string | null; working_art_is_placeholder: boolean | null; working_finished_key: string | null;
-};
-
-// Release and Accept copy the working images onto the version (075, 083), so a difference here
-// means the draft's image changed afterwards. Compared server-side: blob keys never reach a client.
-export function imagesMoved(working: WorkingImages | null, version: VersionImages | null): boolean {
-  if (!working || !version) return false;
-  return (
-    working.working_art_key !== version.art_key ||
-    working.working_finished_key !== version.finished_key ||
-    !!working.working_art_is_placeholder !== !!version.art_is_placeholder
-  );
-}
 
 // `versions` newest first, as listVersions returns them. Approved wins over published, the same
 // order the playtester's reader uses.
@@ -50,7 +35,8 @@ export function versionPill(
   if (!version) return { label: statusLabel };
   const label = `${statusLabel} · v${version.number}`;
   if (!version.releasedData) return { label };
-  return version.imagesMoved || draftMovedOn(version.releasedData, draft)
+  // Same test Release uses, so the pill and the Release dialog can't disagree about a change.
+  return version.imagesMoved || !sameCardContent(version.releasedData, draft)
     ? { label: `${label} · edited since`, title: `Playtesters see v${version.number}. This draft has changes they don't see yet.` }
     : { label, title: `Playtesters see v${version.number}. This draft matches it.` };
 }

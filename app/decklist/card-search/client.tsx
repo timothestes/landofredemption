@@ -29,6 +29,7 @@ import { useCanScan } from "../../collection/hooks/useCanScan";
 import { ownedCardNames } from "./utils/collectionCheck";
 import { cycleOwnedMode, parseOwnedMode, ownedModeParam, OWNED_MODE_LABELS, type OwnedFilterMode } from "./ownedFilter";
 import { parseDeckText, generateDeckText, downloadDeckAsFile, downloadDeckAsFileBySet, copyDeckToClipboard } from "./utils/deckImportExport";
+import { continueHint, droppedHeading, importedCardCount, importNotice, nextImportStep } from "./utils/importOutcome";
 import { createClient } from "../../../utils/supabase/client";
 import { getUserSafe } from "../../../utils/supabase/getUserSafe";
 import type { User } from "@supabase/supabase-js";
@@ -281,6 +282,8 @@ export default function CardSearchClient({
   // Import/export state
   const [importText, setImportText] = useState("");
   const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importKeptCards, setImportKeptCards] = useState(0);
+  const canImportAnyway = importErrors.length > 0 && importKeptCards > 0;
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFilename, setImportFilename] = useState<string | null>(null);
   const [exportNotification, setExportNotification] = useState(false);
@@ -1632,16 +1635,17 @@ export default function CardSearchClient({
   }
 
   // Import deck from text
-  async function handleImportDeck(text: string) {
+  async function handleImportDeck(text: string, acceptDropped = false) {
     const result = parseDeckText(text, cards);
 
-    if (result.errors.length > 0) {
+    if (nextImportStep(result, acceptDropped) !== "import") {
       setImportErrors(result.errors);
-    } else {
-      setImportErrors([]);
+      setImportKeptCards(importedCardCount(result.deck));
+      return;
     }
 
-    if (!result.deck) return;
+    const dropped = result.errors.length;
+    setImportErrors([]);
 
     // Filename (from .txt upload) wins over the existing deck name; fall back to parser default
     const importedName = importFilename || deck.name || result.deck.name;
@@ -1656,20 +1660,23 @@ export default function CardSearchClient({
     setImportFilename(null);
 
     // Auto-save the imported deck so it persists without an extra click
+    let saved = false;
     if (user) {
       try {
         const saveResult = await saveDeckToCloud(undefined, importedDeck);
         if (saveResult?.success) {
+          saved = true;
           if (saveResult.deckCheckResult) {
             setDeckCheckResult(saveResult.deckCheckResult);
           }
-          setNotification({ message: 'Deck imported and saved!', type: 'success' });
-        } else {
-          setNotification({ message: 'Imported, but failed to save', type: 'error' });
         }
       } catch {
-        setNotification({ message: 'Imported, but failed to save', type: 'error' });
+        // Reported by the notice below.
       }
+    }
+    const notice = importNotice({ dropped, signedIn: !!user, saved });
+    if (notice) {
+      setNotification(notice);
       setTimeout(() => setNotification(null), 3000);
     }
   }
@@ -3134,7 +3141,7 @@ export default function CardSearchClient({
       {/* Import modal */}
       {showImportModal && (
         <div 
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-4"
           onClick={() => {
             setShowImportModal(false);
             setImportText("");
@@ -3143,7 +3150,7 @@ export default function CardSearchClient({
           }}
         >
           <div
-            className="bg-card rounded-lg shadow-xl max-w-2xl w-full p-6"
+            className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-full overflow-y-auto p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-xl font-semibold mb-4 text-foreground">
@@ -3170,25 +3177,31 @@ export default function CardSearchClient({
             </div>
             <textarea
               id="import-deck-textarea"
-              className="w-full h-64 p-3 border border-border rounded bg-background text-foreground font-mono text-sm"
+              className={`w-full ${importErrors.length > 0 ? "h-24 md:h-64" : "h-64"} p-3 border border-border rounded bg-background text-foreground font-mono text-sm`}
               placeholder={`1\tSon of God "Manger" (Promo)\n1\tThe Second Coming (CoW AB)\n1\tAngel of the Lord (2017 Promo)\n\nReserve:\n1\tGibeonite Trickery (Roots)\n1\tNot Among You`}
               value={importText}
-              onChange={(e) => setImportText(e.target.value)}
+              onChange={(e) => {
+                setImportText(e.target.value);
+                setImportErrors([]);
+              }}
               autoFocus
             />
             {importErrors.length > 0 && (
               <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
                 <p className="text-sm font-semibold text-red-800 dark:text-red-300 mb-2">
-                  Import Warnings:
+                  {droppedHeading(importErrors.length)}
                 </p>
-                <ul className="text-xs text-red-700 dark:text-red-400 list-disc list-inside space-y-1">
+                <ul className="max-h-40 overflow-y-auto text-xs text-red-700 dark:text-red-400 list-disc list-inside space-y-1">
                   {importErrors.map((err, i) => (
                     <li key={i}>{err}</li>
                   ))}
                 </ul>
+                {importKeptCards > 0 && (
+                  <p className="mt-2 text-xs text-foreground">{continueHint(importKeptCards, !!user)}</p>
+                )}
               </div>
             )}
-            <div className="mt-6 flex gap-3 items-center">
+            <div className="mt-6 flex flex-wrap gap-3 items-center">
               <label
                 htmlFor="import-deck-file"
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground bg-muted hover:bg-muted/80 rounded cursor-pointer transition-colors"
@@ -3210,6 +3223,7 @@ export default function CardSearchClient({
                     reader.onload = (event) => {
                       const text = event.target?.result as string;
                       setImportText(text);
+                      setImportErrors([]);
                       setImportFilename(file.name.replace(/\.txt$/i, ""));
                     };
                     reader.readAsText(file);
@@ -3231,10 +3245,14 @@ export default function CardSearchClient({
               </button>
               <button
                 className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => handleImportDeck(importText)}
+                onClick={(e) => {
+                  // The second click of a double-click must not accept a list nobody has read yet.
+                  if (e.detail > 1) return;
+                  handleImportDeck(importText, canImportAnyway);
+                }}
                 disabled={!importText.trim()}
               >
-                Import
+                {canImportAnyway ? "Import anyway" : "Import"}
               </button>
               </div>
             </div>
@@ -3424,7 +3442,7 @@ export default function CardSearchClient({
       
       {/* General notification */}
       {notification && (
-        <div className={`fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in ${
+        <div className={`fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in ${
           notification.type === 'success' ? 'bg-green-600 text-white' :
           notification.type === 'error' ? 'bg-red-600 text-white' :
           'bg-green-700 text-white'

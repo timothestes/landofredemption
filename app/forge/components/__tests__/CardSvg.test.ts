@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { renderToStaticMarkup } from "react-dom/server";
 import CardSvg, { type CardSvgProps } from "@/app/forge/components/CardSvg";
 import { RENDER_VERSION } from "@/app/forge/lib/renderVersion";
+import { textWidth } from "@/app/forge/lib/textFit";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 
 const FONTS = { title: "Title Face", stat: "Stat Face", body: "Body Face" };
@@ -105,7 +106,64 @@ describe("RENDER_VERSION guard", () => {
       .map((card, i) => render(props(card, { noArt: i % 2 === 1, rasters: { art: i % 2 === 1 ? null : "data:art" } })))
       .join("");
     const hash = createHash("sha256").update(markup).digest("hex");
-    expect({ RENDER_VERSION, hash }).toEqual({ RENDER_VERSION: 6, hash: "b0e7298e767a91d6c21343db39018da1ab048fb43f896a260fd8da5a4e90fe66" });
+    expect({ RENDER_VERSION, hash }).toEqual({ RENDER_VERSION: 7, hash: "ca0b510a992f905b3656c5e8fb12ccf0575c5cd69bfa6e552af2d3d11e1ea844" });
+  });
+});
+
+// A Lost Soul has no icon box, so its title centers on the card and has the art window's width
+// on both sides. Long names are normal for this type: they used to lose their first letters.
+describe("CardSvg Lost Soul title", () => {
+  const CENTER = 375;
+  const title = (name: string, cardType: DesignCard["cardType"] = ["LostSoul"]) => {
+    const html = render(props({ name, cardType }));
+    const clip = html.match(/<clipPath id="rt"><rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)"/)!;
+    const text = html.match(/<text x="([\d.]+)" y="[\d.]+" text-anchor="(\w+)"[^>]*clip-path="url\(#rt\)"[^>]*>([^<]*)</)!;
+    const fit = html.match(/<text x="[\d.]+" y="[\d.]+" text-anchor="\w+"[^>]*clip-path="url\(#rt\)"[^>]*text[lL]ength="([\d.]+)"/);
+    return {
+      clipLeft: Number(clip[1]), clipRight: Number(clip[1]) + Number(clip[2]),
+      x: Number(text[1]), anchor: text[2], drawn: text[3], textLength: fit ? Number(fit[1]) : null,
+    };
+  };
+
+  it("draws the short name as printed: centered at 9 pt, unsqueezed", () => {
+    const t = title('Lost Soul "Harvest" [John 4:35]');
+    expect(t.drawn).toBe("Lost Soul");
+    expect(t.x).toBe(CENTER);
+    expect(t.anchor).toBe("middle");
+    expect(t.textLength).toBeNull();
+  });
+
+  it("keeps the clip centered on the card, so neither end is favored", () => {
+    const t = title("[Test] Lost Soul of Somewhere");
+    expect((t.clipLeft + t.clipRight) / 2).toBe(CENTER);
+  });
+
+  it("leaves a name of any length room for its first letters", () => {
+    for (const name of [
+      "[Test] Lost Soul of Somewhere",
+      "[Test] Lost Soul of Somewhere Far Away (Luke 15)",
+      "[Test] Lost Soul of Somewhere Very Far Away From Home Indeed (Luke 15:11-32)",
+    ]) {
+      const t = title(name);
+      const width = t.textLength ?? textWidth(t.drawn, "title", 37.5);
+      expect(t.drawn).toBe(name);
+      expect(CENTER - width / 2).toBeGreaterThanOrEqual(t.clipLeft);
+      expect(CENTER + width / 2).toBeLessThanOrEqual(t.clipRight);
+    }
+  });
+
+  it("squeezes only a name wider than the art window", () => {
+    expect(title("[Test] Lost Soul of Somewhere").textLength).toBeNull();
+    const long = title("[Test] Lost Soul of Somewhere Very Far Away From Home Indeed (Luke 15:11-32)");
+    expect(long.textLength).toBe(592);
+  });
+
+  it("leaves a boxed card's title where it was", () => {
+    const t = title("[Test] Lost Soul of Somewhere Far Away (Luke 15)", ["Hero"]);
+    expect(t.anchor).toBe("end");
+    expect(t.x).toBe(671);
+    expect(t.clipLeft).toBe(206.5);
+    expect(t.clipRight).toBe(677);
   });
 });
 

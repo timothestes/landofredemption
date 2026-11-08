@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { excerpt, clampHandles, moveHandle, snapHandle, wholeRange, trimToFit, words } from "@/app/forge/lib/verseExcerpt";
+import { excerpt, clampHandles, moveHandle, snapHandle, wholeRange, trimToFit, words, verseOverCopy } from "@/app/forge/lib/verseExcerpt";
 import { textFit } from "@/app/forge/lib/textFit";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 
@@ -65,4 +65,9 @@ it("trimToFit: unchanged when it fits, shorter with over === 0 when it can, null
   const hopeless = { rawText: Array(12).fill("Negate and discard an evil character in battle.").join(" ") } as DesignCard;
   expect(trimToFit(gen6, h, hopeless)).toBeNull();
 });
+});
+
+it("verseOverCopy names the verse as the cause, since Trim to fit trims the verse", () => {
+  expect(verseOverCopy(1)).toBe("verse pushes the ability 1 line over");
+  expect(verseOverCopy(7)).toBe("verse pushes the ability 7 lines over");
 });

@@ -133,20 +133,25 @@ export async function acceptProposal(
   return { ok: true };
 }
 
+// `restoreDraft` also puts the working draft back to the card's latest version, in the same
+// transaction. The caller flushes the editor first (see flushThen).
 export async function denyProposal(
   proposalId: string,
   cardId: string,
-  reason: string
+  reason: string,
+  restoreDraft = false
 ): Promise<{ ok: boolean; error?: string }> {
   const ctx = await requireElder();
   if (!ctx) return { ok: false, error: "Not authorized" };
   if (!reason.trim()) return { ok: false, error: "A reason is required" };
-  const { error } = await ctx.supabase.rpc("forge_deny_proposal", {
-    p_proposal_id: proposalId,
-    p_reason: reason,
-  });
+  const { error } = await ctx.supabase.rpc(
+    restoreDraft ? "forge_deny_proposal_restore_draft" : "forge_deny_proposal",
+    { p_proposal_id: proposalId, p_reason: reason },
+  );
   if (error) return { ok: false, error: "Could not deny proposal" };
-  revalidatePath(`/forge/cards/${cardId}`);
+  // Restoring can change the title, which set views show.
+  if (restoreDraft) revalidatePath("/forge", "layout");
+  else revalidatePath(`/forge/cards/${cardId}`);
   return { ok: true };
 }
 

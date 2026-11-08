@@ -9,16 +9,18 @@
 import { useMemo, useRef, useState } from "react";
 import { unzipSync } from "fflate";
 import type { DesignCard } from "@/app/forge/lib/designCard";
+import { summarizeOverwritePreview, type OverwritePreview, type RowPreview } from "./overwrite";
 
 const BATCH_SIZE = 8;            // cards per request (must stay ≤ the route's cap of 12)
 const BATCH_CONCURRENCY = 4;     // requests in flight
 const MAX_BATCH_BYTES = 3_500_000; // keep each request under Vercel's ~4.5MB body cap
 
-export type CardStatus = "queued" | "importing" | "imported" | "updated" | "skipped" | "failed";
+export type CardStatus = "queued" | "importing" | "imported" | "updated" | "unchanged" | "skipped" | "failed";
 
 export interface RunCard {
   name: string;
   snapshot: DesignCard;
+  derived: string[];        // snapshot keys with no cell behind them; an overwrite skips these
   entryName: string | null; // zip entry for the finished-card image, if present
   status: CardStatus;
   error?: string;
@@ -36,7 +38,47 @@ function baseName(entryName: string): string {
   return entryName.split("/").pop() ?? entryName;
 }
 
-interface BatchCardResult { name: string; ok: boolean; cardId?: string; skipped?: boolean; updated?: boolean; error?: string }
+interface BatchCardResult {
+  name: string; ok: boolean; cardId?: string; skipped?: boolean; updated?: boolean; unchanged?: boolean;
+  preview?: RowPreview; error?: string;
+}
+
+async function errorMessage(res: Response): Promise<string> {
+  try {
+    const body = await res.json();
+    if (body?.error) return body.error;
+  } catch { /* non-JSON error body */ }
+  return `Import failed (${res.status})`;
+}
+
+// Asks the route what an overwrite run would do. No images go up and nothing is written. Throws
+// if any batch can't be read: an overwrite must not go ahead on a count it doesn't have.
+export async function previewOverwrite(
+  setId: string,
+  cards: { name: string; snapshot: DesignCard; derived: string[]; entryName: string | null }[],
+): Promise<OverwritePreview> {
+  const rows: { preview?: RowPreview; hasImage: boolean }[] = [];
+  let cursor = 0;
+  const runOne = async () => {
+    for (;;) {
+      const start = cursor;
+      cursor += BATCH_SIZE;
+      if (start >= cards.length) return;
+      const batch = cards.slice(start, start + BATCH_SIZE);
+      const fd = new FormData();
+      fd.set("payload", JSON.stringify({
+        setId, overwrite: true, preview: true,
+        cards: batch.map((c) => ({ name: c.name, snapshot: c.snapshot, derived: c.derived })),
+      }));
+      const res = await fetch("/forge/api/import", { method: "POST", body: fd });
+      if (!res.ok) throw new Error(await errorMessage(res));
+      const body = (await res.json()) as { results?: BatchCardResult[] };
+      batch.forEach((c, j) => rows.push({ preview: body.results?.[j]?.preview, hasImage: !!c.entryName }));
+    }
+  };
+  await Promise.all(Array.from({ length: BATCH_CONCURRENCY }, runOne));
+  return summarizeOverwritePreview(rows);
+}
 
 // Greedy chunking: ≤ BATCH_SIZE cards and ≤ MAX_BATCH_BYTES of (uncompressed) image
 // data per request. An image bigger than the cap still gets its own single-card batch.
@@ -93,17 +135,13 @@ export function useImportRunner() {
         fileField = `file-${j}`;
         fd.set(fileField, new File([images[it.entryName].slice()], baseName(it.entryName), { type: mimeFor(it.entryName) }));
       }
-      return { name: it.name, snapshot: it.snapshot, fileField };
+      return { name: it.name, snapshot: it.snapshot, derived: it.derived, fileField };
     });
     fd.set("payload", JSON.stringify({ setId, cards, overwrite }));
 
     const res = await fetch("/forge/api/import", { method: "POST", body: fd });
     if (!res.ok) {
-      let message = `Import failed (${res.status})`;
-      try {
-        const body = await res.json();
-        if (body?.error) message = body.error;
-      } catch { /* non-JSON error body */ }
+      const message = await errorMessage(res);
       for (const idx of batch) { work[idx].status = "failed"; work[idx].error = message; }
       return;
     }
@@ -114,7 +152,7 @@ export function useImportRunner() {
         work[idx].status = "failed";
         work[idx].error = r?.error ?? "Unexpected error";
       } else {
-        work[idx].status = r.skipped ? "skipped" : r.updated ? "updated" : "imported";
+        work[idx].status = r.skipped ? "skipped" : r.unchanged ? "unchanged" : r.updated ? "updated" : "imported";
       }
     });
   }
@@ -189,10 +227,11 @@ export function useImportRunner() {
   }
 
   const counts = useMemo(() => {
-    const c = { imported: 0, updated: 0, skipped: 0, failed: 0 };
+    const c = { imported: 0, updated: 0, unchanged: 0, skipped: 0, failed: 0 };
     for (const it of items ?? []) {
       if (it.status === "imported") c.imported++;
       else if (it.status === "updated") c.updated++;
+      else if (it.status === "unchanged") c.unchanged++;
       else if (it.status === "skipped") c.skipped++;
       else if (it.status === "failed") c.failed++;
     }
@@ -200,7 +239,7 @@ export function useImportRunner() {
   }, [items]);
 
   const finished = !!items && !running && items.every((it) =>
-    it.status === "imported" || it.status === "updated" || it.status === "skipped" || it.status === "failed");
+    it.status === "imported" || it.status === "updated" || it.status === "unchanged" || it.status === "skipped" || it.status === "failed");
 
   return { items, running, doneSetId, counts, finished, run, retryFailed, reset };
 }

@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import {
   CARD_TYPES, ALIGNMENTS, CLASSES, ICONS, RARITIES, MULTI_BRIGADES, ICON_SIDES,
-  deriveAlignmentFromTypes, toggleMultiBrigade, brigadeLabels, iconSide, defaultIconSide,
-  type DesignCard, type CardType, type Brigade, type ClassIconKind, type IconSide,
+  toggleMultiBrigade, brigadeLabels, brigadeSides, toggleCardType, iconSide, defaultIconSide,
+  type DesignCard, type Brigade, type ClassIconKind, type IconSide,
 } from "@/app/forge/lib/designCard";
 import StatInput from "./StatInput";
 import IdentifiersInput from "./IdentifiersInput";
@@ -97,23 +98,12 @@ export default function CardDetailsFields({
 }: { snapshot: DesignCard; update: (patch: Partial<DesignCard>) => void }) {
   const types = snapshot.cardType ?? [];
   const goodEvil = snapshot.alignment === "Good_Evil";
+  // Open on a card with no type yet, where the type is the next thing to say. Seeded once at
+  // mount: choosing the type must not close the block under someone who is still filling it in.
+  const [startOpen] = useState(types.length === 0);
 
-  // Auto-fill alignment from the selected types, without clobbering a manual
-  // pick: only applies when alignment is unset, or still equals what the
-  // previous type set would have derived (i.e. it hasn't been overridden).
-  function onToggleType(t: CardType) {
-    const newTypes = toggle<CardType>(snapshot.cardType, t);
-    const prevAlignment = deriveAlignmentFromTypes(types);
-    const nextAlignment = deriveAlignmentFromTypes(newTypes);
-    const patch: Partial<DesignCard> = { cardType: newTypes };
-    if (nextAlignment !== null && (!snapshot.alignment || snapshot.alignment === prevAlignment)) {
-      patch.alignment = nextAlignment;
-    }
-    update(patch);
-  }
-
-  // Collapsed by default (the block is tall); the summary previews what's set so
-  // the card stays readable at a glance without opening it.
+  // Collapsed once there is a type (the block is tall); the summary previews what's set
+  // so the card stays readable at a glance without opening it.
   const preview = [
     ...types,
     ...brigadeLabels(snapshot.brigades ?? []),
@@ -125,7 +115,7 @@ export default function CardDetailsFields({
     .join(" · ");
 
   return (
-    <details className="rounded-lg border bg-card">
+    <details className="rounded-lg border bg-card" open={startOpen}>
       <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium">
         Card details
         <span className="ml-2 font-normal text-muted-foreground">
@@ -147,7 +137,7 @@ export default function CardDetailsFields({
               src={typeIconSrc(t, snapshot.alignment)}
               label={typeLabel(t)} title={t}
               selected={types.includes(t)}
-              onClick={() => onToggleType(t)} />
+              onClick={() => update(toggleCardType(snapshot, t))} />
           ))}
         </div>
       </div>
@@ -181,31 +171,47 @@ export default function CardDetailsFields({
 
       {/* Brigade, split by alignment so the two sets don't read as one 16-wide wrap.
           Each row's Multi tile selects (or clears) that whole set, which is how a
-          printed "Multi" card is stored. */}
+          printed "Multi" card is stored. Only sides that fit the card are offered
+          (brigadeSides). A saved brigade from another side stays on screen until it is
+          removed: an imported card, or one from before this rule, can't lose it unseen. */}
       <div>
         <span className="mb-1 block text-sm font-medium">Brigade</span>
+        <p className="mb-2 text-xs text-muted-foreground">
+          Pick every brigade the card has. Click one again to remove it.
+        </p>
         <div className="space-y-2">
           {(["Good", "Evil"] as const).map((side) => {
-            const multi = MULTI_BRIGADES[side].every((b) => (snapshot.brigades ?? []).includes(b));
+            const selected = snapshot.brigades ?? [];
+            const offered = brigadeSides(snapshot).includes(side);
+            const tiles = MULTI_BRIGADES[side].filter((b) => offered || selected.includes(b));
+            if (tiles.length === 0) return null;
+            const multi = MULTI_BRIGADES[side].every((b) => selected.includes(b));
             return (
               <div key={side}>
                 <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {side}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
-                  <Tile
-                    src={multiBrigadeIconSrc(side)}
-                    label="Multi" title={`${side} Multi`} ariaLabel={`${side} Multi`}
-                    selected={multi}
-                    onClick={() => update({ brigades: toggleMultiBrigade(snapshot.brigades, side) })} />
-                  {MULTI_BRIGADES[side].map((b) => (
+                  {offered && (
+                    <Tile
+                      src={multiBrigadeIconSrc(side)}
+                      label="Multi" title={`${side} Multi`} ariaLabel={`${side} Multi`}
+                      selected={multi}
+                      onClick={() => update({ brigades: toggleMultiBrigade(snapshot.brigades, side) })} />
+                  )}
+                  {tiles.map((b) => (
                     <Tile key={b}
                       src={brigadeIconSrc(b)}
                       label={brigadeLabel(b)} title={b}
-                      selected={(snapshot.brigades ?? []).includes(b)}
+                      selected={selected.includes(b)}
                       onClick={() => update({ brigades: toggle<Brigade>(snapshot.brigades, b) })} />
                   ))}
                 </div>
+                {!offered && (
+                  <p className="mt-1 text-xs text-amber-600 dark:text-amber-500">
+                    Doesn&apos;t fit this card&apos;s type. Click to remove.
+                  </p>
+                )}
               </div>
             );
           })}

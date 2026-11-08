@@ -4,9 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 import { shareToSet, sendToPrivate, publish, approve, unapprove, archive, unarchive, deleteCard } from "@/app/forge/lib/lifecycle";
-import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, CONFIRM_COPY } from "@/app/forge/lib/lifecycleCopy";
+import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, deleteCopy, releaseBlockers, releaseBlockedNote, isReleaseUnchanged, releaseUnchangedNote, restoreCopy, releasePreview, RELEASE_FLUSH_FAILED, type ReleaseBase, type RestoreTarget } from "@/app/forge/lib/lifecycleCopy";
+import { flushThen } from "@/app/forge/lib/proposeFlow";
+import FieldChanges from "./FieldChanges";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
+import type { DesignCard } from "@/app/forge/lib/designCard";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -28,10 +31,23 @@ import {
 
 export default function LifecycleControls({
   card,
+  draft,
+  flushPending = async () => ({ ok: true }),
+  releaseBase = null,
+  restoreTarget = null,
   sets,
   openProposals = { count: 0, hasMatch: false },
 }: {
   card: ForgeCardFull;
+  // The editor's live draft. `card.snapshot` trails it by a save and a refresh.
+  draft: DesignCard;
+  // Writes the editor's pending edit. Release freezes the server's copy, so without this
+  // it could ship something other than the diff its dialog just showed.
+  flushPending?: () => Promise<{ ok: boolean }>;
+  // The newest version playtesters have seen. Null before a card's first release.
+  releaseBase?: ReleaseBase | null;
+  // Where Restore will put this card. Only set while it's shelved.
+  restoreTarget?: RestoreTarget | null;
   sets: ForgeSetSummary[];
   // Releasing closes the card's open proposals (migration 083). `hasMatch` =
   // one of them is exactly this draft, so the release records it as accepted
@@ -43,8 +59,11 @@ export default function LifecycleControls({
   const [picking, setPicking] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmReturn, setConfirmReturn] = useState(false);
+  const [confirmRestore, setConfirmRestore] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [releaseNote, setReleaseNote] = useState("");
+  // The RPC minted nothing. It decides; this catches what the dialog's own check can't see.
+  const [releaseNoOp, setReleaseNoOp] = useState(false);
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>) =>
     start(async () => {
       const r = await fn();
@@ -56,8 +75,13 @@ export default function LifecycleControls({
   // row inside the same transaction (migration 072).
   const doRelease = () =>
     start(async () => {
-      const r = await publish(card.id, releaseNote);
+      const r = await flushThen(
+        flushPending,
+        () => publish(card.id, releaseNote),
+        { ok: false, error: RELEASE_FLUSH_FAILED },
+      );
       if (r.ok === false) { alert(r.error ?? "Could not release card"); return; }
+      if (r.unchanged) { setReleaseNoOp(true); return; }
       setReleaseOpen(false);
       setReleaseNote("");
       router.refresh();
@@ -73,6 +97,13 @@ export default function LifecycleControls({
 
   const inSet = card.setId !== null;
   const releaseNotices = releaseProposalNotice(openProposals.count, openProposals.hasMatch);
+  const returnCopy = returnToIdeasCopy(1);
+  const restore = restoreCopy(restoreTarget ?? { status: "draft", versionNumber: null });
+  const delCopy = deleteCopy([draft.name]);
+  const blockers = releaseBlockers(draft);
+  const blockedNote = releaseBlockedNote(blockers);
+  const releaseUnchanged = releaseNoOp || isReleaseUnchanged(draft, releaseBase);
+  const preview = releasePreview(draft, releaseBase);
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -87,11 +118,14 @@ export default function LifecycleControls({
             ))}
             {card.status === "archived" && <li className="font-semibold text-foreground">· {STATUS_LABEL.archived}</li>}
           </ol>
-          <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
             {(card.status === "draft" || card.status === "playtesting") && (
-              <Button size="sm" className="h-7 px-3 text-xs" disabled={pending} onClick={() => setReleaseOpen(true)}>
-                {releaseLabel(card.status)}
-              </Button>
+              <>
+                {blockedNote && <span className="text-muted-foreground">{blockedNote}</span>}
+                <Button size="sm" className="h-7 px-3 text-xs" disabled={pending || blockers.length > 0} onClick={() => { setReleaseNoOp(false); setReleaseOpen(true); }}>
+                  {releaseLabel(card.status)}
+                </Button>
+              </>
             )}
             {card.status === "playtesting" && (
               <Button size="sm" variant="outline" className="h-7 px-3 text-xs" disabled={pending} onClick={() => run(() => approve(card.id))}>
@@ -104,7 +138,7 @@ export default function LifecycleControls({
               </Button>
             )}
             {card.status === "archived" && (
-              <Button size="sm" variant="outline" className="h-7 px-3 text-xs" disabled={pending} onClick={() => run(() => unarchive(card.id))}>
+              <Button size="sm" variant="outline" className="h-7 px-3 text-xs" disabled={pending} onClick={() => setConfirmRestore(true)}>
                 {ACTION_LABEL.restore}
               </Button>
             )}
@@ -132,7 +166,7 @@ export default function LifecycleControls({
           </div>
         </>
       ) : (
-        <div className="ml-auto">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           {picking ? (
             <select autoFocus disabled={pending} value="" onChange={(e) => e.target.value && run(() => shareToSet(card.id, e.target.value))} className="rounded-md border bg-background px-2 py-1">
               <option value="" disabled>Share into set…</option>
@@ -141,58 +175,90 @@ export default function LifecycleControls({
           ) : (
             <Button size="sm" variant="outline" className="h-7 px-3 text-xs" onClick={() => setPicking(true)}>Share to a set</Button>
           )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={pending} aria-label="More actions">
+                <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setConfirmDelete(true)}>
+                {ACTION_LABEL.delete}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
       <Dialog open={releaseOpen} onOpenChange={(o) => { if (!o) setReleaseOpen(false); }}>
-        <DialogContent>
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>{releaseLabel(card.status)}</DialogTitle>
             <DialogDescription>
-              Freezes the current draft as a new version visible to playtesters.
+              {releaseUnchanged
+                ? releaseUnchangedNote(releaseBase?.versionNumber ?? null)
+                : "Freezes the current draft as a new version visible to playtesters."}
             </DialogDescription>
           </DialogHeader>
-          <DialogBody className="space-y-2">
-            {releaseNotices.length > 0 && (
-              <ul className="space-y-1 rounded-md border bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground">
-                {releaseNotices.map((n) => (
-                  <li key={n}>{n}</li>
-                ))}
-              </ul>
-            )}
-            <label className="block text-xs font-medium text-muted-foreground">What changed? (optional)</label>
-            <textarea
-              autoFocus
-              value={releaseNote}
-              onChange={(e) => setReleaseNote(e.target.value)}
-              placeholder="Shown in the card’s history…"
-              className="h-24 w-full rounded-md border bg-background px-2 py-1 text-sm"
-            />
-          </DialogBody>
+          {!releaseUnchanged && (
+            <DialogBody className="space-y-2">
+              <div className="space-y-1.5">
+                <p className="text-xs text-muted-foreground">{preview.caption}</p>
+                <FieldChanges changes={preview.changes} />
+                {preview.artNote && <p className="text-xs text-muted-foreground">{preview.artNote}</p>}
+              </div>
+              {releaseNotices.length > 0 && (
+                <ul className="space-y-1 rounded-md border bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground">
+                  {releaseNotices.map((n) => (
+                    <li key={n}>{n}</li>
+                  ))}
+                </ul>
+              )}
+              <label className="block text-xs font-medium text-muted-foreground">What changed? (optional)</label>
+              <textarea
+                autoFocus
+                value={releaseNote}
+                onChange={(e) => setReleaseNote(e.target.value)}
+                placeholder="Shown in the card’s history…"
+                className="h-24 w-full rounded-md border bg-background px-2 py-1 text-sm"
+              />
+            </DialogBody>
+          )}
           <DialogFooter>
             <Button variant="outline" disabled={pending} onClick={() => setReleaseOpen(false)}>
-              Cancel
+              {releaseUnchanged ? "Close" : "Cancel"}
             </Button>
-            <Button disabled={pending} onClick={doRelease}>Release</Button>
+            {!releaseUnchanged && (
+              <Button disabled={pending || blockers.length > 0} onClick={doRelease}>Release</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmationDialog
+        open={confirmRestore}
+        onOpenChange={setConfirmRestore}
+        onConfirm={() => run(() => unarchive(card.id))}
+        variant="warning"
+        title={restore.title}
+        description={restore.description}
+        confirmLabel={restore.confirmLabel}
+      />
       <ConfirmationDialog
         open={confirmReturn}
         onOpenChange={setConfirmReturn}
         onConfirm={() => run(() => sendToPrivate(card.id))}
         variant="warning"
-        title={CONFIRM_COPY.returnToIdeas.title}
-        description={CONFIRM_COPY.returnToIdeas.description}
-        confirmLabel={CONFIRM_COPY.returnToIdeas.confirmLabel}
+        title={returnCopy.title}
+        description={returnCopy.description}
+        confirmLabel={returnCopy.confirmLabel}
       />
       <ConfirmationDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
         onConfirm={onDelete}
         variant="destructive"
-        title="Delete this card?"
-        description={CONFIRM_COPY.delete.description}
-        confirmLabel="Delete card"
+        title={delCopy.title}
+        description={delCopy.description}
+        confirmLabel={delCopy.confirmLabel}
       />
     </div>
   );

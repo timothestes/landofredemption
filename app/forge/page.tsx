@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireForge } from "./lib/auth";
 import { LifecycleFlow } from "./components/LifecycleFlow";
+import NewIdeaTile from "./components/NewIdeaTile";
 
 export const dynamic = "force-dynamic";
 
@@ -30,10 +31,7 @@ export default async function ForgeHomePage() {
           <LifecycleFlow />
 
           <section className="space-y-3">
-            <Link href="/forge/ideas" className="block rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:bg-muted/50 hover:shadow [.jayden_&]:bg-gradient-to-br [.jayden_&]:from-[hsla(0,80%,25%,0.15)] [.jayden_&]:via-[hsla(270,60%,20%,0.1)] [.jayden_&]:to-[hsla(230,80%,30%,0.15)] [.jayden_&]:border-primary/30">
-              <div className="font-medium">New idea</div>
-              <div className="text-sm text-muted-foreground">Sketch a card in your private ideas.</div>
-            </Link>
+            <NewIdeaTile />
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Link href="/forge/import" className="rounded-lg border p-3 hover:bg-muted/50 [.jayden_&]:bg-card/80 [.jayden_&]:backdrop-blur-sm [.jayden_&]:border-primary/20 [.jayden_&]:hover:border-primary/60">
                 <div className="text-sm font-medium">Import a set</div>

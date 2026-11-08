@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
+import type { DesignCard } from "@/app/forge/lib/designCard";
 
 // Lets the review column reach the editor's autosave. `review` is built in the server
 // component and passed to StudioEditor as an element, so it cannot receive callbacks as
@@ -25,4 +26,18 @@ export const StudioSyncProvider = StudioSyncContext.Provider;
 
 export function useStudioSync(): StudioSync {
   return useContext(StudioSyncContext);
+}
+
+// The editor's draft as it stands now, for review-column previews of what a flush is about
+// to send. The `card` prop can't do this: it trails the editor by a save and a router
+// refresh, so it reads "No field changes" just after a saved edit.
+//
+// A context of its own because the value changes on every keystroke, and so does anything
+// that reads it. Read it only in a leaf mounted while it is needed, never in ReviewPanel.
+const StudioDraftContext = createContext<DesignCard | null>(null);
+
+export const StudioDraftProvider = StudioDraftContext.Provider;
+
+export function useStudioDraft(): DesignCard | null {
+  return useContext(StudioDraftContext);
 }

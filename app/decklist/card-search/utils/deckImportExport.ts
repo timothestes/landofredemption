@@ -137,7 +137,7 @@ export function parseDeckText(
     const parts = line.split("\t");
 
     if (parts.length < 2) {
-      errors.push(`Line ${i + 1}: Invalid format (expected tab-separated values)`);
+      errors.push(`Line ${i + 1}: Invalid format (expected tab-separated values): "${line}"`);
       continue;
     }
 
@@ -148,7 +148,7 @@ export function parseDeckText(
     // Parse quantity
     const quantity = parseInt(quantityStr, 10);
     if (isNaN(quantity) || quantity < 1) {
-      errors.push(`Line ${i + 1}: Invalid quantity "${quantityStr}" (must be at least 1)`);
+      errors.push(`Line ${i + 1}: Invalid quantity "${quantityStr}" for "${cardName}" (must be at least 1)`);
       continue;
     }
 
@@ -201,9 +201,10 @@ export function parseDeckText(
         errors.push(`Line ${i + 1}: Card not found: "${cardName}"`);
         continue;
       } else if (matchingCards.length > 1) {
-        // Multiple printings found - use first one and warn
+        // Multiple printings found - use first one and warn. The line is kept, so
+        // this is not an error: `errors` is exactly the lines that were dropped.
         matchingCard = matchingCards[0];
-        errors.push(
+        warnings.push(
           `Line ${i + 1}: Multiple versions of "${cardName}" found, using ${matchingCard.set}`
         );
       } else {

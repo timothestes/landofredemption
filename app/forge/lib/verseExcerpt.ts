@@ -128,3 +128,9 @@ export function trimToFit(verses: Verse[], h: Handles, card: DesignCard): Handle
   }
   return cur;
 }
+
+/** The panel's fit verdict. textFit's `over` counts ability lines, and Trim to fit shortens the
+ *  verse, so it names both: the verse is what the button will cut, the ability what it spills. */
+export function verseOverCopy(over: number): string {
+  return `verse pushes the ability ${over} line${over === 1 ? "" : "s"} over`;
+}

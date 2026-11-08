@@ -12,7 +12,7 @@ vi.mock("@/app/forge/lib/art", () => ({
 
 import { requireForge, requireElder } from "@/app/forge/lib/auth";
 import { validateArtFile, uploadForgeArt, uploadForgeFinished, readForgeUpload, deleteForgeArt } from "@/app/forge/lib/art";
-import { saveCard, getCard, listForgeCards, uploadArt, uploadFinished } from "../cards";
+import { saveCardFields, getCard, listForgeCards, uploadArt, uploadFinished } from "../cards";
 
 function ctx(rpcImpl?: any, queryRows?: any[]) {
   const order = vi.fn(async () => ({ data: queryRows ?? [], error: null }));
@@ -34,20 +34,25 @@ function ctx(rpcImpl?: any, queryRows?: any[]) {
 
 beforeEach(() => vi.clearAllMocks());
 
-describe("saveCard", () => {
+describe("saveCardFields", () => {
   it("rejects when caller is not an elder", async () => {
     (requireElder as any).mockResolvedValue(null);
-    expect((await saveCard("c1", { name: "x" })).ok).toBe(false);
+    expect((await saveCardFields("c1", { set: { name: "x" }, remove: [] })).ok).toBe(false);
   });
-  it("calls forge_save_card with the card id + snapshot and returns updatedAt", async () => {
+  it("calls forge_save_card_fields with only the changed fields and returns updatedAt", async () => {
     const c = ctx();
     (requireElder as any).mockResolvedValue(c);
-    const r = await saveCard("c1", { name: "Goliath", cardType: ["EvilCharacter"] });
+    const r = await saveCardFields("c1", { set: { name: "Goliath" }, remove: ["rarity"] });
     expect(r.ok).toBe(true);
     expect((c.supabase.rpc as any).mock.calls[0]).toEqual([
-      "forge_save_card", { p_card_id: "c1", p_snapshot: { name: "Goliath", cardType: ["EvilCharacter"] } },
+      "forge_save_card_fields", { p_card_id: "c1", p_set: { name: "Goliath" }, p_remove: ["rarity"] },
     ]);
     expect(r.updatedAt).toBe("2026-06-23T00:00:00Z");
+  });
+  it("reports a refused save without throwing", async () => {
+    const c = ctx(async () => ({ data: null, error: { message: "snapshot too large" } }));
+    (requireElder as any).mockResolvedValue(c);
+    expect(await saveCardFields("c1", { set: { name: "x" }, remove: [] })).toEqual({ ok: false, error: "Could not save card" });
   });
 });
 

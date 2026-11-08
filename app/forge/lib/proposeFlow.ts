@@ -17,3 +17,15 @@ export async function runProposeSubmit(deps: {
   if (flushed.ok === false) return { ok: false, error: PROPOSE_FLUSH_FAILED };
   return deps.create();
 }
+
+// The same order for anything else that acts on the server's copy of the draft (Release,
+// Deny and restore): if the flush fails, `failed` comes back and `act` never runs.
+export async function flushThen<T>(
+  flush: () => Promise<{ ok: boolean }>,
+  act: () => Promise<T>,
+  failed: T,
+): Promise<T> {
+  const flushed = await flush();
+  if (flushed.ok === false) return failed;
+  return act();
+}

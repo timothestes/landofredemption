@@ -65,11 +65,29 @@ export function sameSnapshot(a: DesignCard, b: DesignCard): boolean {
   return canonicalJson(a) === canonicalJson(b);
 }
 
+// Whether two snapshots read the same on a card, for deciding a release has nothing to
+// ship. An emptied field counts as no field: typing into a blank field and erasing it
+// leaves "" where there was nothing, which nobody can see. Mirrors
+// _forge_snapshot_content (migration 127), which is what actually decides; this only
+// words the release dialog.
+export function sameCardContent(a: DesignCard, b: DesignCard): boolean {
+  return sameSnapshot(withoutEmpties(a), withoutEmpties(b));
+}
+
+function withoutEmpties(card: DesignCard): DesignCard {
+  return Object.fromEntries(
+    Object.entries(card).filter(([, v]) => v !== undefined && v !== null && v !== "" && !(Array.isArray(v) && v.length === 0)),
+  );
+}
+
 function canonicalJson(v: unknown): string {
   if (v === null || typeof v !== "object") return JSON.stringify(v) ?? "null";
   if (Array.isArray(v)) return `[${v.map(canonicalJson).join(",")}]`;
   const o = v as Record<string, unknown>;
+  // An undefined key is absent: JSON drops it on the way to the server, so an editor holding
+  // `reference: undefined` and a row with no reference are the same snapshot.
   return `{${Object.keys(o)
+    .filter((k) => o[k] !== undefined)
     .sort()
     .map((k) => `${JSON.stringify(k)}:${canonicalJson(o[k])}`)
     .join(",")}}`;
@@ -94,14 +112,6 @@ export function diffCards(before: DesignCard, after: DesignCard): FieldChange[] 
     out.push({ field: f, label: FIELD_LABELS[f as string], kind, before: b, after: a });
   }
   return out;
-}
-
-// Has the draft moved on from a version, as a reader would see it? Every key counts, so unlike
-// diffCards it sees the no-editor fields an import can change. Unlike sameSnapshot, a field the
-// editor touched and cleared ("" or [] where the version has no key) is not a change.
-export function draftMovedOn(version: DesignCard, draft: DesignCard): boolean {
-  const keys = Object.keys({ ...version, ...draft }) as (keyof DesignCard)[];
-  return keys.some((k) => display(version[k]) !== display(draft[k]));
 }
 
 export function summarizeDiff(changes: FieldChange[]): string {

@@ -19,11 +19,12 @@ const ALL_GOOD: DesignCard["brigades"] = ["Blue", "Clay", "GoodGold", "Green", "
 // Clicking is covered by toggleMultiBrigade's tests; vitest here has no DOM.
 describe("CardDetailsFields Multi brigade", () => {
   it("offers a Multi tile per alignment, pressed only when that whole set is selected", () => {
-    const full = render({ cardType: ["GE"], alignment: "Good", brigades: ALL_GOOD });
+    const full = render({ cardType: ["GE", "EE"], alignment: "Good_Evil", brigades: ALL_GOOD });
     expect(tile(full, "Good Multi")).toMatch(/aria-pressed="true"/);
     expect(tile(full, "Evil Multi")).toMatch(/aria-pressed="false"/);
     const three = render({ cardType: ["EE"], alignment: "Evil", brigades: ["Crimson", "EvilGold", "Gray"] });
     expect(tile(three, "Evil Multi")).toMatch(/aria-pressed="false"/);
+    expect(tile(render({ cardType: ["GE"], alignment: "Good", brigades: ALL_GOOD }), "Good Multi")).toMatch(/aria-pressed="true"/);
   });
 
   it("summarizes a full set as Multi instead of listing every brigade", () => {
@@ -31,6 +32,68 @@ describe("CardDetailsFields Multi brigade", () => {
       .match(/<summary[^>]*>[\s\S]*?<\/summary>/)![0];
     expect(summary).toContain("GE · Good Multi");
     expect(summary).not.toContain("Clay");
+  });
+});
+
+// The rule itself is covered by brigadeSides' and toggleCardType's tests.
+describe("CardDetailsFields brigade picker", () => {
+  const hasTile = (html: string, title: string) => html.includes(`title="${title}"`);
+
+  it("offers a Hero only good brigades", () => {
+    const html = render({ cardType: ["Hero"], alignment: "Good" });
+    expect(hasTile(html, "Silver")).toBe(true);
+    expect(hasTile(html, "Good Multi")).toBe(true);
+    expect(hasTile(html, "Crimson")).toBe(false);
+    expect(hasTile(html, "Evil Multi")).toBe(false);
+  });
+
+  it("offers an Evil Enhancement only evil brigades", () => {
+    const html = render({ cardType: ["EE"], alignment: "Evil" });
+    expect(hasTile(html, "Crimson")).toBe(true);
+    expect(hasTile(html, "Silver")).toBe(false);
+    expect(hasTile(html, "Good Multi")).toBe(false);
+  });
+
+  it("offers both to a dual card, a Good/Evil card and a card with no type", () => {
+    for (const card of [
+      { cardType: ["Hero", "EvilCharacter"], alignment: "Good_Evil" },
+      { cardType: ["GE", "EE"], alignment: "Neutral" },
+      { cardType: ["Dominant"], alignment: "Good_Evil" },
+      {},
+    ] as DesignCard[]) {
+      const html = render(card);
+      expect(hasTile(html, "Good Multi")).toBe(true);
+      expect(hasTile(html, "Evil Multi")).toBe(true);
+    }
+  });
+
+  it("keeps a saved brigade that no longer fits on screen, pressed, so it can be removed", () => {
+    const html = render({ cardType: ["Hero"], alignment: "Good", brigades: ["Silver", "Crimson"] });
+    expect(tile(html, "Crimson")).toMatch(/aria-pressed="true"/);
+    expect(hasTile(html, "Gray")).toBe(false);
+    expect(hasTile(html, "Evil Multi")).toBe(false);
+    expect(html).toContain("Doesn&#x27;t fit this card&#x27;s type");
+    expect(render({ cardType: ["Hero"], alignment: "Good", brigades: ["Silver"] })).not.toContain("Doesn&#x27;t fit");
+  });
+
+  it("says a second click adds, not replaces", () => {
+    expect(render({ cardType: ["Hero"] })).toContain("Pick every brigade the card has. Click one again to remove it.");
+  });
+});
+
+// `open` is seeded once at mount, so nothing here can close it under someone mid-edit; that
+// half needs a DOM and was checked in a mounted harness.
+describe("CardDetailsFields starting state", () => {
+  const details = (html: string) => html.match(/<details[^>]*>/)![0];
+
+  it("starts open on a card with no type yet", () => {
+    expect(details(render({}))).toMatch(/\bopen\b/);
+    expect(details(render({ name: "Named only", rawText: "Some text." }))).toMatch(/\bopen\b/);
+    expect(details(render({ cardType: [] }))).toMatch(/\bopen\b/);
+  });
+
+  it("starts collapsed once the card has a type", () => {
+    expect(details(render({ cardType: ["Hero"] }))).not.toMatch(/\bopen\b/);
   });
 });
 
@@ -50,7 +113,7 @@ describe("CardDetailsFields icon tiles", () => {
   });
 
   it("gives every brigade its colored art at rest, not just when selected", () => {
-    const html = render({ cardType: ["Hero"] });
+    const html = render({});
     expect(tile(html, "Crimson")).toContain("/filter-icons/Color=Crimson.png");
     expect(tile(html, "Crimson")).toMatch(/aria-pressed="false"/);
     expect(tile(html, "GoodGold")).toContain("Color=Good%20Gold.png");
@@ -109,7 +172,7 @@ describe("CardDetailsFields icon tiles", () => {
   });
 
   it("never leaves selection to color alone, and defers the art until opened", () => {
-    const html = render({ cardType: ["Hero"], brigades: ["Blue"] });
+    const html = render({ brigades: ["Blue"] });
     // 12 types + 16 brigades + 2 Multi + 2 classes + 3 icons.
     expect(html.match(/aria-pressed=/g)!.length).toBe(35);
     expect(html.match(/loading="lazy"/g)!.length).toBe(35);
