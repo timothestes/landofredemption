@@ -13,6 +13,7 @@ import {
 } from "@/app/forge/lib/lifecycleCopy";
 import { cardRawText, CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
+import { typeLabel, brigadeLabel } from "@/app/forge/lib/filterIcons";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
 import type { ReleaseInfo } from "@/app/forge/lib/versions";
 import { Button } from "@/components/ui/button";
@@ -145,11 +146,11 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
         </select>
         <select value={type} onChange={(e) => setType(e.target.value as CardType | "")} className={selectClass} aria-label="Filter by type">
           <option value="">All types</option>
-          {CARD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          {CARD_TYPES.map((t) => <option key={t} value={t}>{typeLabel(t)}</option>)}
         </select>
         <select value={brigade} onChange={(e) => setBrigade(e.target.value as Brigade | "")} className={selectClass} aria-label="Filter by brigade">
           <option value="">All brigades</option>
-          {BRIGADES.map((b) => <option key={b} value={b}>{b}</option>)}
+          {BRIGADES.map((b) => <option key={b} value={b}>{brigadeLabel(b)}</option>)}
         </select>
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           Updated since

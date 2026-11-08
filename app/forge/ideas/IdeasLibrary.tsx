@@ -7,6 +7,7 @@ import { bulkShareToSet, bulkLifecycle, type BulkResult } from "@/app/forge/lib/
 import { BULK_DONE_VERB, deleteCopy } from "@/app/forge/lib/lifecycleCopy";
 import ForgeCardGrid from "@/app/forge/components/ForgeCardGrid";
 import { CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
+import { typeLabel, brigadeLabel } from "@/app/forge/lib/filterIcons";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
 import { Button } from "@/components/ui/button";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
@@ -76,11 +77,11 @@ export default function IdeasLibrary({ cards, canCreate, sets }: { cards: ForgeC
           className="rounded-md border bg-background px-3 py-1.5 text-sm" />
         <select value={type} onChange={(e) => setType(e.target.value as CardType | "")} className="rounded-md border bg-background px-2 py-1.5 text-sm">
           <option value="">All types</option>
-          {CARD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          {CARD_TYPES.map((t) => <option key={t} value={t}>{typeLabel(t)}</option>)}
         </select>
         <select value={brigade} onChange={(e) => setBrigade(e.target.value as Brigade | "")} className="rounded-md border bg-background px-2 py-1.5 text-sm">
           <option value="">All brigades</option>
-          {BRIGADES.map((b) => <option key={b} value={b}>{b}</option>)}
+          {BRIGADES.map((b) => <option key={b} value={b}>{brigadeLabel(b)}</option>)}
         </select>
         <Button size="sm" variant={selecting ? "secondary" : "outline"} className="h-8"
           onClick={() => { setSelecting(!selecting); setSelected(new Set()); setSummary(null); }}>
