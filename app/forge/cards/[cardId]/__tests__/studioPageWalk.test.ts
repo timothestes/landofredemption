@@ -7,7 +7,7 @@ vi.mock("@/app/forge/lib/auth", () => ({ requireForge: vi.fn() }));
 vi.mock("@/app/forge/lib/cards", () => ({ getCard: vi.fn() }));
 vi.mock("@/app/forge/lib/artCandidates", () => ({ listArtCandidates: vi.fn(async () => []) }));
 vi.mock("@/app/forge/lib/sets", () => ({
-  getSet: vi.fn(async () => ({ name: "Invented Set" })), listSets: vi.fn(async () => []), listSetCards: vi.fn(),
+  getSet: vi.fn(async () => ({ name: "Invented Set" })), listSets: vi.fn(async () => []), listSetSiblings: vi.fn(),
 }));
 vi.mock("@/app/forge/lib/proposals", () => ({ getOpenProposalDiffs: vi.fn(async () => []), listProposals: vi.fn(async () => []) }));
 vi.mock("@/app/forge/lib/comments", () => ({ listComments: vi.fn(async () => []) }));
@@ -18,7 +18,7 @@ vi.mock("@/app/forge/lib/versions", () => ({
 
 import { requireForge } from "@/app/forge/lib/auth";
 import { getCard } from "@/app/forge/lib/cards";
-import { listSetCards } from "@/app/forge/lib/sets";
+import { listSetSiblings } from "@/app/forge/lib/sets";
 import { listSetActivity } from "@/app/forge/lib/versions";
 import StudioPage from "../page";
 
@@ -38,7 +38,7 @@ const set = [sibling("a", ["Hero"]), sibling("b", ["GE"]), sibling("c", ["Hero"]
 async function props(cardId: string, searchParams: Record<string, string>) {
   (requireForge as any).mockResolvedValue(ctx());
   (getCard as any).mockResolvedValue({ id: cardId, setId: "s1", snapshot: {}, creatorId: "u1", createdAt: "2026-01-01" });
-  (listSetCards as any).mockResolvedValue(set);
+  (listSetSiblings as any).mockResolvedValue(set);
   const el: any = await StudioPage({ params: Promise.resolve({ cardId }), searchParams: Promise.resolve(searchParams) });
   return el.props;
 }

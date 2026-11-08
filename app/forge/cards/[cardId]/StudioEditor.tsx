@@ -8,6 +8,7 @@ import { upload } from "@vercel/blob/client";
 import ForgeCardFace from "@/app/forge/components/ForgeCardFace";
 import ForgeCardPreview from "@/app/forge/components/ForgeCardPreview";
 import ForgeBreadcrumbs from "@/app/forge/components/ForgeBreadcrumbs";
+import LinkPending from "@/app/forge/components/LinkPending";
 import FilePicker from "@/app/forge/components/FilePicker";
 import ArtCandidatesPanel from "@/app/forge/components/ArtCandidatesPanel";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -101,6 +102,8 @@ export default function StudioEditor({
   const [previewScripture, setPreviewScripture] = useState<string | null>(null);
   const [peeking, setPeeking] = useState(false); // the large face over the form, below lg
   const router = useRouter();
+  const prevArrow = useRef<HTMLAnchorElement>(null);
+  const nextArrow = useRef<HTMLAnchorElement>(null);
 
   const { others, setEditing } = useForgeCardChannel(
     setId ? forgeCardTopic(card.id) : null,
@@ -191,14 +194,15 @@ export default function StudioEditor({
       // navigated off the card.
       const el = document.activeElement;
       if (el && el !== document.body && el !== document.documentElement) return;
-      const dest = e.key === "ArrowLeft" ? prevId : nextId;
-      if (!dest) return;
+      // The arrow's own click, so a keypress shows the same pending spinner a tap does.
+      const arrow = e.key === "ArrowLeft" ? prevArrow.current : nextArrow.current;
+      if (!arrow) return;
       e.preventDefault();
-      router.push(`/forge/cards/${dest}${walkQuery}`);
+      arrow.click();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [prevId, nextId, walkQuery, router]);
+  }, []);
 
   const update = (patch: Partial<DesignCard>) => {
     fieldsDirty.current = true;
@@ -400,13 +404,17 @@ export default function StudioEditor({
               onClick={() => setPeeking(true)} />
             {/* Prev/next within the set — same order as the grid, no wrap at ends. */}
             {prevId && (
-              <Link href={`/forge/cards/${prevId}${walkQuery}`} aria-label="Previous card in set" className={arrowClass + " -left-11 sm:left-1.5"}>
-                <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+              <Link ref={prevArrow} href={`/forge/cards/${prevId}${walkQuery}`} aria-label="Previous card in set" className={arrowClass + " -left-11 sm:left-1.5"}>
+                <LinkPending idle={<ChevronLeft className="h-5 w-5" aria-hidden="true" />}>
+                  <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                </LinkPending>
               </Link>
             )}
             {nextId && (
-              <Link href={`/forge/cards/${nextId}${walkQuery}`} aria-label="Next card in set" className={arrowClass + " -right-11 sm:right-1.5"}>
-                <ChevronRight className="h-5 w-5" aria-hidden="true" />
+              <Link ref={nextArrow} href={`/forge/cards/${nextId}${walkQuery}`} aria-label="Next card in set" className={arrowClass + " -right-11 sm:right-1.5"}>
+                <LinkPending idle={<ChevronRight className="h-5 w-5" aria-hidden="true" />}>
+                  <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                </LinkPending>
               </Link>
             )}
             {/* Copy the face as a PNG to share. Tucked into the bottom-right corner, small

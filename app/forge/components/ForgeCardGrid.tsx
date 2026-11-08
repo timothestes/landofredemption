@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { MessageSquare, GitPullRequest } from "lucide-react";
+import { MessageSquare, GitPullRequest, Loader2 } from "lucide-react";
 import ForgeCardFace from "@/app/forge/components/ForgeCardFace";
 import ForgeCardPreview from "@/app/forge/components/ForgeCardPreview";
+import LinkPending from "@/app/forge/components/LinkPending";
 import { cardRawText } from "@/app/forge/lib/designCard";
 import { tileId } from "@/app/forge/lib/cardFilters";
 import { STATUS_LABEL, STATUS_BADGE_CLASS } from "@/app/forge/lib/lifecycleCopy";
@@ -84,6 +85,13 @@ export default function ForgeCardGrid({
                   {release}
                 </span>
               )}
+              <LinkPending>
+                <span className="absolute inset-0 z-10 flex items-center justify-center">
+                  <span className="rounded-full border bg-background/90 p-1.5 shadow-sm">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  </span>
+                </span>
+              </LinkPending>
             </div>
             <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
               <p className="min-w-[6rem] flex-1 truncate text-xs text-muted-foreground">{c.title ?? "Untitled"}</p>

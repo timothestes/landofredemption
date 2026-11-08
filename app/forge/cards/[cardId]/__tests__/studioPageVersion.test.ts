@@ -7,7 +7,7 @@ vi.mock("@/app/forge/lib/auth", () => ({ requireForge: vi.fn() }));
 vi.mock("@/app/forge/lib/cards", () => ({ getCard: vi.fn() }));
 vi.mock("@/app/forge/lib/artCandidates", () => ({ listArtCandidates: vi.fn(async () => []) }));
 vi.mock("@/app/forge/lib/sets", () => ({
-  getSet: vi.fn(async () => ({ name: "Invented Set" })), listSets: vi.fn(async () => []), listSetCards: vi.fn(async () => []),
+  getSet: vi.fn(async () => ({ name: "Invented Set" })), listSets: vi.fn(async () => []), listSetSiblings: vi.fn(async () => []),
 }));
 vi.mock("@/app/forge/lib/proposals", () => ({ getOpenProposalDiffs: vi.fn(async () => []), listProposals: vi.fn(async () => []) }));
 vi.mock("@/app/forge/lib/comments", () => ({ listComments: vi.fn(async () => []) }));

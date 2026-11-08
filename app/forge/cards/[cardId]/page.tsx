@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { requireForge } from "@/app/forge/lib/auth";
 import { getCard } from "@/app/forge/lib/cards";
 import { listArtCandidates } from "@/app/forge/lib/artCandidates";
-import { getSet, listSets, listSetCards } from "@/app/forge/lib/sets";
+import { getSet, listSets, listSetSiblings } from "@/app/forge/lib/sets";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
 import { filterQuery, gridHref, parseCardFilters, walkSet } from "@/app/forge/lib/cardFilters";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
@@ -27,8 +27,10 @@ export default async function StudioPage({ params, searchParams }: {
   const filters = parseCardFilters(await searchParams);
   const card = await getCard(cardId);
   if (!card) notFound();
-  const artCandidates = await listArtCandidates(cardId);
-  const set = card.setId ? await getSet(card.setId) : null;
+  const [artCandidates, set] = await Promise.all([
+    listArtCandidates(cardId),
+    card.setId ? getSet(card.setId) : null,
+  ]);
 
   const inSet = card.setId !== null;
   const sets = inSet ? [] : await listSets();
@@ -39,7 +41,7 @@ export default async function StudioPage({ params, searchParams }: {
         listComments(cardId),
         listVersions(cardId),
         listCardEvents(cardId),
-        listSetCards(card.setId!),
+        listSetSiblings(card.setId!),
       ])
     : [[], [], [], [], [], []];
   const canReview = ctx.role === "elder" || ctx.role === "superadmin";
@@ -91,19 +93,12 @@ export default async function StudioPage({ params, searchParams }: {
   const releases = inSet && filters.since ? await listSetActivity(ordered.map((c) => c.id)) : undefined;
   const { prevId, nextId, position } = walkSet(ordered, cardId, filters, releases);
 
-  const { data: meRow } = await ctx.supabase
-    .from("playtest_members")
-    .select("display_name")
-    .eq("user_id", ctx.user.id)
-    .single();
+  // The second is the "Created by" line in the studio header. Same member-readable name lookup as History.
+  const [{ data: meRow }, { data: creatorRow }] = await Promise.all([
+    ctx.supabase.from("playtest_members").select("display_name").eq("user_id", ctx.user.id).single(),
+    ctx.supabase.from("playtest_members").select("display_name").eq("user_id", card.creatorId).maybeSingle(),
+  ]);
   const currentUser = { userId: ctx.user.id, displayName: meRow?.display_name ?? null };
-
-  // "Created by" line in the studio header. Same member-readable name lookup as History.
-  const { data: creatorRow } = await ctx.supabase
-    .from("playtest_members")
-    .select("display_name")
-    .eq("user_id", card.creatorId)
-    .maybeSingle();
   const creator = { name: creatorRow?.display_name ?? "Forge member", at: card.createdAt };
 
   // ReviewPanel is passed INTO the studio rather than rendered after it: a sticky element
