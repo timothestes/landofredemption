@@ -39,6 +39,13 @@ creates a version; decisions do.
 Missing art stays allowed: art-less playtest releases are normal. A bulk release counts
 a blocked card as skipped and says why.
 
+**Releasing an unchanged card mints nothing** (migration 127). If the working draft
+matches the published version in content and art, `forge_publish_card` returns null. The
+single-card dialog says nothing has changed since vN; a bulk release counts the card as
+skipped. Open proposals stay open, because no version was minted. A first release always
+mints, and so does releasing a card whose last release was retired. "Content" ignores
+empty fields, so typing into a blank field and erasing it is not a change.
+
 ## Why autosave exists (and why it is NOT versioning)
 
 `forge_cards.working_snapshot` is the live editing surface. The studio

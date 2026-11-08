@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 import { shareToSet, sendToPrivate, publish, approve, unapprove, archive, unarchive, deleteCard } from "@/app/forge/lib/lifecycle";
-import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, deleteCopy, releaseBlockers, releaseBlockedNote } from "@/app/forge/lib/lifecycleCopy";
+import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, deleteCopy, releaseBlockers, releaseBlockedNote, isReleaseUnchanged, releaseUnchangedNote, type ReleaseBase } from "@/app/forge/lib/lifecycleCopy";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
 import type { DesignCard } from "@/app/forge/lib/designCard";
@@ -30,12 +30,15 @@ import {
 export default function LifecycleControls({
   card,
   draft,
+  releaseBase = null,
   sets,
   openProposals = { count: 0, hasMatch: false },
 }: {
   card: ForgeCardFull;
   // The editor's live draft. `card.snapshot` trails it by a save and a refresh.
   draft: DesignCard;
+  // The newest version playtesters have seen. Null before a card's first release.
+  releaseBase?: ReleaseBase | null;
   sets: ForgeSetSummary[];
   // Releasing closes the card's open proposals (migration 083). `hasMatch` =
   // one of them is exactly this draft, so the release records it as accepted
@@ -49,6 +52,8 @@ export default function LifecycleControls({
   const [confirmReturn, setConfirmReturn] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [releaseNote, setReleaseNote] = useState("");
+  // The RPC minted nothing. It decides; this catches what the dialog's own check can't see.
+  const [releaseNoOp, setReleaseNoOp] = useState(false);
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>) =>
     start(async () => {
       const r = await fn();
@@ -62,6 +67,7 @@ export default function LifecycleControls({
     start(async () => {
       const r = await publish(card.id, releaseNote);
       if (r.ok === false) { alert(r.error ?? "Could not release card"); return; }
+      if (r.unchanged) { setReleaseNoOp(true); return; }
       setReleaseOpen(false);
       setReleaseNote("");
       router.refresh();
@@ -81,6 +87,7 @@ export default function LifecycleControls({
   const delCopy = deleteCopy([draft.name]);
   const blockers = releaseBlockers(draft);
   const blockedNote = releaseBlockedNote(blockers);
+  const releaseUnchanged = releaseNoOp || isReleaseUnchanged(draft, releaseBase);
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -99,7 +106,7 @@ export default function LifecycleControls({
             {(card.status === "draft" || card.status === "playtesting") && (
               <>
                 {blockedNote && <span className="text-muted-foreground">{blockedNote}</span>}
-                <Button size="sm" className="h-7 px-3 text-xs" disabled={pending || blockers.length > 0} onClick={() => setReleaseOpen(true)}>
+                <Button size="sm" className="h-7 px-3 text-xs" disabled={pending || blockers.length > 0} onClick={() => { setReleaseNoOp(false); setReleaseOpen(true); }}>
                   {releaseLabel(card.status)}
                 </Button>
               </>
@@ -171,31 +178,37 @@ export default function LifecycleControls({
           <DialogHeader>
             <DialogTitle>{releaseLabel(card.status)}</DialogTitle>
             <DialogDescription>
-              Freezes the current draft as a new version visible to playtesters.
+              {releaseUnchanged
+                ? releaseUnchangedNote(releaseBase?.versionNumber ?? null)
+                : "Freezes the current draft as a new version visible to playtesters."}
             </DialogDescription>
           </DialogHeader>
-          <DialogBody className="space-y-2">
-            {releaseNotices.length > 0 && (
-              <ul className="space-y-1 rounded-md border bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground">
-                {releaseNotices.map((n) => (
-                  <li key={n}>{n}</li>
-                ))}
-              </ul>
-            )}
-            <label className="block text-xs font-medium text-muted-foreground">What changed? (optional)</label>
-            <textarea
-              autoFocus
-              value={releaseNote}
-              onChange={(e) => setReleaseNote(e.target.value)}
-              placeholder="Shown in the card’s history…"
-              className="h-24 w-full rounded-md border bg-background px-2 py-1 text-sm"
-            />
-          </DialogBody>
+          {!releaseUnchanged && (
+            <DialogBody className="space-y-2">
+              {releaseNotices.length > 0 && (
+                <ul className="space-y-1 rounded-md border bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground">
+                  {releaseNotices.map((n) => (
+                    <li key={n}>{n}</li>
+                  ))}
+                </ul>
+              )}
+              <label className="block text-xs font-medium text-muted-foreground">What changed? (optional)</label>
+              <textarea
+                autoFocus
+                value={releaseNote}
+                onChange={(e) => setReleaseNote(e.target.value)}
+                placeholder="Shown in the card’s history…"
+                className="h-24 w-full rounded-md border bg-background px-2 py-1 text-sm"
+              />
+            </DialogBody>
+          )}
           <DialogFooter>
             <Button variant="outline" disabled={pending} onClick={() => setReleaseOpen(false)}>
-              Cancel
+              {releaseUnchanged ? "Close" : "Cancel"}
             </Button>
-            <Button disabled={pending || blockers.length > 0} onClick={doRelease}>Release</Button>
+            {!releaseUnchanged && (
+              <Button disabled={pending || blockers.length > 0} onClick={doRelease}>Release</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

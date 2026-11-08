@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/app/forge/lib/auth", () => ({ requireForge: vi.fn(), requireElder: vi.fn() }));
 
+import { revalidatePath } from "next/cache";
 import { requireElder } from "@/app/forge/lib/auth";
 import { shareToSet, publish, approve, deleteCard } from "../lifecycle";
 import { bulkLifecycle, bulkShareToSet } from "../lifecycle";
@@ -41,6 +42,23 @@ describe("lifecycle actions", () => {
     const c = ctx(async () => ({ data: null, error: { message: "nope" } }));
     (requireElder as any).mockResolvedValue(c);
     expect((await approve("c1")).ok).toBe(false);
+  });
+  it("publish reports a release that changed nothing, and refreshes nothing", async () => {
+    const c = ctx(async () => ({ data: null, error: null }));
+    (requireElder as any).mockResolvedValue(c);
+    expect(await publish("c1")).toEqual({ ok: true, unchanged: true });
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+  it("publish reports a real release plainly", async () => {
+    const c = ctx(async () => ({ data: "v2", error: null }));
+    (requireElder as any).mockResolvedValue(c);
+    expect(await publish("c1")).toEqual({ ok: true });
+    expect(revalidatePath).toHaveBeenCalled();
+  });
+  it("publish surfaces an RPC error as ok:false", async () => {
+    const c = ctx(async () => ({ data: null, error: { message: "nope" } }));
+    (requireElder as any).mockResolvedValue(c);
+    expect((await publish("c1")).ok).toBe(false);
   });
   it("deleteCard calls forge_delete_card", async () => {
     const c = ctx();
@@ -109,6 +127,27 @@ describe("bulkLifecycle", () => {
     const r = await bulkLifecycle("release", ["c1", "c2", "c3", "c4"]);
     expect(r).toEqual({ ok: true, done: 1, skipped: 3, failed: 0, reasons: { noNameOrType: 3 } });
     expect((c.supabase.rpc as any).mock.calls.map((x: any) => x[1].p_card_id)).toEqual(["c1"]);
+  });
+
+  it("counts an unchanged card as skipped, because the RPC minted nothing", async () => {
+    const c = bulkCtx([
+      { id: "c1", status: "playtesting", working_snapshot: READY },
+      { id: "c2", status: "playtesting", working_snapshot: READY },
+    ]);
+    (c.supabase.rpc as any).mockImplementation(async (_fn: string, args: any) => ({
+      data: args.p_card_id === "c1" ? null : "v-new",
+      error: null,
+    }));
+    (requireElder as any).mockResolvedValue(c);
+    expect(await bulkLifecycle("release", ["c1", "c2"])).toEqual({
+      ok: true, done: 1, skipped: 1, failed: 0, reasons: { unchanged: 1 },
+    });
+  });
+
+  it("does not read a void RPC's null as unchanged", async () => {
+    const c = bulkCtx([{ id: "c1", status: "playtesting" }]);
+    (requireElder as any).mockResolvedValue(c);
+    expect(await bulkLifecycle("shelve", ["c1"])).toEqual({ ok: true, done: 1, skipped: 0, failed: 0 });
   });
 
   it("releases a card with no art", async () => {

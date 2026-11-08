@@ -73,6 +73,33 @@ export async function listVersions(cardId: string): Promise<VersionRow[]> {
   }));
 }
 
+// Whether the card's artwork differs from a version's, using the same fields
+// forge_publish_card compares (migration 127). Answered here so the blob keys stay on
+// the server. Words the release dialog only; the RPC decides what a release does.
+export async function artChangedSince(cardId: string, versionId: string): Promise<boolean> {
+  const ctx = await requireForge();
+  if (!ctx) return false;
+  const [{ data: card }, { data: version }] = await Promise.all([
+    ctx.supabase
+      .from("forge_cards")
+      .select("working_art_key, working_art_is_placeholder, working_art_original_key, working_finished_key")
+      .eq("id", cardId)
+      .maybeSingle(),
+    ctx.supabase
+      .from("card_versions")
+      .select("art_key, art_is_placeholder, art_original_key, finished_key")
+      .eq("id", versionId)
+      .maybeSingle(),
+  ]);
+  if (!card || !version) return false;
+  return (
+    card.working_art_key !== version.art_key ||
+    card.working_art_is_placeholder !== version.art_is_placeholder ||
+    card.working_art_original_key !== version.art_original_key ||
+    card.working_finished_key !== version.finished_key
+  );
+}
+
 // Lifecycle events (post-072 only), oldest first. forge_audit is elder-read
 // RLS-gated; non-elders simply get [].
 export async function listCardEvents(cardId: string): Promise<CardEventRow[]> {

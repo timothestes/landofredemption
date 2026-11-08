@@ -74,16 +74,40 @@ begin
   values (auth.uid(), 'card_unarchived', p_card_id::text);
 end; $$;
 
--- (U-16) A card needs a name and a type before it can be released.
+-- A snapshot with its empty fields removed. Typing into a blank field and erasing it
+-- leaves "" where there was nothing, and that is not a change anyone can see.
+-- sameCardContent in app/forge/lib/cardDiff.ts mirrors this. Internal: not callable over
+-- RPC. Definer functions run as the owner, who keeps EXECUTE.
+create or replace function public._forge_snapshot_content(p_snapshot jsonb)
+returns jsonb language sql immutable set search_path = '' as $$
+  select coalesce(jsonb_object_agg(key, value), '{}'::jsonb)
+    from jsonb_each(p_snapshot)
+   where value not in ('null'::jsonb, '""'::jsonb, '[]'::jsonb);
+$$;
+
+revoke execute on function public._forge_snapshot_content(jsonb) from public, anon, authenticated;
+
+-- forge_publish_card gains two guards. Same signature, so CREATE OR REPLACE keeps the
+-- grants. Everything after them is 083 verbatim.
 --
--- Missing art stays allowed: art-less playtest releases are normal. The deployed client
--- treats the raised error as a failed release, and the current client checks first
--- (releaseBlockers in app/forge/lib/lifecycleCopy.ts), so this is the backstop. The
--- signature is unchanged, so CREATE OR REPLACE keeps the grants.
+-- (U-16) A card needs a name and a type before it can be released. Missing art stays
+-- allowed: art-less playtest releases are normal. The deployed client treats the raised
+-- error as a failed release, and the current client checks first (releaseBlockers in
+-- app/forge/lib/lifecycleCopy.ts), so this is the backstop.
+--
+-- (U-15) A card that matches its published version, in content and art, mints nothing
+-- and returns null. Without this, a select-all release bumped every card and stamped it
+-- with a fresh date, so History and the "Updated since" filter stopped meaning anything.
+--   * The guard needs a published_version_id. A first release has none and always mints,
+--     and so does a card whose last release was retired, since releasing it has an effect.
+--   * Open proposals are left alone: no version was minted, so their base is still
+--     current and they can still be accepted.
+--   * Callers only look at `error`, so the deployed client and promote.ts's preflight
+--     rename both carry on: the rename goes on to approve the version already published.
 create or replace function public.forge_publish_card(p_card_id uuid, p_note text default null)
 returns uuid language plpgsql security definer set search_path = '' as $$
 declare v_card public.forge_cards%rowtype; v_next int; v_version_id uuid;
-        v_can_accept boolean; v_matched uuid;
+        v_can_accept boolean; v_matched uuid; v_live public.card_versions%rowtype;
 begin
   select * into v_card from public.forge_cards where id = p_card_id for update;
   if not found then raise exception 'card not found'; end if;
@@ -98,6 +122,16 @@ begin
   if btrim(coalesce(v_card.working_snapshot->>'name', '')) = ''
      or coalesce(v_card.working_snapshot->'cardType', 'null'::jsonb) in ('null'::jsonb, '[]'::jsonb, '""'::jsonb) then
     raise exception 'a card needs a name and a type before it can be released';
+  end if;
+  if v_card.published_version_id is not null then
+    select * into v_live from public.card_versions where id = v_card.published_version_id;
+    if public._forge_snapshot_content(v_live.data) = public._forge_snapshot_content(v_card.working_snapshot)
+       and v_live.art_key is not distinct from v_card.working_art_key
+       and v_live.art_is_placeholder = v_card.working_art_is_placeholder
+       and v_live.art_original_key is not distinct from v_card.working_art_original_key
+       and v_live.finished_key is not distinct from v_card.working_finished_key then
+      return null;
+    end if;
   end if;
   select coalesce(max(version_number), 0) + 1 into v_next
     from public.card_versions where card_id = p_card_id;

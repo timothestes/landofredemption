@@ -23,12 +23,19 @@ export async function shareToSet(cardId: string, setId: string): Promise<Result>
 export async function sendToPrivate(cardId: string): Promise<Result> {
   return call("forge_send_card_to_private", { p_card_id: cardId }, "Could not send card to private");
 }
-export async function publish(cardId: string, note?: string): Promise<Result> {
-  return call(
-    "forge_publish_card",
-    { p_card_id: cardId, p_note: note?.trim() || null },
-    "Could not release card",
-  );
+// `unchanged`: the card already matches its published version, so nothing was minted
+// (migration 127). The RPC returns null for that and the new version's id otherwise.
+export async function publish(cardId: string, note?: string): Promise<Result & { unchanged?: boolean }> {
+  const ctx = await requireElder();
+  if (!ctx) return { ok: false, error: "Not authorized" };
+  const { data, error } = await ctx.supabase.rpc("forge_publish_card", {
+    p_card_id: cardId,
+    p_note: note?.trim() || null,
+  });
+  if (error) return { ok: false, error: "Could not release card" };
+  if (data === null) return { ok: true, unchanged: true };
+  revalidatePath("/forge", "layout");
+  return { ok: true };
 }
 export async function approve(cardId: string): Promise<Result> {
   return call("forge_approve_card", { p_card_id: cardId }, "Could not approve card");
@@ -105,8 +112,9 @@ export async function bulkLifecycle(action: LifecycleAction, cardIds: string[]):
     return runBulk(cardIds, "id, status, working_snapshot", async (supabase, row) => {
       if (!isEligible("release", row.status)) return "skipped";
       if (releaseBlockers(row.working_snapshot ?? {}).length > 0) return "noNameOrType";
-      const { error } = await supabase.rpc(fn, { p_card_id: row.id });
-      return error ? "failed" : "done";
+      const { data, error } = await supabase.rpc(fn, { p_card_id: row.id });
+      if (error) return "failed";
+      return data === null ? "unchanged" : "done";
     });
   }
   return runBulk(cardIds, "id, status", async (supabase, row) => {

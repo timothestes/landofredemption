@@ -2,6 +2,7 @@
 // action. Pure and isomorphic — imported by client components and server actions.
 // Eligibility mirrors the guards in migration 052's RPCs; keep them in sync.
 
+import { sameCardContent } from "@/app/forge/lib/cardDiff";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 
 export const STATUS_LABEL: Record<string, string> = {
@@ -105,6 +106,21 @@ export function releaseBlockedNote(blockers: ("name" | "type")[]): string | null
   return `Add ${blockers.map((b) => `a ${b}`).join(" and ")} to release.`;
 }
 
+// The newest version playtesters have seen, for the release dialog. `live` = it is the
+// card's published version right now; `artChanged` is worked out on the server.
+export type ReleaseBase = { versionNumber: number; data: DesignCard; live: boolean; artChanged: boolean };
+
+// True when a release would do nothing. forge_publish_card (migration 127) decides, and
+// only mints nothing when the card has a live version: a first release always mints, and
+// so does releasing a card whose last release was retired, since that has an effect.
+export function isReleaseUnchanged(draft: DesignCard, base: ReleaseBase | null): boolean {
+  return !!base && base.live && !base.artChanged && sameCardContent(draft, base.data);
+}
+
+export function releaseUnchangedNote(versionNumber: number | null): string {
+  return `Nothing has changed since ${versionNumber === null ? "the last release" : `v${versionNumber}`}, so there is nothing to release.`;
+}
+
 const ACTION_ELIGIBLE: Record<LifecycleAction, readonly string[]> = {
   release: ["draft", "playtesting"],
   markFinal: ["playtesting"],
@@ -170,7 +186,7 @@ export function bulkConfirmCopy(action: BulkConfirmAction, { names }: { names: (
     case "release":
       return {
         title: `Release ${cardCount(n)}?`,
-        description: "Freezes each card’s current draft as a new version visible to playtesters.",
+        description: "Freezes each card’s current draft as a new version visible to playtesters. A card with no changes since its last release is skipped.",
         confirmLabel: "Release",
       };
     case "releaseAll":
@@ -223,7 +239,7 @@ export function bulkBlockedNotice(blocked: number): string[] {
   return [`${cardCount(blocked)} ${blocked === 1 ? "has" : "have"} no name or type and will be skipped.`];
 }
 
-export type BulkSkipReason = "noNameOrType";
+export type BulkSkipReason = "noNameOrType" | "unchanged";
 
 // The line under the grid after a bulk action. Skips with a known reason say so.
 export function bulkSummary(
@@ -231,8 +247,12 @@ export function bulkSummary(
   r: { done: number; skipped: number; failed: number; reasons?: Partial<Record<BulkSkipReason, number>> },
 ): string {
   const noNameOrType = r.reasons?.noNameOrType ?? 0;
-  const parts = noNameOrType > 0 ? [`${noNameOrType} no name or type`] : [];
-  const other = r.skipped - noNameOrType;
+  const unchanged = r.reasons?.unchanged ?? 0;
+  const parts = [
+    ...(noNameOrType > 0 ? [`${noNameOrType} no name or type`] : []),
+    ...(unchanged > 0 ? [`${unchanged} unchanged since last release`] : []),
+  ];
+  const other = r.skipped - noNameOrType - unchanged;
   if (parts.length > 0 && other > 0) parts.push(`${other} not eligible`);
   const why = parts.length > 0 ? ` (${parts.join(", ")})` : "";
   return `${BULK_DONE_VERB[action]} ${r.done} · ${r.skipped} skipped${why} · ${r.failed} failed`;

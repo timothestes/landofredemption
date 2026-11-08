@@ -65,6 +65,21 @@ export function sameSnapshot(a: DesignCard, b: DesignCard): boolean {
   return canonicalJson(a) === canonicalJson(b);
 }
 
+// Whether two snapshots read the same on a card, for deciding a release has nothing to
+// ship. An emptied field counts as no field: typing into a blank field and erasing it
+// leaves "" where there was nothing, which nobody can see. Mirrors
+// _forge_snapshot_content (migration 127), which is what actually decides; this only
+// words the release dialog.
+export function sameCardContent(a: DesignCard, b: DesignCard): boolean {
+  return sameSnapshot(withoutEmpties(a), withoutEmpties(b));
+}
+
+function withoutEmpties(card: DesignCard): DesignCard {
+  return Object.fromEntries(
+    Object.entries(card).filter(([, v]) => v !== undefined && v !== null && v !== "" && !(Array.isArray(v) && v.length === 0)),
+  );
+}
+
 function canonicalJson(v: unknown): string {
   if (v === null || typeof v !== "object") return JSON.stringify(v) ?? "null";
   if (Array.isArray(v)) return `[${v.map(canonicalJson).join(",")}]`;

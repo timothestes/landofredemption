@@ -4,6 +4,7 @@ import {
   STATUS_LABEL, ACTION_LABEL, releaseLabel, isEligible, BULK_DONE_VERB, releaseProposalNotice,
   returnToIdeasCopy, deleteCopy, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice,
   releaseBlockers, releaseBlockedNote, bulkBlockedNotice, bulkSummary,
+  releaseUnchangedNote, isReleaseUnchanged,
 } from "../lifecycleCopy";
 
 describe("lifecycleCopy", () => {
@@ -177,6 +178,7 @@ describe("bulkConfirmCopy", () => {
     const c = bulkConfirmCopy("release", ctx(3));
     expect(c.title).toBe("Release 3 cards?");
     expect(c.description).toMatch(/new version visible to playtesters/);
+    expect(c.description).toMatch(/no changes since its last release is skipped/);
   });
 
   it("mark final says no new version is made and playtesters keep it", () => {
@@ -271,8 +273,50 @@ describe("bulkSummary", () => {
       .toBe("Released 2 \u00b7 1 skipped (1 no name or type) \u00b7 0 failed");
   });
 
+  it("gives the reason for cards skipped as unchanged", () => {
+    expect(bulkSummary("release", { done: 0, skipped: 2, failed: 0, reasons: { unchanged: 2 } }))
+      .toBe("Released 0 \u00b7 2 skipped (2 unchanged since last release) \u00b7 0 failed");
+    expect(bulkSummary("release", { done: 1, skipped: 2, failed: 0, reasons: { unchanged: 1, noNameOrType: 1 } }))
+      .toBe("Released 1 \u00b7 2 skipped (1 no name or type, 1 unchanged since last release) \u00b7 0 failed");
+  });
+
   it("accounts for the rest when only some skips have a reason", () => {
     expect(bulkSummary("release", { done: 0, skipped: 3, failed: 0, reasons: { noNameOrType: 1 } }))
       .toBe("Released 0 \u00b7 3 skipped (1 no name or type, 2 not eligible) \u00b7 0 failed");
+  });
+});
+
+describe("isReleaseUnchanged", () => {
+  const DATA = { name: "Invented", cardType: ["Hero" as const], rawText: "Draw 2." };
+  const base = (over = {}) => ({ versionNumber: 3, data: DATA, live: true, artChanged: false, ...over });
+
+  it("is true when content and art match the live version", () => {
+    expect(isReleaseUnchanged({ ...DATA, reference: "" }, base())).toBe(true);
+  });
+
+  it("is false for a first release", () => {
+    expect(isReleaseUnchanged(DATA, null)).toBe(false);
+  });
+
+  it("is false when the content changed", () => {
+    expect(isReleaseUnchanged({ ...DATA, rawText: "Draw 3." }, base())).toBe(false);
+  });
+
+  it("is false when only the art changed", () => {
+    expect(isReleaseUnchanged(DATA, base({ artChanged: true }))).toBe(false);
+  });
+
+  it("is false when the last release is no longer live, so releasing still has an effect", () => {
+    expect(isReleaseUnchanged(DATA, base({ live: false }))).toBe(false);
+  });
+});
+
+describe("releaseUnchangedNote", () => {
+  it("names the version", () => {
+    expect(releaseUnchangedNote(3)).toBe("Nothing has changed since v3, so there is nothing to release.");
+  });
+
+  it("copes without a version number", () => {
+    expect(releaseUnchangedNote(null)).toBe("Nothing has changed since the last release, so there is nothing to release.");
   });
 });
