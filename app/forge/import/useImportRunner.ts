@@ -14,6 +14,7 @@ import { summarizeOverwritePreview, type OverwritePreview, type RowPreview } fro
 const BATCH_SIZE = 8;            // cards per request (must stay ≤ the route's cap of 12)
 const BATCH_CONCURRENCY = 4;     // requests in flight
 const MAX_BATCH_BYTES = 3_500_000; // keep each request under Vercel's ~4.5MB body cap
+const CHECK_DEADLINE_MS = 20_000;  // how long the existing-set check may hold the Import button
 
 export type CardStatus = "queued" | "importing" | "imported" | "updated" | "unchanged" | "skipped" | "failed";
 
@@ -56,17 +57,26 @@ async function errorMessage(res: Response): Promise<string> {
 type PreviewCard = { name: string; snapshot: DesignCard; derived: string[]; entryName: string | null };
 
 // Asks the route what each row would do in this set, in row order. No images go up and nothing
-// is written. Throws if any batch can't be read: nothing should act on a partial answer.
+// is written. Throws if any batch can't be read: nothing should act on a partial answer. The
+// wizard holds its Import button while this runs, so a request that hangs must not hang it: past
+// the deadline every in-flight batch is aborted and the whole check rejects.
 export async function previewRows(
   setId: string,
   cards: PreviewCard[],
   signal?: AbortSignal,
+  deadlineMs: number = CHECK_DEADLINE_MS,
 ): Promise<(RowPreview | undefined)[]> {
+  const ctl = new AbortController();
+  const follow = () => ctl.abort(signal?.reason);
+  if (signal?.aborted) follow();
+  signal?.addEventListener("abort", follow, { once: true });
+  const timer = setTimeout(() => ctl.abort(new Error("Checking the set took too long.")), deadlineMs);
+
   const rows = new Array<RowPreview | undefined>(cards.length);
   let cursor = 0;
   const runOne = async () => {
     for (;;) {
-      signal?.throwIfAborted();
+      ctl.signal.throwIfAborted();
       const start = cursor;
       cursor += BATCH_SIZE;
       if (start >= cards.length) return;
@@ -76,13 +86,18 @@ export async function previewRows(
         setId, overwrite: true, preview: true,
         cards: batch.map((c) => ({ name: c.name, snapshot: c.snapshot, derived: c.derived })),
       }));
-      const res = await fetch("/forge/api/import", { method: "POST", body: fd, signal });
+      const res = await fetch("/forge/api/import", { method: "POST", body: fd, signal: ctl.signal });
       if (!res.ok) throw new Error(await errorMessage(res));
       const body = (await res.json()) as { results?: BatchCardResult[] };
       batch.forEach((_, j) => { rows[start + j] = body.results?.[j]?.preview; });
     }
   };
-  await Promise.all(Array.from({ length: BATCH_CONCURRENCY }, runOne));
+  try {
+    await Promise.all(Array.from({ length: BATCH_CONCURRENCY }, runOne));
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", follow);
+  }
   return rows;
 }
 

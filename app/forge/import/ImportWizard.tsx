@@ -32,7 +32,6 @@ import { overwriteConfirmCopy, type OverwritePreview, type RowPreview } from "./
 import { importButtonCopy, needsFixing, resultHeadline, rowOutcome, runRowLabel, skippedNote } from "./importCopy";
 import type { SourceSelection } from "./selection";
 
-// Cap on decompressed object-URL previews — a 200-card zip of ~1MB PNGs would
 // Previews load lazily in chunks as the table scrolls: decompression is synchronous
 // main-thread work and each ~1MB PNG pins a blob URL, so a 224-card zip decompressed
 // all at once would freeze the page and hold hundreds of MB. Chunks keep each pause

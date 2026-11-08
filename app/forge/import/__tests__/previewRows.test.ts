@@ -25,7 +25,7 @@ function stubRoute(answer: (name: string) => RowPreview, opts: { failOn?: string
   return calls;
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("previewRows (U-58)", () => {
   it("answers per row, in row order, even when batches finish out of order", async () => {
@@ -52,6 +52,24 @@ describe("previewRows (U-58)", () => {
   it("throws when a batch can't be read, rather than reporting a partial answer", async () => {
     stubRoute(() => "new", { failOn: "Card 9" });
     await expect(previewRows("set-1", cards(20))).rejects.toThrow("No access");
+  });
+
+  it("gives up past its deadline and aborts every request still in flight", async () => {
+    vi.useFakeTimers();
+    const signals: AbortSignal[] = [];
+    // A route that never answers, as a dropped connection looks from the page.
+    vi.stubGlobal("fetch", vi.fn((_url: string, init: RequestInit) => new Promise((_, reject) => {
+      signals.push(init.signal!);
+      init.signal!.addEventListener("abort", () => reject(init.signal!.reason));
+    })));
+    const pending = previewRows("set-1", cards(150), undefined, 20_000);
+    const outcome = expect(pending).rejects.toThrow("Checking the set took too long.");
+    await vi.advanceTimersByTimeAsync(19_999);
+    expect(signals.every((s) => !s.aborted)).toBe(true);
+    await vi.advanceTimersByTimeAsync(1);
+    await outcome;
+    expect(signals).toHaveLength(4); // one per worker, none started a second batch
+    expect(signals.every((s) => s.aborted)).toBe(true);
   });
 
   it("stops asking once aborted", async () => {
