@@ -73,13 +73,13 @@ export default function IdeasLibrary({ cards, canCreate, sets }: { cards: ForgeC
     <div className="mx-auto max-w-6xl p-4 pb-28 sm:pb-20">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <h1 className="mr-auto text-lg font-semibold">Ideas</h1>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…"
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" aria-label="Search ideas by name"
           className="rounded-md border bg-background px-3 py-1.5 text-sm" />
-        <select value={type} onChange={(e) => setType(e.target.value as CardType | "")} className="rounded-md border bg-background px-2 py-1.5 text-sm">
+        <select value={type} onChange={(e) => setType(e.target.value as CardType | "")} className="rounded-md border bg-background px-2 py-1.5 text-sm" aria-label="Filter by type">
           <option value="">All types</option>
           {CARD_TYPES.map((t) => <option key={t} value={t}>{typeLabel(t)}</option>)}
         </select>
-        <select value={brigade} onChange={(e) => setBrigade(e.target.value as Brigade | "")} className="rounded-md border bg-background px-2 py-1.5 text-sm">
+        <select value={brigade} onChange={(e) => setBrigade(e.target.value as Brigade | "")} className="rounded-md border bg-background px-2 py-1.5 text-sm" aria-label="Filter by brigade">
           <option value="">All brigades</option>
           {BRIGADES.map((b) => <option key={b} value={b}>{brigadeLabel(b)}</option>)}
         </select>

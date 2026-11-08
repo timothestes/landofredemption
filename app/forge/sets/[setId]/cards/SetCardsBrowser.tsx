@@ -130,7 +130,7 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
     <div className="relative pb-28 sm:pb-20">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="relative">
-          <input ref={searchRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or text… (press /)"
+          <input ref={searchRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or text… (press /)" aria-label="Search cards by name or text"
             className="rounded-md border bg-background px-3 py-1.5 pr-8 text-sm" />
           {q && (
             <button type="button" aria-label="Clear search"
