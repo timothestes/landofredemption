@@ -18,6 +18,7 @@ export const EVENT_LABEL: Record<string, string> = {
   card_archived: "Shelved",
   card_unarchived: "Restored",
   card_returned_to_ideas: "Returned to ideas",
+  card_draft_restored: "Draft put back to the last version",
 };
 
 // Version rendering maps — every value of VersionRow["status"] MUST have an

@@ -7,7 +7,7 @@ import { sortSetCards } from "@/app/forge/lib/cardOrder";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import { getOpenProposalDiffs, listProposals } from "@/app/forge/lib/proposals";
 import { listComments } from "@/app/forge/lib/comments";
-import { listVersions, listCardEvents } from "@/app/forge/lib/versions";
+import { listVersions, listCardEvents, artChangedSince, getShelvedRecord } from "@/app/forge/lib/versions";
 import StudioEditor from "./StudioEditor";
 import ReviewPanel from "./ReviewPanel";
 
@@ -44,6 +44,27 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
     count: openDiffs.length,
     hasMatch: openDiffs.some((d) => sameSnapshot(d.proposal.proposedSnapshot, card.snapshot ?? {})),
   };
+
+  // The newest version playtesters have seen; draft iterations never reached them.
+  // versions is newest first. The release dialog compares the live draft against it.
+  const lastRelease = versions.find((v) => v.status !== "draft") ?? null;
+  const releaseBase = lastRelease
+    ? {
+        versionNumber: lastRelease.versionNumber,
+        data: lastRelease.data,
+        live: lastRelease.id === card.publishedVersionId,
+        artChanged: await artChangedSince(cardId, lastRelease.id),
+      }
+    : null;
+
+  // Where Restore will put a shelved card, for its dialog. Wording only; the RPC decides.
+  const shelved = card.status === "archived" ? await getShelvedRecord(cardId) : null;
+  const restoreTarget = shelved
+    ? {
+        status: shelved.status,
+        versionNumber: versions.find((v) => v.id === shelved.versionId)?.versionNumber ?? null,
+      }
+    : null;
 
   // Prev/next arrows on the card face walk the set in the same order as the grid.
   // No wrap: the boundary card gets null and hides that arrow.
@@ -86,6 +107,8 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
       position={position}
       artCandidates={artCandidates}
       openProposals={openProposals}
+      releaseBase={releaseBase}
+      restoreTarget={restoreTarget}
       review={
         inSet ? (
           // key: React validates this as a keyless list child once it crosses the

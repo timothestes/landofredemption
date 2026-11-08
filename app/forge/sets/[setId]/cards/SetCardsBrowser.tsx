@@ -8,7 +8,8 @@ import ForgeCardGrid from "@/app/forge/components/ForgeCardGrid";
 import AddCardTile from "./AddCardTile";
 import { bulkLifecycle, type BulkResult } from "@/app/forge/lib/lifecycle";
 import {
-  STATUS_LABEL, ACTION_LABEL, BULK_DONE_VERB, CONFIRM_COPY, isEligible, type LifecycleAction,
+  STATUS_LABEL, ACTION_LABEL, isEligible, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice, bulkBlockedNotice, bulkSummary, releaseBlockers,
+  type LifecycleAction, type BulkAction, type BulkConfirmAction,
 } from "@/app/forge/lib/lifecycleCopy";
 import { cardRawText, CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
@@ -18,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 
 const SET_STATUSES = ["draft", "playtesting", "approved", "archived"] as const;
-const BULK_ACTIONS: LifecycleAction[] = ["release", "markFinal", "shelve", "restore", "returnToIdeas", "delete"];
+const BULK_ACTIONS: BulkAction[] = ["release", "markFinal", "shelve", "restore", "returnToIdeas", "delete"];
 const selectClass = "rounded-md border bg-background px-2 py-1.5 text-sm";
 
 export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts, proposalCounts, releases }: { cards: ForgeCardFull[]; setId: string; canCreate: boolean; commentCounts?: Record<string, number>; proposalCounts?: Record<string, number>; releases?: Record<string, ReleaseInfo> }) {
@@ -33,7 +34,7 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [busy, setBusy] = useState<LifecycleAction | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState<"returnToIdeas" | "delete" | "releaseAll" | null>(null);
+  const [confirming, setConfirming] = useState<BulkConfirmAction | null>(null);
 
   // Press "/" (when not already typing in a field) to reset the search and jump to it.
   useEffect(() => {
@@ -85,8 +86,9 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
   // new frozen version, which stays a deliberate per-card (or selection) act.
   const draftIds = useMemo(() => filtered.filter((c) => c.status === "draft").map((c) => c.id), [filtered]);
   // How many selected cards each action would actually touch — shown on the button.
-  const eligibleCount = (a: LifecycleAction) =>
-    ids.filter((id) => { const c = byId.get(id); return c && isEligible(a, c.status); }).length;
+  const eligibleCards = (a: LifecycleAction) =>
+    ids.flatMap((id) => { const c = byId.get(id); return c && isEligible(a, c.status) ? [c] : []; });
+  const eligibleCount = (a: LifecycleAction) => eligibleCards(a).length;
 
   const toggle = (id: string) =>
     setSelected((prev) => {
@@ -101,10 +103,27 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
     const r: BulkResult = await bulkLifecycle(action, targetIds);
     setBusy(null);
     if (r.ok === false) { setSummary(r.error); return; }
-    setSummary(`${BULK_DONE_VERB[action]} ${r.done} · ${r.skipped} skipped · ${r.failed} failed`);
+    setSummary(bulkSummary(action, r));
     setSelected(new Set());
     router.refresh();
   }
+
+  const confirmingRelease = confirming === "release" || confirming === "releaseAll";
+  const confirmEligible = confirming === "releaseAll"
+    ? filtered.filter((c) => c.status === "draft")
+    : eligibleCards(confirming ?? "delete");
+  // A release skips cards with no name or type, so they don't count as being released.
+  const confirmCards = confirmingRelease
+    ? confirmEligible.filter((c) => releaseBlockers(c.snapshot ?? {}).length === 0)
+    : confirmEligible;
+  const confirmCopy = bulkConfirmCopy(confirming ?? "delete", { names: confirmCards.map((c) => c.title) });
+  // Release closes open proposals (migration 083), so say so before it happens.
+  const confirmNotices = confirmingRelease
+    ? [
+        ...bulkBlockedNotice(confirmEligible.length - confirmCards.length),
+        ...bulkProposalNotice(confirmCards.reduce((sum, c) => sum + (proposalCounts?.[c.id] ?? 0), 0)),
+      ]
+    : [];
 
   return (
     <div className="relative pb-28 sm:pb-20">
@@ -203,7 +222,8 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
           {BULK_ACTIONS.map((a) => {
             const n = eligibleCount(a);
             const danger = a === "delete";
-            const label = busy === a ? "Working…" : `${ACTION_LABEL[a]}${n ? ` (${n})` : ""}`;
+            const name = a === "release" ? bulkReleaseLabel(eligibleCards(a).map((c) => c.status)) : ACTION_LABEL[a];
+            const label = busy === a ? "Working…" : `${name}${n ? ` (${n})` : ""}`;
             return (
               <Button
                 key={a}
@@ -211,7 +231,7 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
                 variant={a === "release" ? "default" : "outline"}
                 className={`h-8 text-xs ${danger ? "border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive" : ""}`}
                 disabled={busy !== null || n === 0}
-                onClick={() => (a === "delete" || a === "returnToIdeas") ? setConfirming(a) : runBulk(a, ids)}
+                onClick={() => setConfirming(a)}
               >
                 {label}
               </Button>
@@ -230,12 +250,16 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
           else if (a) runBulk(a, ids);
         }}
         variant={confirming === "delete" ? "destructive" : "warning"}
-        title={CONFIRM_COPY[confirming ?? "delete"].title}
-        description={`${CONFIRM_COPY[confirming ?? "delete"].description} (${
-          confirming === "releaseAll" ? draftIds.length : eligibleCount(confirming ?? "delete")
-        } cards)`}
-        confirmLabel={CONFIRM_COPY[confirming ?? "delete"].confirmLabel}
-      />
+        title={confirmCopy.title}
+        description={confirmCopy.description}
+        confirmLabel={confirmCopy.confirmLabel}
+      >
+        {confirmNotices.length > 0 && (
+          <ul className="space-y-1 rounded-md border bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground">
+            {confirmNotices.map((n) => <li key={n}>{n}</li>)}
+          </ul>
+        )}
+      </ConfirmationDialog>
     </div>
   );
 }

@@ -30,7 +30,22 @@ creates a version; decisions do.
               ─────────────────────────────────▶ vN 'published', card → In playtest
  "Mark final"      : flips current 'published' row → 'approved' (no new version)
  "Reopen testing"  : flips it back (no new version)
+ "Shelve"          : retires the live row, clears the pointers, and records what it
+                     cleared (shelved_status + shelved_*_version_id)
+ "Restore"         : puts back exactly that: In playtest or Final on the same version,
+                     visible to playtesters again; Draft stays Draft (no new version)
 ```
+
+**Release needs a name and a type** (migration 127), at the database and in the UI.
+Missing art stays allowed: art-less playtest releases are normal. A bulk release counts
+a blocked card as skipped and says why.
+
+**Releasing an unchanged card mints nothing** (migration 127). If the working draft
+matches the published version in content and art, `forge_publish_card` returns null. The
+single-card dialog says nothing has changed since vN; a bulk release counts the card as
+skipped. Open proposals stay open, because no version was minted. A first release always
+mints, and so does releasing a card whose last release was retired. "Content" ignores
+empty fields, so typing into a blank field and erasing it is not a change.
 
 ## Why autosave exists (and why it is NOT versioning)
 
@@ -67,7 +82,7 @@ overwrite can't be undone; a wizard confirm step says how many cards will change
 | `draft` | Accepting a proposal on a **Draft** card | Elders/owner/superadmin only | Pre-release iteration record. Never superseded, never released; permanent history. |
 | `published` | **Release to playtesters** button, or accepting a proposal on an **In playtest** card | Playtesters (granted) + elders | The current playtest version. Exactly one per card; the previous one flips to `superseded`. |
 | `approved` | **Mark final** (flips the current `published` row in place) | Playtesters (granted) + elders | The finalized version. Reopen flips it back to `published`. |
-| `superseded` | Automatically, when a newer `published` version replaces the old one (or on Shelve/Return for published/approved rows) | Elders only | Retired release. Draft rows are never turned into this. |
+| `superseded` | Automatically, when a newer `published` version replaces the old one (or on Shelve/Return for published/approved rows) | Elders only | Retired release. Draft rows are never turned into this. Restore flips the row Shelve took down back to what it was (migration 127). |
 
 Version numbers are one monotonic sequence per card across all statuses —
 if a card iterated four times in draft, its first release is **v5**. That is
@@ -86,7 +101,14 @@ iteration).
   above), folds it into the working draft, closes sibling open proposals as
   `superseded`. On a Draft card the dialog says so explicitly: nothing is
   released.
-- **Deny** (elder): requires a reason, stored as a proposal-anchored comment.
+- **Deny** (elder): requires a reason, stored as a proposal-anchored comment. A proposal
+  freezes the one shared draft and isn't a branch, so a denied change stays in the draft
+  and the next release ships it. The Deny dialog therefore asks: put the draft back to the
+  latest version (`forge_deny_proposal_restore_draft`, migration 127, atomic with the
+  deny; snapshot only, art untouched; logged in History), or leave it. It defaults to
+  going back only when the draft is just the denied change; if the draft has moved on,
+  going back would discard those edits too, so it defaults to leaving it and says so.
+  The Release dialog shows a diff against the last release either way.
 - **Release resolves open proposals** (migration 083). Releasing also mints a
   version, so it would otherwise leave open proposals permanently
   un-acceptable. Instead, in the same transaction: the oldest open proposal
@@ -105,6 +127,8 @@ iteration).
 
 ## Where the "why" of a change lives
 
+- **Release dialog** — lists what will change for playtesters, from the live draft. It
+  flushes the editor before freezing, so the diff you read is what ships.
 - **Release note** — optional "What changed?" in the Release dialog, stamped
   atomically on the version row (`card_versions.note`).
 - **Proposal summary** — mandatory at propose time; History shows it beside
@@ -143,6 +167,6 @@ pipeline + manual Lackey export).
 | History timeline | `CardHistory.tsx` + pure assembly in `app/forge/lib/historyView.ts` |
 | Readers | `app/forge/lib/versions.ts` (listVersions / listCardEvents / listSetActivity) |
 | Server actions | `app/forge/lib/proposals.ts`, `lifecycle.ts` |
-| RPCs (current bodies) | migrations `083` (**current `forge_publish_card`** — resolves open proposals), `072` (publish note + audit events + undeletable reasons), `075` (draft versions, unified base/guard, sweep exclusions) |
+| RPCs (current bodies) | migrations `127` (**current `forge_publish_card`**, `forge_archive_card` and `forge_unarchive_card`; also new `forge_deny_proposal_restore_draft`), `083` (publish resolves open proposals), `072` (publish note + audit events + undeletable reasons), `075` (draft versions, unified base/guard, sweep exclusions) |
 | Enum + backfill | `074` (`version_status` gains 'draft'), `076` (backfilled the one 073-era lost accept) |
 | Design history | `docs/superpowers/specs/2026-07-06-forge-version-history-design.md` (incl. addendum) |

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { diffCards, summarizeDiff, coerceFieldValue, sameSnapshot } from "../cardDiff";
+import { diffCards, summarizeDiff, coerceFieldValue, sameSnapshot, sameCardContent } from "../cardDiff";
 
 describe("diffCards", () => {
   it("detects a changed scalar field", () => {
@@ -89,5 +89,31 @@ describe("sameSnapshot", () => {
   it("treats an empty snapshot as equal only to another empty one", () => {
     expect(sameSnapshot({}, {})).toBe(true);
     expect(sameSnapshot({}, { name: "David" })).toBe(false);
+  });
+});
+
+// Mirrors _forge_snapshot_content in migration 127, which decides whether a release
+// mints a version. The same cases are run against the SQL.
+describe("sameCardContent", () => {
+  it("ignores key order", () => {
+    expect(sameCardContent({ name: "A", rawText: "x" }, { rawText: "x", name: "A" })).toBe(true);
+  });
+
+  it("treats an emptied field as no field, since a typed-then-erased edit changes nothing", () => {
+    expect(sameCardContent({ name: "A" }, { name: "A", reference: "", brigades: [], strength: undefined })).toBe(true);
+    expect(sameCardContent({ name: "A" }, { name: "A", strength: null as never })).toBe(true);
+  });
+
+  it("does not treat a zero stat as empty", () => {
+    expect(sameCardContent({ name: "A" }, { name: "A", strength: 0 })).toBe(false);
+  });
+
+  it("sees a real change, including in fields the diff doesn't list", () => {
+    expect(sameCardContent({ rawText: "Draw 2." }, { rawText: "Draw 3." })).toBe(false);
+    expect(sameCardContent({ name: "A" }, { name: "A", legality: "Rotation" })).toBe(false);
+  });
+
+  it("is order-sensitive inside a list, as jsonb is", () => {
+    expect(sameCardContent({ brigades: ["Blue", "Red"] }, { brigades: ["Red", "Blue"] })).toBe(false);
   });
 });

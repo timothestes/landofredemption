@@ -26,13 +26,14 @@ export type CardEventRow = {
 
 export type ReleaseInfo = { versionNumber: number; releasedAt: string; status: VersionRow["status"] };
 
-// The lifecycle actions written by migration 072 (see forge_audit inserts).
+// The lifecycle actions written by migrations 072 and 127 (see forge_audit inserts).
 const CARD_EVENT_ACTIONS = [
   "card_approved",
   "card_unapproved",
   "card_archived",
   "card_unarchived",
   "card_returned_to_ideas",
+  "card_draft_restored",
 ];
 
 // Resolve user UUIDs -> display names (member-readable). Same pattern as comments.ts.
@@ -71,6 +72,52 @@ export async function listVersions(cardId: string): Promise<VersionRow[]> {
     createdAt: r.created_at,
     authorName: names.get(r.created_by) ?? "Forge member",
   }));
+}
+
+// Whether the card's artwork differs from a version's, using the same fields
+// forge_publish_card compares (migration 127). Answered here so the blob keys stay on
+// the server. Words the release dialog only; the RPC decides what a release does.
+export async function artChangedSince(cardId: string, versionId: string): Promise<boolean> {
+  const ctx = await requireForge();
+  if (!ctx) return false;
+  const [{ data: card }, { data: version }] = await Promise.all([
+    ctx.supabase
+      .from("forge_cards")
+      .select("working_art_key, working_art_is_placeholder, working_art_original_key, working_finished_key")
+      .eq("id", cardId)
+      .maybeSingle(),
+    ctx.supabase
+      .from("card_versions")
+      .select("art_key, art_is_placeholder, art_original_key, finished_key")
+      .eq("id", versionId)
+      .maybeSingle(),
+  ]);
+  if (!card || !version) return false;
+  return (
+    card.working_art_key !== version.art_key ||
+    card.working_art_is_placeholder !== version.art_is_placeholder ||
+    card.working_art_original_key !== version.art_original_key ||
+    card.working_finished_key !== version.finished_key
+  );
+}
+
+// What Restore will put back on a shelved card (migration 127). Read separately, only for
+// a shelved card, so no other page depends on these columns. No record means Draft, which
+// is what forge_unarchive_card does with one too.
+export async function getShelvedRecord(cardId: string): Promise<{ status: string; versionId: string | null }> {
+  const none = { status: "draft", versionId: null };
+  const ctx = await requireForge();
+  if (!ctx) return none;
+  const { data } = await ctx.supabase
+    .from("forge_cards")
+    .select("shelved_status, shelved_published_version_id, shelved_approved_version_id")
+    .eq("id", cardId)
+    .maybeSingle();
+  if (!data?.shelved_status) return none;
+  return {
+    status: data.shelved_status,
+    versionId: data.shelved_approved_version_id ?? data.shelved_published_version_id ?? null,
+  };
 }
 
 // Lifecycle events (post-072 only), oldest first. forge_audit is elder-read

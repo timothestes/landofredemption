@@ -97,8 +97,8 @@ describe("buildCommentEras", () => {
 });
 
 describe("EVENT_LABEL", () => {
-  it("covers all five audited actions", () => {
-    for (const a of ["card_approved", "card_unapproved", "card_archived", "card_unarchived", "card_returned_to_ideas"]) {
+  it("covers all six audited actions", () => {
+    for (const a of ["card_approved", "card_unapproved", "card_archived", "card_unarchived", "card_returned_to_ideas", "card_draft_restored"]) {
       expect(EVENT_LABEL[a]).toBeTruthy();
     }
   });

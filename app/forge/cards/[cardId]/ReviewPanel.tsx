@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import ProposalDiff from "./ProposalDiff";
 import CommentThread from "./CommentThread";
 import CardHistory from "./CardHistory";
-import { useStudioSync } from "./StudioSyncContext";
+import { useStudioDraft, useStudioSync } from "./StudioSyncContext";
 import FieldChanges from "./FieldChanges";
 import { Button } from "@/components/ui/button";
 import { buildHistory } from "@/app/forge/lib/historyView";
@@ -16,9 +16,35 @@ import {
   proposeConsequence, proposeDiffCaption, proposeEmptyNote,
 } from "@/app/forge/lib/proposeCopy";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
+import type { DesignCard } from "@/app/forge/lib/designCard";
 import { createProposal, type ProposalDiffData, type ProposalRow } from "@/app/forge/lib/proposals";
 import type { CommentRow } from "@/app/forge/lib/comments";
 import type { VersionRow, CardEventRow } from "@/app/forge/lib/versions";
+
+// What the reviewer will be asked to sign off on, from the editor's live draft, which is
+// what a submit flushes and freezes. Its own component so that only this re-renders per
+// keystroke, and only while the propose form is open. A first proposal gets no field list:
+// every field reads as an addition, which ProposalDiff already judged to be noise.
+export function ProposePreview({
+  latestVersion,
+  savedDraft,
+}: {
+  latestVersion: { versionNumber: number; data: DesignCard } | null;
+  savedDraft: DesignCard;
+}) {
+  const draft = useStudioDraft() ?? savedDraft;
+  if (!latestVersion) return <p className="text-muted-foreground">{PROPOSE_NEW_CARD}</p>;
+  const changes = diffCards(latestVersion.data, draft);
+  if (changes.length === 0) {
+    return <p role="status" className="text-muted-foreground">{proposeEmptyNote(latestVersion.versionNumber)}</p>;
+  }
+  return (
+    <div className="space-y-1.5">
+      <p className="text-muted-foreground">{proposeDiffCaption(latestVersion.versionNumber)}</p>
+      <FieldChanges changes={changes} />
+    </div>
+  );
+}
 
 export default function ReviewPanel({
   card,
@@ -76,12 +102,9 @@ export default function ReviewPanel({
   };
   const canPropose = card.status === "draft" || card.status === "playtesting";
 
-  // What the reviewer will be asked to sign off on. listVersions orders
-  // version_number DESC, so versions[0] is the same row createProposal diffs
-  // against server-side. A preview, not a guarantee: submitting flushes the editor
-  // first, so the submission can include edits newer than this list.
+  // listVersions orders version_number DESC, so versions[0] is the same row
+  // createProposal diffs against server-side.
   const latestVersion = versions[0] ?? null;
-  const draftChanges = latestVersion ? diffCards(latestVersion.data, card.snapshot ?? {}) : [];
 
   // Card-level thread only, mirroring CommentThread's own filter.
   const cardComments = comments.filter((c) => c.proposalId === null);
@@ -116,19 +139,8 @@ export default function ReviewPanel({
 
         {proposing && (
           <div className="mb-3 space-y-3 rounded-md border bg-muted/30 p-3 text-xs">
-            {/* Lead with WHAT is being submitted. A first proposal gets no field list:
-                every field reads as an addition, which ProposalDiff already judged to
-                be noise rather than a diff. */}
-            {!latestVersion ? (
-              <p className="text-muted-foreground">{PROPOSE_NEW_CARD}</p>
-            ) : draftChanges.length === 0 ? (
-              <p role="status" className="text-muted-foreground">{proposeEmptyNote(latestVersion.versionNumber)}</p>
-            ) : (
-              <div className="space-y-1.5">
-                <p className="text-muted-foreground">{proposeDiffCaption(latestVersion.versionNumber)}</p>
-                <FieldChanges changes={draftChanges} />
-              </div>
-            )}
+            {/* Lead with WHAT is being submitted. */}
+            <ProposePreview latestVersion={latestVersion} savedDraft={card.snapshot ?? {}} />
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
               <textarea autoFocus value={summary} onChange={(e) => setSummary(e.target.value)}
@@ -137,8 +149,7 @@ export default function ReviewPanel({
                 className="h-16 w-full rounded-md border bg-background px-2 py-1 sm:flex-1" />
               <div className="flex gap-2">
                 {/* Never gated on the diff above: artwork changes are invisible to
-                    diffCards, and this prop trails the keystroke by a refresh. The
-                    server guard in createProposal stays authoritative. */}
+                    diffCards. The server guard in createProposal stays authoritative. */}
                 <Button size="sm" disabled={busy || !summary.trim()} onClick={submitProposal}>
                   Submit proposal
                 </Button>
@@ -166,6 +177,8 @@ export default function ReviewPanel({
                 finishedUrl={finishedUrl}
                 canReview={canReview}
                 cardStatus={card.status}
+                savedDraft={card.snapshot ?? {}}
+                latestVersion={latestVersion}
               />
             ))}
           </div>
