@@ -56,7 +56,7 @@ describe("computeProgress", () => {
     expect(computeProgress([card(["Hero"], ["Blue"])], {}).headline.pct).toBe(0);
   });
 
-  // New-set dialog now only ever writes a total (or nothing) — no more per-type seed.
+  // Settings can save a total on its own, with no per-type targets.
   it("total-only target (40) yields no per-type goal entries, no NaN, no divide-by-zero", () => {
     const m = computeProgress([card(["Hero"], ["Blue"]), card(["LostSoul"], undefined)], { total: 40 });
     expect(m.headline).toEqual({ actual: 2, target: 40, pct: 5 });

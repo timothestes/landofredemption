@@ -5,6 +5,7 @@ import { requireForge, requireElder } from "@/app/forge/lib/auth";
 import type { TargetCounts } from "@/app/forge/lib/progress";
 import { type ForgeCardFull } from "@/app/forge/lib/cards";
 import type { DesignCard } from "@/app/forge/lib/designCard";
+import { NEW_SET_PRIVATE_DEFAULT, setsTakingCards } from "@/app/forge/lib/setAccess";
 
 export type ForgeSetSummary = { id: string; name: string; slug: string; status: string; total: number; targetTotal: number; statusCounts: Record<string, number>; isPrivate: boolean };
 export type ForgeSetDetail = { id: string; name: string; slug: string; notes: string | null; targetCounts: TargetCounts; status: string; isPrivate: boolean };
@@ -12,7 +13,7 @@ export type SetElder = { userId: string; displayName: string | null; role: strin
 
 type Result = { ok: true } | { ok: false; error: string };
 
-export async function createSet(name: string, isPrivate = false): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+export async function createSet(name: string, isPrivate = NEW_SET_PRIVATE_DEFAULT): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   const ctx = await requireElder();
   if (!ctx) return { ok: false, error: "Not authorized" };
   const { data, error } = await ctx.supabase.rpc("forge_create_set", { p_name: name, p_is_private: isPrivate });
@@ -46,6 +47,18 @@ export async function listSets(): Promise<ForgeSetSummary[]> {
     statusCounts: statusCounts.get(s.id) ?? {},
     isPrivate: !!s.is_private,
   }));
+}
+
+// The sets the caller can put cards into, for set pickers. listSets also returns sets the
+// caller can only read, and the database would refuse those after the choice was made.
+export async function listWritableSets(): Promise<ForgeSetSummary[]> {
+  const ctx = await requireForge();
+  if (!ctx) return [];
+  const [sets, { data: roster }] = await Promise.all([
+    listSets(),
+    ctx.supabase.from("forge_set_elders").select("set_id").eq("user_id", ctx.user.id),
+  ]);
+  return setsTakingCards(sets, ctx.role, new Set((roster ?? []).map((r: any) => r.set_id as string)));
 }
 
 // True when the caller may create/design cards in this set (set elder or superadmin).

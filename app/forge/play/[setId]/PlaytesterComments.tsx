@@ -4,6 +4,9 @@ import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { addComment, deleteComment, listCardComments, type CommentRow } from "@/app/forge/lib/comments";
 import { timeAgo } from "@/app/forge/lib/relativeTime";
+import { withDeadline } from "@/app/forge/lib/withDeadline";
+
+const FAILED = "Couldn’t do that. Check your connection and try again.";
 
 export default function PlaytesterComments({
   cardId,
@@ -17,6 +20,7 @@ export default function PlaytesterComments({
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState("");
   const [pending, start] = useTransition();
+  const [posting, setPosting] = useState(false);
 
   const load = () => listCardComments(cardId).then(setComments);
   // Reload whenever the open card changes.
@@ -28,13 +32,16 @@ export default function PlaytesterComments({
 
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>, after?: () => void) =>
     start(async () => {
-      const r = await fn();
+      const r = await withDeadline(fn(), { ok: false, error: FAILED });
       if (!r.ok) {
-        alert(r.error ?? "Action failed");
-        return;
+        alert(r.error ?? FAILED);
+      } else {
+        // Reload first: clearing the box before the list has the comment left "No comments
+        // yet" on screen with your text gone, which looks like it was thrown away.
+        await withDeadline(load(), undefined);
+        after?.();
       }
-      after?.();
-      await load();
+      setPosting(false);
     });
 
   const roots = (comments ?? []).filter((c) => c.parentId === null);
@@ -99,6 +106,7 @@ export default function PlaytesterComments({
       <div className="space-y-2 rounded-md border p-2">
         <textarea
           value={body}
+          disabled={posting}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Leave a comment for the designers…"
           className="h-16 w-full rounded-md border bg-background px-2 py-1 text-sm"
@@ -107,9 +115,12 @@ export default function PlaytesterComments({
           size="sm"
           className="ml-auto flex"
           disabled={pending || !body.trim()}
-          onClick={() => run(() => addComment({ cardId, body }), () => setBody(""))}
+          onClick={() => {
+            setPosting(true);
+            run(() => addComment({ cardId, body }), () => setBody(""));
+          }}
         >
-          Post
+          {posting ? "Posting…" : "Post"}
         </Button>
       </div>
 

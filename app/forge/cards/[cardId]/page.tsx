@@ -2,7 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { requireForge } from "@/app/forge/lib/auth";
 import { getCard } from "@/app/forge/lib/cards";
 import { listArtCandidates } from "@/app/forge/lib/artCandidates";
-import { getSet, listSets, listSetCards } from "@/app/forge/lib/sets";
+import { getSet, listWritableSets, listSetCards, canDesignSet } from "@/app/forge/lib/sets";
+import { canWriteCard } from "@/app/forge/lib/setAccess";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import { getOpenProposalDiffs, listProposals } from "@/app/forge/lib/proposals";
@@ -25,7 +26,7 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
   const set = card.setId ? await getSet(card.setId) : null;
 
   const inSet = card.setId !== null;
-  const sets = inSet ? [] : await listSets();
+  const sets = inSet ? [] : await listWritableSets();
   const [openDiffs, proposals, comments, versions, events, siblings] = inSet
     ? await Promise.all([
         getOpenProposalDiffs(cardId),
@@ -36,7 +37,10 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
         listSetCards(card.setId!),
       ])
     : [[], [], [], [], [], []];
-  const canReview = ctx.role === "elder" || ctx.role === "superadmin";
+  // Which controls to offer. The RPCs check again, and they are what actually decides.
+  const canDesign = card.setId ? await canDesignSet(card.setId) : false;
+  const canEdit = canWriteCard({ status: card.status, isOwner: card.ownerId === ctx.user.id, role: ctx.role, canDesign });
+  const canReview = canDesign && canEdit;
 
   // Releasing closes every open proposal (migration 083); one that is exactly
   // this working draft is recorded as accepted instead. Classified here so the
@@ -122,6 +126,7 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
       releaseBase={releaseBase}
       restoreTarget={restoreTarget}
       version={version}
+      canEdit={canEdit}
       review={
         inSet ? (
           // key: React validates this as a keyless list child once it crosses the

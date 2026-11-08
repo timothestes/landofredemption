@@ -8,7 +8,7 @@ import ForgeCardGrid from "@/app/forge/components/ForgeCardGrid";
 import AddCardTile from "./AddCardTile";
 import { bulkLifecycle, type BulkResult } from "@/app/forge/lib/lifecycle";
 import {
-  STATUS_LABEL, ACTION_LABEL, isEligible, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice, bulkBlockedNotice, bulkSummary, releaseBlockers,
+  STATUS_LABEL, ACTION_LABEL, isEligible, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice, bulkBlockedNotice, bulkSummary, releaseBlockers, READ_ONLY_SET_NOTE,
   type LifecycleAction, type BulkAction, type BulkConfirmAction,
 } from "@/app/forge/lib/lifecycleCopy";
 import { cardRawText, CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
@@ -180,17 +180,22 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
               <Link href={`/forge/import?set=${setId}`}>Import cards</Link>
             </Button>
           )}
-          {!selecting && draftIds.length > 0 && (
-            <Button size="sm" className="h-8" disabled={busy !== null} onClick={() => setConfirming("releaseAll")}>
+          {/* A rare whole-set act, so it doesn't take the page's one solid green. */}
+          {!selecting && canCreate && draftIds.length > 0 && (
+            <Button size="sm" variant="outline" className="h-8" disabled={busy !== null} onClick={() => setConfirming("releaseAll")}>
               {busy === "release" ? "Working…" : `Release all to playtest (${draftIds.length})`}
             </Button>
           )}
-          <Button
-            size="sm" variant={selecting ? "secondary" : "outline"} className="h-8"
-            onClick={() => { setSelecting(!selecting); setSelected(new Set()); setSummary(null); }}
-          >
-            {selecting ? "Done selecting" : "Select"}
-          </Button>
+          {canCreate ? (
+            <Button
+              size="sm" variant={selecting ? "secondary" : "outline"} className="h-8"
+              onClick={() => { setSelecting(!selecting); setSelected(new Set()); setSummary(null); }}
+            >
+              {selecting ? "Done selecting" : "Select"}
+            </Button>
+          ) : (
+            <span className="text-xs text-muted-foreground">{READ_ONLY_SET_NOTE}</span>
+          )}
         </div>
       </div>
 
