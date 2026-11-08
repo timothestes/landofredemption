@@ -3,20 +3,24 @@ import { cn } from "@/lib/utils";
 
 export type Crumb = { label: string; href?: string };
 
-export default function ForgeBreadcrumbs({ items, className }: { items: Crumb[]; className?: string }) {
+// oneLine: never wrap. The last two crumbs truncate, since the first ones are short and fixed.
+export default function ForgeBreadcrumbs({ items, className, oneLine = false }: { items: Crumb[]; className?: string; oneLine?: boolean }) {
   return (
     <nav aria-label="Breadcrumb" className={cn("mb-2 text-xs text-muted-foreground", className)}>
-      <ol className="flex flex-wrap items-center gap-1">
-        {items.map((it, i) => (
-          <li key={i} className="flex items-center gap-1">
-            {i > 0 && <span aria-hidden>›</span>}
-            {it.href ? (
-              <Link href={it.href} className="hover:text-foreground hover:underline">{it.label}</Link>
-            ) : (
-              <span aria-current="page" className="font-medium text-foreground">{it.label}</span>
-            )}
-          </li>
-        ))}
+      <ol className={cn("flex items-center gap-1", !oneLine && "flex-wrap")}>
+        {items.map((it, i) => {
+          const truncates = oneLine && i >= items.length - 2;
+          return (
+            <li key={i} className={cn("flex items-center gap-1", oneLine && (truncates ? "min-w-0" : "shrink-0"))}>
+              {i > 0 && <span aria-hidden className="shrink-0">›</span>}
+              {it.href ? (
+                <Link href={it.href} className={cn("hover:text-foreground hover:underline", truncates && "truncate")}>{it.label}</Link>
+              ) : (
+                <span aria-current="page" className={cn("font-medium text-foreground", truncates && "truncate")}>{it.label}</span>
+              )}
+            </li>
+          );
+        })}
       </ol>
     </nav>
   );

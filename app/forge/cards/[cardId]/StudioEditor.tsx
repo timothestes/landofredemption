@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Download, ChevronLeft, ChevronRight, Loader2, Check, AlertTriangle } from "lucide-react";
+import { Download, ChevronLeft, ChevronRight, Loader2, Check, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import { upload } from "@vercel/blob/client";
 import ForgeCardFace from "@/app/forge/components/ForgeCardFace";
 import ForgeCardPreview from "@/app/forge/components/ForgeCardPreview";
@@ -78,6 +78,7 @@ export default function StudioEditor({
   const [uploading, setUploading] = useState<"finished" | null>(null);
   // The verse finder's candidate excerpt, drawn on the preview face only. Never saved.
   const [previewScripture, setPreviewScripture] = useState<string | null>(null);
+  const [peeking, setPeeking] = useState(false); // the large face over the form, below lg
   const router = useRouter();
 
   const { others, setEditing } = useForgeCardChannel(
@@ -226,6 +227,7 @@ export default function StudioEditor({
   const t = Date.parse(card.updatedAt) || 0;
   const activeSourceId = artCandidates.find((c) => c.isActiveSource)?.id ?? null;
   const previewCard = previewScripture === null ? snapshot : { ...snapshot, scripture: previewScripture };
+
   const face = card.hasFinished ? (
     <ForgeCardFace
       name={snapshot.name ?? null}
@@ -236,23 +238,6 @@ export default function StudioEditor({
   ) : (
     <ForgeCardPreview card={previewCard} artUrl={card.hasArt ? `/forge/api/art/${card.id}?t=${t}` : null} />
   );
-
-  // Below lg the face sits above the form and scrolls away. Once most of it has gone, a pinned
-  // button brings it back over the form without losing your place. On a phone, where the face
-  // is small enough to leave Name on the first screen, tapping it does the same.
-  const faceRef = useRef<HTMLDivElement>(null);
-  const [faceAway, setFaceAway] = useState(false);
-  const [peeking, setPeeking] = useState(false);
-  useEffect(() => {
-    if (!faceRef.current) return;
-    // -152px: the sticky chrome (112px) and the breadcrumb row (40px) cover that much.
-    const io = new IntersectionObserver(([e]) => setFaceAway(e.intersectionRatio < 0.5), {
-      rootMargin: "-152px 0px 0px 0px",
-      threshold: 0.5,
-    });
-    io.observe(faceRef.current);
-    return () => io.disconnect();
-  }, []);
 
   return (
     <div className="mx-auto max-w-5xl p-4">
@@ -274,7 +259,8 @@ export default function StudioEditor({
           of the padded wrapper; inside the flex-col below it would unstick immediately. */}
       <div className="sticky top-[var(--forge-chrome)] z-30 -mx-4 mb-2 flex items-center justify-between gap-3 border-b bg-background px-4 py-2">
         <ForgeBreadcrumbs
-          className="mb-0 min-w-0 text-sm"
+          className="mb-0 min-w-0 flex-1 text-sm"
+          oneLine
           items={
             card.setId
               ? [
@@ -316,6 +302,13 @@ export default function StudioEditor({
             </Button>
           )}
         </div>
+        {/* Below lg the face sits above the form and scrolls away; this brings it back without
+            losing your place. In this row, not over the form, so it never covers a field. The
+            negative margin keeps a 36px target from making the row taller. */}
+        <Button variant="ghost" aria-label={peeking ? "Hide card" : "Show card"} title={peeking ? "Hide card" : "Show card"}
+          className="-my-2 -mr-2 h-9 w-9 shrink-0 p-0 text-muted-foreground lg:hidden" onClick={() => setPeeking(!peeking)}>
+          {peeking ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+        </Button>
       </div>
 
       <div className="mb-3 flex flex-col gap-2 text-sm">
@@ -332,13 +325,10 @@ export default function StudioEditor({
         )}
       </div>
 
-      {(faceAway || peeking) && (
-        <div className="fixed right-4 top-[calc(var(--forge-chrome)+3rem)] z-20 flex flex-col items-end gap-1 lg:hidden">
-          <Button variant="outline" className="h-9 px-3 shadow-md" onClick={() => setPeeking(!peeking)}>
-            {peeking ? "Hide card" : "Show card"}
-          </Button>
-          {/* As large as fits under the chrome and this button, at the card's aspect ratio. */}
-          {peeking && <div className="w-[min(100vw-2rem,24rem,(100svh-14rem)*0.714)] rounded-lg shadow-lg">{face}</div>}
+      {/* As large as fits under the chrome, at the card's aspect ratio. */}
+      {peeking && (
+        <div className="fixed right-4 top-[calc(var(--forge-chrome)+3rem)] z-20 w-[min(100vw-2rem,24rem,(100svh-11rem)*0.714)] rounded-lg shadow-lg lg:hidden">
+          {face}
         </div>
       )}
 
@@ -355,7 +345,7 @@ export default function StudioEditor({
               scroll past before reaching the name field. Uncapped in the lg grid, where it
               fills the 360px track. On a phone, sized from the screen height so Name still
               starts on the first screen; tap it for the large view. */}
-          <div ref={faceRef} className="relative mx-auto w-[28svh] sm:w-auto sm:max-w-sm lg:max-w-none">
+          <div className="relative mx-auto w-[28svh] sm:w-auto sm:max-w-sm lg:max-w-none">
             {face}
             <button type="button" aria-label="Show the card larger" className="absolute inset-0 sm:hidden"
               onClick={() => setPeeking(true)} />
