@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   CARD_TYPES, ALIGNMENTS, CLASSES, ICONS, RARITIES, MULTI_BRIGADES, ICON_SIDES,
   deriveAlignmentFromTypes, toggleMultiBrigade, brigadeLabels, iconSide, defaultIconSide,
@@ -97,6 +98,9 @@ export default function CardDetailsFields({
 }: { snapshot: DesignCard; update: (patch: Partial<DesignCard>) => void }) {
   const types = snapshot.cardType ?? [];
   const goodEvil = snapshot.alignment === "Good_Evil";
+  // Open on a card with no type yet, where the type is the next thing to say. Seeded once at
+  // mount: choosing the type must not close the block under someone who is still filling it in.
+  const [startOpen] = useState(types.length === 0);
 
   // Auto-fill alignment from the selected types, without clobbering a manual
   // pick: only applies when alignment is unset, or still equals what the
@@ -112,8 +116,8 @@ export default function CardDetailsFields({
     update(patch);
   }
 
-  // Collapsed by default (the block is tall); the summary previews what's set so
-  // the card stays readable at a glance without opening it.
+  // Collapsed once there is a type (the block is tall); the summary previews what's set
+  // so the card stays readable at a glance without opening it.
   const preview = [
     ...types,
     ...brigadeLabels(snapshot.brigades ?? []),
@@ -125,7 +129,7 @@ export default function CardDetailsFields({
     .join(" · ");
 
   return (
-    <details className="rounded-lg border bg-card">
+    <details className="rounded-lg border bg-card" open={startOpen}>
       <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium">
         Card details
         <span className="ml-2 font-normal text-muted-foreground">

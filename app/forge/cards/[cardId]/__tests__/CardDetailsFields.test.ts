@@ -34,6 +34,22 @@ describe("CardDetailsFields Multi brigade", () => {
   });
 });
 
+// `open` is seeded once at mount, so nothing here can close it under someone mid-edit; that
+// half needs a DOM and was checked in a mounted harness.
+describe("CardDetailsFields starting state", () => {
+  const details = (html: string) => html.match(/<details[^>]*>/)![0];
+
+  it("starts open on a card with no type yet", () => {
+    expect(details(render({}))).toMatch(/\bopen\b/);
+    expect(details(render({ name: "Named only", rawText: "Some text." }))).toMatch(/\bopen\b/);
+    expect(details(render({ cardType: [] }))).toMatch(/\bopen\b/);
+  });
+
+  it("starts collapsed once the card has a type", () => {
+    expect(details(render({ cardType: ["Hero"] }))).not.toMatch(/\bopen\b/);
+  });
+});
+
 describe("CardDetailsFields icon tiles", () => {
   it("shows each card type's own art, spacing the run-together names", () => {
     const html = render({ cardType: ["EvilCharacter"], alignment: "Evil" });
