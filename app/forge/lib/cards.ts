@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireForge, requireElder } from "@/app/forge/lib/auth";
 import { validateArtFile, uploadForgeArt, uploadForgeFinished, readForgeUpload, deleteForgeArt } from "@/app/forge/lib/art";
+import { refusalOr } from "@/app/forge/lib/rpcRefusal";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 import type { SnapshotPatch } from "@/app/forge/lib/cardSave";
 
@@ -98,6 +99,21 @@ export async function uploadFinished(
     p_key: key,
   });
   if (error) return { ok: false, error: "Could not save finished card" };
+  revalidatePath("/forge/ideas");
+  return { ok: true };
+}
+
+// Clears the card's pointer and leaves the file. Release and accept copy this same key into
+// card_versions.finished_key, so a released version, and later a promotion, may still read it.
+export async function removeFinished(cardId: string): Promise<{ ok: boolean; error?: string }> {
+  const ctx = await requireElder();
+  if (!ctx) return { ok: false, error: "Not authorized" };
+  const { error } = await ctx.supabase.rpc("forge_set_working_finished", {
+    p_card_id: cardId,
+    p_key: null,
+  });
+  if (error) return { ok: false, error: refusalOr(error, "Could not remove the finished image") };
+  revalidatePath(`/forge/cards/${cardId}`);
   revalidatePath("/forge/ideas");
   return { ok: true };
 }

@@ -47,6 +47,14 @@ skipped. Open proposals stay open, because no version was minted. A first releas
 mints, and so does releasing a card whose last release was retired. "Content" ignores
 empty fields, so typing into a blank field and erasing it is not a change.
 
+**A finished image is a pointer on the card.** Release and accept copy
+`working_finished_key` into `card_versions.finished_key`, reading it at that moment: a
+proposal has no key of its own. "Remove finished image" (`removeFinished` in
+`app/forge/lib/cards.ts`) clears only the card's pointer and leaves the file, because a
+version, and later a promotion, may still read it. It counts as an art change, so the pill
+says "edited since" and the next release or accept mints a version with no finished image.
+Playtesters keep the released version until then.
+
 ## Why autosave exists (and why it is NOT versioning)
 
 `forge_cards.working_snapshot` is the live editing surface. The studio
