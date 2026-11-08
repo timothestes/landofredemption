@@ -57,31 +57,6 @@ export function parseCarddata(text: string): LackeyRow[] {
   return rows;
 }
 
-// Exact (case-insensitive) match on Set or OfficialSet; /…/ is a case-insensitive regex.
-export function matchesFilter(row: LackeyRow, filter: string): boolean {
-  const f = filter.trim();
-  if (!f) return false;
-  const slashes = f.match(/^\/(.*)\/$/);
-  if (slashes) {
-    let re: RegExp;
-    try { re = new RegExp(slashes[1], "i"); } catch { return false; }
-    return re.test(row.set) || re.test(row.officialSet);
-  }
-  const lower = f.toLowerCase();
-  return row.set.toLowerCase() === lower || row.officialSet.toLowerCase() === lower;
-}
-
-export function distinctSets(rows: LackeyRow[]): { set: string; count: number }[] {
-  const counts = new Map<string, number>();
-  for (const r of rows) {
-    if (!r.set) continue;
-    counts.set(r.set, (counts.get(r.set) ?? 0) + 1);
-  }
-  return [...counts.entries()]
-    .map(([set, count]) => ({ set, count }))
-    .sort((a, b) => b.count - a.count || a.set.localeCompare(b.set));
-}
-
 const IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff"];
 
 // Zip entries are prefixed by a variable root folder — match by path suffix.

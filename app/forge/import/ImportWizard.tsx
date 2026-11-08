@@ -8,7 +8,7 @@
 // useImportRunner). Source panels emit a common SourceSelection; preview, destination,
 // and the run pipeline are shared here.
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { unzipSync } from "fflate";
 import { createSet, type ForgeSetSummary } from "@/app/forge/lib/sets";
@@ -24,14 +24,15 @@ import {
   DialogBody,
   DialogFooter,
 } from "@/components/ui/dialog";
+import ImportPreviewTable from "./ImportPreviewTable";
 import LackeySourcePanel from "./LackeySourcePanel";
 import SpreadsheetSourcePanel from "./SpreadsheetSourcePanel";
-import { useImportRunner, previewOverwrite, mimeFor, type RunCard } from "./useImportRunner";
-import { overwriteConfirmCopy, type OverwritePreview } from "./overwrite";
+import { useImportRunner, previewOverwrite, previewRows, mimeFor, type RunCard } from "./useImportRunner";
+import { overwriteConfirmCopy, type OverwritePreview, type RowPreview } from "./overwrite";
+import { importButtonCopy, needsFixing, resultHeadline, rowOutcome, runRowLabel, skippedNote } from "./importCopy";
 import type { SourceSelection } from "./selection";
 
-// Cap on decompressed object-URL previews — a 200-card zip of ~1MB PNGs would
-// Previews load lazily in chunks as the grid scrolls: decompression is synchronous
+// Previews load lazily in chunks as the table scrolls: decompression is synchronous
 // main-thread work and each ~1MB PNG pins a blob URL, so a 224-card zip decompressed
 // all at once would freeze the page and hold hundreds of MB. Chunks keep each pause
 // short and spend memory only on what the elder actually scrolls to.
@@ -48,6 +49,8 @@ export default function ImportWizard({
 }) {
   const [source, setSource] = useState<Source>("lackey");
   const [selection, setSelection] = useState<SourceSelection | null>(null);
+  // Bumped to remount the source panel, which drops the files it holds.
+  const [panelKey, setPanelKey] = useState(0);
 
   const preselected = sets.find((s) => s.id === initialSetId)?.id;
   const [mode, setMode] = useState<"new" | "existing">(preselected ? "existing" : "new");
@@ -65,6 +68,9 @@ export default function ImportWizard({
   const [previews, setPreviews] = useState<Map<string, string>>(new Map());
   const [previewError, setPreviewError] = useState(false);
   const [previewCount, setPreviewCount] = useState(PREVIEW_CHUNK);
+  // What the chosen set already holds, row by row. Null until there's a set to check.
+  const [setCheck, setSetCheck] = useState<(RowPreview | undefined)[] | "checking" | "failed" | null>(null);
+  const [destName, setDestName] = useState("");
 
   const runner = useImportRunner();
   const { items, doneSetId, counts, finished } = runner;
@@ -123,28 +129,37 @@ export default function ImportWizard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Grow the previewed window when the loaded/unloaded BOUNDARY nears the viewport.
-  // The observed element is the first still-loading tile — a fixed sentinel at the
-  // grid's bottom would sit thousands of px below a mid-grid scroll position and
-  // never fire. The callback ref re-targets the observer as the boundary moves;
-  // observe() reports current intersection immediately, so a boundary that's
-  // already in view cascades until it passes the viewport.
   const totalPreviewable = new Set(cards.map((c) => c.entryName).filter(Boolean)).size;
   const morePreviews = previewCount < totalPreviewable;
-  const previewObserver = useRef<IntersectionObserver | null>(null);
-  useEffect(() => {
-    previewObserver.current = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) setPreviewCount((c) => c + PREVIEW_CHUNK);
-    }, { rootMargin: "600px" });
-    return () => previewObserver.current?.disconnect();
-  }, []);
-  const boundaryRef = (el: HTMLDivElement | null) => {
-    const io = previewObserver.current;
-    if (io && el) { io.disconnect(); io.observe(el); }
-  };
-  const firstPendingIdx = morePreviews
+  const loadMorePreviews = useCallback(() => setPreviewCount((c) => c + PREVIEW_CHUNK), []);
+  // Nothing to watch until the first chunk lands, or there's none coming (a corrupt zip).
+  const firstPendingIdx = morePreviews && previews.size > 0
     ? cards.findIndex((c) => c.entryName && !previews.has(c.entryName))
     : -1;
+
+  // Says what a run into this set will do before anyone presses Import. Only asks once the
+  // choices settle: ticking a set or re-pointing a column each make a new selection.
+  const wantsSetCheck = mode === "existing" && !!existingSetId && cards.length > 0 && !items;
+  useEffect(() => {
+    if (!wantsSetCheck) { setSetCheck(null); return; }
+    setSetCheck("checking");
+    const ctl = new AbortController();
+    const timer = setTimeout(() => {
+      previewRows(existingSetId, cards, ctl.signal).then(
+        (rows) => { if (!ctl.signal.aborted) setSetCheck(rows); },
+        () => { if (!ctl.signal.aborted) setSetCheck("failed"); },
+      );
+    }, 400);
+    return () => { clearTimeout(timer); ctl.abort(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantsSetCheck, existingSetId, selection?.key]);
+  const outcomes = useMemo(
+    () => (Array.isArray(setCheck)
+      ? setCheck.map((preview, i) => rowOutcome(preview, overwrite, !!cards[i]?.entryName))
+      : null),
+    [setCheck, overwrite, cards],
+  );
+  const buttonCopy = importButtonCopy(cards.length, outcomes, overwrite);
 
   function switchSource(next: Source) {
     if (running || next === source) return;
@@ -166,9 +181,10 @@ export default function ImportWizard({
         setId = r.id;
       }
       if (!setId) { setRunError("Pick a destination set."); return; }
+      setDestName(mode === "new" ? newSetName.trim() : sets.find((s) => s.id === setId)?.name ?? "this set");
 
       const work: RunCard[] = cards.map((c) => ({
-        name: c.name, snapshot: c.snapshot, derived: c.derived, entryName: c.entryName, status: "queued",
+        name: c.name, snapshot: c.snapshot, derived: c.derived, entryName: c.entryName, warnings: c.warnings, status: "queued",
       }));
       await runner.run(setId, work, selection.zipBytes, selection.sizes, overwrite);
     } catch (e) {
@@ -197,7 +213,18 @@ export default function ImportWizard({
     await runImport();
   }
 
+  // Back to step 2, keeping the destination. Remounting the panel drops its files.
+  function importAnother() {
+    setPanelKey((k) => k + 1);
+    setSelection(null);
+    setOverwrite(false);
+    setNewSetName("");
+    window.scrollTo({ top: 0 });
+  }
+
   const overwriteCopy = confirmOverwrite && overwriteConfirmCopy(confirmOverwrite);
+  const fixUps = (items ?? []).filter(needsFixing);
+  const flagged = cards.filter((c) => c.warnings.length > 0).length;
 
   return (
     <div className="mx-auto max-w-4xl p-4">
@@ -240,12 +267,12 @@ export default function ImportWizard({
       </fieldset>
 
       {source === "lackey"
-        ? <LackeySourcePanel disabled={running} onSelection={setSelection} />
-        : <SpreadsheetSourcePanel disabled={running} onSelection={setSelection} />}
+        ? <LackeySourcePanel key={panelKey} disabled={running} onSelection={setSelection} />
+        : <SpreadsheetSourcePanel key={panelKey} disabled={running} onSelection={setSelection} />}
 
       {/* 4 — preview */}
       {cards.length > 0 && !items && (
-        <fieldset className="mt-4 rounded-md border p-3">
+        <fieldset className="mt-4 min-w-0 rounded-md border p-3">
           <legend className="px-1 text-sm font-medium">4 · Preview</legend>
           {previewError && (
             <p className="mb-2 text-xs text-destructive">
@@ -253,34 +280,12 @@ export default function ImportWizard({
               images will likely fail to import.
             </p>
           )}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {cards.map((c, i) => {
-              const url = c.entryName ? previews.get(c.entryName) : null;
-              return (
-                <div key={`${c.name}|${c.entryName}`} ref={i === firstPendingIdx ? boundaryRef : undefined}>
-                  <div className="relative w-full overflow-hidden rounded-md border bg-muted/30" style={{ aspectRatio: "2.5 / 3.5" }}>
-                    {url ? (
-                      <img src={url} alt={c.name} loading="lazy" decoding="async"
-                        className="absolute inset-0 h-full w-full object-contain" />
-                    ) : (
-                      <div className="flex h-full items-center justify-center p-2 text-center text-xs text-muted-foreground">
-                        {c.entryName ? "Loading preview…" : "No image"}
-                      </div>
-                    )}
-                    {c.warnings.length > 0 && (
-                      <span
-                        title={c.warnings.join("\n")}
-                        className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full border border-amber-500/40 bg-amber-500/15 text-[10px] font-semibold text-amber-700 backdrop-blur-sm dark:text-amber-400"
-                      >
-                        !
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">{c.name}</p>
-                </div>
-              );
-            })}
-          </div>
+          <p className="mb-2 text-xs text-muted-foreground">
+            What each card will be saved with.
+            {flagged > 0 && ` ${flagged} flagged: amber says what won’t import.`}
+          </p>
+          <ImportPreviewTable cards={cards} previews={previews} firstPendingIdx={firstPendingIdx}
+            onNeedMorePreviews={loadMorePreviews} outcomes={outcomes} />
         </fieldset>
       )}
 
@@ -322,11 +327,18 @@ export default function ImportWizard({
               </>
             )}
           </div>
+          {buttonCopy.note && <p className="mt-3 text-sm">{buttonCopy.note}</p>}
+          {setCheck === "failed" && (
+            <p className="mt-3 text-sm text-amber-600 dark:text-amber-500">
+              Couldn’t check this set for existing cards.
+              {overwrite ? " Importing will try again first." : " Any already in it will be skipped, not changed."}
+            </p>
+          )}
           {runError && <p className="mt-2 text-sm text-destructive">{runError}</p>}
           <Button type="button" className="mt-3"
             onClick={() => (mode === "new" ? setNewSetDialogOpen(true) : overwrite ? checkOverwrite() : runImport())}
-            disabled={running || cards.length === 0}>
-            {checking ? "Checking existing cards…" : cards.length === 1 ? "Import 1 card" : `Import ${cards.length} cards`}
+            disabled={running || cards.length === 0 || setCheck === "checking" || buttonCopy.nothingToDo}>
+            {checking || setCheck === "checking" ? "Checking existing cards…" : buttonCopy.label}
           </Button>
         </fieldset>
       )}
@@ -376,38 +388,82 @@ export default function ImportWizard({
         </ul>
       </ConfirmationDialog>
 
-      {/* 6 — progress + summary */}
+      {/* progress + summary */}
       {items && (
         <fieldset className="mt-4 rounded-md border p-3">
-          <legend className="px-1 text-sm font-medium">6 · Import</legend>
-          <p className="text-sm">
+          <legend className="px-1 text-sm font-medium">{finished ? "Result" : "Importing"}</legend>
+          <p className="text-sm font-medium">{resultHeadline(counts, destName, finished)}</p>
+          <p className="mt-1 text-sm">
             {overwrite ? (
               <>Imported {counts.imported} · Updated {counts.updated} · Unchanged {counts.unchanged} · Failed {counts.failed}</>
             ) : (
               <>Imported {counts.imported} · Skipped {counts.skipped} · Failed {counts.failed}</>
             )}
           </p>
-          {finished && counts.failed > 0 && (
-            <Button type="button" variant="outline" size="sm" className="mt-2 h-7 px-3 text-xs" onClick={runner.retryFailed}>
-              Retry failed
-            </Button>
+          {finished && counts.skipped > 0 && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {skippedNote(counts.skipped)}
+              {mode === "existing" && !overwrite && (
+                <>
+                  {" "}
+                  <button type="button" className="text-foreground underline"
+                    onClick={() => { setOverwrite(true); runner.reset(); }}>
+                    Go back and overwrite
+                  </button>
+                </>
+              )}
+            </p>
           )}
-          {finished && doneSetId && (
-            <Link href={`/forge/sets/${doneSetId}/cards`}
-              className="mt-2 block text-sm font-medium text-primary hover:underline">
-              View set →
-            </Link>
+          {finished && fixUps.length > 0 && (
+            <div className="mt-3 border-t pt-3">
+              <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                {fixUps.length === 1 ? "1 card needs fixing" : `${fixUps.length} cards need fixing`}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                These fields didn’t import. Each card opens in a new tab, so this list stays here.
+              </p>
+              <ul className="mt-1 max-h-64 overflow-y-auto text-xs">
+                {fixUps.map((it, i) => (
+                  <li key={i} className="py-1">
+                    {it.cardId
+                      ? <a href={`/forge/cards/${it.cardId}`} target="_blank" rel="noopener noreferrer" className="font-medium underline">{it.name}</a>
+                      : <span className="font-medium">{it.name}</span>}
+                    <span className="text-muted-foreground">: {it.warnings.join("; ")}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {finished && (
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+              {counts.failed > 0 && (
+                <Button type="button" variant="outline" size="sm" onClick={runner.retryFailed}>
+                  Retry failed
+                </Button>
+              )}
+              <Button type="button" variant="outline" size="sm" onClick={importAnother}>
+                Import another file
+              </Button>
+              {doneSetId && (
+                <Link href={`/forge/sets/${doneSetId}/cards`} className="text-sm font-medium text-primary hover:underline">
+                  View set →
+                </Link>
+              )}
+            </div>
           )}
           <ul className="mt-3 max-h-64 space-y-1 overflow-y-auto text-xs">
             {items.map((it, i) => (
               <li key={i} className="flex items-center justify-between gap-2">
-                <span className="truncate">{it.name}</span>
+                {it.cardId
+                  ? <a href={`/forge/cards/${it.cardId}`} target="_blank" rel="noopener noreferrer" className="truncate hover:underline">{it.name}</a>
+                  : <span className="truncate">{it.name}</span>}
                 <span className={
                   it.status === "failed" ? "text-destructive"
+                    : needsFixing(it) ? "text-amber-700 dark:text-amber-400"
                     : it.status === "imported" || it.status === "updated" ? "text-primary"
                     : "text-muted-foreground"
                 }>
-                  {it.status === "failed" ? `failed: ${it.error ?? "unknown"}` : it.status}
+                  {runRowLabel(it)}
                 </span>
               </li>
             ))}
