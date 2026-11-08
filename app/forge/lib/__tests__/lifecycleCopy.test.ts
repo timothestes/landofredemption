@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import {
   STATUS_LABEL, ACTION_LABEL, releaseLabel, isEligible, BULK_DONE_VERB, releaseProposalNotice,
-  returnToIdeasCopy,
+  returnToIdeasCopy, deleteCopy, bulkReleaseLabel,
 } from "../lifecycleCopy";
 
 describe("lifecycleCopy", () => {
@@ -107,5 +107,48 @@ describe("returnToIdeasCopy", () => {
     const c = returnToIdeasCopy(3);
     expect(c.title).toBe("Return 3 cards to ideas?");
     expect(c.description).toMatch(/makes you their owner/);
+  });
+});
+
+describe("deleteCopy", () => {
+  it("names a single card", () => {
+    const c = deleteCopy(["Invented Card"]);
+    expect(c.title).toBe("Delete “Invented Card”?");
+    expect(c.description).toMatch(/cannot be undone/);
+    expect(c.confirmLabel).toBe("Delete card");
+  });
+
+  it("falls back for a card with no name", () => {
+    expect(deleteCopy([null]).title).toBe("Delete this untitled card?");
+    expect(deleteCopy(["   "]).title).toBe("Delete this untitled card?");
+  });
+
+  it("names up to three cards in bulk and counts the rest", () => {
+    const c = deleteCopy(["A", null, "C", "D", "E"]);
+    expect(c.title).toBe("Delete 5 cards?");
+    expect(c.description).toContain("A, Untitled, C and 2 more");
+    expect(c.confirmLabel).toBe("Delete 5 cards");
+  });
+
+  it("does not say 'and 0 more' when every card fits", () => {
+    expect(deleteCopy(["A", "B"]).description).toContain("removes A, B, with");
+  });
+});
+
+describe("bulkReleaseLabel", () => {
+  it("never offers 'Release to playtesters' for cards already released", () => {
+    expect(bulkReleaseLabel(["playtesting", "playtesting"])).toBe("Release update");
+  });
+
+  it("matches the single-card label for all-draft selections", () => {
+    expect(bulkReleaseLabel(["draft"])).toBe(releaseLabel("draft"));
+  });
+
+  it("uses a neutral word for a mixed selection", () => {
+    expect(bulkReleaseLabel(["draft", "playtesting"])).toBe("Release");
+  });
+
+  it("falls back to the action label with nothing eligible", () => {
+    expect(bulkReleaseLabel([])).toBe(ACTION_LABEL.release);
   });
 });

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createCard, type ForgeCardFull } from "@/app/forge/lib/cards";
 import { bulkShareToSet, bulkLifecycle, type BulkResult } from "@/app/forge/lib/lifecycle";
-import { BULK_DONE_VERB, CONFIRM_COPY } from "@/app/forge/lib/lifecycleCopy";
+import { BULK_DONE_VERB, deleteCopy } from "@/app/forge/lib/lifecycleCopy";
 import ForgeCardGrid from "@/app/forge/components/ForgeCardGrid";
 import { CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
@@ -65,6 +65,8 @@ export default function IdeasLibrary({ cards, canCreate, sets }: { cards: ForgeC
     setSelected(new Set());
     router.refresh();
   }
+
+  const delCopy = deleteCopy(cards.filter((c) => selected.has(c.id)).map((c) => c.title));
 
   return (
     <div className="mx-auto max-w-6xl p-4 pb-28 sm:pb-20">
@@ -134,9 +136,9 @@ export default function IdeasLibrary({ cards, canCreate, sets }: { cards: ForgeC
         onOpenChange={setConfirmDelete}
         onConfirm={onBulkDelete}
         variant="destructive"
-        title={CONFIRM_COPY.delete.title}
-        description={`${CONFIRM_COPY.delete.description} (${selected.size} cards)`}
-        confirmLabel={CONFIRM_COPY.delete.confirmLabel}
+        title={delCopy.title}
+        description={delCopy.description}
+        confirmLabel={delCopy.confirmLabel}
       />
     </div>
   );

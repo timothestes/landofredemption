@@ -60,6 +60,15 @@ export function releaseLabel(status: string): string {
   return status === "draft" ? ACTION_LABEL.release : "Release update";
 }
 
+// The bulk bar's label for the cards a release would touch. Same words as the studio
+// button, so a released card never reads "Release to playtesters" in one place and
+// "Release update" in the other; both follow the status the grid's badge shows.
+export function bulkReleaseLabel(statuses: string[]): string {
+  const distinct = new Set(statuses);
+  if (distinct.size === 0) return ACTION_LABEL.release;
+  return distinct.size === 1 ? releaseLabel(statuses[0]) : "Release";
+}
+
 // What releasing will do to the card's open proposals, said before you commit
 // to it. Mirrors migration 083: forge_publish_card records at most ONE matching
 // proposal as accepted (the oldest) and closes the rest as out of date.
@@ -103,12 +112,6 @@ export const CONFIRM_COPY = {
       "Releases every draft card matching the current filters. Playtesters will be able to see and build playtest decks with them.",
     confirmLabel: "Release all",
   },
-  delete: {
-    title: "Delete permanently?",
-    description:
-      "This permanently removes the card and all of its versions. This cannot be undone.",
-    confirmLabel: "Delete",
-  },
 } as const;
 
 // forge_send_card_to_private makes the person clicking the owner, on purpose (#443):
@@ -122,5 +125,25 @@ export function returnToIdeasCopy(count: number): ConfirmCopy {
       ? "Moves this card to your own ideas and makes you its owner. Nobody else on the set can see it there. Released versions are retired and playtesters can no longer see it."
       : "Moves these cards to your own ideas and makes you their owner. Nobody else on the set can see them there. Released versions are retired and playtesters can no longer see them.",
     confirmLabel: "Return to ideas",
+  };
+}
+
+// Delete is permanent and reached from grids of near-identical tiles, so the dialog
+// says which card. A bulk delete names the first few and counts the rest.
+export function deleteCopy(names: (string | null | undefined)[]): ConfirmCopy {
+  const trimmed = names.map((n) => n?.trim() || null);
+  if (trimmed.length === 1) {
+    return {
+      title: trimmed[0] ? `Delete “${trimmed[0]}”?` : "Delete this untitled card?",
+      description: "This permanently removes the card and all of its versions. This cannot be undone.",
+      confirmLabel: "Delete card",
+    };
+  }
+  const shown = trimmed.slice(0, 3).map((n) => n ?? "Untitled");
+  const more = trimmed.length - shown.length;
+  return {
+    title: `Delete ${trimmed.length} cards?`,
+    description: `This permanently removes ${shown.join(", ")}${more > 0 ? ` and ${more} more` : ""}, with all of their versions. This cannot be undone.`,
+    confirmLabel: `Delete ${trimmed.length} cards`,
   };
 }

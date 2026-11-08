@@ -8,7 +8,8 @@ import ForgeCardGrid from "@/app/forge/components/ForgeCardGrid";
 import AddCardTile from "./AddCardTile";
 import { bulkLifecycle, type BulkResult } from "@/app/forge/lib/lifecycle";
 import {
-  STATUS_LABEL, ACTION_LABEL, BULK_DONE_VERB, CONFIRM_COPY, isEligible, returnToIdeasCopy, type LifecycleAction,
+  STATUS_LABEL, ACTION_LABEL, BULK_DONE_VERB, CONFIRM_COPY, isEligible, bulkReleaseLabel, returnToIdeasCopy, deleteCopy,
+  type LifecycleAction,
 } from "@/app/forge/lib/lifecycleCopy";
 import { cardRawText, CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
@@ -85,8 +86,9 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
   // new frozen version, which stays a deliberate per-card (or selection) act.
   const draftIds = useMemo(() => filtered.filter((c) => c.status === "draft").map((c) => c.id), [filtered]);
   // How many selected cards each action would actually touch — shown on the button.
-  const eligibleCount = (a: LifecycleAction) =>
-    ids.filter((id) => { const c = byId.get(id); return c && isEligible(a, c.status); }).length;
+  const eligibleCards = (a: LifecycleAction) =>
+    ids.flatMap((id) => { const c = byId.get(id); return c && isEligible(a, c.status) ? [c] : []; });
+  const eligibleCount = (a: LifecycleAction) => eligibleCards(a).length;
 
   const toggle = (id: string) =>
     setSelected((prev) => {
@@ -107,14 +109,11 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
   }
 
   const confirmCopy =
-    confirming === "returnToIdeas"
-      ? returnToIdeasCopy(eligibleCount("returnToIdeas"))
-      : {
-          ...CONFIRM_COPY[confirming ?? "delete"],
-          description: `${CONFIRM_COPY[confirming ?? "delete"].description} (${
-            confirming === "releaseAll" ? draftIds.length : eligibleCount("delete")
-          } cards)`,
-        };
+    confirming === "releaseAll"
+      ? { ...CONFIRM_COPY.releaseAll, description: `${CONFIRM_COPY.releaseAll.description} (${draftIds.length} cards)` }
+      : confirming === "returnToIdeas"
+        ? returnToIdeasCopy(eligibleCount("returnToIdeas"))
+        : deleteCopy(eligibleCards("delete").map((c) => c.title));
 
   return (
     <div className="relative pb-28 sm:pb-20">
@@ -213,7 +212,8 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
           {BULK_ACTIONS.map((a) => {
             const n = eligibleCount(a);
             const danger = a === "delete";
-            const label = busy === a ? "Working…" : `${ACTION_LABEL[a]}${n ? ` (${n})` : ""}`;
+            const name = a === "release" ? bulkReleaseLabel(eligibleCards(a).map((c) => c.status)) : ACTION_LABEL[a];
+            const label = busy === a ? "Working…" : `${name}${n ? ` (${n})` : ""}`;
             return (
               <Button
                 key={a}

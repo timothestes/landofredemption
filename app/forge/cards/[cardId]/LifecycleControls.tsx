@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 import { shareToSet, sendToPrivate, publish, approve, unapprove, archive, unarchive, deleteCard } from "@/app/forge/lib/lifecycle";
-import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, CONFIRM_COPY } from "@/app/forge/lib/lifecycleCopy";
+import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, deleteCopy } from "@/app/forge/lib/lifecycleCopy";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,7 @@ export default function LifecycleControls({
   const inSet = card.setId !== null;
   const releaseNotices = releaseProposalNotice(openProposals.count, openProposals.hasMatch);
   const returnCopy = returnToIdeasCopy(1);
+  const delCopy = deleteCopy([card.title]);
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -191,9 +192,9 @@ export default function LifecycleControls({
         onOpenChange={setConfirmDelete}
         onConfirm={onDelete}
         variant="destructive"
-        title="Delete this card?"
-        description={CONFIRM_COPY.delete.description}
-        confirmLabel="Delete card"
+        title={delCopy.title}
+        description={delCopy.description}
+        confirmLabel={delCopy.confirmLabel}
       />
     </div>
   );
