@@ -22,8 +22,10 @@ export interface RunCard {
   snapshot: DesignCard;
   derived: string[];        // snapshot keys with no cell behind them; an overwrite skips these
   entryName: string | null; // zip entry for the finished-card image, if present
+  warnings: string[];       // values the preview flagged; kept for the result's fix-up list
   status: CardStatus;
   error?: string;
+  cardId?: string;          // set once the route has answered, for the result's links
 }
 
 export function mimeFor(entryName: string): string {
@@ -163,6 +165,7 @@ export function useImportRunner() {
         work[idx].error = r?.error ?? "Unexpected error";
       } else {
         work[idx].status = r.skipped ? "skipped" : r.unchanged ? "unchanged" : r.updated ? "updated" : "imported";
+        work[idx].cardId = r.cardId;
       }
     });
   }

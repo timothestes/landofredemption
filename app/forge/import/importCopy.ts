@@ -1,7 +1,8 @@
-// What the import wizard says about a run before it: the button, the note beside it, each
-// preview row's outcome. Pure.
+// What the import wizard says about a run: before it (the button, the note beside it, each
+// preview row's outcome) and after it (the headline, each row's label, the fix-up list). Pure.
 
 import type { RowPreview } from "./overwrite";
+import type { CardStatus } from "./useImportRunner";
 
 const cardCount = (n: number) => (n === 1 ? "1 card" : `${n} cards`);
 
@@ -68,4 +69,38 @@ export function importButtonCopy(
     note: same > 0 ? `${same} already ${same === 1 ? "matches" : "match"} this file and won’t be touched.` : null,
     nothingToDo: false,
   };
+}
+
+export function resultHeadline(
+  { imported, updated }: { imported: number; updated: number },
+  setName: string,
+  finished: boolean,
+): string {
+  if (!finished) return `Importing into ${setName}…`;
+  if (imported > 0 && updated > 0) return `${cardCount(imported)} imported and ${updated} updated in ${setName}`;
+  if (imported > 0) return `${cardCount(imported)} imported into ${setName}`;
+  if (updated > 0) return `${cardCount(updated)} updated in ${setName}`;
+  return `Nothing changed in ${setName}`;
+}
+
+export function skippedNote(skipped: number): string {
+  return skipped === 1
+    ? "1 skipped: a card with that name is already in this set. It wasn’t changed."
+    : `${skipped} skipped: cards with those names are already in this set. They weren’t changed.`;
+}
+
+type RunRow = { status: CardStatus; warnings: string[]; error?: string };
+
+const wasWritten = (status: CardStatus) => status === "imported" || status === "updated";
+
+// A skipped or failed row's flagged values never landed, so there's nothing to fix on its card.
+export function needsFixing(it: RunRow): boolean {
+  return wasWritten(it.status) && it.warnings.length > 0;
+}
+
+export function runRowLabel(it: RunRow): string {
+  if (it.status === "failed") return `failed: ${it.error ?? "unknown"}`;
+  if (it.status === "skipped") return "skipped: already in this set";
+  if (needsFixing(it)) return `${it.status}, needs fixing`;
+  return it.status;
 }

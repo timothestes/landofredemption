@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { importButtonCopy, rowOutcome, type RowOutcome } from "../importCopy";
+import {
+  importButtonCopy, needsFixing, resultHeadline, rowOutcome, runRowLabel, skippedNote, type RowOutcome,
+} from "../importCopy";
+import type { CardStatus } from "../useImportRunner";
 
 const many = (o: RowOutcome, n: number) => Array.from({ length: n }, () => o);
 
@@ -79,5 +82,62 @@ describe("importButtonCopy (U-58)", () => {
     const copy = importButtonCopy(3, ["skip", "skip", null], false);
     expect(copy.label).toBe("Import 1 new card");
     expect(copy.nothingToDo).toBe(false);
+  });
+});
+
+describe("resultHeadline (U-59)", () => {
+  const counts = (imported: number, updated = 0) => ({ imported, updated });
+
+  it("names the destination while it runs and when it's done", () => {
+    expect(resultHeadline(counts(0), "Set A", false)).toBe("Importing into Set A…");
+    expect(resultHeadline(counts(5), "Set A", true)).toBe("5 cards imported into Set A");
+    expect(resultHeadline(counts(1), "Set A", true)).toBe("1 card imported into Set A");
+  });
+
+  it("says updated, not imported, for an overwrite", () => {
+    expect(resultHeadline(counts(0, 3), "Set A", true)).toBe("3 cards updated in Set A");
+    expect(resultHeadline(counts(2, 3), "Set A", true)).toBe("2 cards imported and 3 updated in Set A");
+  });
+
+  it("doesn't claim an import when nothing was written", () => {
+    expect(resultHeadline(counts(0), "Set A", true)).toBe("Nothing changed in Set A");
+  });
+});
+
+describe("runRowLabel (U-58, U-59)", () => {
+  it("gives a skip its reason", () => {
+    expect(runRowLabel({ status: "skipped", warnings: [] })).toBe("skipped: already in this set");
+  });
+
+  it("doesn't call a flagged card plain imported", () => {
+    expect(runRowLabel({ status: "imported", warnings: ["x"] })).toBe("imported, needs fixing");
+    expect(runRowLabel({ status: "updated", warnings: ["x"] })).toBe("updated, needs fixing");
+    expect(runRowLabel({ status: "imported", warnings: [] })).toBe("imported");
+  });
+
+  it("carries the failure reason", () => {
+    expect(runRowLabel({ status: "failed", warnings: [], error: "Too big" })).toBe("failed: Too big");
+    expect(runRowLabel({ status: "failed", warnings: ["x"] })).toBe("failed: unknown");
+  });
+});
+
+describe("skippedNote (U-58)", () => {
+  it("says why, in the right number", () => {
+    expect(skippedNote(1)).toBe("1 skipped: a card with that name is already in this set. It wasn’t changed.");
+    expect(skippedNote(5)).toBe("5 skipped: cards with those names are already in this set. They weren’t changed.");
+  });
+});
+
+describe("needsFixing (U-59)", () => {
+  it("lists only flagged cards the run actually wrote", () => {
+    const rows: { name: string; status: CardStatus; warnings: string[] }[] = [
+      { name: "written", status: "imported", warnings: ["bad type"] },
+      { name: "updated", status: "updated", warnings: ["bad stat"] },
+      { name: "clean", status: "imported", warnings: [] },
+      { name: "skipped", status: "skipped", warnings: ["bad type"] },
+      { name: "same", status: "unchanged", warnings: ["bad type"] },
+      { name: "failed", status: "failed", warnings: ["bad type"] },
+    ];
+    expect(rows.filter(needsFixing).map((r) => r.name)).toEqual(["written", "updated"]);
   });
 });
