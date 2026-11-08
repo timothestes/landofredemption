@@ -59,7 +59,10 @@
     --popover: 215 15% 9%;
     --popover-foreground: 210 10% 95%;
     --primary: 142 71% 45%;
-    --primary-foreground: 0 0% 98%;
+    /* Navy, not white: this green is too bright to carry light text (white is
+       2.2:1, navy 7.7:1). Darkening the green instead would drop text-primary
+       on the dark background below 4.5:1; no single green can pass both. */
+    --primary-foreground: 221 39% 11%;
     --secondary: 215 12% 18%;
     --secondary-foreground: 210 10% 95%;
     --muted: 215 12% 20%;
@@ -82,6 +85,12 @@
     --dialog-header-bg: 215 15% 13%;
     --dialog-border: 215 10% 20%;
     --dialog-header-accent: 142 71% 45%;
+  }
+
+  /* /play and /goldfish keep white on green: their layouts render this marker.
+     :has() sets it on <html>, so portaled dialogs and drawers get it too. */
+  .dark:has([data-game-surface]) {
+    --primary-foreground: 0 0% 98%;
   }
 
   .jayden {
