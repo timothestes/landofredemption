@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   deriveSupersededBy, buildHistory, buildCommentEras,
   EVENT_LABEL, VERSION_STATUS_LABEL, VERSION_PILL, versionVerb,
-  splitHistoryForDisplay, splitCommentEras,
+  splitHistoryForDisplay, splitCommentEras, olderCommentsLabel,
 } from "../historyView";
 
 const prop = (over: any) => ({
@@ -178,42 +178,87 @@ describe("splitHistoryForDisplay", () => {
 describe("splitCommentEras", () => {
   const v1 = { versionNumber: 1, createdAt: "2026-07-01T00:00:00Z", status: "published" as const };
   const v2 = { versionNumber: 2, createdAt: "2026-07-03T00:00:00Z", status: "published" as const };
-  const m1 = comment({ id: "m1", createdAt: "2026-07-02T00:00:00Z" });
-  const m2 = comment({ id: "m2", createdAt: "2026-07-04T00:00:00Z" });
+  const v3 = { versionNumber: 3, createdAt: "2026-07-05T00:00:00Z", status: "published" as const };
+  const m1 = comment({ id: "m1", createdAt: "2026-07-02T00:00:00Z", resolved: true });
+  const m2 = comment({ id: "m2", createdAt: "2026-07-04T00:00:00Z", resolved: true });
+  const open1 = comment({ id: "open1", createdAt: "2026-07-02T01:00:00Z" });
+  const noReplies = () => [];
+  const ids = (items: ReturnType<typeof buildCommentEras>) =>
+    items.map((i) => (i.kind === "era" ? `v${i.versionNumber}` : i.comment.id));
 
-  it("defaults to the current version's era, folding earlier eras", () => {
+  it("folds resolved comments on earlier versions, with their divider", () => {
     const items = buildCommentEras([m1, m2], [v2, v1]);
-    const { recent, older, hiddenCommentCount } = splitCommentEras(items, 2, () => 0);
-    expect(recent.map((i) => (i.kind === "era" ? `v${i.versionNumber}` : i.comment.id))).toEqual(["v2", "m2"]);
-    expect(older.map((i) => (i.kind === "era" ? `v${i.versionNumber}` : i.comment.id))).toEqual(["v1", "m1"]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, 2, noReplies);
+    expect(ids(shown)).toEqual(["v2", "m2"]);
     expect(hiddenCommentCount).toBe(1);
+  });
+
+  // The audit's case: "2 · 1 unresolved" in the heading, and no question on the page.
+  it("keeps an unresolved comment visible after a newer release, with its divider", () => {
+    const items = buildCommentEras([open1], [v2, v1]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, 2, noReplies);
+    expect(ids(shown)).toEqual(["v1", "open1"]);
+    expect(hiddenCommentCount).toBe(0);
+  });
+
+  it("splits an era, folding the resolved and keeping the unresolved", () => {
+    const items = buildCommentEras([m1, open1, m2], [v3, v2, v1]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, 3, noReplies);
+    expect(ids(shown)).toEqual(["v1", "open1"]);
+    expect(hiddenCommentCount).toBe(2);
+  });
+
+  it("keeps a resolved comment whose reply is still unresolved", () => {
+    const items = buildCommentEras([m1], [v2, v1]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, 2, (id) =>
+      id === "m1" ? [comment({ id: "r1", parentId: "m1" })] : [],
+    );
+    expect(ids(shown)).toEqual(["v1", "m1"]);
+    expect(hiddenCommentCount).toBe(0);
   });
 
   it("counts replies toward the hidden total", () => {
     const items = buildCommentEras([m1, m2], [v2, v1]);
-    const { hiddenCommentCount } = splitCommentEras(items, 2, (id) => (id === "m1" ? 2 : 0));
+    const reply = (id: string) => comment({ id, parentId: "m1", resolved: true });
+    const { hiddenCommentCount } = splitCommentEras(items, 2, (id) => (id === "m1" ? [reply("r1"), reply("r2")] : []));
     expect(hiddenCommentCount).toBe(3);
   });
 
   it("hides nothing when there are no versions", () => {
     const items = buildCommentEras([m1], []);
-    const { older, hiddenCommentCount } = splitCommentEras(items, null, () => 0);
-    expect(older).toEqual([]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, null, noReplies);
+    expect(shown).toEqual(items);
     expect(hiddenCommentCount).toBe(0);
   });
 
-  it("folds everything when nobody has commented since the current version", () => {
-    const v2later = { versionNumber: 2, createdAt: "2026-07-05T00:00:00Z", status: "published" as const };
-    const items = buildCommentEras([m1], [v2later, v1]);
-    const { recent, hiddenCommentCount } = splitCommentEras(items, 2, () => 0);
-    expect(recent).toEqual([]);
+  it("folds everything resolved when nobody has commented since the current version", () => {
+    const items = buildCommentEras([m1], [v2, v1]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, 2, noReplies);
+    expect(shown).toEqual([]);
     expect(hiddenCommentCount).toBe(1);
   });
 
-  it("folds nothing when every comment is in the current era", () => {
+  it("shows the current version's comments even once they're resolved", () => {
     const items = buildCommentEras([m1], [v1]);
-    const { older, hiddenCommentCount } = splitCommentEras(items, 1, () => 0);
-    expect(older).toEqual([]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, 1, noReplies);
+    expect(ids(shown)).toEqual(["v1", "m1"]);
     expect(hiddenCommentCount).toBe(0);
+  });
+
+  // The old fold counted dividers as something to hide: "0 comments on earlier versions".
+  it("hides nothing when only dividers precede the current era", () => {
+    const m3 = comment({ id: "m3", createdAt: "2026-07-06T00:00:00Z", resolved: true });
+    const items = buildCommentEras([m3], [v3, v2, v1]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, 3, noReplies);
+    expect(ids(shown)).toEqual(["v3", "m3"]);
+    expect(hiddenCommentCount).toBe(0);
+  });
+});
+
+describe("olderCommentsLabel", () => {
+  it("says what the fold holds and that it opens", () => {
+    expect(olderCommentsLabel(false, 1)).toBe("Show 1 resolved comment on earlier versions");
+    expect(olderCommentsLabel(false, 3)).toBe("Show 3 resolved comments on earlier versions");
+    expect(olderCommentsLabel(true, 3)).toBe("Hide resolved comments on earlier versions");
   });
 });

@@ -14,7 +14,7 @@ import {
   type CommentRow,
 } from "@/app/forge/lib/comments";
 import { timeAgo } from "@/app/forge/lib/relativeTime";
-import { buildCommentEras, splitCommentEras, type CommentEraItem } from "@/app/forge/lib/historyView";
+import { buildCommentEras, olderCommentsLabel, splitCommentEras, type CommentEraItem } from "@/app/forge/lib/historyView";
 import { useLocalStorageFlag } from "@/app/forge/lib/useLocalStorageFlag";
 import { initials } from "./PresenceBar";
 import { useStudioSync } from "./StudioSyncContext";
@@ -291,11 +291,8 @@ export default function CommentThread({
       </div>
     );
 
-  const { older, recent, hiddenCommentCount } = splitCommentEras(
-    buildCommentEras(top, versions),
-    currentVersionNumber,
-    (id) => repliesOf(id).length
-  );
+  const eraItems = buildCommentEras(top, versions);
+  const { shown, hiddenCommentCount } = splitCommentEras(eraItems, currentVersionNumber, repliesOf);
 
   return (
     <div className="space-y-4">
@@ -313,20 +310,17 @@ export default function CommentThread({
         </p>
       ) : (
         <div className="space-y-4">
-          {older.length > 0 && (
+          {hiddenCommentCount > 0 && (
             <button
               type="button"
               aria-expanded={showOlder}
               onClick={() => setShowOlder(!showOlder)}
               className="cursor-pointer select-none text-xs text-muted-foreground hover:text-foreground"
             >
-              {showOlder
-                ? "Hide earlier comments"
-                : `${hiddenCommentCount} comment${hiddenCommentCount === 1 ? "" : "s"} on earlier versions`}
+              {olderCommentsLabel(showOlder, hiddenCommentCount)}
             </button>
           )}
-          {showOlder && older.map(renderItem)}
-          {recent.map(renderItem)}
+          {(showOlder ? eraItems : shown).map(renderItem)}
         </div>
       )}
 

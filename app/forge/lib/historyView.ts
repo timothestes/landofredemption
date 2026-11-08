@@ -142,23 +142,45 @@ export function splitHistoryForDisplay(events: HistoryEvent[]): {
   return { recent: events.slice(0, boundary + 1), older, hiddenVersionCount };
 }
 
-// The fold for Comments: default to the current version's era. Everything
-// before its era divider collapses behind one disclosure. Replies render as
-// their own items, so they count toward the hidden total.
+// The fold for Comments: resolved discussion on earlier versions collapses behind one
+// disclosure. Anything unresolved stays in view with its divider, however old: each release
+// used to bury every open question. A thread is unresolved if any of it is, which is what the
+// section heading counts. Replies render as their own items, so they count toward the hidden
+// total. `shown` is the view while folded; opened, the thread shows every item in order.
 export function splitCommentEras(
   items: CommentEraItem[],
   currentVersionNumber: number | null,
-  replyCount: (commentId: string) => number
-): { older: CommentEraItem[]; recent: CommentEraItem[]; hiddenCommentCount: number } {
-  if (currentVersionNumber === null) return { older: [], recent: items, hiddenCommentCount: 0 };
+  repliesOf: (commentId: string) => CommentRow[]
+): { shown: CommentEraItem[]; hiddenCommentCount: number } {
+  if (currentVersionNumber === null) return { shown: items, hiddenCommentCount: 0 };
   const idx = items.findIndex((i) => i.kind === "era" && i.versionNumber === currentVersionNumber);
   // No divider for the current version = nobody has commented since it landed;
   // every comment belongs to an earlier era.
-  const older = idx === -1 ? items : items.slice(0, idx);
-  const recent = idx === -1 ? [] : items.slice(idx);
-  const hiddenCommentCount = older.reduce(
-    (n, i) => (i.kind === "comment" ? n + 1 + replyCount(i.comment.id) : n),
-    0
-  );
-  return { older, recent, hiddenCommentCount };
+  const earlier = idx === -1 ? items : items.slice(0, idx);
+  const current = idx === -1 ? [] : items.slice(idx);
+  const shown: CommentEraItem[] = [];
+  let hiddenCommentCount = 0;
+  let divider: CommentEraItem | null = null; // the era's divider, until a comment under it shows
+  for (const item of earlier) {
+    if (item.kind === "era") {
+      divider = item;
+      continue;
+    }
+    const replies = repliesOf(item.comment.id);
+    if (item.comment.resolved && replies.every((r) => r.resolved)) {
+      hiddenCommentCount += 1 + replies.length;
+      continue;
+    }
+    if (divider) {
+      shown.push(divider);
+      divider = null;
+    }
+    shown.push(item);
+  }
+  return { shown: [...shown, ...current], hiddenCommentCount };
+}
+
+export function olderCommentsLabel(open: boolean, hiddenCount: number): string {
+  if (open) return "Hide resolved comments on earlier versions";
+  return `Show ${hiddenCount} resolved comment${hiddenCount === 1 ? "" : "s"} on earlier versions`;
 }
