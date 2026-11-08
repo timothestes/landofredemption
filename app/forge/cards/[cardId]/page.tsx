@@ -4,11 +4,11 @@ import { getCard } from "@/app/forge/lib/cards";
 import { listArtCandidates } from "@/app/forge/lib/artCandidates";
 import { getSet, listSets, listSetCards } from "@/app/forge/lib/sets";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
-import { filterQuery, gridHref, parseCardFilters } from "@/app/forge/lib/cardFilters";
+import { filterQuery, gridHref, parseCardFilters, walkSet } from "@/app/forge/lib/cardFilters";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import { getOpenProposalDiffs, listProposals } from "@/app/forge/lib/proposals";
 import { listComments } from "@/app/forge/lib/comments";
-import { listVersions, listCardEvents, artChangedSince, getShelvedRecord } from "@/app/forge/lib/versions";
+import { listVersions, listCardEvents, listSetActivity, artChangedSince, getShelvedRecord } from "@/app/forge/lib/versions";
 import { pickStudioVersion } from "@/app/forge/lib/studioVersion";
 import StudioEditor from "./StudioEditor";
 import ReviewPanel from "./ReviewPanel";
@@ -84,15 +84,12 @@ export default async function StudioPage({ params, searchParams }: {
       : await artChangedSince(cardId, releasedId);
   const version = pickStudioVersion(card, versions, moved);
 
-  // Prev/next arrows on the card face walk the set in the same order as the grid.
-  // No wrap: the boundary card gets null and hides that arrow.
+  // Prev/next arrows on the card face walk the list the grid showed: its filter, in its order.
+  // No wrap: the boundary card gets null and hides that arrow. The position is shown under the
+  // face so walking a set tells you where you are, and so the ←/→ shortcut is discoverable at all.
   const ordered = sortSetCards(siblings);
-  const idx = ordered.findIndex((c) => c.id === cardId);
-  const prevId = idx > 0 ? ordered[idx - 1].id : null;
-  const nextId = idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1].id : null;
-  // Shown under the face so walking a set tells you where you are, and so the ←/→
-  // shortcut is discoverable at all.
-  const position = idx >= 0 && ordered.length > 1 ? { index: idx + 1, total: ordered.length } : null;
+  const releases = inSet && filters.since ? await listSetActivity(ordered.map((c) => c.id)) : undefined;
+  const { prevId, nextId, position } = walkSet(ordered, cardId, filters, releases);
 
   const { data: meRow } = await ctx.supabase
     .from("playtest_members")

@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { saveCardFields, uploadFinished, setPlaceholder, type ForgeCardFull } from "@/app/forge/lib/cards";
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
+import { walkHint, type WalkPosition } from "@/app/forge/lib/cardFilters";
 import { createCardSaver, incomingAction } from "@/app/forge/lib/cardSave";
 import { STATUS_BADGE_CLASS } from "@/app/forge/lib/lifecycleCopy";
 import { versionPill, type StudioVersion } from "@/app/forge/lib/studioVersion";
@@ -59,7 +60,7 @@ export default function StudioEditor({
   walkQuery?: string;
   gridHref: string;
   // Where this card sits in the set's grid order, when there is more than one.
-  position?: { index: number; total: number } | null;
+  position?: WalkPosition | null;
   artCandidates: ArtCandidate[];
   // Passed straight to LifecycleControls for the release dialog's heads-up.
   openProposals?: { count: number; hasMatch: boolean };
@@ -423,8 +424,8 @@ export default function StudioEditor({
           </div>
           {position && (
             <p className="mt-2 text-center text-xs text-muted-foreground">
-              {position.index} of {position.total}
-              <span className="hidden lg:inline"> · ← → to move</span>
+              {walkHint(position)}
+              {(prevId || nextId) && <span className="hidden lg:inline"> · ← → to move</span>}
             </p>
           )}
         </div>

@@ -11,9 +11,9 @@ import {
   STATUS_LABEL, ACTION_LABEL, isEligible, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice, bulkBlockedNotice, bulkSummary, releaseBlockers,
   type LifecycleAction, type BulkAction, type BulkConfirmAction,
 } from "@/app/forge/lib/lifecycleCopy";
-import { cardRawText, CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
+import { CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
-import { SET_STATUSES } from "@/app/forge/lib/cardFilters";
+import { SET_STATUSES, visibleSetCards } from "@/app/forge/lib/cardFilters";
 import { useGridPlace } from "@/app/forge/lib/useGridPlace";
 import { typeLabel, brigadeLabel } from "@/app/forge/lib/filterIcons";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
@@ -54,30 +54,8 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
   // view's prev/next arrows via sortSetCards.
   const sorted = useMemo(() => sortSetCards(cards), [cards]);
 
-  const filtered = useMemo(() => sorted.filter((c) => {
-    const s = c.snapshot ?? {};
-    if (q) {
-      const needle = q.toLowerCase();
-      const hay = `${c.title ?? ""}\n${cardRawText(s)}`.toLowerCase();
-      if (!hay.includes(needle)) return false;
-    }
-    if (status && c.status !== status) return false;
-    if (type && !(s.cardType ?? []).includes(type)) return false;
-    if (brigade && !(s.brigades ?? []).includes(brigade)) return false;
-    if (since) {
-      const cutoff = Date.parse(since);
-      const rel = releases?.[c.id];
-      if (!rel || Date.parse(rel.releasedAt) < cutoff) return false;
-    }
-    return true;
-  }), [sorted, q, status, type, brigade, since, releases]);
-
-  const shown = useMemo(() => {
-    if (!since) return filtered;
-    return [...filtered].sort(
-      (a, b) => Date.parse(releases?.[b.id]?.releasedAt ?? "") - Date.parse(releases?.[a.id]?.releasedAt ?? "")
-    );
-  }, [filtered, since, releases]);
+  // The same list the card page's arrows walk.
+  const filtered = useMemo(() => visibleSetCards(sorted, filters, releases), [sorted, filters, releases]);
 
   const byId = useMemo(() => new Map(cards.map((c) => [c.id, c])), [cards]);
   const ids = [...selected];
@@ -166,8 +144,8 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="font-medium text-foreground">{selected.size} selected</span>
               <button type="button" className="hover:text-foreground hover:underline"
-                onClick={() => setSelected(new Set(shown.map((c) => c.id)))}>
-                Select all ({shown.length})
+                onClick={() => setSelected(new Set(filtered.map((c) => c.id)))}>
+                Select all ({filtered.length})
               </button>
               <button type="button" className="hover:text-foreground hover:underline" onClick={() => setSelected(new Set())}>
                 Clear
@@ -198,13 +176,13 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
       )}
 
       <ForgeCardGrid
-        cards={shown}
+        cards={filtered}
         cardQuery={query}
         showStatus
         commentCounts={commentCounts}
         proposalCounts={proposalCounts}
         releaseBadges={since ? Object.fromEntries(
-          shown.flatMap((c) => {
+          filtered.flatMap((c) => {
             const rel = releases?.[c.id];
             // Draft iterations count as activity but must not read as releases.
             return rel ? [[c.id, `v${rel.versionNumber}${rel.status === "draft" ? " draft" : ""} · ${new Date(rel.releasedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`]] : [];
