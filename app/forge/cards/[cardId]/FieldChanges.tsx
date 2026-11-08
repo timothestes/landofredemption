@@ -1,6 +1,6 @@
 "use client";
 
-import { isBlockChange, type FieldChange } from "@/app/forge/lib/cardDiff";
+import { isBlockChange, readsAsRedline, wordDiff, type FieldChange, type TextOp } from "@/app/forge/lib/cardDiff";
 
 // Diff colours are rose/emerald, not destructive/primary:
 //   - `--primary` is the brand accent, reserved for CTAs and active states. A version
@@ -14,6 +14,34 @@ import { isBlockChange, type FieldChange } from "@/app/forge/lib/cardDiff";
 const BEFORE = "whitespace-pre-wrap rounded border-l-2 border-rose-500 bg-rose-500/10 px-2 py-1 text-foreground";
 const AFTER = "whitespace-pre-wrap rounded border-l-2 border-emerald-500 bg-emerald-500/10 px-2 py-1 text-foreground";
 const FIRST = "whitespace-pre-wrap rounded border-l-2 border-border bg-muted px-2 py-1 text-foreground";
+// Padded so a replaced word reads as two marks, not one: "2" then "3", never "23".
+const DEL = "rounded-sm bg-rose-500/25 px-0.5 line-through decoration-rose-500";
+const INS = "rounded-sm bg-emerald-500/25 px-0.5 font-medium no-underline";
+
+function Marked({ ops }: { ops: TextOp[] }) {
+  return (
+    <>
+      {ops.map((o, i) =>
+        o.op === "del" ? <del key={i} className={DEL}>{o.text}</del>
+          : o.op === "ins" ? <ins key={i} className={INS}>{o.text}</ins>
+          : <span key={i}>{o.text}</span>,
+      )}
+    </>
+  );
+}
+
+// A small change is one paragraph with the changed words marked. A rewrite stays as two
+// paragraphs, with whatever words did change marked on each side.
+function TextChange({ before, after }: { before: string; after: string }) {
+  const ops = wordDiff(before, after);
+  if (readsAsRedline(ops)) return <div className={FIRST}><Marked ops={ops} /></div>;
+  return (
+    <>
+      <div className={BEFORE}><Marked ops={ops.filter((o) => o.op !== "ins")} /></div>
+      <div className={AFTER}><Marked ops={ops.filter((o) => o.op !== "del")} /></div>
+    </>
+  );
+}
 
 export default function FieldChanges({
   changes,
@@ -35,11 +63,10 @@ export default function FieldChanges({
               <span className="font-medium">{c.label}</span>
               {firstValue ? (
                 <div className={FIRST}>{c.after ?? "—"}</div>
+              ) : c.after === null ? (
+                <div className={BEFORE}>{c.before}</div>
               ) : (
-                <>
-                  {c.before !== null && <div className={BEFORE}>{c.before}</div>}
-                  {c.after !== null && <div className={AFTER}>{c.after}</div>}
-                </>
+                <TextChange before={c.before as string} after={c.after} />
               )}
             </li>
           );

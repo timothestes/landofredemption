@@ -44,7 +44,7 @@ export default function GlobalError({
             body { background: #111827 !important; color: #f0f2f4 !important; }
             .ge-card { background: #14161a; border-color: #292d32; }
             .ge-muted, .ge-link { color: #838b95; }
-            .ge-btn { background: #21c45d; }
+            .ge-btn { background: #21c45d; color: #111827; }
           }
         `}</style>
         <div

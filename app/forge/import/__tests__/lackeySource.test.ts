@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { zipSync, strToU8 } from "fflate";
-import { readLackeySource, soleSetCode } from "@/app/forge/import/lackeySource";
+import { readLackeySource, fileSets, setCode } from "@/app/forge/import/lackeySource";
 import { parseCarddata } from "@/app/forge/lib/lackey";
 
 const HEADER =
@@ -55,15 +55,40 @@ describe("readLackeySource", () => {
   });
 });
 
-describe("soleSetCode", () => {
-  it("returns the OfficialSet code when every row belongs to one set", () => {
-    expect(soleSetCode(parseCarddata(TSV))).toBe("EoT");
+describe("fileSets (U-62)", () => {
+  const parse = (...rows: string[]) => parseCarddata([HEADER, ...rows].join("\n"));
+
+  it("names the one set in a one-set file, preferring the OfficialSet spelling", () => {
+    expect(fileSets(parse(row("A"), row("B")))).toEqual([{ code: "eot", label: "EoT", count: 2 }]);
   });
+
   it("falls back to the Set column when OfficialSet is blank", () => {
-    expect(soleSetCode(parseCarddata([HEADER, row("A", "eot", ""), row("B", "eot", "")].join("\n")))).toBe("eot");
+    expect(fileSets(parse(row("A", "eot", ""), row("B", "eot", "")))).toEqual([{ code: "eot", label: "eot", count: 2 }]);
   });
-  it("returns null for a multi-set file or no rows", () => {
-    expect(soleSetCode(parseCarddata([HEADER, row("A", "eot", "EoT"), row("B", "rr2", "RR2")].join("\n")))).toBeNull();
-    expect(soleSetCode([])).toBeNull();
+
+  it("lists every set in a multi-set file by code, with its count", () => {
+    const sets = fileSets(parse(row("A", "RR2", "Roots 2"), row("B", "GoC", "Gospel of Christ"), row("C", "RR2", "Roots 2")));
+    expect(sets).toEqual([
+      { code: "GoC", label: "Gospel of Christ", count: 1 },
+      { code: "RR2", label: "Roots 2", count: 2 },
+    ]);
+  });
+
+  it("keeps two codes apart when they share an OfficialSet", () => {
+    const sets = fileSets(parse(row("A", "RoA", "Rock of Ages"), row("B", "RoA 3", "Rock of Ages")));
+    expect(sets.map((s) => s.code)).toEqual(["RoA", "RoA 3"]);
+  });
+
+  it("doesn't lose rows with a blank Set cell", () => {
+    const rows = parse(row("A", "", "EoT"), row("B", "", ""));
+    expect(rows.map(setCode)).toEqual(["EoT", ""]);
+    expect(fileSets(rows)).toEqual([
+      { code: "", label: "No set code", count: 1 },
+      { code: "EoT", label: "EoT", count: 1 },
+    ]);
+  });
+
+  it("is empty for no rows", () => {
+    expect(fileSets([])).toEqual([]);
   });
 });

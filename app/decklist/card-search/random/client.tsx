@@ -104,7 +104,7 @@ export default function RandomCardClient() {
           <p className="text-destructive mb-4 text-sm">{error || "No card found"}</p>
           <button
             onClick={() => pickRandomCard()}
-            className="px-4 py-2.5 bg-primary text-white rounded-lg font-medium text-sm active:translate-y-[1px] transition-transform"
+            className="px-4 py-2.5 bg-primary text-white dark:text-primary-foreground rounded-lg font-medium text-sm active:translate-y-[1px] transition-transform"
           >
             Try Again
           </button>

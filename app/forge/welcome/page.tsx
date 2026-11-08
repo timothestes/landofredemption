@@ -17,7 +17,7 @@ export default async function ForgeWelcomePage() {
     .single();
   if (data?.display_name) redirect("/forge");
   return (
-    <main className="mx-auto max-w-md p-6">
+    <div className="mx-auto max-w-md p-6">
       <h1 className="text-2xl" style={{ fontFamily: "Cinzel, serif" }}>
         Welcome to The Forge
       </h1>
@@ -25,6 +25,6 @@ export default async function ForgeWelcomePage() {
         Your invite is accepted. Pick a display name so other members recognize you.
       </p>
       <OnboardingForm />
-    </main>
+    </div>
   );
 }

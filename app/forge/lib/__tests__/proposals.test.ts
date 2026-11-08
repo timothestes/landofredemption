@@ -4,8 +4,8 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/app/forge/lib/auth", () => ({ requireForge: vi.fn(), requireElder: vi.fn() }));
 
 import { revalidatePath } from "next/cache";
-import { requireElder } from "@/app/forge/lib/auth";
-import { acceptProposal, denyProposal } from "../proposals";
+import { requireElder, requireForge } from "@/app/forge/lib/auth";
+import { denyProposal, acceptProposal, getOpenProposalDiffs } from "../proposals";
 import { ACCEPT_NEEDS_NAME_AND_TYPE } from "../proposeCopy";
 
 function ctx(error: any = null) {
@@ -61,5 +61,45 @@ describe("denyProposal", () => {
   it("surfaces an RPC error", async () => {
     (requireElder as any).mockResolvedValue(ctx({ message: "nope" }));
     expect((await denyProposal("p1", "c1", "no", true)).ok).toBe(false);
+  });
+});
+
+describe("acceptProposal", () => {
+  it("marks a stale accept as closed, so the dialog won't offer a retry", async () => {
+    (requireElder as any).mockResolvedValue(ctx());
+    const r = await acceptProposal("p1");
+    expect(r.ok).toBe(false);
+    expect(r.closed).toBe(true);
+  });
+
+  it("does not mark an RPC failure as closed", async () => {
+    (requireElder as any).mockResolvedValue(ctx({ message: "nope" }));
+    expect(await acceptProposal("p1")).toEqual({ ok: false, error: "Could not accept proposal" });
+  });
+});
+
+describe("getOpenProposalDiffs", () => {
+  function reads(rows: Record<string, any[]>) {
+    return {
+      supabase: {
+        from: (table: string) => {
+          const chain: any = { select: () => chain, eq: () => chain, in: () => chain, order: () => chain };
+          chain.then = (done: any) => done({ data: rows[table] ?? [] });
+          return chain;
+        },
+      },
+    };
+  }
+
+  // The reviewer's first question. listProposals had this; the open list did not.
+  it("names who proposed each open proposal", async () => {
+    (requireForge as any).mockResolvedValue(reads({
+      card_proposals: [{ id: "p1", card_id: "c1", base_version_id: "v3", status: "open", created_by: "u2", created_at: "2026-09-01T00:00:00Z" }],
+      card_versions: [{ id: "v3", data: { name: "Invented" } }],
+      playtest_members: [{ user_id: "u2", display_name: "Rhoda" }],
+    }));
+    const [d] = await getOpenProposalDiffs("c1");
+    expect(d.proposal.proposerName).toBe("Rhoda");
+    expect(d.current).toEqual({ name: "Invented" });
   });
 });

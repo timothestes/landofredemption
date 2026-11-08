@@ -12,6 +12,7 @@ Tokens live in `app/globals.css` and are consumed through Tailwind (`bg-backgrou
 
 - **Two neutral themes, one hue family.** Light is cool slate on near-white (`--background: 220 27% 98%`); dark is navy (`221 39% 11%`). Pure white and pure grey never appear. `card` is one step brighter than `background` in light and one step darker in dark; that tonal step, not a border, is how a panel lifts.
 - **Green `primary` is the only accent.** Hover and active states, the one primary CTA in a view, checked controls, and focus (the `Input` border turns `ring`; focus rings themselves are suppressed globally in `globals.css`). Never a decorative fill.
+- **Text on green is `primary-foreground`, never `text-white`.** Near-white on the light theme's darker green (4.8:1), navy on the dark theme's bright green (7.7:1; white there is 2.2:1). `/play` and `/goldfish` keep near-white for now through the `data-game-surface` marker in their layouts.
 - **Red lives only in the wordmark's R.** Blue is off-palette. Amber is reserved for tier and status (Regional/National, warnings). `destructive` is red.
 - **Jayden** is an easter-egg theme with its own gradient tokens; nothing outside `.jayden` uses gradients.
 

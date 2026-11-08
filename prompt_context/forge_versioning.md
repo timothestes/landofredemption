@@ -50,6 +50,14 @@ skipped. Open proposals stay open, because no version was minted. A first releas
 mints, and so does releasing a card whose last release was retired. "Content" ignores
 empty fields, so typing into a blank field and erasing it is not a change.
 
+**A finished image is a pointer on the card.** Release and accept copy
+`working_finished_key` into `card_versions.finished_key`, reading it at that moment: a
+proposal has no key of its own. "Remove finished image" (`removeFinished` in
+`app/forge/lib/cards.ts`) clears only the card's pointer and leaves the file, because a
+version, and later a promotion, may still read it. It counts as an art change, so the pill
+says "edited since" and the next release or accept mints a version with no finished image.
+Playtesters keep the released version until then.
+
 ## Why autosave exists (and why it is NOT versioning)
 
 `forge_cards.working_snapshot` is the live editing surface. The studio
@@ -100,10 +108,12 @@ iteration).
 - The proposal's `base_version_id` = the card's latest version of ANY status
   at propose time (null only for a never-versioned card — those render as
   "New card — first proposal" instead of a diff).
-- **Accept** (elder): checkpoints the proposed snapshot as a version (table
-  above), folds it into the working draft, closes sibling open proposals as
-  `superseded`. On a Draft card the dialog says so explicitly: nothing is
-  released.
+- **Accept** (elder): saves pending edits first, then checkpoints the proposed
+  snapshot as a version (table above), folds it into the working draft, closes
+  sibling open proposals as `superseded`. If the save fails, nothing is accepted.
+  Accepting replaces the draft with the proposal, so an open proposal warns once
+  the draft has moved on. On a Draft card the dialog says so explicitly: nothing
+  is released.
 - **Deny** (elder): requires a reason, stored as a proposal-anchored comment. A proposal
   freezes the one shared draft and isn't a branch, so a denied change stays in the draft
   and the next release ships it. The Deny dialog therefore asks: put the draft back to the
@@ -144,9 +154,15 @@ iteration).
   "vN released" otherwise) with author, time, note, status pill, and an
   expandable field diff vs the previous version; proposal outcomes with
   reasons; lifecycle events (Marked final / Reopened / Shelved / Restored /
-  Returned) from `forge_audit`.
+  Returned) from `forge_audit`. Also applied suggestions, which are worked out
+  rather than recorded: `forge_apply_suggestion` only writes the draft and marks
+  the comment resolved, so who applied one, when, and the value it replaced are
+  not stored. `appliedSuggestion` in `app/forge/lib/historyView.ts` infers it from
+  the comment and the versions, and takes the old value from the version at the
+  time.
 - **Card page → Comments**: era dividers ("v3 updated · Jul 7") anchor old
-  comments to the version they were written against.
+  comments to the version they were written against. Resolved threads on earlier
+  versions fold; anything unresolved stays in view.
 - **Studio header**: a pill in the grid's language ("In playtest · v3"), naming
   the released version, plus "· edited since" once the working draft (text,
   live; art and finished image, on refresh) differs from it. With nothing

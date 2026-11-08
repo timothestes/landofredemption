@@ -1,6 +1,7 @@
 // app/forge/lib/__tests__/lifecycleCopy.test.ts
 import { describe, it, expect } from "vitest";
 import {
+  draftMovedOnNote,
   STATUS_LABEL, ACTION_LABEL, releaseLabel, isEligible, BULK_DONE_VERB, releaseProposalNotice,
   returnToIdeasCopy, deleteCopy, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice,
   releaseBlockers, releaseBlockedNote, bulkBlockedNotice, bulkSummary,
@@ -430,6 +431,25 @@ describe("denyDraftPlan", () => {
     const p = denyDraftPlan({ draft: PROPOSED, proposed: PROPOSED, latest: null });
     expect(p.offer).toBe(false);
     expect(p.note).toMatch(/no earlier version/);
+  });
+});
+
+describe("draftMovedOnNote", () => {
+  const proposed = { name: "Invented", rawText: "Draw 3." };
+
+  it("is silent while the draft is what was proposed", () => {
+    expect(draftMovedOnNote({ ...proposed }, proposed)).toBeNull();
+  });
+
+  // forge_accept_proposal writes the proposal over the working draft.
+  it("warns that accepting drops edits made since", () => {
+    expect(draftMovedOnNote({ ...proposed, rawText: "Draw 4." }, proposed)).toBe(
+      "The draft has changed since this was proposed. Accepting drops those changes.",
+    );
+  });
+
+  it("doesn't count a field typed into and erased", () => {
+    expect(draftMovedOnNote({ ...proposed, reference: "" }, proposed)).toBeNull();
   });
 });
 

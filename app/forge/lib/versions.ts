@@ -150,15 +150,29 @@ export async function listSetActivity(
 ): Promise<Record<string, ReleaseInfo>> {
   const ctx = await requireForge();
   if (!ctx || cardIds.length === 0) return {};
-  const { data } = await ctx.supabase
-    .from("card_versions")
-    .select("card_id, version_number, status, created_at")
-    .in("card_id", cardIds)
-    .order("created_at", { ascending: false });
+  // PostgREST caps each request at 1000 rows with no error. id breaks created_at ties, so
+  // pages can't skip or repeat a row.
+  const PAGE_SIZE = 1000;
   const out: Record<string, ReleaseInfo> = {};
-  for (const r of data ?? []) {
-    const id = (r as any).card_id as string;
-    if (!out[id]) out[id] = { versionNumber: (r as any).version_number, releasedAt: (r as any).created_at, status: (r as any).status };
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await ctx.supabase
+      .from("card_versions")
+      .select("card_id, version_number, status, created_at")
+      .in("card_id", cardIds)
+      .order("created_at", { ascending: false })
+      .order("id")
+      .range(from, from + PAGE_SIZE - 1);
+    // All or nothing: a partial map would show the cards it missed as never versioned, next to
+    // cards that look complete. The grid still works without this, so don't fail the page.
+    if (error) {
+      console.error("[forge] listSetActivity failed", error);
+      return {};
+    }
+    for (const r of data ?? []) {
+      const id = (r as any).card_id as string;
+      if (!out[id]) out[id] = { versionNumber: (r as any).version_number, releasedAt: (r as any).created_at, status: (r as any).status };
+    }
+    if (!data || data.length < PAGE_SIZE) break;
   }
   return out;
 }

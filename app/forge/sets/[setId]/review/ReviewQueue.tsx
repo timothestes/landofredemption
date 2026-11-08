@@ -4,12 +4,17 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   buildReviewQueue,
+  reviewByline,
+  reviewRowHref,
   type ReviewCardRow,
   type ReviewKind,
   type ReviewOpenItem,
 } from "@/app/forge/lib/reviewView";
 import { useLastVisit } from "@/app/forge/lib/useLastVisit";
 import SinceFilter from "../SinceFilter";
+
+// A row is meant to be enough to decide whether to open it, not a transcript of the card.
+const MAX_ROW_ITEMS = 3;
 
 export default function ReviewQueue({
   setId,
@@ -71,27 +76,42 @@ export default function ReviewQueue({
           {rows.map((i) => (
             <li key={i.cardId}>
               <Link
-                href={`/forge/cards/${i.cardId}`}
-                className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-muted/50"
+                href={reviewRowHref(i.cardId, i.openProposals)}
+                className="block rounded-md border px-3 py-2 text-sm hover:bg-muted/50"
               >
-                <span className="font-medium">{i.title ?? "Untitled card"}</span>
-                <span className="flex gap-2 text-xs text-muted-foreground">
-                  {i.newCount > 0 && (
-                    <span className="rounded-full border border-foreground/30 px-2 py-0.5 font-medium text-foreground">
-                      {i.newCount} new
-                    </span>
-                  )}
-                  {i.openProposals > 0 && (
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">
-                      {i.openProposals} proposal{i.openProposals === 1 ? "" : "s"}
-                    </span>
-                  )}
-                  {i.openSuggestions > 0 && (
-                    <span className="rounded-full bg-sky-100 px-2 py-0.5 text-sky-800">
-                      {i.openSuggestions} suggestion{i.openSuggestions === 1 ? "" : "s"}
-                    </span>
-                  )}
-                </span>
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <span className="min-w-0 break-words font-medium">{i.title ?? "Untitled card"}</span>
+                  <span className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    {i.newCount > 0 && (
+                      <span className="rounded-full border border-foreground/30 px-2 py-0.5 font-medium text-foreground">
+                        {i.newCount} new
+                      </span>
+                    )}
+                    {i.openProposals > 0 && (
+                      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">
+                        {i.openProposals} proposal{i.openProposals === 1 ? "" : "s"}
+                      </span>
+                    )}
+                    {i.openSuggestions > 0 && (
+                      <span className="rounded-full bg-sky-100 px-2 py-0.5 text-sky-800">
+                        {i.openSuggestions} suggestion{i.openSuggestions === 1 ? "" : "s"}
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <div className="mt-1.5 space-y-1 text-xs text-muted-foreground">
+                  {i.items.slice(0, MAX_ROW_ITEMS).map((item) => (
+                    <div key={item.id}>
+                      {item.summary && <p className="line-clamp-2 text-sm text-foreground">{item.summary}</p>}
+                      {/* The relative time can differ between the server's render and this one. */}
+                      <p suppressHydrationWarning className="line-clamp-2">
+                        {reviewByline({ who: item.who, at: item.createdAt, baseVersion: item.baseVersion })}
+                        {item.changed && ` · ${item.changed}`}
+                      </p>
+                    </div>
+                  ))}
+                  {i.items.length > MAX_ROW_ITEMS && <p>+{i.items.length - MAX_ROW_ITEMS} more</p>}
+                </div>
               </Link>
             </li>
           ))}

@@ -12,7 +12,7 @@ export default async function ForgeDecksPage() {
   if (!ctx) notFound();
   const [decks, shared] = await Promise.all([listForgeDecks(), listSharedForgeDecks()]);
   return (
-    <main className="mx-auto max-w-3xl p-6">
+    <div className="mx-auto max-w-3xl p-6">
       <ForgeBreadcrumbs items={[{ label: "The Forge", href: "/forge" }, { label: "Decks" }]} />
       <h1 className="text-2xl" style={{ fontFamily: "Cinzel, serif" }}>Decks</h1>
       <p className="mt-1 text-sm text-muted-foreground">Build with the cards shared with you, plus the full card pool.</p>
@@ -47,6 +47,6 @@ export default async function ForgeDecksPage() {
           </ul>
         )}
       </section>
-    </main>
+    </div>
   );
 }

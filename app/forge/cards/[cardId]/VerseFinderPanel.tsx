@@ -5,7 +5,7 @@
 // call is an explicit action; typing only re-runs `classify`. All excerpt / ellipsis / handle
 // math comes from verseExcerpt.ts — this file only renders it and routes input to it.
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from "react";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,8 @@ import {
   clampHandles,
   moveHandle,
   snapHandle,
+  placeHandle,
+  nearestWord,
   wholeRange,
   trimToFit,
   verseOverCopy,
@@ -57,6 +59,12 @@ type Which = "start" | "end";
 const UPSTREAM = "Couldn't reach API.Bible. Type the verse by hand for now.";
 const CANT_FIT = "Can't fit without the ability shrinking";
 const SEARCH_KEY = "forge.verseFinder.search";
+const TRIM_HELP = "To trim, tap or click a word to move the nearer end, or drag an end.";
+/** How far a press must travel to be a drag, not a tap. */
+const DRAG_SLOP = 6;
+/** Dragging within this distance of the reader's top or bottom scrolls it, this much per move. */
+const DRAG_EDGE = 28;
+const DRAG_SCROLL = 14;
 
 export default function VerseFinderPanel({
   snapshot,
@@ -165,6 +173,9 @@ export default function VerseFinderPanel({
           setResults(null);
           setLastSearch(null);
         }
+        // Arrows and recent chips: the box follows to the chapter on screen. A typed reference is
+        // already there, and a hit keeps the search words that ← Results goes back to.
+        if (!opts.ref && !opts.fromHit) setQuery(canonicalRef(data.bookId, data.chapter, from, to));
         setFromHit(!!opts.fromHit);
         setChapter(data);
         setHandles(wholeRange(data.verses, from, to));
@@ -406,6 +417,14 @@ export default function VerseFinderPanel({
   }, [chapter, handles, loading]);
 
   const hasResults = !!results?.verses.length;
+  // The line above the reader names this chapter, so a caption for what is already loaded only repeats it.
+  const boxShowsChapter =
+    !!chapter &&
+    classified.kind === "ref" &&
+    classified.ref.bookId === chapter.bookId &&
+    classified.ref.chapter === chapter.chapter &&
+    classified.ref.from === chapter.requested.from &&
+    classified.ref.to === chapter.requested.to;
   const copyright = chapter ? chapter.copyright : hasResults ? results!.copyright : null;
 
   return (
@@ -419,7 +438,7 @@ export default function VerseFinderPanel({
         inputRef={inputRef}
         query={query}
         setQuery={setQuery}
-        hint={backable && boxShowsSearch ? "Esc · back to results" : hintFor(classified)}
+        hint={backable && boxShowsSearch ? "Esc · back to results" : boxShowsChapter ? null : hintFor(classified)}
         status={status}
         loading={loading}
         onSubmit={submit}
@@ -454,11 +473,15 @@ export default function VerseFinderPanel({
         <>
           {backable && (
             <div className="flex items-center">
-              <Button type="button" variant="ghost" size="sm" onClick={backToResults}>
+              <Button type="button" variant="ghost" size="sm" className="h-11 sm:h-9" onClick={backToResults}>
                 <span aria-hidden="true">←</span> Results ({results!.total})
               </Button>
             </div>
           )}
+          <div>
+            <p className="text-sm font-medium tabular-nums">{canonicalRef(chapter.bookId, chapter.chapter, ex.from, ex.to)}</p>
+            <p className="text-xs text-muted-foreground">{TRIM_HELP}</p>
+          </div>
           <ChapterView
             startHandleRef={startHandleRef}
             chapter={chapter}
@@ -470,13 +493,19 @@ export default function VerseFinderPanel({
             }}
           />
           <Readout lines={lines} over={over} onTrim={trim} />
-          <div className="flex justify-end">
-            <Button type="button" variant="default" size="sm" onClick={commit} disabled={!ex.text}>
-              Use on card
-            </Button>
-          </div>
         </>
       )}
+      {/* Close is for a phone: no Esc there, and the toggle has scrolled out of reach. */}
+      <div className={cn("flex justify-end gap-2", !ex && "sm:hidden")}>
+        <Button type="button" variant="outline" size="sm" className="h-11 sm:hidden" onClick={onClose}>
+          Close
+        </Button>
+        {ex && (
+          <Button type="button" variant="default" size="sm" className="h-11 sm:h-9" onClick={commit} disabled={!ex.text}>
+            Use on card
+          </Button>
+        )}
+      </div>
       <Footer copyright={copyright} />
     </div>
   );
@@ -515,7 +544,7 @@ function InputRow(props: {
   const { chapter, loading } = props;
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
         <input
           autoFocus
           ref={props.inputRef}
@@ -531,9 +560,9 @@ function InputRow(props: {
           }}
           placeholder="Genesis 6:2, or words you remember"
           aria-label="Verse reference or keywords"
-          className="min-w-0 flex-1 rounded-md border bg-background px-3 py-2 text-sm"
+          className="min-h-11 min-w-0 flex-1 basis-full rounded-md border bg-background px-3 py-2 text-base sm:min-h-0 sm:basis-0 sm:text-sm"
         />
-        <Button type="button" variant="secondary" size="sm" onClick={props.onSubmit} disabled={loading}>
+        <Button type="button" variant="secondary" size="sm" className="h-11 flex-1 sm:h-9 sm:flex-none" onClick={props.onSubmit} disabled={loading}>
           {loading && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
           Look up
         </Button>
@@ -541,7 +570,7 @@ function InputRow(props: {
           type="button"
           variant="ghost"
           size="icon"
-          className="h-9 w-9"
+          className="h-11 w-11 sm:h-9 sm:w-9"
           aria-label="Previous chapter"
           onClick={props.onPrev}
           disabled={loading || !chapter?.prev}
@@ -552,7 +581,7 @@ function InputRow(props: {
           type="button"
           variant="ghost"
           size="icon"
-          className="h-9 w-9"
+          className="h-11 w-11 sm:h-9 sm:w-9"
           aria-label="Next chapter"
           onClick={props.onNext}
           disabled={loading || !chapter?.next}
@@ -588,7 +617,7 @@ function RecentChips({
           type="button"
           disabled={disabled}
           onClick={() => onPick(r.id)}
-          className="rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+          className="min-h-11 rounded-full border px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 sm:min-h-0"
         >
           {r.label}
           {i === 0 && " · last used"}
@@ -659,6 +688,50 @@ function ChapterView({
     onChange(clampHandles(verses, next));
   }
 
+  // Follows a finger or a mouse to the nearest word. Listens on window, not the handle: moving a
+  // handle can make reconciliation move its node (see refocus), which drops pointer capture.
+  function startDrag(which: Which, down: ReactPointerEvent<HTMLButtonElement>) {
+    const box = containerRef.current;
+    if (!box || down.button !== 0) return;
+    let last = which === "start" ? s : e - 1;
+    // Measured from inside the word the handle names, so grabbing off-centre doesn't jump a word.
+    const named = box.querySelector(`[data-word="${last}"]`)?.getBoundingClientRect();
+    const grabX = named ? (which === "start" ? named.left + 1 : named.right - 1) - down.clientX : 0;
+    const grabY = named ? (named.top + named.bottom) / 2 - down.clientY : 0;
+    let moved = false;
+
+    const onMove = (ev: PointerEvent) => {
+      if (ev.pointerId !== down.pointerId) return;
+      if (!moved && Math.hypot(ev.clientX - down.clientX, ev.clientY - down.clientY) < DRAG_SLOP) return;
+      moved = true;
+      const edges = box.getBoundingClientRect();
+      if (ev.clientY < edges.top + DRAG_EDGE) box.scrollTop -= DRAG_SCROLL;
+      else if (ev.clientY > edges.bottom - DRAG_EDGE) box.scrollTop += DRAG_SCROLL;
+      const rects = Array.from(box.querySelectorAll("[data-word]"), (el) => el.getBoundingClientRect());
+      const i = nearestWord(rects, ev.clientX + grabX, ev.clientY + grabY);
+      if (i === last) return;
+      last = i;
+      refocus.current = which;
+      onChange(placeHandle(verses, handles, which, i));
+    };
+    const onEnd = (ev: PointerEvent) => {
+      if (ev.pointerId !== down.pointerId) return;
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onEnd);
+      window.removeEventListener("pointercancel", onEnd);
+      if (moved || ev.type === "pointercancel") return;
+      // A tap. The finger target overlaps the words around the handle, and those still take a tap.
+      const word = document.elementsFromPoint(ev.clientX, ev.clientY).find((el) => el.hasAttribute("data-word"));
+      if (!word) return;
+      const i = Number(word.getAttribute("data-word"));
+      const row = rows.find((r) => i >= r.offset && i < r.offset + r.w.length);
+      if (row) onWord(row.n, i - row.offset, i);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onEnd);
+    window.addEventListener("pointercancel", onEnd);
+  }
+
   function onHandleKey(which: Which, ev: KeyboardEvent<HTMLButtonElement>) {
     let next: Handles | null = null;
     if (ev.key === "ArrowLeft") next = moveHandle(verses, handles, which, -1);
@@ -678,7 +751,14 @@ function ChapterView({
       type="button"
       aria-label={`${which} handle`}
       onKeyDown={(ev) => onHandleKey(which, ev)}
-      className="mx-px inline-block h-5 w-0.5 cursor-ew-resize rounded-full bg-foreground/50 align-middle outline-none focus:bg-primary"
+      onPointerDown={(ev) => startDrag(which, ev)}
+      className={cn(
+        "relative mx-px inline-block h-5 w-0.5 cursor-ew-resize touch-none rounded-full bg-foreground/50 align-middle outline-none focus:bg-primary",
+        // For a finger: a dot to aim at and a 44 px target, leaning out of the selection so both
+        // ends can still be grabbed when they are one short word apart. A mouse gets neither.
+        "before:absolute before:-inset-y-3 after:absolute after:left-1/2 after:size-2.5 after:-translate-x-1/2 after:rounded-full after:bg-inherit [@media(pointer:fine)]:before:content-none [@media(pointer:fine)]:after:content-none",
+        which === "start" ? "before:-left-8 before:-right-2.5 after:-top-1.5" : "before:-left-2.5 before:-right-8 after:-bottom-1.5",
+      )}
     />
   );
 
@@ -708,6 +788,7 @@ function ChapterView({
           key={`w${i}`}
           type="button"
           tabIndex={-1}
+          data-word={i}
           data-first={i === s ? "true" : undefined}
           onMouseDown={(ev) => ev.preventDefault()}
           onClick={() => onWord(row.n, k, i)}
@@ -748,19 +829,20 @@ function Readout({ lines, over, onTrim }: { lines: string[]; over: number; onTri
     <div className="flex flex-col gap-2">
       <div className="overflow-x-auto rounded-md border bg-background px-3 py-2 font-['ForgeBody'] text-sm italic">
         {lines.map((line, i) => (
-          <div key={i} className="whitespace-pre">
+          // Below sm, a line longer than the box wraps, indented so it still reads as one card line.
+          <div key={i} className="-indent-3 whitespace-pre-wrap pl-3 sm:indent-0 sm:whitespace-pre sm:pl-0">
             {line}
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground sm:flex-nowrap">
         <span className="whitespace-nowrap tabular-nums">
           {lines.length} {lines.length === 1 ? "line" : "lines"}
         </span>
         {over > 0 && (
           <>
             <span className="tabular-nums">{verseOverCopy(over)}</span>
-            <Button type="button" variant="secondary" size="sm" onClick={onTrim}>
+            <Button type="button" variant="secondary" size="sm" className="h-11 sm:h-9" onClick={onTrim}>
               Trim to fit
             </Button>
           </>

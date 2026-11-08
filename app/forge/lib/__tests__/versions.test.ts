@@ -4,12 +4,13 @@ vi.mock("@/app/forge/lib/auth", () => ({ requireForge: vi.fn() }));
 
 import { requireForge } from "@/app/forge/lib/auth";
 import { listVersions, listCardEvents, listSetActivity, artChangedSince, getShelvedRecord } from "../versions";
+import { cappedQuery } from "./fixtures/cappedQuery";
 
 // Chainable query stub: every method returns the builder; awaiting it yields
 // the row payload for its table (thenable, like the supabase-js builder).
 function table(rows: any[]) {
   const b: any = {};
-  for (const m of ["select", "eq", "in", "is", "order"]) b[m] = vi.fn(() => b);
+  for (const m of ["select", "eq", "in", "is", "order", "range"]) b[m] = vi.fn(() => b);
   b.then = (res: any) => Promise.resolve({ data: rows, error: null }).then(res);
   return b;
 }
@@ -85,6 +86,42 @@ describe("listSetActivity", () => {
       c1: { versionNumber: 3, releasedAt: "2026-07-05T00:00:00Z", status: "draft" },
       c2: { versionNumber: 1, releasedAt: "2026-06-20T00:00:00Z", status: "published" },
     });
+  });
+
+  const member = (versions: ReturnType<typeof cappedQuery>) => ({
+    role: "elder", user: { id: "u1" }, supabase: { from: () => versions.start() },
+  });
+  // Newest first, as the query asks for: one busy card, then a quiet card past row 1000.
+  const pastTheCap = [
+    ...Array.from({ length: 1200 }, (_, i) => ({ card_id: "busy", version_number: 1200 - i, status: "draft", created_at: "2026-07-02T00:00:00Z" })),
+    { card_id: "quiet", version_number: 1, status: "published", created_at: "2026-06-01T00:00:00Z" },
+  ];
+
+  it("reaches a card whose only version sits past row 1000", async () => {
+    (requireForge as any).mockResolvedValue(member(cappedQuery(pastTheCap)));
+    expect(await listSetActivity(["busy", "quiet"])).toEqual({
+      busy: { versionNumber: 1200, releasedAt: "2026-07-02T00:00:00Z", status: "draft" },
+      quiet: { versionNumber: 1, releasedAt: "2026-06-01T00:00:00Z", status: "published" },
+    });
+  });
+
+  it("breaks created_at ties by id on every page, and stops at the first short page", async () => {
+    const versions = cappedQuery(pastTheCap);
+    (requireForge as any).mockResolvedValue(member(versions));
+    await listSetActivity(["busy", "quiet"]);
+    expect(versions.requests.map((r) => r.range)).toEqual([[0, 999], [1000, 1999]]);
+    for (const r of versions.requests) {
+      expect(r.orders.map(([column]) => column)).toEqual(["created_at", "id"]);
+      expect(r.orders[0][1]).toEqual({ ascending: false });
+    }
+  });
+
+  it("returns nothing rather than a partial map when a later page fails", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    (requireForge as any).mockResolvedValue(member(cappedQuery(pastTheCap, { failRequest: 1 })));
+    expect(await listSetActivity(["busy", "quiet"])).toEqual({});
+    expect(logged).toHaveBeenCalled();
+    logged.mockRestore();
   });
 });
 

@@ -18,7 +18,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 import { requireElder } from "@/app/forge/lib/auth";
 import { validateArtFile, uploadForgeArt, uploadForgeArtRaw, readForgeArt, readForgeUpload, deleteForgeArt } from "@/app/forge/lib/art";
 import { clampCropRect, cropCardImage } from "@/app/forge/lib/imageCrop";
-import { addArtCandidate, applyCrop, deleteArtCandidate, listArtCandidates, setArtCandidateSource } from "../artCandidates";
+import { activateCandidate, addArtCandidate, applyCrop, deleteArtCandidate, listArtCandidates, setArtCandidateSource } from "../artCandidates";
 
 /** Supabase mock: from() returns a self-chaining builder resolving to `rows`
  * keyed by table name; rpc() resolves from `rpcResults` keyed by fn name. */
@@ -231,5 +231,49 @@ describe("applyCrop", () => {
       p_key: "forge-art/cropped",
       p_original_key: "forge-art/src",
     });
+  });
+});
+
+// Migration 128 (#603) makes these RPCs raise on a promoted card, on top of the refusals they
+// already raise. The member reads what the database said, before and after that goes on.
+describe("a refusal from the RPC reaches the member", () => {
+  const refused = { error: { code: "P0001", message: "a promoted card is read-only" } };
+  const said = { ok: false, error: "A promoted card is read-only." };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (clampCropRect as ReturnType<typeof vi.fn>).mockImplementation((r) => r);
+  });
+
+  it("deleteArtCandidate", async () => {
+    mockCtx({ rpcResults: { forge_delete_art_candidate: refused } });
+    expect(await deleteArtCandidate("card1", "cand1")).toEqual(said);
+  });
+
+  it("activateCandidate", async () => {
+    mockCtx({
+      rows: { forge_card_art_candidates: { key: "forge-art/k1" } },
+      rpcResults: { forge_set_working_art: refused },
+    });
+    expect(await activateCandidate("card1", "cand1")).toEqual(said);
+  });
+
+  it("applyCrop", async () => {
+    mockCtx({
+      rows: { forge_card_art_candidates: { key: "forge-art/k1" } },
+      rpcResults: { forge_set_working_art: refused },
+    });
+    (readForgeArt as ReturnType<typeof vi.fn>).mockResolvedValue({ statusCode: 200, stream: new Blob([new Uint8Array([1])]).stream() });
+    (cropCardImage as ReturnType<typeof vi.fn>).mockResolvedValue({ data: Buffer.from([1]), contentType: "image/jpeg" });
+    (uploadForgeArtRaw as ReturnType<typeof vi.fn>).mockResolvedValue("forge-art/cropped");
+    expect(await applyCrop("card1", "cand1", { x: 0.1, y: 0.1, width: 0.5, height: 0.5 })).toEqual(said);
+  });
+
+  it("keeps a connection error general", async () => {
+    mockCtx({
+      rows: { forge_card_art_candidates: { key: "forge-art/k1" } },
+      rpcResults: { forge_set_working_art: { error: { message: "fetch failed" } } },
+    });
+    expect(await activateCandidate("card1", "cand1")).toEqual({ ok: false, error: "Could not set artwork" });
   });
 });

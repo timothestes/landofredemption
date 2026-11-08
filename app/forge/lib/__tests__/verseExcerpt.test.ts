@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { excerpt, clampHandles, moveHandle, snapHandle, wholeRange, trimToFit, words, verseOverCopy } from "@/app/forge/lib/verseExcerpt";
+import { excerpt, clampHandles, moveHandle, snapHandle, placeHandle, nearestWord, wholeRange, trimToFit, words, verseOverCopy } from "@/app/forge/lib/verseExcerpt";
 import { textFit } from "@/app/forge/lib/textFit";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 
@@ -70,4 +70,59 @@ it("trimToFit: unchanged when it fits, shorter with over === 0 when it can, null
 it("verseOverCopy names the verse as the cause, since Trim to fit trims the verse", () => {
   expect(verseOverCopy(1)).toBe("verse pushes the ability 1 line over");
   expect(verseOverCopy(7)).toBe("verse pushes the ability 7 lines over");
+});
+
+describe("placeHandle", () => {
+  const ch = [
+    { n: 1, text: "one two three" },
+    { n: 2, text: "four five six" },
+  ];
+  const h = { start: { verse: 1, word: 1 }, end: { verse: 2, word: 2 } }; // "two three four five"
+
+  it("puts the start before the word and keeps the word in the excerpt", () => {
+    expect(placeHandle(ch, h, "start", 0).start).toEqual({ verse: 1, word: 0 });
+    expect(placeHandle(ch, h, "start", 3).start).toEqual({ verse: 2, word: 0 });
+  });
+  it("puts the end after the word and keeps the word in the excerpt", () => {
+    expect(placeHandle(ch, h, "end", 5).end).toEqual({ verse: 2, word: 3 });
+    expect(placeHandle(ch, h, "end", 2).end).toEqual({ verse: 1, word: 3 });
+  });
+  it("leaves the other handle alone", () => {
+    expect(placeHandle(ch, h, "start", 0).end).toEqual(h.end);
+    expect(placeHandle(ch, h, "end", 5).start).toEqual(h.start);
+  });
+  it("cannot cross the other handle: one word always stays selected", () => {
+    expect(excerpt(ch, placeHandle(ch, h, "start", 5)).text).toBe("…five…");
+    expect(excerpt(ch, placeHandle(ch, h, "end", 0)).text).toBe("…two…");
+  });
+});
+
+describe("nearestWord", () => {
+  // Two lines of two words, 20 px tall, with an 8 px gap between the lines.
+  const rects = [
+    { left: 0, right: 50, top: 0, bottom: 20 },
+    { left: 60, right: 100, top: 0, bottom: 20 },
+    { left: 0, right: 30, top: 28, bottom: 48 },
+    { left: 40, right: 90, top: 28, bottom: 48 },
+  ];
+  it("finds the word under the point", () => {
+    expect(nearestWord(rects, 70, 10)).toBe(1);
+    expect(nearestWord(rects, 10, 40)).toBe(2);
+  });
+  it("takes the closer word across a space", () => {
+    expect(nearestWord(rects, 53, 10)).toBe(0);
+    expect(nearestWord(rects, 58, 10)).toBe(1);
+  });
+  it("takes the closer line in the gap between lines", () => {
+    expect(nearestWord(rects, 70, 22)).toBe(1);
+    expect(nearestWord(rects, 70, 26)).toBe(3);
+  });
+  it("past the end of a line, stays on that line", () => {
+    expect(nearestWord(rects, 300, 10)).toBe(1);
+    expect(nearestWord(rects, 300, 40)).toBe(3);
+  });
+  it("above and below the text, takes the first and last lines", () => {
+    expect(nearestWord(rects, 10, -50)).toBe(0);
+    expect(nearestWord(rects, 80, 500)).toBe(3);
+  });
 });

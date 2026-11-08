@@ -44,7 +44,7 @@ function SideControl({ icon, snapshot, update }: {
           const selected = current === s;
           return (
             <button key={s} type="button" title={s} aria-pressed={selected} onClick={() => choose(s)}
-              className={`rounded border px-2 py-1 text-[11px] font-medium transition-colors ${
+              className={`min-h-11 rounded border px-3 py-1 text-xs font-medium transition-colors sm:min-h-0 sm:px-2 sm:text-[11px] sm:leading-[inherit] ${
                 selected
                   ? "border-primary/40 bg-primary/15 text-primary"
                   : "border-transparent bg-muted/40 text-muted-foreground hover:border-border hover:bg-muted"
@@ -80,7 +80,7 @@ function Tile({ src, label, title, ariaLabel, selected, onClick }: {
           : "border-transparent bg-muted/40 hover:border-border hover:bg-muted"
       }`}>
       <img src={src} alt="" aria-hidden="true" loading="lazy" className="h-7 w-auto" />
-      <span className={`whitespace-nowrap text-[10px] font-medium leading-none ${
+      <span className={`whitespace-nowrap text-xs font-medium leading-none sm:text-[10px] ${
         selected ? "text-primary" : "text-muted-foreground"
       }`}>
         {label}
@@ -148,7 +148,7 @@ export default function CardDetailsFields({
         <span className="mb-1 block text-sm font-medium">Alignment</span>
         <select value={snapshot.alignment ?? ""}
           onChange={(e) => update({ alignment: (e.target.value || undefined) as DesignCard["alignment"] })}
-          className="rounded-md border bg-background px-3 py-2 text-sm">
+          className="min-h-11 rounded-md border bg-background px-3 py-2 text-base sm:min-h-0 sm:text-sm">
           <option value="">—</option>
           {ALIGNMENTS.map((a) => <option key={a} value={a}>{a === "Good_Evil" ? "Good/Evil" : a}</option>)}
         </select>
@@ -159,7 +159,7 @@ export default function CardDetailsFields({
         <span className="mb-1 block text-sm font-medium">Rarity</span>
         <select value={snapshot.rarity ?? ""}
           onChange={(e) => update({ rarity: e.target.value || undefined })}
-          className="rounded-md border bg-background px-3 py-2 text-sm">
+          className="min-h-11 rounded-md border bg-background px-3 py-2 text-base sm:min-h-0 sm:text-sm">
           <option value="">—</option>
           {/* An imported/legacy value outside the curated list (e.g. "Legacy Rare")
               still needs a slot so we don't silently blank it out. */}
@@ -220,7 +220,7 @@ export default function CardDetailsFields({
       </div>
 
       {/* Strength / Toughness */}
-      <div>
+      <div className="[&_input]:min-h-11 [&_input]:text-base sm:[&_input]:min-h-0 sm:[&_input]:text-sm">
         <div className="flex gap-3">
           {/* Wider than the input, for the note it can show underneath. */}
           <label className="block w-36">
@@ -280,7 +280,7 @@ export default function CardDetailsFields({
           value={snapshot.identifiers ?? []}
           onChange={(identifiers) => update({ identifiers })}
           placeholder="Comma-separated, e.g. Genesis, Patriarch"
-          className="w-full rounded-md border bg-background px-3 py-2 text-sm" />
+          className="min-h-11 w-full rounded-md border bg-background px-3 py-2 text-base placeholder:text-sm sm:min-h-0 sm:text-sm" />
       </label>
       </div>
     </details>

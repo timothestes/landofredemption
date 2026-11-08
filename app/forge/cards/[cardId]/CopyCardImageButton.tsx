@@ -74,7 +74,8 @@ export default function CopyCardImageButton({
       title={LABEL[phase]}
       disabled={phase === "busy"}
       className={cn(
-        "flex h-7 w-7 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground disabled:cursor-wait",
+        // The before: box is a 44 px target on a phone, around a button that stays small on the card.
+        "flex h-7 w-7 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors before:absolute before:-inset-2 hover:bg-background hover:text-foreground disabled:cursor-wait sm:before:content-none",
         phase === "done" && "text-primary",
         phase === "failed" && "text-destructive",
         className,

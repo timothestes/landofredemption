@@ -15,6 +15,7 @@ vi.mock("@/app/forge/lib/play", () => ({
   }]),
 }));
 
+import { requireForge } from "@/app/forge/lib/auth";
 import RevealGrid, { type RevealItem } from "../RevealGrid";
 import ForgePlaySetPage from "../page";
 
@@ -60,8 +61,29 @@ describe("playtest page payload", () => {
     return null;
   };
 
+  const open = (searchParams: { card?: string | string[] } = {}) =>
+    ForgePlaySetPage({ params: Promise.resolve({ setId: "s1" }), searchParams: Promise.resolve(searchParams) });
+
+  it("leaves the <main> landmark to the root layout", async () => {
+    expect(renderToStaticMarkup(await open())).not.toContain("<main");
+  });
+
+  it("opens a card from the link only when it is in the released list", async () => {
+    expect(revealGridProps(await open({ card: "c1" })).initialCardId).toBe("c1");
+    expect(revealGridProps(await open({ card: "unreleased-or-unknown" })).initialCardId).toBeUndefined();
+    expect(revealGridProps(await open({ card: ["c1", "c1"] })).initialCardId).toBeUndefined();
+    expect(revealGridProps(await open()).initialCardId).toBeUndefined();
+  });
+
+  it("points the Sets breadcrumb at the list each role can open", async () => {
+    vi.mocked(requireForge).mockResolvedValueOnce({ user: { id: "u1" }, role: "playtester" } as any);
+    expect(renderToStaticMarkup(await open())).toContain('href="/forge/play/sets"');
+    vi.mocked(requireForge).mockResolvedValueOnce({ user: { id: "u1" }, role: "elder" } as any);
+    expect(renderToStaticMarkup(await open())).toContain('href="/forge/sets"');
+  });
+
   it("carries exactly the released card, its image urls and its version number", async () => {
-    const page = await ForgePlaySetPage({ params: Promise.resolve({ setId: "s1" }) });
+    const page = await open();
     const { items } = revealGridProps(page);
     expect(items).toEqual([{
       cardId: "c1", data: { name: "Invented Tyrant" },

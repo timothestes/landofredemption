@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { requireForge } from "@/app/forge/lib/auth";
+import { DESIGNER_PAGE_LANDING } from "@/app/forge/lib/playtesterLanding";
 import { listSetCards, canDesignSet } from "@/app/forge/lib/sets";
 import { listUnresolvedCommentCounts } from "@/app/forge/lib/comments";
 import { listOpenProposalCounts } from "@/app/forge/lib/proposals";
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function SetCardsPage({ params }: { params: Promise<{ setId: string }> }) {
   const ctx = await requireForge();
   if (!ctx) notFound();
-  if (ctx.role === "playtester") redirect("/forge/play");
+  if (ctx.role === "playtester") redirect(DESIGNER_PAGE_LANDING);
   const { setId } = await params;
   const [cards, canCreate] = await Promise.all([listSetCards(setId), canDesignSet(setId)]);
   if (cards.length === 0) {

@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { saveCardFields, uploadFinished, setPlaceholder, type ForgeCardFull } from "@/app/forge/lib/cards";
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
+import { reviewJumpLinks } from "@/app/forge/lib/reviewView";
 import { walkHint, type WalkPosition } from "@/app/forge/lib/cardFilters";
 import { createCardSaver, editAction, incomingAction } from "@/app/forge/lib/cardSave";
 import { createOptimisticToggle, type ToggleState } from "@/app/forge/lib/optimisticToggle";
@@ -34,6 +35,8 @@ import PresenceBar from "./PresenceBar";
 import { StudioDraftProvider, StudioSyncProvider } from "./StudioSyncContext";
 import CardDetailsFields from "./CardDetailsFields";
 import CopyCardImageButton from "./CopyCardImageButton";
+import RemoveFinishedButton from "./RemoveFinishedButton";
+import { FINISHED_HELP_ON, FINISHED_NOTE, PLACEHOLDER_HELP, PLACEHOLDER_NOTE, placeholderShowing } from "@/app/forge/lib/artStatus";
 import ScriptureFields from "./ScriptureFields";
 
 // DESCOPE (2026-07-03): the structured template (FullModeForm) was removed from the
@@ -50,7 +53,7 @@ const arrowClass =
   "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground";
 
 export default function StudioEditor({
-  card, sets, currentUser, creator, setId, setName, prevId, nextId, walkQuery = "", gridHref, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, canEdit = true, review,
+  card, sets, currentUser, creator, setId, setName, prevId, nextId, walkQuery = "", gridHref, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, canEdit = true, unresolvedComments = 0, review,
 }: {
   card: ForgeCardFull;
   sets: ForgeSetSummary[];
@@ -74,6 +77,8 @@ export default function StudioEditor({
   // For the Restore dialog on a shelved card: where it will go back to.
   restoreTarget?: RestoreTarget | null;
   version?: StudioVersion | null;
+  // For the jump links down to the review column.
+  unresolvedComments?: number;
   // Whether this member can write to this card. Worked out in the page; the RPCs still decide.
   canEdit?: boolean;
   // The review column (proposals / history / comments), rendered inside this component's
@@ -112,7 +117,7 @@ export default function StudioEditor({
     onFailed: (error) => setPlaceholderErr(error ?? PLACEHOLDER_FAILED),
   }));
   const [pendingFinished, setPendingFinished] = useState<File | null>(null);
-  const [uploading, setUploading] = useState<"finished" | null>(null);
+  const [uploading, setUploading] = useState<"finished" | "removing" | null>(null);
   // The verse finder's candidate excerpt, drawn on the preview face only. Never saved.
   const [previewScripture, setPreviewScripture] = useState<string | null>(null);
   const [peeking, setPeeking] = useState(false); // the large face over the form, below lg
@@ -312,7 +317,7 @@ export default function StudioEditor({
   // Follows the local draft too (never previewCard: a verse being previewed is not an edit).
   const pill = card.setId ? versionPill(card.status, version, snapshot) : null;
   const versionBadge = pill && (
-    <span title={pill.title} className={cn("whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] tabular-nums", STATUS_BADGE_CLASS[card.status])}>
+    <span title={pill.title} className={cn("whitespace-nowrap rounded-full border px-2 py-0.5 text-xs tabular-nums sm:text-[11px] sm:leading-[inherit]", STATUS_BADGE_CLASS[card.status])}>
       {pill.label}
     </span>
   );
@@ -327,6 +332,12 @@ export default function StudioEditor({
   ) : (
     <ForgeCardPreview card={previewCard} artUrl={card.hasArt ? `/forge/api/art/${card.id}?t=${t}` : null} />
   );
+
+  // The face stops following the fields once a finished image is on, and a placeholder looks like
+  // any other art. Said beside the face, here and over it on a phone, not below the fold.
+  const faceNote = card.hasFinished ? FINISHED_NOTE
+    : placeholderShowing(card, placeholderTick.value ?? !!card.isPlaceholder) ? PLACEHOLDER_NOTE
+    : null;
 
   return (
     <div className="mx-auto max-w-5xl p-4">
@@ -370,7 +381,7 @@ export default function StudioEditor({
             role="status"
             aria-live="polite"
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground",
+              "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs text-muted-foreground sm:text-[11px] sm:leading-[inherit]",
               saved === "idle" && !dirty && "hidden",
               saved === "error" && "border-destructive/40 text-destructive",
             )}
@@ -414,6 +425,17 @@ export default function StudioEditor({
           </p>
           {versionBadge && <span className="inline-flex shrink-0 leading-4 lg:hidden">{versionBadge}</span>}
         </div>
+        {/* Everything a reviewer needs is below the editor. Plain anchors: same page, no
+            navigation. Always both, so a comment arriving mid-edit can't move the form. */}
+        {card.setId && (
+          <p className="flex flex-wrap gap-x-3 text-xs">
+            {reviewJumpLinks(openProposals?.count ?? 0, unresolvedComments).map((l) => (
+              <a key={l.href} href={l.href} className="inline-flex min-h-8 items-center text-muted-foreground underline underline-offset-2 hover:text-foreground sm:min-h-0">
+                {l.label}
+              </a>
+            ))}
+          </p>
+        )}
         <LifecycleControls card={card} draft={snapshot} flushPending={flushPending} releaseBase={releaseBase} restoreTarget={restoreTarget} sets={sets} openProposals={openProposals} canEdit={canEdit} />
         {card.setId && canEdit && (
           <p className="text-xs text-muted-foreground">
@@ -426,6 +448,7 @@ export default function StudioEditor({
       {peeking && (
         <div className="fixed right-4 top-[calc(var(--forge-chrome)+3rem)] z-20 w-[min(100vw-2rem,24rem,(100svh-11rem)*0.714)] rounded-lg shadow-lg lg:hidden">
           {face}
+          {faceNote && <p className="mt-1 rounded-md bg-background px-2 py-1 text-center text-xs text-muted-foreground">{faceNote}</p>}
         </div>
       )}
 
@@ -474,6 +497,7 @@ export default function StudioEditor({
               onError={setErr}
             />
           </div>
+          {faceNote && <p className="mt-2 text-center text-xs text-muted-foreground">{faceNote}</p>}
           {position && (
             <p className="mt-2 text-center text-xs text-muted-foreground">
               {walkHint(position)}
@@ -494,7 +518,7 @@ export default function StudioEditor({
 
             <textarea value={snapshot.rawText ?? ""} onChange={(e) => update({ rawText: e.target.value })}
               placeholder="Type the card's special ability."
-              className="max-h-[60vh] min-h-40 w-full rounded-md border bg-background px-3 py-2 text-sm [field-sizing:content]" />
+              className="max-h-[60vh] min-h-40 w-full rounded-md border bg-background px-3 py-2 text-base [field-sizing:content] sm:text-sm" />
 
             <ScriptureFields snapshot={snapshot} update={update} onPreview={setPreviewScripture} />
 
@@ -510,7 +534,7 @@ export default function StudioEditor({
                 <span>
                   <span className="font-medium">Temporary / placeholder art</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
-                    Placeholder art isn’t shown in playtests — upload final art and uncheck when it’s ready.
+                    {PLACEHOLDER_HELP}
                   </span>
                 </span>
               </label>
@@ -540,14 +564,18 @@ export default function StudioEditor({
                   else onUpload(f, "finished");
                 }} />
               <p className="mt-2 text-xs text-muted-foreground">
-                A finished card image made elsewhere. When present, it’s shown everywhere instead of the artwork.
+                {card.hasFinished ? FINISHED_HELP_ON : "A finished card image made elsewhere. When present, it’s shown everywhere instead of the artwork."}
               </p>
               {card.hasFinished && (
-                <a href={`/forge/api/art/${card.id}?kind=finished&download=1`}
-                  className={cn(buttonVariants({ variant: "outline", size: "sm" }), "mt-3")}>
-                  <Download className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                  Download finished card
-                </a>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <a href={`/forge/api/art/${card.id}?kind=finished&download=1`}
+                    className={buttonVariants({ variant: "outline", size: "sm" })}>
+                    <Download className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                    Download finished card
+                  </a>
+                  <RemoveFinishedButton cardId={card.id} status={card.status} disabled={uploading !== null}
+                    onBusy={(busy) => setUploading(busy ? "removing" : null)} />
+                </div>
               )}
             </fieldset>
           </fieldset>

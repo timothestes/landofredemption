@@ -5,7 +5,7 @@
 // CLIENT-SAFE: fflate + the pure Lackey helpers, nothing server-only.
 
 import { unzipSync } from "fflate";
-import { distinctSets, parseCarddata, type LackeyRow } from "@/app/forge/lib/lackey";
+import { parseCarddata, type LackeyRow } from "@/app/forge/lib/lackey";
 
 export interface LackeySource {
   rows: LackeyRow[];
@@ -42,12 +42,25 @@ export async function readLackeySource(file: File): Promise<LackeySource> {
   return { rows: parseCarddata(decode(unzipped[carddataEntry])), entryNames, sizes, zipBytes: bytes };
 }
 
-/** The one set code a file holds, or null when it spans several (or none). Prefers
- *  the OfficialSet spelling ("EoT") over the lowercase Set key ("eot") since the
- *  filter matches either and the code doubles as the new set's default name. Pure. */
-export function soleSetCode(rows: LackeyRow[]): string | null {
-  const sets = distinctSets(rows);
-  if (sets.length !== 1) return null;
-  const official = new Set(rows.map((r) => r.officialSet).filter(Boolean));
-  return official.size === 1 ? [...official][0] : sets[0].set;
+/** Which set in the file a row belongs to. Pure. */
+export function setCode(row: LackeyRow): string {
+  return row.set || row.officialSet;
+}
+
+export interface FileSet {
+  code: string;  // setCode of its rows; "" for rows with no set at all
+  label: string; // the OfficialSet spelling ("Roots 2", "EoT") where there is one
+  count: number;
+}
+
+/** The sets a file holds, in code order, for choosing which to import. Pure. */
+export function fileSets(rows: LackeyRow[]): FileSet[] {
+  const sets = new Map<string, FileSet>();
+  for (const r of rows) {
+    const code = setCode(r);
+    const set = sets.get(code);
+    if (set) set.count++;
+    else sets.set(code, { code, label: r.officialSet || r.set || "No set code", count: 1 });
+  }
+  return [...sets.values()].sort((a, b) => a.code.localeCompare(b.code));
 }
