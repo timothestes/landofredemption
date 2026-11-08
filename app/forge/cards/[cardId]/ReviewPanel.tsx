@@ -182,6 +182,7 @@ export default function ReviewPanel({
                 finishedUrl={finishedUrl}
                 canReview={canReview}
                 cardStatus={card.status}
+                baseVersionNumber={versions.find((v) => v.id === d.proposal.baseVersionId)?.versionNumber ?? null}
                 savedDraft={card.snapshot ?? {}}
                 latestVersion={latestVersion}
                 closed={!openDiffs.some((o) => o.proposal.id === d.proposal.id)}

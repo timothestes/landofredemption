@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildReviewQueue, keepHeldProposal, type ReviewCardRow, type ReviewOpenItem } from "../reviewView";
+import { buildReviewQueue, keepHeldProposal, proposalByline, type ReviewCardRow, type ReviewOpenItem } from "../reviewView";
 
 const card = (over: Partial<ReviewCardRow> = {}): ReviewCardRow => ({
   id: "c1", title: "Goliath", status: "draft", ...over,
@@ -116,5 +116,21 @@ describe("keepHeldProposal", () => {
     const held = diff("p1");
     expect(keepHeldProposal([], held)).toEqual([held]);
     expect(keepHeldProposal([diff("p2")], held).map((d) => d.proposal.id)).toEqual(["p2", "p1"]);
+  });
+});
+
+describe("proposalByline", () => {
+  const now = Date.parse("2026-09-01T12:00:00Z");
+
+  it("says who, when and against which version", () => {
+    expect(proposalByline({ who: "Rhoda", at: "2026-09-01T10:00:00Z", baseVersion: 3 }, now)).toBe("Rhoda · 2h ago · against v3");
+  });
+
+  it("names no version for a first proposal", () => {
+    expect(proposalByline({ who: "Rhoda", at: "2026-09-01T10:00:00Z", baseVersion: null }, now)).toBe("Rhoda · 2h ago");
+  });
+
+  it("falls back when the name can't be read", () => {
+    expect(proposalByline({ who: null, at: "2026-09-01T10:00:00Z", baseVersion: 1 }, now)).toBe("Forge member · 2h ago · against v1");
   });
 });

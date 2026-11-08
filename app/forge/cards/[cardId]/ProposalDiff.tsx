@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import ForgeCardFace from "@/app/forge/components/ForgeCardFace";
+import ForgeCardPreview from "@/app/forge/components/ForgeCardPreview";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,9 +16,10 @@ import {
 import { diffCards, summarizeDiff } from "@/app/forge/lib/cardDiff";
 import { acceptProposal, denyProposal, type ProposalRow } from "@/app/forge/lib/proposals";
 import { addComment } from "@/app/forge/lib/comments";
-import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
-import { denyDraftPlan, ACCEPT_CLOSED_NOTE, DENY_FLUSH_FAILED } from "@/app/forge/lib/lifecycleCopy";
+import type { DesignCard } from "@/app/forge/lib/designCard";
+import { denyDraftPlan, draftMovedOnNote, ACCEPT_CLOSED_NOTE, DENY_FLUSH_FAILED } from "@/app/forge/lib/lifecycleCopy";
 import { flushThen, runAcceptProposal } from "@/app/forge/lib/proposeFlow";
+import { proposalByline } from "@/app/forge/lib/reviewView";
 import FieldChanges from "./FieldChanges";
 import { useStudioDraft, useStudioSync } from "./StudioSyncContext";
 
@@ -115,6 +116,18 @@ function DenyDialogBody({
   );
 }
 
+// Its own component so that reading the live draft re-renders only this per keystroke.
+function DraftMovedOn({ proposed, savedDraft }: { proposed: DesignCard; savedDraft: DesignCard }) {
+  const draft = useStudioDraft() ?? savedDraft;
+  const note = draftMovedOnNote(draft, proposed);
+  if (!note) return null;
+  return (
+    <p className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-300">
+      {note}
+    </p>
+  );
+}
+
 export default function ProposalDiff({
   proposal,
   current,
@@ -122,6 +135,7 @@ export default function ProposalDiff({
   finishedUrl,
   canReview,
   cardStatus,
+  baseVersionNumber = null,
   savedDraft = {},
   latestVersion = null,
   closed = false,
@@ -133,6 +147,7 @@ export default function ProposalDiff({
   finishedUrl: string | null;
   canReview: boolean;
   cardStatus: string;
+  baseVersionNumber?: number | null;
   // The card's working draft as last refreshed, and its newest version of any status: the
   // one Deny can put the draft back to. Same row forge_deny_proposal_restore_draft picks.
   savedDraft?: DesignCard;
@@ -187,9 +202,14 @@ export default function ProposalDiff({
   return (
     <div className="rounded-md border p-3">
       <p className="text-sm font-medium">{proposal.summary ?? "Proposed change"}</p>
+      {/* The relative time can differ between the server's render and this one. */}
+      <p suppressHydrationWarning className="mt-0.5 text-xs text-muted-foreground">
+        {proposalByline({ who: proposal.proposerName, at: proposal.createdAt, baseVersion: baseVersionNumber })}
+      </p>
       <p className="mt-0.5 text-xs text-muted-foreground">
         {isNewCard ? "New card — first proposal" : summarizeDiff(changes)}
       </p>
+      <DraftMovedOn proposed={proposed} savedDraft={savedDraft} />
 
       {/* Decision controls + change list render ABOVE the previews (mobile-first). */}
       {proposal.status === "open" && canReview && (
@@ -210,11 +230,11 @@ export default function ProposalDiff({
       )}
 
       {/* The field diff above carries the change; the paired faces are collapsed by
-          default (a proposal never changes the art/finished image, so for those cards
-          the two previews are identical). Available on demand. A first proposal has no
-          released version to put in the "Current" slot, and an empty face there renders
-          as the art plus "Untitled" and no body text — which reads as a wiped card
-          rather than as "nothing yet". So a new card shows one face on its own. */}
+          default. Available on demand. Always the rendered frame, even on a card with a
+          finished image: a proposal never changes that image, so showing it would make
+          the two faces identical. A first proposal has no released version to put in the
+          "Current" slot, and an empty face there reads as a wiped card rather than as
+          "nothing yet". So a new card shows one face on its own. */}
       <details className="mt-3">
         <summary className="cursor-pointer select-none text-xs text-muted-foreground hover:text-foreground">
           Show card preview
@@ -223,24 +243,19 @@ export default function ProposalDiff({
           {!isNewCard && (
             <div>
               <p className="mb-1 text-xs text-muted-foreground">Current</p>
-              <ForgeCardFace
-                name={current.name ?? null}
-                rawText={cardRawText(current)}
-                finishedUrl={finishedUrl}
-                artUrl={artUrl}
-              />
+              <ForgeCardPreview card={current} artUrl={artUrl} />
             </div>
           )}
           <div>
             <p className="mb-1 text-xs text-muted-foreground">{isNewCard ? "Card preview" : "Proposed"}</p>
-            <ForgeCardFace
-              name={proposed.name ?? null}
-              rawText={cardRawText(proposed)}
-              finishedUrl={finishedUrl}
-              artUrl={artUrl}
-            />
+            <ForgeCardPreview card={proposed} artUrl={artUrl} />
           </div>
         </div>
+        {finishedUrl && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            This card has a finished image, which is shown everywhere in place of these faces. Accepting doesn’t change it.
+          </p>
+        )}
       </details>
 
       <Dialog open={acceptOpen} onOpenChange={(o) => { if (!o) showAccept(false); }}>
@@ -256,6 +271,7 @@ export default function ProposalDiff({
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-2">
+            {!gone && <DraftMovedOn proposed={proposed} savedDraft={savedDraft} />}
             <label className="block text-xs font-medium text-muted-foreground">Note (optional)</label>
             <textarea
               value={note}

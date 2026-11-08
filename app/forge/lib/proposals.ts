@@ -198,8 +198,9 @@ export async function getOpenProposalDiffs(cardId: string): Promise<ProposalDiff
       .in("id", baseIds);
     for (const v of vers ?? []) baseMap.set(v.id, (v.data ?? {}) as DesignCard);
   }
+  const names = await nameMap(ctx, proposals.map((p) => p.createdBy));
   return proposals.map((p) => ({
-    proposal: p,
+    proposal: { ...p, proposerName: names.get(p.createdBy) ?? null },
     current: p.baseVersionId ? baseMap.get(p.baseVersionId) ?? {} : {},
   }));
 }

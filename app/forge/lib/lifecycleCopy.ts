@@ -189,6 +189,14 @@ export function denyDraftPlan({
   return { ...plan, offer: true, defaultRestore: !movedOn };
 }
 
+// Accepting writes the proposal over the working draft (forge_accept_proposal), so anything
+// edited since it was proposed goes. Same comparison as denyDraftPlan's `movedOn`.
+export function draftMovedOnNote(draft: DesignCard, proposed: DesignCard): string | null {
+  return sameCardContent(draft, proposed)
+    ? null
+    : "The draft has changed since this was proposed. Accepting drops those changes.";
+}
+
 const ACTION_ELIGIBLE: Record<LifecycleAction, readonly string[]> = {
   release: ["draft", "playtesting"],
   markFinal: ["playtesting"],

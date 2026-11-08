@@ -114,6 +114,99 @@ export function diffCards(before: DesignCard, after: DesignCard): FieldChange[] 
   return out;
 }
 
+// Word-level diff of a long text field, so a reviewer can see the one word that changed
+// instead of comparing two paragraphs by eye. Both sides rebuild exactly: `same` + `del`
+// is the old text, `same` + `ins` is the new. Punctuation is its own token, so "2." to "3."
+// marks the digit.
+export type TextOp = { op: "same" | "del" | "ins"; text: string };
+
+const TEXT_TOKEN = /\s+|[\p{L}\p{N}'’]+|[^\s\p{L}\p{N}]/gu;
+// The table is words x words and a snapshot can run to 64 KB. Past this, the changed middle
+// is shown as one replacement. Card text with the shared ends trimmed is nowhere near it.
+const MAX_DIFF_CELLS = 1_000_000;
+
+export function wordDiff(before: string, after: string): TextOp[] {
+  const a = before.match(TEXT_TOKEN) ?? [];
+  const b = after.match(TEXT_TOKEN) ?? [];
+  let start = 0;
+  while (start < a.length && start < b.length && a[start] === b[start]) start++;
+  let endA = a.length;
+  let endB = b.length;
+  while (endA > start && endB > start && a[endA - 1] === b[endB - 1]) { endA--; endB--; }
+
+  const ops: TextOp[] = [];
+  const push = (op: TextOp["op"], text: string) => {
+    const last = ops[ops.length - 1];
+    if (last?.op === op) last.text += text;
+    else if (text) ops.push({ op, text });
+  };
+  push("same", a.slice(0, start).join(""));
+
+  const n = endA - start;
+  const m = endB - start;
+  if (n * m > MAX_DIFF_CELLS) {
+    push("del", a.slice(start, endA).join(""));
+    push("ins", b.slice(start, endB).join(""));
+  } else {
+    // Longest common subsequence, walked forwards.
+    const width = m + 1;
+    const lcs = new Uint32Array((n + 1) * width);
+    for (let i = n - 1; i >= 0; i--) {
+      for (let j = m - 1; j >= 0; j--) {
+        lcs[i * width + j] = a[start + i] === b[start + j]
+          ? lcs[(i + 1) * width + j + 1] + 1
+          : Math.max(lcs[(i + 1) * width + j], lcs[i * width + j + 1]);
+      }
+    }
+    let i = 0;
+    let j = 0;
+    while (i < n || j < m) {
+      if (i < n && j < m && a[start + i] === b[start + j]) {
+        push("same", a[start + i]);
+        i++;
+        j++;
+      } else if (i < n && (j === m || lcs[(i + 1) * width + j] >= lcs[i * width + j + 1])) {
+        push("del", a[start + i++]);
+      } else {
+        push("ins", b[start + j++]);
+      }
+    }
+  }
+  push("same", a.slice(endA).join(""));
+  return joinAcrossSpaces(ops);
+}
+
+// A space left unchanged between two replaced words isn't worth showing: "old words" to
+// "new text" is one change, not two with a stray match between them.
+function joinAcrossSpaces(ops: TextOp[]): TextOp[] {
+  const out: TextOp[] = [];
+  let del = "";
+  let ins = "";
+  const flush = () => {
+    if (del) out.push({ op: "del", text: del });
+    if (ins) out.push({ op: "ins", text: ins });
+    del = ins = "";
+  };
+  ops.forEach((o, k) => {
+    if (o.op === "del") del += o.text;
+    else if (o.op === "ins") ins += o.text;
+    else if (!o.text.trim() && k > 0 && k < ops.length - 1) { del += o.text; ins += o.text; }
+    else { flush(); out.push(o); }
+  });
+  flush();
+  return out;
+}
+
+// One marked-up paragraph reads well when most of the text survived. Past that, the
+// insertions and deletions interleave into something harder to read than two paragraphs.
+export function readsAsRedline(ops: TextOp[]): boolean {
+  const words = (kept: boolean) =>
+    ops
+      .filter((o) => (o.op === "same") === kept)
+      .reduce((n, o) => n + (o.text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0), 0);
+  return words(true) > words(false);
+}
+
 export function summarizeDiff(changes: FieldChange[]): string {
   if (changes.length === 0) return "No field changes.";
   const labels = changes.map((c) => c.label);

@@ -2,6 +2,7 @@
 // imported by a client component and by unit tests alike (same shape as
 // app/forge/lib/setCommentsView.ts).
 
+import { timeAgo } from "@/app/forge/lib/relativeTime";
 import { sinceCutoffMs } from "@/app/forge/lib/setCommentsView";
 
 export type ReviewKind = "all" | "proposals" | "suggestions";
@@ -70,4 +71,16 @@ export function buildReviewQueue(
 // a moment after it appeared. The row whose dialog is open stays until the dialog closes.
 export function keepHeldProposal<T extends { proposal: { id: string } }>(open: T[], held: T | null): T[] {
   return held && !open.some((d) => d.proposal.id === held.proposal.id) ? [...open, held] : open;
+}
+
+// The first three things a reviewer asks about a proposal.
+export function proposalByline(
+  p: { who: string | null; at: string; baseVersion: number | null },
+  nowMs?: number,
+): string {
+  return [
+    p.who ?? "Forge member",
+    timeAgo(p.at, nowMs),
+    ...(p.baseVersion === null ? [] : [`against v${p.baseVersion}`]),
+  ].join(" · ");
 }
