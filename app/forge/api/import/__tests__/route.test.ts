@@ -30,9 +30,13 @@ function rig(rows = [EXISTING]) {
     data: fn === "forge_create_card" ? "new-card" : "2026-11-08T00:00:00Z",
     error: null as null | { message: string },
   }));
-  const q: any = { select: vi.fn(() => q), eq: vi.fn(() => q), in: vi.fn(async () => ({ data: rows, error: null })) };
+  const q: any = {
+    select: vi.fn(() => q),
+    eq: vi.fn(() => q),
+    filter: vi.fn(async () => ({ data: rows, error: null })),
+  };
   asMock(requireElder).mockResolvedValue({ supabase: { rpc, from: () => q } });
-  return { rpc };
+  return { rpc, q };
 }
 
 function post(body: Record<string, unknown>, files: Record<string, File> = {}) {
@@ -119,6 +123,19 @@ describe("POST /forge/api/import overwrite (U-02)", () => {
     const snapshot = { name: "Fresh", cardType: ["Hero"], alignment: "Good" };
     await post({ overwrite: true, cards: [{ name: "Fresh", snapshot, derived: ["alignment"] }] });
     expect(rpc).toHaveBeenCalledWith("forge_save_card", { p_card_id: "new-card", p_snapshot: snapshot });
+  });
+});
+
+describe("POST /forge/api/import finding existing cards", () => {
+  // postgrest-js's .in() doesn't escape a double quote, which silently drops every value after
+  // it, so those rows would look new and an overwrite would create a second card.
+  it("escapes a quoted Lost Soul name in the lookup", async () => {
+    const { q } = rig([]);
+    await post({
+      overwrite: true, preview: true,
+      cards: [{ name: 'Lost Soul "Invented" [Gen 1:1]', snapshot: {} }, { name: "Plain Card", snapshot: {} }],
+    });
+    expect(q.filter).toHaveBeenCalledWith("title", "in", '("Lost Soul \\"Invented\\" [Gen 1:1]","Plain Card")');
   });
 });
 

@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { requireElder, notFoundResponse } from "@/app/forge/lib/auth";
 import { uploadForgeFinished, validateArtFile } from "@/app/forge/lib/art";
+import { pgrestInList } from "@/lib/pricing/helpers";
 import { isEmptyPatch } from "@/app/forge/lib/cardSave";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 import { overwritePatch, type RowPreview } from "@/app/forge/import/overwrite";
@@ -62,7 +63,7 @@ export async function POST(req: Request): Promise<Response> {
     .from("forge_cards")
     .select("id, title, working_snapshot")
     .eq("set_id", setId)
-    .in("title", names);
+    .filter("title", "in", pgrestInList(names)); // .in() can't take a quoted Lost Soul name
   if (existErr) return badRequest(existErr.message);
   const existingByTitle = new Map(
     (existing ?? []).map((r: { id: string; title: string; working_snapshot: DesignCard }) => [r.title, r]),
