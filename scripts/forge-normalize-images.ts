@@ -88,23 +88,36 @@ async function collectRefs(): Promise<Map<string, Ref[]>> {
     if (!key) return;
     refs.set(key, [...(refs.get(key) ?? []), ref]);
   };
-  const { data: cards, error: cardsErr } = await supabase
-    .from("forge_cards")
-    .select("id, working_art_key, working_art_original_key, working_finished_key");
-  if (cardsErr) throw cardsErr;
-  for (const c of cards ?? []) {
-    for (const col of ["working_art_key", "working_art_original_key", "working_finished_key"] as const) {
-      add(c[col], { table: "forge_cards", id: c.id, column: col, cardId: c.id });
+  // PostgREST returns at most 1000 rows per request with no error, and both tables are past that.
+  // A row missed here would keep its old key while the rewrite loop deletes that blob.
+  const PAGE_SIZE = 1000;
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data: cards, error: cardsErr } = await supabase
+      .from("forge_cards")
+      .select("id, working_art_key, working_art_original_key, working_finished_key")
+      .order("id")
+      .range(from, from + PAGE_SIZE - 1);
+    if (cardsErr) throw cardsErr;
+    for (const c of cards ?? []) {
+      for (const col of ["working_art_key", "working_art_original_key", "working_finished_key"] as const) {
+        add(c[col], { table: "forge_cards", id: c.id, column: col, cardId: c.id });
+      }
     }
+    if (!cards || cards.length < PAGE_SIZE) break;
   }
-  const { data: versions, error: versionsErr } = await supabase
-    .from("card_versions")
-    .select("id, card_id, art_key, art_original_key, finished_key");
-  if (versionsErr) throw versionsErr;
-  for (const v of versions ?? []) {
-    for (const col of ["art_key", "art_original_key", "finished_key"] as const) {
-      add(v[col], { table: "card_versions", id: v.id, column: col, cardId: v.card_id });
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data: versions, error: versionsErr } = await supabase
+      .from("card_versions")
+      .select("id, card_id, art_key, art_original_key, finished_key")
+      .order("id")
+      .range(from, from + PAGE_SIZE - 1);
+    if (versionsErr) throw versionsErr;
+    for (const v of versions ?? []) {
+      for (const col of ["art_key", "art_original_key", "finished_key"] as const) {
+        add(v[col], { table: "card_versions", id: v.id, column: col, cardId: v.card_id });
+      }
     }
+    if (!versions || versions.length < PAGE_SIZE) break;
   }
   return refs;
 }
