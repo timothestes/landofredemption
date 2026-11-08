@@ -80,6 +80,83 @@ describe("computeProgress", () => {
   });
 });
 
+// The targets editor stores a type-level target under "none", alone (TargetsEditor.save).
+describe("computeProgress type-level targets", () => {
+  it("counts every card of the type, whatever its brigade", () => {
+    const m = computeProgress([card(["Hero"], ["Silver"]), card(["Hero"], ["Blue"])], { cells: { Hero: { none: 4 } } });
+    expect(m.checklist).toEqual([{ type: "Hero", brigade: "none", remaining: 2 }]);
+  });
+
+  it("agrees with the type's Total", () => {
+    const m = computeProgress([card(["Hero"], ["Silver"]), card(["Hero"], ["Blue"])], { cells: { Hero: { none: 4 } } });
+    expect(m.typeTotals.Hero).toEqual({ actual: 2, target: 4 });
+  });
+
+  it("counts a multi-brigade card once, in the list and in the Total", () => {
+    const m = computeProgress([card(["Hero"], ["Blue", "Green"])], { cells: { Hero: { none: 4 } } });
+    expect(m.checklist).toEqual([{ type: "Hero", brigade: "none", remaining: 3 }]);
+    expect(m.typeTotals.Hero).toEqual({ actual: 1, target: 4 });
+  });
+
+  it("counts brigade-less cards too, and types without a brigade as before", () => {
+    const m = computeProgress(
+      [card(["Hero"], undefined), card(["Hero"], ["Blue"]), card(["Artifact"], [])],
+      { cells: { Hero: { none: 3 }, Artifact: { none: 2 } } },
+    );
+    expect(m.checklist).toEqual([
+      { type: "Artifact", brigade: "none", remaining: 1 },
+      { type: "Hero", brigade: "none", remaining: 1 },
+    ]);
+  });
+
+  it("leaves the list when met or passed, and never counts archived cards", () => {
+    const met = computeProgress([card(["Hero"], ["Blue"]), card(["Hero"], ["Red"])], { cells: { Hero: { none: 2 } } });
+    expect(met.checklist).toEqual([]);
+    const passed = computeProgress([card(["Hero"], ["Blue"]), card(["Hero"], ["Red"])], { cells: { Hero: { none: 1 } } });
+    expect(passed.checklist).toEqual([]);
+    const archived = computeProgress([card(["Hero"], ["Blue"], "archived")], { cells: { Hero: { none: 2 } } });
+    expect(archived.checklist).toEqual([{ type: "Hero", brigade: "none", remaining: 2 }]);
+  });
+
+  it("names the target for no column: it belongs to the type's Total", () => {
+    const m = computeProgress([card(["Hero"], ["Silver"]), card(["Hero"], ["Blue"])], { cells: { Hero: { none: 4 } } });
+    expect(m.brigades).toEqual(["Blue", "Silver"]);
+    expect(m.cells.every((c) => c.target === 0)).toBe(true);
+    // A brigade-less card still has somewhere to show.
+    const withNone = computeProgress([card(["Hero"], undefined)], { cells: { Hero: { none: 4 } } });
+    expect(withNone.cells).toEqual([{ type: "Hero", brigade: "none", actual: 1, target: 0 }]);
+  });
+
+  it("a card of two types counts toward each", () => {
+    const m = computeProgress([card(["Hero", "EvilCharacter"], ["Blue", "Crimson"])], {
+      cells: { Hero: { none: 2 }, EvilCharacter: { none: 2 } },
+    });
+    expect(m.typeTotals.Hero).toEqual({ actual: 1, target: 2 });
+    expect(m.typeTotals.EvilCharacter).toEqual({ actual: 1, target: 2 });
+  });
+});
+
+describe("computeProgress per-brigade targets", () => {
+  it("keep counting cell by cell, and total the cells", () => {
+    const m = computeProgress([card(["Hero"], ["Blue", "Green"])], { cells: { Hero: { Blue: 1, Green: 1, Red: 2 } } });
+    expect(m.checklist).toEqual([{ type: "Hero", brigade: "Red", remaining: 2 }]);
+    expect(m.typeTotals.Hero).toEqual({ actual: 2, target: 4 });
+  });
+
+  it("beside a brigade target, none still means brigade-less cards", () => {
+    const m = computeProgress([card(["Fortress"], ["Blue"]), card(["Fortress"], undefined)], {
+      cells: { Fortress: { none: 3, Blue: 1 } },
+    });
+    expect(m.checklist).toEqual([{ type: "Fortress", brigade: "none", remaining: 2 }]);
+    expect(m.typeTotals.Fortress).toEqual({ actual: 2, target: 4 });
+  });
+
+  it("a type with no target totals its cells, target 0", () => {
+    const m = computeProgress([card(["Hero"], ["Blue"])], {});
+    expect(m.typeTotals.Hero).toEqual({ actual: 1, target: 0 });
+  });
+});
+
 describe("computeProgress keywords", () => {
   const withText = (rawText: string | undefined, status = "draft", specialAbility?: string) => ({
     snapshot: { cardType: ["GE"], brigades: ["Blue"], rawText, specialAbility }, status,
