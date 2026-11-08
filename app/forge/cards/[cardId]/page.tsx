@@ -4,6 +4,7 @@ import { getCard } from "@/app/forge/lib/cards";
 import { listArtCandidates } from "@/app/forge/lib/artCandidates";
 import { getSet, listSets, listSetCards } from "@/app/forge/lib/sets";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
+import { filterQuery, gridHref, parseCardFilters } from "@/app/forge/lib/cardFilters";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import { getOpenProposalDiffs, listProposals } from "@/app/forge/lib/proposals";
 import { listComments } from "@/app/forge/lib/comments";
@@ -14,11 +15,16 @@ import ReviewPanel from "./ReviewPanel";
 
 export const dynamic = "force-dynamic";
 
-export default async function StudioPage({ params }: { params: Promise<{ cardId: string }> }) {
+export default async function StudioPage({ params, searchParams }: {
+  params: Promise<{ cardId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const ctx = await requireForge();
   if (!ctx) notFound();
   if (ctx.role === "playtester") redirect("/forge/play");
   const { cardId } = await params;
+  // The filters of the grid you came from, kept on the way along the arrows and back.
+  const filters = parseCardFilters(await searchParams);
   const card = await getCard(cardId);
   if (!card) notFound();
   const artCandidates = await listArtCandidates(cardId);
@@ -116,6 +122,8 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
       setName={set?.name ?? null}
       prevId={prevId}
       nextId={nextId}
+      walkQuery={filterQuery(filters)}
+      gridHref={gridHref(card.setId, cardId, filters)}
       position={position}
       artCandidates={artCandidates}
       openProposals={openProposals}

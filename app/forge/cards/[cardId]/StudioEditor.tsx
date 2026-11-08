@@ -44,7 +44,7 @@ const arrowClass =
   "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground";
 
 export default function StudioEditor({
-  card, sets, currentUser, creator, setId, setName, prevId, nextId, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, review,
+  card, sets, currentUser, creator, setId, setName, prevId, nextId, walkQuery = "", gridHref, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, review,
 }: {
   card: ForgeCardFull;
   sets: ForgeSetSummary[];
@@ -55,6 +55,9 @@ export default function StudioEditor({
   setName: string | null;
   prevId?: string | null;
   nextId?: string | null;
+  // The grid's filters ("?type=Hero"), which the arrows pass along, and the way back to that grid.
+  walkQuery?: string;
+  gridHref: string;
   // Where this card sits in the set's grid order, when there is more than one.
   position?: { index: number; total: number } | null;
   artCandidates: ArtCandidate[];
@@ -190,11 +193,11 @@ export default function StudioEditor({
       const dest = e.key === "ArrowLeft" ? prevId : nextId;
       if (!dest) return;
       e.preventDefault();
-      router.push(`/forge/cards/${dest}`);
+      router.push(`/forge/cards/${dest}${walkQuery}`);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [prevId, nextId, router]);
+  }, [prevId, nextId, walkQuery, router]);
 
   const update = (patch: Partial<DesignCard>) => {
     fieldsDirty.current = true;
@@ -303,12 +306,12 @@ export default function StudioEditor({
               ? [
                   { label: "The Forge", href: "/forge" },
                   { label: "Sets", href: "/forge/sets" },
-                  { label: setName ?? "Set", href: `/forge/sets/${card.setId}/cards` },
+                  { label: setName ?? "Set", href: gridHref, scroll: false },
                   { label: crumbName },
                 ]
               : [
                   { label: "The Forge", href: "/forge" },
-                  { label: "Ideas", href: "/forge/ideas" },
+                  { label: "Ideas", href: gridHref, scroll: false },
                   { label: crumbName },
                 ]
           }
@@ -396,12 +399,12 @@ export default function StudioEditor({
               onClick={() => setPeeking(true)} />
             {/* Prev/next within the set — same order as the grid, no wrap at ends. */}
             {prevId && (
-              <Link href={`/forge/cards/${prevId}`} aria-label="Previous card in set" className={arrowClass + " -left-11 sm:left-1.5"}>
+              <Link href={`/forge/cards/${prevId}${walkQuery}`} aria-label="Previous card in set" className={arrowClass + " -left-11 sm:left-1.5"}>
                 <ChevronLeft className="h-5 w-5" aria-hidden="true" />
               </Link>
             )}
             {nextId && (
-              <Link href={`/forge/cards/${nextId}`} aria-label="Next card in set" className={arrowClass + " -right-11 sm:right-1.5"}>
+              <Link href={`/forge/cards/${nextId}${walkQuery}`} aria-label="Next card in set" className={arrowClass + " -right-11 sm:right-1.5"}>
                 <ChevronRight className="h-5 w-5" aria-hidden="true" />
               </Link>
             )}

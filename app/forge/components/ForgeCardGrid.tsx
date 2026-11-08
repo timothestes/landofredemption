@@ -4,6 +4,7 @@ import { MessageSquare, GitPullRequest } from "lucide-react";
 import ForgeCardFace from "@/app/forge/components/ForgeCardFace";
 import ForgeCardPreview from "@/app/forge/components/ForgeCardPreview";
 import { cardRawText } from "@/app/forge/lib/designCard";
+import { tileId } from "@/app/forge/lib/cardFilters";
 import { STATUS_LABEL, STATUS_BADGE_CLASS } from "@/app/forge/lib/lifecycleCopy";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
 
@@ -14,9 +15,11 @@ export type GridSelection = {
 };
 
 export default function ForgeCardGrid({
-  cards, showStatus = false, selection, leading, commentCounts, proposalCounts, releaseBadges, versionNumbers,
+  cards, cardQuery = "", showStatus = false, selection, leading, commentCounts, proposalCounts, releaseBadges, versionNumbers,
 }: {
   cards: ForgeCardFull[];
+  // The grid's filters ("?type=Hero"), carried to the card so its arrows and way back keep them.
+  cardQuery?: string;
   showStatus?: boolean;
   selection?: GridSelection;
   leading?: ReactNode;
@@ -119,7 +122,9 @@ export default function ForgeCardGrid({
           );
         }
         return (
-          <Link key={c.id} href={`/forge/cards/${c.id}`} className="group block transition hover:opacity-90">
+          // No prefetch while filtered: typing changes every tile's href, and each change would
+          // prefetch again.
+          <Link key={c.id} id={tileId(c.id)} href={`/forge/cards/${c.id}${cardQuery}`} prefetch={cardQuery ? false : undefined} className="group block transition hover:opacity-90">
             {inner}
           </Link>
         );

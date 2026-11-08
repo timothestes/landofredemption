@@ -13,24 +13,22 @@ import {
 } from "@/app/forge/lib/lifecycleCopy";
 import { cardRawText, CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
+import { SET_STATUSES } from "@/app/forge/lib/cardFilters";
+import { useGridPlace } from "@/app/forge/lib/useGridPlace";
 import { typeLabel, brigadeLabel } from "@/app/forge/lib/filterIcons";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
 import type { ReleaseInfo } from "@/app/forge/lib/versions";
 import { Button } from "@/components/ui/button";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 
-const SET_STATUSES = ["draft", "playtesting", "approved", "archived"] as const;
 const BULK_ACTIONS: BulkAction[] = ["release", "markFinal", "shelve", "restore", "returnToIdeas", "delete"];
 const selectClass = "rounded-md border bg-background px-2 py-1.5 text-sm";
 
 export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts, proposalCounts, releases }: { cards: ForgeCardFull[]; setId: string; canCreate: boolean; commentCounts?: Record<string, number>; proposalCounts?: Record<string, number>; releases?: Record<string, ReleaseInfo> }) {
   const router = useRouter();
   const searchRef = useRef<HTMLInputElement>(null);
-  const [q, setQ] = useState("");
-  const [status, setStatus] = useState("");
-  const [type, setType] = useState<CardType | "">("");
-  const [brigade, setBrigade] = useState<Brigade | "">("");
-  const [since, setSince] = useState("");
+  const { filters, query, update, typeSearch } = useGridPlace();
+  const { q, status, type, brigade, since } = filters;
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [busy, setBusy] = useState<LifecycleAction | null>(null);
@@ -44,12 +42,12 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
       const el = document.activeElement as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable)) return;
       e.preventDefault();
-      setQ("");
+      update({ q: "" });
       searchRef.current?.focus();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [update]);
 
   // Default order: the design team's print order (compareCardsDefault — sections,
   // multi-first brigade groups, strength). Shared with the single-card detail
@@ -130,25 +128,25 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
     <div className="relative pb-28 sm:pb-20">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="relative">
-          <input ref={searchRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or text… (press /)" aria-label="Search cards by name or text"
+          <input ref={searchRef} value={q} onChange={(e) => typeSearch(e.target.value)} placeholder="Search name or text… (press /)" aria-label="Search cards by name or text"
             className="rounded-md border bg-background px-3 py-1.5 pr-8 text-sm" />
           {q && (
             <button type="button" aria-label="Clear search"
-              onClick={() => { setQ(""); searchRef.current?.focus(); }}
+              onClick={() => { update({ q: "" }); searchRef.current?.focus(); }}
               className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:text-foreground">
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className={selectClass} aria-label="Filter by status">
+        <select value={status} onChange={(e) => update({ status: e.target.value })} className={selectClass} aria-label="Filter by status">
           <option value="">All statuses</option>
           {SET_STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
         </select>
-        <select value={type} onChange={(e) => setType(e.target.value as CardType | "")} className={selectClass} aria-label="Filter by type">
+        <select value={type} onChange={(e) => update({ type: e.target.value as CardType | "" })} className={selectClass} aria-label="Filter by type">
           <option value="">All types</option>
           {CARD_TYPES.map((t) => <option key={t} value={t}>{typeLabel(t)}</option>)}
         </select>
-        <select value={brigade} onChange={(e) => setBrigade(e.target.value as Brigade | "")} className={selectClass} aria-label="Filter by brigade">
+        <select value={brigade} onChange={(e) => update({ brigade: e.target.value as Brigade | "" })} className={selectClass} aria-label="Filter by brigade">
           <option value="">All brigades</option>
           {BRIGADES.map((b) => <option key={b} value={b}>{brigadeLabel(b)}</option>)}
         </select>
@@ -157,7 +155,7 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
           <input
             type="date"
             value={since}
-            onChange={(e) => setSince(e.target.value)}
+            onChange={(e) => update({ since: e.target.value })}
             aria-label="Show cards with a new version since date"
             className={selectClass}
           />
@@ -201,6 +199,7 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
 
       <ForgeCardGrid
         cards={shown}
+        cardQuery={query}
         showStatus
         commentCounts={commentCounts}
         proposalCounts={proposalCounts}

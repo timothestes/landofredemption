@@ -8,15 +8,15 @@ import { BULK_DONE_VERB, deleteCopy } from "@/app/forge/lib/lifecycleCopy";
 import ForgeCardGrid from "@/app/forge/components/ForgeCardGrid";
 import { CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
 import { typeLabel, brigadeLabel } from "@/app/forge/lib/filterIcons";
+import { useGridPlace } from "@/app/forge/lib/useGridPlace";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
 import { Button } from "@/components/ui/button";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 
 export default function IdeasLibrary({ cards, canCreate, sets }: { cards: ForgeCardFull[]; canCreate: boolean; sets: ForgeSetSummary[] }) {
   const router = useRouter();
-  const [q, setQ] = useState("");
-  const [type, setType] = useState<CardType | "">("");
-  const [brigade, setBrigade] = useState<Brigade | "">("");
+  const { filters, query, update, typeSearch } = useGridPlace();
+  const { q, type, brigade } = filters;
   const [creating, setCreating] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -73,13 +73,13 @@ export default function IdeasLibrary({ cards, canCreate, sets }: { cards: ForgeC
     <div className="mx-auto max-w-6xl p-4 pb-28 sm:pb-20">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <h1 className="mr-auto text-lg font-semibold">Ideas</h1>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" aria-label="Search ideas by name"
+        <input value={q} onChange={(e) => typeSearch(e.target.value)} placeholder="Search…" aria-label="Search ideas by name"
           className="rounded-md border bg-background px-3 py-1.5 text-sm" />
-        <select value={type} onChange={(e) => setType(e.target.value as CardType | "")} className="rounded-md border bg-background px-2 py-1.5 text-sm" aria-label="Filter by type">
+        <select value={type} onChange={(e) => update({ type: e.target.value as CardType | "" })} className="rounded-md border bg-background px-2 py-1.5 text-sm" aria-label="Filter by type">
           <option value="">All types</option>
           {CARD_TYPES.map((t) => <option key={t} value={t}>{typeLabel(t)}</option>)}
         </select>
-        <select value={brigade} onChange={(e) => setBrigade(e.target.value as Brigade | "")} className="rounded-md border bg-background px-2 py-1.5 text-sm" aria-label="Filter by brigade">
+        <select value={brigade} onChange={(e) => update({ brigade: e.target.value as Brigade | "" })} className="rounded-md border bg-background px-2 py-1.5 text-sm" aria-label="Filter by brigade">
           <option value="">All brigades</option>
           {BRIGADES.map((b) => <option key={b} value={b}>{brigadeLabel(b)}</option>)}
         </select>
@@ -113,7 +113,7 @@ export default function IdeasLibrary({ cards, canCreate, sets }: { cards: ForgeC
           {canCreate && <Button onClick={onNew} disabled={creating}>Jot an idea</Button>}
         </div>
       ) : (
-        <ForgeCardGrid cards={filtered} selection={{ active: selecting, selected, onToggle: toggle }} />
+        <ForgeCardGrid cards={filtered} cardQuery={query} selection={{ active: selecting, selected, onToggle: toggle }} />
       )}
 
       {selecting && selected.size > 0 && (

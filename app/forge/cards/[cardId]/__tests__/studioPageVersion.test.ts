@@ -37,7 +37,7 @@ async function versionProp(card: Record<string, unknown>, versions: unknown[]) {
   (requireForge as any).mockResolvedValue(ctx());
   (getCard as any).mockResolvedValue({ id: "c1", setId: "s1", snapshot: {}, creatorId: "u1", createdAt: "2026-01-01", ...card });
   (listVersions as any).mockResolvedValue(versions);
-  const el: any = await StudioPage({ params: Promise.resolve({ cardId: "c1" }) });
+  const el: any = await StudioPage({ params: Promise.resolve({ cardId: "c1" }), searchParams: Promise.resolve({}) });
   return el.props.version;
 }
 
