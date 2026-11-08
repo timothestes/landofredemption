@@ -17,7 +17,7 @@ import { diffCards, summarizeDiff } from "@/app/forge/lib/cardDiff";
 import { acceptProposal, denyProposal, type ProposalRow } from "@/app/forge/lib/proposals";
 import { addComment } from "@/app/forge/lib/comments";
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
-import { denyDraftPlan, DENY_FLUSH_FAILED } from "@/app/forge/lib/lifecycleCopy";
+import { denyDraftPlan, ACCEPT_CLOSED_NOTE, DENY_FLUSH_FAILED } from "@/app/forge/lib/lifecycleCopy";
 import { flushThen, runAcceptProposal } from "@/app/forge/lib/proposeFlow";
 import FieldChanges from "./FieldChanges";
 import { useStudioDraft, useStudioSync } from "./StudioSyncContext";
@@ -124,6 +124,8 @@ export default function ProposalDiff({
   cardStatus,
   savedDraft = {},
   latestVersion = null,
+  closed = false,
+  onAcceptDialog,
 }: {
   proposal: ProposalRow;
   current: DesignCard;
@@ -135,12 +137,16 @@ export default function ProposalDiff({
   // one Deny can put the draft back to. Same row forge_deny_proposal_restore_draft picks.
   savedDraft?: DesignCard;
   latestVersion?: { versionNumber: number; data: DesignCard } | null;
+  // The proposal has left the open list, and this row is only here for its open dialog.
+  closed?: boolean;
+  onAcceptDialog?: (open: boolean) => void;
 }) {
   const router = useRouter();
   const { flushPending } = useStudioSync();
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [acceptOpen, setAcceptOpen] = useState(false);
+  const [closedByAccept, setClosedByAccept] = useState(false);
   const [denyOpen, setDenyOpen] = useState(false);
   const [note, setNote] = useState("");
   const [reason, setReason] = useState("");
@@ -150,6 +156,14 @@ export default function ProposalDiff({
   // "— → value" diff is noise, so render the proposal as a plain new card.
   const isNewCard = proposal.baseVersionId === null;
   const isDraft = cardStatus === "draft";
+  // Not while an accept is running: a good one leaves the open list before its note is saved.
+  const gone = (closed || closedByAccept) && !pending;
+
+  const showAccept = (open: boolean) => {
+    setErr(null);
+    setAcceptOpen(open);
+    onAcceptDialog?.(open);
+  };
 
   const doAccept = () =>
     start(async () => {
@@ -160,8 +174,12 @@ export default function ProposalDiff({
         note,
         addNote: (body) => addComment({ cardId: proposal.cardId, proposalId: proposal.id, body }),
       });
-      if (!r.ok) { setErr(r.error ?? "Could not accept proposal"); return; }
-      setAcceptOpen(false);
+      if (!r.ok) {
+        setErr(r.error ?? "Could not accept proposal");
+        if (r.closed) { setClosedByAccept(true); router.refresh(); }
+        return;
+      }
+      showAccept(false);
       setNote("");
       router.refresh();
     });
@@ -176,7 +194,7 @@ export default function ProposalDiff({
       {/* Decision controls + change list render ABOVE the previews (mobile-first). */}
       {proposal.status === "open" && canReview && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Button size="sm" disabled={pending} onClick={() => { setErr(null); setAcceptOpen(true); }}>
+          <Button size="sm" disabled={pending} onClick={() => showAccept(true)}>
             Accept
           </Button>
           <Button size="sm" variant="outline" disabled={pending} onClick={() => setDenyOpen(true)}>
@@ -225,12 +243,14 @@ export default function ProposalDiff({
         </div>
       </details>
 
-      <Dialog open={acceptOpen} onOpenChange={(o) => { if (!o) { setAcceptOpen(false); setErr(null); } }}>
+      <Dialog open={acceptOpen} onOpenChange={(o) => { if (!o) showAccept(false); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Accept proposal</DialogTitle>
+            <DialogTitle>{gone ? "Proposal closed" : "Accept proposal"}</DialogTitle>
             <DialogDescription>
-              {isDraft
+              {gone
+                ? "This proposal can’t be accepted any more."
+                : isDraft
                 ? "Applies this change to the working draft and records it as a new draft version in the card’s history. The card stays in Draft — nothing is visible to playtesters."
                 : "Releases a new version to playtesters (not the public card database) and replaces the working draft with this proposal. The card stays in playtest — use Mark final when it’s done."}
             </DialogDescription>
@@ -240,16 +260,18 @@ export default function ProposalDiff({
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
+              disabled={gone}
               placeholder="Add a note for the proposal history…"
-              className="h-24 w-full rounded-md border bg-background px-2 py-1 text-sm"
+              className="h-24 w-full rounded-md border bg-background px-2 py-1 text-sm disabled:opacity-60"
             />
             {err && <p className="text-sm text-destructive">{err}</p>}
+            {gone && !err && <p className="text-sm">{ACCEPT_CLOSED_NOTE}</p>}
           </DialogBody>
           <DialogFooter>
-            <Button variant="outline" disabled={pending} onClick={() => { setAcceptOpen(false); setErr(null); }}>
-              Cancel
+            <Button variant="outline" disabled={pending} onClick={() => showAccept(false)}>
+              {gone ? "Close" : "Cancel"}
             </Button>
-            <Button disabled={pending} onClick={doAccept}>{isDraft ? "Accept" : "Accept & release"}</Button>
+            {!gone && <Button disabled={pending} onClick={doAccept}>{isDraft ? "Accept" : "Accept & release"}</Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>

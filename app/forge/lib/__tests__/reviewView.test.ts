@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildReviewQueue, type ReviewCardRow, type ReviewOpenItem } from "../reviewView";
+import { buildReviewQueue, keepHeldProposal, type ReviewCardRow, type ReviewOpenItem } from "../reviewView";
 
 const card = (over: Partial<ReviewCardRow> = {}): ReviewCardRow => ({
   id: "c1", title: "Goliath", status: "draft", ...over,
@@ -94,5 +94,27 @@ describe("buildReviewQueue", () => {
   it("ignores open items pointing at a card outside the set", () => {
     const rows = buildReviewQueue([card({ id: "c1" })], [item({ cardId: "ghost" })]);
     expect(rows).toEqual([]);
+  });
+});
+
+describe("keepHeldProposal", () => {
+  const diff = (id: string) => ({ proposal: { id } });
+
+  it("lists the open proposals when nothing is held", () => {
+    const open = [diff("p1"), diff("p2")];
+    expect(keepHeldProposal(open, null)).toBe(open);
+  });
+
+  it("does not list a held proposal twice while it is still open", () => {
+    const open = [diff("p1"), diff("p2")];
+    expect(keepHeldProposal(open, diff("p2"))).toBe(open);
+  });
+
+  // The stale accept: the server closes the proposal, the realtime ping refreshes the page,
+  // and the row has to outlive that for its dialog to stay up.
+  it("keeps a held proposal the refresh dropped", () => {
+    const held = diff("p1");
+    expect(keepHeldProposal([], held)).toEqual([held]);
+    expect(keepHeldProposal([diff("p2")], held).map((d) => d.proposal.id)).toEqual(["p2", "p1"]);
   });
 });

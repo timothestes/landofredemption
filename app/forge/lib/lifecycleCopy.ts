@@ -147,6 +147,9 @@ export const DENY_FLUSH_FAILED =
   "Couldn’t save your latest edits, so the proposal wasn’t denied. Check your connection and try again.";
 export const ACCEPT_FLUSH_FAILED =
   "Couldn’t save your latest edits, so the proposal wasn’t accepted. Check your connection and try again.";
+// The Accept dialog when the proposal closed underneath it: a release, or another elder's
+// decision, landed while it was open.
+export const ACCEPT_CLOSED_NOTE = "This proposal was closed while this was open, so there’s nothing left to accept.";
 
 // The choice in the Deny dialog. A proposal freezes the one shared draft, so denying can't
 // simply undo it: going back to vN throws away everything since vN, not just the proposal.

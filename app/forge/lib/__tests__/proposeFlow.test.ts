@@ -124,11 +124,11 @@ describe("runAcceptProposal", () => {
   it("passes the server's refusal through and adds no note", async () => {
     const log: string[] = [];
     const r = await acceptFlow(log, {
-      accept: async () => { log.push("accept"); return { ok: false, error: "A newer version was released." }; },
+      accept: async () => { log.push("accept"); return { ok: false, error: "A newer version was released.", closed: true }; },
       note: "Looks right",
     });
     expect(log).toEqual(["flush", "accept"]);
-    expect(r).toEqual({ ok: false, error: "A newer version was released." });
+    expect(r).toEqual({ ok: false, error: "A newer version was released.", closed: true });
   });
 
   it("adds no note when the box is blank", async () => {

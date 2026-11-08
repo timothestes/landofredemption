@@ -64,3 +64,10 @@ export function buildReviewQueue(
       Date.parse(b.latestAt) - Date.parse(a.latestAt)
   );
 }
+
+// The proposals to list on a card. A refresh drops a closed proposal from the open list, and
+// that used to unmount its row with the Accept dialog still open on it, so an error vanished
+// a moment after it appeared. The row whose dialog is open stays until the dialog closes.
+export function keepHeldProposal<T extends { proposal: { id: string } }>(open: T[], held: T | null): T[] {
+  return held && !open.some((d) => d.proposal.id === held.proposal.id) ? [...open, held] : open;
+}

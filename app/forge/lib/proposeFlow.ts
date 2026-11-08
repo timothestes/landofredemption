@@ -36,10 +36,10 @@ export async function flushThen<T>(
 // note is stored against the proposal, mirroring a deny reason, so it waits for the accept.
 export async function runAcceptProposal(deps: {
   flush: () => Promise<{ ok: boolean }>;
-  accept: () => Promise<{ ok: boolean; error?: string }>;
+  accept: () => Promise<{ ok: boolean; error?: string; closed?: boolean }>;
   note: string;
   addNote: (body: string) => Promise<unknown>;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<{ ok: boolean; error?: string; closed?: boolean }> {
   const r = await flushThen(deps.flush, deps.accept, { ok: false, error: ACCEPT_FLUSH_FAILED });
   if (r.ok === false) return r;
   if (deps.note.trim()) await deps.addNote(deps.note);

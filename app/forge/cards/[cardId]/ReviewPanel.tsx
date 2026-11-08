@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { buildHistory } from "@/app/forge/lib/historyView";
 import { diffCards } from "@/app/forge/lib/cardDiff";
 import { runProposeSubmit } from "@/app/forge/lib/proposeFlow";
+import { keepHeldProposal } from "@/app/forge/lib/reviewView";
 import {
   PROPOSE_INTRO, PROPOSE_NEW_CARD, PROPOSE_SELF_ACCEPT, PROPOSE_ALREADY_UNDER_REVIEW,
   proposeConsequence, proposeDiffCaption, proposeEmptyNote,
@@ -102,6 +103,10 @@ export default function ReviewPanel({
   };
   const canPropose = card.status === "draft" || card.status === "playtesting";
 
+  // The proposal whose Accept dialog is open. See keepHeldProposal.
+  const [held, setHeld] = useState<ProposalDiffData | null>(null);
+  const shownDiffs = keepHeldProposal(openDiffs, held);
+
   // listVersions orders version_number DESC, so versions[0] is the same row
   // createProposal diffs against server-side.
   const latestVersion = versions[0] ?? null;
@@ -162,13 +167,13 @@ export default function ReviewPanel({
             {err && <p role="alert" className="text-destructive">{err}</p>}
           </div>
         )}
-        {openDiffs.length === 0 ? (
+        {shownDiffs.length === 0 ? (
           <p className="rounded-md border border-dashed border-muted-foreground/30 bg-muted/40 px-3 py-6 text-center text-sm text-muted-foreground">
             No open proposals.
           </p>
         ) : (
           <div className="space-y-3">
-            {openDiffs.map((d) => (
+            {shownDiffs.map((d) => (
               <ProposalDiff
                 key={d.proposal.id}
                 proposal={d.proposal}
@@ -179,6 +184,8 @@ export default function ReviewPanel({
                 cardStatus={card.status}
                 savedDraft={card.snapshot ?? {}}
                 latestVersion={latestVersion}
+                closed={!openDiffs.some((o) => o.proposal.id === d.proposal.id)}
+                onAcceptDialog={(open) => setHeld(open ? d : null)}
               />
             ))}
           </div>
