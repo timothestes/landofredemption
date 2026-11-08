@@ -102,6 +102,14 @@ iteration).
   Returned) from `forge_audit`.
 - **Card page → Comments**: era dividers ("v3 updated · Jul 7") anchor old
   comments to the version they were written against.
+- **Studio header**: a pill in the grid's language ("In playtest · v3"), naming
+  the released version, plus "· edited since" once the working draft (text,
+  live; art and finished image, on refresh) differs from it. With nothing
+  released it is the latest iteration ("Draft · v2"), with no comparison.
+  In the sticky row from `lg`, on the Created by line below that.
+- **Playtester view** (`/forge/play/<set>`): the released version number on the
+  tile and in the modal, and nothing else. The payload carries nothing about
+  the working draft, not even a "moved on" flag.
 - **Set page grid**: the status pill carries the latest version
   ("Draft · v2", "In playtest · v3"); the "Updated since" date filter shows
   cards with any version activity since the cutoff (badge marks draft
@@ -124,6 +132,7 @@ pipeline + manual Lackey export).
 | Propose UI + review panel | `app/forge/cards/[cardId]/ReviewPanel.tsx`, `ProposalDiff.tsx` |
 | History timeline | `CardHistory.tsx` + pure assembly in `app/forge/lib/historyView.ts` |
 | Readers | `app/forge/lib/versions.ts` (listVersions / listCardEvents / listSetActivity) |
+| Studio version pill | `app/forge/lib/studioVersion.ts`; `draftMovedOn` in `app/forge/lib/cardDiff.ts` |
 | Server actions | `app/forge/lib/proposals.ts`, `lifecycle.ts` |
 | RPCs (current bodies) | migrations `083` (**current `forge_publish_card`** — resolves open proposals), `072` (publish note + audit events + undeletable reasons), `075` (draft versions, unified base/guard, sweep exclusions) |
 | Enum + backfill | `074` (`version_status` gains 'draft'), `076` (backfilled the one 073-era lost accept) |

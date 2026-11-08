@@ -96,6 +96,14 @@ export function diffCards(before: DesignCard, after: DesignCard): FieldChange[] 
   return out;
 }
 
+// Has the draft moved on from a version, as a reader would see it? Every key counts, so unlike
+// diffCards it sees the no-editor fields an import can change. Unlike sameSnapshot, a field the
+// editor touched and cleared ("" or [] where the version has no key) is not a change.
+export function draftMovedOn(version: DesignCard, draft: DesignCard): boolean {
+  const keys = Object.keys({ ...version, ...draft }) as (keyof DesignCard)[];
+  return keys.some((k) => display(version[k]) !== display(draft[k]));
+}
+
 export function summarizeDiff(changes: FieldChange[]): string {
   if (changes.length === 0) return "No field changes.";
   const labels = changes.map((c) => c.label);

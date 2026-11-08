@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { diffCards, summarizeDiff, coerceFieldValue, sameSnapshot } from "../cardDiff";
+import { diffCards, summarizeDiff, coerceFieldValue, sameSnapshot, draftMovedOn } from "../cardDiff";
 
 describe("diffCards", () => {
   it("detects a changed scalar field", () => {
@@ -84,5 +84,29 @@ describe("sameSnapshot", () => {
   it("treats an empty snapshot as equal only to another empty one", () => {
     expect(sameSnapshot({}, {})).toBe(true);
     expect(sameSnapshot({}, { name: "David" })).toBe(false);
+  });
+});
+
+describe("draftMovedOn", () => {
+  it("is false for the same content in any key order", () => {
+    expect(draftMovedOn({ name: "A", strength: 7 }, { strength: 7, name: "A" })).toBe(false);
+  });
+  it("sees an edited field", () => {
+    expect(draftMovedOn({ rawText: "Draw 2." }, { rawText: "Draw 3." })).toBe(true);
+  });
+  it("sees a field added or emptied", () => {
+    expect(draftMovedOn({}, { reference: "1 Sam 17" })).toBe(true);
+    expect(draftMovedOn({ reference: "1 Sam 17" }, { reference: "" })).toBe(true);
+  });
+  // The editor writes "" and [] when a field is touched and cleared. Nothing changed on the card.
+  it("does not count a touched and cleared field as a change", () => {
+    expect(draftMovedOn({ name: "A" }, { name: "A", scripture: "", identifiers: [] })).toBe(false);
+  });
+  // diffCards skips these: they have no studio editor, but an import can still change them.
+  it("sees a change in a field diffCards skips", () => {
+    expect(draftMovedOn({ legality: "Rotation" }, { legality: "Banned" })).toBe(true);
+  });
+  it("sees reordered brigades, which change the printed bands", () => {
+    expect(draftMovedOn({ brigades: ["Blue", "Red"] }, { brigades: ["Red", "Blue"] })).toBe(true);
   });
 });

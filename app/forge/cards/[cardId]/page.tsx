@@ -8,6 +8,7 @@ import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import { getOpenProposalDiffs, listProposals } from "@/app/forge/lib/proposals";
 import { listComments } from "@/app/forge/lib/comments";
 import { listVersions, listCardEvents } from "@/app/forge/lib/versions";
+import { imagesMoved, pickStudioVersion, type VersionImages, type WorkingImages } from "@/app/forge/lib/studioVersion";
 import StudioEditor from "./StudioEditor";
 import ReviewPanel from "./ReviewPanel";
 
@@ -44,6 +45,25 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
     count: openDiffs.length,
     hasMatch: openDiffs.some((d) => sameSnapshot(d.proposal.proposedSnapshot, card.snapshot ?? {})),
   };
+
+  // The header's version pill. The text is compared on the client against the live draft; the
+  // images only here, so their blob keys stay on the server. Same composite-FK embed shape as
+  // the art route: an object or null at runtime, whatever supabase-js infers.
+  let moved = false;
+  if (card.approvedVersionId ?? card.publishedVersionId) {
+    const { data: images } = await ctx.supabase
+      .from("forge_cards")
+      .select(
+        "working_art_key, working_art_is_placeholder, working_finished_key, " +
+          "approved:card_versions!fk_approved(art_key, art_is_placeholder, finished_key), " +
+          "published:card_versions!fk_published(art_key, art_is_placeholder, finished_key)",
+      )
+      .eq("id", cardId)
+      .maybeSingle();
+    const row = images as unknown as (WorkingImages & { approved: VersionImages | null; published: VersionImages | null }) | null;
+    moved = imagesMoved(row, row?.approved ?? row?.published ?? null);
+  }
+  const version = pickStudioVersion(card, versions, moved);
 
   // Prev/next arrows on the card face walk the set in the same order as the grid.
   // No wrap: the boundary card gets null and hides that arrow.
@@ -86,6 +106,7 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
       position={position}
       artCandidates={artCandidates}
       openProposals={openProposals}
+      version={version}
       review={
         inSet ? (
           // key: React validates this as a keyless list child once it crosses the
