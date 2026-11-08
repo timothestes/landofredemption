@@ -107,12 +107,19 @@ function CardModal({ item, currentUserId, onClose }: { item: RevealItem; current
   );
 }
 
-export default function RevealGrid({ items, currentUserId }: { items: RevealItem[]; currentUserId: string }) {
+export default function RevealGrid({ items, currentUserId, initialCardId }: { items: RevealItem[]; currentUserId: string; initialCardId?: string }) {
   const [active, setActive] = useState<RevealItem | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const [q, setQ] = useState("");
   const [type, setType] = useState<CardType | "">("");
   const [brigade, setBrigade] = useState<Brigade | "">("");
+
+  // A link to one card opens it. After mount, because Dialog portals to <body>, which the server's
+  // HTML can't include.
+  useEffect(() => {
+    if (initialCardId) setActive(items.find((it) => it.cardId === initialCardId) ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCardId]);
 
   // Press "/" (when not already typing in a field) to reset the search and jump to it.
   useEffect(() => {

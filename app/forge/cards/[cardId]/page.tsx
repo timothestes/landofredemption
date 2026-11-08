@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { requireForge } from "@/app/forge/lib/auth";
+import { playtesterCardHref } from "@/app/forge/lib/play";
 import { getCard } from "@/app/forge/lib/cards";
 import { listArtCandidates } from "@/app/forge/lib/artCandidates";
 import { getSet, listSets, listSetCards } from "@/app/forge/lib/sets";
@@ -17,8 +18,8 @@ export const dynamic = "force-dynamic";
 export default async function StudioPage({ params }: { params: Promise<{ cardId: string }> }) {
   const ctx = await requireForge();
   if (!ctx) notFound();
-  if (ctx.role === "playtester") redirect("/forge/play");
   const { cardId } = await params;
+  if (ctx.role === "playtester") redirect(await playtesterCardHref(cardId));
   const card = await getCard(cardId);
   if (!card) notFound();
   const artCandidates = await listArtCandidates(cardId);

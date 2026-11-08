@@ -4,6 +4,8 @@
 // DesignCard payload + a hasApprovedArt boolean — never a blob key (use the
 // /forge/api/art/<id>?v=approved proxy to render the image).
 import { requireForge } from "@/app/forge/lib/auth";
+import { getSet } from "@/app/forge/lib/sets";
+import { DESIGNER_PAGE_LANDING, PLAYTEST_CARD_STATUSES, playtesterCardLanding } from "@/app/forge/lib/playtesterLanding";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 
 export type RevealCard = { cardId: string; data: DesignCard; hasApprovedArt: boolean; hasApprovedFinished: boolean; versionId: string; versionNumber: number };
@@ -24,7 +26,7 @@ export async function listSetApprovedCards(setId: string): Promise<RevealCard[]>
     .from("forge_cards")
     .select("id, approved_version_id, published_version_id")
     .eq("set_id", setId)
-    .in("status", ["playtesting", "approved", "promoted"]);
+    .in("status", PLAYTEST_CARD_STATUSES);
 
   const byVersion = new Map<string, string>(); // version_id -> card_id
   for (const c of cards ?? []) {
@@ -47,4 +49,26 @@ export async function listSetApprovedCards(setId: string): Promise<RevealCard[]>
     versionId: v.id as string,
     versionNumber: v.version_number as number,
   }));
+}
+
+// Where a link to a card takes a playtester. A row coming back proves nothing on its own: RLS
+// also shows an owner their own card, whatever its status or grant. So the rule checks both.
+export async function playtesterCardHref(cardId: string): Promise<string> {
+  const ctx = await requireForge();
+  if (!ctx) return DESIGNER_PAGE_LANDING;
+
+  const { data: card } = await ctx.supabase
+    .from("forge_cards")
+    .select("id, set_id, status, approved_version_id, published_version_id")
+    .eq("id", cardId)
+    .maybeSingle();
+  if (!card) return playtesterCardLanding(null);
+
+  return playtesterCardLanding({
+    id: card.id,
+    setId: card.set_id,
+    status: card.status,
+    releasedVersionId: card.approved_version_id ?? card.published_version_id,
+    setGranted: !!card.set_id && !!(await getSet(card.set_id)),
+  });
 }
