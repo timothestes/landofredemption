@@ -76,6 +76,7 @@ export default function StudioEditor({
   // A write from elsewhere arrived while this session had an unsaved edit, so adopting it
   // would have thrown that edit away. Offered as a choice instead.
   const [stale, setStale] = useState(false);
+  const [confirmLoad, setConfirmLoad] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstRender = useRef(true);
@@ -149,6 +150,7 @@ export default function StudioEditor({
     latest.current = incoming;
     setSnapshot(incoming);
     setStale(false);
+    setConfirmLoad(false);
   }, [card.snapshot, saver]);
 
   // Clicking a nav link within the debounce window unmounts this editor before the
@@ -230,6 +232,20 @@ export default function StudioEditor({
     setSaved((s) => (s === "error" ? "idle" : s));   // nothing of this session's is left to fail
   };
 
+  // Asks first when there is something to lose. The pending save waits for the answer: going
+  // out now, it would merge the edit into their version and change the answer under the question.
+  const loadTheirVersion = () => {
+    if (saver.clean()) { adoptIncoming(); return; }
+    if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+    setConfirmLoad(true);
+  };
+
+  // The dialog closed either way. If the edit is still here it was kept, so its save goes out.
+  const closeLoadConfirm = () => {
+    setConfirmLoad(false);
+    if (!saver.clean()) void runSave();
+  };
+
   async function onUpload(file: File, kind: "finished") {
     setErr(null);
     setUploading(kind);
@@ -283,10 +299,10 @@ export default function StudioEditor({
       {stale && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
           <span>
-            This card changed elsewhere while you were editing. Your unsaved edit is still here —
-            saving keeps yours.
+            This card changed elsewhere while you were editing.
+            {dirty && " Your unsaved edit is still here — saving keeps yours."}
           </span>
-          <Button variant="outline" className="ml-auto h-6 px-2 text-[11px]" onClick={adoptIncoming}>
+          <Button variant="outline" className="ml-auto h-6 px-2 text-[11px]" onClick={loadTheirVersion}>
             Load their version
           </Button>
         </div>
@@ -509,6 +525,17 @@ export default function StudioEditor({
         title="Replace image without updating the card fields?"
         description="You're replacing the finished card image but haven't changed any card fields this session. If the new image changed the ability text, update the fields to match."
         confirmLabel="Replace anyway"
+      />
+
+      <ConfirmationDialog
+        open={confirmLoad}
+        onOpenChange={(o) => { if (!o) closeLoadConfirm(); }}
+        onConfirm={adoptIncoming}
+        variant="warning"
+        title="Load their version?"
+        description="This throws away your unsaved edit. It can't be undone."
+        confirmLabel="Load their version"
+        cancelLabel="Keep my edit"
       />
     </div>
   );
