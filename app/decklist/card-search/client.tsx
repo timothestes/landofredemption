@@ -3245,7 +3245,11 @@ export default function CardSearchClient({
               </button>
               <button
                 className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => handleImportDeck(importText, canImportAnyway)}
+                onClick={(e) => {
+                  // The second click of a double-click must not accept a list nobody has read yet.
+                  if (e.detail > 1) return;
+                  handleImportDeck(importText, canImportAnyway);
+                }}
                 disabled={!importText.trim()}
               >
                 {canImportAnyway ? "Import anyway" : "Import"}
