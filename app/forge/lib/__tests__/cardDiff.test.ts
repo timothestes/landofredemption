@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { diffCards, summarizeDiff, coerceFieldValue, sameSnapshot, sameCardContent } from "../cardDiff";
+import { diffCards, summarizeDiff, coerceFieldValue, sameSnapshot, sameCardContent, wordDiff, readsAsRedline as redline } from "../cardDiff";
 
 describe("diffCards", () => {
   it("detects a changed scalar field", () => {
@@ -115,5 +115,107 @@ describe("sameCardContent", () => {
 
   it("is order-sensitive inside a list, as jsonb is", () => {
     expect(sameCardContent({ brigades: ["Blue", "Red"] }, { brigades: ["Red", "Blue"] })).toBe(false);
+  });
+});
+
+describe("wordDiff", () => {
+  const side = (ops: ReturnType<typeof wordDiff>, drop: "del" | "ins") =>
+    ops.filter((o) => o.op !== drop).map((o) => o.text).join("");
+
+  // The audit's case: two whole paragraphs, compared by eye to find the "3".
+  it("marks only the changed word in a long sentence", () => {
+    const ops = wordDiff(
+      "Protect target Hero from the next opponent enhancement this turn. Draw 2.",
+      "Protect target Hero from the next opponent enhancement this turn. Draw 3.",
+    );
+    expect(ops).toEqual([
+      { op: "same", text: "Protect target Hero from the next opponent enhancement this turn. Draw " },
+      { op: "del", text: "2" },
+      { op: "ins", text: "3" },
+      { op: "same", text: "." },
+    ]);
+  });
+
+  it("marks two separate changes separately, keeping what lies between", () => {
+    const ops = wordDiff("Draw 2 and discard 1 now.", "Draw 3 and discard 2 now.");
+    expect(ops.filter((o) => o.op !== "same")).toEqual([
+      { op: "del", text: "2" },
+      { op: "ins", text: "3" },
+      { op: "del", text: "1" },
+      { op: "ins", text: "2" },
+    ]);
+    expect(ops.filter((o) => o.op === "same").map((o) => o.text)).toEqual(["Draw ", " and discard ", " now."]);
+  });
+
+  it("keeps a word that moved within a rewritten phrase", () => {
+    const ops = wordDiff("the next opponent enhancement this turn", "the next enhancement an opponent plays this turn");
+    expect(side(ops, "ins")).toBe("the next opponent enhancement this turn");
+    expect(side(ops, "del")).toBe("the next enhancement an opponent plays this turn");
+    expect(ops.filter((o) => o.op === "same").map((o) => o.text).join("")).toContain("opponent");
+  });
+
+  // Matching only the spaces between replaced words reads as confetti.
+  it("treats consecutive replaced words as one change", () => {
+    expect(wordDiff("old words here", "new text there")).toEqual([
+      { op: "del", text: "old words here" },
+      { op: "ins", text: "new text there" },
+    ]);
+  });
+
+  it("keeps punctuation out of the changed word", () => {
+    expect(wordDiff("Draw 2.", "Draw 2!")).toEqual([
+      { op: "same", text: "Draw 2" },
+      { op: "del", text: "." },
+      { op: "ins", text: "!" },
+    ]);
+  });
+
+  it("keeps newlines", () => {
+    const ops = wordDiff("First line.\nSecond line.", "First line.\nSecond row.");
+    expect(side(ops, "ins")).toBe("First line.\nSecond line.");
+    expect(side(ops, "del")).toBe("First line.\nSecond row.");
+  });
+
+  it("always rebuilds both sides exactly", () => {
+    const cases: [string, string][] = [
+      ["", "added text"],
+      ["removed text", ""],
+      ["a b c d", "b d e"],
+      ["  spaced   out  ", "spaced out"],
+      ["same", "same"],
+      ["Hero's +2/+1 (X)", "Hero’s +3/+1 (Y)"],
+    ];
+    for (const [before, after] of cases) {
+      const ops = wordDiff(before, after);
+      expect(side(ops, "ins")).toBe(before);
+      expect(side(ops, "del")).toBe(after);
+    }
+  });
+
+  // Snapshots run to 64 KB. The table is words x words, so a huge rewrite skips it.
+  it("falls back to replacing the changed middle when the text is enormous", () => {
+    const before = Array.from({ length: 3000 }, (_, i) => `a${i}`).join(" ");
+    const after = Array.from({ length: 3000 }, (_, i) => `b${i}`).join(" ");
+    expect(wordDiff(`Keep ${before} end`, `Keep ${after} end`)).toEqual([
+      { op: "same", text: "Keep " },
+      { op: "del", text: before },
+      { op: "ins", text: after },
+      { op: "same", text: " end" },
+    ]);
+  });
+});
+
+describe("redline", () => {
+  it("reads inline when most of the text is unchanged", () => {
+    expect(redline(wordDiff("Protect target Hero this turn. Draw 2.", "Protect target Hero this turn. Draw 3."))).toBe(true);
+  });
+
+  it("does not when the text was largely rewritten", () => {
+    expect(redline(wordDiff("Protect target Hero this turn.", "Discard the top card of a deck."))).toBe(false);
+    expect(redline(wordDiff("one two three four", "one five six seven"))).toBe(false);
+  });
+
+  it("does not for a very short change, where two lines are clearer", () => {
+    expect(redline(wordDiff("Draw 2", "Draw 3"))).toBe(false);
   });
 });

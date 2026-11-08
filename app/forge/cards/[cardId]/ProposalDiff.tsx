@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import ForgeCardFace from "@/app/forge/components/ForgeCardFace";
+import ForgeCardPreview from "@/app/forge/components/ForgeCardPreview";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,9 +16,10 @@ import {
 import { diffCards, summarizeDiff } from "@/app/forge/lib/cardDiff";
 import { acceptProposal, denyProposal, type ProposalRow } from "@/app/forge/lib/proposals";
 import { addComment } from "@/app/forge/lib/comments";
-import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
-import { denyDraftPlan, DENY_FLUSH_FAILED } from "@/app/forge/lib/lifecycleCopy";
-import { flushThen } from "@/app/forge/lib/proposeFlow";
+import type { DesignCard } from "@/app/forge/lib/designCard";
+import { denyDraftPlan, draftMovedOnNote, ACCEPT_CLOSED_NOTE, DENY_FLUSH_FAILED } from "@/app/forge/lib/lifecycleCopy";
+import { flushThen, runAcceptProposal } from "@/app/forge/lib/proposeFlow";
+import { reviewByline } from "@/app/forge/lib/reviewView";
 import FieldChanges from "./FieldChanges";
 import { useStudioDraft, useStudioSync } from "./StudioSyncContext";
 
@@ -115,6 +116,18 @@ function DenyDialogBody({
   );
 }
 
+// Its own component so that reading the live draft re-renders only this per keystroke.
+function DraftMovedOn({ proposed, savedDraft }: { proposed: DesignCard; savedDraft: DesignCard }) {
+  const draft = useStudioDraft() ?? savedDraft;
+  const note = draftMovedOnNote(draft, proposed);
+  if (!note) return null;
+  return (
+    <p className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-300">
+      {note}
+    </p>
+  );
+}
+
 export default function ProposalDiff({
   proposal,
   current,
@@ -122,8 +135,11 @@ export default function ProposalDiff({
   finishedUrl,
   canReview,
   cardStatus,
+  baseVersionNumber = null,
   savedDraft = {},
   latestVersion = null,
+  closed = false,
+  onAcceptDialog,
 }: {
   proposal: ProposalRow;
   current: DesignCard;
@@ -131,15 +147,21 @@ export default function ProposalDiff({
   finishedUrl: string | null;
   canReview: boolean;
   cardStatus: string;
+  baseVersionNumber?: number | null;
   // The card's working draft as last refreshed, and its newest version of any status: the
   // one Deny can put the draft back to. Same row forge_deny_proposal_restore_draft picks.
   savedDraft?: DesignCard;
   latestVersion?: { versionNumber: number; data: DesignCard } | null;
+  // The proposal has left the open list, and this row is only here for its open dialog.
+  closed?: boolean;
+  onAcceptDialog?: (open: boolean) => void;
 }) {
   const router = useRouter();
+  const { flushPending } = useStudioSync();
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [acceptOpen, setAcceptOpen] = useState(false);
+  const [closedByAccept, setClosedByAccept] = useState(false);
   const [denyOpen, setDenyOpen] = useState(false);
   const [note, setNote] = useState("");
   const [reason, setReason] = useState("");
@@ -149,15 +171,30 @@ export default function ProposalDiff({
   // "— → value" diff is noise, so render the proposal as a plain new card.
   const isNewCard = proposal.baseVersionId === null;
   const isDraft = cardStatus === "draft";
+  // Not while an accept is running: a good one leaves the open list before its note is saved.
+  const gone = (closed || closedByAccept) && !pending;
+
+  const showAccept = (open: boolean) => {
+    setErr(null);
+    setAcceptOpen(open);
+    onAcceptDialog?.(open);
+  };
 
   const doAccept = () =>
     start(async () => {
       setErr(null);
-      const r = await acceptProposal(proposal.id);
-      if (!r.ok) { setErr(r.error ?? "Could not accept proposal"); return; }
-      // Optional accept note → stored as a proposal-anchored comment, mirroring deny.
-      if (note.trim()) await addComment({ cardId: proposal.cardId, proposalId: proposal.id, body: note });
-      setAcceptOpen(false);
+      const r = await runAcceptProposal({
+        flush: flushPending,
+        accept: () => acceptProposal(proposal.id),
+        note,
+        addNote: (body) => addComment({ cardId: proposal.cardId, proposalId: proposal.id, body }),
+      });
+      if (!r.ok) {
+        setErr(r.error ?? "Could not accept proposal");
+        if (r.closed) { setClosedByAccept(true); router.refresh(); }
+        return;
+      }
+      showAccept(false);
       setNote("");
       router.refresh();
     });
@@ -165,14 +202,19 @@ export default function ProposalDiff({
   return (
     <div className="rounded-md border p-3">
       <p className="text-sm font-medium">{proposal.summary ?? "Proposed change"}</p>
+      {/* The relative time can differ between the server's render and this one. */}
+      <p suppressHydrationWarning className="mt-0.5 text-xs text-muted-foreground">
+        {reviewByline({ who: proposal.proposerName, at: proposal.createdAt, baseVersion: baseVersionNumber })}
+      </p>
       <p className="mt-0.5 text-xs text-muted-foreground">
         {isNewCard ? "New card — first proposal" : summarizeDiff(changes)}
       </p>
+      <DraftMovedOn proposed={proposed} savedDraft={savedDraft} />
 
       {/* Decision controls + change list render ABOVE the previews (mobile-first). */}
       {proposal.status === "open" && canReview && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Button size="sm" disabled={pending} onClick={() => { setErr(null); setAcceptOpen(true); }}>
+          <Button size="sm" disabled={pending} onClick={() => showAccept(true)}>
             Accept
           </Button>
           <Button size="sm" variant="outline" disabled={pending} onClick={() => setDenyOpen(true)}>
@@ -188,11 +230,11 @@ export default function ProposalDiff({
       )}
 
       {/* The field diff above carries the change; the paired faces are collapsed by
-          default (a proposal never changes the art/finished image, so for those cards
-          the two previews are identical). Available on demand. A first proposal has no
-          released version to put in the "Current" slot, and an empty face there renders
-          as the art plus "Untitled" and no body text — which reads as a wiped card
-          rather than as "nothing yet". So a new card shows one face on its own. */}
+          default. Available on demand. Always the rendered frame, even on a card with a
+          finished image: a proposal never changes that image, so showing it would make
+          the two faces identical. A first proposal has no released version to put in the
+          "Current" slot, and an empty face there reads as a wiped card rather than as
+          "nothing yet". So a new card shows one face on its own. */}
       <details className="mt-3">
         <summary className="cursor-pointer select-none text-xs text-muted-foreground hover:text-foreground">
           Show card preview
@@ -201,51 +243,51 @@ export default function ProposalDiff({
           {!isNewCard && (
             <div>
               <p className="mb-1 text-xs text-muted-foreground">Current</p>
-              <ForgeCardFace
-                name={current.name ?? null}
-                rawText={cardRawText(current)}
-                finishedUrl={finishedUrl}
-                artUrl={artUrl}
-              />
+              <ForgeCardPreview card={current} artUrl={artUrl} />
             </div>
           )}
           <div>
             <p className="mb-1 text-xs text-muted-foreground">{isNewCard ? "Card preview" : "Proposed"}</p>
-            <ForgeCardFace
-              name={proposed.name ?? null}
-              rawText={cardRawText(proposed)}
-              finishedUrl={finishedUrl}
-              artUrl={artUrl}
-            />
+            <ForgeCardPreview card={proposed} artUrl={artUrl} />
           </div>
         </div>
+        {finishedUrl && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            This card has a finished image, which is shown everywhere in place of these faces. Accepting doesn’t change it.
+          </p>
+        )}
       </details>
 
-      <Dialog open={acceptOpen} onOpenChange={(o) => { if (!o) { setAcceptOpen(false); setErr(null); } }}>
+      <Dialog open={acceptOpen} onOpenChange={(o) => { if (!o) showAccept(false); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Accept proposal</DialogTitle>
+            <DialogTitle>{gone ? "Proposal closed" : "Accept proposal"}</DialogTitle>
             <DialogDescription>
-              {isDraft
+              {gone
+                ? "This proposal can’t be accepted any more."
+                : isDraft
                 ? "Applies this change to the working draft and records it as a new draft version in the card’s history. The card stays in Draft — nothing is visible to playtesters."
                 : "Releases a new version to playtesters (not the public card database) and replaces the working draft with this proposal. The card stays in playtest — use Mark final when it’s done."}
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-2">
+            {!gone && <DraftMovedOn proposed={proposed} savedDraft={savedDraft} />}
             <label className="block text-xs font-medium text-muted-foreground">Note (optional)</label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
+              disabled={gone}
               placeholder="Add a note for the proposal history…"
-              className="h-24 w-full rounded-md border bg-background px-2 py-1 text-sm"
+              className="h-24 w-full rounded-md border bg-background px-2 py-1 text-sm disabled:opacity-60"
             />
             {err && <p className="text-sm text-destructive">{err}</p>}
+            {gone && !err && <p className="text-sm">{ACCEPT_CLOSED_NOTE}</p>}
           </DialogBody>
           <DialogFooter>
-            <Button variant="outline" disabled={pending} onClick={() => { setAcceptOpen(false); setErr(null); }}>
-              Cancel
+            <Button variant="outline" disabled={pending} onClick={() => showAccept(false)}>
+              {gone ? "Close" : "Cancel"}
             </Button>
-            <Button disabled={pending} onClick={doAccept}>{isDraft ? "Accept" : "Accept & release"}</Button>
+            {!gone && <Button disabled={pending} onClick={doAccept}>{isDraft ? "Accept" : "Accept & release"}</Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>

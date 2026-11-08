@@ -35,7 +35,7 @@ const proposal = (baseVersionId: string | null): ProposalRow => ({
   approverName: null,
 });
 
-const render = (baseVersionId: string | null, current: DesignCard) =>
+const render = (baseVersionId: string | null, current: DesignCard, over: Record<string, unknown> = {}) =>
   renderToStaticMarkup(
     React.createElement(ProposalDiff, {
       proposal: proposal(baseVersionId),
@@ -44,6 +44,8 @@ const render = (baseVersionId: string | null, current: DesignCard) =>
       finishedUrl: null,
       canReview: true,
       cardStatus: "draft",
+      savedDraft: PROPOSED,
+      ...over,
     })
   );
 
@@ -67,5 +69,43 @@ describe("ProposalDiff card preview", () => {
     expect(html).toContain(">Proposed<");
     expect(html).not.toContain(">Card preview<");
     expect(html).toContain("Old text.");
+  });
+});
+
+describe("ProposalDiff byline", () => {
+  it("says who proposed it, when, and against which version", () => {
+    const html = render("v3", { name: "Panic Demon" }, { baseVersionNumber: 3 });
+    expect(html).toContain("Undude · ");
+    expect(html).toContain(" · against v3");
+  });
+
+  it("names no version on a first proposal", () => {
+    expect(render(null, {})).not.toContain("against");
+  });
+});
+
+describe("ProposalDiff when the draft has moved on", () => {
+  const NOTE = "The draft has changed since this was proposed. Accepting drops those changes.";
+
+  it("says so when the draft no longer matches the proposal", () => {
+    expect(render("v1", {}, { savedDraft: { ...PROPOSED, rawText: "Edited since." } })).toContain(NOTE);
+  });
+
+  it("stays quiet while they match", () => {
+    expect(render("v1", {})).not.toContain(NOTE);
+  });
+});
+
+describe("ProposalDiff preview is the card", () => {
+  it("draws the frame, so a stat change shows", () => {
+    const html = render("v1", { ...PROPOSED, toughness: 1 });
+    expect(html).toContain('aria-label="Card preview: Panic Demon"');
+    expect(html).toContain("<svg");
+  });
+
+  it("explains that a finished image won't pick the change up", () => {
+    const note = "Accepting doesn’t change it.";
+    expect(render("v1", {}, { finishedUrl: "/forge/api/art/c1?kind=finished" })).toContain(note);
+    expect(render("v1", {})).not.toContain(note);
   });
 });

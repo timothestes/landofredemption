@@ -12,6 +12,8 @@ import { StudioDraftProvider } from "@/app/forge/cards/[cardId]/StudioSyncContex
 
 const V3 = { versionNumber: 3, data: { name: "Invented", rawText: "Draw 2." } as DesignCard };
 
+const text = (html: string) => html.replace(/<[^>]+>/g, "");
+
 const render = (draft: DesignCard | null, saved: DesignCard, latest: typeof V3 | null = V3) =>
   renderToStaticMarkup(
     React.createElement(
@@ -28,7 +30,7 @@ describe("ProposePreview", () => {
     const html = render({ name: "Invented", rawText: "Draw 3." }, V3.data);
     expect(html).not.toContain("No field changes");
     expect(html).toContain("The current draft differs from v3");
-    expect(html).toContain("Draw 3.");
+    expect(text(html)).toContain("Draw 3.");
   });
 
   it("says no changes when an edit is undone, even if the server prop still has it", () => {
@@ -37,7 +39,7 @@ describe("ProposePreview", () => {
   });
 
   it("falls back to the saved draft outside the studio", () => {
-    expect(render(null, { name: "Invented", rawText: "Draw 9." })).toContain("Draw 9.");
+    expect(text(render(null, { name: "Invented", rawText: "Draw 9." }))).toContain("Draw 9.");
   });
 
   it("gives a first proposal no field list", () => {

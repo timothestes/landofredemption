@@ -110,9 +110,10 @@ export async function createProposal(
   return { ok: true, id: data };
 }
 
+// `closed` = the proposal is no longer open, so there is nothing left to retry.
 export async function acceptProposal(
   proposalId: string
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; closed?: boolean }> {
   const ctx = await requireElder();
   if (!ctx) return { ok: false, error: "Not authorized" };
   const { data, error } = await ctx.supabase.rpc("forge_accept_proposal", {
@@ -126,6 +127,7 @@ export async function acceptProposal(
       ok: false,
       error:
         "A newer version was released while this was open, so this proposal was closed. Re-propose from the current draft if the change is still needed.",
+      closed: true,
     };
   }
   // Lifecycle change ripples to set/card/queue views.
@@ -196,8 +198,9 @@ export async function getOpenProposalDiffs(cardId: string): Promise<ProposalDiff
       .in("id", baseIds);
     for (const v of vers ?? []) baseMap.set(v.id, (v.data ?? {}) as DesignCard);
   }
+  const names = await nameMap(ctx, proposals.map((p) => p.createdBy));
   return proposals.map((p) => ({
-    proposal: p,
+    proposal: { ...p, proposerName: names.get(p.createdBy) ?? null },
     current: p.baseVersionId ? baseMap.get(p.baseVersionId) ?? {} : {},
   }));
 }

@@ -127,6 +127,7 @@ export default async function StudioPage({ params, searchParams }: {
       releaseBase={releaseBase}
       restoreTarget={restoreTarget}
       version={version}
+      unresolvedComments={comments.filter((c) => c.proposalId === null && !c.resolved).length}
       canEdit={canEdit}
       review={
         inSet ? (

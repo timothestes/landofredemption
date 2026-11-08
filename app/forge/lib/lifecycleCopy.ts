@@ -145,6 +145,11 @@ export const RELEASE_FLUSH_FAILED =
   "Couldn’t save your latest edits, so nothing was released. Check your connection and try again.";
 export const DENY_FLUSH_FAILED =
   "Couldn’t save your latest edits, so the proposal wasn’t denied. Check your connection and try again.";
+export const ACCEPT_FLUSH_FAILED =
+  "Couldn’t save your latest edits, so the proposal wasn’t accepted. Check your connection and try again.";
+// The Accept dialog when the proposal closed underneath it: a release, or another elder's
+// decision, landed while it was open.
+export const ACCEPT_CLOSED_NOTE = "This proposal was closed while this was open, so there’s nothing left to accept.";
 
 // The choice in the Deny dialog. A proposal freezes the one shared draft, so denying can't
 // simply undo it: going back to vN throws away everything since vN, not just the proposal.
@@ -182,6 +187,14 @@ export function denyDraftPlan({
   if (!latest) return { ...plan, note: "The draft keeps this change, because the card has no earlier version to go back to." };
   if (sameCardContent(draft, latest.data)) return plan;
   return { ...plan, offer: true, defaultRestore: !movedOn };
+}
+
+// Accepting writes the proposal over the working draft (forge_accept_proposal), so anything
+// edited since it was proposed goes. Same comparison as denyDraftPlan's `movedOn`.
+export function draftMovedOnNote(draft: DesignCard, proposed: DesignCard): string | null {
+  return sameCardContent(draft, proposed)
+    ? null
+    : "The draft has changed since this was proposed. Accepting drops those changes.";
 }
 
 // The Share dialog. Sharing takes a card out of a private sketchpad, so it says who can see it next.

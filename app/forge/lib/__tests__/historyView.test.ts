@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   deriveSupersededBy, buildHistory, buildCommentEras,
   EVENT_LABEL, VERSION_STATUS_LABEL, VERSION_PILL, versionVerb,
-  splitHistoryForDisplay, splitCommentEras,
+  splitHistoryForDisplay, splitCommentEras, olderCommentsLabel,
+  appliedSuggestion, appliedSuggestions, appliedSuggestionNote,
 } from "../historyView";
 
 const prop = (over: any) => ({
@@ -178,42 +179,181 @@ describe("splitHistoryForDisplay", () => {
 describe("splitCommentEras", () => {
   const v1 = { versionNumber: 1, createdAt: "2026-07-01T00:00:00Z", status: "published" as const };
   const v2 = { versionNumber: 2, createdAt: "2026-07-03T00:00:00Z", status: "published" as const };
-  const m1 = comment({ id: "m1", createdAt: "2026-07-02T00:00:00Z" });
-  const m2 = comment({ id: "m2", createdAt: "2026-07-04T00:00:00Z" });
+  const v3 = { versionNumber: 3, createdAt: "2026-07-05T00:00:00Z", status: "published" as const };
+  const m1 = comment({ id: "m1", createdAt: "2026-07-02T00:00:00Z", resolved: true });
+  const m2 = comment({ id: "m2", createdAt: "2026-07-04T00:00:00Z", resolved: true });
+  const open1 = comment({ id: "open1", createdAt: "2026-07-02T01:00:00Z" });
+  const noReplies = () => [];
+  const ids = (items: ReturnType<typeof buildCommentEras>) =>
+    items.map((i) => (i.kind === "era" ? `v${i.versionNumber}` : i.comment.id));
 
-  it("defaults to the current version's era, folding earlier eras", () => {
+  it("folds resolved comments on earlier versions, with their divider", () => {
     const items = buildCommentEras([m1, m2], [v2, v1]);
-    const { recent, older, hiddenCommentCount } = splitCommentEras(items, 2, () => 0);
-    expect(recent.map((i) => (i.kind === "era" ? `v${i.versionNumber}` : i.comment.id))).toEqual(["v2", "m2"]);
-    expect(older.map((i) => (i.kind === "era" ? `v${i.versionNumber}` : i.comment.id))).toEqual(["v1", "m1"]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, 2, noReplies);
+    expect(ids(shown)).toEqual(["v2", "m2"]);
     expect(hiddenCommentCount).toBe(1);
+  });
+
+  // The audit's case: "2 · 1 unresolved" in the heading, and no question on the page.
+  it("keeps an unresolved comment visible after a newer release, with its divider", () => {
+    const items = buildCommentEras([open1], [v2, v1]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, 2, noReplies);
+    expect(ids(shown)).toEqual(["v1", "open1"]);
+    expect(hiddenCommentCount).toBe(0);
+  });
+
+  it("splits an era, folding the resolved and keeping the unresolved", () => {
+    const items = buildCommentEras([m1, open1, m2], [v3, v2, v1]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, 3, noReplies);
+    expect(ids(shown)).toEqual(["v1", "open1"]);
+    expect(hiddenCommentCount).toBe(2);
+  });
+
+  it("keeps a resolved comment whose reply is still unresolved", () => {
+    const items = buildCommentEras([m1], [v2, v1]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, 2, (id) =>
+      id === "m1" ? [comment({ id: "r1", parentId: "m1" })] : [],
+    );
+    expect(ids(shown)).toEqual(["v1", "m1"]);
+    expect(hiddenCommentCount).toBe(0);
   });
 
   it("counts replies toward the hidden total", () => {
     const items = buildCommentEras([m1, m2], [v2, v1]);
-    const { hiddenCommentCount } = splitCommentEras(items, 2, (id) => (id === "m1" ? 2 : 0));
+    const reply = (id: string) => comment({ id, parentId: "m1", resolved: true });
+    const { hiddenCommentCount } = splitCommentEras(items, 2, (id) => (id === "m1" ? [reply("r1"), reply("r2")] : []));
     expect(hiddenCommentCount).toBe(3);
   });
 
   it("hides nothing when there are no versions", () => {
     const items = buildCommentEras([m1], []);
-    const { older, hiddenCommentCount } = splitCommentEras(items, null, () => 0);
-    expect(older).toEqual([]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, null, noReplies);
+    expect(shown).toEqual(items);
     expect(hiddenCommentCount).toBe(0);
   });
 
-  it("folds everything when nobody has commented since the current version", () => {
-    const v2later = { versionNumber: 2, createdAt: "2026-07-05T00:00:00Z", status: "published" as const };
-    const items = buildCommentEras([m1], [v2later, v1]);
-    const { recent, hiddenCommentCount } = splitCommentEras(items, 2, () => 0);
-    expect(recent).toEqual([]);
+  it("folds everything resolved when nobody has commented since the current version", () => {
+    const items = buildCommentEras([m1], [v2, v1]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, 2, noReplies);
+    expect(shown).toEqual([]);
     expect(hiddenCommentCount).toBe(1);
   });
 
-  it("folds nothing when every comment is in the current era", () => {
+  it("shows the current version's comments even once they're resolved", () => {
     const items = buildCommentEras([m1], [v1]);
-    const { older, hiddenCommentCount } = splitCommentEras(items, 1, () => 0);
-    expect(older).toEqual([]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, 1, noReplies);
+    expect(ids(shown)).toEqual(["v1", "m1"]);
     expect(hiddenCommentCount).toBe(0);
+  });
+
+  // The old fold counted dividers as something to hide: "0 comments on earlier versions".
+  it("hides nothing when only dividers precede the current era", () => {
+    const m3 = comment({ id: "m3", createdAt: "2026-07-06T00:00:00Z", resolved: true });
+    const items = buildCommentEras([m3], [v3, v2, v1]);
+    const { shown, hiddenCommentCount } = splitCommentEras(items, 3, noReplies);
+    expect(ids(shown)).toEqual(["v3", "m3"]);
+    expect(hiddenCommentCount).toBe(0);
+  });
+});
+
+describe("olderCommentsLabel", () => {
+  it("says what the fold holds and that it opens", () => {
+    expect(olderCommentsLabel(false, 1)).toBe("Show 1 resolved comment on earlier versions");
+    expect(olderCommentsLabel(false, 3)).toBe("Show 3 resolved comments on earlier versions");
+    expect(olderCommentsLabel(true, 3)).toBe("Hide resolved comments on earlier versions");
+  });
+});
+
+describe("appliedSuggestion", () => {
+  const v1 = ver({ id: "v1", versionNumber: 1, data: { toughness: 1 }, createdAt: "2026-07-01T00:00:00Z" });
+  const v2 = ver({ id: "v2", versionNumber: 2, data: { toughness: 2 }, createdAt: "2026-07-03T00:00:00Z" });
+  const v3 = ver({ id: "v3", versionNumber: 3, data: { toughness: 2 }, createdAt: "2026-07-04T00:00:00Z" });
+  const suggestion = (over: any = {}) =>
+    comment({ id: "s1", field: "toughness", suggestedValue: 2, resolved: true, createdAt: "2026-07-02T00:00:00Z", ...over });
+
+  it("reads the old value from the version when it was suggested", () => {
+    const a = appliedSuggestion(suggestion(), [v1], { toughness: 2 });
+    expect(a).toMatchObject({ baseVersion: 1, inVersion: null });
+    expect(a?.change).toMatchObject({ field: "toughness", label: "Toughness", kind: "changed", before: "1", after: "2" });
+  });
+
+  it("names the first later version holding it, even once the draft has moved on", () => {
+    expect(appliedSuggestion(suggestion(), [v3, v2, v1], { toughness: 9 })).toMatchObject({ baseVersion: 1, inVersion: 2 });
+  });
+
+  it("has no old value on a card with no version yet", () => {
+    const a = appliedSuggestion(suggestion(), [], { toughness: 2 });
+    expect(a).toMatchObject({ baseVersion: null, inVersion: null });
+    expect(a?.change).toMatchObject({ kind: "added", before: null, after: "2" });
+  });
+
+  it("compares lists as they read", () => {
+    const a = appliedSuggestion(suggestion({ field: "brigades", suggestedValue: ["Blue", "Red"] }), [], { brigades: ["Blue", "Red"] });
+    expect(a?.change.after).toBe("Blue, Red");
+  });
+
+  // A dismissed suggestion looks the same in the row. The value not landing is the tell.
+  it("is null for a suggestion dismissed with Resolve", () => {
+    expect(appliedSuggestion(suggestion(), [v1], { toughness: 1 })).toBeNull();
+  });
+
+  it("is null when the field already held the value", () => {
+    expect(appliedSuggestion(suggestion({ createdAt: "2026-07-05T00:00:00Z" }), [v3, v2, v1], { toughness: 2 })).toBeNull();
+  });
+
+  it("is null while it is still open", () => {
+    expect(appliedSuggestion(suggestion({ resolved: false }), [v1], { toughness: 2 })).toBeNull();
+  });
+
+  it("is null for a comment with no suggestion", () => {
+    expect(appliedSuggestion(comment({ resolved: true }), [v1], { toughness: 2 })).toBeNull();
+    expect(appliedSuggestion(suggestion({ suggestedValue: null }), [v1], { toughness: 2 })).toBeNull();
+  });
+
+  it("collects them by comment id", () => {
+    const applied = appliedSuggestions([suggestion(), suggestion({ id: "s2", suggestedValue: 7 }), comment({})], [v1], { toughness: 2 });
+    expect([...applied.keys()]).toEqual(["s1"]);
+  });
+});
+
+describe("appliedSuggestionNote", () => {
+  const base = { commentId: "s1", change: { field: "toughness", label: "Toughness", kind: "changed", before: "1", after: "2" } } as any;
+
+  it("says the change hasn't reached playtesters while it is only in the draft", () => {
+    expect(appliedSuggestionNote({ ...base, baseVersion: 3, inVersion: null })).toBe(
+      "Old value as of v3. In the working draft: playtesters won’t see it until the next release.",
+    );
+  });
+
+  it("names the version it landed in", () => {
+    expect(appliedSuggestionNote({ ...base, baseVersion: 3, inVersion: 4 })).toBe("Old value as of v3. Included in v4.");
+  });
+
+  it("leaves out an old value it doesn't have", () => {
+    expect(appliedSuggestionNote({ ...base, baseVersion: null, inVersion: null })).toBe(
+      "In the working draft: playtesters won’t see it until the next release.",
+    );
+  });
+});
+
+describe("buildHistory with applied suggestions", () => {
+  const v1 = ver({ id: "v1", versionNumber: 1, data: { toughness: 1 }, createdAt: "2026-07-01T00:00:00Z" });
+  const v2 = ver({ id: "v2", versionNumber: 2, data: { toughness: 2 }, createdAt: "2026-07-03T00:00:00Z" });
+  const applied = comment({ id: "s1", field: "toughness", suggestedValue: 2, resolved: true, createdAt: "2026-07-02T00:00:00Z" });
+
+  it("adds a line where it was suggested, the only time the record has", () => {
+    const h = buildHistory([v2, v1], [], [], [applied], { toughness: 2 });
+    expect(h.map((e) => e.kind)).toEqual(["version", "suggestion", "version"]);
+    const line = h[1];
+    expect(line.at).toBe("2026-07-02T00:00:00Z");
+    if (line.kind === "suggestion") {
+      expect(line.comment.id).toBe("s1");
+      expect(line.applied.inVersion).toBe(2);
+    }
+  });
+
+  it("adds nothing for a dismissed suggestion", () => {
+    const dismissed = comment({ id: "s2", field: "toughness", suggestedValue: 9, resolved: true, createdAt: "2026-07-02T00:00:00Z" });
+    expect(buildHistory([v2, v1], [], [], [dismissed], { toughness: 2 }).map((e) => e.kind)).toEqual(["version", "version"]);
   });
 });

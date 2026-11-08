@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 import { cn } from "@/lib/utils";
-import { coerceFieldValue, FIELD_LABELS, SUGGESTABLE_FIELDS } from "@/app/forge/lib/cardDiff";
+import { coerceFieldValue, displayValue, FIELD_LABELS, SUGGESTABLE_FIELDS } from "@/app/forge/lib/cardDiff";
+import type { DesignCard } from "@/app/forge/lib/designCard";
 import {
   addComment,
   resolveComment,
@@ -14,11 +15,18 @@ import {
   type CommentRow,
 } from "@/app/forge/lib/comments";
 import { timeAgo } from "@/app/forge/lib/relativeTime";
-import { buildCommentEras, splitCommentEras, type CommentEraItem } from "@/app/forge/lib/historyView";
+import {
+  appliedSuggestionNote,
+  buildCommentEras,
+  olderCommentsLabel,
+  splitCommentEras,
+  type AppliedSuggestion,
+  type CommentEraItem,
+} from "@/app/forge/lib/historyView";
 import { useLocalStorageFlag } from "@/app/forge/lib/useLocalStorageFlag";
 import { withDeadline } from "@/app/forge/lib/withDeadline";
 import { initials } from "./PresenceBar";
-import { useStudioSync } from "./StudioSyncContext";
+import { useStudioDraft, useStudioSync } from "./StudioSyncContext";
 
 // Matches the pill in the set-level feed (SetCommentsFeed) — one pill style, not two.
 const pillClass = "rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground";
@@ -34,6 +42,34 @@ function valueText(v: unknown): string {
   return String(v);
 }
 
+function OldToNew({ before, after }: { before: string | null; after: string }) {
+  return (
+    <>
+      {before === null ? (
+        <span className="font-normal text-muted-foreground">Not set</span>
+      ) : (
+        <span className="font-normal line-through decoration-rose-500 decoration-2">{before}</span>
+      )}
+      <span aria-hidden="true"> → </span>
+      {after}
+    </>
+  );
+}
+
+// Old and new before Apply, from the editor's live draft, which is what Apply's flush sends.
+// Its own component so that only this re-renders per keystroke, and only while a suggestion
+// is still open.
+function OpenSuggestionValue({ c, savedDraft }: { c: CommentRow; savedDraft: DesignCard }) {
+  const draft = useStudioDraft() ?? savedDraft;
+  const current = displayValue(draft[c.field as keyof DesignCard]);
+  const suggested = displayValue(c.suggestedValue);
+  if (suggested === null) return <span className="font-normal text-muted-foreground">no value given</span>;
+  if (current === suggested) {
+    return <>{suggested}<span className="font-normal text-muted-foreground"> · already in the draft</span></>;
+  }
+  return <OldToNew before={current} after={suggested} />;
+}
+
 // Module scope, NOT nested in the parent's render body. As a nested arrow function its
 // element type changed identity every render, so React unmounted and remounted every
 // comment on the card on each keystroke — which put the caret at the end of the reply box
@@ -42,6 +78,8 @@ function Comment({
   c,
   isReply,
   showApply,
+  applied,
+  savedDraft,
   busy,
   replyOpen,
   replyDraft,
@@ -55,6 +93,8 @@ function Comment({
   c: CommentRow;
   isReply?: boolean;
   showApply: boolean;
+  applied?: AppliedSuggestion;
+  savedDraft: DesignCard;
   busy: boolean;
   replyOpen: boolean;
   replyDraft: string;
@@ -76,12 +116,12 @@ function Comment({
       >
         {initials(c.authorName)}
       </span>
-      <div className={cn("min-w-0 flex-1", c.resolved && "opacity-60")}>
+      <div className={cn("min-w-0 flex-1", c.resolved && !applied && "opacity-60")}>
         <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
           <span className="font-medium text-foreground">{author}</span>
           <span aria-hidden="true">·</span>
           {timeAgo(c.createdAt)}
-          {c.resolved && <span className={pillClass}>Resolved</span>}
+          {c.resolved && <span className={pillClass}>{applied ? "Applied" : "Resolved"}</span>}
         </p>
 
         <p className="mt-1 whitespace-pre-wrap leading-relaxed">{c.body}</p>
@@ -96,7 +136,13 @@ function Comment({
             </p>
             <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
               <span className="min-w-0 break-words font-medium">
-                {valueText(c.suggestedValue) || <span className="font-normal text-muted-foreground">no value given</span>}
+                {applied ? (
+                  <OldToNew before={applied.change.before} after={applied.change.after as string} />
+                ) : c.resolved ? (
+                  valueText(c.suggestedValue) || <span className="font-normal text-muted-foreground">no value given</span>
+                ) : (
+                  <OpenSuggestionValue c={c} savedDraft={savedDraft} />
+                )}
               </span>
               {showApply && (
                 <Button
@@ -111,6 +157,7 @@ function Comment({
                 </Button>
               )}
             </div>
+            {applied && <p className="mt-1 text-xs text-muted-foreground">{appliedSuggestionNote(applied)}</p>}
           </div>
         )}
 
@@ -174,11 +221,15 @@ export default function CommentThread({
   comments,
   canApply,
   versions = [],
+  applied,
+  savedDraft,
 }: {
   cardId: string;
   comments: CommentRow[];
   canApply: boolean;
   versions?: { versionNumber: number; createdAt: string; status: "draft" | "published" | "approved" | "superseded" }[];
+  applied: Map<string, AppliedSuggestion>;
+  savedDraft: DesignCard;
 }) {
   const router = useRouter();
   const { flushPending } = useStudioSync();
@@ -271,6 +322,8 @@ export default function CommentThread({
     c,
     isReply,
     showApply: !!c.field && c.suggestedValue != null && canApply && !c.resolved,
+    applied: applied.get(c.id),
+    savedDraft,
     busy: busyId === c.id,
     replyOpen: replyTo === c.id,
     replyDraft: replyDrafts[c.id] ?? "",
@@ -315,11 +368,8 @@ export default function CommentThread({
       </div>
     );
 
-  const { older, recent, hiddenCommentCount } = splitCommentEras(
-    buildCommentEras(top, versions),
-    currentVersionNumber,
-    (id) => repliesOf(id).length
-  );
+  const eraItems = buildCommentEras(top, versions);
+  const { shown, hiddenCommentCount } = splitCommentEras(eraItems, currentVersionNumber, repliesOf);
 
   return (
     <div className="space-y-4">
@@ -337,20 +387,17 @@ export default function CommentThread({
         </p>
       ) : (
         <div className="space-y-4">
-          {older.length > 0 && (
+          {hiddenCommentCount > 0 && (
             <button
               type="button"
               aria-expanded={showOlder}
               onClick={() => setShowOlder(!showOlder)}
               className="cursor-pointer select-none text-xs text-muted-foreground hover:text-foreground"
             >
-              {showOlder
-                ? "Hide earlier comments"
-                : `${hiddenCommentCount} comment${hiddenCommentCount === 1 ? "" : "s"} on earlier versions`}
+              {olderCommentsLabel(showOlder, hiddenCommentCount)}
             </button>
           )}
-          {showOlder && older.map(renderItem)}
-          {recent.map(renderItem)}
+          {(showOlder ? eraItems : shown).map(renderItem)}
         </div>
       )}
 

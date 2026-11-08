@@ -5,6 +5,7 @@ import { summarizeDiff, type FieldChange } from "@/app/forge/lib/cardDiff";
 import FieldChanges from "./FieldChanges";
 import {
   EVENT_LABEL,
+  appliedSuggestionNote,
   VERSION_STATUS_LABEL,
   VERSION_PILL,
   versionVerb,
@@ -91,6 +92,24 @@ function renderEvent(e: HistoryEvent) {
             {r.body}
           </p>
         ))}
+      </li>
+    );
+  }
+  if (e.kind === "suggestion") {
+    return (
+      <li key={`s-${e.comment.id}`} className="rounded-md border px-2.5 py-2">
+        {/* The relative time can differ between the server's render and this one. */}
+        <p suppressHydrationWarning className="text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Suggestion applied</span>
+          {" · suggested by "}
+          {e.comment.authorName ?? "Forge member"}
+          {" · "}
+          {timeAgo(e.at)}
+        </p>
+        <div className="mt-1">
+          <FieldChanges changes={[e.applied.change]} />
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">{appliedSuggestionNote(e.applied)}</p>
       </li>
     );
   }
