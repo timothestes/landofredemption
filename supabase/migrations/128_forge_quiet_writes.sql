@@ -5,7 +5,7 @@
 -- Bodies were taken from the migrations that last defined them and match production by md5 of
 -- prosrc: forge_accept_proposal 075, forge_set_working_finished 061, forge_set_working_art and
 -- forge_set_art_placeholder 052, forge_add_art_candidate and forge_delete_art_candidate 082,
--- forge_set_art_candidate_source 101, forge_apply_suggestion 053.
+-- forge_apply_suggestion 053.
 
 -- Accept skipped the name-and-type gate. forge_publish_card (127) refuses to release a card with
 -- no name or type, but accepting on an In playtest card mints a 'published' version too, so a
@@ -113,10 +113,12 @@ end; $$;
 -- snapshot: Apply wrote the field and the title, and resolved the comment. Same check, same text,
 -- after the authorization check, in:
 --   forge_set_working_finished, forge_set_working_art, forge_set_art_placeholder,
---   forge_add_art_candidate, forge_delete_art_candidate, forge_set_art_candidate_source,
---   forge_apply_suggestion
+--   forge_add_art_candidate, forge_delete_art_candidate, forge_apply_suggestion
 -- Each body is the latest verbatim plus that check. The readers forge_art_key and
 -- forge_candidate_art_key write nothing, so they stay as they are.
+--
+-- forge_set_art_candidate_source stays as it is, on purpose: where a promoted card's art came from
+-- can still be corrected, and a source link changes nothing on the card (Tim, 2026-11-08).
 --
 -- Nothing in promote's flow writes through these on a promoted card:
 --   * forge_promote_set (092) copies the approved version into the manifest and flips the status.
@@ -244,32 +246,6 @@ begin
     raise exception 'candidate is the source of the current artwork';
   end if;
   delete from public.forge_card_art_candidates where id = p_candidate_id;
-end; $$;
-
-create or replace function public.forge_set_art_candidate_source(p_candidate_id uuid, p_source_url text)
-returns void language plpgsql security definer set search_path = '' as $$
-declare v_card_id uuid;
-begin
-  select a.card_id into v_card_id
-    from public.forge_card_art_candidates a where a.id = p_candidate_id;
-  if v_card_id is null then
-    raise exception 'no such candidate';
-  end if;
-  if not exists (
-    select 1 from public.forge_cards c
-    where c.id = v_card_id
-      and (c.owner_id = auth.uid()
-           or public.is_forge_superadmin()
-           or (c.set_id is not null and public.is_forge_set_elder(c.set_id)))
-  ) then
-    raise exception 'not authorized to edit this card';
-  end if;
-  if exists (select 1 from public.forge_cards c where c.id = v_card_id and c.status = 'promoted') then
-    raise exception 'a promoted card is read-only';
-  end if;
-  update public.forge_card_art_candidates
-    set source_url = nullif(trim(p_source_url), '')
-    where id = p_candidate_id;
 end; $$;
 
 create or replace function public.forge_apply_suggestion(p_comment_id uuid)
