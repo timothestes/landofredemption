@@ -5,7 +5,7 @@ vi.mock("@/app/forge/lib/auth", () => ({ requireForge: vi.fn(), requireElder: vi
 
 import { requireForge, requireElder } from "@/app/forge/lib/auth";
 import { revalidatePath } from "next/cache";
-import { createSet, saveSetNotes, listSets, listWritableSets, grantSet, revokeSet, bulkDeleteSets, renameSet } from "../sets";
+import { createSet, saveSetNotes, listSets, listSetSiblings, listWritableSets, grantSet, revokeSet, bulkDeleteSets, renameSet } from "../sets";
 
 function ctx(opts: { rpc?: any; rows?: any[] } = {}) {
   const order = vi.fn(async () => ({ data: opts.rows ?? [], error: null }));
@@ -119,6 +119,20 @@ describe("bulkDeleteSets", () => {
   it("rejects more than 100 ids", async () => {
     (requireElder as any).mockResolvedValue({ role: "elder", user: { id: "u1" }, supabase: { rpc: vi.fn() } });
     expect((await bulkDeleteSets(Array.from({ length: 101 }, (_, i) => `s${i}`))).ok).toBe(false);
+  });
+});
+
+describe("listSetSiblings", () => {
+  it("reads only what sorting and filtering a set needs", async () => {
+    const c = ctx({ rows: [{ id: "c1", title: "Invented", status: "draft", set_id: "s1", working_snapshot: { cardType: ["Hero"] } }] });
+    (requireForge as any).mockResolvedValue(c);
+    expect(await listSetSiblings("s1")).toEqual([{ id: "c1", title: "Invented", status: "draft", setId: "s1", snapshot: { cardType: ["Hero"] } }]);
+    expect((c.supabase.from as any)().select.mock.calls[0][0]).toBe("id, title, status, set_id, working_snapshot");
+  });
+
+  it("is empty for a non-member", async () => {
+    (requireForge as any).mockResolvedValue(null);
+    expect(await listSetSiblings("s1")).toEqual([]);
   });
 });
 

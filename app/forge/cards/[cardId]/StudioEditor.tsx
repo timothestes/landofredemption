@@ -8,6 +8,7 @@ import { upload } from "@vercel/blob/client";
 import ForgeCardFace from "@/app/forge/components/ForgeCardFace";
 import ForgeCardPreview from "@/app/forge/components/ForgeCardPreview";
 import ForgeBreadcrumbs from "@/app/forge/components/ForgeBreadcrumbs";
+import LinkPending from "@/app/forge/components/LinkPending";
 import FilePicker from "@/app/forge/components/FilePicker";
 import ArtCandidatesPanel from "@/app/forge/components/ArtCandidatesPanel";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { saveCardFields, uploadFinished, setPlaceholder, type ForgeCardFull } from "@/app/forge/lib/cards";
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
+import { walkHint, type WalkPosition } from "@/app/forge/lib/cardFilters";
 import { createCardSaver, incomingAction } from "@/app/forge/lib/cardSave";
 import { createOptimisticToggle, type ToggleState } from "@/app/forge/lib/optimisticToggle";
 import { withDeadline } from "@/app/forge/lib/withDeadline";
@@ -48,7 +50,7 @@ const arrowClass =
   "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground";
 
 export default function StudioEditor({
-  card, sets, currentUser, creator, setId, setName, prevId, nextId, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, canEdit = true, review,
+  card, sets, currentUser, creator, setId, setName, prevId, nextId, walkQuery = "", gridHref, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, canEdit = true, review,
 }: {
   card: ForgeCardFull;
   sets: ForgeSetSummary[];
@@ -59,8 +61,11 @@ export default function StudioEditor({
   setName: string | null;
   prevId?: string | null;
   nextId?: string | null;
+  // The grid's filters ("?type=Hero"), which the arrows pass along, and the way back to that grid.
+  walkQuery?: string;
+  gridHref: string;
   // Where this card sits in the set's grid order, when there is more than one.
-  position?: { index: number; total: number } | null;
+  position?: WalkPosition | null;
   artCandidates: ArtCandidate[];
   // Passed straight to LifecycleControls for the release dialog's heads-up.
   openProposals?: { count: number; hasMatch: boolean };
@@ -111,6 +116,8 @@ export default function StudioEditor({
   const [previewScripture, setPreviewScripture] = useState<string | null>(null);
   const [peeking, setPeeking] = useState(false); // the large face over the form, below lg
   const router = useRouter();
+  const prevArrow = useRef<HTMLAnchorElement>(null);
+  const nextArrow = useRef<HTMLAnchorElement>(null);
 
   const { others, setEditing } = useForgeCardChannel(
     setId ? forgeCardTopic(card.id) : null,
@@ -207,14 +214,15 @@ export default function StudioEditor({
       // navigated off the card.
       const el = document.activeElement;
       if (el && el !== document.body && el !== document.documentElement) return;
-      const dest = e.key === "ArrowLeft" ? prevId : nextId;
-      if (!dest) return;
+      // The arrow's own click, so a keypress shows the same pending spinner a tap does.
+      const arrow = e.key === "ArrowLeft" ? prevArrow.current : nextArrow.current;
+      if (!arrow) return;
       e.preventDefault();
-      router.push(`/forge/cards/${dest}`);
+      arrow.click();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [prevId, nextId, router]);
+  }, []);
 
   const update = (patch: Partial<DesignCard>) => {
     fieldsDirty.current = true;
@@ -330,12 +338,12 @@ export default function StudioEditor({
               ? [
                   { label: "The Forge", href: "/forge" },
                   { label: "Sets", href: "/forge/sets" },
-                  { label: setName ?? "Set", href: `/forge/sets/${card.setId}/cards` },
+                  { label: setName ?? "Set", href: gridHref, scroll: false },
                   { label: crumbName },
                 ]
               : [
                   { label: "The Forge", href: "/forge" },
-                  { label: "Ideas", href: "/forge/ideas" },
+                  { label: "Ideas", href: gridHref, scroll: false },
                   { label: crumbName },
                 ]
           }
@@ -423,13 +431,17 @@ export default function StudioEditor({
               onClick={() => setPeeking(true)} />
             {/* Prev/next within the set — same order as the grid, no wrap at ends. */}
             {prevId && (
-              <Link href={`/forge/cards/${prevId}`} aria-label="Previous card in set" className={arrowClass + " -left-11 sm:left-1.5"}>
-                <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+              <Link ref={prevArrow} href={`/forge/cards/${prevId}${walkQuery}`} aria-label="Previous card in set" className={arrowClass + " -left-11 sm:left-1.5"}>
+                <LinkPending idle={<ChevronLeft className="h-5 w-5" aria-hidden="true" />}>
+                  <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                </LinkPending>
               </Link>
             )}
             {nextId && (
-              <Link href={`/forge/cards/${nextId}`} aria-label="Next card in set" className={arrowClass + " -right-11 sm:right-1.5"}>
-                <ChevronRight className="h-5 w-5" aria-hidden="true" />
+              <Link ref={nextArrow} href={`/forge/cards/${nextId}${walkQuery}`} aria-label="Next card in set" className={arrowClass + " -right-11 sm:right-1.5"}>
+                <LinkPending idle={<ChevronRight className="h-5 w-5" aria-hidden="true" />}>
+                  <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                </LinkPending>
               </Link>
             )}
             {/* Copy the face as a PNG to share. Tucked into the bottom-right corner, small
@@ -447,8 +459,8 @@ export default function StudioEditor({
           </div>
           {position && (
             <p className="mt-2 text-center text-xs text-muted-foreground">
-              {position.index} of {position.total}
-              <span className="hidden lg:inline"> · ← → to move</span>
+              {walkHint(position)}
+              {(prevId || nextId) && <span className="hidden lg:inline"> · ← → to move</span>}
             </p>
           )}
         </div>

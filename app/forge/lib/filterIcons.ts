@@ -74,22 +74,24 @@ export function glyphIconSrc(name: ClassName | IconName): string {
   return `${KIT_ICONS}/${GLYPH_ART[name]}.png`;
 }
 
-// Display only — storage, the diff and the collapsed summary keep the union's spelling.
-// A grid of tiles is much harder to scan when two words run together.
-const TYPE_LABEL: Partial<Record<CardType, string>> = {
+// Display only: storage and the diff keep the union's spelling. The one place to turn a stored
+// type or brigade into words, for pickers, filters, targets and progress alike. Takes any string
+// because targets and old imports can hold values outside the union, which pass through as they are.
+const TYPE_LABEL: Record<string, string> = {
   EvilCharacter: "Evil Character",
   LostSoul: "Lost Soul",
 };
-const BRIGADE_LABEL: Partial<Record<Brigade, string>> = {
+const BRIGADE_LABEL: Record<string, string> = {
   GoodGold: "Good Gold",
   EvilGold: "Evil Gold",
   PaleGreen: "Pale Green",
+  none: "No brigade", // the targets' bucket for types that have no brigade
 };
 
-export function typeLabel(type: CardType): string {
+export function typeLabel(type: string): string {
   return TYPE_LABEL[type] ?? type;
 }
 
-export function brigadeLabel(brigade: Brigade): string {
+export function brigadeLabel(brigade: string): string {
   return BRIGADE_LABEL[brigade] ?? brigade;
 }
