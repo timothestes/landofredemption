@@ -278,7 +278,7 @@ export default function CardDetailsFields({
           value={snapshot.identifiers ?? []}
           onChange={(identifiers) => update({ identifiers })}
           placeholder="Comma-separated, e.g. Genesis, Patriarch"
-          className="min-h-11 w-full rounded-md border bg-background px-3 py-2 text-base sm:min-h-0 sm:text-sm" />
+          className="min-h-11 w-full rounded-md border bg-background px-3 py-2 text-base placeholder:text-sm sm:min-h-0 sm:text-sm" />
       </label>
       </div>
     </details>
