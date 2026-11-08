@@ -5,7 +5,7 @@
 -- Bodies were taken from the migrations that last defined them and match production by md5 of
 -- prosrc: forge_accept_proposal 075, forge_set_working_finished 061, forge_set_working_art and
 -- forge_set_art_placeholder 052, forge_add_art_candidate and forge_delete_art_candidate 082,
--- forge_set_art_candidate_source 101.
+-- forge_set_art_candidate_source 101, forge_apply_suggestion 053.
 
 -- Accept skipped the name-and-type gate. forge_publish_card (127) refuses to release a card with
 -- no name or type, but accepting on an In playtest card mints a 'published' version too, so a
@@ -109,7 +109,12 @@ end; $$;
 
 -- A promoted card is read-only, but the working-art writers never said so. forge_save_card and
 -- forge_save_card_fields refuse one, and a promoted card still took a new finished image, new art,
--- the placeholder flag and candidate changes. Same check, same text, after the authorization check.
+-- the placeholder flag and candidate changes. forge_apply_suggestion had the same gap on the
+-- snapshot: Apply wrote the field and the title, and resolved the comment. Same check, same text,
+-- after the authorization check, in:
+--   forge_set_working_finished, forge_set_working_art, forge_set_art_placeholder,
+--   forge_add_art_candidate, forge_delete_art_candidate, forge_set_art_candidate_source,
+--   forge_apply_suggestion
 -- Each body is the latest verbatim plus that check. The readers forge_art_key and
 -- forge_candidate_art_key write nothing, so they stay as they are.
 --
@@ -265,4 +270,34 @@ begin
   update public.forge_card_art_candidates
     set source_url = nullif(trim(p_source_url), '')
     where id = p_candidate_id;
+end; $$;
+
+create or replace function public.forge_apply_suggestion(p_comment_id uuid)
+returns timestamptz language plpgsql security definer set search_path = '' as $$
+declare v_c public.card_comments%rowtype; v_card public.forge_cards%rowtype;
+        v_new jsonb; v_updated timestamptz;
+begin
+  select * into v_c from public.card_comments where id = p_comment_id;
+  if not found then raise exception 'comment not found'; end if;
+  if v_c.field is null or v_c.suggested_value is null then
+    raise exception 'this comment is not an applyable suggestion';
+  end if;
+  if not public._forge_is_card_field(v_c.field) then raise exception 'unknown card field'; end if;
+  select * into v_card from public.forge_cards where id = v_c.card_id for update;
+  if not found then raise exception 'card not found'; end if;
+  if not (v_card.owner_id = auth.uid() or public.is_forge_superadmin()
+          or (v_card.set_id is not null and public.is_forge_set_elder(v_card.set_id))) then
+    raise exception 'not authorized to edit this card';
+  end if;
+  if v_card.status = 'promoted' then raise exception 'a promoted card is read-only'; end if;
+  v_new := jsonb_set(coalesce(v_card.working_snapshot, '{}'::jsonb), array[v_c.field], v_c.suggested_value, true);
+  if octet_length(v_new::text) > 64000 then raise exception 'snapshot too large'; end if;
+  update public.forge_cards
+     set working_snapshot = v_new,
+         title = nullif(btrim(coalesce(v_new->>'name','')), ''),
+         updated_at = now()
+   where id = v_card.id
+  returning updated_at into v_updated;
+  update public.card_comments set resolved = true where id = p_comment_id;
+  return v_updated;
 end; $$;
