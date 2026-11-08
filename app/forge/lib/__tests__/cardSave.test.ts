@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
-  createCardSaver, diffSnapshot, incomingAction, isEmptyPatch,
+  createCardSaver, diffSnapshot, editAction, incomingAction, isEmptyPatch,
   LEAVE_GRACE_MS, RECONNECT_WINDOW_MS, SEND_DEADLINE_MS, type SnapshotPatch,
 } from "../cardSave";
 import { sameSnapshot } from "../cardDiff";
@@ -580,5 +580,101 @@ describe("createCardSaver after a failed attempt", () => {
     void r.saver.flush();
     r.latest.current = { name: "S0", rarity: "R" };   // undone, but the save is still out there
     expect(r.saver.clean()).toBe(false);
+  });
+});
+
+// What the autosave effect does with an edit, so the pill can't be left saying "Unsaved changes"
+// when nothing is, or say the card is clean when a failed save still has to go out.
+describe("editAction (U-50)", () => {
+  function rig(row: DesignCard = { name: "S0", rarity: "R" }) {
+    const latest = { current: row };
+    const lastSaved = { current: row };
+    const d = deferredSend();
+    const saver = createCardSaver({ latest, lastSaved, send: d.send });
+    return {
+      latest, lastSaved, saver, ...d,
+      // The effect's own order: latest.current first, then the question.
+      edit(next: DesignCard) {
+        latest.current = next;
+        return editAction({ edit: next, target: saver.target(), clean: saver.clean() });
+      },
+    };
+  }
+
+  it("arms a save for a real change", () => {
+    expect(rig().edit({ name: "S1", rarity: "R" })).toBe("save");
+  });
+
+  it("is clean when an edit is undone before its save fires", () => {
+    const r = rig();
+    r.edit({ name: "S1", rarity: "R" });
+    expect(r.edit({ name: "S0", rarity: "R" })).toBe("clean");
+    expect(r.calls).toHaveLength(0);
+  });
+
+  it("is clean when a field is retyped as it already was", () => {
+    expect(rig().edit({ rarity: "R", name: "S0" })).toBe("clean");
+  });
+
+  it("is clean when the only difference is an undefined key", () => {
+    expect(rig({ name: "S0" }).edit({ name: "S0", rarity: undefined })).toBe("clean");
+  });
+
+  it("is clean when an edit after a stored save is undone", async () => {
+    const r = rig();
+    r.edit({ name: "S1", rarity: "R" });
+    const flight = r.saver.flush();
+    r.calls[0].resolve({ ok: true });
+    await flight;
+    r.edit({ name: "S2", rarity: "R" });
+    expect(r.edit({ name: "S1", rarity: "R" })).toBe("clean");
+  });
+
+  it("is never clean after a failed save, whose fields may have landed and must go out again", async () => {
+    const r = rig();
+    r.edit({ name: "Landed", rarity: "R" });
+    const flight = r.saver.flush();
+    r.calls[0].reject(new TypeError("Failed to fetch"));
+    await flight;
+
+    expect(r.edit({ name: "S0", rarity: "R" })).toBe("wait");
+
+    const retry = r.saver.flush();
+    expect(r.calls[1].patch).toEqual({ set: { name: "S0" }, remove: [] });
+    r.calls[1].resolve({ ok: true });
+    await retry;
+    expect(r.edit({ name: "S0", rarity: "R" })).toBe("clean");
+  });
+
+  it("waits for a save in flight when the edit ends back on what it is sending", async () => {
+    const r = rig();
+    r.edit({ name: "S1", rarity: "R" });
+    const flight = r.saver.flush();
+    r.edit({ name: "S2", rarity: "R" });
+    expect(r.edit({ name: "S1", rarity: "R" })).toBe("wait");
+
+    r.calls[0].resolve({ ok: true });
+    await flight;
+    expect(r.edit({ name: "S1", rarity: "R" })).toBe("clean");
+    expect(r.calls).toHaveLength(1);
+  });
+
+  it("arms a save when an edit is undone during a flight, which still has to be undone on the server", () => {
+    const r = rig();
+    r.edit({ name: "S1", rarity: "R" });
+    void r.saver.flush();
+    expect(r.edit({ name: "S0", rarity: "R" })).toBe("save");
+  });
+
+  it("is clean once the session adopts a write from elsewhere, failed save or not", async () => {
+    const r = rig();
+    r.edit({ name: "Landed", rarity: "R" });
+    const flight = r.saver.flush();
+    r.calls[0].reject(new TypeError("Failed to fetch"));
+    await flight;
+
+    const theirs: DesignCard = { name: "Theirs", rarity: "R" };
+    r.lastSaved.current = theirs;
+    expect(r.edit(theirs)).toBe("clean");
   });
 });

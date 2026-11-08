@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { saveCardFields, uploadFinished, setPlaceholder, type ForgeCardFull } from "@/app/forge/lib/cards";
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
-import { createCardSaver, incomingAction } from "@/app/forge/lib/cardSave";
+import { createCardSaver, editAction, incomingAction } from "@/app/forge/lib/cardSave";
 import { STATUS_BADGE_CLASS } from "@/app/forge/lib/lifecycleCopy";
 import { versionPill, type StudioVersion } from "@/app/forge/lib/studioVersion";
 import type { ArtCandidate } from "@/app/forge/lib/artCandidates";
@@ -120,9 +120,10 @@ export default function StudioEditor({
     latest.current = snapshot;
     if (firstRender.current) { firstRender.current = false; return; }
     // Content, not identity: update() always builds a new object, and an adopted snapshot
-    // must not be echoed straight back to the server. Against what the server will hold, not
-    // lastSaved: an edit undone while its save is in flight still needs saving.
-    if (sameSnapshot(snapshot, saver.target())) return;
+    // must not be echoed straight back to the server.
+    const action = editAction({ edit: snapshot, target: saver.target(), clean: saver.clean() });
+    if (action === "clean") setDirty(false);
+    if (action !== "save") return;
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => { void runSave(); }, 700);
     return () => { if (timer.current) clearTimeout(timer.current); };
