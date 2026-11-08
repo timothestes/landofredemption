@@ -19,10 +19,14 @@ describe("diffCards", () => {
     expect(d[0]).toMatchObject({ field: "rawText", label: "Card text", kind: "changed" });
   });
 
-  it("diffs the territory plate's side, labelled for the review", () => {
-    const d = diffCards({ icons: ["Territory"] }, { icons: ["Territory"], territoryPlate: "both" });
+  it("diffs each class icon's side, labelled for the review", () => {
+    const d = diffCards({ icons: ["Territory"] }, { icons: ["Territory"], territorySide: "both" });
     expect(d).toHaveLength(1);
-    expect(d[0]).toMatchObject({ field: "territoryPlate", label: "Territory plate", kind: "added", after: "both" });
+    expect(d[0]).toMatchObject({ field: "territorySide", label: "Territory class icon", kind: "added", after: "both" });
+    const shields = diffCards({ class: ["Warrior", "Weapon"] }, { class: ["Warrior", "Weapon"], warriorSide: "good", weaponSide: "evil" });
+    expect(shields.map((c) => [c.field, c.label, c.after])).toEqual([
+      ["warriorSide", "Warrior class icon", "good"], ["weaponSide", "Weapon class icon", "evil"],
+    ]);
   });
 
   it("compares array fields by joined display value", () => {

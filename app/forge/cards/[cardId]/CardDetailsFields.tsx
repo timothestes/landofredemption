@@ -1,11 +1,10 @@
 "use client";
 
 import {
-  CARD_TYPES, ALIGNMENTS, CLASSES, ICONS, RARITIES, MULTI_BRIGADES, TERRITORY_PLATE_SIDES,
-  deriveAlignmentFromTypes, toggleMultiBrigade, brigadeLabels,
-  type DesignCard, type CardType, type Brigade, type TerritoryPlateSide,
+  CARD_TYPES, ALIGNMENTS, CLASSES, ICONS, RARITIES, MULTI_BRIGADES, ICON_SIDES,
+  deriveAlignmentFromTypes, toggleMultiBrigade, brigadeLabels, iconSide, defaultIconSide,
+  type DesignCard, type CardType, type Brigade, type ClassIconKind, type IconSide,
 } from "@/app/forge/lib/designCard";
-import { isDualAlignment } from "@/app/forge/lib/frameAssets";
 import StatInput from "./StatInput";
 import IdentifiersInput from "./IdentifiersInput";
 import {
@@ -16,7 +15,46 @@ import {
 type ClassName = (typeof CLASSES)[number];
 type IconName = (typeof ICONS)[number];
 
-const PLATE_SIDE_LABEL: Record<TerritoryPlateSide, string> = { good: "Good side", evil: "Evil side", both: "Both sides" };
+const SIDE_LABEL: Record<IconSide, string> = { good: "Good side", evil: "Evil side", both: "Both sides" };
+const SIDE_FIELD: Record<ClassIconKind, "warriorSide" | "weaponSide" | "territorySide"> = {
+  Warrior: "warriorSide", Weapon: "weaponSide", Territory: "territorySide",
+};
+
+// Which side(s) of a Good/Evil card a class icon prints on — print does either side or both,
+// per icon, so the card chooses (iconSide has the defaults). The default stores nothing.
+function SideControl({ icon, snapshot, update }: {
+  icon: ClassIconKind; snapshot: DesignCard; update: (patch: Partial<DesignCard>) => void;
+}) {
+  const current = iconSide(snapshot, icon);
+  function choose(s: IconSide) {
+    const patch: Partial<DesignCard> = {};
+    patch[SIDE_FIELD[icon]] = s === defaultIconSide(icon) ? undefined : s;
+    if (icon === "Territory") patch.territoryPlate = undefined; // retire #593's key as it is re-set
+    update(patch);
+  }
+  return (
+    <div className="mt-2">
+      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {icon} class icon
+      </span>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label={`${icon} class icon side`}>
+        {ICON_SIDES.map((s) => {
+          const selected = current === s;
+          return (
+            <button key={s} type="button" title={s} aria-pressed={selected} onClick={() => choose(s)}
+              className={`rounded border px-2 py-1 text-[11px] font-medium transition-colors ${
+                selected
+                  ? "border-primary/40 bg-primary/15 text-primary"
+                  : "border-transparent bg-muted/40 text-muted-foreground hover:border-border hover:bg-muted"
+              }`}>
+              {SIDE_LABEL[s]}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function toggle<T>(arr: T[] | undefined, v: T): T[] {
   const a = arr ?? [];
@@ -58,6 +96,7 @@ export default function CardDetailsFields({
   snapshot, update,
 }: { snapshot: DesignCard; update: (patch: Partial<DesignCard>) => void }) {
   const types = snapshot.cardType ?? [];
+  const goodEvil = snapshot.alignment === "Good_Evil";
 
   // Auto-fill alignment from the selected types, without clobbering a manual
   // pick: only applies when alignment is unset, or still equals what the
@@ -203,6 +242,11 @@ export default function CardDetailsFields({
               onClick={() => update({ class: toggle<ClassName>(snapshot.class, c) })} />
           ))}
         </div>
+        {/* Side controls only once the alignment field says Good/Evil (not the preview's
+            dual-frame rule), one per chosen class. */}
+        {goodEvil && CLASSES.filter((c) => (snapshot.class ?? []).includes(c)).map((c) => (
+          <SideControl key={c} icon={c} snapshot={snapshot} update={update} />
+        ))}
       </div>
 
       {/* Icons — Territory / Star / Cloud */}
@@ -216,30 +260,8 @@ export default function CardDetailsFields({
               onClick={() => update({ icons: toggle<IconName>(snapshot.icons, ic) })} />
           ))}
         </div>
-        {/* Where a dual-alignment card prints its territory plate — print does either side
-            or both, so the card chooses. The good side (unset) is the default. */}
-        {isDualAlignment(snapshot) && (snapshot.icons ?? []).includes("Territory") && (
-          <div className="mt-2">
-            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Territory plate
-            </span>
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Territory plate side">
-              {TERRITORY_PLATE_SIDES.map((s) => {
-                const selected = (snapshot.territoryPlate ?? "good") === s;
-                return (
-                  <button key={s} type="button" title={s} aria-pressed={selected}
-                    onClick={() => update({ territoryPlate: s === "good" ? undefined : s })}
-                    className={`rounded border px-2 py-1 text-[11px] font-medium transition-colors ${
-                      selected
-                        ? "border-primary/40 bg-primary/15 text-primary"
-                        : "border-transparent bg-muted/40 text-muted-foreground hover:border-border hover:bg-muted"
-                    }`}>
-                    {PLATE_SIDE_LABEL[s]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+        {goodEvil && (snapshot.icons ?? []).includes("Territory") && (
+          <SideControl icon="Territory" snapshot={snapshot} update={update} />
         )}
       </div>
 
