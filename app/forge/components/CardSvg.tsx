@@ -225,11 +225,12 @@ export default function CardSvg({
   const name = printedName(card) || "Card Name";
   // Title: right-aligned into the art window's edge; centered between the boxes when there is
   // a right box (Covenants / Curses, dual-alignment cards); a Lost Soul, which has no box,
-  // centers "Lost Soul" on the card. Fixed at 9 pt, squeezed only when its real width overruns
-  // the frame.
+  // centers on the card with the art window's width to use, inset the same on both sides.
+  // Fixed at 9 pt, squeezed only when its real width overruns the frame.
   const lostSoul = (card.cardType ?? []).includes("LostSoul");
-  const titleLeft = RECTS.title.x;
-  const titleRight = right ? right.rect.x - 12 : titleLeft + RECTS.title.w - TITLE_INSET;
+  const titleEdge = RECTS.title.x + RECTS.title.w - TITLE_INSET;
+  const titleLeft = lostSoul ? CW - titleEdge : RECTS.title.x;
+  const titleRight = right ? right.rect.x - 12 : titleEdge;
   const titleAvail = titleRight - titleLeft;
   const titleSize = TITLE_SIZE;
   const titleSqueeze = textWidth(name, "title", titleSize) * TITLE_KERN > titleAvail;
