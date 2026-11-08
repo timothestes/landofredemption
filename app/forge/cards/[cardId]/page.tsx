@@ -8,6 +8,7 @@ import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import { getOpenProposalDiffs, listProposals } from "@/app/forge/lib/proposals";
 import { listComments } from "@/app/forge/lib/comments";
 import { listVersions, listCardEvents, artChangedSince, getShelvedRecord } from "@/app/forge/lib/versions";
+import { pickStudioVersion } from "@/app/forge/lib/studioVersion";
 import StudioEditor from "./StudioEditor";
 import ReviewPanel from "./ReviewPanel";
 
@@ -66,6 +67,17 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
       }
     : null;
 
+  // The header's version pill. The text is compared on the client against the live draft; the
+  // images only here, so their blob keys stay on the server. A Final card's released version
+  // can be older than lastRelease, so it may need its own comparison.
+  const releasedId = card.approvedVersionId ?? card.publishedVersionId;
+  const moved = !releasedId
+    ? false
+    : releasedId === lastRelease?.id
+      ? !!releaseBase?.artChanged
+      : await artChangedSince(cardId, releasedId);
+  const version = pickStudioVersion(card, versions, moved);
+
   // Prev/next arrows on the card face walk the set in the same order as the grid.
   // No wrap: the boundary card gets null and hides that arrow.
   const ordered = sortSetCards(siblings);
@@ -109,6 +121,7 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
       openProposals={openProposals}
       releaseBase={releaseBase}
       restoreTarget={restoreTarget}
+      version={version}
       review={
         inSet ? (
           // key: React validates this as a keyless list child once it crosses the

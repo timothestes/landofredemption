@@ -6,7 +6,7 @@
 import { requireForge } from "@/app/forge/lib/auth";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 
-export type RevealCard = { cardId: string; data: DesignCard; hasApprovedArt: boolean; hasApprovedFinished: boolean; versionId: string };
+export type RevealCard = { cardId: string; data: DesignCard; hasApprovedArt: boolean; hasApprovedFinished: boolean; versionId: string; versionNumber: number };
 
 // NOTE: still named listSetApprovedCards for caller stability, but it now reveals
 // playtesting cards too (see migration 057). The revealed version is the approved
@@ -35,7 +35,7 @@ export async function listSetApprovedCards(setId: string): Promise<RevealCard[]>
 
   const { data: versions } = await ctx.supabase
     .from("card_versions")
-    .select("id, card_id, data, art_key, art_original_key, art_is_placeholder, finished_key")
+    .select("id, card_id, version_number, data, art_key, art_original_key, art_is_placeholder, finished_key")
     .in("status", ["published", "approved"]) // self-defend alongside RLS
     .in("id", Array.from(byVersion.keys()));
 
@@ -45,5 +45,6 @@ export async function listSetApprovedCards(setId: string): Promise<RevealCard[]>
     hasApprovedArt: !!(v.art_original_key ?? v.art_key) && !v.art_is_placeholder,
     hasApprovedFinished: !!v.finished_key,
     versionId: v.id as string,
+    versionNumber: v.version_number as number,
   }));
 }

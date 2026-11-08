@@ -4,12 +4,27 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import type { DesignCard, CardType, Brigade } from "@/app/forge/lib/designCard";
 import { cardRawText, CARD_TYPES, BRIGADES } from "@/app/forge/lib/designCard";
+import { textFit } from "@/app/forge/lib/textFit";
 import ForgeCardFace from "@/app/forge/components/ForgeCardFace";
+import ForgeCardPreview from "@/app/forge/components/ForgeCardPreview";
 import PlaytesterComments from "./PlaytesterComments";
 
-export type RevealItem = { cardId: string; data: DesignCard; artUrl: string | null; finishedUrl: string | null };
+// Serialized into a playtester's page, so it carries the released card only. Nothing about the
+// working draft belongs here, not even a flag saying it has moved on.
+export type RevealItem = { cardId: string; data: DesignCard; artUrl: string | null; finishedUrl: string | null; versionNumber: number };
 
 const selectClass = "rounded-md border bg-background px-2 py-1.5 text-sm";
+
+// The deck builder's face: the uploaded finished image, else the frame drawn in the browser from
+// the released snapshot. Not the art proxy's kind=rendered: that is one function call per tile
+// on a cache miss, and this costs the server nothing.
+function RevealFace({ item }: { item: RevealItem }) {
+  return item.finishedUrl ? (
+    <ForgeCardFace name={item.data.name ?? null} rawText={cardRawText(item.data)} finishedUrl={item.finishedUrl} artUrl={item.artUrl} className="w-full rounded-md" />
+  ) : (
+    <ForgeCardPreview card={item.data} artUrl={item.artUrl} className="w-full rounded-md" />
+  );
+}
 
 export default function RevealGrid({ items, currentUserId }: { items: RevealItem[]; currentUserId: string }) {
   const [active, setActive] = useState<RevealItem | null>(null);
@@ -97,28 +112,40 @@ export default function RevealGrid({ items, currentUserId }: { items: RevealItem
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {filtered.map((it) => (
             <button key={it.cardId} onClick={() => setActive(it)} className="block w-full text-left">
-              <ForgeCardFace name={it.data.name ?? null} rawText={cardRawText(it.data)} finishedUrl={it.finishedUrl} artUrl={it.artUrl} className="w-full rounded-md" />
+              <RevealFace item={it} />
+              <span className="mt-1 block text-xs tabular-nums text-muted-foreground">v{it.versionNumber}</span>
             </button>
           ))}
         </div>
       )}
       {active && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4" onClick={() => setActive(null)}>
-          <div
-            className="my-auto flex w-full max-w-3xl flex-col gap-4 rounded-lg bg-background p-4 sm:flex-row"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mx-auto w-full max-w-sm shrink-0 sm:mx-0 sm:w-64">
-              <ForgeCardFace name={active.data.name ?? null} rawText={cardRawText(active.data)} finishedUrl={active.finishedUrl} artUrl={active.artUrl} className="w-full" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-sm font-semibold">Comments</h2>
-                <button type="button" aria-label="Close" onClick={() => setActive(null)} className="rounded p-1 text-muted-foreground hover:text-foreground">
-                  <X className="h-4 w-4" />
+          <div className="my-auto w-full max-w-3xl rounded-lg bg-background px-4 pb-4" onClick={(e) => e.stopPropagation()}>
+            {/* Pinned, so Close stays in reach below a long comment thread. */}
+            <div className="sticky top-0 z-10 -mx-4 flex items-center justify-between gap-2 rounded-t-lg bg-background pl-4 pr-1">
+              <h2 className="min-w-0 truncate text-sm font-semibold">{active.data.name?.trim() || "Untitled"}</h2>
+              <div className="flex shrink-0 items-center gap-1">
+                <span className="text-xs tabular-nums text-muted-foreground">v{active.versionNumber}</span>
+                <button type="button" aria-label="Close" onClick={() => setActive(null)} className="flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:text-foreground">
+                  <X className="h-5 w-5" />
                 </button>
               </div>
-              <PlaytesterComments cardId={active.cardId} currentUserId={currentUserId} />
+            </div>
+            <div className="flex flex-col gap-4 sm:flex-row">
+              {/* On a phone the height cap leaves the comment box on screen; 15rem is the header,
+                  the Comments heading, the box and the gutters. */}
+              <div className="mx-auto w-full max-w-[min(24rem,calc((100dvh-15rem)*5/7))] shrink-0 sm:mx-0 sm:w-64 sm:max-w-none md:w-80">
+                <RevealFace item={active} />
+                {/* An ability too long for the frame runs off the face, and this modal is the
+                    only place to read a card. */}
+                {!active.finishedUrl && textFit(active.data).over > 0 && (
+                  <p className="mt-2 whitespace-pre-wrap text-sm">{cardRawText(active.data)}</p>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="mb-2 text-sm font-semibold">Comments</h3>
+                <PlaytesterComments cardId={active.cardId} currentUserId={currentUserId} />
+              </div>
             </div>
           </div>
         </div>

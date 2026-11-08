@@ -18,6 +18,8 @@ import { saveCardFields, uploadFinished, setPlaceholder, type ForgeCardFull } fr
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import { createCardSaver, incomingAction } from "@/app/forge/lib/cardSave";
+import { STATUS_BADGE_CLASS } from "@/app/forge/lib/lifecycleCopy";
+import { versionPill, type StudioVersion } from "@/app/forge/lib/studioVersion";
 import type { ArtCandidate } from "@/app/forge/lib/artCandidates";
 import type { ReleaseBase, RestoreTarget } from "@/app/forge/lib/lifecycleCopy";
 import LifecycleControls from "./LifecycleControls";
@@ -42,7 +44,7 @@ const arrowClass =
   "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground";
 
 export default function StudioEditor({
-  card, sets, currentUser, creator, setId, setName, prevId, nextId, position, artCandidates, openProposals, releaseBase, restoreTarget, review,
+  card, sets, currentUser, creator, setId, setName, prevId, nextId, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, review,
 }: {
   card: ForgeCardFull;
   sets: ForgeSetSummary[];
@@ -62,6 +64,7 @@ export default function StudioEditor({
   releaseBase?: ReleaseBase | null;
   // For the Restore dialog on a shelved card: where it will go back to.
   restoreTarget?: RestoreTarget | null;
+  version?: StudioVersion | null;
   // The review column (proposals / history / comments), rendered inside this component's
   // grid so the sticky card face keeps travelling alongside it. Built in the server
   // component, so it is an element, not a render prop — it cannot take callbacks.
@@ -251,6 +254,16 @@ export default function StudioEditor({
   const t = Date.parse(card.updatedAt) || 0;
   const activeSourceId = artCandidates.find((c) => c.isActiveSource)?.id ?? null;
   const previewCard = previewScripture === null ? snapshot : { ...snapshot, scripture: previewScripture };
+  // Local, like the face and the field: card.title only catches up after the save and a refresh.
+  // A name still undefined means it was never edited, so a title set at creation stands.
+  const crumbName = (snapshot.name ?? card.title)?.trim() || "Untitled";
+  // Follows the local draft too (never previewCard: a verse being previewed is not an edit).
+  const pill = card.setId ? versionPill(card.status, version, snapshot) : null;
+  const versionBadge = pill && (
+    <span title={pill.title} className={cn("whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] tabular-nums", STATUS_BADGE_CLASS[card.status])}>
+      {pill.label}
+    </span>
+  );
 
   const face = card.hasFinished ? (
     <ForgeCardFace
@@ -291,12 +304,12 @@ export default function StudioEditor({
                   { label: "The Forge", href: "/forge" },
                   { label: "Sets", href: "/forge/sets" },
                   { label: setName ?? "Set", href: `/forge/sets/${card.setId}/cards` },
-                  { label: card.title?.trim() || "Untitled" },
+                  { label: crumbName },
                 ]
               : [
                   { label: "The Forge", href: "/forge" },
                   { label: "Ideas", href: "/forge/ideas" },
-                  { label: card.title?.trim() || "Untitled" },
+                  { label: crumbName },
                 ]
           }
         />
@@ -325,6 +338,9 @@ export default function StudioEditor({
               Retry
             </Button>
           )}
+          {/* Last in the row, so it holds still while the save pill changes width. Below lg the
+              row has no room for it: it sits on the Created by line, out of the sticky chrome. */}
+          {versionBadge && <span className="hidden lg:inline-flex">{versionBadge}</span>}
         </div>
         {/* Below lg the face sits above the form and scrolls away; this brings it back without
             losing your place. In this row, not over the form, so it never covers a field. The
@@ -336,11 +352,16 @@ export default function StudioEditor({
       </div>
 
       <div className="mb-3 flex flex-col gap-2 text-sm">
-        <p className="text-xs text-muted-foreground">
-          Created by <span className="font-medium text-foreground">{creator.name}</span>
-          {" · "}
-          {new Date(creator.at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-        </p>
+        {/* One line whatever the pill says: it grows on the first edit, and a wrap here would
+            move the form under the caret. */}
+        <div className="flex items-center justify-between gap-2">
+          <p className="min-w-0 truncate text-xs text-muted-foreground">
+            Created by <span className="font-medium text-foreground">{creator.name}</span>
+            {" · "}
+            {new Date(creator.at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+          </p>
+          {versionBadge && <span className="inline-flex shrink-0 leading-4 lg:hidden">{versionBadge}</span>}
+        </div>
         <LifecycleControls card={card} draft={snapshot} flushPending={flushPending} releaseBase={releaseBase} restoreTarget={restoreTarget} sets={sets} openProposals={openProposals} />
         {card.setId && (
           <p className="text-xs text-muted-foreground">
