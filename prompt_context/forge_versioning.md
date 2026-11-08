@@ -53,6 +53,13 @@ runs at a time per session (`createCardSaver` in `app/forge/lib/cardSave.ts`).
 `forge_save_card` still writes whole snapshots, for a newly imported card and
 the promote preflight rename only.
 
+**Import "Overwrite existing cards" edits the working draft the same way.** It
+merges only the fields the file carries (`overwritePatch` in
+`app/forge/import/overwrite.ts`): a blank cell or a missing column leaves the
+card's value alone, and a file can't clear a field. A row that changes nothing
+writes nothing. It mints no version and leaves no record in History, so an
+overwrite can't be undone; a wizard confirm step says how many cards will change.
+
 ## How each version status comes to exist
 
 | `card_versions.status` | Minted by | Who can see it | Meaning |

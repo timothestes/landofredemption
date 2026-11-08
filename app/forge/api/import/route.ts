@@ -1,7 +1,9 @@
 import { revalidatePath } from "next/cache";
 import { requireElder, notFoundResponse } from "@/app/forge/lib/auth";
 import { uploadForgeFinished, validateArtFile } from "@/app/forge/lib/art";
+import { isEmptyPatch } from "@/app/forge/lib/cardSave";
 import type { DesignCard } from "@/app/forge/lib/designCard";
+import { overwritePatch, type RowPreview } from "@/app/forge/import/overwrite";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +17,13 @@ const MAX_PAYLOAD_CHARS = 512_000;
 const MAX_NAME_LENGTH = 200;
 const MAX_SNAPSHOT_BYTES = 32_000; // forge_save_card enforces 64KB; fail earlier & clearer
 
-interface BatchCard { name?: string; snapshot?: DesignCard; fileField?: string }
-interface CardResult { name: string; ok: boolean; cardId?: string; skipped?: boolean; updated?: boolean; error?: string }
+// `derived`: snapshot keys the parser filled in with no cell behind them, which only the
+// route's caller can know. See overwritePatch.
+interface BatchCard { name?: string; snapshot?: DesignCard; fileField?: string; derived?: string[] }
+interface CardResult {
+  name: string; ok: boolean; cardId?: string; skipped?: boolean; updated?: boolean; unchanged?: boolean;
+  preview?: RowPreview; error?: string;
+}
 
 function badRequest(message: string): Response {
   return Response.json({ error: message }, { status: 400 });
@@ -34,7 +41,7 @@ export async function POST(req: Request): Promise<Response> {
   }
   const raw = form.get("payload");
   if (typeof raw !== "string" || raw.length > MAX_PAYLOAD_CHARS) return badRequest("Invalid payload");
-  let payload: { setId?: unknown; cards?: unknown; overwrite?: unknown };
+  let payload: { setId?: unknown; cards?: unknown; overwrite?: unknown; preview?: unknown };
   try {
     payload = JSON.parse(raw);
   } catch {
@@ -43,6 +50,8 @@ export async function POST(req: Request): Promise<Response> {
   const setId = typeof payload.setId === "string" ? payload.setId : "";
   const cards = Array.isArray(payload.cards) ? (payload.cards as BatchCard[]) : [];
   const overwrite = payload.overwrite === true;
+  // The overwrite confirm step: says what each row would do, and writes nothing.
+  const preview = payload.preview === true;
   if (!setId || cards.length === 0 || cards.length > MAX_CARDS_PER_BATCH) {
     return badRequest("Invalid batch");
   }
@@ -51,12 +60,12 @@ export async function POST(req: Request): Promise<Response> {
   const names = cards.map((c) => (c?.name ?? "").trim()).filter(Boolean);
   const { data: existing, error: existErr } = await ctx.supabase
     .from("forge_cards")
-    .select("id, title")
+    .select("id, title, working_snapshot")
     .eq("set_id", setId)
     .in("title", names);
   if (existErr) return badRequest(existErr.message);
   const existingByTitle = new Map(
-    (existing ?? []).map((r: { id: string; title: string }) => [r.title, r.id]),
+    (existing ?? []).map((r: { id: string; title: string; working_snapshot: DesignCard }) => [r.title, r]),
   );
 
   const results: CardResult[] = await Promise.all(
@@ -83,14 +92,30 @@ export async function POST(req: Request): Promise<Response> {
       }
 
       // Idempotency: a card with this title already in the target set → skip (safe re-runs),
-      // unless overwrite is on — then update its working snapshot + finished image in place.
-      const dupId = existingByTitle.get(name);
+      // unless overwrite is on — then merge what the row carries into its working draft, and
+      // replace its finished image if the row has one. A row that changes nothing writes nothing.
+      const dup = existingByTitle.get(name);
+      const dupId = dup?.id;
+      const patch = dup && overwritePatch(
+        dup.working_snapshot ?? {},
+        card.snapshot ?? {},
+        Array.isArray(card.derived) ? card.derived : [],
+      );
+
+      if (preview) {
+        return { name, ok: true, cardId: dupId, preview: !patch ? "new" : isEmptyPatch(patch) ? "unchanged" : "changed" };
+      }
+
       if (dupId && !overwrite) return { name, ok: true, cardId: dupId, skipped: true };
 
       if (dupId && overwrite) {
-        const { error: saveErr } = await ctx.supabase
-          .rpc("forge_save_card", { p_card_id: dupId, p_snapshot: card.snapshot ?? {} });
-        if (saveErr) return { name, ok: false, error: saveErr.message };
+        const changed = !isEmptyPatch(patch);
+        if (changed) {
+          const { error: saveErr } = await ctx.supabase.rpc("forge_save_card_fields", {
+            p_card_id: dupId, p_set: patch.set, p_remove: patch.remove,
+          });
+          if (saveErr) return { name, ok: false, error: saveErr.message };
+        }
 
         if (file) {
           let key: string;
@@ -104,7 +129,9 @@ export async function POST(req: Request): Promise<Response> {
           if (artErr) return { name, ok: false, error: artErr.message };
         }
 
-        return { name, ok: true, cardId: dupId, updated: true };
+        return changed || file
+          ? { name, ok: true, cardId: dupId, updated: true }
+          : { name, ok: true, cardId: dupId, unchanged: true };
       }
 
       const { data: cardId, error: createErr } = await ctx.supabase
@@ -137,6 +164,6 @@ export async function POST(req: Request): Promise<Response> {
     }),
   );
 
-  revalidatePath(`/forge/sets/${setId}/cards`);
+  if (!preview) revalidatePath(`/forge/sets/${setId}/cards`);
   return Response.json({ results });
 }

@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   matchesFilter, distinctSets, findImageEntry,
-  lackeyRowToDesignCard, auditLackeyRow, type LackeyRow,
+  lackeyRowToDesignCard, lackeyDerivedFields, auditLackeyRow, type LackeyRow,
 } from "@/app/forge/lib/lackey";
 import FilePicker from "@/app/forge/components/FilePicker";
 import { readLackeySource, soleSetCode } from "./lackeySource";
@@ -64,6 +64,7 @@ export default function LackeySourcePanel({
       cards: matched.map((r) => ({
         name: r.name,
         snapshot: lackeyRowToDesignCard(r),
+        derived: lackeyDerivedFields(r),
         entryName: findImageEntry(r, entryNames),
         warnings: auditLackeyRow(r),
       })),

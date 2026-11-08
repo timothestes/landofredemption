@@ -179,6 +179,7 @@ export default function SpreadsheetSourcePanel({
       cards: table.cards.map((c) => ({
         name: c.name,
         snapshot: c.snapshot,
+        derived: c.derived,
         entryName: zip ? findLooseImageEntry(c.imageFile, zip.entryNames) : null,
         warnings: c.warnings,
       })),
