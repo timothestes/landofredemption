@@ -311,8 +311,8 @@ export default function CardSvg({
       <rect x={B.x} y={B.y} width={B.w} height={B.h} rx={B.r} fill="none" stroke={INK} strokeWidth={BORDER_STROKE} />
       {left && <IconBoxG id={`${uid}l`} box={left} side="left" statFont={fonts.stat} assetHref={assetHref} />}
       {right && <IconBoxG id={`${uid}r`} box={right} side="right" statFont={fonts.stat} assetHref={assetHref} />}
-      {classes.map((c) => (
-        <image key={c.src} href={assetHref(c.src)} x={c.rect.x} y={c.rect.y} width={c.rect.w} height={c.rect.h} preserveAspectRatio="xMidYMid meet" />
+      {classes.map((c, i) => (
+        <image key={`${c.src}-${i}`} href={assetHref(c.src)} x={c.rect.x} y={c.rect.y} width={c.rect.w} height={c.rect.h} preserveAspectRatio="xMidYMid meet" />
       ))}
       <clipPath id={`${uid}t`}><rect x={titleLeft - TITLE_PAD} y={RECTS.title.y - 12} width={titleAvail + 2 * TITLE_PAD} height={RECTS.title.h + 24} /></clipPath>
       {/* Title: a white face carrying a black contour, over a dark copy of itself offset to

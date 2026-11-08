@@ -314,18 +314,54 @@ describe("dual alignment", () => {
     const right = { x: CANVAS.w - ICON_RECTS.shield.x - T.w, y: T.y, w: T.w, h: T.h };
     const card: DesignCard = { cardType: ["GE", "EE"], brigades: ["Green", "Gray"], icons: ["Territory"] };
     expect(plate(card)).toEqual([left]);
-    expect(plate({ ...card, territoryPlate: "good" })).toEqual([left]);
-    expect(plate({ ...card, territoryPlate: "evil" })).toEqual([right]);
-    expect(plate({ ...card, territoryPlate: "both" })).toEqual([left, right]);
+    expect(plate({ ...card, territorySide: "good" })).toEqual([left]);
+    expect(plate({ ...card, territorySide: "evil" })).toEqual([right]);
+    expect(plate({ ...card, territorySide: "both" })).toEqual([left, right]);
     // Under the shield on each side, the way the shields stack (Joab).
     const under = ICON_RECTS.shield.y + ICON_RECTS.shield.h + 6;
-    expect(plate({ ...JOAB, icons: ["Territory"], territoryPlate: "both" }).map((r) => r.y)).toEqual([under, under]);
+    expect(plate({ ...JOAB, icons: ["Territory"], territorySide: "both" }).map((r) => r.y)).toEqual([under, under]);
     // A single-alignment card has one side; the choice is ignored.
     const single: DesignCard = { cardType: ["GE"], brigades: ["Green"], icons: ["Territory"] };
-    expect(plate({ ...single, territoryPlate: "evil" })).toEqual([left]);
-    expect(plate({ ...single, territoryPlate: "both" })).toEqual([left]);
+    expect(plate({ ...single, territorySide: "evil" })).toEqual([left]);
+    expect(plate({ ...single, territorySide: "both" })).toEqual([left]);
     // Without the icon there is no plate, whatever the side says.
-    expect(plate({ ...card, icons: [], territoryPlate: "both" })).toEqual([]);
+    expect(plate({ ...card, icons: [], territorySide: "both" })).toEqual([]);
+    // #593 shipped the field as `territoryPlate` for a day; a card saved then still reads.
+    expect(plate({ ...card, territoryPlate: "both" })).toEqual([left, right]);
+    expect(plate({ ...card, territoryPlate: "both", territorySide: "evil" })).toEqual([right]);
+  });
+
+  // The shields vary the same way: both sides on Joab, Battle Axe, Snatched Spear, Joab's Spears,
+  // Jehu's Sword, King Jehu, Joab and King Saul (CoW); the evil side only on Drawn Sword and the
+  // First / Second Seal; the good side only on Goliath's Sword; and Persian Horsemen / Persian
+  // Horses prints the warrior under one box and the weapon under the other.
+  it("prints each class shield on the side the card chooses, both sides unless told otherwise", () => {
+    const shields = (card: DesignCard) => classIcons(card)
+      .filter((c) => !c.src.endsWith("territory.png"))
+      .map((c) => [c.src.split("/").pop(), c.rect.x] as const);
+    const L = ICON_RECTS.shield.x, R = CANVAS.w - ICON_RECTS.shield.x - ICON_RECTS.shield.w;
+    const card: DesignCard = { cardType: ["GE", "EE"], brigades: ["Green", "Brown"], class: ["Warrior", "Weapon"] };
+    expect(shields(card)).toEqual(expect.arrayContaining([["warrior.png", L], ["warrior.png", R], ["weapon.png", L], ["weapon.png", R]]));
+    expect(shields(card)).toHaveLength(4);
+    expect(shields({ ...card, warriorSide: "evil" })).toEqual(expect.arrayContaining([["warrior.png", R], ["weapon.png", L], ["weapon.png", R]]));
+    expect(shields({ ...card, warriorSide: "evil" })).toHaveLength(3);
+    expect(shields({ ...card, weaponSide: "good" })).toEqual(expect.arrayContaining([["warrior.png", L], ["warrior.png", R], ["weapon.png", L]]));
+    expect(shields({ ...card, weaponSide: "good" })).toHaveLength(3);
+    expect(shields({ ...card, warriorSide: "good", weaponSide: "evil" })).toEqual([["warrior.png", L], ["weapon.png", R]]);
+    // A single-alignment card has one side; the choice is ignored.
+    expect(shields({ cardType: ["Hero"], brigades: ["Blue"], class: ["Warrior"], warriorSide: "evil" })).toEqual([["warrior.png", L]]);
+  });
+
+  it("stacks each side's icons on their own, so a side with one icon puts it in the top slot (Persian Horsemen)", () => {
+    const card: DesignCard = {
+      cardType: ["Hero", "EvilCharacter"], brigades: ["Purple", "Brown"], class: ["Warrior", "Weapon"], icons: ["Territory"],
+      warriorSide: "good", weaponSide: "evil", territorySide: "both",
+    };
+    const bySide = (x: number) => classIcons(card).filter((c) => c.rect.x === x).map((c) => [c.src.split("/").pop(), c.rect.y] as const);
+    const under = ICON_RECTS.shield.y + ICON_RECTS.shield.h + 6;
+    expect(bySide(ICON_RECTS.shield.x)).toEqual([["warrior.png", ICON_RECTS.shield.y], ["territory.png", under]]);
+    expect(bySide(CANVAS.w - ICON_RECTS.shield.x - ICON_RECTS.shield.w)).toEqual([["weapon.png", ICON_RECTS.shield.y]]);
+    expect(bySide(CANVAS.w - ICON_RECTS.shield.x - ICON_RECTS.territory.w)).toEqual([["territory.png", under]]);
   });
 
   it("a dual Dominant takes the lamb on the left and the reaper on the right, over the two nebulae", () => {

@@ -71,11 +71,14 @@ export function brigadeLabels(brigades: readonly Brigade[]): string[] {
 
 export const CLASSES = ["Warrior", "Weapon"] as const;
 export const ICONS = ["Territory", "Star", "Cloud"] as const;
-// Which side(s) of a dual-alignment card carry the territory plate. Print does all three
-// (Healing Naaman: good side; Woe to Chemosh: evil side; 7 Years of Famine: both), so the
-// card chooses; unset means the good side. Ignored on a single-alignment card.
-export const TERRITORY_PLATE_SIDES = ["good", "evil", "both"] as const;
-export type TerritoryPlateSide = (typeof TERRITORY_PLATE_SIDES)[number];
+// Which side(s) of a Good/Evil card carry each class icon. Print does all three for each of
+// them — territory: Healing Naaman good side, Woe to Chemosh evil side, 7 Years of Famine
+// both; shields: Joab / Battle Axe both, Drawn Sword and the Seals evil side, Goliath's Sword
+// good side, Persian Horsemen the warrior under one box and the weapon under the other — so
+// the card chooses per icon. Unset = the good side for territory, both sides for a shield
+// (the print majority). Ignored on a single-alignment card.
+export const ICON_SIDES = ["good", "evil", "both"] as const;
+export type IconSide = (typeof ICON_SIDES)[number];
 export const LEGALITIES = ["Rotation", "Classic", "Scrolls", "Paragon", "Banned"] as const;
 export const RARITIES = ["Common", "Uncommon", "Rare", "Ultra Rare", "Promo"] as const;
 
@@ -99,7 +102,12 @@ export type DesignCard = {
   toughness?: StatValue;
   class?: (typeof CLASSES)[number][];
   icons?: (typeof ICONS)[number][];
-  territoryPlate?: TerritoryPlateSide;
+  warriorSide?: IconSide;
+  weaponSide?: IconSide;
+  territorySide?: IconSide;
+  /** @deprecated `territorySide`'s name in #593 for a day (2026-11-07/08). Read by
+   *  iconSide(), cleared when the side is next set, never written. */
+  territoryPlate?: IconSide;
   identifiers?: string[];
   specialAbility?: string;
   reference?: string;
@@ -109,6 +117,23 @@ export type DesignCard = {
   artistCredit?: string;
   cardFrame?: string;
 };
+
+export type ClassIconKind = "Warrior" | "Weapon" | "Territory";
+
+/** Where a class icon prints when the card says nothing: both sides for a shield, the good
+ *  side for the territory plate (see ICON_SIDES). Pure. */
+export function defaultIconSide(icon: ClassIconKind): IconSide {
+  return icon === "Territory" ? "good" : "both";
+}
+
+/** The side(s) a class icon prints on for a dual-alignment card: the card's choice, else the
+ *  default. Pure. */
+export function iconSide(card: DesignCard, icon: ClassIconKind): IconSide {
+  const chosen = icon === "Warrior" ? card.warriorSide
+    : icon === "Weapon" ? card.weaponSide
+    : card.territorySide ?? card.territoryPlate;
+  return chosen ?? defaultIconSide(icon);
+}
 
 export type Applicability = "required" | "optional" | "na";
 export type FieldKey =

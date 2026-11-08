@@ -65,17 +65,47 @@ describe("CardDetailsFields icon tiles", () => {
     expect(tile(html, "Cloud")).toContain("/forge/frames/icons/cloud.png");
   });
 
-  it("lets a dual-alignment Territory card choose the plate's side, the good side pressed by default", () => {
-    const dual: DesignCard = { cardType: ["GE", "EE"], brigades: ["Green", "Gray"], icons: ["Territory"] };
-    const html = render(dual);
-    expect(tile(html, "good")).toMatch(/aria-pressed="true"/);
-    expect(tile(html, "evil")).toMatch(/aria-pressed="false"/);
-    expect(tile(html, "both")).toMatch(/aria-pressed="false"/);
-    expect(tile(html, "both")).toContain("Both sides");
-    expect(tile(render({ ...dual, territoryPlate: "both" }), "both")).toMatch(/aria-pressed="true"/);
-    // Only a dual-alignment card with the icon has a choice to make.
+  // Each side control is a group named for the icon ("Territory class icon side"); its three
+  // buttons carry the stored value as `title`, so a button is found inside its group.
+  const group = (html: string, name: string) => {
+    const m = html.match(new RegExp(`<div[^>]*aria-label="${name} side"[^>]*>.*?</div>`, "s"));
+    if (!m) throw new Error(`no "${name}" group`);
+    return m[0];
+  };
+
+  it("lets a Good/Evil Territory card choose the territory class icon's side, the good side pressed by default", () => {
+    const dual: DesignCard = { cardType: ["GE", "EE"], alignment: "Good_Evil", brigades: ["Green", "Gray"], icons: ["Territory"] };
+    const g = group(render(dual), "Territory class icon");
+    expect(tile(g, "good")).toMatch(/aria-pressed="true"/);
+    expect(tile(g, "evil")).toMatch(/aria-pressed="false"/);
+    expect(tile(g, "both")).toMatch(/aria-pressed="false"/);
+    expect(tile(g, "both")).toContain("Both sides");
+    // The control is named for what the rules call it, not for the frame kit's asset.
+    expect(render(dual)).not.toContain("Territory plate");
+    expect(tile(group(render({ ...dual, territorySide: "both" }), "Territory class icon"), "both")).toMatch(/aria-pressed="true"/);
+    // #593's name for the field for a day: still read, so the pressed side matches the preview.
+    expect(tile(group(render({ ...dual, territoryPlate: "evil" }), "Territory class icon"), "evil")).toMatch(/aria-pressed="true"/);
+    // Only a card set to Good/Evil alignment, with the icon, has a choice to make — a GE/EE
+    // card filed as Neutral (the catalog's way) still previews as dual but keeps the default.
     expect(render({ ...dual, icons: ["Star"] })).not.toContain('title="both"');
+    expect(render({ ...dual, alignment: "Neutral" })).not.toContain('title="both"');
+    expect(render({ ...dual, alignment: undefined })).not.toContain('title="both"');
     expect(render({ cardType: ["GE"], brigades: ["Green"], icons: ["Territory"] })).not.toContain('title="both"');
+  });
+
+  it("gives each chosen class shield its own side control on a Good/Evil card, both sides by default", () => {
+    const dual: DesignCard = { cardType: ["Hero", "EvilCharacter"], alignment: "Good_Evil", brigades: ["Purple", "Brown"], class: ["Warrior"] };
+    const html = render(dual);
+    expect(tile(group(html, "Warrior class icon"), "both")).toMatch(/aria-pressed="true"/);
+    expect(html).not.toContain('aria-label="Weapon class icon side"');
+    expect(html).not.toContain('aria-label="Territory class icon side"');
+    const both = render({ ...dual, class: ["Warrior", "Weapon"], weaponSide: "evil" });
+    expect(tile(group(both, "Warrior class icon"), "both")).toMatch(/aria-pressed="true"/);
+    expect(tile(group(both, "Weapon class icon"), "evil")).toMatch(/aria-pressed="true"/);
+    expect(tile(group(both, "Weapon class icon"), "both")).toMatch(/aria-pressed="false"/);
+    // Not on a single-alignment card, nor before the alignment says Good/Evil.
+    expect(render({ ...dual, cardType: ["Hero"], alignment: "Good" })).not.toContain("class icon side");
+    expect(render({ ...dual, alignment: "Neutral" })).not.toContain("class icon side");
   });
 
   it("never leaves selection to color alone, and defers the art until opened", () => {
