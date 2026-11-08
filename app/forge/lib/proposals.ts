@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireForge, requireElder } from "@/app/forge/lib/auth";
 import { diffCards } from "@/app/forge/lib/cardDiff";
+import { ACCEPT_NEEDS_NAME_AND_TYPE } from "@/app/forge/lib/proposeCopy";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 
 export type ProposalStatus = "open" | "accepted" | "denied" | "superseded";
@@ -118,7 +119,12 @@ export async function acceptProposal(
   const { data, error } = await ctx.supabase.rpc("forge_accept_proposal", {
     p_proposal_id: proposalId,
   });
-  if (error) return { ok: false, error: "Could not accept proposal" };
+  if (error) {
+    return {
+      ok: false,
+      error: error.message.includes("needs a name and a type") ? ACCEPT_NEEDS_NAME_AND_TYPE : "Could not accept proposal",
+    };
+  }
   // Since migration 083 a release closes open proposals itself, so a stale base
   // here means a genuine race: someone released while this review was open.
   if (data === null) {
