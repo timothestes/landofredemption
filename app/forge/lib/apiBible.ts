@@ -61,8 +61,10 @@ export class UpstreamError extends Error {
 // NASB marks a "historical present" (a Greek present tense rendered as past) with an
 // asterisk glued to the verb: "they *took Him along". It is translator's apparatus, not
 // wording; printed cards never carry it, so it is dropped wherever text is shown or stored.
+// The same goes for the pilcrow (¶) the source puts where a paragraph starts, at the start of
+// a verse or mid-verse.
 export function stripNasbMarkers(text: string): string {
-  return text.replace(/\*(?=\p{L})/gu, "");
+  return text.replace(/\*(?=\p{L})/gu, "").replace(/¶\s*/g, "");
 }
 
 export function splitChapterText(content: string): { n: number; text: string }[] {
@@ -128,7 +130,7 @@ const fetchChapterCached = unstable_cache(
       fumsToken: json.meta?.fumsToken ?? "",
     };
   },
-  ["api-bible-chapter", "v2"], // v2: asterisk markers stripped; bumps past 7-day entries cached with them
+  ["api-bible-chapter", "v3"], // v3: pilcrows stripped; bumps past 7-day entries cached with them
   { revalidate: 604800 },
 );
 
