@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
@@ -16,6 +16,7 @@ import {
 import { timeAgo } from "@/app/forge/lib/relativeTime";
 import { buildCommentEras, splitCommentEras, type CommentEraItem } from "@/app/forge/lib/historyView";
 import { useLocalStorageFlag } from "@/app/forge/lib/useLocalStorageFlag";
+import { withDeadline } from "@/app/forge/lib/withDeadline";
 import { initials } from "./PresenceBar";
 import { useStudioSync } from "./StudioSyncContext";
 
@@ -25,6 +26,7 @@ const linkButtonClass = "text-muted-foreground transition-colors hover:text-fore
 
 // Sentinel busy key for the new-comment composer, which has no comment id yet.
 const COMPOSE = "__compose__";
+const POST_FAILED = "Couldn’t post that. Check your connection and try again. Your text is still here.";
 
 function valueText(v: unknown): string {
   if (v === null || v === undefined) return "";
@@ -145,6 +147,7 @@ function Comment({
             <textarea
               autoFocus
               rows={2}
+              disabled={busy}
               value={replyDraft}
               onChange={(e) => onReplyDraft(e.target.value)}
               placeholder="Reply…"
@@ -157,7 +160,7 @@ function Comment({
               disabled={busy || !replyDraft.trim()}
               onClick={onSendReply}
             >
-              Send
+              {busy ? "Sending…" : "Send"}
             </Button>
           </div>
         )}
@@ -196,8 +199,7 @@ export default function CommentThread({
 
   const run = async (
     id: string,
-    fn: () => Promise<{ ok: boolean; error?: string }>,
-    after?: () => void
+    fn: () => Promise<{ ok: boolean; error?: string }>
   ) => {
     setErr(null);
     setBusyId(id);
@@ -207,7 +209,6 @@ export default function CommentThread({
         setErr(r.error ?? "Action failed");
         return;
       }
-      after?.();
       router.refresh();
     } catch (e) {
       // A thrown action used to surface as an unhandled rejection with no feedback at all.
@@ -215,6 +216,29 @@ export default function CommentThread({
     } finally {
       setBusyId(null);
     }
+  };
+
+  // The form stays open until the comment is on screen: the transition puts its close and the
+  // refreshed thread in one commit. Closing on the server's OK left "No comments yet" showing
+  // for seconds, which looks like a lost comment. A failed post leaves the text in the box.
+  const post = async (
+    id: string,
+    add: () => Promise<{ ok: boolean; error?: string }>,
+    clear: () => void
+  ) => {
+    setErr(null);
+    setBusyId(id);
+    const r = await withDeadline(add(), { ok: false, error: POST_FAILED });
+    if (r.ok === false) {
+      setErr(r.error ?? POST_FAILED);
+      setBusyId(null);
+      return;
+    }
+    startTransition(() => {
+      clear();
+      setBusyId(null);
+      router.refresh();
+    });
   };
 
   // Card-level thread only (proposal-anchored comments live under their proposal).
@@ -226,7 +250,7 @@ export default function CommentThread({
     : null;
 
   const submitTop = () =>
-    run(
+    post(
       COMPOSE,
       () =>
         addComment({
@@ -253,7 +277,7 @@ export default function CommentThread({
     onToggleReply: () => setReplyTo(replyTo === c.id ? null : c.id),
     onReplyDraft: (v: string) => setReplyDrafts((d) => ({ ...d, [c.id]: v })),
     onSendReply: () =>
-      run(c.id, () => addComment({ cardId, parentId: c.id, body: replyDrafts[c.id] ?? "" }), () => {
+      post(c.id, () => addComment({ cardId, parentId: c.id, body: replyDrafts[c.id] ?? "" }), () => {
         setReplyDrafts((d) => ({ ...d, [c.id]: "" }));
         setReplyTo(null);
       }),
@@ -331,7 +355,7 @@ export default function CommentThread({
       )}
 
       {composing ? (
-        <div className="space-y-2 rounded-md border p-2">
+        <fieldset disabled={busyId === COMPOSE} className="min-w-0 space-y-2 rounded-md border p-2">
           <textarea
             autoFocus
             value={body}
@@ -368,13 +392,13 @@ export default function CommentThread({
               disabled={busyId === COMPOSE || !body.trim()}
               onClick={submitTop}
             >
-              Post
+              {busyId === COMPOSE ? "Posting…" : "Post"}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setComposing(false)}>
               Cancel
             </Button>
           </div>
-        </div>
+        </fieldset>
       ) : (
         // Cancel keeps `body`, so an accidental collapse never loses what you typed —
         // the label says so when there is something to come back to.

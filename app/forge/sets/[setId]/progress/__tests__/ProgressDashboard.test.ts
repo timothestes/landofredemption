@@ -29,4 +29,18 @@ describe("ProgressDashboard", () => {
     expect(text).not.toContain("4 more Hero");
     expect(text).not.toContain("0/4");
   });
+
+  // New sets no longer ask for a total, so this is the normal state of a new set.
+  it("reads sensibly with no total, empty or not", () => {
+    const empty = render(computeProgress([], {}));
+    expect(empty).toContain("|0|");
+    expect(empty).toContain("cards in set");
+    const one = render(computeProgress([{ snapshot: { cardType: ["Hero"], brigades: ["Blue"] }, status: "draft" }], {}));
+    for (const text of [empty, one]) {
+      expect(text).not.toContain("/ 0");
+      expect(text).not.toContain("%");
+      expect(text).not.toContain("NaN");
+      expect(text).not.toContain("Infinity");
+    }
+  });
 });

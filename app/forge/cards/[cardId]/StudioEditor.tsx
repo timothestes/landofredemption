@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Download, ChevronLeft, ChevronRight, Loader2, Check, AlertTriangle, Eye, EyeOff } from "lucide-react";
@@ -20,6 +20,8 @@ import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import { walkHint, type WalkPosition } from "@/app/forge/lib/cardFilters";
 import { createCardSaver, incomingAction } from "@/app/forge/lib/cardSave";
+import { createOptimisticToggle, type ToggleState } from "@/app/forge/lib/optimisticToggle";
+import { withDeadline } from "@/app/forge/lib/withDeadline";
 import { STATUS_BADGE_CLASS } from "@/app/forge/lib/lifecycleCopy";
 import { versionPill, type StudioVersion } from "@/app/forge/lib/studioVersion";
 import type { ArtCandidate } from "@/app/forge/lib/artCandidates";
@@ -42,11 +44,13 @@ import ScriptureFields from "./ScriptureFields";
 
 // Prev/next arrows on the card face. From sm up they sit inside its edges; on a phone the
 // face is narrow enough to leave a gutter each side, so they sit there, off the small card.
+const PLACEHOLDER_FAILED = "Couldn’t save that. Check your connection and try again.";
+
 const arrowClass =
   "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground";
 
 export default function StudioEditor({
-  card, sets, currentUser, creator, setId, setName, prevId, nextId, walkQuery = "", gridHref, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, review,
+  card, sets, currentUser, creator, setId, setName, prevId, nextId, walkQuery = "", gridHref, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, canEdit = true, review,
 }: {
   card: ForgeCardFull;
   sets: ForgeSetSummary[];
@@ -70,6 +74,8 @@ export default function StudioEditor({
   // For the Restore dialog on a shelved card: where it will go back to.
   restoreTarget?: RestoreTarget | null;
   version?: StudioVersion | null;
+  // Whether this member can write to this card. Worked out in the page; the RPCs still decide.
+  canEdit?: boolean;
   // The review column (proposals / history / comments), rendered inside this component's
   // grid so the sticky card face keeps travelling alongside it. Built in the server
   // component, so it is an element, not a render prop — it cannot take callbacks.
@@ -95,6 +101,14 @@ export default function StudioEditor({
     latest,
     lastSaved,
     send: (patch) => saveCardFields(card.id, patch),
+  }));
+  const [placeholderTick, setPlaceholderTick] = useState<ToggleState>({ value: null, saving: false });
+  const [placeholderErr, setPlaceholderErr] = useState<string | null>(null);
+  const [placeholder] = useState(() => createOptimisticToggle({
+    save: (next) => withDeadline(setPlaceholder(card.id, next), { ok: false, error: PLACEHOLDER_FAILED }),
+    onState: setPlaceholderTick,
+    onSaved: () => router.refresh(),
+    onFailed: (error) => setPlaceholderErr(error ?? PLACEHOLDER_FAILED),
   }));
   const [pendingFinished, setPendingFinished] = useState<File | null>(null);
   const [uploading, setUploading] = useState<"finished" | null>(null);
@@ -136,6 +150,12 @@ export default function StudioEditor({
   }, [snapshot, card.id, saver, runSave]);
 
   useEffect(() => { savedRef.current = saved; }, [saved]);
+
+  // Once the server's value changes the tick follows it again, so another elder's change shows.
+  // Not during a save: a refresh from an earlier tap mustn't undo the tap just made.
+  useEffect(() => {
+    if (!placeholder.saving()) setPlaceholderTick((t) => (t.value === null ? t : { value: null, saving: false }));
+  }, [card.isPlaceholder, placeholder]);
 
   // `snapshot` is seeded from props once; router.refresh() re-renders WITHOUT remounting,
   // so every server-side write to working_snapshot — Apply suggestion, Accept proposal,
@@ -246,13 +266,20 @@ export default function StudioEditor({
         handleUploadUrl: "/forge/api/art/upload-token",
       });
       const r = await uploadFinished(card.id, blob.pathname);
-      if (r.ok === false) setErr(r.error ?? "Upload failed");
-      else router.refresh();
+      if (r.ok === false) {
+        setErr(r.error ?? "Upload failed");
+        setUploading(null);
+        return;
+      }
+      // "Uploading…" clears in one commit with the refreshed page, so it lasts until the new face.
+      startTransition(() => {
+        setUploading(null);
+        router.refresh();
+      });
     } catch (e) {
       // Previously uncaught: the spinner cleared (finally still ran) but nothing told
       // the user it failed — a silent no-op. Now it does.
       setErr(e instanceof Error ? e.message : "Upload failed");
-    } finally {
       setUploading(null);
     }
   }
@@ -370,8 +397,8 @@ export default function StudioEditor({
           </p>
           {versionBadge && <span className="inline-flex shrink-0 leading-4 lg:hidden">{versionBadge}</span>}
         </div>
-        <LifecycleControls card={card} draft={snapshot} flushPending={flushPending} releaseBase={releaseBase} restoreTarget={restoreTarget} sets={sets} openProposals={openProposals} />
-        {card.setId && (
+        <LifecycleControls card={card} draft={snapshot} flushPending={flushPending} releaseBase={releaseBase} restoreTarget={restoreTarget} sets={sets} openProposals={openProposals} canEdit={canEdit} />
+        {card.setId && canEdit && (
           <p className="text-xs text-muted-foreground">
             Releases are visible to Forge playtesters only — they don’t change the public card database.
           </p>
@@ -442,7 +469,7 @@ export default function StudioEditor({
             The presence focus handlers stay on the form only — typing a comment should not
             flag you as editing the card. */}
         <div className="min-w-0 space-y-6">
-          <div className="space-y-4" onFocusCapture={() => setEditing(true)} onBlurCapture={() => setEditing(false)}>
+          <fieldset disabled={!canEdit} className="min-w-0 space-y-4 disabled:opacity-70" onFocusCapture={() => setEditing(true)} onBlurCapture={() => setEditing(false)}>
             {err && <p className="text-sm text-destructive">{err}</p>}
 
             <input autoFocus={!card.title?.trim()} value={snapshot.name ?? ""} onChange={(e) => update({ name: e.target.value })}
@@ -461,8 +488,8 @@ export default function StudioEditor({
               <legend className="px-1 text-sm font-medium">Artwork (illustration)</legend>
               <ArtCandidatesPanel cardId={card.id} candidates={artCandidates} cardName={snapshot.name ?? null} />
               <label className="mt-3 flex items-start gap-2">
-                <Checkbox className="mt-0.5" checked={!!card.isPlaceholder}
-                  onCheckedChange={async () => { await setPlaceholder(card.id, !card.isPlaceholder); router.refresh(); }} />
+                <Checkbox className="mt-0.5" checked={placeholderTick.value ?? !!card.isPlaceholder} disabled={placeholderTick.saving}
+                  onCheckedChange={(next) => { setPlaceholderErr(null); void placeholder.set(next === true); }} />
                 <span>
                   <span className="font-medium">Temporary / placeholder art</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
@@ -470,6 +497,7 @@ export default function StudioEditor({
                   </span>
                 </span>
               </label>
+              {placeholderErr && <p role="status" className="mt-1 text-sm text-destructive">{placeholderErr}</p>}
               {card.hasArt && (
                 <a href={activeSourceId
                   ? `/forge/api/art/${card.id}?candidate=${activeSourceId}&download=1`
@@ -505,7 +533,7 @@ export default function StudioEditor({
                 </a>
               )}
             </fieldset>
-          </div>
+          </fieldset>
           <StudioSyncProvider value={syncValue}>
             <StudioDraftProvider value={snapshot}>{review}</StudioDraftProvider>
           </StudioSyncProvider>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, type CSSProperties } from "react";
+import { cn } from "@/lib/utils";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 import { washColumns, washBands } from "@/app/forge/lib/frameAssets";
 import { CANVAS, RECTS } from "@/app/forge/lib/frameGeometry";
@@ -46,13 +47,16 @@ export default function ForgeCardPreview({
   const B = RECTS.border, A = RECTS.art;
 
   return (
+    // The plate: the margin outside the frame's border. White in print, and the server render
+    // (CardSvg's rasters) still paints it white for copied and play images. On a dark page it
+    // follows the theme, or a grid of cards is a wall of the brightest things on screen.
     <div
-      className={className}
+      className={cn("bg-white dark:bg-card", className)}
       role="img"
       aria-label={card.name ? `Card preview: ${card.name}` : "Card preview"}
       style={{
         position: "relative", aspectRatio: `${CW} / ${CH}`, width: "100%",
-        overflow: "hidden", borderRadius: "3.73% / 2.67%", background: "#fff", color: INK,
+        overflow: "hidden", borderRadius: "3.73% / 2.67%", color: INK,
         fontFamily: FONTS.body, userSelect: "none",
       }}
     >

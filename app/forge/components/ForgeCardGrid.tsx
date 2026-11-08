@@ -69,12 +69,15 @@ export default function ForgeCardGrid({
                 </span>
               )}
               {propCount > 0 && (
+                // Solid, in every theme: it sits on the card face, not the page, so the tinted pill's
+                // theme-dependent text measured under 2.2:1 against what actually ended up behind it.
                 <span
-                  className="absolute bottom-1 right-1 z-10 flex items-center gap-0.5 rounded-full border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 shadow-sm backdrop-blur-sm dark:text-amber-400"
+                  className="absolute bottom-1 right-1 z-10 flex items-center gap-0.5 rounded-full border border-amber-600 bg-amber-400 px-1.5 py-0.5 text-[10px] font-semibold text-amber-950 shadow-sm"
                   title={`${propCount} open proposal${propCount === 1 ? "" : "s"}`}
                 >
-                  <GitPullRequest className="h-3 w-3" />
+                  <GitPullRequest className="h-3 w-3" aria-hidden="true" />
                   {propCount}
+                  <span className="sr-only"> open proposal{propCount === 1 ? "" : "s"}</span>
                 </span>
               )}
               {release && (
