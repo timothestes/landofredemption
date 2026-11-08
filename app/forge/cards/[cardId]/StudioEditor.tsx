@@ -146,7 +146,7 @@ export default function StudioEditor({
   // unload (close tab, reload) gets the browser's leave prompt instead.
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!sameSnapshot(latest.current, lastSaved.current) || savedRef.current === "saving") {
+      if (!saver.clean()) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -154,11 +154,7 @@ export default function StudioEditor({
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => {
       window.removeEventListener("beforeunload", onBeforeUnload);
-      // Never rejects. If it fails, this editor is gone and can't show it, so the one thing
-      // left to do for the edit is send it again when the connection returns.
-      void saver.flush().then((ok) => {
-        if (!ok) window.addEventListener("online", () => { void saver.flush(); }, { once: true });
-      });
+      saver.leave(window);
     };
   }, [card.id, saver]);
 
@@ -205,7 +201,7 @@ export default function StudioEditor({
   // instead of racing the 700ms debounce. See StudioSyncContext for why it must be context.
   const flushPending = useCallback(async () => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
-    if (!saver.busy() && sameSnapshot(latest.current, lastSaved.current)) return { ok: true };
+    if (saver.clean()) return { ok: true };
     return { ok: await runSave() };
   }, [saver, runSave]);
 
@@ -221,6 +217,7 @@ export default function StudioEditor({
     setSnapshot(incoming);
     setStale(false);
     setDirty(false);
+    setSaved((s) => (s === "error" ? "idle" : s));   // nothing of this session's is left to fail
   };
 
   async function onUpload(file: File, kind: "finished") {

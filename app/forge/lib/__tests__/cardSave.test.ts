@@ -1,6 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
-  createCardSaver, diffSnapshot, incomingAction, isEmptyPatch, type SnapshotPatch,
+  createCardSaver, diffSnapshot, incomingAction, isEmptyPatch,
+  LEAVE_GRACE_MS, RECONNECT_WINDOW_MS, SEND_DEADLINE_MS, type SnapshotPatch,
 } from "../cardSave";
 import { sameSnapshot } from "../cardDiff";
 import type { DesignCard } from "../designCard";
@@ -339,5 +340,245 @@ describe("createCardSaver sequencing", () => {
       await flushMicrotasks();
       expect(calls).toHaveLength(1);
     });
+  });
+});
+
+// Next's router can drop a server action for good: one dispatched during a navigation, when the
+// action before that navigation was discarded, hangs off a dead node and its promise never
+// settles. Those are the sends these tests leave unresolved.
+describe("createCardSaver with a request that never settles", () => {
+  afterEach(() => { vi.useRealTimers(); });
+
+  function rig(row: DesignCard = { name: "S0" }) {
+    vi.useFakeTimers();
+    const latest = { current: row };
+    const lastSaved = { current: row };
+    const d = deferredSend();
+    return { latest, lastSaved, ...d, saver: createCardSaver({ latest, lastSaved, send: d.send }) };
+  }
+
+  it("gives up at the deadline instead of saving forever", async () => {
+    const { saver, calls, latest, lastSaved } = rig();
+    latest.current = { name: "S1" };
+    const flight = saver.flush();
+    expect(saver.busy()).toBe(true);
+    await vi.advanceTimersByTimeAsync(SEND_DEADLINE_MS);
+    await expect(flight).resolves.toBe(false);
+    expect(saver.busy()).toBe(false);
+    expect(lastSaved.current).toEqual({ name: "S0" });
+    expect(calls).toHaveLength(1);
+  });
+
+  it("doesn't give up early on a slow request", async () => {
+    const { saver, calls, latest, lastSaved } = rig();
+    latest.current = { name: "S1" };
+    const flight = saver.flush();
+    await vi.advanceTimersByTimeAsync(SEND_DEADLINE_MS - 1);
+    calls[0].resolve({ ok: true });
+    await expect(flight).resolves.toBe(true);
+    expect(lastSaved.current).toEqual({ name: "S1" });
+  });
+
+  it("sends everything asked for during the wait once the deadline passes", async () => {
+    const { saver, calls, latest } = rig();
+    latest.current = { name: "S1" };
+    const flight = saver.flush();
+    latest.current = { name: "S1", rarity: "R" };
+    void saver.flush();
+    await vi.advanceTimersByTimeAsync(SEND_DEADLINE_MS);
+    expect(calls).toHaveLength(2);
+    expect(calls[1].patch).toEqual({ set: { name: "S1", rarity: "R" }, remove: [] });
+    calls[1].resolve({ ok: true });
+    await expect(flight).resolves.toBe(true);
+  });
+
+  it("ignores a late answer from an attempt it gave up on", async () => {
+    const { saver, calls, latest, lastSaved } = rig();
+    latest.current = { name: "S1" };
+    const flight = saver.flush();
+    await vi.advanceTimersByTimeAsync(SEND_DEADLINE_MS);
+    await flight;
+    calls[0].resolve({ ok: true });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(lastSaved.current).toEqual({ name: "S0" });
+  });
+
+  describe("leave", () => {
+    it("sends at once when nothing is in flight", () => {
+      const { saver, calls, latest } = rig();
+      latest.current = { name: "S1" };
+      saver.leave(new EventTarget());
+      expect(calls).toHaveLength(1);
+    });
+
+    it("does nothing when there is nothing to save", async () => {
+      const { saver, calls } = rig();
+      saver.leave(new EventTarget());
+      await vi.advanceTimersByTimeAsync(LEAVE_GRACE_MS * 2);
+      expect(calls).toHaveLength(0);
+      expect(saver.busy()).toBe(false);
+    });
+
+    it("sends past a request that never settles, well before the deadline", async () => {
+      const { saver, calls, latest } = rig();
+      latest.current = { name: "S1" };
+      void saver.flush();
+      saver.leave(new EventTarget());
+      await vi.advanceTimersByTimeAsync(LEAVE_GRACE_MS);
+      expect(calls).toHaveLength(2);
+      expect(calls[1].patch).toEqual({ set: { name: "S1" }, remove: [] });
+    });
+
+    it("waits for a request that does land, and then sends only what's left", async () => {
+      const { saver, calls, latest } = rig();
+      latest.current = { name: "S1" };
+      void saver.flush();
+      latest.current = { name: "S1", rarity: "R" };
+      saver.leave(new EventTarget());
+      calls[0].resolve({ ok: true });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(calls[1].patch).toEqual({ set: { rarity: "R" }, remove: [] });
+    });
+
+    it("doesn't abandon the follow-up save when the grace period ends", async () => {
+      const { saver, calls, latest, lastSaved } = rig();
+      latest.current = { name: "S1" };
+      void saver.flush();
+      latest.current = { name: "S1", rarity: "R" };
+      saver.leave(new EventTarget());
+      calls[0].resolve({ ok: true });
+      await vi.advanceTimersByTimeAsync(LEAVE_GRACE_MS);
+      expect(calls).toHaveLength(2);
+      calls[1].resolve({ ok: true });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(lastSaved.current).toEqual({ name: "S1", rarity: "R" });
+    });
+
+    it("tries once more when the send after leaving is dropped too", async () => {
+      const { saver, calls, latest } = rig();
+      latest.current = { name: "S1" };
+      saver.leave(new EventTarget());
+      await vi.advanceTimersByTimeAsync(SEND_DEADLINE_MS);
+      expect(calls).toHaveLength(2);
+    });
+
+    it("resends on reconnect after failing offline, once", async () => {
+      const { saver, calls, latest, lastSaved } = rig();
+      const events = new EventTarget();
+      latest.current = { name: "S1" };
+      saver.leave(events);
+      calls[0].reject(new TypeError("Failed to fetch"));
+      await vi.advanceTimersByTimeAsync(0);
+      calls[1].reject(new TypeError("Failed to fetch"));
+      await vi.advanceTimersByTimeAsync(0);
+
+      events.dispatchEvent(new Event("online"));
+      expect(calls).toHaveLength(3);
+      calls[2].resolve({ ok: true });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(lastSaved.current).toEqual({ name: "S1" });
+
+      events.dispatchEvent(new Event("online"));
+      expect(calls).toHaveLength(3);
+    });
+
+    it("stops listening after a while, so old text can't land over newer work hours later", async () => {
+      const { saver, calls, latest } = rig();
+      const events = new EventTarget();
+      latest.current = { name: "S1" };
+      saver.leave(events);
+      calls[0].reject(new TypeError("Failed to fetch"));
+      await vi.advanceTimersByTimeAsync(0);
+      calls[1].reject(new TypeError("Failed to fetch"));
+      await vi.advanceTimersByTimeAsync(RECONNECT_WINDOW_MS);
+      events.dispatchEvent(new Event("online"));
+      expect(calls).toHaveLength(2);
+    });
+  });
+});
+
+// A failed attempt may have landed, with only its response lost. lastSaved can't say so, so the
+// fields go out again rather than trusting a diff that says there's nothing to do.
+describe("createCardSaver after a failed attempt", () => {
+  function rig(row: DesignCard = { name: "S0", rarity: "R" }) {
+    const latest = { current: row };
+    const lastSaved = { current: row };
+    const d = deferredSend();
+    return { latest, lastSaved, ...d, saver: createCardSaver({ latest, lastSaved, send: d.send }) };
+  }
+  async function failOnce(r: ReturnType<typeof rig>, edit: DesignCard) {
+    r.latest.current = edit;
+    const flight = r.saver.flush();
+    r.calls[r.calls.length - 1].reject(new TypeError("Failed to fetch"));
+    await flight;
+  }
+
+  it("resends a field whose edit was undone, which the diff alone calls clean", async () => {
+    const r = rig();
+    await failOnce(r, { name: "Landed", rarity: "R" });
+    r.latest.current = { name: "S0", rarity: "R" };
+    expect(isEmptyPatch(diffSnapshot(r.lastSaved.current, r.latest.current))).toBe(true);
+    expect(r.saver.clean()).toBe(false);
+
+    const retry = r.saver.flush();
+    expect(r.calls[1].patch).toEqual({ set: { name: "S0" }, remove: [] });
+    r.calls[1].resolve({ ok: true });
+    await expect(retry).resolves.toBe(true);
+    expect(r.saver.clean()).toBe(true);
+  });
+
+  it("resends a key whose removal was undone, and a set that now needs removing", async () => {
+    const r = rig();
+    await failOnce(r, { name: "S0" });                          // removed rarity
+    r.latest.current = { name: "S0", rarity: "R" };             // put it back
+    void r.saver.flush();
+    expect(r.calls[1].patch).toEqual({ set: { rarity: "R" }, remove: [] });
+    r.calls[1].reject(new TypeError("Failed to fetch"));
+    await new Promise((res) => setTimeout(res, 0));
+
+    const s = rig({ name: "S0" });
+    await failOnce(s, { name: "S0", rarity: "New" });           // set rarity
+    s.latest.current = { name: "S0" };                          // cleared it again
+    void s.saver.flush();
+    expect(s.calls[1].patch).toEqual({ set: {}, remove: ["rarity"] });
+  });
+
+  it("doesn't list a removed key twice", async () => {
+    const r = rig();
+    await failOnce(r, { name: "S0" });
+    void r.saver.flush();
+    expect(r.calls[1].patch).toEqual({ set: {}, remove: ["rarity"] });
+  });
+
+  it("stops resending once a save is stored", async () => {
+    const r = rig();
+    await failOnce(r, { name: "Landed", rarity: "R" });
+    const retry = r.saver.flush();
+    r.calls[1].resolve({ ok: true });
+    await retry;
+    expect(r.saver.clean()).toBe(true);
+    await r.saver.flush();
+    expect(r.calls).toHaveLength(2);
+  });
+
+  it("forgets them when the session adopts a write from elsewhere", async () => {
+    const r = rig();
+    await failOnce(r, { name: "Landed", rarity: "R" });
+    const theirs: DesignCard = { name: "Theirs", rarity: "R" };
+    r.lastSaved.current = theirs;
+    r.latest.current = theirs;
+    expect(r.saver.clean()).toBe(true);
+    await r.saver.flush();
+    expect(r.calls).toHaveLength(1);
+  });
+
+  it("counts a save in flight as not clean", () => {
+    const r = rig();
+    expect(r.saver.clean()).toBe(true);
+    r.latest.current = { name: "S1" };
+    expect(r.saver.clean()).toBe(false);
+    void r.saver.flush();
+    r.latest.current = { name: "S0", rarity: "R" };   // undone, but the save is still out there
+    expect(r.saver.clean()).toBe(false);
   });
 });
