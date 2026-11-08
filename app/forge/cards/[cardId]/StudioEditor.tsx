@@ -154,9 +154,20 @@ export default function StudioEditor({
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => {
       window.removeEventListener("beforeunload", onBeforeUnload);
-      void saver.flush();
+      // Never rejects. If it fails, this editor is gone and can't show it, so the one thing
+      // left to do for the edit is send it again when the connection returns.
+      void saver.flush().then((ok) => {
+        if (!ok) window.addEventListener("online", () => { void saver.flush(); }, { once: true });
+      });
     };
   }, [card.id, saver]);
+
+  // A save that failed offline goes out by itself on reconnect, with no keystroke or Retry.
+  useEffect(() => {
+    const onOnline = () => { if (savedRef.current === "error") void runSave(); };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [runSave]);
 
   // Arrow keys step to the prev/next card in the set — but only when focus is
   // outside a field, so they still move the text cursor while editing.
