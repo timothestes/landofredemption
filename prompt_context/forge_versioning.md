@@ -179,6 +179,6 @@ pipeline + manual Lackey export).
 | Readers | `app/forge/lib/versions.ts` (listVersions / listCardEvents / listSetActivity) |
 | Studio version pill | `app/forge/lib/studioVersion.ts`; `sameCardContent` in `app/forge/lib/cardDiff.ts`, `artChangedSince` in `app/forge/lib/versions.ts` |
 | Server actions | `app/forge/lib/proposals.ts`, `lifecycle.ts` |
-| RPCs (current bodies) | migrations `128` (**current `forge_accept_proposal`**), `127` (**current `forge_publish_card`**, `forge_archive_card` and `forge_unarchive_card`; also new `forge_deny_proposal_restore_draft`), `083` (publish resolves open proposals), `072` (publish note + audit events + undeletable reasons), `075` (draft versions, unified base/guard, sweep exclusions) |
+| RPCs (current bodies) | migrations `128` (**current `forge_accept_proposal`**; also the working-art writers, which now refuse a promoted card), `127` (**current `forge_publish_card`**, `forge_archive_card` and `forge_unarchive_card`; also new `forge_deny_proposal_restore_draft`), `083` (publish resolves open proposals), `072` (publish note + audit events + undeletable reasons), `075` (draft versions, unified base/guard, sweep exclusions) |
 | Enum + backfill | `074` (`version_status` gains 'draft'), `076` (backfilled the one 073-era lost accept) |
 | Design history | `docs/superpowers/specs/2026-07-06-forge-version-history-design.md` (incl. addendum) |

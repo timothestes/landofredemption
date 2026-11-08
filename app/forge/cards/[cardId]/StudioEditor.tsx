@@ -467,7 +467,11 @@ export default function StudioEditor({
               <ArtCandidatesPanel cardId={card.id} candidates={artCandidates} cardName={snapshot.name ?? null} />
               <label className="mt-3 flex items-start gap-2">
                 <Checkbox className="mt-0.5" checked={!!card.isPlaceholder}
-                  onCheckedChange={async () => { await setPlaceholder(card.id, !card.isPlaceholder); router.refresh(); }} />
+                  onCheckedChange={async () => {
+                    const r = await setPlaceholder(card.id, !card.isPlaceholder);
+                    if (r.ok === false) setErr(r.error ?? "Could not update placeholder");
+                    router.refresh();
+                  }} />
                 <span>
                   <span className="font-medium">Temporary / placeholder art</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">

@@ -12,7 +12,7 @@ vi.mock("@/app/forge/lib/art", () => ({
 
 import { requireForge, requireElder } from "@/app/forge/lib/auth";
 import { validateArtFile, uploadForgeArt, uploadForgeFinished, readForgeUpload, deleteForgeArt } from "@/app/forge/lib/art";
-import { saveCardFields, getCard, listForgeCards, uploadArt, uploadFinished } from "../cards";
+import { saveCardFields, getCard, listForgeCards, setPlaceholder, uploadArt, uploadFinished } from "../cards";
 
 function ctx(rpcImpl?: any, queryRows?: any[]) {
   const order = vi.fn(async () => ({ data: queryRows ?? [], error: null }));
@@ -177,6 +177,33 @@ describe("uploadFinished", () => {
     const r = await uploadFinished("c1", "forge-art-raw/gone.png");
     expect(r).toEqual({ ok: false, error: "Could not read uploaded image" });
     expect(uploadForgeFinished).not.toHaveBeenCalled();
+  });
+});
+
+describe("a promoted card refuses art writes", () => {
+  const readOnly = async () => ({ data: null, error: { message: "a promoted card is read-only" } });
+
+  it("uploadFinished says so instead of a general failure", async () => {
+    (requireElder as any).mockResolvedValue(ctx(readOnly));
+    (readForgeUpload as any).mockResolvedValue({ data: Buffer.from([1, 2, 3]), contentType: "image/png" });
+    (validateArtFile as any).mockReturnValue(null);
+    (uploadForgeFinished as any).mockResolvedValue("forge-finished/abc");
+    expect(await uploadFinished("c1", "forge-art-raw/x.png")).toEqual({ ok: false, error: "A promoted card is read-only." });
+  });
+
+  it("setPlaceholder says so instead of a general failure", async () => {
+    (requireElder as any).mockResolvedValue(ctx(readOnly));
+    expect(await setPlaceholder("c1", true)).toEqual({ ok: false, error: "A promoted card is read-only." });
+  });
+
+  it("keeps any other refusal general", async () => {
+    const other = async () => ({ data: null, error: { message: "not authorized to edit this card" } });
+    (requireElder as any).mockResolvedValue(ctx(other));
+    expect(await setPlaceholder("c1", true)).toEqual({ ok: false, error: "Could not update placeholder" });
+    (readForgeUpload as any).mockResolvedValue({ data: Buffer.from([1, 2, 3]), contentType: "image/png" });
+    (validateArtFile as any).mockReturnValue(null);
+    (uploadForgeFinished as any).mockResolvedValue("forge-finished/abc");
+    expect(await uploadFinished("c1", "forge-art-raw/x.png")).toEqual({ ok: false, error: "Could not save finished card" });
   });
 });
 

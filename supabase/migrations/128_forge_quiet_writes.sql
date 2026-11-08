@@ -3,7 +3,9 @@
 -- the grants and no call can become ambiguous, and each new refusal is a raised error, which the
 -- deployed client already reports as a failed action.
 -- Bodies were taken from the migrations that last defined them and match production by md5 of
--- prosrc: forge_accept_proposal 075.
+-- prosrc: forge_accept_proposal 075, forge_set_working_finished 061, forge_set_working_art and
+-- forge_set_art_placeholder 052, forge_add_art_candidate and forge_delete_art_candidate 082,
+-- forge_set_art_candidate_source 101.
 
 -- Accept skipped the name-and-type gate. forge_publish_card (127) refuses to release a card with
 -- no name or type, but accepting on an In playtest card mints a 'published' version too, so a
@@ -103,4 +105,164 @@ begin
      set status = 'superseded', closed_at = now(), closed_by = auth.uid()
    where card_id = v_card.id and status = 'open' and id <> p_proposal_id;
   return v_version_id;
+end; $$;
+
+-- A promoted card is read-only, but the working-art writers never said so. forge_save_card and
+-- forge_save_card_fields refuse one, and a promoted card still took a new finished image, new art,
+-- the placeholder flag and candidate changes. Same check, same text, after the authorization check.
+-- Each body is the latest verbatim plus that check. The readers forge_art_key and
+-- forge_candidate_art_key write nothing, so they stay as they are.
+--
+-- Nothing in promote's flow writes through these on a promoted card:
+--   * forge_promote_set (092) copies the approved version into the manifest and flips the status.
+--   * The image step reads finished_key from that frozen version, and forge_mark_release_image_uploaded
+--     and forge_set_release_image_transform write manifest rows only.
+--   * applyRenameFix (promote.ts) runs before promotion, on an approved card.
+--   * forge_abort_release puts the card back to approved, so its art can change again.
+-- The upload that this refuses never reached players either: a release reads the frozen version.
+create or replace function public.forge_set_working_finished(
+  p_card_id uuid, p_key text
+) returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if not exists (
+    select 1 from public.forge_cards c
+    where c.id = p_card_id
+      and (c.owner_id = auth.uid()
+           or public.is_forge_superadmin()
+           or (c.set_id is not null and public.is_forge_set_elder(c.set_id)))
+  ) then
+    raise exception 'not authorized to edit this card';
+  end if;
+  if exists (select 1 from public.forge_cards c where c.id = p_card_id and c.status = 'promoted') then
+    raise exception 'a promoted card is read-only';
+  end if;
+  update public.forge_cards
+     set working_finished_key = p_key, updated_at = now()
+   where id = p_card_id;
+end; $$;
+
+create or replace function public.forge_set_working_art(
+  p_card_id uuid, p_key text, p_original_key text
+) returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if not exists (
+    select 1 from public.forge_cards c
+    where c.id = p_card_id
+      and (c.owner_id = auth.uid()
+           or public.is_forge_superadmin()
+           or (c.set_id is not null and public.is_forge_set_elder(c.set_id)))
+  ) then
+    raise exception 'not authorized to edit this card';
+  end if;
+  if exists (select 1 from public.forge_cards c where c.id = p_card_id and c.status = 'promoted') then
+    raise exception 'a promoted card is read-only';
+  end if;
+  update public.forge_cards
+     set working_art_key = p_key, working_art_original_key = p_original_key,
+         working_art_is_placeholder = false, updated_at = now()
+   where id = p_card_id;
+end; $$;
+
+create or replace function public.forge_set_art_placeholder(
+  p_card_id uuid, p_is_placeholder boolean
+) returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if not exists (
+    select 1 from public.forge_cards c
+    where c.id = p_card_id
+      and (c.owner_id = auth.uid()
+           or public.is_forge_superadmin()
+           or (c.set_id is not null and public.is_forge_set_elder(c.set_id)))
+  ) then
+    raise exception 'not authorized to edit this card';
+  end if;
+  if exists (select 1 from public.forge_cards c where c.id = p_card_id and c.status = 'promoted') then
+    raise exception 'a promoted card is read-only';
+  end if;
+  update public.forge_cards
+     set working_art_is_placeholder = coalesce(p_is_placeholder, false), updated_at = now()
+   where id = p_card_id;
+end; $$;
+
+create or replace function public.forge_add_art_candidate(p_card_id uuid, p_key text)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare v_id uuid;
+begin
+  -- Serialize concurrent adds per card so the count-then-insert cap can't race.
+  perform pg_advisory_xact_lock(hashtext(p_card_id::text));
+  if not exists (
+    select 1 from public.forge_cards c
+    where c.id = p_card_id
+      and (c.owner_id = auth.uid()
+           or public.is_forge_superadmin()
+           or (c.set_id is not null and public.is_forge_set_elder(c.set_id)))
+  ) then
+    raise exception 'not authorized to edit this card';
+  end if;
+  if exists (select 1 from public.forge_cards c where c.id = p_card_id and c.status = 'promoted') then
+    raise exception 'a promoted card is read-only';
+  end if;
+  if (select count(*) from public.forge_card_art_candidates a where a.card_id = p_card_id) >= 12 then
+    raise exception 'candidate limit reached (12)';
+  end if;
+  insert into public.forge_card_art_candidates (card_id, key)
+  values (p_card_id, p_key)
+  returning id into v_id;
+  return v_id;
+end; $$;
+
+create or replace function public.forge_delete_art_candidate(p_candidate_id uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+declare v_card_id uuid; v_key text;
+begin
+  select a.card_id, a.key into v_card_id, v_key
+    from public.forge_card_art_candidates a where a.id = p_candidate_id;
+  if v_card_id is null then
+    raise exception 'no such candidate';
+  end if;
+  if not exists (
+    select 1 from public.forge_cards c
+    where c.id = v_card_id
+      and (c.owner_id = auth.uid()
+           or public.is_forge_superadmin()
+           or (c.set_id is not null and public.is_forge_set_elder(c.set_id)))
+  ) then
+    raise exception 'not authorized to edit this card';
+  end if;
+  if exists (select 1 from public.forge_cards c where c.id = v_card_id and c.status = 'promoted') then
+    raise exception 'a promoted card is read-only';
+  end if;
+  if exists (
+    select 1 from public.forge_cards c
+    where c.id = v_card_id and c.working_art_original_key = v_key
+  ) then
+    raise exception 'candidate is the source of the current artwork';
+  end if;
+  delete from public.forge_card_art_candidates where id = p_candidate_id;
+end; $$;
+
+create or replace function public.forge_set_art_candidate_source(p_candidate_id uuid, p_source_url text)
+returns void language plpgsql security definer set search_path = '' as $$
+declare v_card_id uuid;
+begin
+  select a.card_id into v_card_id
+    from public.forge_card_art_candidates a where a.id = p_candidate_id;
+  if v_card_id is null then
+    raise exception 'no such candidate';
+  end if;
+  if not exists (
+    select 1 from public.forge_cards c
+    where c.id = v_card_id
+      and (c.owner_id = auth.uid()
+           or public.is_forge_superadmin()
+           or (c.set_id is not null and public.is_forge_set_elder(c.set_id)))
+  ) then
+    raise exception 'not authorized to edit this card';
+  end if;
+  if exists (select 1 from public.forge_cards c where c.id = v_card_id and c.status = 'promoted') then
+    raise exception 'a promoted card is read-only';
+  end if;
+  update public.forge_card_art_candidates
+    set source_url = nullif(trim(p_source_url), '')
+    where id = p_candidate_id;
 end; $$;

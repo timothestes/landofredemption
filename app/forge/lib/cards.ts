@@ -6,6 +6,12 @@ import { validateArtFile, uploadForgeArt, uploadForgeFinished, readForgeUpload, 
 import type { DesignCard } from "@/app/forge/lib/designCard";
 import type { SnapshotPatch } from "@/app/forge/lib/cardSave";
 
+// The database refuses art writes on a promoted card (migration 128). That's worth saying as it
+// is, and anything else stays general.
+function artWriteError(error: { message: string }, general: string): string {
+  return error.message.includes("a promoted card is read-only") ? "A promoted card is read-only." : general;
+}
+
 export async function createCard(
   title: string
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
@@ -97,7 +103,7 @@ export async function uploadFinished(
     p_card_id: cardId,
     p_key: key,
   });
-  if (error) return { ok: false, error: "Could not save finished card" };
+  if (error) return { ok: false, error: artWriteError(error, "Could not save finished card") };
   revalidatePath("/forge/ideas");
   return { ok: true };
 }
@@ -112,7 +118,7 @@ export async function setPlaceholder(
     p_card_id: cardId,
     p_is_placeholder: isPlaceholder,
   });
-  if (error) return { ok: false, error: "Could not update placeholder" };
+  if (error) return { ok: false, error: artWriteError(error, "Could not update placeholder") };
   revalidatePath("/forge/ideas");
   return { ok: true };
 }
