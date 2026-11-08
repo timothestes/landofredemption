@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  parseCarddata, matchesFilter, distinctSets, findImageEntry, lackeyRowToDesignCard,
+  parseCarddata, findImageEntry, lackeyRowToDesignCard,
 } from "@/app/forge/lib/lackey";
 
 const HEADER =
@@ -40,36 +40,6 @@ describe("parseCarddata", () => {
   });
   it("throws when required columns are missing", () => {
     expect(() => parseCarddata("Foo\tBar\nx\ty")).toThrow(/missing/i);
-  });
-});
-
-describe("matchesFilter", () => {
-  const r = parseCarddata([HEADER, row()].join("\n"))[0];
-  it("matches Set exactly, case-insensitively", () => {
-    expect(matchesFilter(r, "tst")).toBe(true);
-    expect(matchesFilter(r, "TS")).toBe(false);
-  });
-  it("matches OfficialSet exactly", () => {
-    expect(matchesFilter(r, "test set")).toBe(true);
-  });
-  it("supports /regex/ against Set and OfficialSet", () => {
-    expect(matchesFilter(r, "/^ts/")).toBe(true);
-    expect(matchesFilter(r, "/^zz/")).toBe(false);
-  });
-  it("invalid regex and empty filter match nothing", () => {
-    expect(matchesFilter(r, "/[/")).toBe(false);
-    expect(matchesFilter(r, "  ")).toBe(false);
-  });
-});
-
-describe("distinctSets", () => {
-  it("counts by Set column, sorted by count desc then name", () => {
-    const rows = parseCarddata([
-      HEADER, row({ Name: "A" }), row({ Name: "B" }), row({ Name: "C", Set: "ZZZ" }),
-    ].join("\n"));
-    expect(distinctSets(rows)).toEqual([
-      { set: "TST", count: 2 }, { set: "ZZZ", count: 1 },
-    ]);
   });
 });
 

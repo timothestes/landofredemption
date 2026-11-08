@@ -41,8 +41,8 @@ test.describe("forge uiux pass", () => {
       await page.getByLabel("Lackey zip file").setInputFiles({
         name: "Test Plugin V1.zip", mimeType: "application/zip", buffer: buildFixtureZip(),
       });
-      await page.getByLabel("Set filter").fill("TST");
-      await expect(page.getByText("3 cards match")).toBeVisible();
+      await page.getByRole("checkbox", { name: /TST/ }).check();
+      await expect(page.getByText("3 cards selected")).toBeVisible();
       const setName = `E2E UIUX ${Date.now()}`;
       await page.getByRole("button", { name: "Import 3 cards" }).click();
       await page.getByLabel("New set name").fill(setName);
