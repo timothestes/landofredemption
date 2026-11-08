@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { unzipSync } from "fflate";
 import {
   parseCsv, parseXlsx, detectColumns, tableToCards, findLooseImageEntry, isImageEntry,
-  imageFileStem, imageEntryStem,
+  imageFileStem, imageEntryStem, notImportedNote,
   MAPPABLE_FIELDS, type ColumnMapping, type MappableField, type SheetTable,
 } from "@/app/forge/lib/spreadsheet";
 import FilePicker from "@/app/forge/components/FilePicker";
@@ -21,7 +21,7 @@ const FIELD_LABELS: Record<MappableField, string> = {
   strength: "Strength", toughness: "Toughness", class: "Class",
   identifier: "Identifiers", specialAbility: "Special ability", rarity: "Rarity",
   reference: "Reference", book: "Book", chapter: "Chapter", verse: "Verse",
-  alignment: "Alignment", legality: "Legality", artist: "Artist",
+  scripture: "Scripture text", alignment: "Alignment", legality: "Legality", artist: "Artist",
 };
 
 interface ImagesZip {
@@ -197,7 +197,9 @@ export default function SpreadsheetSourcePanel({
     return zip.entryNames.filter((n) => isImageEntry(n) && !used.has(n)).length;
   }, [zip, selection]);
   const warned = (table?.cards ?? []).filter((c) => c.warnings.length > 0);
-  const ignoredHeaders = detected.ignored.map((i) => header[i]).filter((h) => h?.trim());
+  // Re-pointing a field at an unrecognized column imports it, so it stops being "not imported".
+  const mappedColumns = new Set(Object.values(mapping));
+  const ignoredHeaders = detected.ignored.filter((i) => !mappedColumns.has(i)).map((i) => header[i]).filter((h) => h?.trim());
 
   // Mis-mapping tripwires — a wrong-but-complete auto-detection produces a plausible
   // preview and a "successful" import, so make the suspicious cases loud instead.
@@ -322,7 +324,7 @@ export default function SpreadsheetSourcePanel({
           ))}
           {ignoredHeaders.length > 0 && (
             <p className="mb-2 text-xs text-muted-foreground">
-              Not imported: {ignoredHeaders.map((h) => `“${h}”`).join(", ")} — adjust the mapping below if one of these should be.
+              {notImportedNote(ignoredHeaders)}
             </p>
           )}
 

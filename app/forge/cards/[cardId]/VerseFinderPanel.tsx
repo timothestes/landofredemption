@@ -18,6 +18,7 @@ import {
   snapHandle,
   wholeRange,
   trimToFit,
+  verseOverCopy,
   type Verse,
   type Handles,
 } from "@/app/forge/lib/verseExcerpt";
@@ -753,12 +754,12 @@ function Readout({ lines, over, onTrim }: { lines: string[]; over: number; onTri
         ))}
       </div>
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-        <span className="tabular-nums">
+        <span className="whitespace-nowrap tabular-nums">
           {lines.length} {lines.length === 1 ? "line" : "lines"}
         </span>
         {over > 0 && (
           <>
-            <span className="tabular-nums">ability runs {over} over</span>
+            <span className="tabular-nums">{verseOverCopy(over)}</span>
             <Button type="button" variant="secondary" size="sm" onClick={onTrim}>
               Trim to fit
             </Button>

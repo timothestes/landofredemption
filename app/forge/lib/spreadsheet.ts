@@ -171,7 +171,7 @@ export function parseXlsx(bytes: Uint8Array): SheetTable[] {
 export const MAPPABLE_FIELDS = [
   "name", "image", "type", "brigade", "strength", "toughness", "class",
   "identifier", "specialAbility", "rarity", "reference", "book", "chapter",
-  "verse", "alignment", "legality", "artist",
+  "verse", "scripture", "alignment", "legality", "artist",
 ] as const;
 export type MappableField = (typeof MAPPABLE_FIELDS)[number];
 export type ColumnMapping = Partial<Record<MappableField, number>>;
@@ -188,6 +188,7 @@ const HEADER_ALIASES: Record<string, MappableField> = {
   rarity: "rarity",
   reference: "reference", scripturereference: "reference",
   book: "book", chapter: "chapter", verse: "verse",
+  scripture: "scripture", scripturetext: "scripture", versetext: "scripture",
   alignment: "alignment", legality: "legality",
   artist: "artist", artistcredit: "artist",
   brigadecolor: "brigade", brigadecolour: "brigade",
@@ -231,6 +232,15 @@ export function detectColumns(header: string[]): {
     else duplicates.push({ field, index: i }); // second column of a field: dropped, but said out loud
   });
   return { mapping, ignored, duplicates };
+}
+
+/** The wizard's line about columns nothing reads. These are just names no field goes by, and
+ *  many have no field at all (designer notes), so it says what a sheet can fill rather than
+ *  suggesting a target exists. Pure. */
+export function notImportedNote(headers: string[]): string {
+  return `Not imported: ${headers.map((h) => `“${h}”`).join(", ")}. `
+    + `No card field goes by ${headers.length === 1 ? "that name" : "those names"}. `
+    + `Column mapping below lists every field a sheet can fill.`;
 }
 
 // ---------------------------------------------------------------------------
@@ -301,6 +311,8 @@ export function tableToCards(rows: string[][], mapping: ColumnMapping): {
     const snapshot = lackeyRowToDesignCard(lackeyRow);
     const artist = get("artist");
     if (artist) snapshot.artistCredit = artist;
+    const scripture = get("scripture");
+    if (scripture) snapshot.scripture = scripture;
 
     cards.push({
       name, imageFile: get("image"), snapshot,

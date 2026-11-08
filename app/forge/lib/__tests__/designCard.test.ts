@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   cardApplicability, isStatBearing, validate, BRIGADES, cardRawText, deriveAlignmentFromTypes,
-  multiBrigadeSide, toggleMultiBrigade, brigadeLabels, printedName,
+  multiBrigadeSide, toggleMultiBrigade, brigadeLabels, printedName, brigadeSides, toggleCardType,
+  type DesignCard,
 } from "../designCard";
 
 const ALL_GOOD = ["Blue", "Clay", "GoodGold", "Green", "Purple", "Red", "Silver", "Teal", "White"] as const;
@@ -34,6 +35,120 @@ describe("Multi brigade", () => {
     expect(brigadeLabels([...ALL_GOOD])).toEqual(["Good Multi"]);
     expect(brigadeLabels(["Brown", ...ALL_GOOD])).toEqual(["Good Multi", "Brown"]);
     expect(brigadeLabels(["Crimson", "EvilGold", "Gray"])).toEqual(["Crimson", "EvilGold", "Gray"]);
+  });
+});
+
+describe("brigadeSides", () => {
+  const BOTH = ["Good", "Evil"];
+
+  it("offers a good type good brigades and an evil type evil ones", () => {
+    expect(brigadeSides({ cardType: ["Hero"] })).toEqual(["Good"]);
+    expect(brigadeSides({ cardType: ["GE"] })).toEqual(["Good"]);
+    expect(brigadeSides({ cardType: ["Hero", "GE"] })).toEqual(["Good"]);
+    expect(brigadeSides({ cardType: ["EvilCharacter"] })).toEqual(["Evil"]);
+    expect(brigadeSides({ cardType: ["EE"] })).toEqual(["Evil"]);
+    expect(brigadeSides({ cardType: ["EvilCharacter", "EE"] })).toEqual(["Evil"]);
+  });
+
+  it("offers both on a card with a good and an evil type, whatever its alignment says", () => {
+    expect(brigadeSides({ cardType: ["Hero", "EvilCharacter"], alignment: "Good_Evil" })).toEqual(BOTH);
+    expect(brigadeSides({ cardType: ["GE", "EE"], alignment: "Good_Evil" })).toEqual(BOTH);
+    expect(brigadeSides({ cardType: ["GE", "EvilCharacter"] })).toEqual(BOTH);
+    // The catalog files GE/EE as Neutral.
+    expect(brigadeSides({ cardType: ["GE", "EE"], alignment: "Neutral" })).toEqual(BOTH);
+    expect(brigadeSides({ cardType: ["GE", "EE"], alignment: "Good" })).toEqual(BOTH);
+  });
+
+  it("offers both once the alignment says Good/Evil, as a dual Dominant or a convertible character does", () => {
+    expect(brigadeSides({ cardType: ["Dominant"], alignment: "Good_Evil" })).toEqual(BOTH);
+    // Printed Evil Characters with a Hero side (filed "Gray (Red)") are two-box cards.
+    expect(brigadeSides({ cardType: ["EvilCharacter"], alignment: "Good_Evil" })).toEqual(BOTH);
+    expect(brigadeSides({ cardType: ["Hero"], alignment: "Good_Evil" })).toEqual(BOTH);
+  });
+
+  it("offers both when the type says nothing about alignment, or there is no type yet", () => {
+    expect(brigadeSides({})).toEqual(BOTH);
+    expect(brigadeSides({ cardType: [] })).toEqual(BOTH);
+    for (const t of ["LostSoul", "Artifact", "Dominant", "Fortress", "Site", "City", "Curse", "Covenant"] as const) {
+      expect(brigadeSides({ cardType: [t] })).toEqual(BOTH);
+    }
+  });
+
+  it("lets a good or evil type decide beside a type that says nothing", () => {
+    expect(brigadeSides({ cardType: ["Hero", "Fortress"] })).toEqual(["Good"]);
+    expect(brigadeSides({ cardType: ["EvilCharacter", "Fortress"] })).toEqual(["Evil"]);
+  });
+
+  it("lets the types decide over a single alignment", () => {
+    expect(brigadeSides({ cardType: ["Hero"], alignment: "Evil" })).toEqual(["Good"]);
+    expect(brigadeSides({ cardType: ["Hero"], alignment: "Neutral" })).toEqual(["Good"]);
+  });
+});
+
+describe("toggleCardType", () => {
+  it("adds and removes the type, filling in the alignment", () => {
+    expect(toggleCardType({}, "Hero")).toEqual({ cardType: ["Hero"], alignment: "Good" });
+    expect(toggleCardType({ cardType: ["Hero"], alignment: "Good" }, "EvilCharacter"))
+      .toEqual({ cardType: ["Hero", "EvilCharacter"], alignment: "Good_Evil" });
+    expect(toggleCardType({ cardType: ["Hero"], alignment: "Good" }, "Hero")).toEqual({ cardType: [] });
+  });
+
+  it("does not clobber an alignment picked by hand", () => {
+    expect(toggleCardType({ cardType: ["Dominant"], alignment: "Evil" }, "Hero")).toEqual({ cardType: ["Dominant", "Hero"] });
+    expect(toggleCardType({ cardType: ["GE", "EE"], alignment: "Neutral" }, "Hero")).toEqual({ cardType: ["GE", "EE", "Hero"] });
+  });
+
+  it("clears the evil brigade when the evil type goes", () => {
+    const card: DesignCard = { cardType: ["GE", "EE"], alignment: "Good_Evil", brigades: ["Purple", "Crimson"] };
+    expect(toggleCardType(card, "EE")).toEqual({ cardType: ["GE"], alignment: "Good", brigades: ["Purple"] });
+  });
+
+  it("clears the good brigade when the good type goes", () => {
+    const card: DesignCard = { cardType: ["Hero", "EvilCharacter"], alignment: "Good_Evil", brigades: ["Silver", "Crimson"] };
+    expect(toggleCardType(card, "Hero")).toEqual({ cardType: ["EvilCharacter"], alignment: "Evil", brigades: ["Crimson"] });
+  });
+
+  it("clears it from a GE/EE card filed as Neutral too, leaving the alignment", () => {
+    const card: DesignCard = { cardType: ["GE", "EE"], alignment: "Neutral", brigades: ["Purple", "Crimson"] };
+    expect(toggleCardType(card, "EE")).toEqual({ cardType: ["GE"], brigades: ["Purple"] });
+  });
+
+  it("clears what no longer fits when a type is first chosen", () => {
+    const card: DesignCard = { brigades: ["Silver", "Crimson"] };
+    expect(toggleCardType(card, "Hero")).toEqual({ cardType: ["Hero"], alignment: "Good", brigades: ["Silver"] });
+  });
+
+  it("leaves brigades alone when the type no longer says anything", () => {
+    const card: DesignCard = { cardType: ["Hero"], alignment: "Good", brigades: ["Silver"] };
+    expect(toggleCardType(card, "Hero")).toEqual({ cardType: [] });
+  });
+
+  it("leaves brigades alone when adding the second alignment's type", () => {
+    const card: DesignCard = { cardType: ["Hero"], alignment: "Good", brigades: ["Silver"] };
+    expect(toggleCardType(card, "EvilCharacter")).toEqual({ cardType: ["Hero", "EvilCharacter"], alignment: "Good_Evil" });
+  });
+
+  it("keeps same-alignment brigades together", () => {
+    const card: DesignCard = { cardType: ["Hero"], alignment: "Good", brigades: ["Silver", "Blue"] };
+    expect(toggleCardType(card, "GE")).toEqual({ cardType: ["Hero", "GE"], alignment: "Good" });
+  });
+
+  it("keeps both sides on a card set to Good/Evil by hand", () => {
+    const card: DesignCard = { cardType: ["EvilCharacter"], alignment: "Good_Evil", brigades: ["Gray", "Red"] };
+    expect(toggleCardType(card, "Fortress")).toEqual({ cardType: ["EvilCharacter", "Fortress"] });
+  });
+
+  it("keeps a Multi card's set when its side still fits, and clears it when it does not", () => {
+    const multi: DesignCard = { cardType: ["Hero", "EvilCharacter"], alignment: "Good_Evil", brigades: [...ALL_GOOD, "Crimson"] };
+    expect(toggleCardType(multi, "EvilCharacter").brigades).toEqual([...ALL_GOOD]);
+    expect(toggleCardType(multi, "Hero").brigades).toEqual(["Crimson"]);
+  });
+
+  it("does not touch the per-side class icon choices", () => {
+    const card: DesignCard = { cardType: ["GE", "EE"], alignment: "Good_Evil", brigades: ["Green", "Gray"], class: ["Warrior"], warriorSide: "evil", territorySide: "both" };
+    const patch = toggleCardType(card, "EE");
+    expect(patch).not.toHaveProperty("warriorSide");
+    expect(patch).not.toHaveProperty("territorySide");
   });
 });
 

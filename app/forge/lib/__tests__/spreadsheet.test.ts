@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { zipSync, strToU8 } from "fflate";
 import {
-  parseCsv, parseXlsx, detectColumns, tableToCards, findLooseImageEntry,
-  type ColumnMapping,
+  parseCsv, parseXlsx, detectColumns, tableToCards, findLooseImageEntry, notImportedNote,
+  MAPPABLE_FIELDS, type ColumnMapping,
 } from "@/app/forge/lib/spreadsheet";
 import { auditLackeyRow, type LackeyRow } from "@/app/forge/lib/lackey";
 
@@ -192,6 +192,18 @@ describe("detectColumns", () => {
     expect(ignored).toEqual([]);
   });
 
+  it("maps a Scripture column to the verse text, apart from the reference and the verse number", () => {
+    const { mapping, ignored } = detectColumns(["Name", "Reference", "Verse", "Scripture"]);
+    expect(mapping.reference).toBe(1);
+    expect(mapping.verse).toBe(2);
+    expect(mapping.scripture).toBe(3);
+    expect(ignored).toEqual([]);
+    expect(MAPPABLE_FIELDS).toContain("scripture");
+    expect(detectColumns(["Name", "Scripture Text"]).mapping.scripture).toBe(1);
+    expect(detectColumns(["Name", "Verse Text"]).mapping.scripture).toBe(1);
+    expect(detectColumns(["Name", "Scripture Reference"]).mapping.reference).toBe(1);
+  });
+
   it("reports unrecognized headers as ignored column indexes", () => {
     const { mapping, ignored } = detectColumns(["Name", "Flavor Text", ""]);
     expect(mapping.name).toBe(0);
@@ -287,6 +299,20 @@ describe("tableToCards", () => {
     expect(mk("", "1", "2")).toBeUndefined();
     // xlsx numeric cells arrive as "19.0" — cleaned to integers
     expect(mk("Revelation", "19.0", "15.0")).toBe("Revelation 19:15");
+  });
+
+  it("carries a Scripture column onto the card, without touching the reference", () => {
+    const header = ["Name", "Reference", "Scripture"];
+    const { mapping } = detectColumns(header);
+    const { cards } = tableToCards([
+      header,
+      ["With Verse", "John 3:16", "  For God so loved the world. "],
+      ["Dash Verse", "John 3:17", "-"],
+    ], mapping);
+    expect(cards[0].snapshot.scripture).toBe("For God so loved the world.");
+    expect(cards[0].snapshot.reference).toBe("John 3:16");
+    expect(cards[0].warnings).toEqual([]);
+    expect(cards[1].snapshot.scripture).toBeUndefined();
   });
 
   it("prefers a combined Reference column over Book/Chapter/Verse", () => {
@@ -498,6 +524,22 @@ describe("tableToCards", () => {
       [header, ["Nameless Hero", "Hero", "Good"]], mapping,
     );
     expect(cards[0].warnings.join(" | ")).toMatch(/no brigade/);
+  });
+});
+
+describe("notImportedNote", () => {
+  it("names the columns and states what can be filled, without suggesting a target exists", () => {
+    const one = notImportedNote(["Designer Notes"]);
+    expect(one).toContain("“Designer Notes”");
+    expect(one).toContain("that name");
+    const two = notImportedNote(["Designer Notes", "Flavor Text"]);
+    expect(two).toContain("“Designer Notes”, “Flavor Text”");
+    expect(two).toContain("those names");
+    for (const note of [one, two]) {
+      expect(note).not.toMatch(/adjust/i);
+      expect(note).not.toMatch(/if one of these should/i);
+      expect(note).toContain("every field a sheet can fill");
+    }
   });
 });
 
