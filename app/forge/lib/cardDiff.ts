@@ -96,7 +96,7 @@ function canonicalJson(v: unknown): string {
 const ARRAY_FIELDS = new Set(["cardType", "brigades", "class", "icons", "identifiers"]);
 const NUMBER_FIELDS = new Set(["strength", "toughness"]);
 
-function display(v: unknown): string | null {
+export function displayValue(v: unknown): string | null {
   if (v === undefined || v === null || v === "") return null;
   if (Array.isArray(v)) return v.length ? v.join(", ") : null;
   return String(v);
@@ -105,8 +105,8 @@ function display(v: unknown): string | null {
 export function diffCards(before: DesignCard, after: DesignCard): FieldChange[] {
   const out: FieldChange[] = [];
   for (const f of DIFF_FIELDS) {
-    const b = display(before[f]);
-    const a = display(after[f]);
+    const b = displayValue(before[f]);
+    const a = displayValue(after[f]);
     if (b === a) continue;
     const kind = b === null ? "added" : a === null ? "removed" : "changed";
     out.push({ field: f, label: FIELD_LABELS[f as string], kind, before: b, after: a });

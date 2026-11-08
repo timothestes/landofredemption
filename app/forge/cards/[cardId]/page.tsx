@@ -122,6 +122,7 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
       releaseBase={releaseBase}
       restoreTarget={restoreTarget}
       version={version}
+      unresolvedComments={comments.filter((c) => c.proposalId === null && !c.resolved).length}
       review={
         inSet ? (
           // key: React validates this as a keyless list child once it crosses the

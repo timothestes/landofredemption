@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { saveCardFields, uploadFinished, setPlaceholder, type ForgeCardFull } from "@/app/forge/lib/cards";
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
+import { reviewJumpLinks } from "@/app/forge/lib/reviewView";
 import { createCardSaver, incomingAction } from "@/app/forge/lib/cardSave";
 import { STATUS_BADGE_CLASS } from "@/app/forge/lib/lifecycleCopy";
 import { versionPill, type StudioVersion } from "@/app/forge/lib/studioVersion";
@@ -44,7 +45,7 @@ const arrowClass =
   "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground";
 
 export default function StudioEditor({
-  card, sets, currentUser, creator, setId, setName, prevId, nextId, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, review,
+  card, sets, currentUser, creator, setId, setName, prevId, nextId, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, unresolvedComments = 0, review,
 }: {
   card: ForgeCardFull;
   sets: ForgeSetSummary[];
@@ -65,6 +66,8 @@ export default function StudioEditor({
   // For the Restore dialog on a shelved card: where it will go back to.
   restoreTarget?: RestoreTarget | null;
   version?: StudioVersion | null;
+  // For the jump links down to the review column.
+  unresolvedComments?: number;
   // The review column (proposals / history / comments), rendered inside this component's
   // grid so the sticky card face keeps travelling alongside it. Built in the server
   // component, so it is an element, not a render prop — it cannot take callbacks.
@@ -362,6 +365,17 @@ export default function StudioEditor({
           </p>
           {versionBadge && <span className="inline-flex shrink-0 leading-4 lg:hidden">{versionBadge}</span>}
         </div>
+        {/* Everything a reviewer needs is below the editor. Plain anchors: same page, no
+            navigation. Always both, so a comment arriving mid-edit can't move the form. */}
+        {card.setId && (
+          <p className="flex flex-wrap gap-x-3 text-xs">
+            {reviewJumpLinks(openProposals?.count ?? 0, unresolvedComments).map((l) => (
+              <a key={l.href} href={l.href} className="inline-flex min-h-8 items-center text-muted-foreground underline underline-offset-2 hover:text-foreground sm:min-h-0">
+                {l.label}
+              </a>
+            ))}
+          </p>
+        )}
         <LifecycleControls card={card} draft={snapshot} flushPending={flushPending} releaseBase={releaseBase} restoreTarget={restoreTarget} sets={sets} openProposals={openProposals} />
         {card.setId && (
           <p className="text-xs text-muted-foreground">

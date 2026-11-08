@@ -1,11 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { buildReviewQueue, keepHeldProposal, proposalByline, type ReviewCardRow, type ReviewOpenItem } from "../reviewView";
+import {
+  buildReviewQueue, keepHeldProposal, reviewByline, reviewRowHref, reviewJumpLinks,
+  proposalReviewItem, suggestionReviewItem, type ReviewCardRow, type ReviewOpenItem,
+} from "../reviewView";
 
 const card = (over: Partial<ReviewCardRow> = {}): ReviewCardRow => ({
   id: "c1", title: "Goliath", status: "draft", ...over,
 });
 const item = (over: Partial<ReviewOpenItem> = {}): ReviewOpenItem => ({
-  cardId: "c1", kind: "proposal", createdAt: "2026-09-01T12:00:00Z", ...over,
+  id: "i1", cardId: "c1", kind: "proposal", createdAt: "2026-09-01T12:00:00Z",
+  who: "Rhoda", summary: null, changed: null, baseVersion: null, ...over,
 });
 
 describe("buildReviewQueue", () => {
@@ -119,18 +123,104 @@ describe("keepHeldProposal", () => {
   });
 });
 
-describe("proposalByline", () => {
+describe("reviewByline", () => {
   const now = Date.parse("2026-09-01T12:00:00Z");
 
   it("says who, when and against which version", () => {
-    expect(proposalByline({ who: "Rhoda", at: "2026-09-01T10:00:00Z", baseVersion: 3 }, now)).toBe("Rhoda · 2h ago · against v3");
+    expect(reviewByline({ who: "Rhoda", at: "2026-09-01T10:00:00Z", baseVersion: 3 }, now)).toBe("Rhoda · 2h ago · against v3");
   });
 
   it("names no version for a first proposal", () => {
-    expect(proposalByline({ who: "Rhoda", at: "2026-09-01T10:00:00Z", baseVersion: null }, now)).toBe("Rhoda · 2h ago");
+    expect(reviewByline({ who: "Rhoda", at: "2026-09-01T10:00:00Z", baseVersion: null }, now)).toBe("Rhoda · 2h ago");
   });
 
   it("falls back when the name can't be read", () => {
-    expect(proposalByline({ who: null, at: "2026-09-01T10:00:00Z", baseVersion: 1 }, now)).toBe("Forge member · 2h ago · against v1");
+    expect(reviewByline({ who: null, at: "2026-09-01T10:00:00Z", baseVersion: 1 }, now)).toBe("Forge member · 2h ago · against v1");
+  });
+});
+
+describe("buildReviewQueue row contents", () => {
+  it("lists the surviving items, proposals first, newest first within each", () => {
+    const [row] = buildReviewQueue([card()], [
+      item({ id: "s1", kind: "suggestion", createdAt: "2026-09-09T12:00:00Z" }),
+      item({ id: "p1", createdAt: "2026-09-01T12:00:00Z" }),
+      item({ id: "p2", createdAt: "2026-09-05T12:00:00Z" }),
+      item({ id: "s2", kind: "suggestion", createdAt: "2026-09-10T12:00:00Z" }),
+    ]);
+    expect(row.items.map((i) => i.id)).toEqual(["p2", "p1", "s2", "s1"]);
+  });
+
+  it("drops what the filters drop, so the row matches its pills", () => {
+    const [row] = buildReviewQueue([card()], [
+      item({ id: "p1" }),
+      item({ id: "s1", kind: "suggestion" }),
+    ], { kind: "suggestions" });
+    expect(row.items.map((i) => i.id)).toEqual(["s1"]);
+    expect(row.openProposals).toBe(0);
+  });
+});
+
+describe("reviewRowHref", () => {
+  it("lands on the proposals when the row shows any", () => {
+    expect(reviewRowHref("c1", 1)).toBe("/forge/cards/c1#proposals");
+  });
+
+  it("lands on the comments for a row of suggestions only", () => {
+    expect(reviewRowHref("c1", 0)).toBe("/forge/cards/c1#comments");
+  });
+});
+
+describe("reviewJumpLinks", () => {
+  it("counts what is waiting and points at each section", () => {
+    expect(reviewJumpLinks(1, 2)).toEqual([
+      { href: "#proposals", label: "1 open proposal" },
+      { href: "#comments", label: "2 unresolved comments" },
+    ]);
+    expect(reviewJumpLinks(3, 1).map((l) => l.label)).toEqual(["3 open proposals", "1 unresolved comment"]);
+  });
+
+  // Always both links, so a comment arriving mid-edit can't push the form under the caret.
+  it("still links when nothing is waiting", () => {
+    expect(reviewJumpLinks(0, 0)).toEqual([
+      { href: "#proposals", label: "No open proposals" },
+      { href: "#comments", label: "No unresolved comments" },
+    ]);
+  });
+});
+
+describe("proposalReviewItem", () => {
+  const row = { id: "p1", cardId: "c1", createdAt: "2026-09-01T12:00:00Z", who: "Rhoda", summary: "Draw more", baseVersionId: "v3" };
+
+  it("says what changed against the version it was proposed from", () => {
+    const i = proposalReviewItem({
+      ...row,
+      base: { versionNumber: 3, data: { rawText: "Draw 2.", toughness: 1 } },
+      proposed: { rawText: "Draw 3.", toughness: 2 },
+    });
+    expect(i).toMatchObject({ kind: "proposal", who: "Rhoda", summary: "Draw more", baseVersion: 3, changed: "Changed Card text, Toughness." });
+  });
+
+  it("calls a first proposal a new card", () => {
+    const i = proposalReviewItem({ ...row, baseVersionId: null, base: null, proposed: { name: "Invented" } });
+    expect(i).toMatchObject({ baseVersion: null, changed: "New card \u2014 first proposal" });
+  });
+
+  it("claims nothing when the base version can't be read", () => {
+    const i = proposalReviewItem({ ...row, base: null, proposed: { name: "Invented" } });
+    expect(i).toMatchObject({ baseVersion: null, changed: null });
+  });
+});
+
+describe("suggestionReviewItem", () => {
+  const row = { id: "m1", cardId: "c1", createdAt: "2026-09-01T12:00:00Z", who: "Tyler" };
+
+  it("names the field and the value", () => {
+    expect(suggestionReviewItem({ ...row, field: "toughness", suggestedValue: 2 })).toMatchObject({
+      kind: "suggestion", who: "Tyler", summary: null, baseVersion: null, changed: "Suggested Toughness: 2",
+    });
+  });
+
+  it("joins a list value", () => {
+    expect(suggestionReviewItem({ ...row, field: "brigades", suggestedValue: ["Blue", "Red"] }).changed).toBe("Suggested Brigade: Blue, Red");
   });
 });

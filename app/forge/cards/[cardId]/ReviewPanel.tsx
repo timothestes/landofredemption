@@ -117,7 +117,8 @@ export default function ReviewPanel({
 
   return (
     <div className="space-y-8">
-      <section>
+      {/* scroll-mt for the same reason as #comments below. */}
+      <section id="proposals" className="scroll-mt-[calc(var(--forge-chrome)+4rem)]">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-base font-semibold tracking-tight">
             Open proposals

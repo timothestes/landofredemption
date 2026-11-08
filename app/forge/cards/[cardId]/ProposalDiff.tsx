@@ -19,7 +19,7 @@ import { addComment } from "@/app/forge/lib/comments";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 import { denyDraftPlan, draftMovedOnNote, ACCEPT_CLOSED_NOTE, DENY_FLUSH_FAILED } from "@/app/forge/lib/lifecycleCopy";
 import { flushThen, runAcceptProposal } from "@/app/forge/lib/proposeFlow";
-import { proposalByline } from "@/app/forge/lib/reviewView";
+import { reviewByline } from "@/app/forge/lib/reviewView";
 import FieldChanges from "./FieldChanges";
 import { useStudioDraft, useStudioSync } from "./StudioSyncContext";
 
@@ -204,7 +204,7 @@ export default function ProposalDiff({
       <p className="text-sm font-medium">{proposal.summary ?? "Proposed change"}</p>
       {/* The relative time can differ between the server's render and this one. */}
       <p suppressHydrationWarning className="mt-0.5 text-xs text-muted-foreground">
-        {proposalByline({ who: proposal.proposerName, at: proposal.createdAt, baseVersion: baseVersionNumber })}
+        {reviewByline({ who: proposal.proposerName, at: proposal.createdAt, baseVersion: baseVersionNumber })}
       </p>
       <p className="mt-0.5 text-xs text-muted-foreground">
         {isNewCard ? "New card — first proposal" : summarizeDiff(changes)}
