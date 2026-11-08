@@ -63,6 +63,7 @@ export function useGridPlace() {
       // Before the click navigates. A write that lands during a navigation cancels it, and leaving
       // first would lose the last few letters typed from this entry's URL.
       writeUrl();
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // a new tab: this page stays
       if (!(e.target as Element).closest?.(`a[id^="${TILE_ID_PREFIX}"]`)) return;
       const y = window.scrollY;
       lastPlace = { path: window.location.pathname, y };
@@ -80,9 +81,15 @@ export function useGridPlace() {
   // dropped from the router's cache, as any save does, arrives too late for the browser's own
   // restore, which has already clamped to the shorter card page. A breadcrumb's Link has
   // scroll={false} for the same reason: Next would otherwise scroll to the top after this runs.
+  // Each marker is used once and removed. Left in place, it would override the browser's own
+  // restore the next time you came back to this entry from somewhere other than a card.
   useLayoutEffect(() => {
-    const entryY = window.history.state?.[ENTRY_Y];
-    if (typeof entryY === "number") { window.scrollTo(0, entryY); return; }
+    const { [ENTRY_Y]: entryY, ...state } = window.history.state ?? {};
+    if (typeof entryY === "number") {
+      window.history.replaceState(state, "");
+      window.scrollTo(0, entryY);
+      return;
+    }
     const hash = window.location.hash.slice(1);
     if (!hash.startsWith(TILE_ID_PREFIX)) return;
     const tile = document.getElementById(hash);
@@ -93,6 +100,7 @@ export function useGridPlace() {
       viewportHeight: window.innerHeight,
       chrome: tile ? parseFloat(getComputedStyle(tile).getPropertyValue("--forge-chrome")) || 0 : 0,
     }));
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
   }, []);
 
   return { filters, query: filterQuery(filters), update, typeSearch, clear };
