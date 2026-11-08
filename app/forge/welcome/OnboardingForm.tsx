@@ -33,6 +33,7 @@ export default function OnboardingForm() {
     setBusy(false);
     if (!r.ok) return setError(r.error ?? "Could not save");
     router.push("/forge");
+    router.refresh(); // the layout stays mounted across the push, and it holds the name prompt
   }
 
   return (
