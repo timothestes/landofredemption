@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { createSet, saveSetTargets, bulkDeleteSets, type ForgeSetSummary } from "@/app/forge/lib/sets";
+import { createSet, bulkDeleteSets, type ForgeSetSummary } from "@/app/forge/lib/sets";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,15 +17,12 @@ import {
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 import PrivateBadge from "@/app/forge/components/PrivateBadge";
 
-const inputClass = "rounded-md border border-input bg-background px-2 py-1 text-sm";
-
 export default function SetsIndex({ sets, canCreate }: { sets: ForgeSetSummary[]; canCreate: boolean }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [total, setTotal] = useState<number>(100);
   const [isPrivate, setIsPrivate] = useState(false);
 
   const [selecting, setSelecting] = useState(false);
@@ -102,7 +99,6 @@ export default function SetsIndex({ sets, canCreate }: { sets: ForgeSetSummary[]
   function openCreate() {
     setName("");
     setError(null);
-    setTotal(100);
     setIsPrivate(false);
     setOpen(true);
   }
@@ -116,16 +112,6 @@ export default function SetsIndex({ sets, canCreate }: { sets: ForgeSetSummary[]
       setBusy(false);
       setError(r.error);
       return;
-    }
-    if (total > 0) {
-      const seed = await saveSetTargets(r.id, { total });
-      if (!seed.ok) {
-        // Set exists; don't strand the user — send them in, but tell them the target failed.
-        setBusy(false);
-        setError("Set created but the target count failed to save — set it from the Settings tab.");
-        router.push(`/forge/sets/${r.id}/settings`);
-        return;
-      }
     }
     // Keep `busy` true through navigation so the spinner shows until the next page loads.
     router.push(`/forge/sets/${r.id}/cards`);
@@ -345,18 +331,6 @@ export default function SetsIndex({ sets, canCreate }: { sets: ForgeSetSummary[]
                   Only you and designers you add can see this set. Hidden from other elders.
                 </span>
               </span>
-            </label>
-
-            <label className="flex items-center gap-2 text-sm">
-              <span className="font-medium">How many cards total?</span>
-              <input
-                type="number"
-                min={0}
-                value={total}
-                onChange={(e) => setTotal(Number(e.target.value))}
-                aria-label="Total cards"
-                className={`${inputClass} w-24`}
-              />
             </label>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
