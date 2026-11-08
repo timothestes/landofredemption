@@ -11,6 +11,7 @@ import ForgeBreadcrumbs from "@/app/forge/components/ForgeBreadcrumbs";
 import LinkPending from "@/app/forge/components/LinkPending";
 import FilePicker from "@/app/forge/components/FilePicker";
 import ArtCandidatesPanel from "@/app/forge/components/ArtCandidatesPanel";
+import ArtSourceLinks from "@/app/forge/components/ArtSourceLinks";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
@@ -53,7 +54,7 @@ const arrowClass =
   "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground";
 
 export default function StudioEditor({
-  card, sets, currentUser, creator, setId, setName, prevId, nextId, walkQuery = "", gridHref, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, canEdit = true, unresolvedComments = 0, review,
+  card, sets, currentUser, creator, setId, setName, prevId, nextId, walkQuery = "", gridHref, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, canEdit = true, canEditSources = false, unresolvedComments = 0, review,
 }: {
   card: ForgeCardFull;
   sets: ForgeSetSummary[];
@@ -81,6 +82,8 @@ export default function StudioEditor({
   unresolvedComments?: number;
   // Whether this member can write to this card. Worked out in the page; the RPCs still decide.
   canEdit?: boolean;
+  // Source links outlive promotion, so a card that's otherwise read-only can still have these.
+  canEditSources?: boolean;
   // The review column (proposals / history / comments), rendered inside this component's
   // grid so the sticky card face keeps travelling alongside it. Built in the server
   // component, so it is an element, not a render prop — it cannot take callbacks.
@@ -579,6 +582,7 @@ export default function StudioEditor({
               )}
             </fieldset>
           </fieldset>
+          {!canEdit && canEditSources && <ArtSourceLinks cardId={card.id} candidates={artCandidates} />}
           <StudioSyncProvider value={syncValue}>
             <StudioDraftProvider value={snapshot}>{review}</StudioDraftProvider>
           </StudioSyncProvider>

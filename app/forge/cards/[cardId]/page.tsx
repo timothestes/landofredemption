@@ -4,7 +4,7 @@ import { playtesterCardHref } from "@/app/forge/lib/play";
 import { getCard } from "@/app/forge/lib/cards";
 import { listArtCandidates } from "@/app/forge/lib/artCandidates";
 import { getSet, listWritableSets, listSetSiblings, canDesignSet } from "@/app/forge/lib/sets";
-import { canWriteCard } from "@/app/forge/lib/setAccess";
+import { canEditArtSources, canWriteCard } from "@/app/forge/lib/setAccess";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
 import { filterQuery, gridHref, parseCardFilters, walkSet } from "@/app/forge/lib/cardFilters";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
@@ -48,7 +48,8 @@ export default async function StudioPage({ params, searchParams }: {
     : [[], [], [], [], [], []];
   // Which controls to offer. The RPCs check again, and they are what actually decides.
   const canDesign = card.setId ? await canDesignSet(card.setId) : false;
-  const canEdit = canWriteCard({ status: card.status, isOwner: card.ownerId === ctx.user.id, role: ctx.role, canDesign });
+  const who = { isOwner: card.ownerId === ctx.user.id, role: ctx.role, canDesign };
+  const canEdit = canWriteCard({ status: card.status, ...who });
   const canReview = canDesign && canEdit;
 
   // Releasing closes every open proposal (migration 083); one that is exactly
@@ -129,6 +130,7 @@ export default async function StudioPage({ params, searchParams }: {
       version={version}
       unresolvedComments={comments.filter((c) => c.proposalId === null && !c.resolved).length}
       canEdit={canEdit}
+      canEditSources={canEditArtSources(who)}
       review={
         inSet ? (
           // key: React validates this as a keyless list child once it crosses the
