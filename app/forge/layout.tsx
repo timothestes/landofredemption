@@ -19,7 +19,7 @@ export default async function ForgeLayout({
     // ForgeNav 47px). Declared once here because anything else that wants to stick under
     // them has to agree with them exactly — a px out either way clips or leaks.
     <div className="flex min-h-screen flex-col" style={{ "--forge-chrome": "112px" } as React.CSSProperties}>
-      <TopNav />
+      <TopNav hideGameLinks={ctx.role === "playtester"} />
       <ForgeNav role={ctx.role} />
       <div className="flex-1">{children}</div>
     </div>
