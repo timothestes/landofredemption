@@ -265,3 +265,22 @@ describe("ForgeCardPreview empty art window", () => {
     expect(noArtLabel(html)).toBeUndefined();
   });
 });
+
+// The margin outside the frame's border is the only part of the card the page's theme touches.
+// It is white in print, and renderCard's own layers still paint it white for copied and play
+// images, but on a dark page a grid of them was a wall of the brightest things on screen.
+describe("ForgeCardPreview plate", () => {
+  const wrapper = (html: string) => html.match(/^<div[^>]*>/)![0];
+
+  it("follows the theme, and stays white in light", () => {
+    const html = wrapper(render({ name: "Invented Card", cardType: ["Hero"] }));
+    expect(html).toContain("bg-white");
+    expect(html).toContain("dark:bg-card");
+    expect(html).not.toMatch(/background:#fff/);
+  });
+
+  it("keeps a caller's classes", () => {
+    const html = renderToStaticMarkup(React.createElement(ForgeCardPreview, { card: {}, className: "w-full rounded-md" }));
+    expect(wrapper(html)).toContain("w-full rounded-md");
+  });
+});

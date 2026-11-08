@@ -33,7 +33,7 @@ export default async function SetCardsPage({ params }: { params: Promise<{ setId
         ) : (
           <>
             <div className="mx-auto mb-4 aspect-[750/1050] w-40 rounded-lg border-2 border-dashed" />
-            <p className="text-sm text-muted-foreground">No cards in this set yet. Share an idea from your ideas library.</p>
+            <p className="text-sm text-muted-foreground">No cards in this set yet.</p>
           </>
         )}
       </div>
