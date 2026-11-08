@@ -18,6 +18,8 @@ import { saveCardFields, uploadFinished, setPlaceholder, type ForgeCardFull } fr
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import { createCardSaver, incomingAction } from "@/app/forge/lib/cardSave";
+import { createOptimisticToggle, type ToggleState } from "@/app/forge/lib/optimisticToggle";
+import { withDeadline } from "@/app/forge/lib/withDeadline";
 import { STATUS_BADGE_CLASS } from "@/app/forge/lib/lifecycleCopy";
 import { versionPill, type StudioVersion } from "@/app/forge/lib/studioVersion";
 import type { ArtCandidate } from "@/app/forge/lib/artCandidates";
@@ -40,6 +42,8 @@ import ScriptureFields from "./ScriptureFields";
 
 // Prev/next arrows on the card face. From sm up they sit inside its edges; on a phone the
 // face is narrow enough to leave a gutter each side, so they sit there, off the small card.
+const PLACEHOLDER_FAILED = "Couldn’t save that. Check your connection and try again.";
+
 const arrowClass =
   "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground";
 
@@ -93,6 +97,14 @@ export default function StudioEditor({
     lastSaved,
     send: (patch) => saveCardFields(card.id, patch),
   }));
+  const [placeholderTick, setPlaceholderTick] = useState<ToggleState>({ value: null, saving: false });
+  const [placeholderErr, setPlaceholderErr] = useState<string | null>(null);
+  const [placeholder] = useState(() => createOptimisticToggle({
+    save: (next) => withDeadline(setPlaceholder(card.id, next), { ok: false, error: PLACEHOLDER_FAILED }),
+    onState: setPlaceholderTick,
+    onSaved: () => router.refresh(),
+    onFailed: (error) => setPlaceholderErr(error ?? PLACEHOLDER_FAILED),
+  }));
   const [pendingFinished, setPendingFinished] = useState<File | null>(null);
   const [uploading, setUploading] = useState<"finished" | null>(null);
   // The verse finder's candidate excerpt, drawn on the preview face only. Never saved.
@@ -131,6 +143,12 @@ export default function StudioEditor({
   }, [snapshot, card.id, saver, runSave]);
 
   useEffect(() => { savedRef.current = saved; }, [saved]);
+
+  // Once the server's value changes the tick follows it again, so another elder's change shows.
+  // Not during a save: a refresh from an earlier tap mustn't undo the tap just made.
+  useEffect(() => {
+    if (!placeholder.saving()) setPlaceholderTick((t) => (t.value === null ? t : { value: null, saving: false }));
+  }, [card.isPlaceholder, placeholder]);
 
   // `snapshot` is seeded from props once; router.refresh() re-renders WITHOUT remounting,
   // so every server-side write to working_snapshot — Apply suggestion, Accept proposal,
@@ -451,8 +469,8 @@ export default function StudioEditor({
               <legend className="px-1 text-sm font-medium">Artwork (illustration)</legend>
               <ArtCandidatesPanel cardId={card.id} candidates={artCandidates} cardName={snapshot.name ?? null} />
               <label className="mt-3 flex items-start gap-2">
-                <Checkbox className="mt-0.5" checked={!!card.isPlaceholder}
-                  onCheckedChange={async () => { await setPlaceholder(card.id, !card.isPlaceholder); router.refresh(); }} />
+                <Checkbox className="mt-0.5" checked={placeholderTick.value ?? !!card.isPlaceholder} disabled={placeholderTick.saving}
+                  onCheckedChange={(next) => { setPlaceholderErr(null); void placeholder.set(next === true); }} />
                 <span>
                   <span className="font-medium">Temporary / placeholder art</span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
@@ -460,6 +478,7 @@ export default function StudioEditor({
                   </span>
                 </span>
               </label>
+              {placeholderErr && <p role="status" className="mt-1 text-sm text-destructive">{placeholderErr}</p>}
               {card.hasArt && (
                 <a href={activeSourceId
                   ? `/forge/api/art/${card.id}?candidate=${activeSourceId}&download=1`
