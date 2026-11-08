@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useFocusTrap } from "@/app/collection/scan/hooks/useFocusTrap";
 import type { DesignCard, CardType, Brigade } from "@/app/forge/lib/designCard";
 import { cardRawText, CARD_TYPES, BRIGADES } from "@/app/forge/lib/designCard";
 import { textFit } from "@/app/forge/lib/textFit";
@@ -26,6 +29,84 @@ function RevealFace({ item }: { item: RevealItem }) {
   );
 }
 
+function CardModal({ item, currentUserId, onClose }: { item: RevealItem; currentUserId: string; onClose: () => void }) {
+  const trapRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const [hasDraft, setHasDraft] = useState(false);
+  const [held, setHeld] = useState(false);
+
+  // The trap only catches Tab at the first and last control. Safari's Tab skips buttons, so
+  // Shift+Tab from the comment box never reaches "first" and lands on the page behind.
+  useEffect(() => {
+    const keepInside = (e: FocusEvent) => {
+      if (!trapRef.current?.contains(e.target as Node)) trapRef.current?.querySelector("button")?.focus();
+    };
+    document.addEventListener("focusin", keepInside);
+    return () => document.removeEventListener("focusin", keepInside);
+  }, []);
+  useFocusTrap(trapRef, true);
+
+  // Written feedback is what the Forge wants from a playtester, so no way out of this modal
+  // drops a typed comment without asking. Discarding is the one explicit way past it.
+  const requestClose = () => {
+    if (!hasDraft) {
+      onClose();
+      return;
+    }
+    setHeld(true);
+    const fields = trapRef.current?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("textarea, input");
+    Array.from(fields ?? []).find((f) => f.value.trim())?.focus();
+  };
+
+  // Posting or clearing the comment answers the question, so it goes away.
+  useEffect(() => {
+    if (!hasDraft) setHeld(false);
+  }, [hasDraft]);
+
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) requestClose(); }} aria-labelledby={titleId}>
+      <DialogContent size="lg" className="max-w-3xl">
+        <div ref={trapRef} className="flex min-h-0 flex-col">
+          {/* Pinned, so Close stays in reach below a long comment thread. */}
+          <div className="flex shrink-0 items-center justify-between gap-2 pl-4 pr-1">
+            <h2 id={titleId} className="min-w-0 truncate text-sm font-semibold">{item.data.name?.trim() || "Untitled"}</h2>
+            <div className="flex shrink-0 items-center gap-1">
+              <span className="text-xs tabular-nums text-muted-foreground">v{item.versionNumber}</span>
+              <button type="button" aria-label="Close" onClick={requestClose} className="flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+          {held && (
+            <div role="alert" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-y bg-muted px-4 py-2 text-sm">
+              <span>Your comment hasn&apos;t been posted.</span>
+              <Button type="button" variant="outline" size="sm" className="min-h-11 sm:min-h-9" onClick={onClose}>
+                Discard and close
+              </Button>
+            </div>
+          )}
+          <div className="flex min-h-0 flex-col gap-4 overflow-y-auto px-4 pb-4 sm:flex-row">
+            {/* On a phone the height cap leaves the comment box on screen; 15rem is the header,
+                the Comments heading, the box and the gutters. */}
+            <div className="mx-auto w-full max-w-[min(24rem,calc((100dvh-15rem)*5/7))] shrink-0 sm:mx-0 sm:w-64 sm:max-w-none md:w-80">
+              <RevealFace item={item} />
+              {/* An ability too long for the frame runs off the face, and this modal is the
+                  only place to read a card. */}
+              {!item.finishedUrl && textFit(item.data).over > 0 && (
+                <p className="mt-2 whitespace-pre-wrap text-sm">{cardRawText(item.data)}</p>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="mb-2 text-sm font-semibold">Comments</h3>
+              <PlaytesterComments cardId={item.cardId} currentUserId={currentUserId} onDraftChange={setHasDraft} />
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function RevealGrid({ items, currentUserId }: { items: RevealItem[]; currentUserId: string }) {
   const [active, setActive] = useState<RevealItem | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -35,6 +116,7 @@ export default function RevealGrid({ items, currentUserId }: { items: RevealItem
 
   // Press "/" (when not already typing in a field) to reset the search and jump to it.
   useEffect(() => {
+    if (active) return; // The search sits behind the open modal.
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
       const el = document.activeElement as HTMLElement | null;
@@ -45,7 +127,7 @@ export default function RevealGrid({ items, currentUserId }: { items: RevealItem
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [active]);
 
   // Default order: by card type, then brigade, then name. Type and brigade use
   // the canonical model order (CARD_TYPES / BRIGADES); cards missing a primary
@@ -118,38 +200,7 @@ export default function RevealGrid({ items, currentUserId }: { items: RevealItem
           ))}
         </div>
       )}
-      {active && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4" onClick={() => setActive(null)}>
-          <div className="my-auto w-full max-w-3xl rounded-lg bg-background px-4 pb-4" onClick={(e) => e.stopPropagation()}>
-            {/* Pinned, so Close stays in reach below a long comment thread. */}
-            <div className="sticky top-0 z-10 -mx-4 flex items-center justify-between gap-2 rounded-t-lg bg-background pl-4 pr-1">
-              <h2 className="min-w-0 truncate text-sm font-semibold">{active.data.name?.trim() || "Untitled"}</h2>
-              <div className="flex shrink-0 items-center gap-1">
-                <span className="text-xs tabular-nums text-muted-foreground">v{active.versionNumber}</span>
-                <button type="button" aria-label="Close" onClick={() => setActive(null)} className="flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:text-foreground">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-            <div className="flex flex-col gap-4 sm:flex-row">
-              {/* On a phone the height cap leaves the comment box on screen; 15rem is the header,
-                  the Comments heading, the box and the gutters. */}
-              <div className="mx-auto w-full max-w-[min(24rem,calc((100dvh-15rem)*5/7))] shrink-0 sm:mx-0 sm:w-64 sm:max-w-none md:w-80">
-                <RevealFace item={active} />
-                {/* An ability too long for the frame runs off the face, and this modal is the
-                    only place to read a card. */}
-                {!active.finishedUrl && textFit(active.data).over > 0 && (
-                  <p className="mt-2 whitespace-pre-wrap text-sm">{cardRawText(active.data)}</p>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="mb-2 text-sm font-semibold">Comments</h3>
-                <PlaytesterComments cardId={active.cardId} currentUserId={currentUserId} />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {active && <CardModal item={active} currentUserId={currentUserId} onClose={() => setActive(null)} />}
     </>
   );
 }

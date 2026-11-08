@@ -12,7 +12,7 @@ export default async function ForgePlaySetsPage() {
   const sets = await listSets();
 
   return (
-    <main className="mx-auto max-w-3xl p-6">
+    <div className="mx-auto max-w-3xl p-6">
       <h1 className="text-2xl" style={{ fontFamily: "Cinzel, serif" }}>Playtest</h1>
       <h2 className="mt-6 text-sm font-medium">Sets shared with you</h2>
       {sets.length === 0 ? (
@@ -29,6 +29,6 @@ export default async function ForgePlaySetsPage() {
           ))}
         </ul>
       )}
-    </main>
+    </div>
   );
 }

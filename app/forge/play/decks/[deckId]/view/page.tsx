@@ -20,7 +20,7 @@ export default async function ForgeDeckViewPage({ params }: { params: Promise<{ 
   const granted = await listGrantedForgeCards();
 
   return (
-    <main className="mx-auto max-w-6xl p-6">
+    <div className="mx-auto max-w-6xl p-6">
       <ForgeBreadcrumbs
         items={[
           { label: "The Forge", href: "/forge" },
@@ -29,6 +29,6 @@ export default async function ForgeDeckViewPage({ params }: { params: Promise<{ 
         ]}
       />
       <DeckViewClient deck={deck} granted={granted} />
-    </main>
+    </div>
   );
 }

@@ -23,7 +23,7 @@ export default async function ForgePlaySetPage({ params }: { params: Promise<{ s
   }));
 
   return (
-    <main className="mx-auto max-w-5xl p-6">
+    <div className="mx-auto max-w-5xl p-6">
       <ForgeBreadcrumbs items={[
         { label: "The Forge", href: "/forge" },
         { label: "Sets", href: "/forge/play" },
@@ -32,6 +32,6 @@ export default async function ForgePlaySetPage({ params }: { params: Promise<{ s
       <h1 className="text-xl font-semibold">{set.name}</h1>
       <p className="text-sm text-muted-foreground">Cards shared for playtesting</p>
       <RevealGrid items={items} currentUserId={ctx.user.id} />
-    </main>
+    </div>
   );
 }

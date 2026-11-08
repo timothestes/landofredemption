@@ -60,6 +60,11 @@ describe("playtest page payload", () => {
     return null;
   };
 
+  it("leaves the <main> landmark to the root layout", async () => {
+    const page = await ForgePlaySetPage({ params: Promise.resolve({ setId: "s1" }) });
+    expect(renderToStaticMarkup(page)).not.toContain("<main");
+  });
+
   it("carries exactly the released card, its image urls and its version number", async () => {
     const page = await ForgePlaySetPage({ params: Promise.resolve({ setId: "s1" }) });
     const { items } = revealGridProps(page);

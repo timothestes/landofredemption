@@ -8,15 +8,21 @@ import { timeAgo } from "@/app/forge/lib/relativeTime";
 export default function PlaytesterComments({
   cardId,
   currentUserId,
+  onDraftChange,
 }: {
   cardId: string;
   currentUserId: string;
+  onDraftChange: (hasDraft: boolean) => void;
 }) {
   const [comments, setComments] = useState<CommentRow[] | null>(null);
   const [body, setBody] = useState("");
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState("");
   const [pending, start] = useTransition();
+
+  // A reply box that has been folded away holds nothing the player can see.
+  const hasDraft = body.trim() !== "" || (replyTo !== null && replyBody.trim() !== "");
+  useEffect(() => onDraftChange(hasDraft), [hasDraft, onDraftChange]);
 
   const load = () => listCardComments(cardId).then(setComments);
   // Reload whenever the open card changes.

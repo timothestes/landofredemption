@@ -14,11 +14,11 @@ export default async function ForgeAnnouncementsPage() {
   if (!ctx) notFound();
   const [{ members, sets }, recent] = await Promise.all([getMissiveDirectory(), listRecentMissives()]);
   return (
-    <main className="mx-auto max-w-3xl p-6">
+    <div className="mx-auto max-w-3xl p-6">
       <h1 className="text-2xl" style={{ fontFamily: "Cinzel, serif" }}>
         Announcements
       </h1>
       <AnnouncementComposer members={members} sets={sets} recent={recent} callerId={ctx.user.id} />
-    </main>
+    </div>
   );
 }

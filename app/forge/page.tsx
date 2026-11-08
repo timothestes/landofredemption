@@ -12,7 +12,7 @@ export default async function ForgeHomePage() {
   const isPlaytester = ctx.role === "playtester";
 
   return (
-    <main className="mx-auto max-w-6xl space-y-8 p-6">
+    <div className="mx-auto max-w-6xl space-y-8 p-6">
       <h1 className="text-2xl" style={{ fontFamily: "Cinzel, serif" }}>The Forge</h1>
 
       {isPlaytester ? (
@@ -55,6 +55,6 @@ export default async function ForgeHomePage() {
           </section>
         </>
       )}
-    </main>
+    </div>
   );
 }

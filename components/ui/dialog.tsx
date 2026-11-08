@@ -12,9 +12,10 @@ interface DialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
+  "aria-labelledby"?: string;
 }
 
-function Dialog({ open, onOpenChange, children }: DialogProps) {
+function Dialog({ open, onOpenChange, children, "aria-labelledby": labelledBy }: DialogProps) {
   const handleClose = useCallback(() => onOpenChange(false), [onOpenChange]);
 
   // ESC key dismissal
@@ -51,6 +52,7 @@ function Dialog({ open, onOpenChange, children }: DialogProps) {
       onClick={handleClose}
       role="dialog"
       aria-modal="true"
+      aria-labelledby={labelledBy}
     >
       {children}
     </div>,
