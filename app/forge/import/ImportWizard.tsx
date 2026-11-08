@@ -289,23 +289,23 @@ export default function ImportWizard({
           <legend className="px-1 text-sm font-medium">5 · Destination</legend>
           <div className="space-y-2 text-sm">
             <label className="flex items-center gap-2">
-              <input type="radio" name="dest" checked={mode === "new"}
+              <input type="radio" name="dest" checked={mode === "new"} disabled={running}
                 onChange={() => { setMode("new"); setOverwrite(false); }} />
               Create a new set
             </label>
             <label className="flex items-center gap-2">
               <input type="radio" name="dest" checked={mode === "existing"} onChange={() => setMode("existing")}
-                disabled={sets.length === 0} />
+                disabled={running || sets.length === 0} />
               Add to an existing set
             </label>
             {mode === "existing" && (
               <>
-                <select value={existingSetId} onChange={(e) => setExistingSetId(e.target.value)}
+                <select value={existingSetId} onChange={(e) => setExistingSetId(e.target.value)} disabled={running}
                   aria-label="Existing set" className="ml-6 w-64 rounded-md border bg-background px-2 py-1 text-sm">
                   {sets.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
                 <label className="mt-2 flex items-start gap-2 text-sm">
-                  <Checkbox checked={overwrite} onCheckedChange={(v) => setOverwrite(v === true)}
+                  <Checkbox checked={overwrite} onCheckedChange={(v) => setOverwrite(v === true)} disabled={running}
                     className="mt-0.5" />
                   <span>
                     <span className="font-medium">Overwrite existing cards</span>

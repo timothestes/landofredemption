@@ -19,6 +19,7 @@ const asMock = (fn: unknown) => fn as ReturnType<typeof vi.fn>;
 const EXISTING = {
   id: "card-1",
   title: "Existing",
+  status: "draft",
   working_snapshot: {
     name: "Existing", rawText: "Old text", alignment: "Good_Evil", cardType: ["Hero"],
     strength: 8, scripture: "A typed verse",
@@ -102,6 +103,17 @@ describe("POST /forge/api/import overwrite (U-02)", () => {
     expect((await results(res))[0]).toMatchObject({ updated: true });
     expect(uploadForgeFinished).toHaveBeenCalledTimes(1);
     expect(rpc.mock.calls.map((c) => c[0])).toEqual(["forge_set_working_finished"]);
+  });
+
+  it("refuses an image for a promoted card, even when the fields match", async () => {
+    const { rpc } = rig([{ ...EXISTING, status: "promoted" }]);
+    const res = await post(
+      { overwrite: true, cards: [{ name: "Existing", snapshot: { name: "Existing" }, fileField: "file-0" }] },
+      { "file-0": image() },
+    );
+    expect((await results(res))[0]).toEqual({ name: "Existing", ok: false, error: "a promoted card is read-only" });
+    expect(uploadForgeFinished).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("reports a refused merge as a failed row", async () => {

@@ -61,12 +61,12 @@ export async function POST(req: Request): Promise<Response> {
   const names = cards.map((c) => (c?.name ?? "").trim()).filter(Boolean);
   const { data: existing, error: existErr } = await ctx.supabase
     .from("forge_cards")
-    .select("id, title, working_snapshot")
+    .select("id, title, working_snapshot, status")
     .eq("set_id", setId)
     .filter("title", "in", pgrestInList(names)); // .in() can't take a quoted Lost Soul name
   if (existErr) return badRequest(existErr.message);
   const existingByTitle = new Map(
-    (existing ?? []).map((r: { id: string; title: string; working_snapshot: DesignCard }) => [r.title, r]),
+    (existing ?? []).map((r: { id: string; title: string; working_snapshot: DesignCard; status: string }) => [r.title, r]),
   );
 
   const results: CardResult[] = await Promise.all(
@@ -110,6 +110,10 @@ export async function POST(req: Request): Promise<Response> {
       if (dupId && !overwrite) return { name, ok: true, cardId: dupId, skipped: true };
 
       if (dupId && overwrite) {
+        // forge_set_working_finished has no promoted guard, and a row whose fields match skips
+        // the merge that would have raised this.
+        if (file && dup.status === "promoted") return { name, ok: false, error: "a promoted card is read-only" };
+
         const changed = !isEmptyPatch(patch);
         if (changed) {
           const { error: saveErr } = await ctx.supabase.rpc("forge_save_card_fields", {
