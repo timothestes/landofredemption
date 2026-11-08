@@ -302,7 +302,7 @@ export default function StudioEditor({
           {" · "}
           {new Date(creator.at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
         </p>
-        <LifecycleControls card={card} draft={snapshot} releaseBase={releaseBase} restoreTarget={restoreTarget} sets={sets} openProposals={openProposals} />
+        <LifecycleControls card={card} draft={snapshot} flushPending={flushPending} releaseBase={releaseBase} restoreTarget={restoreTarget} sets={sets} openProposals={openProposals} />
         {card.setId && (
           <p className="text-xs text-muted-foreground">
             Releases are visible to Forge playtesters only — they don’t change the public card database.

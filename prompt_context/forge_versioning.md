@@ -83,7 +83,14 @@ iteration).
   above), folds it into the working draft, closes sibling open proposals as
   `superseded`. On a Draft card the dialog says so explicitly: nothing is
   released.
-- **Deny** (elder): requires a reason, stored as a proposal-anchored comment.
+- **Deny** (elder): requires a reason, stored as a proposal-anchored comment. A proposal
+  freezes the one shared draft and isn't a branch, so a denied change stays in the draft
+  and the next release ships it. The Deny dialog therefore asks: put the draft back to the
+  latest version (`forge_deny_proposal_restore_draft`, migration 127, atomic with the
+  deny; snapshot only, art untouched; logged in History), or leave it. It defaults to
+  going back only when the draft is just the denied change; if the draft has moved on,
+  going back would discard those edits too, so it defaults to leaving it and says so.
+  The Release dialog shows a diff against the last release either way.
 - **Release resolves open proposals** (migration 083). Releasing also mints a
   version, so it would otherwise leave open proposals permanently
   un-acceptable. Instead, in the same transaction: the oldest open proposal
@@ -102,6 +109,8 @@ iteration).
 
 ## Where the "why" of a change lives
 
+- **Release dialog** — lists what will change for playtesters, from the live draft. It
+  flushes the editor before freezing, so the diff you read is what ships.
 - **Release note** — optional "What changed?" in the Release dialog, stamped
   atomically on the version row (`card_versions.note`).
 - **Proposal summary** — mandatory at propose time; History shows it beside
@@ -140,6 +149,6 @@ pipeline + manual Lackey export).
 | History timeline | `CardHistory.tsx` + pure assembly in `app/forge/lib/historyView.ts` |
 | Readers | `app/forge/lib/versions.ts` (listVersions / listCardEvents / listSetActivity) |
 | Server actions | `app/forge/lib/proposals.ts`, `lifecycle.ts` |
-| RPCs (current bodies) | migrations `127` (**current `forge_publish_card`**, `forge_archive_card` and `forge_unarchive_card`), `083` (publish resolves open proposals), `072` (publish note + audit events + undeletable reasons), `075` (draft versions, unified base/guard, sweep exclusions) |
+| RPCs (current bodies) | migrations `127` (**current `forge_publish_card`**, `forge_archive_card` and `forge_unarchive_card`; also new `forge_deny_proposal_restore_draft`), `083` (publish resolves open proposals), `072` (publish note + audit events + undeletable reasons), `075` (draft versions, unified base/guard, sweep exclusions) |
 | Enum + backfill | `074` (`version_status` gains 'draft'), `076` (backfilled the one 073-era lost accept) |
 | Design history | `docs/superpowers/specs/2026-07-06-forge-version-history-design.md` (incl. addendum) |

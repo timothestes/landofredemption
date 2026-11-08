@@ -177,6 +177,8 @@ export default function ReviewPanel({
                 finishedUrl={finishedUrl}
                 canReview={canReview}
                 cardStatus={card.status}
+                savedDraft={card.snapshot ?? {}}
+                latestVersion={latestVersion}
               />
             ))}
           </div>

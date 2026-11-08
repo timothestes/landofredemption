@@ -3,6 +3,7 @@
 -- unchanged, and each behaviour change is one that client already handles.
 -- Bodies were taken from the migrations that last defined them and match production
 -- by md5 of prosrc: forge_archive_card 075, forge_unarchive_card 072, forge_publish_card 083.
+-- forge_deny_proposal_restore_draft is new; its checks follow forge_deny_proposal in 053.
 
 -- (U-17) Restore puts a card back the way it was before Shelve.
 --
@@ -196,3 +197,54 @@ begin
 
   return v_version_id;
 end; $$;
+
+-- (U-04) Deny can also put the draft back.
+--
+-- A proposal freezes the card's one shared draft; it isn't a branch. So a denied change
+-- stays in the draft, and the next release ships it. This is a new function rather than
+-- a parameter on forge_deny_proposal: adding a defaulted argument without dropping the
+-- old signature creates an overload and makes the deployed client's named call ambiguous
+-- (PGRST203). forge_deny_proposal is untouched and still leaves the draft alone.
+--
+-- Goes back to the card's LATEST version of any status, not the proposal's base. They
+-- are the same for any proposal opened since 083, but the proposals 083 left orphaned
+-- have an older base, and restoring that would resurrect text several versions old.
+-- Snapshot only: a proposal never carries art, so art edits aren't part of what's denied.
+-- The caller must flush the editor first, or a pending autosave lands on top of this.
+-- Locking follows forge_accept_proposal: card first, then re-read the proposal under it.
+create or replace function public.forge_deny_proposal_restore_draft(p_proposal_id uuid, p_reason text)
+returns void language plpgsql security definer set search_path = '' as $$
+declare v_prop public.card_proposals%rowtype; v_card public.forge_cards%rowtype; v_snapshot jsonb;
+begin
+  if btrim(coalesce(p_reason,'')) = '' then raise exception 'a reason is required to deny'; end if;
+  select * into v_prop from public.card_proposals where id = p_proposal_id;
+  if not found then raise exception 'proposal not found'; end if;
+  select * into v_card from public.forge_cards where id = v_prop.card_id for update;
+  if not found then raise exception 'card not found'; end if;
+  select * into v_prop from public.card_proposals where id = p_proposal_id for update;
+  if v_prop.status <> 'open' then raise exception 'proposal is not open'; end if;
+  if not (public.is_forge_superadmin()
+          or (v_card.set_id is not null and public.is_forge_set_elder(v_card.set_id))) then
+    raise exception 'not authorized to deny proposals on this card';
+  end if;
+  if v_card.status = 'promoted' then raise exception 'a promoted card is read-only'; end if;
+  select data into v_snapshot from public.card_versions
+   where card_id = v_card.id
+   order by version_number desc limit 1;
+  if v_snapshot is null then raise exception 'no version to put the draft back to'; end if;
+  update public.forge_cards
+     set working_snapshot = v_snapshot,
+         title = nullif(btrim(coalesce(v_snapshot->>'name','')), ''),
+         updated_at = now()
+   where id = v_card.id;
+  update public.card_proposals
+     set status = 'denied', closed_at = now(), closed_by = auth.uid()
+   where id = p_proposal_id;
+  insert into public.card_comments (card_id, proposal_id, body, created_by)
+  values (v_prop.card_id, p_proposal_id, btrim(p_reason), auth.uid());
+  insert into public.forge_audit (actor, action, target)
+  values (auth.uid(), 'card_draft_restored', v_card.id::text);
+end; $$;
+
+revoke execute on function public.forge_deny_proposal_restore_draft(uuid, text) from public, anon;
+grant execute on function public.forge_deny_proposal_restore_draft(uuid, text) to authenticated;

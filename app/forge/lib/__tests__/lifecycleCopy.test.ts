@@ -4,7 +4,7 @@ import {
   STATUS_LABEL, ACTION_LABEL, releaseLabel, isEligible, BULK_DONE_VERB, releaseProposalNotice,
   returnToIdeasCopy, deleteCopy, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice,
   releaseBlockers, releaseBlockedNote, bulkBlockedNotice, bulkSummary,
-  releaseUnchangedNote, isReleaseUnchanged, restoreCopy,
+  releaseUnchangedNote, isReleaseUnchanged, restoreCopy, releasePreview, denyDraftPlan,
 } from "../lifecycleCopy";
 
 describe("lifecycleCopy", () => {
@@ -350,5 +350,85 @@ describe("restoreCopy", () => {
     expect(c.description).toMatch(/In playtest/);
     expect(c.description).toMatch(/[Pp]laytesters can see it again/);
     expect(c.description).not.toMatch(/\bvnull\b/);
+  });
+});
+
+describe("releasePreview", () => {
+  const V3 = { name: "Invented", cardType: ["Hero" as const], rawText: "Draw 2." };
+  const base = (over = {}) => ({ versionNumber: 3, data: V3, live: true, artChanged: false, ...over });
+
+  it("says a first release is a first release, with no field list", () => {
+    const p = releasePreview(V3, null);
+    expect(p.caption).toMatch(/haven\u2019t seen this card/);
+    expect(p.changes).toEqual([]);
+    expect(p.artNote).toBeNull();
+  });
+
+  it("lists what playtesters will see change from the live version", () => {
+    const p = releasePreview({ ...V3, rawText: "Draw 3." }, base());
+    expect(p.caption).toBe("Playtesters will see these changes from v3:");
+    expect(p.changes.map((c) => [c.label, c.before, c.after])).toEqual([["Card text", "Draw 2.", "Draw 3."]]);
+  });
+
+  // The U-04 case: a denied change left in the draft has to show up here.
+  it("shows a denied change still sitting in the draft", () => {
+    const denied = { ...V3, rawText: "Draw 3." };
+    expect(releasePreview(denied, base()).changes).toHaveLength(1);
+  });
+
+  it("is plain about a last release that isn't live any more", () => {
+    const p = releasePreview({ ...V3, rawText: "Draw 3." }, base({ live: false }));
+    expect(p.caption).toBe("Changes since v3, the last release:");
+  });
+
+  it("says when no field changed, and flags art on its own", () => {
+    const p = releasePreview(V3, base({ artChanged: true }));
+    expect(p.caption).toBe("No field changes since v3.");
+    expect(p.changes).toEqual([]);
+    expect(p.artNote).toBe("The artwork has changed since v3.");
+  });
+});
+
+describe("denyDraftPlan", () => {
+  const V4 = { versionNumber: 4, data: { name: "Invented", cardType: ["Hero" as const], rawText: "Draw 2." } };
+  const PROPOSED = { ...V4.data, rawText: "Draw 3." };
+
+  it("defaults to going back when the draft is just the denied change", () => {
+    const p = denyDraftPlan({ draft: PROPOSED, proposed: PROPOSED, latest: V4 });
+    expect(p.offer).toBe(true);
+    expect(p.defaultRestore).toBe(true);
+    expect(p.restoreLabel).toBe("Put the draft back to v4");
+    expect(p.restoreHint).toMatch(/stays in this proposal/);
+    expect(p.restoreHint).not.toMatch(/throws away/);
+  });
+
+  it("defaults to leaving it, and warns, when the draft has moved on since", () => {
+    const p = denyDraftPlan({ draft: { ...PROPOSED, reference: "Gen 1:1" }, proposed: PROPOSED, latest: V4 });
+    expect(p.offer).toBe(true);
+    expect(p.defaultRestore).toBe(false);
+    expect(p.restoreHint).toMatch(/throws away those newer edits/);
+  });
+
+  it("always says what leaving it means: the next release ships it", () => {
+    const p = denyDraftPlan({ draft: PROPOSED, proposed: PROPOSED, latest: V4 });
+    expect(p.keepLabel).toBe("Leave the draft as it is");
+    expect(p.keepHint).toMatch(/next release will include it/);
+  });
+
+  it("says artwork isn't affected", () => {
+    expect(denyDraftPlan({ draft: PROPOSED, proposed: PROPOSED, latest: V4 }).restoreHint).toMatch(/Artwork stays/);
+  });
+
+  it("offers nothing when the draft already matches the last version", () => {
+    const p = denyDraftPlan({ draft: { ...V4.data, reference: "" }, proposed: PROPOSED, latest: V4 });
+    expect(p.offer).toBe(false);
+    expect(p.defaultRestore).toBe(false);
+    expect(p.note).toBeNull();
+  });
+
+  it("says so when there is no version to go back to", () => {
+    const p = denyDraftPlan({ draft: PROPOSED, proposed: PROPOSED, latest: null });
+    expect(p.offer).toBe(false);
+    expect(p.note).toMatch(/no earlier version/);
   });
 });

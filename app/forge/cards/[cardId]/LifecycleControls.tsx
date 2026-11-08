@@ -4,7 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 import { shareToSet, sendToPrivate, publish, approve, unapprove, archive, unarchive, deleteCard } from "@/app/forge/lib/lifecycle";
-import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, deleteCopy, releaseBlockers, releaseBlockedNote, isReleaseUnchanged, releaseUnchangedNote, restoreCopy, type ReleaseBase, type RestoreTarget } from "@/app/forge/lib/lifecycleCopy";
+import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, deleteCopy, releaseBlockers, releaseBlockedNote, isReleaseUnchanged, releaseUnchangedNote, restoreCopy, releasePreview, RELEASE_FLUSH_FAILED, type ReleaseBase, type RestoreTarget } from "@/app/forge/lib/lifecycleCopy";
+import { flushThen } from "@/app/forge/lib/proposeFlow";
+import FieldChanges from "./FieldChanges";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
 import type { DesignCard } from "@/app/forge/lib/designCard";
@@ -30,6 +32,7 @@ import {
 export default function LifecycleControls({
   card,
   draft,
+  flushPending = async () => ({ ok: true }),
   releaseBase = null,
   restoreTarget = null,
   sets,
@@ -38,6 +41,9 @@ export default function LifecycleControls({
   card: ForgeCardFull;
   // The editor's live draft. `card.snapshot` trails it by a save and a refresh.
   draft: DesignCard;
+  // Writes the editor's pending edit. Release freezes the server's copy, so without this
+  // it could ship something other than the diff its dialog just showed.
+  flushPending?: () => Promise<{ ok: boolean }>;
   // The newest version playtesters have seen. Null before a card's first release.
   releaseBase?: ReleaseBase | null;
   // Where Restore will put this card. Only set while it's shelved.
@@ -69,7 +75,11 @@ export default function LifecycleControls({
   // row inside the same transaction (migration 072).
   const doRelease = () =>
     start(async () => {
-      const r = await publish(card.id, releaseNote);
+      const r = await flushThen(
+        flushPending,
+        () => publish(card.id, releaseNote),
+        { ok: false, error: RELEASE_FLUSH_FAILED },
+      );
       if (r.ok === false) { alert(r.error ?? "Could not release card"); return; }
       if (r.unchanged) { setReleaseNoOp(true); return; }
       setReleaseOpen(false);
@@ -93,6 +103,7 @@ export default function LifecycleControls({
   const blockers = releaseBlockers(draft);
   const blockedNote = releaseBlockedNote(blockers);
   const releaseUnchanged = releaseNoOp || isReleaseUnchanged(draft, releaseBase);
+  const preview = releasePreview(draft, releaseBase);
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -107,7 +118,7 @@ export default function LifecycleControls({
             ))}
             {card.status === "archived" && <li className="font-semibold text-foreground">· {STATUS_LABEL.archived}</li>}
           </ol>
-          <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
             {(card.status === "draft" || card.status === "playtesting") && (
               <>
                 {blockedNote && <span className="text-muted-foreground">{blockedNote}</span>}
@@ -179,7 +190,7 @@ export default function LifecycleControls({
         </div>
       )}
       <Dialog open={releaseOpen} onOpenChange={(o) => { if (!o) setReleaseOpen(false); }}>
-        <DialogContent>
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>{releaseLabel(card.status)}</DialogTitle>
             <DialogDescription>
@@ -190,6 +201,11 @@ export default function LifecycleControls({
           </DialogHeader>
           {!releaseUnchanged && (
             <DialogBody className="space-y-2">
+              <div className="space-y-1.5">
+                <p className="text-xs text-muted-foreground">{preview.caption}</p>
+                <FieldChanges changes={preview.changes} />
+                {preview.artNote && <p className="text-xs text-muted-foreground">{preview.artNote}</p>}
+              </div>
               {releaseNotices.length > 0 && (
                 <ul className="space-y-1 rounded-md border bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground">
                   {releaseNotices.map((n) => (

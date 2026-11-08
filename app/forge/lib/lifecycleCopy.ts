@@ -2,7 +2,7 @@
 // action. Pure and isomorphic — imported by client components and server actions.
 // Eligibility mirrors the guards in migration 052's RPCs; keep them in sync.
 
-import { sameCardContent } from "@/app/forge/lib/cardDiff";
+import { diffCards, sameCardContent, type FieldChange } from "@/app/forge/lib/cardDiff";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 
 export const STATUS_LABEL: Record<string, string> = {
@@ -119,6 +119,69 @@ export function isReleaseUnchanged(draft: DesignCard, base: ReleaseBase | null):
 
 export function releaseUnchangedNote(versionNumber: number | null): string {
   return `Nothing has changed since ${versionNumber === null ? "the last release" : `v${versionNumber}`}, so there is nothing to release.`;
+}
+
+// What the Release dialog shows will ship. A denied change stays in the draft, because a
+// proposal isn't a branch, so this is where it gets seen before it reaches playtesters.
+export function releasePreview(
+  draft: DesignCard,
+  base: ReleaseBase | null,
+): { caption: string; changes: FieldChange[]; artNote: string | null } {
+  // A first release gets no field list: every field reads as an addition.
+  if (!base) return { caption: "First release: playtesters haven’t seen this card yet.", changes: [], artNote: null };
+  const changes = diffCards(base.data, draft);
+  const v = `v${base.versionNumber}`;
+  const caption =
+    changes.length === 0
+      ? `No field changes since ${v}.`
+      : base.live
+        ? `Playtesters will see these changes from ${v}:`
+        : `Changes since ${v}, the last release:`;
+  return { caption, changes, artNote: base.artChanged ? `The artwork has changed since ${v}.` : null };
+}
+
+// A flush failure leaves the server on the previous draft, so acting would ship old text.
+export const RELEASE_FLUSH_FAILED =
+  "Couldn’t save your latest edits, so nothing was released. Check your connection and try again.";
+export const DENY_FLUSH_FAILED =
+  "Couldn’t save your latest edits, so the proposal wasn’t denied. Check your connection and try again.";
+
+// The choice in the Deny dialog. A proposal freezes the one shared draft, so denying can't
+// simply undo it: going back to vN throws away everything since vN, not just the proposal.
+// Defaults to going back only when that loses nothing but the denied change. Once the
+// draft has moved on, the default keeps it, and the option says what it would cost.
+export function denyDraftPlan({
+  draft,
+  proposed,
+  latest,
+}: {
+  draft: DesignCard;
+  proposed: DesignCard;
+  latest: { versionNumber: number; data: DesignCard } | null;
+}): {
+  offer: boolean;
+  defaultRestore: boolean;
+  restoreLabel: string;
+  restoreHint: string;
+  keepLabel: string;
+  keepHint: string;
+  note: string | null;
+} {
+  const movedOn = !sameCardContent(draft, proposed);
+  const plan = {
+    offer: false,
+    defaultRestore: false,
+    restoreLabel: `Put the draft back to v${latest?.versionNumber}`,
+    restoreHint: movedOn
+      ? "The draft has changed since this was proposed, so this also throws away those newer edits. Artwork stays as it is."
+      : "The denied wording stays in this proposal’s history. Artwork stays as it is.",
+    keepLabel: "Leave the draft as it is",
+    keepHint: "The denied change stays in the draft, and the next release will include it.",
+    note: null as string | null,
+  };
+  if (!latest) return { ...plan, note: "The draft keeps this change, because the card has no earlier version to go back to." };
+  if (sameCardContent(draft, latest.data)) return plan;
+  return { ...plan, offer: true, defaultRestore: !movedOn };
 }
 
 const ACTION_ELIGIBLE: Record<LifecycleAction, readonly string[]> = {

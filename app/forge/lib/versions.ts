@@ -26,13 +26,14 @@ export type CardEventRow = {
 
 export type ReleaseInfo = { versionNumber: number; releasedAt: string; status: VersionRow["status"] };
 
-// The lifecycle actions written by migration 072 (see forge_audit inserts).
+// The lifecycle actions written by migrations 072 and 127 (see forge_audit inserts).
 const CARD_EVENT_ACTIONS = [
   "card_approved",
   "card_unapproved",
   "card_archived",
   "card_unarchived",
   "card_returned_to_ideas",
+  "card_draft_restored",
 ];
 
 // Resolve user UUIDs -> display names (member-readable). Same pattern as comments.ts.

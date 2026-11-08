@@ -17,7 +17,103 @@ import { diffCards, summarizeDiff } from "@/app/forge/lib/cardDiff";
 import { acceptProposal, denyProposal, type ProposalRow } from "@/app/forge/lib/proposals";
 import { addComment } from "@/app/forge/lib/comments";
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
+import { denyDraftPlan, DENY_FLUSH_FAILED } from "@/app/forge/lib/lifecycleCopy";
+import { flushThen } from "@/app/forge/lib/proposeFlow";
 import FieldChanges from "./FieldChanges";
+import { useStudioDraft, useStudioSync } from "./StudioSyncContext";
+
+// The Deny dialog's contents. Its own component so that reading the live draft re-renders
+// only this, and only while the dialog is open.
+function DenyDialogBody({
+  proposal,
+  savedDraft,
+  latestVersion,
+  reason,
+  setReason,
+  onCancel,
+  onDenied,
+}: {
+  proposal: ProposalRow;
+  savedDraft: DesignCard;
+  latestVersion: { versionNumber: number; data: DesignCard } | null;
+  reason: string;
+  setReason: (reason: string) => void;
+  onCancel: () => void;
+  onDenied: () => void;
+}) {
+  const { flushPending } = useStudioSync();
+  const draft = useStudioDraft() ?? savedDraft;
+  const plan = denyDraftPlan({ draft, proposed: proposal.proposedSnapshot, latest: latestVersion });
+  const [pending, start] = useTransition();
+  const [err, setErr] = useState<string | null>(null);
+  const [restore, setRestore] = useState(plan.defaultRestore);
+
+  const doDeny = () =>
+    start(async () => {
+      setErr(null);
+      // Restoring writes the snapshot server-side, so a pending autosave has to land
+      // first or it would overwrite the result. See StudioSyncContext.
+      const r = restore && plan.offer
+        ? await flushThen(
+            flushPending,
+            () => denyProposal(proposal.id, proposal.cardId, reason, true),
+            { ok: false, error: DENY_FLUSH_FAILED },
+          )
+        : await denyProposal(proposal.id, proposal.cardId, reason);
+      if (!r.ok) { setErr(r.error ?? "Could not deny proposal"); return; }
+      onDenied();
+    });
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>Deny proposal</DialogTitle>
+        <DialogDescription>The reason is recorded in the proposal history.</DialogDescription>
+      </DialogHeader>
+      <DialogBody className="space-y-3">
+        <div className="space-y-2">
+          <label className="block text-xs font-medium text-muted-foreground">Reason</label>
+          <textarea
+            autoFocus
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Why is this being denied?"
+            className="h-24 w-full rounded-md border bg-background px-2 py-1 text-sm"
+          />
+        </div>
+        {plan.offer && (
+          <fieldset className="space-y-1">
+            <legend className="mb-1 text-xs font-medium text-muted-foreground">The draft</legend>
+            <label className="flex items-start gap-2 py-1 text-sm">
+              <input type="radio" name={`deny-draft-${proposal.id}`} className="mt-1 text-primary focus:ring-0 focus:ring-offset-0" checked={restore} onChange={() => setRestore(true)} />
+              <span>
+                {plan.restoreLabel}
+                <span className="block text-xs text-muted-foreground">{plan.restoreHint}</span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 py-1 text-sm">
+              <input type="radio" name={`deny-draft-${proposal.id}`} className="mt-1 text-primary focus:ring-0 focus:ring-offset-0" checked={!restore} onChange={() => setRestore(false)} />
+              <span>
+                {plan.keepLabel}
+                <span className="block text-xs text-muted-foreground">{plan.keepHint}</span>
+              </span>
+            </label>
+          </fieldset>
+        )}
+        {plan.note && <p className="text-xs text-muted-foreground">{plan.note}</p>}
+        {err && <p className="text-sm text-destructive">{err}</p>}
+      </DialogBody>
+      <DialogFooter>
+        <Button variant="outline" disabled={pending} onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button variant="destructive" disabled={pending || !reason.trim()} onClick={doDeny}>
+          Deny proposal
+        </Button>
+      </DialogFooter>
+    </>
+  );
+}
 
 export default function ProposalDiff({
   proposal,
@@ -26,6 +122,8 @@ export default function ProposalDiff({
   finishedUrl,
   canReview,
   cardStatus,
+  savedDraft = {},
+  latestVersion = null,
 }: {
   proposal: ProposalRow;
   current: DesignCard;
@@ -33,6 +131,10 @@ export default function ProposalDiff({
   finishedUrl: string | null;
   canReview: boolean;
   cardStatus: string;
+  // The card's working draft as last refreshed, and its newest version of any status: the
+  // one Deny can put the draft back to. Same row forge_deny_proposal_restore_draft picks.
+  savedDraft?: DesignCard;
+  latestVersion?: { versionNumber: number; data: DesignCard } | null;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -60,16 +162,6 @@ export default function ProposalDiff({
       router.refresh();
     });
 
-  const doDeny = () =>
-    start(async () => {
-      setErr(null);
-      const r = await denyProposal(proposal.id, proposal.cardId, reason);
-      if (!r.ok) { setErr(r.error ?? "Could not deny proposal"); return; }
-      setDenyOpen(false);
-      setReason("");
-      router.refresh();
-    });
-
   return (
     <div className="rounded-md border p-3">
       <p className="text-sm font-medium">{proposal.summary ?? "Proposed change"}</p>
@@ -83,7 +175,7 @@ export default function ProposalDiff({
           <Button size="sm" disabled={pending} onClick={() => { setErr(null); setAcceptOpen(true); }}>
             Accept
           </Button>
-          <Button size="sm" variant="outline" disabled={pending} onClick={() => { setErr(null); setDenyOpen(true); }}>
+          <Button size="sm" variant="outline" disabled={pending} onClick={() => setDenyOpen(true)}>
             Deny
           </Button>
         </div>
@@ -158,31 +250,17 @@ export default function ProposalDiff({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={denyOpen} onOpenChange={(o) => { if (!o) { setDenyOpen(false); setErr(null); } }}>
+      <Dialog open={denyOpen} onOpenChange={(o) => { if (!o) setDenyOpen(false); }}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Deny proposal</DialogTitle>
-            <DialogDescription>The reason is recorded in the proposal history.</DialogDescription>
-          </DialogHeader>
-          <DialogBody className="space-y-2">
-            <label className="block text-xs font-medium text-muted-foreground">Reason</label>
-            <textarea
-              autoFocus
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Why is this being denied?"
-              className="h-24 w-full rounded-md border bg-background px-2 py-1 text-sm"
-            />
-            {err && <p className="text-sm text-destructive">{err}</p>}
-          </DialogBody>
-          <DialogFooter>
-            <Button variant="outline" disabled={pending} onClick={() => { setDenyOpen(false); setErr(null); }}>
-              Cancel
-            </Button>
-            <Button variant="destructive" disabled={pending || !reason.trim()} onClick={doDeny}>
-              Deny proposal
-            </Button>
-          </DialogFooter>
+          <DenyDialogBody
+            proposal={proposal}
+            savedDraft={savedDraft}
+            latestVersion={latestVersion}
+            reason={reason}
+            setReason={setReason}
+            onCancel={() => setDenyOpen(false)}
+            onDenied={() => { setDenyOpen(false); setReason(""); router.refresh(); }}
+          />
         </DialogContent>
       </Dialog>
     </div>
