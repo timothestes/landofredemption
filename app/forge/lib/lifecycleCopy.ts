@@ -105,15 +105,6 @@ export function isEligible(action: LifecycleAction, status: string): boolean {
 
 export type ConfirmCopy = { title: string; description: string; confirmLabel: string };
 
-export const CONFIRM_COPY = {
-  releaseAll: {
-    title: "Release all drafts?",
-    description:
-      "Releases every draft card matching the current filters. Playtesters will be able to see and build playtest decks with them.",
-    confirmLabel: "Release all",
-  },
-} as const;
-
 // forge_send_card_to_private makes the person clicking the owner, on purpose (#443):
 // a card returned from a set lands in THEIR ideas, whoever made it. The card is then
 // private to them, because forge_cards_select only admits set elders while set_id is set.
@@ -146,4 +137,67 @@ export function deleteCopy(names: (string | null | undefined)[]): ConfirmCopy {
     description: `This permanently removes ${shown.join(", ")}${more > 0 ? ` and ${more} more` : ""}, with all of their versions. This cannot be undone.`,
     confirmLabel: `Delete ${trimmed.length} cards`,
   };
+}
+
+// The actions on the set grid's bulk bar, plus the toolbar's "Release all".
+export type BulkAction = Exclude<LifecycleAction, "reopen">;
+export type BulkConfirmAction = BulkAction | "releaseAll";
+
+const cardCount = (n: number) => `${n} ${n === 1 ? "card" : "cards"}`;
+
+// Every bulk action confirms, in the same voice as the single-card dialogs: what will
+// happen, and what playtesters will see. `names` holds the cards it would really touch.
+export function bulkConfirmCopy(action: BulkConfirmAction, { names }: { names: (string | null | undefined)[] }): ConfirmCopy {
+  const n = names.length;
+  const one = n === 1;
+  switch (action) {
+    case "release":
+      return {
+        title: `Release ${cardCount(n)}?`,
+        description: "Freezes each card’s current draft as a new version visible to playtesters.",
+        confirmLabel: "Release",
+      };
+    case "releaseAll":
+      return {
+        title: "Release all drafts?",
+        description: `Releases ${n} draft ${one ? "card" : "cards"} matching the current filters. Playtesters will be able to see and build playtest decks with ${one ? "it" : "them"}.`,
+        confirmLabel: "Release all",
+      };
+    case "markFinal":
+      return {
+        title: `Mark ${cardCount(n)} final?`,
+        description: `Marks ${one ? "the card’s released version" : "each card’s released version"} as final. No new version is made. Playtesters can still see ${one ? "it" : "them"}, and Reopen testing undoes this.`,
+        confirmLabel: "Mark final",
+      };
+    case "shelve":
+      return {
+        title: `Shelve ${cardCount(n)}?`,
+        description: one
+          ? "Playtesters can no longer see this card. Restore brings it back: In playtest if it had a released version, otherwise Draft."
+          : "Playtesters can no longer see these cards. Restore brings each one back: In playtest if it had a released version, otherwise Draft.",
+        confirmLabel: "Shelve",
+      };
+    case "restore":
+      return {
+        title: `Restore ${cardCount(n)}?`,
+        description: "A card with a released version goes back to In playtest, and playtesters can see it again. Any other card goes back to Draft.",
+        confirmLabel: "Restore",
+      };
+    case "returnToIdeas":
+      return returnToIdeasCopy(n);
+    case "delete":
+      return deleteCopy(names);
+  }
+}
+
+// Bulk release uses forge_publish_card, so it closes open proposals as a single release
+// does (migration 083). The grid only has per-card counts, not which proposal matches
+// which draft, so this says what happens to them rather than how many of each.
+export function bulkProposalNotice(openCount: number): string[] {
+  if (openCount <= 0) return [];
+  return [
+    openCount === 1
+      ? "1 open proposal on these cards will be closed. If it matches its card’s draft it’s recorded as accepted by the release; otherwise it’s closed as out of date. Review it first if you still want it."
+      : `${openCount} open proposals on these cards will be closed. One that matches its card’s draft is recorded as accepted by the release; the rest are closed as out of date. Review them first if you still want them.`,
+  ];
 }

@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import {
   STATUS_LABEL, ACTION_LABEL, releaseLabel, isEligible, BULK_DONE_VERB, releaseProposalNotice,
-  returnToIdeasCopy, deleteCopy, bulkReleaseLabel,
+  returnToIdeasCopy, deleteCopy, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice,
 } from "../lifecycleCopy";
 
 describe("lifecycleCopy", () => {
@@ -150,5 +150,75 @@ describe("bulkReleaseLabel", () => {
 
   it("falls back to the action label with nothing eligible", () => {
     expect(bulkReleaseLabel([])).toBe(ACTION_LABEL.release);
+  });
+});
+
+describe("bulkConfirmCopy", () => {
+  const ctx = (n: number, extra = {}) => ({ names: Array.from({ length: n }, (_, i) => `Card ${i + 1}`), ...extra });
+
+  it("has a confirmation for every action in the bulk bar", () => {
+    for (const a of ["release", "markFinal", "shelve", "restore", "returnToIdeas", "delete", "releaseAll"] as const) {
+      const c = bulkConfirmCopy(a, ctx(2));
+      expect(c.title).toBeTruthy();
+      expect(c.description).toBeTruthy();
+      expect(c.confirmLabel).toBeTruthy();
+    }
+  });
+
+  it("never says '1 cards'", () => {
+    for (const a of ["release", "markFinal", "shelve", "restore", "releaseAll"] as const) {
+      const c = bulkConfirmCopy(a, ctx(1));
+      expect(`${c.title} ${c.description}`).not.toMatch(/\b1 cards\b/);
+    }
+  });
+
+  it("release says what it freezes and who sees it", () => {
+    const c = bulkConfirmCopy("release", ctx(3));
+    expect(c.title).toBe("Release 3 cards?");
+    expect(c.description).toMatch(/new version visible to playtesters/);
+  });
+
+  it("mark final says no new version is made and playtesters keep it", () => {
+    const c = bulkConfirmCopy("markFinal", ctx(2));
+    expect(c.title).toBe("Mark 2 cards final?");
+    expect(c.description).toMatch(/No new version is made/);
+    expect(c.description).toMatch(/Playtesters can still see/);
+  });
+
+  it("shelve says playtesters lose them and where Restore takes them", () => {
+    const c = bulkConfirmCopy("shelve", ctx(2));
+    expect(c.description).toMatch(/Playtesters can no longer see/);
+    expect(c.description).toMatch(/In playtest/);
+    expect(c.description).toMatch(/Draft/);
+  });
+
+  it("restore says released cards reach playtesters again", () => {
+    const c = bulkConfirmCopy("restore", ctx(2));
+    expect(c.description).toMatch(/In playtest/);
+    expect(c.description).toMatch(/playtesters can see/);
+  });
+
+  it("delete and return reuse the single-card copy", () => {
+    expect(bulkConfirmCopy("delete", ctx(1)).title).toBe("Delete \u201cCard 1\u201d?");
+    expect(bulkConfirmCopy("returnToIdeas", ctx(2)).description).toMatch(/makes you their owner/);
+  });
+
+  it("release all counts the drafts", () => {
+    expect(bulkConfirmCopy("releaseAll", ctx(3)).description).toMatch(/3 draft cards/);
+    expect(bulkConfirmCopy("releaseAll", ctx(1)).description).toMatch(/1 draft card\b/);
+  });
+});
+
+describe("bulkProposalNotice", () => {
+  it("says nothing with no open proposals", () => {
+    expect(bulkProposalNotice(0)).toEqual([]);
+  });
+
+  it("says a release closes them, and how, matching migration 083", () => {
+    const [one] = bulkProposalNotice(1);
+    expect(one).toMatch(/^1 open proposal on these cards will be closed/);
+    expect(one).toMatch(/recorded as accepted/);
+    expect(one).toMatch(/out of date/);
+    expect(bulkProposalNotice(4)[0]).toMatch(/^4 open proposals on these cards will be closed/);
   });
 });

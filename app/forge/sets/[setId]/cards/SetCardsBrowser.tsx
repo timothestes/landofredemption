@@ -8,8 +8,8 @@ import ForgeCardGrid from "@/app/forge/components/ForgeCardGrid";
 import AddCardTile from "./AddCardTile";
 import { bulkLifecycle, type BulkResult } from "@/app/forge/lib/lifecycle";
 import {
-  STATUS_LABEL, ACTION_LABEL, BULK_DONE_VERB, CONFIRM_COPY, isEligible, bulkReleaseLabel, returnToIdeasCopy, deleteCopy,
-  type LifecycleAction,
+  STATUS_LABEL, ACTION_LABEL, BULK_DONE_VERB, isEligible, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice,
+  type LifecycleAction, type BulkAction, type BulkConfirmAction,
 } from "@/app/forge/lib/lifecycleCopy";
 import { cardRawText, CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 
 const SET_STATUSES = ["draft", "playtesting", "approved", "archived"] as const;
-const BULK_ACTIONS: LifecycleAction[] = ["release", "markFinal", "shelve", "restore", "returnToIdeas", "delete"];
+const BULK_ACTIONS: BulkAction[] = ["release", "markFinal", "shelve", "restore", "returnToIdeas", "delete"];
 const selectClass = "rounded-md border bg-background px-2 py-1.5 text-sm";
 
 export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts, proposalCounts, releases }: { cards: ForgeCardFull[]; setId: string; canCreate: boolean; commentCounts?: Record<string, number>; proposalCounts?: Record<string, number>; releases?: Record<string, ReleaseInfo> }) {
@@ -34,7 +34,7 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [busy, setBusy] = useState<LifecycleAction | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState<"returnToIdeas" | "delete" | "releaseAll" | null>(null);
+  const [confirming, setConfirming] = useState<BulkConfirmAction | null>(null);
 
   // Press "/" (when not already typing in a field) to reset the search and jump to it.
   useEffect(() => {
@@ -108,12 +108,14 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
     router.refresh();
   }
 
-  const confirmCopy =
-    confirming === "releaseAll"
-      ? { ...CONFIRM_COPY.releaseAll, description: `${CONFIRM_COPY.releaseAll.description} (${draftIds.length} cards)` }
-      : confirming === "returnToIdeas"
-        ? returnToIdeasCopy(eligibleCount("returnToIdeas"))
-        : deleteCopy(eligibleCards("delete").map((c) => c.title));
+  const confirmCards = confirming === "releaseAll"
+    ? filtered.filter((c) => c.status === "draft")
+    : eligibleCards(confirming ?? "delete");
+  const confirmCopy = bulkConfirmCopy(confirming ?? "delete", { names: confirmCards.map((c) => c.title) });
+  // Release closes open proposals (migration 083), so say so before it happens.
+  const confirmNotices = confirming === "release" || confirming === "releaseAll"
+    ? bulkProposalNotice(confirmCards.reduce((sum, c) => sum + (proposalCounts?.[c.id] ?? 0), 0))
+    : [];
 
   return (
     <div className="relative pb-28 sm:pb-20">
@@ -221,7 +223,7 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
                 variant={a === "release" ? "default" : "outline"}
                 className={`h-8 text-xs ${danger ? "border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive" : ""}`}
                 disabled={busy !== null || n === 0}
-                onClick={() => (a === "delete" || a === "returnToIdeas") ? setConfirming(a) : runBulk(a, ids)}
+                onClick={() => setConfirming(a)}
               >
                 {label}
               </Button>
@@ -243,7 +245,13 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
         title={confirmCopy.title}
         description={confirmCopy.description}
         confirmLabel={confirmCopy.confirmLabel}
-      />
+      >
+        {confirmNotices.length > 0 && (
+          <ul className="space-y-1 rounded-md border bg-muted/50 px-2 py-1.5 text-xs text-muted-foreground">
+            {confirmNotices.map((n) => <li key={n}>{n}</li>)}
+          </ul>
+        )}
+      </ConfirmationDialog>
     </div>
   );
 }
