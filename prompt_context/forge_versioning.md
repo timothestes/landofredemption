@@ -30,6 +30,9 @@ creates a version; decisions do.
               ─────────────────────────────────▶ vN 'published', card → In playtest
  "Mark final"      : flips current 'published' row → 'approved' (no new version)
  "Reopen testing"  : flips it back (no new version)
+ "Shelve"          : retires the live row and remembers it (shelved_version_id)
+ "Restore"         : a card shelved with a live version goes back to In playtest on
+                     that same version; anything else goes back to Draft (no new version)
 ```
 
 ## Why autosave exists (and why it is NOT versioning)
@@ -49,7 +52,7 @@ intended way to record your own iteration; nothing else will.
 | `draft` | Accepting a proposal on a **Draft** card | Elders/owner/superadmin only | Pre-release iteration record. Never superseded, never released; permanent history. |
 | `published` | **Release to playtesters** button, or accepting a proposal on an **In playtest** card | Playtesters (granted) + elders | The current playtest version. Exactly one per card; the previous one flips to `superseded`. |
 | `approved` | **Mark final** (flips the current `published` row in place) | Playtesters (granted) + elders | The finalized version. Reopen flips it back to `published`. |
-| `superseded` | Automatically, when a newer `published` version replaces the old one (or on Shelve/Return for published/approved rows) | Elders only | Retired release. Draft rows are never turned into this. |
+| `superseded` | Automatically, when a newer `published` version replaces the old one (or on Shelve/Return for published/approved rows) | Elders only | Retired release. Draft rows are never turned into this. Restore flips the row Shelve took down back to `published` (migration 127); a Final card comes back In playtest. |
 
 Version numbers are one monotonic sequence per card across all statuses —
 if a card iterated four times in draft, its first release is **v5**. That is
@@ -125,6 +128,6 @@ pipeline + manual Lackey export).
 | History timeline | `CardHistory.tsx` + pure assembly in `app/forge/lib/historyView.ts` |
 | Readers | `app/forge/lib/versions.ts` (listVersions / listCardEvents / listSetActivity) |
 | Server actions | `app/forge/lib/proposals.ts`, `lifecycle.ts` |
-| RPCs (current bodies) | migrations `083` (**current `forge_publish_card`** — resolves open proposals), `072` (publish note + audit events + undeletable reasons), `075` (draft versions, unified base/guard, sweep exclusions) |
+| RPCs (current bodies) | migrations `127` (**current `forge_archive_card` and `forge_unarchive_card`**), `083` (**current `forge_publish_card`** — resolves open proposals), `072` (publish note + audit events + undeletable reasons), `075` (draft versions, unified base/guard, sweep exclusions) |
 | Enum + backfill | `074` (`version_status` gains 'draft'), `076` (backfilled the one 073-era lost accept) |
 | Design history | `docs/superpowers/specs/2026-07-06-forge-version-history-design.md` (incl. addendum) |
