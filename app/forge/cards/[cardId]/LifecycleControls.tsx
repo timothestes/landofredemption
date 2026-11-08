@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 import { shareToSet, sendToPrivate, publish, approve, unapprove, archive, unarchive, deleteCard } from "@/app/forge/lib/lifecycle";
-import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, deleteCopy, releaseBlockers, releaseBlockedNote, isReleaseUnchanged, releaseUnchangedNote, type ReleaseBase } from "@/app/forge/lib/lifecycleCopy";
+import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, deleteCopy, releaseBlockers, releaseBlockedNote, isReleaseUnchanged, releaseUnchangedNote, restoreCopy, type ReleaseBase, type RestoreTarget } from "@/app/forge/lib/lifecycleCopy";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
 import type { DesignCard } from "@/app/forge/lib/designCard";
@@ -31,6 +31,7 @@ export default function LifecycleControls({
   card,
   draft,
   releaseBase = null,
+  restoreTarget = null,
   sets,
   openProposals = { count: 0, hasMatch: false },
 }: {
@@ -39,6 +40,8 @@ export default function LifecycleControls({
   draft: DesignCard;
   // The newest version playtesters have seen. Null before a card's first release.
   releaseBase?: ReleaseBase | null;
+  // Where Restore will put this card. Only set while it's shelved.
+  restoreTarget?: RestoreTarget | null;
   sets: ForgeSetSummary[];
   // Releasing closes the card's open proposals (migration 083). `hasMatch` =
   // one of them is exactly this draft, so the release records it as accepted
@@ -50,6 +53,7 @@ export default function LifecycleControls({
   const [picking, setPicking] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmReturn, setConfirmReturn] = useState(false);
+  const [confirmRestore, setConfirmRestore] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [releaseNote, setReleaseNote] = useState("");
   // The RPC minted nothing. It decides; this catches what the dialog's own check can't see.
@@ -84,6 +88,7 @@ export default function LifecycleControls({
   const inSet = card.setId !== null;
   const releaseNotices = releaseProposalNotice(openProposals.count, openProposals.hasMatch);
   const returnCopy = returnToIdeasCopy(1);
+  const restore = restoreCopy(restoreTarget ?? { status: "draft", versionNumber: null });
   const delCopy = deleteCopy([draft.name]);
   const blockers = releaseBlockers(draft);
   const blockedNote = releaseBlockedNote(blockers);
@@ -122,7 +127,7 @@ export default function LifecycleControls({
               </Button>
             )}
             {card.status === "archived" && (
-              <Button size="sm" variant="outline" className="h-7 px-3 text-xs" disabled={pending} onClick={() => run(() => unarchive(card.id))}>
+              <Button size="sm" variant="outline" className="h-7 px-3 text-xs" disabled={pending} onClick={() => setConfirmRestore(true)}>
                 {ACTION_LABEL.restore}
               </Button>
             )}
@@ -212,6 +217,15 @@ export default function LifecycleControls({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmationDialog
+        open={confirmRestore}
+        onOpenChange={setConfirmRestore}
+        onConfirm={() => run(() => unarchive(card.id))}
+        variant="warning"
+        title={restore.title}
+        description={restore.description}
+        confirmLabel={restore.confirmLabel}
+      />
       <ConfirmationDialog
         open={confirmReturn}
         onOpenChange={setConfirmReturn}

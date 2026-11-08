@@ -4,7 +4,7 @@ import {
   STATUS_LABEL, ACTION_LABEL, releaseLabel, isEligible, BULK_DONE_VERB, releaseProposalNotice,
   returnToIdeasCopy, deleteCopy, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice,
   releaseBlockers, releaseBlockedNote, bulkBlockedNotice, bulkSummary,
-  releaseUnchangedNote, isReleaseUnchanged,
+  releaseUnchangedNote, isReleaseUnchanged, restoreCopy,
 } from "../lifecycleCopy";
 
 describe("lifecycleCopy", () => {
@@ -188,17 +188,17 @@ describe("bulkConfirmCopy", () => {
     expect(c.description).toMatch(/Playtesters can still see/);
   });
 
-  it("shelve says playtesters lose them and where Restore takes them", () => {
+  it("shelve says playtesters lose them and that Restore puts them back as they were", () => {
     const c = bulkConfirmCopy("shelve", ctx(2));
     expect(c.description).toMatch(/Playtesters can no longer see/);
-    expect(c.description).toMatch(/In playtest/);
-    expect(c.description).toMatch(/Draft/);
+    expect(c.description).toMatch(/as it was/);
   });
 
-  it("restore says released cards reach playtesters again", () => {
+  it("restore says released cards reach playtesters again, and where the rest go", () => {
     const c = bulkConfirmCopy("restore", ctx(2));
-    expect(c.description).toMatch(/In playtest/);
+    expect(c.description).toMatch(/In playtest or Final/);
     expect(c.description).toMatch(/playtesters can see/);
+    expect(c.description).toMatch(/Draft/);
   });
 
   it("delete and return reuse the single-card copy", () => {
@@ -318,5 +318,37 @@ describe("releaseUnchangedNote", () => {
 
   it("copes without a version number", () => {
     expect(releaseUnchangedNote(null)).toBe("Nothing has changed since the last release, so there is nothing to release.");
+  });
+});
+
+describe("restoreCopy", () => {
+  it("says a released card reaches playtesters again, and names the version", () => {
+    const c = restoreCopy({ status: "playtesting", versionNumber: 3 });
+    expect(c.description).toMatch(/In playtest on v3/);
+    expect(c.description).toMatch(/Playtesters can see v3 again/);
+    expect(c.confirmLabel).toBe("Restore");
+  });
+
+  it("says a Final card comes back Final", () => {
+    const c = restoreCopy({ status: "approved", versionNumber: 2 });
+    expect(c.description).toMatch(/Final on v2/);
+    expect(c.description).toMatch(/Playtesters can see v2 again/);
+  });
+
+  it("says edits made since aren't what playtesters get", () => {
+    expect(restoreCopy({ status: "playtesting", versionNumber: 3 }).description).toMatch(/not any edits made since/);
+  });
+
+  it("says a Draft card stays out of the playtest", () => {
+    const c = restoreCopy({ status: "draft", versionNumber: null });
+    expect(c.description).toMatch(/goes back to Draft/);
+    expect(c.description).toMatch(/Playtesters won.t see it/);
+  });
+
+  it("stays plain if the version can't be named", () => {
+    const c = restoreCopy({ status: "playtesting", versionNumber: null });
+    expect(c.description).toMatch(/In playtest/);
+    expect(c.description).toMatch(/[Pp]laytesters can see it again/);
+    expect(c.description).not.toMatch(/\bvnull\b/);
   });
 });

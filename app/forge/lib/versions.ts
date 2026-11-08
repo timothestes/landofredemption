@@ -100,6 +100,25 @@ export async function artChangedSince(cardId: string, versionId: string): Promis
   );
 }
 
+// What Restore will put back on a shelved card (migration 127). Read separately, only for
+// a shelved card, so no other page depends on these columns. No record means Draft, which
+// is what forge_unarchive_card does with one too.
+export async function getShelvedRecord(cardId: string): Promise<{ status: string; versionId: string | null }> {
+  const none = { status: "draft", versionId: null };
+  const ctx = await requireForge();
+  if (!ctx) return none;
+  const { data } = await ctx.supabase
+    .from("forge_cards")
+    .select("shelved_status, shelved_published_version_id, shelved_approved_version_id")
+    .eq("id", cardId)
+    .maybeSingle();
+  if (!data?.shelved_status) return none;
+  return {
+    status: data.shelved_status,
+    versionId: data.shelved_approved_version_id ?? data.shelved_published_version_id ?? null,
+  };
+}
+
 // Lifecycle events (post-072 only), oldest first. forge_audit is elder-read
 // RLS-gated; non-elders simply get [].
 export async function listCardEvents(cardId: string): Promise<CardEventRow[]> {

@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/app/forge/lib/auth", () => ({ requireForge: vi.fn() }));
 
 import { requireForge } from "@/app/forge/lib/auth";
-import { listVersions, listCardEvents, listSetActivity, artChangedSince } from "../versions";
+import { listVersions, listCardEvents, listSetActivity, artChangedSince, getShelvedRecord } from "../versions";
 
 // Chainable query stub: every method returns the builder; awaiting it yields
 // the row payload for its table (thenable, like the supabase-js builder).
@@ -131,5 +131,37 @@ describe("artChangedSince", () => {
   it("returns false for a non-member", async () => {
     (requireForge as any).mockResolvedValue(null);
     expect(await artChangedSince("c1", "v1")).toBe(false);
+  });
+});
+
+describe("getShelvedRecord", () => {
+  function ctx(row: any, error: any = null) {
+    const b: any = {};
+    b.select = () => b;
+    b.eq = () => b;
+    b.maybeSingle = async () => ({ data: row, error });
+    return { role: "elder", user: { id: "u1" }, supabase: { from: () => b } };
+  }
+
+  it("reads an In playtest record", async () => {
+    (requireForge as any).mockResolvedValue(ctx({ shelved_status: "playtesting", shelved_published_version_id: "v1", shelved_approved_version_id: null }));
+    expect(await getShelvedRecord("c1")).toEqual({ status: "playtesting", versionId: "v1" });
+  });
+
+  it("prefers the approved version on a Final record", async () => {
+    (requireForge as any).mockResolvedValue(ctx({ shelved_status: "approved", shelved_published_version_id: "v1", shelved_approved_version_id: "v1" }));
+    expect(await getShelvedRecord("c1")).toEqual({ status: "approved", versionId: "v1" });
+  });
+
+  it("falls back to Draft with no record, as forge_unarchive_card does", async () => {
+    (requireForge as any).mockResolvedValue(ctx({ shelved_status: null, shelved_published_version_id: null, shelved_approved_version_id: null }));
+    expect(await getShelvedRecord("c1")).toEqual({ status: "draft", versionId: null });
+  });
+
+  it("falls back to Draft when the read fails", async () => {
+    (requireForge as any).mockResolvedValue(ctx(null, { message: "column does not exist" }));
+    expect(await getShelvedRecord("c1")).toEqual({ status: "draft", versionId: null });
+    (requireForge as any).mockResolvedValue(null);
+    expect(await getShelvedRecord("c1")).toEqual({ status: "draft", versionId: null });
   });
 });

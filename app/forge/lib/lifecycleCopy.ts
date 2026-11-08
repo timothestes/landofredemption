@@ -171,6 +171,25 @@ export function deleteCopy(names: (string | null | undefined)[]): ConfirmCopy {
   };
 }
 
+// Where Restore will put a shelved card, from what forge_archive_card recorded (migration
+// 127). The grid has no version numbers for this, so only the single-card dialog names one.
+export type RestoreTarget = { status: string; versionNumber: number | null };
+
+export function restoreCopy({ status, versionNumber }: RestoreTarget): ConfirmCopy {
+  const title = "Restore this card?";
+  if (status === "draft") {
+    return { title, description: "It goes back to Draft. Playtesters won’t see it until it’s released.", confirmLabel: "Restore" };
+  }
+  const where = STATUS_LABEL[status] ?? status;
+  return {
+    title,
+    description: versionNumber === null
+      ? `It goes back to ${where}, and playtesters can see it again.`
+      : `It goes back to ${where} on v${versionNumber}. Playtesters can see v${versionNumber} again, but not any edits made since.`,
+    confirmLabel: "Restore",
+  };
+}
+
 // The actions on the set grid's bulk bar, plus the toolbar's "Release all".
 export type BulkAction = Exclude<LifecycleAction, "reopen">;
 export type BulkConfirmAction = BulkAction | "releaseAll";
@@ -205,14 +224,14 @@ export function bulkConfirmCopy(action: BulkConfirmAction, { names }: { names: (
       return {
         title: `Shelve ${cardCount(n)}?`,
         description: one
-          ? "Playtesters can no longer see this card. Restore brings it back: In playtest if it had a released version, otherwise Draft."
-          : "Playtesters can no longer see these cards. Restore brings each one back: In playtest if it had a released version, otherwise Draft.",
+          ? "Playtesters can no longer see this card. Restore puts it back as it was."
+          : "Playtesters can no longer see these cards. Restore puts each one back as it was.",
         confirmLabel: "Shelve",
       };
     case "restore":
       return {
         title: `Restore ${cardCount(n)}?`,
-        description: "A card with a released version goes back to In playtest, and playtesters can see it again. Any other card goes back to Draft.",
+        description: "A card that was released when it was shelved goes back to In playtest or Final on the same version, and playtesters can see it again. Any other card goes back to Draft.",
         confirmLabel: "Restore",
       };
     case "returnToIdeas":

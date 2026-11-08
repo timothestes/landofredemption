@@ -61,6 +61,10 @@ describe("LifecycleControls", () => {
     expect(releaseButton(html)).not.toMatch(DISABLED);
   });
 
+  it("offers Restore on a shelved card", () => {
+    expect(render({ status: "archived", setId: "s1" })).toContain(">Restore<");
+  });
+
   it("does not block on missing art", () => {
     const html = render({ status: "draft", setId: "s1", hasArt: false }, READY);
     expect(releaseButton(html)).not.toMatch(DISABLED);

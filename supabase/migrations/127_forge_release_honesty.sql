@@ -4,7 +4,7 @@
 -- Bodies were taken from the migrations that last defined them and match production
 -- by md5 of prosrc: forge_archive_card 075, forge_unarchive_card 072, forge_publish_card 083.
 
--- (U-17) Restore returns a released card to In playtest.
+-- (U-17) Restore puts a card back the way it was before Shelve.
 --
 -- Shelving has to retire the live version: card_versions_select lets a granted
 -- playtester read any 'published' or 'approved' row, whatever the card's status. So
@@ -13,16 +13,32 @@
 -- would be wrong: a card returned to ideas, re-shared and then shelved still has one,
 -- and Restore would put a retired version back in front of playtesters.
 --
--- So Shelve records which version it took down. forge_archive_card is the only way
--- into 'archived' and always overwrites the pointer, so a value left behind by Return
--- to ideas can't be read. Nothing was shelved on production when this was written, so
--- there is nothing to backfill. A card with no pointer restores to Draft as before.
--- A Final card restores to In playtest; Mark final is one click away.
-alter table public.forge_cards add column if not exists shelved_version_id uuid;
+-- So Shelve records what it clears, and Restore puts back exactly that, row statuses
+-- included: setting forge_cards.status alone wouldn't reach playtesters, who read
+-- card_versions by status. No new version is minted.
+--   * In playtest comes back In playtest, Final comes back Final, Draft comes back Draft.
+--   * forge_archive_card is the only way into 'archived' and always overwrites the
+--     record, so one left behind by Return to ideas can't be read.
+--   * No record means Draft, as before. Nothing was shelved on production when this was
+--     written, so there is nothing to backfill.
+--   * Open proposals carry on: no version is minted while a card is shelved, so their
+--     base is still the latest version and the stale guard still passes.
+-- Signatures are unchanged, so CREATE OR REPLACE keeps the grants, and the deployed
+-- client only checks for an error and refreshes. Its Restore button works as it did and
+-- the card shows its restored status.
+alter table public.forge_cards
+  add column if not exists shelved_status public.forge_card_status,
+  add column if not exists shelved_published_version_id uuid,
+  add column if not exists shelved_approved_version_id uuid;
 
 do $$ begin
   alter table public.forge_cards
-    add constraint fk_shelved foreign key (id, shelved_version_id)
+    add constraint fk_shelved_published foreign key (id, shelved_published_version_id)
+      references public.card_versions(card_id, id);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table public.forge_cards
+    add constraint fk_shelved_approved foreign key (id, shelved_approved_version_id)
       references public.card_versions(card_id, id);
 exception when duplicate_object then null; end $$;
 
@@ -43,7 +59,9 @@ begin
    where card_id = p_card_id and status in ('published','approved');
   update public.forge_cards
      set status = 'archived', published_version_id = null, approved_version_id = null,
-         shelved_version_id = coalesce(v_card.approved_version_id, v_card.published_version_id),
+         shelved_status = v_card.status,
+         shelved_published_version_id = v_card.published_version_id,
+         shelved_approved_version_id = v_card.approved_version_id,
          updated_at = now()
    where id = p_card_id;
   insert into public.forge_audit (actor, action, target)
@@ -61,15 +79,16 @@ begin
     raise exception 'not authorized';
   end if;
   if v_card.status <> 'archived' then raise exception 'card is not archived'; end if;
-  if v_card.shelved_version_id is not null then
-    update public.card_versions set status = 'published' where id = v_card.shelved_version_id;
-    update public.forge_cards
-       set status = 'playtesting', published_version_id = v_card.shelved_version_id,
-           shelved_version_id = null, updated_at = now()
-     where id = p_card_id;
-  else
-    update public.forge_cards set status = 'draft', updated_at = now() where id = p_card_id;
-  end if;
+  -- In this order: on a Final card both pointers name the same row, and it must end 'approved'.
+  update public.card_versions set status = 'published' where id = v_card.shelved_published_version_id;
+  update public.card_versions set status = 'approved' where id = v_card.shelved_approved_version_id;
+  update public.forge_cards
+     set status = coalesce(v_card.shelved_status, 'draft'),
+         published_version_id = v_card.shelved_published_version_id,
+         approved_version_id = v_card.shelved_approved_version_id,
+         shelved_status = null, shelved_published_version_id = null, shelved_approved_version_id = null,
+         updated_at = now()
+   where id = p_card_id;
   insert into public.forge_audit (actor, action, target)
   values (auth.uid(), 'card_unarchived', p_card_id::text);
 end; $$;

@@ -18,7 +18,7 @@ import { saveCard, uploadFinished, setPlaceholder, type ForgeCardFull } from "@/
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import type { ArtCandidate } from "@/app/forge/lib/artCandidates";
-import type { ReleaseBase } from "@/app/forge/lib/lifecycleCopy";
+import type { ReleaseBase, RestoreTarget } from "@/app/forge/lib/lifecycleCopy";
 import LifecycleControls from "./LifecycleControls";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
 import { forgeCardTopic } from "@/app/forge/lib/realtime";
@@ -41,7 +41,7 @@ const arrowClass =
   "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground";
 
 export default function StudioEditor({
-  card, sets, currentUser, creator, setId, setName, prevId, nextId, position, artCandidates, openProposals, releaseBase, review,
+  card, sets, currentUser, creator, setId, setName, prevId, nextId, position, artCandidates, openProposals, releaseBase, restoreTarget, review,
 }: {
   card: ForgeCardFull;
   sets: ForgeSetSummary[];
@@ -59,6 +59,8 @@ export default function StudioEditor({
   openProposals?: { count: number; hasMatch: boolean };
   // Also for the release dialog: what the draft is compared against.
   releaseBase?: ReleaseBase | null;
+  // For the Restore dialog on a shelved card: where it will go back to.
+  restoreTarget?: RestoreTarget | null;
   // The review column (proposals / history / comments), rendered inside this component's
   // grid so the sticky card face keeps travelling alongside it. Built in the server
   // component, so it is an element, not a render prop — it cannot take callbacks.
@@ -300,7 +302,7 @@ export default function StudioEditor({
           {" · "}
           {new Date(creator.at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
         </p>
-        <LifecycleControls card={card} draft={snapshot} releaseBase={releaseBase} sets={sets} openProposals={openProposals} />
+        <LifecycleControls card={card} draft={snapshot} releaseBase={releaseBase} restoreTarget={restoreTarget} sets={sets} openProposals={openProposals} />
         {card.setId && (
           <p className="text-xs text-muted-foreground">
             Releases are visible to Forge playtesters only — they don’t change the public card database.

@@ -7,7 +7,7 @@ import { sortSetCards } from "@/app/forge/lib/cardOrder";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import { getOpenProposalDiffs, listProposals } from "@/app/forge/lib/proposals";
 import { listComments } from "@/app/forge/lib/comments";
-import { listVersions, listCardEvents, artChangedSince } from "@/app/forge/lib/versions";
+import { listVersions, listCardEvents, artChangedSince, getShelvedRecord } from "@/app/forge/lib/versions";
 import StudioEditor from "./StudioEditor";
 import ReviewPanel from "./ReviewPanel";
 
@@ -57,6 +57,15 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
       }
     : null;
 
+  // Where Restore will put a shelved card, for its dialog. Wording only; the RPC decides.
+  const shelved = card.status === "archived" ? await getShelvedRecord(cardId) : null;
+  const restoreTarget = shelved
+    ? {
+        status: shelved.status,
+        versionNumber: versions.find((v) => v.id === shelved.versionId)?.versionNumber ?? null,
+      }
+    : null;
+
   // Prev/next arrows on the card face walk the set in the same order as the grid.
   // No wrap: the boundary card gets null and hides that arrow.
   const ordered = sortSetCards(siblings);
@@ -99,6 +108,7 @@ export default async function StudioPage({ params }: { params: Promise<{ cardId:
       artCandidates={artCandidates}
       openProposals={openProposals}
       releaseBase={releaseBase}
+      restoreTarget={restoreTarget}
       review={
         inSet ? (
           // key: React validates this as a keyless list child once it crosses the
