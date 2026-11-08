@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { requireForge } from "@/app/forge/lib/auth";
+import { playtesterCardHref } from "@/app/forge/lib/play";
 import { getCard } from "@/app/forge/lib/cards";
 import { listArtCandidates } from "@/app/forge/lib/artCandidates";
 import { getSet, listWritableSets, listSetSiblings, canDesignSet } from "@/app/forge/lib/sets";
@@ -22,8 +23,8 @@ export default async function StudioPage({ params, searchParams }: {
 }) {
   const ctx = await requireForge();
   if (!ctx) notFound();
-  if (ctx.role === "playtester") redirect("/forge/play");
   const { cardId } = await params;
+  if (ctx.role === "playtester") redirect(await playtesterCardHref(cardId));
   // The filters of the grid you came from, kept on the way along the arrows and back.
   const filters = parseCardFilters(await searchParams);
   const card = await getCard(cardId);

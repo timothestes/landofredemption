@@ -57,7 +57,11 @@ export const deckLinks: NavLink[] = [
   { href: "/decklist/card-search/tier-list", label: "Tier List Maker", icon: TbListNumbers, isNew: true, prefetch: false },
 ];
 
-const TopNav: React.FC = () => {
+// hideGameLinks: a playtester's Forge pages have their own Play, Decks and Deckbuilder right below
+// this bar, so the public ones would be the same words going somewhere with no Forge cards. A prop
+// from the Forge layout rather than a pathname check, because the site 404 renders this nav too
+// and must look the same to a non-member under /forge.
+const TopNav: React.FC<{ hideGameLinks?: boolean }> = ({ hideGameLinks = false }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const [isDecksOpen, setIsDecksOpen] = useState(false);
@@ -220,8 +224,23 @@ const TopNav: React.FC = () => {
               );
             })}
 
-            {/* Admin Dropdown - for app admins and/or Forge members */}
-            {(isAdmin || isForgeMember) && (
+            {/* A Forge member who isn't an app admin would have nothing else under "Admin". */}
+            {isForgeMember && !isAdmin && (
+              <Link
+                href="/forge"
+                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors
+                  ${isActive('/forge')
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+              >
+                <GiAnvil className="w-4 h-4" />
+                The Forge
+              </Link>
+            )}
+
+            {/* Admin Dropdown - for app admins */}
+            {isAdmin && (
               <div className="relative">
                 <button
                   onClick={toggleAdmin}
@@ -337,7 +356,7 @@ const TopNav: React.FC = () => {
                         </Link>
                       )}
                       {isForgeMember && (
-                        <div className={isAdmin ? "border-t border-border mt-1 pt-1" : undefined}>
+                        <div className="border-t border-border mt-1 pt-1">
                           <Link
                             href="/forge"
                             onClick={() => setIsAdminOpen(false)}
@@ -355,17 +374,19 @@ const TopNav: React.FC = () => {
             )}
 
             {/* Play link - after Admin */}
-            <Link
-              href="/play"
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
-                ${isActive('/play')
-                ? 'bg-muted text-foreground'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-            >
-              <GiCrossedSwords className="w-4 h-4" />
-              Play
-            </Link>
+            {!hideGameLinks && (
+              <Link
+                href="/play"
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
+                  ${isActive('/play')
+                  ? 'bg-muted text-foreground'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+              >
+                <GiCrossedSwords className="w-4 h-4" />
+                Play
+              </Link>
+            )}
 
             {/* Tournaments Dropdown */}
             <div className="relative">
@@ -419,7 +440,7 @@ const TopNav: React.FC = () => {
             </div>
 
             {/* Rest of nav links (Play, Spoilers and Articles are rendered separately, so exclude them) */}
-            {navLinks.filter((link) => !link.highlight && link.href !== "/play" && link.href !== "/spoilers" && link.href !== "/articles").map((link) => {
+            {!hideGameLinks && navLinks.filter((link) => !link.highlight && link.href !== "/play" && link.href !== "/spoilers" && link.href !== "/articles").map((link) => {
               if (link.authRequired && !user) return null;
               const Icon = link.icon;
               const isHighlight = link.highlight;
@@ -443,54 +464,56 @@ const TopNav: React.FC = () => {
             })}
 
             {/* Decks Dropdown */}
-            <div className="relative">
-              <button
-                onClick={toggleDecks}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
-                  ${isDecksOpen || isActive('/decklist')
-                    ? 'bg-muted text-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-              >
-                <TbCardsFilled className="w-4 h-4" />
-                Decks
-                <svg
-                  className={`w-4 h-4 transition-transform ${isDecksOpen ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            {!hideGameLinks && (
+              <div className="relative">
+                <button
+                  onClick={toggleDecks}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
+                    ${isDecksOpen || isActive('/decklist')
+                      ? 'bg-muted text-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
+                  <TbCardsFilled className="w-4 h-4" />
+                  Decks
+                  <svg
+                    className={`w-4 h-4 transition-transform ${isDecksOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
 
-              {isDecksOpen && (
-                <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-card ring-1 ring-black ring-opacity-5">
-                  <div className="py-2">
-                    {deckLinks.map((link) => {
-                      const Icon = link.icon;
-                      return (
-                        <Link
-                          key={link.href}
-                          href={link.href}
-                          prefetch={link.prefetch}
-                          onClick={() => setIsDecksOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
-                        >
-                          <Icon className="w-4 h-4" />
-                          {link.label}
-                          {link.isNew && (
-                            <span className="ml-auto px-1.5 py-0.5 bg-primary/15 text-primary text-[10px] font-bold rounded uppercase">
-                              New
-                            </span>
-                          )}
-                        </Link>
-                      );
-                    })}
+                {isDecksOpen && (
+                  <div className="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-card ring-1 ring-black ring-opacity-5">
+                    <div className="py-2">
+                      {deckLinks.map((link) => {
+                        const Icon = link.icon;
+                        return (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            prefetch={link.prefetch}
+                            onClick={() => setIsDecksOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-muted"
+                          >
+                            <Icon className="w-4 h-4" />
+                            {link.label}
+                            {link.isNew && (
+                              <span className="ml-auto px-1.5 py-0.5 bg-primary/15 text-primary text-[10px] font-bold rounded uppercase">
+                                New
+                              </span>
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             {/* Spoilers link - after Decks */}
             <Link
@@ -600,7 +623,7 @@ const TopNav: React.FC = () => {
         <div className="lg:hidden border-t border-border max-h-[calc(100dvh-4rem)] overflow-y-auto">
           <div className="px-2 pt-2 pb-3 space-y-1">
             {/* Play + Nationals links */}
-            {navLinks.slice(0, 2).map((link) => {
+            {!hideGameLinks && navLinks.slice(0, 2).map((link) => {
               if (link.authRequired && !user) return null;
               const Icon = link.icon;
               const isHighlight = link.highlight;
@@ -624,8 +647,24 @@ const TopNav: React.FC = () => {
               );
             })}
 
-            {/* Admin Dropdown - for app admins and/or Forge members */}
-            {(isAdmin || isForgeMember) && (
+            {/* A Forge member who isn't an app admin would have nothing else under "Admin". */}
+            {isForgeMember && !isAdmin && (
+              <Link
+                href="/forge"
+                onClick={closeMobileMenu}
+                className={`flex items-center gap-3 px-3 py-2 rounded-md text-base font-medium transition-colors
+                  ${isActive('/forge')
+                    ? 'bg-muted text-foreground'
+                    : 'text-muted-foreground hover:bg-muted'
+                  }`}
+              >
+                <GiAnvil className="w-5 h-5" />
+                The Forge
+              </Link>
+            )}
+
+            {/* Admin Dropdown - for app admins */}
+            {isAdmin && (
               <div className="pt-2">
                 <button
                   onClick={toggleAdmin}
@@ -738,7 +777,7 @@ const TopNav: React.FC = () => {
                       </Link>
                     )}
                     {isForgeMember && (
-                      <div className={isAdmin ? "border-t border-border mt-1 pt-1" : undefined}>
+                      <div className="border-t border-border mt-1 pt-1">
                         <Link
                           href="/forge"
                           onClick={closeMobileMenu}
@@ -802,50 +841,52 @@ const TopNav: React.FC = () => {
             </div>
 
             {/* Mobile Decks Section */}
-            <div className="pt-2">
-              <button
-                onClick={toggleDecks}
-                className="flex items-center justify-between w-full px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted"
-              >
-                <div className="flex items-center gap-3">
-                  <TbCardsFilled className="w-5 h-5" />
-                  Decks
-                </div>
-                <svg
-                  className={`w-4 h-4 transition-transform ${isDecksOpen ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            {!hideGameLinks && (
+              <div className="pt-2">
+                <button
+                  onClick={toggleDecks}
+                  className="flex items-center justify-between w-full px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-muted"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
+                  <div className="flex items-center gap-3">
+                    <TbCardsFilled className="w-5 h-5" />
+                    Decks
+                  </div>
+                  <svg
+                    className={`w-4 h-4 transition-transform ${isDecksOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
 
-              {isDecksOpen && (
-                <div className="mt-2 ml-8 space-y-1">
-                  {deckLinks.map((link) => {
-                    const Icon = link.icon;
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        prefetch={link.prefetch}
-                        onClick={closeMobileMenu}
-                        className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-muted"
-                      >
-                        <Icon className="w-4 h-4" />
-                        {link.label}
-                        {link.isNew && (
-                          <span className="ml-auto px-1.5 py-0.5 bg-primary/15 text-primary text-[10px] font-bold rounded uppercase">
-                            New
-                          </span>
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                {isDecksOpen && (
+                  <div className="mt-2 ml-8 space-y-1">
+                    {deckLinks.map((link) => {
+                      const Icon = link.icon;
+                      return (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          prefetch={link.prefetch}
+                          onClick={closeMobileMenu}
+                          className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-muted"
+                        >
+                          <Icon className="w-4 h-4" />
+                          {link.label}
+                          {link.isNew && (
+                            <span className="ml-auto px-1.5 py-0.5 bg-primary/15 text-primary text-[10px] font-bold rounded uppercase">
+                              New
+                            </span>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Rest of nav links (Spoilers) - after Decks */}
             {navLinks.slice(2).map((link) => {

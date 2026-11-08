@@ -17,7 +17,7 @@ export default async function ForgeAdminPage() {
     listAllSetGrants(),
   ]);
   return (
-    <main className="mx-auto max-w-3xl p-6">
+    <div className="mx-auto max-w-3xl p-6">
       <h1 className="text-2xl" style={{ fontFamily: "Cinzel, serif" }}>
         Forge Members
       </h1>
@@ -28,6 +28,6 @@ export default async function ForgeAdminPage() {
         sets={sets.map((s) => ({ id: s.id, name: s.name }))}
         grants={grants}
       />
-    </main>
+    </div>
   );
 }

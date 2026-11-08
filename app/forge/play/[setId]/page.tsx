@@ -7,7 +7,13 @@ import RevealGrid, { type RevealItem } from "./RevealGrid";
 
 export const dynamic = "force-dynamic";
 
-export default async function ForgePlaySetPage({ params }: { params: Promise<{ setId: string }> }) {
+export default async function ForgePlaySetPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ setId: string }>;
+  searchParams: Promise<{ card?: string | string[] }>;
+}) {
   const ctx = await requireForge();
   if (!ctx) notFound();
   const { setId } = await params;
@@ -21,17 +27,20 @@ export default async function ForgePlaySetPage({ params }: { params: Promise<{ s
     finishedUrl: c.hasApprovedFinished ? `/forge/api/art/${c.cardId}?v=approved&kind=finished` : null,
     versionNumber: c.versionNumber,
   }));
+  // Only a card already in this list opens. Any other id is ignored, with nothing said about it.
+  const { card } = await searchParams;
+  const initialCardId = items.find((it) => it.cardId === card)?.cardId;
 
   return (
-    <main className="mx-auto max-w-5xl p-6">
+    <div className="mx-auto max-w-5xl p-6">
       <ForgeBreadcrumbs items={[
         { label: "The Forge", href: "/forge" },
-        { label: "Sets", href: "/forge/play" },
+        { label: "Sets", href: ctx.role === "playtester" ? "/forge/play/sets" : "/forge/sets" },
         { label: set.name },
       ]} />
       <h1 className="text-xl font-semibold">{set.name}</h1>
       <p className="text-sm text-muted-foreground">Cards shared for playtesting</p>
-      <RevealGrid items={items} currentUserId={ctx.user.id} />
-    </main>
+      <RevealGrid items={items} currentUserId={ctx.user.id} initialCardId={initialCardId} />
+    </div>
   );
 }
