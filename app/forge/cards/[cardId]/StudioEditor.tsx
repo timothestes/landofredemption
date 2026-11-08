@@ -24,7 +24,7 @@ import type { ForgeSetSummary } from "@/app/forge/lib/sets";
 import { forgeCardTopic } from "@/app/forge/lib/realtime";
 import { useForgeCardChannel } from "@/app/forge/lib/useForgeRealtime";
 import PresenceBar from "./PresenceBar";
-import { StudioSyncProvider } from "./StudioSyncContext";
+import { StudioDraftProvider, StudioSyncProvider } from "./StudioSyncContext";
 import CardDetailsFields from "./CardDetailsFields";
 import CopyCardImageButton from "./CopyCardImageButton";
 import ScriptureFields from "./ScriptureFields";
@@ -432,7 +432,9 @@ export default function StudioEditor({
               )}
             </fieldset>
           </div>
-          <StudioSyncProvider value={syncValue}>{review}</StudioSyncProvider>
+          <StudioSyncProvider value={syncValue}>
+            <StudioDraftProvider value={snapshot}>{review}</StudioDraftProvider>
+          </StudioSyncProvider>
         </div>
       </div>
 
