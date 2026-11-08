@@ -5,6 +5,7 @@ import { requireForge, requireElder } from "@/app/forge/lib/auth";
 import type { TargetCounts } from "@/app/forge/lib/progress";
 import { type ForgeCardFull } from "@/app/forge/lib/cards";
 import type { DesignCard } from "@/app/forge/lib/designCard";
+import { NEW_SET_PRIVATE_DEFAULT } from "@/app/forge/lib/setAccess";
 
 export type ForgeSetSummary = { id: string; name: string; slug: string; status: string; total: number; targetTotal: number; statusCounts: Record<string, number>; isPrivate: boolean };
 export type ForgeSetDetail = { id: string; name: string; slug: string; notes: string | null; targetCounts: TargetCounts; status: string; isPrivate: boolean };
@@ -12,7 +13,7 @@ export type SetElder = { userId: string; displayName: string | null; role: strin
 
 type Result = { ok: true } | { ok: false; error: string };
 
-export async function createSet(name: string, isPrivate = false): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+export async function createSet(name: string, isPrivate = NEW_SET_PRIVATE_DEFAULT): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   const ctx = await requireElder();
   if (!ctx) return { ok: false, error: "Not authorized" };
   const { data, error } = await ctx.supabase.rpc("forge_create_set", { p_name: name, p_is_private: isPrivate });

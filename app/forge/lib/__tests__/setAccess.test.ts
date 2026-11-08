@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { grantKey, buildGrantKeySet } from "@/app/forge/lib/setAccess";
+import { grantKey, buildGrantKeySet, NEW_SET_PRIVATE_DEFAULT } from "@/app/forge/lib/setAccess";
 
 describe("grantKey", () => {
   it("joins userId and setId with a separator", () => {
@@ -32,5 +32,11 @@ describe("buildGrantKeySet", () => {
 
   it("returns an empty set for no pairs", () => {
     expect(buildGrantKeySet([]).size).toBe(0);
+  });
+});
+
+describe("NEW_SET_PRIVATE_DEFAULT", () => {
+  it("starts a new set private: Forge cards are secret by default", () => {
+    expect(NEW_SET_PRIVATE_DEFAULT).toBe(true);
   });
 });

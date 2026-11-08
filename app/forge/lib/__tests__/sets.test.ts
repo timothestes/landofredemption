@@ -33,6 +33,12 @@ describe("createSet", () => {
     (requireElder as any).mockResolvedValue(c);
     const r = await createSet("Genesis");
     expect(r).toEqual({ ok: true, id: "set-1" });
+    expect((c.supabase.rpc as any).mock.calls[0]).toEqual(["forge_create_set", { p_name: "Genesis", p_is_private: true }]);
+  });
+  it("makes the set open only when told to", async () => {
+    const c = ctx();
+    (requireElder as any).mockResolvedValue(c);
+    await createSet("Genesis", false);
     expect((c.supabase.rpc as any).mock.calls[0]).toEqual(["forge_create_set", { p_name: "Genesis", p_is_private: false }]);
   });
 });

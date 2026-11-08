@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { createSet, bulkDeleteSets, type ForgeSetSummary } from "@/app/forge/lib/sets";
+import { NEW_SET_PRIVATE_DEFAULT } from "@/app/forge/lib/setAccess";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,7 +24,7 @@ export default function SetsIndex({ sets, canCreate }: { sets: ForgeSetSummary[]
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isPrivate, setIsPrivate] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(NEW_SET_PRIVATE_DEFAULT);
 
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -99,7 +100,7 @@ export default function SetsIndex({ sets, canCreate }: { sets: ForgeSetSummary[]
   function openCreate() {
     setName("");
     setError(null);
-    setIsPrivate(false);
+    setIsPrivate(NEW_SET_PRIVATE_DEFAULT);
     setOpen(true);
   }
 

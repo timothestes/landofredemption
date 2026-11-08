@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { unzipSync } from "fflate";
 import { createSet, type ForgeSetSummary } from "@/app/forge/lib/sets";
+import { NEW_SET_PRIVATE_DEFAULT } from "@/app/forge/lib/setAccess";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
@@ -51,7 +52,7 @@ export default function ImportWizard({
   const preselected = sets.find((s) => s.id === initialSetId)?.id;
   const [mode, setMode] = useState<"new" | "existing">(preselected ? "existing" : "new");
   const [newSetName, setNewSetName] = useState("");
-  const [newSetPrivate, setNewSetPrivate] = useState(false);
+  const [newSetPrivate, setNewSetPrivate] = useState(NEW_SET_PRIVATE_DEFAULT);
   const [existingSetId, setExistingSetId] = useState(preselected ?? sets[0]?.id ?? "");
   const [overwrite, setOverwrite] = useState(false);
   const [newSetDialogOpen, setNewSetDialogOpen] = useState(false);
