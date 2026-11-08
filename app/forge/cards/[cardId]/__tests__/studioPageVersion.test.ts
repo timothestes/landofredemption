@@ -7,7 +7,7 @@ vi.mock("@/app/forge/lib/auth", () => ({ requireForge: vi.fn() }));
 vi.mock("@/app/forge/lib/cards", () => ({ getCard: vi.fn() }));
 vi.mock("@/app/forge/lib/artCandidates", () => ({ listArtCandidates: vi.fn(async () => []) }));
 vi.mock("@/app/forge/lib/sets", () => ({
-  getSet: vi.fn(async () => ({ name: "Invented Set" })), listWritableSets: vi.fn(async () => []), listSetCards: vi.fn(async () => []),
+  getSet: vi.fn(async () => ({ name: "Invented Set" })), listWritableSets: vi.fn(async () => []), listSetSiblings: vi.fn(async () => []),
   canDesignSet: vi.fn(async () => true),
 }));
 vi.mock("@/app/forge/lib/proposals", () => ({ getOpenProposalDiffs: vi.fn(async () => []), listProposals: vi.fn(async () => []) }));
@@ -39,7 +39,7 @@ async function versionProp(card: Record<string, unknown>, versions: unknown[]) {
   (requireForge as any).mockResolvedValue(ctx());
   (getCard as any).mockResolvedValue({ id: "c1", setId: "s1", snapshot: {}, creatorId: "u1", createdAt: "2026-01-01", ...card });
   (listVersions as any).mockResolvedValue(versions);
-  const el: any = await StudioPage({ params: Promise.resolve({ cardId: "c1" }) });
+  const el: any = await StudioPage({ params: Promise.resolve({ cardId: "c1" }), searchParams: Promise.resolve({}) });
   return el.props.version;
 }
 
@@ -85,7 +85,7 @@ describe("studio page write access", () => {
     (getCard as any).mockResolvedValue({ id: "c1", setId: "s1", snapshot: {}, creatorId: "u1", createdAt: "2026-01-01", ownerId: "u2", status: "draft", ...card });
     (listVersions as any).mockResolvedValue([]);
     vi.mocked(canDesignSet).mockResolvedValue(design);
-    return (await StudioPage({ params: Promise.resolve({ cardId: "c1" }) })) as any;
+    return (await StudioPage({ params: Promise.resolve({ cardId: "c1" }), searchParams: Promise.resolve({}) })) as any;
   }
 
   it("lets a designer of the set write and review", async () => {

@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
 import ForgeCardGrid from "@/app/forge/components/ForgeCardGrid";
 
-vi.mock("next/link", () => ({ default: (p: { children: React.ReactNode }) => React.createElement("a", null, p.children) }));
+vi.mock("next/link", () => ({ useLinkStatus: () => ({ pending: false }), default: (p: { children: React.ReactNode }) => React.createElement("a", null, p.children) }));
 
 const card: ForgeCardFull = {
   id: "c1",

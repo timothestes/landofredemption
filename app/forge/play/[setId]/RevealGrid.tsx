@@ -8,6 +8,7 @@ import { useFocusTrap } from "@/app/collection/scan/hooks/useFocusTrap";
 import type { DesignCard, CardType, Brigade } from "@/app/forge/lib/designCard";
 import { cardRawText, CARD_TYPES, BRIGADES } from "@/app/forge/lib/designCard";
 import { textFit } from "@/app/forge/lib/textFit";
+import { typeLabel, brigadeLabel } from "@/app/forge/lib/filterIcons";
 import ForgeCardFace from "@/app/forge/components/ForgeCardFace";
 import ForgeCardPreview from "@/app/forge/components/ForgeCardPreview";
 import PlaytesterComments from "./PlaytesterComments";
@@ -186,11 +187,11 @@ export default function RevealGrid({ items, currentUserId, initialCardId }: { it
         </div>
         <select value={type} onChange={(e) => setType(e.target.value as CardType | "")} className={selectClass} aria-label="Filter by type">
           <option value="">All types</option>
-          {CARD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          {CARD_TYPES.map((t) => <option key={t} value={t}>{typeLabel(t)}</option>)}
         </select>
         <select value={brigade} onChange={(e) => setBrigade(e.target.value as Brigade | "")} className={selectClass} aria-label="Filter by brigade">
           <option value="">All brigades</option>
-          {BRIGADES.map((b) => <option key={b} value={b}>{b}</option>)}
+          {BRIGADES.map((b) => <option key={b} value={b}>{brigadeLabel(b)}</option>)}
         </select>
         <span className="text-xs text-muted-foreground">{filtered.length} of {items.length}</span>
       </div>
