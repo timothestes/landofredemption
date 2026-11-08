@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Download, ChevronLeft, ChevronRight, Loader2, Check, AlertTriangle } from "lucide-react";
+import { Download, ChevronLeft, ChevronRight, Loader2, Check, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import { upload } from "@vercel/blob/client";
 import ForgeCardFace from "@/app/forge/components/ForgeCardFace";
 import ForgeCardPreview from "@/app/forge/components/ForgeCardPreview";
@@ -34,8 +34,8 @@ import ScriptureFields from "./ScriptureFields";
 // The composite renderer (ForgeCardPreview) came back on 2026-09-10 (#387): while
 // there is no finished-card image, it draws the live snapshot in the design team's frame.
 
-// Prev/next arrows overlaid on the card face edges. Inside the edges (not the
-// gutter) so they never clip on mobile.
+// Prev/next arrows on the card face. From sm up they sit inside its edges; on a phone the
+// face is narrow enough to leave a gutter each side, so they sit there, off the small card.
 const arrowClass =
   "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground";
 
@@ -78,6 +78,7 @@ export default function StudioEditor({
   const [uploading, setUploading] = useState<"finished" | null>(null);
   // The verse finder's candidate excerpt, drawn on the preview face only. Never saved.
   const [previewScripture, setPreviewScripture] = useState<string | null>(null);
+  const [peeking, setPeeking] = useState(false); // the large face over the form, below lg
   const router = useRouter();
 
   const { others, setEditing } = useForgeCardChannel(
@@ -227,6 +228,17 @@ export default function StudioEditor({
   const activeSourceId = artCandidates.find((c) => c.isActiveSource)?.id ?? null;
   const previewCard = previewScripture === null ? snapshot : { ...snapshot, scripture: previewScripture };
 
+  const face = card.hasFinished ? (
+    <ForgeCardFace
+      name={snapshot.name ?? null}
+      rawText={cardRawText(snapshot)}
+      finishedUrl={`/forge/api/art/${card.id}?kind=finished&t=${t}`}
+      artUrl={card.hasArt ? `/forge/api/art/${card.id}?t=${t}` : null}
+    />
+  ) : (
+    <ForgeCardPreview card={previewCard} artUrl={card.hasArt ? `/forge/api/art/${card.id}?t=${t}` : null} />
+  );
+
   return (
     <div className="mx-auto max-w-5xl p-4">
       <PresenceBar others={others} />
@@ -247,7 +259,8 @@ export default function StudioEditor({
           of the padded wrapper; inside the flex-col below it would unstick immediately. */}
       <div className="sticky top-[var(--forge-chrome)] z-30 -mx-4 mb-2 flex items-center justify-between gap-3 border-b bg-background px-4 py-2">
         <ForgeBreadcrumbs
-          className="mb-0 min-w-0 text-sm"
+          className="mb-0 min-w-0 flex-1 text-sm"
+          oneLine
           items={
             card.setId
               ? [
@@ -289,6 +302,13 @@ export default function StudioEditor({
             </Button>
           )}
         </div>
+        {/* Below lg the face sits above the form and scrolls away; this brings it back without
+            losing your place. In this row, not over the form, so it never covers a field. The
+            negative margin keeps a 36px target from making the row taller. */}
+        <Button variant="ghost" aria-label={peeking ? "Hide card" : "Show card"} title={peeking ? "Hide card" : "Show card"}
+          className="-my-2 -mr-2 h-9 w-9 shrink-0 p-0 text-muted-foreground lg:hidden" onClick={() => setPeeking(!peeking)}>
+          {peeking ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+        </Button>
       </div>
 
       <div className="mb-3 flex flex-col gap-2 text-sm">
@@ -305,6 +325,13 @@ export default function StudioEditor({
         )}
       </div>
 
+      {/* As large as fits under the chrome, at the card's aspect ratio. */}
+      {peeking && (
+        <div className="fixed right-4 top-[calc(var(--forge-chrome)+3rem)] z-20 w-[min(100vw-2rem,24rem,(100svh-11rem)*0.714)] rounded-lg shadow-lg lg:hidden">
+          {face}
+        </div>
+      )}
+
       {/* lg, not md: at 768–1023px a 360px face track left the review column at 352px and
           shrank ProposalDiff's paired faces to 157px. Below lg this is one column. */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,360px)_1fr]">
@@ -316,34 +343,29 @@ export default function StudioEditor({
         <div className="lg:sticky lg:top-[calc(var(--forge-chrome)+3rem)] lg:self-start lg:max-h-[calc(100dvh-var(--forge-chrome)-4rem)] lg:overflow-y-auto">
           {/* Capped in the single-column range so a full-width face isn't 1030px of card to
               scroll past before reaching the name field. Uncapped in the lg grid, where it
-              fills the 360px track. */}
-          <div className="relative mx-auto max-w-sm lg:max-w-none">
-            {card.hasFinished ? (
-              <ForgeCardFace
-                name={snapshot.name ?? null}
-                rawText={cardRawText(snapshot)}
-                finishedUrl={`/forge/api/art/${card.id}?kind=finished&t=${t}`}
-                artUrl={card.hasArt ? `/forge/api/art/${card.id}?t=${t}` : null}
-              />
-            ) : (
-              <ForgeCardPreview card={previewCard} artUrl={card.hasArt ? `/forge/api/art/${card.id}?t=${t}` : null} />
-            )}
+              fills the 360px track. On a phone, sized from the screen height so Name still
+              starts on the first screen; tap it for the large view. */}
+          <div className="relative mx-auto w-[28svh] sm:w-auto sm:max-w-sm lg:max-w-none">
+            {face}
+            <button type="button" aria-label="Show the card larger" className="absolute inset-0 sm:hidden"
+              onClick={() => setPeeking(true)} />
             {/* Prev/next within the set — same order as the grid, no wrap at ends. */}
             {prevId && (
-              <Link href={`/forge/cards/${prevId}`} aria-label="Previous card in set" className={arrowClass + " left-1.5"}>
+              <Link href={`/forge/cards/${prevId}`} aria-label="Previous card in set" className={arrowClass + " -left-11 sm:left-1.5"}>
                 <ChevronLeft className="h-5 w-5" aria-hidden="true" />
               </Link>
             )}
             {nextId && (
-              <Link href={`/forge/cards/${nextId}`} aria-label="Next card in set" className={arrowClass + " right-1.5"}>
+              <Link href={`/forge/cards/${nextId}`} aria-label="Next card in set" className={arrowClass + " -right-11 sm:right-1.5"}>
                 <ChevronRight className="h-5 w-5" aria-hidden="true" />
               </Link>
             )}
             {/* Copy the face as a PNG to share. Tucked into the bottom-right corner, small
-                enough to sit over the frame's blank corner. The draft is flushed first so the
-                server renders what is on screen, not the last autosave. */}
+                enough to sit over the frame's blank corner (in the gutter on a phone, with the
+                arrows). The draft is flushed first so the server renders what is on screen,
+                not the last autosave. */}
             <CopyCardImageButton
-              className="absolute bottom-1.5 right-1.5 z-10"
+              className="absolute bottom-0 -right-10 z-10 sm:bottom-1.5 sm:right-1.5"
               src={card.hasFinished
                 ? `/forge/api/art/${card.id}?kind=finished&t=${t}`
                 : `/forge/api/art/${card.id}?kind=rendered&v=working`}

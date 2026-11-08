@@ -47,7 +47,7 @@ export default function ForgeNav({ role }: { role: ForgeRole }) {
           <Anvil className="hidden h-5 w-5 sm:block" aria-hidden="true" />
           <span>The Forge</span>
         </Link>
-        <nav className="no-scrollbar flex items-center gap-1 overflow-x-auto">
+        <nav className="no-scrollbar scroll-fade-x flex items-center gap-1 overflow-x-auto pr-7">
           {items.map((it) => {
             const active = it.match(pathname);
             return (

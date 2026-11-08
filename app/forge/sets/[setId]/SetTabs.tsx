@@ -15,7 +15,7 @@ export default function SetTabs({ setId, showPromote = false }: { setId: string;
     ...(showPromote ? [{ href: `/forge/sets/${setId}/promote`, label: "Promote" }] : []),
   ];
   return (
-    <nav className="mt-2 flex gap-1 text-sm">
+    <nav className="no-scrollbar scroll-fade-x mt-2 flex gap-1 overflow-x-auto pr-7 text-sm">
       {tabs.map((t) => {
         const active = pathname.startsWith(t.href);
         return (
