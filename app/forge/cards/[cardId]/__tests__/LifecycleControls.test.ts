@@ -61,6 +61,16 @@ describe("LifecycleControls", () => {
     expect(releaseButton(html)).not.toMatch(DISABLED);
   });
 
+  it("gives someone who can't write the status and a reason, not the actions", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(LifecycleControls, { card: card({ status: "draft", setId: "s1" }), draft: READY, sets: [], canEdit: false }),
+    );
+    expect(html).toContain("only its set’s designers");
+    expect(html).toContain("Draft");
+    expect(html).not.toContain("Release to playtesters");
+    expect(html).not.toContain('aria-label="More actions"');
+  });
+
   it("offers Restore on a shelved card", () => {
     expect(render({ status: "archived", setId: "s1" })).toContain(">Restore<");
   });

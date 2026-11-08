@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 import { shareToSet, sendToPrivate, publish, approve, unapprove, archive, unarchive, deleteCard } from "@/app/forge/lib/lifecycle";
-import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, deleteCopy, releaseBlockers, releaseBlockedNote, isReleaseUnchanged, releaseUnchangedNote, restoreCopy, releasePreview, shareCopy, SHARE_NO_SETS, SHARE_FAILED, RELEASE_FLUSH_FAILED, type ReleaseBase, type RestoreTarget } from "@/app/forge/lib/lifecycleCopy";
+import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, deleteCopy, releaseBlockers, releaseBlockedNote, isReleaseUnchanged, releaseUnchangedNote, restoreCopy, releasePreview, readOnlyCardNote, shareCopy, SHARE_NO_SETS, SHARE_FAILED, RELEASE_FLUSH_FAILED, type ReleaseBase, type RestoreTarget } from "@/app/forge/lib/lifecycleCopy";
 import { flushThen } from "@/app/forge/lib/proposeFlow";
 import { withDeadline } from "@/app/forge/lib/withDeadline";
 import FieldChanges from "./FieldChanges";
@@ -38,6 +38,7 @@ export default function LifecycleControls({
   restoreTarget = null,
   sets,
   openProposals = { count: 0, hasMatch: false },
+  canEdit = true,
 }: {
   card: ForgeCardFull;
   // The editor's live draft. `card.snapshot` trails it by a save and a refresh.
@@ -54,6 +55,8 @@ export default function LifecycleControls({
   // one of them is exactly this draft, so the release records it as accepted
   // instead of discarding it. Classified server-side in the page.
   openProposals?: { count: number; hasMatch: boolean };
+  // Whether this member can write to this card. Worked out in the page; the RPCs still decide.
+  canEdit?: boolean;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -134,6 +137,9 @@ export default function LifecycleControls({
             ))}
             {card.status === "archived" && <li className="font-semibold text-foreground">· {STATUS_LABEL.archived}</li>}
           </ol>
+          {!canEdit ? (
+            <span className="ml-auto text-muted-foreground">{readOnlyCardNote(card.status)}</span>
+          ) : (
           <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
             {(card.status === "draft" || card.status === "playtesting") && (
               <>
@@ -180,6 +186,7 @@ export default function LifecycleControls({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          )}
         </>
       ) : (
         <div className="ml-auto flex flex-wrap items-center gap-2">

@@ -44,7 +44,7 @@ const arrowClass =
   "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground";
 
 export default function StudioEditor({
-  card, sets, currentUser, creator, setId, setName, prevId, nextId, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, review,
+  card, sets, currentUser, creator, setId, setName, prevId, nextId, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, canEdit = true, review,
 }: {
   card: ForgeCardFull;
   sets: ForgeSetSummary[];
@@ -65,6 +65,8 @@ export default function StudioEditor({
   // For the Restore dialog on a shelved card: where it will go back to.
   restoreTarget?: RestoreTarget | null;
   version?: StudioVersion | null;
+  // Whether this member can write to this card. Worked out in the page; the RPCs still decide.
+  canEdit?: boolean;
   // The review column (proposals / history / comments), rendered inside this component's
   // grid so the sticky card face keeps travelling alongside it. Built in the server
   // component, so it is an element, not a render prop — it cannot take callbacks.
@@ -362,8 +364,8 @@ export default function StudioEditor({
           </p>
           {versionBadge && <span className="inline-flex shrink-0 leading-4 lg:hidden">{versionBadge}</span>}
         </div>
-        <LifecycleControls card={card} draft={snapshot} flushPending={flushPending} releaseBase={releaseBase} restoreTarget={restoreTarget} sets={sets} openProposals={openProposals} />
-        {card.setId && (
+        <LifecycleControls card={card} draft={snapshot} flushPending={flushPending} releaseBase={releaseBase} restoreTarget={restoreTarget} sets={sets} openProposals={openProposals} canEdit={canEdit} />
+        {card.setId && canEdit && (
           <p className="text-xs text-muted-foreground">
             Releases are visible to Forge playtesters only — they don’t change the public card database.
           </p>
@@ -430,7 +432,7 @@ export default function StudioEditor({
             The presence focus handlers stay on the form only — typing a comment should not
             flag you as editing the card. */}
         <div className="min-w-0 space-y-6">
-          <div className="space-y-4" onFocusCapture={() => setEditing(true)} onBlurCapture={() => setEditing(false)}>
+          <fieldset disabled={!canEdit} className="min-w-0 space-y-4 disabled:opacity-70" onFocusCapture={() => setEditing(true)} onBlurCapture={() => setEditing(false)}>
             {err && <p className="text-sm text-destructive">{err}</p>}
 
             <input autoFocus={!card.title?.trim()} value={snapshot.name ?? ""} onChange={(e) => update({ name: e.target.value })}
@@ -493,7 +495,7 @@ export default function StudioEditor({
                 </a>
               )}
             </fieldset>
-          </div>
+          </fieldset>
           <StudioSyncProvider value={syncValue}>
             <StudioDraftProvider value={snapshot}>{review}</StudioDraftProvider>
           </StudioSyncProvider>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { grantKey, buildGrantKeySet, NEW_SET_PRIVATE_DEFAULT, canWriteSet, setsTakingCards } from "@/app/forge/lib/setAccess";
+import { grantKey, buildGrantKeySet, NEW_SET_PRIVATE_DEFAULT, canWriteSet, setsTakingCards, canWriteCard } from "@/app/forge/lib/setAccess";
 
 describe("grantKey", () => {
   it("joins userId and setId with a separator", () => {
@@ -75,5 +75,25 @@ describe("setsTakingCards", () => {
   it("hides a released set from everyone, because the database refuses it for everyone", () => {
     expect(setsTakingCards([released], "elder", new Set(["released"]))).toEqual([]);
     expect(setsTakingCards([released], "superadmin", new Set())).toEqual([]);
+  });
+});
+
+// Mirrors the guard in forge_save_card_fields and forge_publish_card. The database stays the real gate.
+describe("canWriteCard", () => {
+  const base = { status: "draft", isOwner: false, role: "elder" as const, canDesign: false };
+  it("refuses a reader of a set they can't design", () => {
+    expect(canWriteCard(base)).toBe(false);
+  });
+  it("lets a designer of the set write, roster or not", () => {
+    expect(canWriteCard({ ...base, canDesign: true })).toBe(true);
+  });
+  it("lets the owner and a superadmin write", () => {
+    expect(canWriteCard({ ...base, isOwner: true })).toBe(true);
+    expect(canWriteCard({ ...base, role: "superadmin" })).toBe(true);
+  });
+  it("keeps a promoted card read-only for everyone", () => {
+    const promoted = { ...base, status: "promoted" };
+    expect(canWriteCard({ ...promoted, isOwner: true, canDesign: true })).toBe(false);
+    expect(canWriteCard({ ...promoted, role: "superadmin" })).toBe(false);
   });
 });

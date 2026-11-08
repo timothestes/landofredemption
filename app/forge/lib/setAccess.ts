@@ -33,3 +33,16 @@ export function setsTakingCards<S extends { id: string; isPrivate: boolean; stat
     (s) => s.status !== "released" && canWriteSet({ role, isPrivate: s.isPrivate, onRoster: rosterSetIds.has(s.id) }),
   );
 }
+
+// Can this member write to this card? Mirrors the guard in forge_save_card_fields and
+// forge_publish_card, which stays the real gate. `canDesign` is is_forge_set_elder for the
+// card's set, so it's true for every elder on a set that isn't private.
+export function canWriteCard({ status, isOwner, role, canDesign }: {
+  status: string;
+  isOwner: boolean;
+  role: ForgeRole;
+  canDesign: boolean;
+}): boolean {
+  if (status === "promoted") return false;
+  return role === "superadmin" || isOwner || canDesign;
+}

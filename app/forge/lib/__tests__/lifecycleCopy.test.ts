@@ -4,7 +4,7 @@ import {
   STATUS_LABEL, ACTION_LABEL, releaseLabel, isEligible, BULK_DONE_VERB, releaseProposalNotice,
   returnToIdeasCopy, deleteCopy, bulkReleaseLabel, bulkConfirmCopy, bulkProposalNotice,
   releaseBlockers, releaseBlockedNote, bulkBlockedNotice, bulkSummary,
-  releaseUnchangedNote, isReleaseUnchanged, restoreCopy, releasePreview, denyDraftPlan, shareCopy,
+  releaseUnchangedNote, isReleaseUnchanged, restoreCopy, releasePreview, denyDraftPlan, shareCopy, readOnlyCardNote,
 } from "../lifecycleCopy";
 
 describe("lifecycleCopy", () => {
@@ -447,5 +447,13 @@ describe("shareCopy", () => {
   });
   it("still says what sharing does before a set is chosen", () => {
     expect(shareCopy(null)).toContain("out of your Ideas");
+  });
+});
+
+describe("readOnlyCardNote", () => {
+  it("says why a card can't be changed", () => {
+    expect(readOnlyCardNote("draft")).toContain("only its set’s designers");
+    expect(readOnlyCardNote("promoted")).toContain("public");
+    expect(readOnlyCardNote("promoted")).not.toContain("designers");
   });
 });

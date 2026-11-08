@@ -191,6 +191,14 @@ export function shareCopy(set: { name: string; isPrivate: boolean } | null): str
   return `Moves this card out of your Ideas and into ${set.name}. ${who} Playtesters see nothing until it’s released.`;
 }
 
+// Why the controls are missing, for someone who can read a card or set but not change it.
+export function readOnlyCardNote(status: string): string {
+  return status === "promoted"
+    ? "This card is public now, so it can’t be edited here."
+    : "You can view this card, but only its set’s designers can change it.";
+}
+export const READ_ONLY_SET_NOTE = "You can view this set, but only its designers can change it.";
+
 export const SHARE_NO_SETS = "There are no sets you can add cards to yet.";
 export const SHARE_FAILED = "Couldn’t share this card. Check your connection and try again.";
 
