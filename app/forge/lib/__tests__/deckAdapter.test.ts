@@ -1,6 +1,33 @@
 import { describe, it, expect } from "vitest";
-import { designCardToCard, designCardSearchFields, forgeDataLine, isForgeDataLine, cardIdFromDataLine } from "../deckAdapter";
+import { designCardToCard, designCardSearchFields, forgeDataLine, isForgeCard, isForgeDataLine, cardIdFromDataLine } from "../deckAdapter";
+import type { Card } from "@/app/decklist/card-search/utils";
 import type { DesignCard } from "../designCard";
+
+describe("isForgeCard", () => {
+  const designed = designCardToCard({ name: "Invented Forge Hero", cardType: ["Hero"] }, "abc", "Invented Set");
+
+  it("is true for a card straight from the adapter", () => {
+    expect(isForgeCard(designed)).toBe(true);
+  });
+
+  it("is true for a pool card, whose imgFile is stamped with the same marker", () => {
+    expect(isForgeCard({ ...designed, imgFile: forgeDataLine("abc") })).toBe(true);
+  });
+
+  it("is true for a saved card the deck can no longer resolve, which keeps only imgFile", () => {
+    expect(isForgeCard({ dataLine: "", imgFile: forgeDataLine("abc") } as Card)).toBe(true);
+  });
+
+  it("is false for public cards, including one with no resolved catalog row", () => {
+    expect(isForgeCard({ dataLine: "Invented Public Hero|AA|Invented Public Hero (AA)", imgFile: "Invented Public Hero (AA)" } as Card)).toBe(false);
+    expect(isForgeCard({ dataLine: "", imgFile: "" } as Card)).toBe(false);
+    expect(isForgeCard({ dataLine: "Forge Master|AA|forge", imgFile: "forge" } as Card)).toBe(false);
+  });
+
+  it("does not throw on a localStorage draft card missing the fields", () => {
+    expect(isForgeCard({ name: "Invented Public Hero" } as Card)).toBe(false);
+  });
+});
 
 describe("designCardToCard", () => {
   it("maps a Lost Soul so validateDeck's type check matches", () => {
