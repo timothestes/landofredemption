@@ -8,7 +8,7 @@ import ForgeCardGrid from "@/app/forge/components/ForgeCardGrid";
 import AddCardTile from "./AddCardTile";
 import { bulkLifecycle, type BulkResult } from "@/app/forge/lib/lifecycle";
 import {
-  STATUS_LABEL, ACTION_LABEL, BULK_DONE_VERB, CONFIRM_COPY, isEligible, type LifecycleAction,
+  STATUS_LABEL, ACTION_LABEL, BULK_DONE_VERB, CONFIRM_COPY, isEligible, returnToIdeasCopy, type LifecycleAction,
 } from "@/app/forge/lib/lifecycleCopy";
 import { cardRawText, CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
@@ -105,6 +105,16 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
     setSelected(new Set());
     router.refresh();
   }
+
+  const confirmCopy =
+    confirming === "returnToIdeas"
+      ? returnToIdeasCopy(eligibleCount("returnToIdeas"))
+      : {
+          ...CONFIRM_COPY[confirming ?? "delete"],
+          description: `${CONFIRM_COPY[confirming ?? "delete"].description} (${
+            confirming === "releaseAll" ? draftIds.length : eligibleCount("delete")
+          } cards)`,
+        };
 
   return (
     <div className="relative pb-28 sm:pb-20">
@@ -230,11 +240,9 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
           else if (a) runBulk(a, ids);
         }}
         variant={confirming === "delete" ? "destructive" : "warning"}
-        title={CONFIRM_COPY[confirming ?? "delete"].title}
-        description={`${CONFIRM_COPY[confirming ?? "delete"].description} (${
-          confirming === "releaseAll" ? draftIds.length : eligibleCount(confirming ?? "delete")
-        } cards)`}
-        confirmLabel={CONFIRM_COPY[confirming ?? "delete"].confirmLabel}
+        title={confirmCopy.title}
+        description={confirmCopy.description}
+        confirmLabel={confirmCopy.confirmLabel}
       />
     </div>
   );

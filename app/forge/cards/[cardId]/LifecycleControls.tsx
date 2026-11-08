@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 import { shareToSet, sendToPrivate, publish, approve, unapprove, archive, unarchive, deleteCard } from "@/app/forge/lib/lifecycle";
-import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, CONFIRM_COPY } from "@/app/forge/lib/lifecycleCopy";
+import { STATUS_PATH, STATUS_LABEL, ACTION_LABEL, releaseLabel, releaseProposalNotice, returnToIdeasCopy, CONFIRM_COPY } from "@/app/forge/lib/lifecycleCopy";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,7 @@ export default function LifecycleControls({
 
   const inSet = card.setId !== null;
   const releaseNotices = releaseProposalNotice(openProposals.count, openProposals.hasMatch);
+  const returnCopy = returnToIdeasCopy(1);
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -181,9 +182,9 @@ export default function LifecycleControls({
         onOpenChange={setConfirmReturn}
         onConfirm={() => run(() => sendToPrivate(card.id))}
         variant="warning"
-        title={CONFIRM_COPY.returnToIdeas.title}
-        description={CONFIRM_COPY.returnToIdeas.description}
-        confirmLabel={CONFIRM_COPY.returnToIdeas.confirmLabel}
+        title={returnCopy.title}
+        description={returnCopy.description}
+        confirmLabel={returnCopy.confirmLabel}
       />
       <ConfirmationDialog
         open={confirmDelete}

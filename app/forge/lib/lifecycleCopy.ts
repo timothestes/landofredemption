@@ -94,18 +94,14 @@ export function isEligible(action: LifecycleAction, status: string): boolean {
   return ACTION_ELIGIBLE[action].includes(status);
 }
 
+export type ConfirmCopy = { title: string; description: string; confirmLabel: string };
+
 export const CONFIRM_COPY = {
   releaseAll: {
     title: "Release all drafts?",
     description:
       "Releases every draft card matching the current filters. Playtesters will be able to see and build playtest decks with them.",
     confirmLabel: "Release all",
-  },
-  returnToIdeas: {
-    title: "Return to ideas?",
-    description:
-      "Returns each card to its owner's private ideas. Released versions are retired and playtesters can no longer see the card.",
-    confirmLabel: "Return to ideas",
   },
   delete: {
     title: "Delete permanently?",
@@ -114,3 +110,17 @@ export const CONFIRM_COPY = {
     confirmLabel: "Delete",
   },
 } as const;
+
+// forge_send_card_to_private makes the person clicking the owner, on purpose (#443):
+// a card returned from a set lands in THEIR ideas, whoever made it. The card is then
+// private to them, because forge_cards_select only admits set elders while set_id is set.
+export function returnToIdeasCopy(count: number): ConfirmCopy {
+  const one = count === 1;
+  return {
+    title: one ? "Return to ideas?" : `Return ${count} cards to ideas?`,
+    description: one
+      ? "Moves this card to your own ideas and makes you its owner. Nobody else on the set can see it there. Released versions are retired and playtesters can no longer see it."
+      : "Moves these cards to your own ideas and makes you their owner. Nobody else on the set can see them there. Released versions are retired and playtesters can no longer see them.",
+    confirmLabel: "Return to ideas",
+  };
+}

@@ -2,6 +2,7 @@
 import { describe, it, expect } from "vitest";
 import {
   STATUS_LABEL, ACTION_LABEL, releaseLabel, isEligible, BULK_DONE_VERB, releaseProposalNotice,
+  returnToIdeasCopy,
 } from "../lifecycleCopy";
 
 describe("lifecycleCopy", () => {
@@ -82,5 +83,29 @@ describe("releaseProposalNotice", () => {
 
   it("pluralizes the closed count with no match", () => {
     expect(releaseProposalNotice(2, false)[0]).toMatch(/^2 open proposals will be closed/);
+  });
+});
+
+describe("returnToIdeasCopy", () => {
+  // forge_send_card_to_private sets owner_id = auth.uid() on purpose (#443), so the
+  // person clicking becomes the owner, whoever made the card.
+  it("says the clicker becomes the owner, not that it goes back to its owner", () => {
+    const c = returnToIdeasCopy(1);
+    expect(c.description).toMatch(/your own ideas/);
+    expect(c.description).toMatch(/makes you its owner/);
+    expect(c.description).not.toMatch(/its owner's/);
+    expect(c.description).not.toMatch(/each card/);
+    expect(c.title).toBe("Return to ideas?");
+  });
+
+  it("still says playtesters lose the card", () => {
+    expect(returnToIdeasCopy(1).description).toMatch(/playtesters can no longer see it/);
+    expect(returnToIdeasCopy(3).description).toMatch(/playtesters can no longer see them/);
+  });
+
+  it("counts cards in bulk", () => {
+    const c = returnToIdeasCopy(3);
+    expect(c.title).toBe("Return 3 cards to ideas?");
+    expect(c.description).toMatch(/makes you their owner/);
   });
 });
