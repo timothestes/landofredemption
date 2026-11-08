@@ -149,3 +149,9 @@ export function walkHint({ index, total, filtered }: WalkPosition): string {
   if (index === 0) return "Not in this filter";
   return `${index} of ${total}${filtered ? " in this filter" : ""}`;
 }
+
+export function noMatchCopy(noun: "cards" | "ideas", filters: CardFilters): string {
+  const onlySearch = filters.q && filterQuery({ ...filters, q: "" }) === "";
+  const base = onlySearch ? `No ${noun} match “${filters.q}”.` : `No ${noun} match your filters.`;
+  return filters.since ? `${base} Only a release or an accepted proposal makes a new version; saved edits don't.` : base;
+}

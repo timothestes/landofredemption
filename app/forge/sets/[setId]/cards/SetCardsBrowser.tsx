@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import ForgeCardGrid from "@/app/forge/components/ForgeCardGrid";
+import NoFilterMatches from "@/app/forge/components/NoFilterMatches";
 import AddCardTile from "./AddCardTile";
 import { bulkLifecycle, type BulkResult } from "@/app/forge/lib/lifecycle";
 import {
@@ -13,7 +14,7 @@ import {
 } from "@/app/forge/lib/lifecycleCopy";
 import { CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
 import { sortSetCards } from "@/app/forge/lib/cardOrder";
-import { SET_STATUSES, visibleSetCards } from "@/app/forge/lib/cardFilters";
+import { SET_STATUSES, visibleSetCards, noMatchCopy } from "@/app/forge/lib/cardFilters";
 import { useGridPlace } from "@/app/forge/lib/useGridPlace";
 import { typeLabel, brigadeLabel } from "@/app/forge/lib/filterIcons";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
@@ -27,7 +28,7 @@ const selectClass = "rounded-md border bg-background px-2 py-1.5 text-sm";
 export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts, proposalCounts, releases }: { cards: ForgeCardFull[]; setId: string; canCreate: boolean; commentCounts?: Record<string, number>; proposalCounts?: Record<string, number>; releases?: Record<string, ReleaseInfo> }) {
   const router = useRouter();
   const searchRef = useRef<HTMLInputElement>(null);
-  const { filters, query, update, typeSearch } = useGridPlace();
+  const { filters, query, update, typeSearch, clear } = useGridPlace();
   const { q, status, type, brigade, since } = filters;
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -139,6 +140,11 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
           />
         </label>
         <span className="text-xs text-muted-foreground">{filtered.length} of {cards.length}</span>
+        {query && filtered.length > 0 && (
+          <Button size="sm" variant="ghost" className="h-8 px-2 text-xs text-muted-foreground" onClick={clear}>
+            Clear filters
+          </Button>
+        )}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {selecting && (
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -175,25 +181,29 @@ export default function SetCardsBrowser({ cards, setId, canCreate, commentCounts
         <div aria-live="polite" className="mb-3 text-xs text-foreground">{summary}</div>
       )}
 
-      <ForgeCardGrid
-        cards={filtered}
-        cardQuery={query}
-        showStatus
-        commentCounts={commentCounts}
-        proposalCounts={proposalCounts}
-        releaseBadges={since ? Object.fromEntries(
-          filtered.flatMap((c) => {
-            const rel = releases?.[c.id];
-            // Draft iterations count as activity but must not read as releases.
-            return rel ? [[c.id, `v${rel.versionNumber}${rel.status === "draft" ? " draft" : ""} · ${new Date(rel.releasedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`]] : [];
-          })
-        ) : undefined}
-        versionNumbers={Object.fromEntries(
-          Object.entries(releases ?? {}).map(([id, r]) => [id, r.versionNumber])
-        )}
-        selection={{ active: selecting, selected, onToggle: toggle }}
-        leading={canCreate ? <AddCardTile setId={setId} disabled={selecting} /> : undefined}
-      />
+      {filtered.length === 0 ? (
+        <NoFilterMatches message={noMatchCopy("cards", filters)} onClear={clear} />
+      ) : (
+        <ForgeCardGrid
+          cards={filtered}
+          cardQuery={query}
+          showStatus
+          commentCounts={commentCounts}
+          proposalCounts={proposalCounts}
+          releaseBadges={since ? Object.fromEntries(
+            filtered.flatMap((c) => {
+              const rel = releases?.[c.id];
+              // Draft iterations count as activity but must not read as releases.
+              return rel ? [[c.id, `v${rel.versionNumber}${rel.status === "draft" ? " draft" : ""} · ${new Date(rel.releasedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`]] : [];
+            })
+          ) : undefined}
+          versionNumbers={Object.fromEntries(
+            Object.entries(releases ?? {}).map(([id, r]) => [id, r.versionNumber])
+          )}
+          selection={{ active: selecting, selected, onToggle: toggle }}
+          leading={canCreate ? <AddCardTile setId={setId} disabled={selecting} /> : undefined}
+        />
+      )}
 
       {selecting && selected.size > 0 && (
         <div className="fixed inset-x-0 bottom-4 z-40 mx-auto flex w-fit max-w-[95vw] flex-wrap items-center justify-center gap-2 rounded-lg border bg-background/95 p-2 shadow-lg backdrop-blur">

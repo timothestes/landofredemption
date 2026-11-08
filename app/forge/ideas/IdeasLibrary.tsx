@@ -6,8 +6,10 @@ import { createCard, type ForgeCardFull } from "@/app/forge/lib/cards";
 import { bulkShareToSet, bulkLifecycle, type BulkResult } from "@/app/forge/lib/lifecycle";
 import { BULK_DONE_VERB, deleteCopy } from "@/app/forge/lib/lifecycleCopy";
 import ForgeCardGrid from "@/app/forge/components/ForgeCardGrid";
+import NoFilterMatches from "@/app/forge/components/NoFilterMatches";
 import { CARD_TYPES, BRIGADES, type CardType, type Brigade } from "@/app/forge/lib/designCard";
 import { typeLabel, brigadeLabel } from "@/app/forge/lib/filterIcons";
+import { noMatchCopy } from "@/app/forge/lib/cardFilters";
 import { useGridPlace } from "@/app/forge/lib/useGridPlace";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
 import { Button } from "@/components/ui/button";
@@ -15,7 +17,7 @@ import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 
 export default function IdeasLibrary({ cards, canCreate, sets }: { cards: ForgeCardFull[]; canCreate: boolean; sets: ForgeSetSummary[] }) {
   const router = useRouter();
-  const { filters, query, update, typeSearch } = useGridPlace();
+  const { filters, query, update, typeSearch, clear } = useGridPlace();
   const { q, type, brigade } = filters;
   const [creating, setCreating] = useState(false);
   const [selecting, setSelecting] = useState(false);
@@ -83,6 +85,11 @@ export default function IdeasLibrary({ cards, canCreate, sets }: { cards: ForgeC
           <option value="">All brigades</option>
           {BRIGADES.map((b) => <option key={b} value={b}>{brigadeLabel(b)}</option>)}
         </select>
+        {query && filtered.length > 0 && (
+          <Button size="sm" variant="ghost" className="h-8 px-2 text-xs text-muted-foreground" onClick={clear}>
+            Clear filters
+          </Button>
+        )}
         <Button size="sm" variant={selecting ? "secondary" : "outline"} className="h-8"
           onClick={() => { setSelecting(!selecting); setSelected(new Set()); setSummary(null); }}>
           {selecting ? "Done selecting" : "Select"}
@@ -106,12 +113,14 @@ export default function IdeasLibrary({ cards, canCreate, sets }: { cards: ForgeC
         </div>
       )}
 
-      {filtered.length === 0 ? (
+      {cards.length === 0 ? (
         <div className="mx-auto mt-16 max-w-xs text-center">
           <div className="mx-auto mb-4 aspect-[750/1050] w-40 rounded-lg border-2 border-dashed" />
           <p className="mb-3 text-sm text-muted-foreground">No ideas yet. Start with a name and a thought.</p>
           {canCreate && <Button onClick={onNew} disabled={creating}>Jot an idea</Button>}
         </div>
+      ) : filtered.length === 0 ? (
+        <NoFilterMatches message={noMatchCopy("ideas", filters)} onClear={clear} />
       ) : (
         <ForgeCardGrid cards={filtered} cardQuery={query} selection={{ active: selecting, selected, onToggle: toggle }} />
       )}

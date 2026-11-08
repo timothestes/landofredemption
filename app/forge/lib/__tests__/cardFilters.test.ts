@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  parseCardFilters, filterQuery, gridHref, gridReturnY, cardMatchesFilters, visibleSetCards, walkSet, walkHint, NO_FILTERS,
+  parseCardFilters, filterQuery, gridHref, gridReturnY, cardMatchesFilters, visibleSetCards, walkSet, walkHint, noMatchCopy, NO_FILTERS,
   type CardFilters, type FilterableCard,
 } from "../cardFilters";
 import type { ReleaseInfo } from "../versions";
@@ -196,5 +196,21 @@ describe("walkHint", () => {
     expect(walkHint({ index: 2, total: 224, filtered: false })).toBe("2 of 224");
     expect(walkHint({ index: 2, total: 6, filtered: true })).toBe("2 of 6 in this filter");
     expect(walkHint({ index: 0, total: 6, filtered: true })).toBe("Not in this filter");
+  });
+});
+
+describe("noMatchCopy", () => {
+  it("quotes a lone search back", () => {
+    expect(noMatchCopy("ideas", f({ q: "zzz" }))).toBe("No ideas match “zzz”.");
+  });
+
+  it("says filters when there's more than a search", () => {
+    expect(noMatchCopy("cards", f({ type: "Hero" }))).toBe("No cards match your filters.");
+    expect(noMatchCopy("cards", f({ q: "zzz", type: "Hero" }))).toBe("No cards match your filters.");
+  });
+
+  it("explains a date filter, since 'nothing matches' reads as 'nothing changed'", () => {
+    expect(noMatchCopy("cards", f({ since: "2026-10-01" })))
+      .toBe("No cards match your filters. Only a release or an accepted proposal makes a new version; saved edits don't.");
   });
 });
