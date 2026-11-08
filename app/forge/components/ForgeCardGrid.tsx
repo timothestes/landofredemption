@@ -7,6 +7,7 @@ import LinkPending from "@/app/forge/components/LinkPending";
 import { cardRawText } from "@/app/forge/lib/designCard";
 import { tileId } from "@/app/forge/lib/cardFilters";
 import { STATUS_LABEL, STATUS_BADGE_CLASS } from "@/app/forge/lib/lifecycleCopy";
+import { placeholderShowing } from "@/app/forge/lib/artStatus";
 import type { ForgeCardFull } from "@/app/forge/lib/cards";
 
 export type GridSelection = {
@@ -58,6 +59,10 @@ export default function ForgeCardGrid({
                 />
               ) : (
                 <ForgeCardPreview card={c.snapshot} artUrl={artUrl} className={faceClass} />
+              )}
+              {/* Over the art it describes: every corner of the face is printed on, or holds another chip. */}
+              {placeholderShowing(c, c.isPlaceholder) && (
+                <span className="absolute left-1/2 top-[20%] z-10 -translate-x-1/2 rounded-full border bg-background/90 px-1.5 py-0.5 text-[10px] font-medium text-foreground shadow-sm backdrop-blur-sm">Placeholder</span>
               )}
               {count > 0 && (
                 <span

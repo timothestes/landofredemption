@@ -2,18 +2,23 @@
 
 import { startTransition, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Link2, Loader2, Trash2 } from "lucide-react";
+import { Check, Link2, Loader2, Trash2 } from "lucide-react";
 import { upload } from "@vercel/blob/client";
 import FilePicker from "@/app/forge/components/FilePicker";
 import CropCandidateModal from "@/app/forge/components/CropCandidateModal";
 import SourceLinkDialog from "@/app/forge/components/SourceLinkDialog";
+import { Button } from "@/components/ui/button";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
-import { addArtCandidate, deleteArtCandidate, type ArtCandidate } from "@/app/forge/lib/artCandidates";
+import { activateCandidate, addArtCandidate, deleteArtCandidate, type ArtCandidate } from "@/app/forge/lib/artCandidates";
 import { pendingTiles, uploadHint, type UploadBatch } from "@/app/forge/lib/artUploadProgress";
+import { withDeadline } from "@/app/forge/lib/withDeadline";
 
 // Candidate blobs are immutable (a row is written once, never replaced), so a
 // constant t cache-buster is enough for the proxy's immutable caching.
 const candidateUrl = (cardId: string, id: string) => `/forge/api/art/${cardId}?candidate=${id}&t=c`;
+
+const USE_FAILED = "Couldn’t switch the artwork. Check your connection and try again.";
+const DELETE_FAILED = "Couldn’t delete that image. Check your connection and try again.";
 
 export default function ArtCandidatesPanel({
   cardId, candidates, cardName,
@@ -28,6 +33,9 @@ export default function ArtCandidatesPanel({
   const [cropping, setCropping] = useState<string | null>(null); // candidate id
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [editingSource, setEditingSource] = useState<string | null>(null); // candidate id
+  // The image being switched to or deleted, one at a time.
+  const [acting, setActing] = useState<{ id: string; kind: "use" | "delete" } | null>(null);
+  const busy = acting !== null || progress !== null;
 
   async function onFiles(files: File[]) {
     setErr(null);
@@ -67,46 +75,80 @@ export default function ArtCandidatesPanel({
     });
   }
 
-  async function onDelete(id: string) {
+  // Same as an upload's spinner: the tile only changes with the refreshed page, so the spinner
+  // lasts until then. Refreshes after a failure too: past the deadline, the action may have landed.
+  async function act(id: string, kind: "use" | "delete", action: Promise<{ ok: boolean; error?: string }>, failed: string) {
     setErr(null);
-    const r = await deleteArtCandidate(cardId, id);
-    if (r.ok === false) setErr(r.error ?? "Could not delete image");
-    router.refresh();
+    setActing({ id, kind });
+    const r = await withDeadline(action, { ok: false, error: failed });
+    if (r.ok === false) {
+      setErr(r.error ?? failed);
+      setActing(null);
+      router.refresh();
+      return;
+    }
+    settle();
+  }
+
+  function settle() {
+    startTransition(() => {
+      setActing(null);
+      router.refresh();
+    });
   }
 
   return (
     <div>
       <FilePicker label="Add images…" accept="image/jpeg,image/png,image/webp,.tif,.tiff,image/tiff" multiple
-        disabled={progress !== null} onFiles={onFiles}
+        disabled={busy} onFiles={onFiles}
         hint={progress ? uploadHint(progress) : `${candidates.length}/12 · click an image to crop`} />
-      {err && <p className="mt-2 text-sm text-destructive">{err}</p>}
+      {err && <p role="status" className="mt-2 text-sm text-destructive">{err}</p>}
 
       {(candidates.length > 0 || progress !== null) && (
         <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
           {candidates.map((c) => (
-            <li key={c.id} className="group relative">
-              <button type="button" className="block w-full" onClick={() => setCropping(c.id)}
-                aria-label={c.isActiveSource ? "Re-crop the current artwork's source" : "Crop this image"}>
-                {/* eslint-disable-next-line @next/next/no-img-element -- forge art must use the authed proxy, never next/image */}
-                <img src={candidateUrl(cardId, c.id)} alt="" loading="lazy" decoding="async"
-                  className={`aspect-square w-full rounded-md border bg-muted/40 object-cover ${c.isActiveSource ? "ring-2 ring-primary" : ""}`} />
-              </button>
-              {c.isActiveSource ? (
-                // On touch the link button below is larger and always shown, so this label moves
-                // to the corner a source tile leaves free (it has no Delete).
-                <span className="absolute bottom-1 left-1 rounded bg-background/85 px-1 text-[10px] font-medium [@media(hover:none)]:bottom-auto [@media(hover:none)]:top-1">Artwork source</span>
-              ) : (
-                <button type="button" aria-label="Delete image"
-                  className="absolute right-1 top-1 rounded-md border bg-background/85 p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus:opacity-100 active:opacity-100 group-hover:opacity-100 [@media(hover:none)]:p-2.5 [@media(hover:none)]:opacity-100"
-                  onClick={() => setPendingDelete(c.id)}>
-                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+            <li key={c.id}>
+              <div className="group relative">
+                <button type="button" className="block w-full" disabled={busy} onClick={() => setCropping(c.id)}
+                  aria-label={c.isActiveSource ? "Re-crop the current artwork's source" : "Crop this image"}>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- forge art must use the authed proxy, never next/image */}
+                  <img src={candidateUrl(cardId, c.id)} alt="" loading="lazy" decoding="async"
+                    className={`aspect-square w-full rounded-md border bg-muted/40 object-cover ${c.isActiveSource ? "ring-2 ring-primary" : ""}`} />
                 </button>
+                {!c.isActiveSource && (
+                  <button type="button" aria-label="Delete image" disabled={busy}
+                    className="absolute right-1 top-1 rounded-md border bg-background/85 p-1 text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus:opacity-100 active:opacity-100 group-hover:opacity-100 [@media(hover:none)]:p-2.5 [@media(hover:none)]:opacity-100"
+                    onClick={() => setPendingDelete(c.id)}>
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                )}
+                <button type="button" aria-label={c.sourceUrl ? "Edit source link" : "Add source link"}
+                  className={`absolute bottom-1 right-1 rounded-md border bg-background/85 p-1 text-muted-foreground transition-opacity hover:text-foreground focus:opacity-100 active:opacity-100 group-hover:opacity-100 [@media(hover:none)]:p-2.5 [@media(hover:none)]:opacity-100 ${c.sourceUrl ? "opacity-100" : "opacity-0"}`}
+                  onClick={() => setEditingSource(c.id)}>
+                  <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+                {acting?.id === c.id && acting.kind === "delete" && (
+                  <span role="status" aria-label="Deleting image" className="absolute inset-0 flex items-center justify-center rounded-md bg-background/70">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden="true" />
+                  </span>
+                )}
+              </div>
+              {/* The action and the state it leads to, in one slot, so the eye finds both in the same place. */}
+              {acting?.id === c.id && acting.kind === "use" ? (
+                <p role="status" className="mt-1 flex h-7 items-center justify-center gap-1 text-xs text-muted-foreground [@media(hover:none)]:h-11">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />Saving…
+                </p>
+              ) : c.isActiveSource ? (
+                <p className="mt-1 flex h-7 items-center justify-center gap-1 text-xs font-medium text-primary [@media(hover:none)]:h-11">
+                  <Check className="h-3.5 w-3.5" aria-hidden="true" />In use
+                </p>
+              ) : (
+                <Button type="button" variant="outline" disabled={busy} aria-label="Use this image as the artwork"
+                  className="mt-1 h-7 w-full px-1 text-xs [@media(hover:none)]:h-11"
+                  onClick={() => void act(c.id, "use", activateCandidate(cardId, c.id), USE_FAILED)}>
+                  Use this
+                </Button>
               )}
-              <button type="button" aria-label={c.sourceUrl ? "Edit source link" : "Add source link"}
-                className={`absolute bottom-1 right-1 rounded-md border bg-background/85 p-1 text-muted-foreground transition-opacity hover:text-foreground focus:opacity-100 active:opacity-100 group-hover:opacity-100 [@media(hover:none)]:p-2.5 [@media(hover:none)]:opacity-100 ${c.sourceUrl ? "opacity-100" : "opacity-0"}`}
-                onClick={() => setEditingSource(c.id)}>
-                <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
             </li>
           ))}
           {/* One skeleton per not-yet-landed file: the active upload spins, queued
@@ -125,7 +167,7 @@ export default function ArtCandidatesPanel({
         <CropCandidateModal cardId={cardId} candidateId={cropping}
           imageUrl={candidateUrl(cardId, cropping)} cardName={cardName}
           onClose={() => setCropping(null)}
-          onApplied={() => { setCropping(null); router.refresh(); }} />
+          onApplied={() => { setCropping(null); setActing({ id: cropping, kind: "use" }); settle(); }} />
       )}
 
       {editingSource && (
@@ -138,7 +180,7 @@ export default function ArtCandidatesPanel({
       <ConfirmationDialog
         open={pendingDelete !== null}
         onOpenChange={(o) => { if (!o) setPendingDelete(null); }}
-        onConfirm={() => { const id = pendingDelete; setPendingDelete(null); if (id) void onDelete(id); }}
+        onConfirm={() => { const id = pendingDelete; setPendingDelete(null); if (id) void act(id, "delete", deleteArtCandidate(cardId, id), DELETE_FAILED); }}
         variant="destructive"
         title="Delete this image?"
         description="Removes it from this card's gallery. This can't be undone."

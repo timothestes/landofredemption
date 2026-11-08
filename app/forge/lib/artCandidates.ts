@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireElder } from "@/app/forge/lib/auth";
 import { validateArtFile, uploadForgeArt, uploadForgeArtRaw, readForgeArt, readForgeUpload, deleteForgeArt } from "@/app/forge/lib/art";
 import { clampCropRect, cropCardImage } from "@/app/forge/lib/imageCrop";
+import { refusalOr } from "@/app/forge/lib/rpcRefusal";
 import type { CropRect } from "@/app/forge/lib/cropPreview";
 
 // Candidate ids/timestamps only — blob keys never leave the server; the client
@@ -96,7 +97,7 @@ export async function deleteArtCandidate(
   if (!ctx) return { ok: false, error: "Not authorized" };
   const { error } = await ctx.supabase.rpc("forge_delete_art_candidate", { p_candidate_id: candidateId });
   if (error) {
-    return { ok: false, error: /source of the current artwork/i.test(error.message) ? "This image is the source of the current artwork." : "Could not delete image" };
+    return { ok: false, error: /source of the current artwork/i.test(error.message) ? "This image is the source of the current artwork." : refusalOr(error, "Could not delete image") };
   }
   revalidatePath(`/forge/cards/${cardId}`);
   return { ok: true };
@@ -157,7 +158,7 @@ export async function activateCandidate(
     p_key: key,
     p_original_key: key,
   });
-  if (error) return { ok: false, error: "Could not set artwork" };
+  if (error) return { ok: false, error: refusalOr(error, "Could not set artwork") };
   revalidatePath(`/forge/cards/${cardId}`);
   revalidatePath("/forge/ideas");
   return { ok: true };
@@ -197,7 +198,7 @@ export async function applyCrop(
     p_key: croppedKey,
     p_original_key: key,
   });
-  if (error) return { ok: false, error: "Could not save artwork" };
+  if (error) return { ok: false, error: refusalOr(error, "Could not save artwork") };
   revalidatePath(`/forge/cards/${cardId}`);
   revalidatePath("/forge/ideas");
   return { ok: true };
