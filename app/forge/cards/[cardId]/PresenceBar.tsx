@@ -17,7 +17,7 @@ export default function PresenceBar({ others }: { others: ForgePresenceMeta[] })
   const people = [...seen.values()];
   const editing = people.filter((p) => p.editing);
   return (
-    <div className="mb-3">
+    <div className="mb-3 max-sm:pt-2">
       <div className="flex items-center gap-2">
         <div className="flex -space-x-2">
           {people.map((p) => (
