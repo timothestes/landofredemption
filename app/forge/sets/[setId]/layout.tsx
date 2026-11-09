@@ -20,7 +20,8 @@ export default async function SetLayout({ children, params }: { children: React.
   return (
     <div className="mx-auto max-w-6xl p-4">
       <div className="mb-4">
-        <ForgeBreadcrumbs items={[
+        {/* From sm up. On a phone the Forge tabs sit right above it and the title just below. */}
+        <ForgeBreadcrumbs className="max-sm:hidden" items={[
           { label: "The Forge", href: "/forge" },
           { label: "Sets", href: "/forge/sets" },
           { label: set.name },

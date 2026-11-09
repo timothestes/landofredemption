@@ -20,6 +20,11 @@ export const NO_FILTERS: CardFilters = { q: "", status: "", type: "", brigade: "
 
 const FILTER_KEYS = ["q", "status", "type", "brigade", "since"] as const;
 
+/** How many filters are set, not counting search, which stays on show. For the phone's Filters button. */
+export function activeFilterCount({ status, type, brigade, since }: CardFilters): number {
+  return [status, type, brigade, since].filter(Boolean).length;
+}
+
 type Params = { get(key: string): string | null } | Record<string, unknown>;
 
 function read(params: Params, key: string): string {
