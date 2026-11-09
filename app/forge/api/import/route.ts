@@ -110,8 +110,8 @@ export async function POST(req: Request): Promise<Response> {
       if (dupId && !overwrite) return { name, ok: true, cardId: dupId, skipped: true };
 
       if (dupId && overwrite) {
-        // forge_set_working_finished has no promoted guard, and a row whose fields match skips
-        // the merge that would have raised this.
+        // Before the upload, so a refused image isn't stored for nothing. The database refuses it
+        // too (forge_set_working_finished, migration 128).
         if (file && dup.status === "promoted") return { name, ok: false, error: "a promoted card is read-only" };
 
         const changed = !isEmptyPatch(patch);

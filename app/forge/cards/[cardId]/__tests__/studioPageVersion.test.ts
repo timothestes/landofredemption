@@ -110,6 +110,12 @@ describe("studio page write access", () => {
     expect((await page({ status: "promoted" }, true)).props.canEdit).toBe(false);
   });
 
+  it("leaves a promoted card's art source links to whoever could edit the card", async () => {
+    expect((await page({ status: "promoted" }, true)).props.canEditSources).toBe(true);
+    expect((await page({ status: "promoted" }, false)).props.canEditSources).toBe(false);
+    expect((await page({ status: "promoted", ownerId: "u1" }, false)).props.canEditSources).toBe(true);
+  });
+
   it("offers an idea's share picker only the sets it can go into", async () => {
     vi.mocked(listWritableSets).mockResolvedValue([{ id: "s9" }] as any);
     const el = await page({ setId: null, ownerId: "u1" }, false);

@@ -15,7 +15,7 @@ import { withDeadline } from "@/app/forge/lib/withDeadline";
 
 // Candidate blobs are immutable (a row is written once, never replaced), so a
 // constant t cache-buster is enough for the proxy's immutable caching.
-const candidateUrl = (cardId: string, id: string) => `/forge/api/art/${cardId}?candidate=${id}&t=c`;
+export const candidateUrl = (cardId: string, id: string) => `/forge/api/art/${cardId}?candidate=${id}&t=c`;
 
 const USE_FAILED = "Couldn’t switch the artwork. Check your connection and try again.";
 const DELETE_FAILED = "Couldn’t delete that image. Check your connection and try again.";

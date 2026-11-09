@@ -11,6 +11,7 @@ import ForgeBreadcrumbs from "@/app/forge/components/ForgeBreadcrumbs";
 import LinkPending from "@/app/forge/components/LinkPending";
 import FilePicker from "@/app/forge/components/FilePicker";
 import ArtCandidatesPanel from "@/app/forge/components/ArtCandidatesPanel";
+import ArtSourceLinks from "@/app/forge/components/ArtSourceLinks";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
@@ -20,7 +21,7 @@ import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
 import { sameSnapshot } from "@/app/forge/lib/cardDiff";
 import { reviewJumpLinks } from "@/app/forge/lib/reviewView";
 import { walkHint, type WalkPosition } from "@/app/forge/lib/cardFilters";
-import { createCardSaver, incomingAction } from "@/app/forge/lib/cardSave";
+import { createCardSaver, editAction, incomingAction } from "@/app/forge/lib/cardSave";
 import { createOptimisticToggle, type ToggleState } from "@/app/forge/lib/optimisticToggle";
 import { withDeadline } from "@/app/forge/lib/withDeadline";
 import { STATUS_BADGE_CLASS } from "@/app/forge/lib/lifecycleCopy";
@@ -53,7 +54,7 @@ const arrowClass =
   "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground";
 
 export default function StudioEditor({
-  card, sets, currentUser, creator, setId, setName, prevId, nextId, walkQuery = "", gridHref, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, canEdit = true, unresolvedComments = 0, review,
+  card, sets, currentUser, creator, setId, setName, prevId, nextId, walkQuery = "", gridHref, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, canEdit = true, canEditSources = false, unresolvedComments = 0, review,
 }: {
   card: ForgeCardFull;
   sets: ForgeSetSummary[];
@@ -81,6 +82,8 @@ export default function StudioEditor({
   unresolvedComments?: number;
   // Whether this member can write to this card. Worked out in the page; the RPCs still decide.
   canEdit?: boolean;
+  // Source links outlive promotion, so a card that's otherwise read-only can still have these.
+  canEditSources?: boolean;
   // The review column (proposals / history / comments), rendered inside this component's
   // grid so the sticky card face keeps travelling alongside it. Built in the server
   // component, so it is an element, not a render prop — it cannot take callbacks.
@@ -92,6 +95,7 @@ export default function StudioEditor({
   // A write from elsewhere arrived while this session had an unsaved edit, so adopting it
   // would have thrown that edit away. Offered as a choice instead.
   const [stale, setStale] = useState(false);
+  const [confirmLoad, setConfirmLoad] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstRender = useRef(true);
@@ -146,9 +150,10 @@ export default function StudioEditor({
     latest.current = snapshot;
     if (firstRender.current) { firstRender.current = false; return; }
     // Content, not identity: update() always builds a new object, and an adopted snapshot
-    // must not be echoed straight back to the server. Against what the server will hold, not
-    // lastSaved: an edit undone while its save is in flight still needs saving.
-    if (sameSnapshot(snapshot, saver.target())) return;
+    // must not be echoed straight back to the server.
+    const action = editAction({ edit: snapshot, target: saver.target(), clean: saver.clean() });
+    if (action === "clean") setDirty(false);
+    if (action !== "save") return;
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => { void runSave(); }, 700);
     return () => { if (timer.current) clearTimeout(timer.current); };
@@ -180,6 +185,7 @@ export default function StudioEditor({
     latest.current = incoming;
     setSnapshot(incoming);
     setStale(false);
+    setConfirmLoad(false);
   }, [card.snapshot, saver]);
 
   // Clicking a nav link within the debounce window unmounts this editor before the
@@ -262,6 +268,20 @@ export default function StudioEditor({
     setSaved((s) => (s === "error" ? "idle" : s));   // nothing of this session's is left to fail
   };
 
+  // Asks first when there is something to lose. The pending save waits for the answer: going
+  // out now, it would merge the edit into their version and change the answer under the question.
+  const loadTheirVersion = () => {
+    if (saver.clean()) { adoptIncoming(); return; }
+    if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+    setConfirmLoad(true);
+  };
+
+  // The dialog closed either way. If the edit is still here it was kept, so its save goes out.
+  const closeLoadConfirm = () => {
+    setConfirmLoad(false);
+    if (!saver.clean()) void runSave();
+  };
+
   async function onUpload(file: File, kind: "finished") {
     setErr(null);
     setUploading(kind);
@@ -328,10 +348,10 @@ export default function StudioEditor({
       {stale && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
           <span>
-            This card changed elsewhere while you were editing. Your unsaved edit is still here —
-            saving keeps yours.
+            This card changed elsewhere while you were editing.
+            {dirty && " Your unsaved edit is still here — saving keeps yours."}
           </span>
-          <Button variant="outline" className="ml-auto h-6 px-2 text-[11px]" onClick={adoptIncoming}>
+          <Button variant="outline" className="ml-auto h-6 px-2 text-[11px]" onClick={loadTheirVersion}>
             Load their version
           </Button>
         </div>
@@ -562,6 +582,7 @@ export default function StudioEditor({
               )}
             </fieldset>
           </fieldset>
+          {!canEdit && canEditSources && <ArtSourceLinks cardId={card.id} candidates={artCandidates} />}
           <StudioSyncProvider value={syncValue}>
             <StudioDraftProvider value={snapshot}>{review}</StudioDraftProvider>
           </StudioSyncProvider>
@@ -576,6 +597,17 @@ export default function StudioEditor({
         title="Replace image without updating the card fields?"
         description="You're replacing the finished card image but haven't changed any card fields this session. If the new image changed the ability text, update the fields to match."
         confirmLabel="Replace anyway"
+      />
+
+      <ConfirmationDialog
+        open={confirmLoad}
+        onOpenChange={(o) => { if (!o) closeLoadConfirm(); }}
+        onConfirm={adoptIncoming}
+        variant="warning"
+        title="Load their version?"
+        description="This throws away your unsaved edit. It can't be undone."
+        confirmLabel="Load their version"
+        cancelLabel="Keep my edit"
       />
     </div>
   );

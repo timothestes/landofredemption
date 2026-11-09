@@ -19,6 +19,11 @@ export function proposeConsequence(cardStatus: string): string {
     : "Accepting records a version in the card’s history. The card stays in Draft — nothing reaches playtesters.";
 }
 
+// Why Accept refused on an In playtest card, where accepting releases the proposal. The check is
+// forge_accept_proposal's (migration 128), and a Draft card's accept never gets this.
+export const ACCEPT_NEEDS_NAME_AND_TYPE =
+  "A card needs a name and a type before it can be released, and this proposal is missing one. Deny it, or propose again with both filled in.";
+
 // Caption above the field list. No "as last saved" qualifier: submitting flushes
 // the editor first, so the submission deliberately includes edits newer than this
 // preview. Promising either freshness or staleness would be a lie.

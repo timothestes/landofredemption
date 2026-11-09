@@ -118,9 +118,10 @@ export const RARITIES = ["Common", "Uncommon", "Rare", "Ultra Rare", "Promo"] as
 // `_forge_is_card_field` (used to validate field-anchored suggestions); its
 // current definition is in supabase/migrations/067_forge_scripture_field.sql.
 // Keep the two lists in sync.
-// A stat is a number, "X" (variable, e.g. The Faithful Followers), or a paired
-// dual-side value like "6 (0)" — the official card pool's convention for
-// dual-alignment enhancements and dual-sided characters (142 cards use it).
+// A stat is a number, "X" (variable, e.g. The Faithful Followers), "-X" or "*" as printed,
+// or a paired dual-side value like "6 (0)" — the official card pool's convention for
+// dual-alignment enhancements and dual-sided characters (142 cards use it). A side with no
+// number prints "-" (Scapegoat, Capture and Seize), so "- (5)".
 // parseStatInput below is the only producer of the string forms.
 export type StatValue = number | string | null;
 
@@ -253,20 +254,22 @@ export function cardRawText(card: DesignCard): string {
 // A dual-side stat carries both alignments' values. Accept either the pool's
 // canonical parens ("6 (0)") or a slash ("6/0") — the separator designers reach for
 // first — and normalize both to the canonical `N (M)`.
-const PAIRED_STAT_RE = /^(x|\d+)\s*(?:\(\s*(x|\d+)\s*\)|\/\s*(x|\d+))$/i;
+const PAIRED_STAT_RE = /^(x|\d+|-)\s*(?:\(\s*(x|\d+|-)\s*\)|\/\s*(x|\d+|-))$/i;
 
-/** Parse a stat: "" → null, "x"/"X" → "X", numbers pass, paired dual-side values
- *  normalize to `N (M)` (e.g. "3(2)" → "3 (2)", "6/0" → "6 (0)", "x/0" → "X (0)"),
- *  junk → null. Pure. */
+/** Parse a stat: "" → null, "x"/"X" → "X", "-x" → "-X", "*" stays, whole numbers pass, paired
+ *  dual-side values normalize to `N (M)` (e.g. "3(2)" → "3 (2)", "6/0" → "6 (0)", "x/0" →
+ *  "X (0)", "-/0" → "- (0)"), junk → null. Pure. */
 export function parseStatInput(raw: string): StatValue {
   const t = raw.trim();
   if (!t) return null;
   if (/^x$/i.test(t)) return "X";
+  if (/^-x$/i.test(t)) return "-X";
+  if (t === "*") return "*";
   const paired = PAIRED_STAT_RE.exec(t);
   if (paired) {
     const side = (s: string) => (/^x$/i.test(s) ? "X" : s);
     return `${side(paired[1])} (${side(paired[2] ?? paired[3])})`;
   }
-  const n = Number(t);
-  return Number.isFinite(n) ? n : null;
+  // Not Number(t) alone: it also takes "7.", "1e3" and "0x10", and the field then disagrees with the card.
+  return /^[+-]?\d+$/.test(t) ? Number(t) : null;
 }

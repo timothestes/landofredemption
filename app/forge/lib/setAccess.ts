@@ -34,15 +34,25 @@ export function setsTakingCards<S extends { id: string; isPrivate: boolean; stat
   );
 }
 
+// Can this member correct a card's art source links? Mirrors forge_set_art_candidate_source, which
+// has no status check on purpose: a link changes nothing on the card, so it outlives promotion.
+// `canDesign` is is_forge_set_elder for the card's set, so it's true for every elder on a set that
+// isn't private.
+export function canEditArtSources({ isOwner, role, canDesign }: {
+  isOwner: boolean;
+  role: ForgeRole;
+  canDesign: boolean;
+}): boolean {
+  return role === "superadmin" || isOwner || canDesign;
+}
+
 // Can this member write to this card? Mirrors the guard in forge_save_card_fields and
-// forge_publish_card, which stays the real gate. `canDesign` is is_forge_set_elder for the
-// card's set, so it's true for every elder on a set that isn't private.
-export function canWriteCard({ status, isOwner, role, canDesign }: {
+// forge_publish_card, which stays the real gate.
+export function canWriteCard({ status, ...who }: {
   status: string;
   isOwner: boolean;
   role: ForgeRole;
   canDesign: boolean;
 }): boolean {
-  if (status === "promoted") return false;
-  return role === "superadmin" || isOwner || canDesign;
+  return status !== "promoted" && canEditArtSources(who);
 }

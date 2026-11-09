@@ -51,6 +51,21 @@ export function incomingAction({ incoming, latest, lastSaved, busy }: {
   return "adopt";
 }
 
+// What the autosave effect does with an edit. Compared against what the server will hold, not
+// lastSaved: an edit undone while its save is in flight still needs saving ("save"). An edit
+// that matches it has nothing to arm, which leaves two cases. Nothing in flight and nothing
+// unconfirmed is "clean": a typo fixed straight away, a name retyped as it was. Otherwise
+// "wait", because it isn't clean yet: a save in flight settles it when it lands, and a failed
+// save's fields still have to go out, on Retry or on reconnect.
+export function editAction({ edit, target, clean }: {
+  edit: DesignCard;
+  target: DesignCard;
+  clean: boolean;
+}): "save" | "clean" | "wait" {
+  if (!sameSnapshot(edit, target)) return "save";
+  return clean ? "clean" : "wait";
+}
+
 // Long enough for a cold start. Past this a save counts as failed, so a lost request can't
 // hold up the saves behind it or leave the pill on "Saving…".
 export const SEND_DEADLINE_MS = 20_000;

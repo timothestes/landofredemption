@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { grantKey, buildGrantKeySet, NEW_SET_PRIVATE_DEFAULT, canWriteSet, setsTakingCards, canWriteCard } from "@/app/forge/lib/setAccess";
+import { grantKey, buildGrantKeySet, NEW_SET_PRIVATE_DEFAULT, canWriteSet, setsTakingCards, canWriteCard, canEditArtSources } from "@/app/forge/lib/setAccess";
 
 describe("grantKey", () => {
   it("joins userId and setId with a separator", () => {
@@ -95,5 +95,21 @@ describe("canWriteCard", () => {
     const promoted = { ...base, status: "promoted" };
     expect(canWriteCard({ ...promoted, isOwner: true, canDesign: true })).toBe(false);
     expect(canWriteCard({ ...promoted, role: "superadmin" })).toBe(false);
+  });
+});
+
+// Mirrors forge_set_art_candidate_source, which has no status check on purpose.
+describe("canEditArtSources", () => {
+  const base = { isOwner: false, role: "elder" as const, canDesign: false };
+  it("follows who can edit the card", () => {
+    expect(canEditArtSources(base)).toBe(false);
+    expect(canEditArtSources({ ...base, canDesign: true })).toBe(true);
+    expect(canEditArtSources({ ...base, isOwner: true })).toBe(true);
+    expect(canEditArtSources({ ...base, role: "superadmin" })).toBe(true);
+  });
+  it("is the one thing a designer keeps on a promoted card", () => {
+    const designer = { ...base, canDesign: true };
+    expect(canWriteCard({ ...designer, status: "promoted" })).toBe(false);
+    expect(canEditArtSources(designer)).toBe(true);
   });
 });

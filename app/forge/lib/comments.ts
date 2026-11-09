@@ -127,7 +127,12 @@ export async function applySuggestion(
   const { error } = await ctx.supabase.rpc("forge_apply_suggestion", {
     p_comment_id: commentId,
   });
-  if (error) return { ok: false, error: "Could not apply suggestion" };
+  if (error) {
+    return {
+      ok: false,
+      error: error.message.includes("a promoted card is read-only") ? "A promoted card is read-only." : "Could not apply suggestion",
+    };
+  }
   revalidatePath(`/forge/cards/${cardId}`);
   return { ok: true };
 }

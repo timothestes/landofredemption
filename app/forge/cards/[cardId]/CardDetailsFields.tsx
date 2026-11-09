@@ -6,6 +6,7 @@ import {
   toggleMultiBrigade, brigadeLabels, brigadeSides, toggleCardType, iconSide, defaultIconSide,
   type DesignCard, type Brigade, type ClassIconKind, type IconSide,
 } from "@/app/forge/lib/designCard";
+import { isDualAlignment } from "@/app/forge/lib/frameAssets";
 import StatInput from "./StatInput";
 import IdentifiersInput from "./IdentifiersInput";
 import {
@@ -221,14 +222,15 @@ export default function CardDetailsFields({
       {/* Strength / Toughness */}
       <div className="[&_input]:min-h-11 [&_input]:text-base sm:[&_input]:min-h-0 sm:[&_input]:text-sm">
         <div className="flex gap-3">
-          <label className="block">
+          {/* Wider than the input, for the note it can show underneath. */}
+          <label className="block w-36">
             <span className="mb-1 block text-sm font-medium">Strength</span>
-            <StatInput value={snapshot.strength} onCommit={(v) => update({ strength: v })}
+            <StatInput value={snapshot.strength} onCommit={(v) => update({ strength: v })} warnTwoSides={!isDualAlignment(snapshot)}
               className="w-24 rounded-md border bg-background px-3 py-2 text-sm" />
           </label>
-          <label className="block">
+          <label className="block w-36">
             <span className="mb-1 block text-sm font-medium">Toughness</span>
-            <StatInput value={snapshot.toughness} onCommit={(v) => update({ toughness: v })}
+            <StatInput value={snapshot.toughness} onCommit={(v) => update({ toughness: v })} warnTwoSides={!isDualAlignment(snapshot)}
               className="w-24 rounded-md border bg-background px-3 py-2 text-sm" />
           </label>
         </div>
