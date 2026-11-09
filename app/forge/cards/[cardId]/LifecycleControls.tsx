@@ -128,7 +128,8 @@ export default function LifecycleControls({
     <div className="flex flex-wrap items-center gap-2 text-xs">
       {inSet ? (
         <>
-          <ol className="flex items-center gap-1 text-muted-foreground">
+          {/* From sm up. On a phone the version pill above already says where the card is. */}
+          <ol className="hidden items-center gap-1 text-muted-foreground sm:flex">
             {STATUS_PATH.map((s) => (
               <li key={s} className={card.status === s ? "font-semibold text-foreground" : ""}>
                 {STATUS_LABEL[s]}

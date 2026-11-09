@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Anvil } from "lucide-react";
+import { useActiveTabInView } from "@/app/forge/lib/tabStrip";
 
 // Inlined (not imported from lib/auth) so this client component never pulls the
 // server-only supabase client into the browser bundle.
@@ -12,6 +13,7 @@ type NavItem = { href: string; label: string; match: (p: string) => boolean };
 
 export default function ForgeNav({ role }: { role: ForgeRole }) {
   const pathname = usePathname() ?? "";
+  const strip = useActiveTabInView(pathname);
 
   const items: NavItem[] =
     role === "playtester"
@@ -37,7 +39,8 @@ export default function ForgeNav({ role }: { role: ForgeRole }) {
     // top-[65px], not top-16: TopNav is 65px tall (h-16 + its bottom border), so top-16
     // left a 1px seam that page content showed through. Opaque, not a translucent blur —
     // with a sticky row beneath it, the blur smeared that row's text as it passed under.
-    <div className="sticky top-[65px] z-40 border-b bg-background">
+    // Only from sm up: on a phone it scrolls away (see --forge-chrome in the layout).
+    <div className="relative z-40 border-b bg-background sm:sticky sm:top-[65px]">
       <div className="mx-auto flex max-w-full items-center gap-1 px-4">
         <Link
           href="/forge"
@@ -47,7 +50,7 @@ export default function ForgeNav({ role }: { role: ForgeRole }) {
           <Anvil className="hidden h-5 w-5 sm:block" aria-hidden="true" />
           <span>The Forge</span>
         </Link>
-        <nav className="no-scrollbar scroll-fade-x flex items-center gap-1 overflow-x-auto pr-7">
+        <nav ref={strip} className="no-scrollbar scroll-fade-x flex items-center gap-1 overflow-x-auto pr-7">
           {items.map((it) => {
             const active = it.match(pathname);
             return (

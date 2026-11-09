@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useActiveTabInView } from "@/app/forge/lib/tabStrip";
 
 export default function SetTabs({ setId, showPromote = false }: { setId: string; showPromote?: boolean }) {
   const pathname = usePathname() ?? "";
+  const strip = useActiveTabInView(pathname);
   const tabs = [
     { href: `/forge/sets/${setId}/cards`, label: "Cards" },
     { href: `/forge/sets/${setId}/notes`, label: "Notes" },
@@ -15,7 +17,7 @@ export default function SetTabs({ setId, showPromote = false }: { setId: string;
     ...(showPromote ? [{ href: `/forge/sets/${setId}/promote`, label: "Promote" }] : []),
   ];
   return (
-    <nav className="no-scrollbar scroll-fade-x mt-2 flex gap-1 overflow-x-auto pr-7 text-sm">
+    <nav ref={strip} className="no-scrollbar scroll-fade-x mt-2 flex gap-1 overflow-x-auto pr-7 text-sm">
       {tabs.map((t) => {
         const active = pathname.startsWith(t.href);
         return (

@@ -24,7 +24,10 @@ export default async function ForgeLayout({
     // --forge-chrome is the height of the two stacked sticky bars below (TopNav 65px +
     // ForgeNav 47px). Declared once here because anything else that wants to stick under
     // them has to agree with them exactly — a px out either way clips or leaks.
-    <div className="flex min-h-screen flex-col" style={{ "--forge-chrome": "112px" } as React.CSSProperties}>
+    // On a phone they scroll away with the page, so it is 0 there: the logo and the tabs do
+    // nothing while you type, and a keyboard leaves little enough room as it is. Relative, not
+    // static, so TopNav's z-index still lifts its menu over the page.
+    <div className="flex min-h-screen flex-col [--forge-chrome:0px] max-sm:[&>nav]:relative sm:[--forge-chrome:112px]">
       <TopNav hideGameLinks={ctx.role === "playtester"} />
       <ForgeNav role={ctx.role} />
       {me && !me.display_name && <NamePrompt />}

@@ -46,12 +46,16 @@ import ScriptureFields from "./ScriptureFields";
 // The composite renderer (ForgeCardPreview) came back on 2026-09-10 (#387): while
 // there is no finished-card image, it draws the live snapshot in the design team's frame.
 
-// Prev/next arrows on the card face. From sm up they sit inside its edges; on a phone the
-// face is narrow enough to leave a gutter each side, so they sit there, off the small card.
 const PLACEHOLDER_FAILED = "Couldn’t save that. Check your connection and try again.";
 
+// Prev/next arrows on the card face, inside its edges, from sm up. A phone has the walk bar instead.
 const arrowClass =
-  "absolute top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground";
+  "absolute top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border bg-background/70 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-background hover:text-foreground sm:flex";
+const walkLinkClass = "flex h-11 w-20 shrink-0 items-center justify-center text-foreground";
+
+// Set by a walk bar tap and read as the next card mounts, so the large view stays open from card
+// to card and a phone can read its way along a set.
+let peekCarriesOver = false;
 
 export default function StudioEditor({
   card, sets, currentUser, creator, setId, setName, prevId, nextId, walkQuery = "", gridHref, position, artCandidates, openProposals, releaseBase, restoreTarget, version = null, canEdit = true, canEditSources = false, unresolvedComments = 0, review,
@@ -123,7 +127,8 @@ export default function StudioEditor({
   const [uploading, setUploading] = useState<"finished" | "removing" | null>(null);
   // The verse finder's candidate excerpt, drawn on the preview face only. Never saved.
   const [previewScripture, setPreviewScripture] = useState<string | null>(null);
-  const [peeking, setPeeking] = useState(false); // the large face over the form, below lg
+  const [peeking, setPeeking] = useState(() => peekCarriesOver); // the large face over the form, below lg
+  useEffect(() => { peekCarriesOver = false; }, []);
   const router = useRouter();
   const prevArrow = useRef<HTMLAnchorElement>(null);
   const nextArrow = useRef<HTMLAnchorElement>(null);
@@ -342,11 +347,13 @@ export default function StudioEditor({
     : placeholderShowing(card, placeholderTick.value ?? !!card.isPlaceholder) ? PLACEHOLDER_NOTE
     : null;
 
+  const walking = !!(prevId || nextId || position);
+
   return (
-    <div className="mx-auto max-w-5xl p-4">
+    <div className={cn("group/studio mx-auto max-w-5xl p-4 max-sm:pt-0", walking && "max-sm:pb-16")}>
       <PresenceBar others={others} />
       {stale && (
-        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 max-sm:mt-2 dark:text-amber-300">
           <span>
             This card changed elsewhere while you were editing.
             {dirty && " Your unsaved edit is still here — saving keeps yours."}
@@ -400,7 +407,7 @@ export default function StudioEditor({
             )}
           </span>
           {saved === "error" && (
-            <Button variant="outline" className="h-6 px-2 text-[11px]" onClick={retrySave}>
+            <Button variant="outline" className="relative h-6 px-2 text-[11px] max-sm:after:absolute max-sm:after:-inset-y-3 max-sm:after:inset-x-0 max-sm:after:content-['']" onClick={retrySave}>
               Retry
             </Button>
           )}
@@ -410,9 +417,9 @@ export default function StudioEditor({
         </div>
         {/* Below lg the face sits above the form and scrolls away; this brings it back without
             losing your place. In this row, not over the form, so it never covers a field. The
-            negative margin keeps a 36px target from making the row taller. */}
+            negative margin keeps the target from making the row taller. */}
         <Button variant="ghost" aria-label={peeking ? "Hide card" : "Show card"} title={peeking ? "Hide card" : "Show card"}
-          className="-my-2 -mr-2 h-9 w-9 shrink-0 p-0 text-muted-foreground lg:hidden" onClick={() => setPeeking(!peeking)}>
+          className="-my-2 -mr-2 h-9 w-9 shrink-0 p-0 text-muted-foreground max-sm:-my-3 max-sm:h-11 max-sm:w-11 lg:hidden" onClick={() => setPeeking(!peeking)}>
           {peeking ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
         </Button>
       </div>
@@ -440,18 +447,46 @@ export default function StudioEditor({
           </p>
         )}
         <LifecycleControls card={card} draft={snapshot} flushPending={flushPending} releaseBase={releaseBase} restoreTarget={restoreTarget} sets={sets} openProposals={openProposals} canEdit={canEdit} />
+        {/* From sm up. A phone needs the room, and the Release dialog says who will see it. */}
         {card.setId && canEdit && (
-          <p className="text-xs text-muted-foreground">
+          <p className="hidden text-xs text-muted-foreground sm:block">
             Releases are visible to Forge playtesters only — they don’t change the public card database.
           </p>
         )}
       </div>
 
-      {/* As large as fits under the chrome, at the card's aspect ratio. */}
+      {/* As large as fits under the chrome, at the card's aspect ratio. On a phone that chrome may
+          be anywhere on screen, so the face goes over everything but the walk bar, centred above
+          it, and a tap anywhere closes it. */}
       {peeking && (
-        <div className="fixed right-4 top-[calc(var(--forge-chrome)+3rem)] z-20 w-[min(100vw-2rem,24rem,(100svh-11rem)*0.714)] rounded-lg shadow-lg lg:hidden">
-          {face}
-          {faceNote && <p className="mt-1 rounded-md bg-background px-2 py-1 text-center text-xs text-muted-foreground">{faceNote}</p>}
+        <>
+          <button type="button" aria-label="Hide card" className="fixed inset-0 z-[55] touch-pinch-zoom bg-background/95 sm:hidden" onClick={() => setPeeking(false)} />
+          <div className="fixed right-4 top-[calc(var(--forge-chrome)+3rem)] z-20 w-[min(100vw-2rem,24rem,(100svh-11rem)*0.714)] rounded-lg shadow-lg max-sm:pointer-events-none max-sm:right-auto max-sm:left-1/2 max-sm:top-[calc(50svh-1.4rem)] max-sm:z-[60] max-sm:w-[min(100vw-2rem,(100svh-7rem)*0.714)] max-sm:-translate-x-1/2 max-sm:-translate-y-1/2 lg:hidden">
+            {face}
+            {faceNote && <p className="mt-1 rounded-md bg-background px-2 py-1 text-center text-xs text-muted-foreground">{faceNote}</p>}
+          </div>
+        </>
+      )}
+
+      {/* The way along a set on a phone: at the thumb, the same place on every card and at any
+          scroll. Keeps your scroll from card to card. Gone while typing, when a keyboard is up. */}
+      {walking && (
+        <div className={cn("fixed inset-x-0 bottom-0 flex items-center justify-between border-t bg-background pb-[env(safe-area-inset-bottom)] group-has-[input:focus,textarea:focus]/studio:hidden sm:hidden", peeking ? "z-[61]" : "z-40")}>
+          {prevId ? (
+            <Link href={`/forge/cards/${prevId}${walkQuery}`} scroll={false} aria-label="Previous card in set" className={walkLinkClass} onClick={() => { peekCarriesOver = peeking; }}>
+              <LinkPending idle={<ChevronLeft className="h-6 w-6" aria-hidden="true" />}>
+                <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
+              </LinkPending>
+            </Link>
+          ) : <span className="w-20 shrink-0" />}
+          <p className="min-w-0 truncate text-center text-xs text-muted-foreground">{position && walkHint(position)}</p>
+          {nextId ? (
+            <Link href={`/forge/cards/${nextId}${walkQuery}`} scroll={false} aria-label="Next card in set" className={walkLinkClass} onClick={() => { peekCarriesOver = peeking; }}>
+              <LinkPending idle={<ChevronRight className="h-6 w-6" aria-hidden="true" />}>
+                <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
+              </LinkPending>
+            </Link>
+          ) : <span className="w-20 shrink-0" />}
         </div>
       )}
 
@@ -474,23 +509,22 @@ export default function StudioEditor({
               onClick={() => setPeeking(true)} />
             {/* Prev/next within the set — same order as the grid, no wrap at ends. */}
             {prevId && (
-              <Link ref={prevArrow} href={`/forge/cards/${prevId}${walkQuery}`} aria-label="Previous card in set" className={arrowClass + " -left-11 sm:left-1.5"}>
+              <Link ref={prevArrow} href={`/forge/cards/${prevId}${walkQuery}`} aria-label="Previous card in set" className={arrowClass + " left-1.5"}>
                 <LinkPending idle={<ChevronLeft className="h-5 w-5" aria-hidden="true" />}>
                   <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
                 </LinkPending>
               </Link>
             )}
             {nextId && (
-              <Link ref={nextArrow} href={`/forge/cards/${nextId}${walkQuery}`} aria-label="Next card in set" className={arrowClass + " -right-11 sm:right-1.5"}>
+              <Link ref={nextArrow} href={`/forge/cards/${nextId}${walkQuery}`} aria-label="Next card in set" className={arrowClass + " right-1.5"}>
                 <LinkPending idle={<ChevronRight className="h-5 w-5" aria-hidden="true" />}>
                   <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
                 </LinkPending>
               </Link>
             )}
             {/* Copy the face as a PNG to share. Tucked into the bottom-right corner, small
-                enough to sit over the frame's blank corner (in the gutter on a phone, with the
-                arrows). The draft is flushed first so the server renders what is on screen,
-                not the last autosave. */}
+                enough to sit over the frame's blank corner (in the gutter on a phone). The draft
+                is flushed first so the server renders what is on screen, not the last autosave. */}
             <CopyCardImageButton
               className="absolute bottom-0 -right-10 z-10 sm:bottom-1.5 sm:right-1.5"
               src={card.hasFinished
@@ -502,7 +536,7 @@ export default function StudioEditor({
           </div>
           {faceNote && <p className="mt-2 text-center text-xs text-muted-foreground">{faceNote}</p>}
           {position && (
-            <p className="mt-2 text-center text-xs text-muted-foreground">
+            <p className="mt-2 hidden text-center text-xs text-muted-foreground sm:block">
               {walkHint(position)}
               {(prevId || nextId) && <span className="hidden lg:inline"> · ← → to move</span>}
             </p>

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  parseCardFilters, filterQuery, gridHref, gridReturnY, cardMatchesFilters, visibleSetCards, walkSet, walkHint, noMatchCopy, NO_FILTERS,
+  parseCardFilters, filterQuery, gridHref, gridReturnY, cardMatchesFilters, visibleSetCards, walkSet, walkHint, noMatchCopy, activeFilterCount, NO_FILTERS,
   type CardFilters, type FilterableCard,
 } from "../cardFilters";
 import type { ReleaseInfo } from "../versions";
@@ -212,5 +212,14 @@ describe("noMatchCopy", () => {
   it("explains a date filter, since 'nothing matches' reads as 'nothing changed'", () => {
     expect(noMatchCopy("cards", f({ since: "2026-10-01" })))
       .toBe("No cards match your filters. Only a release or an accepted proposal makes a new version; saved edits don't.");
+  });
+});
+
+describe("activeFilterCount", () => {
+  it("counts what sits behind the phone's Filters button, not the search beside it", () => {
+    expect(activeFilterCount(f())).toBe(0);
+    expect(activeFilterCount(f({ q: "angel" }))).toBe(0);
+    expect(activeFilterCount(f({ status: "draft", brigade: "PaleGreen" }))).toBe(2);
+    expect(activeFilterCount(f({ status: "draft", type: "Hero", brigade: "Blue", since: "2026-10-01" }))).toBe(4);
   });
 });
