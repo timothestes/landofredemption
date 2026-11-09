@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { filterQuery, gridReturnY, NO_FILTERS, parseCardFilters, TILE_ID_PREFIX, type CardFilters } from "./cardFilters";
+import { ENTRY_Y, dropTraversalFor, entryReturnY, takeTraversal } from "./gridTraversal";
 
 const TYPING_URL_DELAY_MS = 300;
-const ENTRY_Y = "forgeGridY";
 
-// The grid's place when a tile was last opened. Coming back by breadcrumb is a forward navigation
-// with its own new history entry, so that entry can't say where the grid was.
-let lastPlace: { path: string; y: number } | null = null;
+// The grid's place when a tile was last opened, filters included. Coming back by breadcrumb is a
+// forward navigation with its own new history entry, so that entry can't say where the grid was.
+let lastPlace: { url: string; y: number } | null = null;
+const currentUrl = () => window.location.pathname + window.location.search;
 
 // A grid's filters and scroll position, kept across a trip to a card. Filtering stays in local
 // state, so it is as instant as ever and never navigates; the URL follows it with no server
@@ -66,8 +67,8 @@ export function useGridPlace() {
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // a new tab: this page stays
       if (!(e.target as Element).closest?.(`a[id^="${TILE_ID_PREFIX}"]`)) return;
       const y = window.scrollY;
-      lastPlace = { path: window.location.pathname, y };
-      // Read by the layout effect below on Back or Forward. Next keeps custom keys on a restore.
+      lastPlace = { url: currentUrl(), y };
+      // Read back on Back or Forward, by the layout effect below and by gridTraversal.
       window.history.replaceState({ ...window.history.state, [ENTRY_Y]: y }, "");
     };
     document.addEventListener("click", onClick, true);
@@ -84,9 +85,10 @@ export function useGridPlace() {
   // Each marker is used once and removed. Left in place, it would override the browser's own
   // restore the next time you came back to this entry from somewhere other than a card.
   useLayoutEffect(() => {
-    const { [ENTRY_Y]: entryY, ...state } = window.history.state ?? {};
-    if (typeof entryY === "number") {
-      window.history.replaceState(state, "");
+    const { [ENTRY_Y]: inState, ...state } = window.history.state ?? {};
+    const entryY = entryReturnY({ traversal: takeTraversal(), here: currentUrl(), inState });
+    if (entryY !== null) {
+      if (inState !== undefined) window.history.replaceState(state, "");
       window.scrollTo(0, entryY);
       return;
     }
@@ -95,12 +97,20 @@ export function useGridPlace() {
     const tile = document.getElementById(hash);
     const rect = tile?.getBoundingClientRect();
     window.scrollTo(0, gridReturnY({
-      savedY: lastPlace?.path === window.location.pathname ? lastPlace.y : null,
+      savedY: lastPlace?.url === currentUrl() ? lastPlace.y : null,
       tile: rect ? { top: rect.top + window.scrollY, height: rect.height } : null,
       viewportHeight: window.innerHeight,
       chrome: tile ? parseFloat(getComputedStyle(tile).getPropertyValue("--forge-chrome")) || 0 : 0,
     }));
-    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    window.history.replaceState(null, "", currentUrl());
+  }, []);
+
+  // A traversal this grid stayed mounted through is never taken above, so don't leave it for the next
+  // grid to open here by a fresh link. Only this page's own: a jump from one set's grid to another's
+  // unmounts this one in the commit that mounts that one, and that one needs what's held.
+  useLayoutEffect(() => {
+    const path = window.location.pathname;
+    return () => dropTraversalFor(path);
   }, []);
 
   return { filters, query: filterQuery(filters), update, typeSearch, clear };
