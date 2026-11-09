@@ -460,7 +460,7 @@ export default function StudioEditor({
           it, and a tap anywhere closes it. */}
       {peeking && (
         <>
-          <button type="button" aria-label="Hide card" className="fixed inset-0 z-[55] bg-background/95 sm:hidden" onClick={() => setPeeking(false)} />
+          <button type="button" aria-label="Hide card" className="fixed inset-0 z-[55] touch-pinch-zoom bg-background/95 sm:hidden" onClick={() => setPeeking(false)} />
           <div className="fixed right-4 top-[calc(var(--forge-chrome)+3rem)] z-20 w-[min(100vw-2rem,24rem,(100svh-11rem)*0.714)] rounded-lg shadow-lg max-sm:pointer-events-none max-sm:right-auto max-sm:left-1/2 max-sm:top-[calc(50svh-1.4rem)] max-sm:z-[60] max-sm:w-[min(100vw-2rem,(100svh-7rem)*0.714)] max-sm:-translate-x-1/2 max-sm:-translate-y-1/2 lg:hidden">
             {face}
             {faceNote && <p className="mt-1 rounded-md bg-background px-2 py-1 text-center text-xs text-muted-foreground">{faceNote}</p>}
