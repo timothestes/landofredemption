@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Anvil } from "lucide-react";
+import { watchGridTraversals } from "@/app/forge/lib/gridTraversal";
 import { useActiveTabInView } from "@/app/forge/lib/tabStrip";
 
 // Inlined (not imported from lib/auth) so this client component never pulls the
@@ -14,6 +16,8 @@ type NavItem = { href: string; label: string; match: (p: string) => boolean };
 export default function ForgeNav({ role }: { role: ForgeRole }) {
   const pathname = usePathname() ?? "";
   const strip = useActiveTabInView(pathname);
+  // Here because it's on every Forge page, including a card page that was just reloaded.
+  useEffect(() => watchGridTraversals(), []);
 
   const items: NavItem[] =
     role === "playtester"
