@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, type KeyboardEvent, type ReactNode, type TouchEvent } from 'react';
-import { Minus, Plus } from 'lucide-react';
+import { Minus, Pencil, Plus } from 'lucide-react';
 import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { COPY } from '@/app/collection/scan/copy';
 import CardViewer from '@/app/collection/scan/components/CardViewer';
@@ -166,8 +166,9 @@ export default function DeckRow({
           type="button"
           disabled={!editable}
           onClick={openRow}
-          className="flex min-h-11 w-full min-w-0 flex-col justify-center rounded-md px-2 text-left hover:bg-muted/40 focus:outline-none disabled:pointer-events-none"
+          className="flex min-h-11 w-full min-w-0 items-center gap-1.5 rounded-md px-2 text-left hover:bg-muted/40 focus:outline-none disabled:pointer-events-none"
         >
+          <span className="flex min-w-0 flex-1 flex-col justify-center">
           {lostSoul ? (
             <span className="truncate text-sm font-medium">
               {lostSoulsPicked > 0
@@ -191,6 +192,9 @@ export default function DeckRow({
               </span>
             </>
           )}
+          </span>
+          {/* The name is how a row's card is changed: say so, it does not look like a button on its own. */}
+          {editable && !lostSoul && !unresolved && <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />}
         </button>
         </div>
 
