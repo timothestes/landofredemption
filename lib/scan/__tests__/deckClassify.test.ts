@@ -3,7 +3,7 @@ import { CARDS } from '@/lib/cards/lookup';
 import { matchDetection, type MatchResult } from '../match';
 import { getScanIndex } from '../stemIndex';
 import { cardKey, isAB } from '../vocab';
-import { classifyDeckRead, deckPrinting, deckReadToDetection } from '../deckClassify';
+import { classifyDeckRead, deckPrinting, deckReadToDetection, legalNear } from '../deckClassify';
 import type { DeckRead } from '../deckSchema';
 
 const read = (p: Partial<DeckRead>): DeckRead => ({ title: null, strength: null, toughness: null, type: 'unknown', brigade: null, reference: null, group: 1, position: 1, titleBox: null, confidence: 'high', ...p });
@@ -24,18 +24,23 @@ describe('classifyDeckRead', () => {
   it('a fanned Lost Soul is a placeholder', () => expect(classify(read({ title: 'Lost Soul', type: 'Lost Soul' })).kind).toBe('lost_soul'));
   it('a Lost Soul with an unmatched reference is a placeholder', () => expect(classify(read({ title: 'Lost Soul', type: 'Lost Soul', reference: 'Obadiah 9:99' })).kind).toBe('lost_soul'));
   it('a Lost Soul with a read reference is matched', () => expect(classify(read({ title: 'Lost Soul', type: 'Lost Soul', reference: 'Ezekiel 34:12' })).kind).toBe('matched'));
-  it('Forest Fire by title alone is which-card with FooF and Roots', () => {
+  it('Forest Fire by title alone is the Roots card: the only one of the two legal in Limited', () => {
     const c = classify(read({ title: 'Forest Fire', brigade: 'Green/Crimson', type: 'Enhancement' }));
-    expect(c.kind).toBe('which');
-    const names = c.identityCandidates!.flatMap(k => getScanIndex().identities.get(k)!.cards.map(x => x.name));
-    expect(names).toEqual(expect.arrayContaining(['Forest Fire (FooF)', 'Forest Fire (Roots)']));
-    expect(c.key).not.toBeNull();
-  });
-  it('which-card provisional is the only Rotation-legal identity', () => {
-    const c = classify(read({ title: 'Forest Fire', brigade: 'Green/Crimson', type: 'Enhancement' }));
-    expect(c.identityCandidates!.length).toBe(2);
+    expect(c.kind).toBe('matched');
     expect(CARDS.find(x => cardKey(x) === c.key)!.name).toBe('Forest Fire (Roots)');
+    expect(c.identityCandidates).toBeUndefined();
+  });
+  it('a tie among several legal cards asks only about the legal ones', () => {
+    const c = classify(read({ title: 'Abandonment' }));
+    expect(c.kind).toBe('which');
+    expect(c.identityCandidates!.length).toBeGreaterThan(1);
+    for (const k of c.identityCandidates!) expect(getScanIndex().identities.get(k)!.cards.some(x => x.legality === 'Rotation')).toBe(true);
     expect(legalityOf(c.key)).toBe('Rotation');
+  });
+  it('a tie with no legal card still asks about all of them', () => {
+    const c = classify(read({ title: "Aaron's Rod" }));
+    expect(c.kind).toBe('which');
+    expect(c.identityCandidates!.length).toBeGreaterThan(1);
   });
   it('Amariah read as Clay is the Roots card', () => { const c = classify(read({ title: 'Amariah, the High Priest', brigade: 'Clay', type: 'Hero' })); expect(c.kind).toBe('matched'); expect(c.key).toMatch(/^Amariah, the High Priest \(Roots\)\|/); });
   it('a low-confidence fuzzy hit is read_as; a sharp one stays matched', () => {
@@ -66,5 +71,45 @@ describe('deckPrinting', () => {
   it('ignores a matcher choice that is not Rotation-legal', () => {
     const other = CARDS.find(c => c.legality !== 'Rotation' && getScanIndex().identities.get(FALLING_AWAY)!.cards.every(x => cardKey(x) !== cardKey(c)))!;
     expect(deckPrinting(FALLING_AWAY, cardKey(other))).toBe(cardKey(plain));
+  });
+});
+
+// Only the title band shows in a deck photo, so the type and brigade the model reports for a low-confidence read are
+// guesses: on Tim's 2026-11-10 photo three Rotation Dominants came back as "Enhancement" and matched the old Enhancement.
+describe('classifyDeckRead: same name, one Rotation-legal card', () => {
+  const nameOf = (key: string | null) => CARDS.find(x => cardKey(x) === key)!.name;
+  it('a win on type alone does not pick the card that is not legal', () => {
+    const mildew = classify(read({ title: 'Spreading Mildew', type: 'Enhancement', brigade: 'Purple', confidence: 'low' }));
+    expect(mildew.kind).toBe('matched');
+    expect(nameOf(mildew.key)).toBe('Spreading Mildew [RR2]');
+    const gods = classify(read({ title: 'The gods of Egypt', type: 'Enhancement', brigade: 'Black', confidence: 'low' }));
+    expect(nameOf(gods.key)).toBe('the gods of Egypt [IR]');
+    expect(legalityOf(gods.key)).toBe('Rotation');
+  });
+  it('a read reference still picks the old card', () => {
+    const c = classify(read({ title: 'Spreading Mildew', type: 'Enhancement', reference: 'Leviticus 14:6' }));
+    expect(nameOf(c.key)).toBe('Spreading Mildew');
+  });
+  it('a brigade that agrees still picks the old card', () => {
+    const c = classify(read({ title: 'Spreading Mildew', type: 'Enhancement', brigade: 'Gold' }));
+    expect(nameOf(c.key)).toBe('Spreading Mildew');
+  });
+  it('a confident type does not keep the old card: the title band does not show the type', () => {
+    const c = classify(read({ title: "Herod's Temple", type: 'Site', confidence: 'high' }));
+    expect(nameOf(c.key)).toBe("Herod's Temple (GoC)");
+  });
+});
+
+describe('legalNear', () => {
+  it("offers Crowd's Choice for a misread the matcher's own radius rejects", () => {
+    expect(legalNear('Cremus Choice')[0].stem).toBe('crowds choice');
+    expect(classify(read({ title: 'Cremus Choice', confidence: 'low' }))).toMatchObject({ kind: 'not_found', key: null, near: [{ stem: 'crowds choice' }] });
+  });
+  it('offers at most three, nearest first, and nothing for a title unlike any card', () => {
+    const near = legalNear("Pharaoh's Spy");
+    expect(near.length).toBeLessThanOrEqual(3);
+    expect(near.map(n => n.d)).toEqual([...near.map(n => n.d)].sort((a, b) => a - b));
+    expect(legalNear('Lightning Bolt Xyzzy Quux')).toEqual([]);
+    expect(legalNear('')).toEqual([]);
   });
 });

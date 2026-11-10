@@ -78,4 +78,9 @@ describe('chipsFor', () => {
     const [chip] = chipsFor({ kind: 'which', title: null, identityCandidates: [id] });
     expect(chip.siblings.find(x => x.key === chip.key)!.legality).toBe('Rotation');
   });
+
+  it("turns the server's near stem into a chip for a title its own search cannot find", () => {
+    const chips = chipsFor({ kind: 'not_found', title: 'Cremus Choice', near: [{ stem: 'crowds choice', d: 0.23 }] });
+    expect(chips[0].label).toMatch(/^Crowd's Choice/);
+  });
 });

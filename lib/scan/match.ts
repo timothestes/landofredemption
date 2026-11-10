@@ -348,7 +348,7 @@ export function selectPrinting(identity: ScanIdentity, det: ScanDetection, price
 // Stem lookup
 
 /** Optimal string alignment distance (Levenshtein plus adjacent transposition). */
-function osa(a: string, b: string): number {
+export function osa(a: string, b: string): number {
   const n = a.length, m = b.length;
   if (!n) return m;
   if (!m) return n;

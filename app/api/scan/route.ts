@@ -239,7 +239,8 @@ export async function POST(req: Request) {
           kind: c.kind,
           deckKey: c.key,
           ...(c.identityCandidates ? { identityCandidates: c.identityCandidates } : {}),
-          ...(m.near ? { near: m.near } : {}),
+          // A Not found row offers the nearest Limited-legal names; otherwise the matcher's own near misses.
+          ...(c.near ?? m.near ? { near: c.near ?? m.near } : {}),
           scores: m.scores,
           candidates: m.candidates,
         };
