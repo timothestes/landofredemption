@@ -78,6 +78,9 @@ export default function PrintingPicker({
 
   const searching = hits !== null;
   const options: (Candidate | PickerHit)[] = searching ? hits : subject.candidates;
+  // The search opens on the read title, which is also what the suggestions come from: list a printing once.
+  const suggested = new Set((suggestions ?? []).map(c => c.key));
+  const rest = options.filter(c => !suggested.has(c.key));
 
   const pick = (c: Candidate | PickerHit, pool: PickerHit[] = hits ?? []) => {
     if ('identity' in c) {
@@ -176,9 +179,9 @@ export default function PrintingPicker({
               <p className="px-2 py-6 text-center text-sm text-muted-foreground">
                 {searching ? COPY.pickerEmpty : COPY.pickerSearch}
               </p>
-            ) : (
+            ) : rest.length > 0 && (
               <ul className="space-y-1">
-                {options.map(c => renderOption(c))}
+                {rest.map(c => renderOption(c))}
               </ul>
             )}
           </DialogBody>
