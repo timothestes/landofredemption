@@ -4,7 +4,16 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "flowbite-react";
 import { Camera, FileText } from "lucide-react";
 import ToastNotification from "../../../components/ui/toast-notification";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import DeckSourcePicker from "./DeckSourcePicker";
+import NewFeatureCallout, { markPhotoCalloutDone } from "./NewFeatureCallout";
+import PhotoSource from "./PhotoSource";
+import { deckTypeFromMain, effectiveDeck, outcomesSignature, type Source } from "./decklistText";
+import { recordScanOutcomesAction } from "../actions";
+import { DECK_COPY, fill } from "../scan/copy";
+import { buildDeckText } from "../scan/lib/deckText";
+import { deckOutcomes, totals, type DeckOutcome } from "../scan/lib/handoff";
+import type { DeckTrayState } from "../scan/types";
 import { decklistPdfDownloadUrl } from "../card-search/utils/pdfDownloadUrl";
 
 async function checkLegality(decklist: string, deckType: string, deckId?: string | null): Promise<boolean | null> {
@@ -41,15 +50,32 @@ async function checkLegality(decklist: string, deckType: string, deckId?: string
   }
 }
 
+/** What the photo source's tray comes to, kept apart from the typed decklist. */
+interface PhotoDeck {
+  /** Two-column text for the generators: resolved rows and Lost Soul picks. */
+  text: string;
+  /** Cards that will be in the PDF. */
+  cards: number;
+  /** Unresolved rows and Lost Souls not picked yet: not in the PDF. */
+  leftOut: number;
+  /** A photo is queued or being read. */
+  reading: boolean;
+  outcomes: Record<string, DeckOutcome[]>;
+}
+
+const NO_PHOTO_DECK: PhotoDeck = { text: "", cards: 0, leftOut: 0, reading: false, outcomes: {} };
+
 export default function GenerateDeckList() {
-  const [decklist, setDecklist] = useState("");
-  const [deckType, setDeckType] = useState("type_1");
+  const [typedDecklist, setDecklist] = useState("");
+  const [typedDeckType, setDeckType] = useState("type_1");
+  // The photo source keeps its own Deck Type: a read must not change the type a saved deck was loaded with.
+  const [photoDeckType, setPhotoDeckType] = useState("type_1");
   const [name, setName] = useState("");
   const [event, setEvent] = useState("");
   const [loading, setLoading] = useState(false);
   const [screenshotLoading, setScreenshotLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{ url: string; message: string } | null>(null);
+  const [success, setSuccess] = useState<{ url: string; message: string; deckName: string | null } | null>(null);
   const [screenshotSuccess, setScreenshotSuccess] = useState<{ url: string; message: string } | null>(null);
   const [showAlignment, setShowAlignment] = useState(false);
   const [nCardColumns, setNCardColumns] = useState(10);
@@ -57,7 +83,17 @@ export default function GenerateDeckList() {
   const [mCount, setMCount] = useState(false);
   const [aodCount, setAodCount] = useState(false);
   const [loadedDeckName, setLoadedDeckName] = useState<string | null>(null);
-  const [loadedDeckId, setLoadedDeckId] = useState<string | null>(null);
+  const [typedDeckId, setLoadedDeckId] = useState<string | null>(null);
+  const [source, setSource] = useState<Source>("paste");
+  const [photoMounted, setPhotoMounted] = useState(false);
+  const [photo, setPhoto] = useState<PhotoDeck>(NO_PHOTO_DECK);
+  const [confirm, setConfirm] = useState<"pdf" | "image" | null>(null);
+  // The player's own choice of Deck Type wins over the next photo's read.
+  const deckTypeTouched = useRef(false);
+  const photosDone = useRef(0);
+  const photoReports = useRef(0);
+  const lastRecorded = useRef<string | null>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
   const successRef = useRef<HTMLDivElement>(null);
   const screenshotSuccessRef = useRef<HTMLDivElement>(null);
 
@@ -69,6 +105,45 @@ export default function GenerateDeckList() {
       setDeckType(deckTypeValue);
     }
   }, []);
+
+  const chooseSource = useCallback((next: Source) => {
+    setSource(next);
+    if (next === "photo") setPhotoMounted(true);
+  }, []);
+
+  // ?source=photo opens the photo source (the callout, the reader's own page and What's New link here).
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("source") === "photo") chooseSource("photo");
+  }, [chooseSource]);
+
+  const handlePhotoChange = useCallback((state: DeckTrayState) => {
+    const t = totals(state);
+    setPhoto({
+      text: buildDeckText(state, { columns: 2 }),
+      cards: t.main + t.reserve,
+      leftOut: t.leftOut + t.lostSoulsToPick,
+      reading: state.photos.some((p) => p.status === "queued" || p.status === "reading"),
+      outcomes: deckOutcomes(state),
+    });
+    const done = state.photos.filter((p) => p.status === "done").length;
+    // The first report is the tray as it was restored, not a read made on this page.
+    const restored = photoReports.current++ === 0;
+    if (done > photosDone.current) {
+      if (!deckTypeTouched.current) setPhotoDeckType(deckTypeFromMain(t.main));
+      deckTypeTouched.current = false;
+      if (!restored) markPhotoCalloutDone();
+    }
+    photosDone.current = done;
+  }, []);
+
+  const chooseDeckType = (value: string) => {
+    if (source === "photo") {
+      deckTypeTouched.current = true;
+      setPhotoDeckType(value);
+    } else {
+      setDeckType(value);
+    }
+  };
 
   // Auto-scroll to success message when it appears
   useEffect(() => {
@@ -129,11 +204,24 @@ export default function GenerateDeckList() {
     return { valid: true };
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // A PDF or image made from a photo counts as that tray's hand-off: record what the player kept and changed, once per tray.
+  const recordPhotoOutcomes = () => {
+    const signature = outcomesSignature(photo.outcomes);
+    if (signature === lastRecorded.current || Object.keys(photo.outcomes).length === 0) return;
+    lastRecorded.current = signature;
+    void recordScanOutcomesAction(photo.outcomes).catch(() => {
+      lastRecorded.current = null;
+    });
+  };
+
+  const handleSubmit = async () => {
     setError(null);
     setSuccess(null);
-    
+
+    // The photo source sends its own text and never a saved deck's id; typed text loses the builder's extra columns.
+    const { decklist, deckId: loadedDeckId, deckType } = effectiveDeck({
+      source, typed: typedDecklist, photoText: photo.text, loadedDeckId: typedDeckId, typedType: typedDeckType, photoType: photoDeckType,
+    });
     const validation = validateForm(decklist, name, event);
     if (!validation.valid) {
       setError(validation.message || "Invalid form data");
@@ -171,7 +259,10 @@ export default function GenerateDeckList() {
       setSuccess({
         url: data.data.downloadUrl,
         message: data.message,
+        // The name belongs to the deck this PDF was made from, whatever source is showing when it is downloaded.
+        deckName: source === "photo" ? null : loadedDeckName,
       });
+      if (source === "photo") recordPhotoOutcomes();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate decklist");
     } finally {
@@ -180,6 +271,9 @@ export default function GenerateDeckList() {
   };
 
   const handleGenerateScreenshot = async () => {
+    const { decklist, deckId: loadedDeckId, deckType } = effectiveDeck({
+      source, typed: typedDecklist, photoText: photo.text, loadedDeckId: typedDeckId, typedType: typedDeckType, photoType: photoDeckType,
+    });
     const validation = validateForm(decklist);
     if (!validation.valid) {
       setError(validation.message || "Invalid decklist format");
@@ -216,6 +310,7 @@ export default function GenerateDeckList() {
           url: result.data.downloadUrl,
           message: "Screenshot generated successfully",
         });
+        if (source === "photo") recordPhotoOutcomes();
       } else {
         setError('Failed to generate screenshot: ' + result.message);
       }
@@ -227,6 +322,21 @@ export default function GenerateDeckList() {
     }
   };
 
+  const pdfTab = activeTab === "pdf";
+  const photoMode = source === "photo";
+  // Nothing to generate from: a photo still being read would be missing from the PDF.
+  const noDeck = photoMode ? photo.reading || !photo.text : !typedDecklist.trim();
+
+  const generate = (kind: "pdf" | "image") => {
+    setConfirm(null);
+    void (kind === "pdf" ? handleSubmit() : handleGenerateScreenshot());
+  };
+  // Cards the photo could not settle are left out of the PDF: say how many before making it.
+  const requestGenerate = (kind: "pdf" | "image") => {
+    if (photoMode && photo.leftOut > 0) setConfirm(kind);
+    else generate(kind);
+  };
+
   return (
     <div className="flex-1 w-full flex flex-col gap-6 max-w-4xl mx-auto p-4">
       <div className="w-full">
@@ -234,6 +344,15 @@ export default function GenerateDeckList() {
         <p className="text-muted-foreground mb-6">
           Generate a formatted PDF for tournament play or create a visual screenshot of your deck
         </p>
+
+        {!photoMode && (
+          <NewFeatureCallout
+            onRead={() => {
+              chooseSource("photo");
+              pickerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          />
+        )}
 
         {/* Tab Navigation */}
         <div className="flex space-x-1 rounded-lg bg-muted p-1 mb-6">
@@ -261,21 +380,23 @@ export default function GenerateDeckList() {
           </button>
         </div>
 
-        {/* Content based on active tab */}
-        {activeTab === 'pdf' ? (
-          <div className="bg-card rounded-lg border border-border p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <h3 className="text-xl font-semibold">Generate Tournament PDF</h3>
-              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground">
-                Official Format
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground mb-6">
-              Creates a properly formatted PDF suitable for tournament deck checks with player information and card alignments.
-            </p>
+        {/* One panel for both tabs, so the decklist source (and a photo being read) survives a tab change */}
+        <div className="bg-card rounded-lg border border-border p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-xl font-semibold">{pdfTab ? "Generate Tournament PDF" : "Generate Visual Screenshot"}</h3>
+            <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground">
+              {pdfTab ? "Official Format" : "Visual Format"}
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground mb-6">
+            {pdfTab
+              ? "Creates a properly formatted PDF suitable for tournament deck checks with player information and card alignments."
+              : "Creates a visual screenshot of your deck list. No player information required - just your decklist!"}
+          </p>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Player Information */}
+          <div className="space-y-6">
+            {/* Player Information */}
+            {pdfTab && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -290,7 +411,7 @@ export default function GenerateDeckList() {
                     maxLength={50}
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Event Name (optional)
@@ -305,16 +426,18 @@ export default function GenerateDeckList() {
                   />
                 </div>
               </div>
+            )}
 
-              {/* Deck Configuration */}
-              <div className="space-y-4">
-                <div className="max-w-xs">
+            {/* Deck Configuration */}
+            <div className="space-y-4">
+              <div className={pdfTab ? "max-w-xs" : "grid grid-cols-2 gap-4 max-w-md"}>
+                <div>
                   <label className="block text-sm font-medium mb-2">
                     Deck Type
                   </label>
                   <select
-                    value={deckType}
-                    onChange={(e) => setDeckType(e.target.value)}
+                    value={photoMode ? photoDeckType : typedDeckType}
+                    onChange={(e) => chooseDeckType(e.target.value)}
                     className="w-full p-3 border rounded-lg bg-background focus:outline-none focus:border-ring"
                   >
                     <option value="type_1">Type 1</option>
@@ -322,91 +445,7 @@ export default function GenerateDeckList() {
                     <option value="paragon">Paragon</option>
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Options</label>
-                  <div className="flex flex-wrap gap-x-5 gap-y-2">
-                    <label className="inline-flex items-center gap-2 text-sm cursor-pointer select-none">
-                      <input type="checkbox" checked={showAlignment} onChange={(e) => setShowAlignment(e.target.checked)} className="rounded border-border text-primary bg-transparent" />
-                      Show card alignments
-                    </label>
-                    <label className="inline-flex items-center gap-2 text-sm cursor-pointer select-none" title="Average number of unique brigades when randomly drawing 8 non-lost soul cards from a deck">
-                      <input type="checkbox" checked={mCount} onChange={(e) => setMCount(e.target.checked)} className="rounded border-border text-primary bg-transparent" />
-                      Matthew count
-                    </label>
-                    <label className="inline-flex items-center gap-2 text-sm cursor-pointer select-none" title="Average number of Daniel cards in the top 9 cards of a randomly shuffled deck">
-                      <input type="checkbox" checked={aodCount} onChange={(e) => setAodCount(e.target.checked)} className="rounded border-border text-primary bg-transparent" />
-                      AoD count
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Decklist Input */}
-              <DeckSourcePicker
-                value={decklist}
-                onChange={(val) => {
-                  setDecklist(val);
-                  if (loadedDeckName) setLoadedDeckName(null);
-                }}
-                onDeckSelected={handleDeckSelected}
-                loadedDeckName={loadedDeckName}
-                onClearLoaded={() => setLoadedDeckName(null)}
-                textareaClassName="focus:outline-none focus:border-ring"
-              />
-
-              <Button
-                type="submit"
-                disabled={loading || !decklist.trim()}
-                outline
-                gradientDuoTone="greenToBlue"
-                className="w-full"
-                size="lg"
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Generating PDF...
-                  </>
-                ) : (
-                  "Generate Tournament PDF"
-                )}
-              </Button>
-            </form>
-          </div>
-        ) : (
-          <div className="bg-card rounded-lg border border-border p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <h3 className="text-xl font-semibold">Generate Visual Screenshot</h3>
-              <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground">
-                Visual Format
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground mb-6">
-              Creates a visual screenshot of your deck list. No player information required - just your decklist!
-            </p>
-
-            <div className="space-y-6">
-              {/* Screenshot Configuration */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 max-w-md">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Deck Type
-                    </label>
-                    <select
-                      value={deckType}
-                      onChange={(e) => setDeckType(e.target.value)}
-                      className="w-full p-3 border rounded-lg bg-background focus:outline-none focus:border-ring"
-                    >
-                      <option value="type_1">Type 1</option>
-                      <option value="type_2">Type 2</option>
-                      <option value="paragon">Paragon</option>
-                    </select>
-                  </div>
+                {!pdfTab && (
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       Card Columns
@@ -423,26 +462,34 @@ export default function GenerateDeckList() {
                       <option value={15}>15 columns</option>
                     </select>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Options</label>
-                  <div className="flex flex-wrap gap-x-5 gap-y-2">
-                    <label className="inline-flex items-center gap-2 text-sm cursor-pointer select-none" title="Average number of unique brigades when randomly drawing 8 non-lost soul cards from a deck">
-                      <input type="checkbox" checked={mCount} onChange={(e) => setMCount(e.target.checked)} className="rounded border-border text-primary bg-transparent" />
-                      Matthew count
-                    </label>
-                    <label className="inline-flex items-center gap-2 text-sm cursor-pointer select-none" title="Average number of Daniel cards in the top 9 cards of a randomly shuffled deck">
-                      <input type="checkbox" checked={aodCount} onChange={(e) => setAodCount(e.target.checked)} className="rounded border-border text-primary bg-transparent" />
-                      AoD count
-                    </label>
-                  </div>
-                </div>
+                )}
               </div>
 
-              {/* Decklist Input */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Options</label>
+                <div className="flex flex-wrap gap-x-5 gap-y-2">
+                  {pdfTab && (
+                    <label className="inline-flex items-center gap-2 text-sm cursor-pointer select-none">
+                      <input type="checkbox" checked={showAlignment} onChange={(e) => setShowAlignment(e.target.checked)} className="rounded border-border text-primary bg-transparent" />
+                      Show card alignments
+                    </label>
+                  )}
+                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer select-none" title="Average number of unique brigades when randomly drawing 8 non-lost soul cards from a deck">
+                    <input type="checkbox" checked={mCount} onChange={(e) => setMCount(e.target.checked)} className="rounded border-border text-primary bg-transparent" />
+                    Matthew count
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-sm cursor-pointer select-none" title="Average number of Daniel cards in the top 9 cards of a randomly shuffled deck">
+                    <input type="checkbox" checked={aodCount} onChange={(e) => setAodCount(e.target.checked)} className="rounded border-border text-primary bg-transparent" />
+                    AoD count
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Decklist Input */}
+            <div ref={pickerRef} className="scroll-mt-24">
               <DeckSourcePicker
-                value={decklist}
+                value={typedDecklist}
                 onChange={(val) => {
                   setDecklist(val);
                   if (loadedDeckName) setLoadedDeckName(null);
@@ -451,31 +498,75 @@ export default function GenerateDeckList() {
                 loadedDeckName={loadedDeckName}
                 onClearLoaded={() => setLoadedDeckName(null)}
                 textareaClassName="focus:outline-none focus:border-ring"
-              />
-
-              <Button
-                type="button"
-                onClick={handleGenerateScreenshot}
-                disabled={screenshotLoading || !decklist.trim()}
-                outline
-                gradientDuoTone="purpleToBlue"
-                className="w-full"
-                size="lg"
-              >
-                {screenshotLoading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Generating Screenshot...
-                  </>
-                ) : (
-                  "Generate Deck Screenshot"
+                source={source}
+                onSourceChange={chooseSource}
+                photoMounted={photoMounted}
+                lockSource={photo.reading}
+                photoSlot={(userId) => (
+                  <PhotoSource userId={userId} active={photoMode} onChange={handlePhotoChange} />
                 )}
-              </Button>
+              />
             </div>
+
+            {photoMode && photo.leftOut > 0 && (
+              <p className="text-sm text-amber-600 dark:text-amber-400">{fill(DECK_COPY.leftOut, { n: photo.leftOut })}</p>
+            )}
+
+            <Button
+              type="button"
+              onClick={() => requestGenerate(pdfTab ? "pdf" : "image")}
+              disabled={(pdfTab ? loading : screenshotLoading) || noDeck}
+              outline
+              gradientDuoTone={pdfTab ? "greenToBlue" : "purpleToBlue"}
+              className="w-full"
+              size="lg"
+            >
+              {(pdfTab ? loading : screenshotLoading) ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {pdfTab ? "Generating PDF..." : "Generating Screenshot..."}
+                </>
+              ) : photoMode && photo.reading ? (
+                DECK_COPY.reading
+              ) : pdfTab ? (
+                "Generate Tournament PDF"
+              ) : (
+                "Generate Deck Screenshot"
+              )}
+            </Button>
           </div>
+        </div>
+
+        {confirm && (
+          <Dialog open onOpenChange={(o) => !o && setConfirm(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{fill(DECK_COPY.generateConfirm, { n: photo.cards })}</DialogTitle>
+              </DialogHeader>
+              <DialogBody>
+                <p className="text-sm text-muted-foreground">{fill(DECK_COPY.leftOut, { n: photo.leftOut })}</p>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setConfirm(null)}
+                    className="min-h-11 rounded-lg px-4 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => generate(confirm)}
+                    className="min-h-11 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none"
+                  >
+                    Generate
+                  </button>
+                </div>
+              </DialogBody>
+            </DialogContent>
+          </Dialog>
         )}
 
         {/* Error Display */}
@@ -510,7 +601,7 @@ export default function GenerateDeckList() {
                 </div>
               </div>
               <Button
-                onClick={() => window.open(decklistPdfDownloadUrl(success.url, loadedDeckName), '_blank')}
+                onClick={() => window.open(decklistPdfDownloadUrl(success.url, success.deckName), '_blank')}
                 gradientDuoTone="greenToBlue"
                 size="lg"
                 className="font-semibold"

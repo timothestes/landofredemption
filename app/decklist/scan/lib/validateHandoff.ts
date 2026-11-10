@@ -34,6 +34,30 @@ function validDeckOutcome(o: unknown, idRe: RegExp, isKnownKey: (k: string) => b
   };
 }
 
+/**
+ * The outcomes a client sent, rebuilt from known fields. They only feed the eval data, so a bad one is dropped
+ * rather than refused; it never costs the player their deck or their PDF.
+ */
+export function cleanOutcomes(outcomesByScanId: unknown, isKnownKey: (k: string) => boolean): Record<string, DeckOutcome[]> {
+  const out: Record<string, DeckOutcome[]> = {};
+  if (!outcomesByScanId || typeof outcomesByScanId !== 'object' || Array.isArray(outcomesByScanId)) return out;
+  const scanIds = Object.keys(outcomesByScanId);
+  if (scanIds.length > MAX_SCANS) return out;
+  for (const scanId of scanIds) {
+    if (!UUID.test(scanId)) continue;
+    const list = (outcomesByScanId as Record<string, unknown>)[scanId];
+    if (!Array.isArray(list) || list.length > MAX_OUTCOMES) continue;
+    const idRe = new RegExp(`^${scanId}:(\\d+|add:\\d+|ls:\\d+)$`, 'i');
+    const clean: DeckOutcome[] = [];
+    for (const o of list) {
+      const v = validDeckOutcome(o, idRe, isKnownKey);
+      if (v) clean.push(v);
+    }
+    out[scanId] = clean;
+  }
+  return out;
+}
+
 /** Shape-check the client's hand-off payload. Returns a clean copy, or null if a row or the name/format is off; bad outcomes are dropped. */
 export function validateHandoff(input: unknown, isKnownKey: (k: string) => boolean): Handoff | null {
   if (!input || typeof input !== 'object') return null;
@@ -54,25 +78,5 @@ export function validateHandoff(input: unknown, isKnownKey: (k: string) => boole
     cleanRows.push({ card_name, card_set, card_img_file, quantity, zone });
   }
 
-  // Outcomes only feed the eval data, so a bad one is dropped; it never costs the player their deck.
-  const cleanOutcomes: Record<string, DeckOutcome[]> = {};
-  if (outcomesByScanId && typeof outcomesByScanId === 'object' && !Array.isArray(outcomesByScanId)) {
-    const scanIds = Object.keys(outcomesByScanId);
-    if (scanIds.length <= MAX_SCANS) {
-      for (const scanId of scanIds) {
-        if (!UUID.test(scanId)) continue;
-        const list = (outcomesByScanId as Record<string, unknown>)[scanId];
-        if (!Array.isArray(list) || list.length > MAX_OUTCOMES) continue;
-        const idRe = new RegExp(`^${scanId}:(\\d+|add:\\d+|ls:\\d+)$`, 'i');
-        const clean: DeckOutcome[] = [];
-        for (const o of list) {
-          const v = validDeckOutcome(o, idRe, isKnownKey);
-          if (v) clean.push(v);
-        }
-        cleanOutcomes[scanId] = clean;
-      }
-    }
-  }
-
-  return { rows: cleanRows, outcomesByScanId: cleanOutcomes, name, format };
+  return { rows: cleanRows, outcomesByScanId: cleanOutcomes(outcomesByScanId, isKnownKey), name, format };
 }

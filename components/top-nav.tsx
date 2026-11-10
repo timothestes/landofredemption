@@ -53,7 +53,7 @@ export const deckLinks: NavLink[] = [
   { href: "/decklist/community", label: "Community Decks", icon: HiGlobeAlt },
   { href: "/decklist/my-decks", label: "My Decks", icon: TbCardsFilled, authRequired: true },
   { href: "/collection", label: "My Collection", icon: HiCollection, authRequired: true, isNew: true },
-  { href: "/decklist/generate", label: "Deck Check PDF", icon: TbCardsFilled },
+  { href: "/decklist/generate", label: "Deck Check PDF", icon: TbCardsFilled, isNew: true },
   { href: "/decklist/card-search/tier-list", label: "Tier List Maker", icon: TbListNumbers, isNew: true, prefetch: false },
 ];
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateHandoff } from '../lib/validateHandoff';
+import { cleanOutcomes, validateHandoff } from '../lib/validateHandoff';
 import { forceMainOnly } from '../lib/forceMainOnly';
 
 const SID = '11111111-1111-4111-8111-111111111111';
@@ -89,5 +89,26 @@ describe('forceMainOnly', () => {
     const out = forceMainOnly([mk('a', 1, 'reserve')], () => 'lost soul');
     expect(out[0].zone).toBe('main');
     expect(forceMainOnly([mk('a', 1, 'reserve')], () => undefined)[0].zone).toBe('reserve');
+  });
+});
+
+describe('cleanOutcomes', () => {
+  const OTHER = '22222222-2222-4222-8222-222222222222';
+  it('keeps a good outcome', () => {
+    expect(cleanOutcomes({ [SID]: [oc(`${SID}:0`)] }, known)[SID]).toHaveLength(1);
+  });
+  it('drops a scan id that is not a UUID', () => {
+    expect(cleanOutcomes({ nope: [oc('nope:0')] }, known)).toEqual({});
+  });
+  it("drops an outcome whose id belongs to another scan, or whose card is unknown", () => {
+    const r = cleanOutcomes({ [SID]: [oc(`${OTHER}:0`), oc(`${SID}:1`, { finalKey: 'Nope|X|a' }), oc(`${SID}:2`)] }, known);
+    expect(r[SID].map(o => o.id)).toEqual([`${SID}:2`]);
+  });
+  it.each([[null], [[oc(`${SID}:0`)]], ['x'], [undefined]])('returns nothing for %j', input => {
+    expect(cleanOutcomes(input, known)).toEqual({});
+  });
+  it('returns nothing for more than 20 scans', () => {
+    const many = Object.fromEntries(Array.from({ length: 21 }, (_, i) => [`${String(i).padStart(8, '0')}-1111-4111-8111-111111111111`, []]));
+    expect(cleanOutcomes(many, known)).toEqual({});
   });
 });
