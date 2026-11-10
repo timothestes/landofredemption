@@ -170,11 +170,16 @@ export default function DeckRow({
         >
           <span className="flex min-w-0 flex-1 flex-col justify-center">
           {lostSoul ? (
+            <>
             <span className="truncate text-sm font-medium">
               {lostSoulsPicked > 0
                 ? fill(DECK_COPY.lostSoulPicked, { n: lostSoulsPicked })
                 : fill(DECK_COPY.lostSoulRow, { n: row.quantity })}
             </span>
+            {lostSoulsPicked === 0 && (
+              <span className="line-clamp-2 text-xs leading-snug text-muted-foreground">{DECK_COPY.lostSoulRowWhy}</span>
+            )}
+            </>
           ) : (
             <>
               <span className={`line-clamp-2 break-words text-sm font-medium leading-snug ${unresolved ? 'underline underline-offset-4' : ''}`}>
