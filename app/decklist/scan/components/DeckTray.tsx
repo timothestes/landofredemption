@@ -36,6 +36,8 @@ interface Props {
   thumbs: Map<string, string>;
   editable: boolean;
   online: boolean;
+  /** Where a signed-out error on a photo sends the player. */
+  signInHref: string;
   canRetry: (photoId: string) => boolean;
   onRetry: (photoId: string) => void;
   onRemovePhoto: (photoId: string) => void;
@@ -59,7 +61,7 @@ const keyName = (key: string | null): string | null => {
 
 /** The photos, each with its group sections and rows, then the totals line, the picker and the Undo toast. */
 export default function DeckTray({
-  state, dispatch, thumbs, editable, online, canRetry, onRetry, onRemovePhoto, onChooseAnother,
+  state, dispatch, thumbs, editable, online, signInHref, canRetry, onRetry, onRemovePhoto, onChooseAnother,
 }: Props) {
   const [picker, setPicker] = useState<Picker | null>(null);
   const [pickerSeq, setPickerSeq] = useState(0);
@@ -220,7 +222,7 @@ export default function DeckTray({
               detectionCount={n}
               mergedCount={0}
               doneLine={deckDoneLine(n, photo.groups.length, photo.photoQuality, photo.longEdge)}
-              signInHref="/sign-in?redirectTo=/decklist/scan"
+              signInHref={signInHref}
               editable={editable}
               online={online}
               canRetry={canRetry(photo.photoId)}

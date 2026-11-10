@@ -44,7 +44,7 @@ export default function RowEvidence({ source, box, orientation }: Props) {
         aria-label={DECK_COPY.stripLabel}
         className="mx-2 mb-1 block w-[calc(100%-1rem)] rounded-sm focus:outline-none sm:max-w-[240px]"
       >
-        <canvas ref={strip} aria-hidden className="block h-12 w-full rounded-sm bg-muted object-cover sm:h-16" />
+        <canvas ref={strip} aria-hidden className="block h-auto max-h-16 w-full rounded-sm bg-muted object-cover" />
       </button>
       {open && <PhotoViewer source={source} box={[x0, y0, x1, y1]} onClose={() => setOpen(false)} />}
     </>
