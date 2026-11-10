@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, type ReactNode } from "react";
+import { Camera } from "lucide-react";
 import { loadUserDecksAction, loadDeckByIdAction, DeckData, DeckCardData } from "../actions";
 import { createClient } from "@/utils/supabase/client";
 import { getUserSafe } from "@/utils/supabase/getUserSafe";
 import { getFormatDef } from "@/lib/formats";
+import { DECK_COPY } from "../scan/copy";
+import type { Source } from "./decklistText";
 
 /**
  * Convert DeckCardData[] from the database into Lackey-format text.
@@ -71,6 +74,15 @@ interface DeckSourcePickerProps {
   onClearLoaded?: () => void;
   /** Additional class for the textarea (e.g. focus ring color) */
   textareaClassName?: string;
+  /** Which source is showing; owned by the page. */
+  source: Source;
+  onSourceChange: (source: Source) => void;
+  /** The photo source's content, given the signed-in user's id (null when signed out). */
+  photoSlot: (userId: string | null) => ReactNode;
+  /** True once the photo source has been opened: it then stays mounted, hidden, behind the other sources. */
+  photoMounted: boolean;
+  /** A photo is being read: the other sources wait, so the read is not walked away from. */
+  lockSource?: boolean;
 }
 
 export default function DeckSourcePicker({
@@ -80,9 +92,14 @@ export default function DeckSourcePicker({
   loadedDeckName,
   onClearLoaded,
   textareaClassName = "",
+  source: mode,
+  onSourceChange: setMode,
+  photoSlot,
+  photoMounted,
+  lockSource = false,
 }: DeckSourcePickerProps) {
-  const [mode, setMode] = useState<"paste" | "decks">("paste");
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  // undefined until auth resolves, then the user's id or null when signed out.
+  const [userId, setUserId] = useState<string | null | undefined>(undefined);
   const [decks, setDecks] = useState<DeckData[]>([]);
   const [deckCount, setDeckCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -94,7 +111,7 @@ export default function DeckSourcePicker({
   useEffect(() => {
     const supabase = createClient();
     getUserSafe(supabase).then((user) => {
-      setIsLoggedIn(!!user);
+      setUserId(user?.id ?? null);
       if (user) {
         // Preload deck count so we can show it on the button
         loadUserDecksAction().then((result) => {
@@ -157,7 +174,13 @@ export default function DeckSourcePicker({
     d.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const showDeckOption = isLoggedIn === true;
+  const showDeckOption = typeof userId === "string";
+  const chip = (active: boolean) =>
+    `inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border transition-colors disabled:opacity-50 disabled:pointer-events-none ${
+      active
+        ? "bg-foreground text-background border-foreground"
+        : "bg-transparent text-muted-foreground border-border hover:bg-muted"
+    }`;
 
   return (
     <div>
@@ -190,32 +213,23 @@ export default function DeckSourcePicker({
         )}
       </div>
 
-      {/* Source buttons — only show if logged in with decks */}
-      {showDeckOption && (
-        <div className="flex gap-2 mb-3">
-          <button
-            type="button"
-            onClick={() => setMode("paste")}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
-              mode === "paste"
-                ? "bg-foreground text-background border-foreground"
-                : "bg-transparent text-muted-foreground border-border hover:bg-muted"
-            }`}
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            Paste text
-          </button>
-          <button
-            type="button"
-            onClick={handleSwitchToDecks}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
-              mode === "decks"
-                ? "bg-foreground text-background border-foreground"
-                : "bg-transparent text-muted-foreground border-border hover:bg-muted"
-            }`}
-          >
+      {/* Source buttons: the photo source first; saved decks only when signed in */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        <button type="button" onClick={() => setMode("photo")} aria-pressed={mode === "photo"} className={chip(mode === "photo")}>
+          <Camera className="w-3.5 h-3.5" aria-hidden />
+          {DECK_COPY.sourcePhoto}
+          <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary">
+            {DECK_COPY.pillNew}
+          </span>
+        </button>
+        <button type="button" onClick={() => setMode("paste")} disabled={lockSource} aria-pressed={mode === "paste"} className={chip(mode === "paste")}>
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          Paste text
+        </button>
+        {showDeckOption && (
+          <button type="button" onClick={handleSwitchToDecks} disabled={lockSource} aria-pressed={mode === "decks"} className={chip(mode === "decks")}>
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
@@ -226,7 +240,12 @@ export default function DeckSourcePicker({
               </span>
             )}
           </button>
-        </div>
+        )}
+      </div>
+
+      {/* Photo mode: the reader (or a sign-in prompt), kept mounted once opened */}
+      {(photoMounted || mode === "photo") && userId !== undefined && (
+        <div hidden={mode !== "photo"}>{photoSlot(userId)}</div>
       )}
 
       {/* Paste mode: textarea */}
@@ -253,8 +272,14 @@ export default function DeckSourcePicker({
             }}
             className={`w-full h-64 p-3 font-mono text-sm border rounded-lg bg-background ${textareaClassName}`}
             placeholder="1&#9;Card Name"
-            required
           />
+          <button
+            type="button"
+            onClick={() => setMode("photo")}
+            className="mt-1 min-h-11 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground focus:outline-none"
+          >
+            {DECK_COPY.pasteHint}
+          </button>
         </div>
       )}
 
