@@ -68,3 +68,29 @@ describe('deckPrinting', () => {
     expect(deckPrinting(FALLING_AWAY, cardKey(other))).toBe(cardKey(plain));
   });
 });
+
+// Only the title band shows in a deck photo, so the type and brigade the model reports for a low-confidence read are
+// guesses: on Tim's 2026-11-10 photo three Rotation Dominants came back as "Enhancement" and matched the old Enhancement.
+describe('classifyDeckRead: same name, one Rotation-legal card', () => {
+  const nameOf = (key: string | null) => CARDS.find(x => cardKey(x) === key)!.name;
+  it('a win on type alone does not pick the card that is not legal', () => {
+    const mildew = classify(read({ title: 'Spreading Mildew', type: 'Enhancement', brigade: 'Purple', confidence: 'low' }));
+    expect(mildew.kind).toBe('matched');
+    expect(nameOf(mildew.key)).toBe('Spreading Mildew [RR2]');
+    const gods = classify(read({ title: 'The gods of Egypt', type: 'Enhancement', brigade: 'Black', confidence: 'low' }));
+    expect(nameOf(gods.key)).toBe('the gods of Egypt [IR]');
+    expect(legalityOf(gods.key)).toBe('Rotation');
+  });
+  it('a read reference still picks the old card', () => {
+    const c = classify(read({ title: 'Spreading Mildew', type: 'Enhancement', reference: 'Leviticus 14:6' }));
+    expect(nameOf(c.key)).toBe('Spreading Mildew');
+  });
+  it('a brigade that agrees still picks the old card', () => {
+    const c = classify(read({ title: 'Spreading Mildew', type: 'Enhancement', brigade: 'Gold' }));
+    expect(nameOf(c.key)).toBe('Spreading Mildew');
+  });
+  it('a confident type does not keep the old card: the title band does not show the type', () => {
+    const c = classify(read({ title: "Herod's Temple", type: 'Site', confidence: 'high' }));
+    expect(nameOf(c.key)).toBe("Herod's Temple (GoC)");
+  });
+});

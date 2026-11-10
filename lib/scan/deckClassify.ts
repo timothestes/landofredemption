@@ -34,6 +34,24 @@ export function deckPrinting(identityKey: string, matcherChosenKey?: string): st
   return cardKey(legal.find(c => !isAB(c)) ?? legal[0] ?? cards[0]);
 }
 
+/** Under a point, the matcher's win is the type or an empty ability: fields a deck photo's title band does not show. */
+const WEAK_WIN = 1;
+
+/**
+ * When the matcher picked a card that is not Rotation-legal over a same-name card on weak evidence, and exactly
+ * one card of that name is legal, that card's identity; else null. A reference, stats or brigade that agrees
+ * (a point or more) keeps the matcher's choice. The type does not, however sure the read: on the eval photos a
+ * confident "Site" sat on Herod's Temple (GoC), a Fortress, three times.
+ */
+function soleLegalNamesake(m: MatchResult): string | null {
+  const { identities, byStem } = getScanIndex();
+  const chosen = identities.get(m.identityKey!);
+  if (!chosen || chosen.cards.some(rotation)) return null;
+  if (m.scores.matchScore - m.scores.runnerUpScore >= WEAK_WIN) return null;
+  const legal = (byStem.get(chosen.normalizedStem) ?? []).filter(id => id.cards.some(rotation));
+  return legal.length === 1 ? legal[0].key : null;
+}
+
 /** The spec's From reads to rows table: a deck read plus its matcher result becomes a row kind and printing. */
 export function classifyDeckRead(read: DeckRead, m: MatchResult): DeckClass {
   if (read.title == null) return { kind: 'unread', key: null };
@@ -46,7 +64,8 @@ export function classifyDeckRead(read: DeckRead, m: MatchResult): DeckClass {
   if (m.printingReason === 'reference_ambiguous') return { kind: 'matched', key: deckPrinting(m.identityCandidates![0]) };
   if (m.status === 'not_found') return { kind: 'not_found', key: null };
   if (!m.identityKey) return { kind: 'not_found', key: null };
-  const key = deckPrinting(m.identityKey, m.chosen?.key);
+  const legal = soleLegalNamesake(m);
+  const key = legal ? deckPrinting(legal) : deckPrinting(m.identityKey, m.chosen?.key);
   return { kind: m.nameReason === 'fuzzy' && read.confidence === 'low' ? 'read_as' : 'matched', key };
 }
 
