@@ -163,6 +163,7 @@ export function deckTrayReducer(s: DeckTrayState, a: DeckTrayAction): DeckTraySt
       const r = a.response;
       const done = patchPhoto(s, a.photoId, {
         status: 'done', scanId: r.scanId, photoQuality: r.photoQuality, error: undefined,
+        rotation: r.rotation,
         longEdge: r.imageSize ? Math.max(r.imageSize.width, r.imageSize.height) : undefined,
         groups: r.groups.map(g => ({ id: g.id, orientation: g.orientation, bbox: g.bbox, cardCount: g.cardCount })),
       });
@@ -177,6 +178,7 @@ export function deckTrayReducer(s: DeckTrayState, a: DeckTrayAction): DeckTraySt
         };
         if (d.identityCandidates) e.identityCandidates = d.identityCandidates;
         if (d.near) e.near = d.near;
+        if (d.titleBox) e.titleBox = d.titleBox;
         return e;
       });
       return withDefaultZones(s, { ...done, entries: [...done.entries, ...fresh] });
@@ -281,6 +283,7 @@ function cleanEntry(e: unknown): TrayEntry | null {
   out.candidates = Array.isArray(e.candidates) ? e.candidates : [];
   if (e.near !== undefined && !Array.isArray(e.near)) delete out.near;
   if (e.zone !== 'main' && e.zone !== 'reserve') delete out.zone;
+  if (!(Array.isArray(e.titleBox) && e.titleBox.length === 4 && e.titleBox.every((n: unknown) => Number.isFinite(n)))) delete out.titleBox;
   return out;
 }
 
@@ -292,7 +295,9 @@ const validGroup = (g: unknown): boolean =>
 function cleanPhoto(p: unknown): DeckPhoto | null {
   if (!(isObj(p) && typeof p.photoId === 'string' && typeof p.n === 'number' &&
     ['queued', 'reading', 'done', 'failed'].includes(p.status) && Array.isArray(p.groups))) return null;
-  return { ...p, groups: p.groups.filter(validGroup) } as DeckPhoto;
+  const out = { ...p, groups: p.groups.filter(validGroup) } as DeckPhoto;
+  if (![0, 90, 180, 270].includes(p.rotation)) delete out.rotation;
+  return out;
 }
 
 export function restoreDeckTray(raw: unknown, userId: string): DeckTrayState {

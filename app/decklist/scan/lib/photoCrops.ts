@@ -34,26 +34,16 @@ export function cropPlan(
   };
 }
 
-/** Draw a plan from the photo onto a canvas and return an object URL for the JPEG. Browser only. */
-export async function cropToUrl(photoUrl: string, plan: CropPlan): Promise<string> {
-  const blob = await (await fetch(photoUrl)).blob();
-  const bitmap = await createImageBitmap(blob);
-  try {
-    const canvas = document.createElement('canvas');
-    canvas.width = plan.outW;
-    canvas.height = plan.outH;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('no 2d context');
-    ctx.translate(plan.outW / 2, plan.outH / 2);
-    ctx.rotate((plan.rotate * Math.PI) / 180);
-    const quarter = plan.rotate === 90 || plan.rotate === -90;
-    const dw = quarter ? plan.outH : plan.outW;
-    const dh = quarter ? plan.outW : plan.outH;
-    ctx.drawImage(bitmap, plan.sx, plan.sy, plan.sw, plan.sh, -dw / 2, -dh / 2, dw, dh);
-    const out = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', 0.85));
-    if (!out) throw new Error('toBlob failed');
-    return URL.createObjectURL(out);
-  } finally {
-    bitmap.close();
-  }
+/** Draw a plan from a decoded photo onto `canvas`, sized to the plan's output. Browser only. */
+export function drawCrop(source: CanvasImageSource, plan: CropPlan, canvas: HTMLCanvasElement): void {
+  canvas.width = plan.outW;
+  canvas.height = plan.outH;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  ctx.translate(plan.outW / 2, plan.outH / 2);
+  ctx.rotate((plan.rotate * Math.PI) / 180);
+  const quarter = plan.rotate === 90 || plan.rotate === -90;
+  const dw = quarter ? plan.outH : plan.outW;
+  const dh = quarter ? plan.outW : plan.outH;
+  ctx.drawImage(source, plan.sx, plan.sy, plan.sw, plan.sh, -dw / 2, -dh / 2, dw, dh);
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseDeckText } from '@/app/decklist/card-search/utils/deckImportExport';
+import { parseDecklistText } from '@/lib/decksheets/parse';
 import type { Card } from '@/app/decklist/card-search/utils';
 import { deckTrayReducer, initialDeckTray, type DeckTrayAction } from '../lib/deckTrayReducer';
 import { buildDeckText } from '../lib/deckText';
@@ -43,5 +44,15 @@ describe('buildDeckText', () => {
     const got = r.deck!.cards.map(dc => [dc.card.name, dc.card.set, dc.quantity, dc.zone]).sort();
     const want = saveRows(s).map(x => [x.card_name, x.card_set, x.quantity, x.zone]).sort();
     expect(got).toEqual(want);
+  });
+
+  it('columns: 2 parses through the PDF parser with every card', () => {
+    const parsed = parseDecklistText(buildDeckText(s, { columns: 2 }));
+    expect(parsed.main).toEqual([{ quantity: 3, name: 'Moses' }, { quantity: 1, name: 'Aaron' }, { quantity: 2, name: 'Lost Soul' }]);
+    expect(parsed.reserve).toEqual([{ quantity: 2, name: 'Joshua' }]);
+  });
+
+  it('columns: 4 is the default', () => {
+    expect(buildDeckText(s, { columns: 4 })).toBe(buildDeckText(s));
   });
 });

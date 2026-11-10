@@ -7,6 +7,7 @@ export interface DetSpec {
   kind?: DeckRowKind;
   type?: string;
   identityCandidates?: string[];
+  titleBox?: [number, number, number, number];
 }
 
 /** Hand-built deck response; read ids are `${scanId}:${i}`. */
@@ -14,12 +15,13 @@ export function deckResponse(
   scanId: string,
   dets: DetSpec[],
   groups: { id: number; orientation?: string; cardCount?: number; bbox?: [number, number, number, number] }[] = [{ id: 1 }],
+  rotation: DeckScanResponse['rotation'] = 0,
 ): DeckScanResponse {
   const detections = dets.map((d, i) => ({
     id: `${scanId}:${i}`,
     group: d.group,
     position: i,
-    titleBox: null,
+    titleBox: d.titleBox ?? null,
     read: { title: d.title ?? d.key, type: d.type ?? 'Hero' },
     status: 'matched',
     nameReason: 'exact',
@@ -35,7 +37,7 @@ export function deckResponse(
     scanId,
     mode: 'deck',
     photoQuality: 'ok',
-    rotation: 0,
+    rotation,
     imageSize: { width: 2048, height: 1536 },
     groups: groups.map(g => ({
       id: g.id,

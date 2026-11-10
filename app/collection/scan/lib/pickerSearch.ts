@@ -68,6 +68,22 @@ function pairSimilarity(a: string, b: string): number {
   return (2 * shared) / (pa.length + pb.length);
 }
 
+const toHit = (c: CardData, identity: string): PickerHit => ({
+  key: `${c.name}|${c.set}|${c.imgFile}`,
+  name: c.name,
+  set: c.set,
+  officialSet: c.officialSet,
+  imgFile: c.imgFile,
+  legality: c.legality,
+  price: null,
+  identity,
+});
+
+/** Every printing of one card identity. */
+export function printingsForIdentity(identity: string): PickerHit[] {
+  return printingsOf(identity).map(c => toHit(c, identity));
+}
+
 /** Every printing of each of the top name hits; `price` is null for the client to fill. */
 export function searchPrintings(query: string): { hits: PickerHit[]; close: boolean } {
   const out: PickerHit[] = [];
@@ -86,16 +102,7 @@ export function searchPrintings(query: string): { hits: PickerHit[]; close: bool
       const key = `${c.name}|${c.set}|${c.imgFile}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      out.push({
-        key,
-        name: c.name,
-        set: c.set,
-        officialSet: c.officialSet,
-        imgFile: c.imgFile,
-        legality: c.legality,
-        price: null,
-        identity,
-      });
+      out.push(toHit(c, identity));
     }
   }
   return { hits: out, close };
