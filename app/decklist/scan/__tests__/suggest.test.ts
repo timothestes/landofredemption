@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { searchPrintings } from '@/app/collection/scan/lib/pickerSearch';
-import { suggestFor } from '../lib/suggest';
+import { CARDS } from '@/lib/cards/lookup';
+import { cardIdentityKey } from '@/lib/cards/cardIdentity';
+import { chipsFor, suggestFor } from '../lib/suggest';
 
 describe('suggestFor', () => {
   it('gives one printing per card identity', () => {
@@ -44,5 +46,36 @@ describe('suggestFor', () => {
   it('returns nothing with no title and no stems', () => {
     expect(suggestFor(null, undefined)).toEqual([]);
     expect(suggestFor('', [])).toEqual([]);
+  });
+});
+
+describe('chipsFor', () => {
+  it('gives nothing for an unread, matched or Lost Soul row', () => {
+    expect(chipsFor({ kind: 'unread', title: null })).toEqual([]);
+    expect(chipsFor({ kind: 'matched', title: 'Moses' })).toEqual([]);
+    expect(chipsFor({ kind: 'lost_soul', title: 'Lost Soul' })).toEqual([]);
+  });
+
+  it('gives up to three chips for a Not found row, the misread card first', () => {
+    const chips = chipsFor({ kind: 'not_found', title: 'Captive Preist' });
+    expect(chips.length).toBeGreaterThan(0);
+    expect(chips.length).toBeLessThanOrEqual(3);
+    expect(chips[0].label).toMatch(/^Captive Priest/);
+    for (const c of chips) expect(c.siblings.map(x => x.key)).toContain(c.key);
+  });
+
+  it('puts the candidates of a Which card? row first, with labels that tell them apart', () => {
+    const ids = [...new Set(CARDS.filter(c => /^A New Beginning( \(|$)/.test(c.name)).map(cardIdentityKey))];
+    expect(ids.length).toBe(2);
+    const chips = chipsFor({ kind: 'which', title: 'A New Beginning', identityCandidates: ids });
+    expect(chips.slice(0, 2).map(c => cardIdentityKey(CARDS.find(x => `${x.name}|${x.set}|${x.imgFile}` === c.key)!))).toEqual(ids);
+    expect(new Set(chips.map(c => c.label)).size).toBe(chips.length);
+    expect(new Set(chips.map(c => c.key)).size).toBe(chips.length);
+  });
+
+  it('prefers the Rotation printing of a candidate', () => {
+    const id = cardIdentityKey(CARDS.find(c => c.name === 'A New Beginning (FoM)')!);
+    const [chip] = chipsFor({ kind: 'which', title: null, identityCandidates: [id] });
+    expect(chip.siblings.find(x => x.key === chip.key)!.legality).toBe('Rotation');
   });
 });
