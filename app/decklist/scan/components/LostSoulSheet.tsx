@@ -146,6 +146,9 @@ export default function LostSoulSheet({ trayRows, placeholders, picks, onDone, o
                 <X className="h-4 w-4" aria-hidden />
               </button>
             </div>
+            <p className="text-sm leading-snug text-muted-foreground">
+              {DECK_COPY.lostSoulWhy} {DECK_COPY.lostSoulTip}
+            </p>
             <input
               type="search"
               value={query}
