@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, type ReactNode } from "react";
+import { useEffect, useRef, useState, useCallback, type ReactNode } from "react";
 import { Camera } from "lucide-react";
 import { loadUserDecksAction, loadDeckByIdAction, DeckData, DeckCardData } from "../actions";
 import { createClient } from "@/utils/supabase/client";
@@ -100,6 +100,9 @@ export default function DeckSourcePicker({
 }: DeckSourcePickerProps) {
   // undefined until auth resolves, then the user's id or null when signed out.
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
+  // The source showing now, for a deck load that finishes after the player has moved on.
+  const modeNow = useRef(mode);
+  modeNow.current = mode;
   const [decks, setDecks] = useState<DeckData[]>([]);
   const [deckCount, setDeckCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -155,6 +158,8 @@ export default function DeckSourcePicker({
     setLoadingDeckId(deck.id);
     try {
       const result = await loadDeckByIdAction(deck.id);
+      // The player left the deck list while this loaded (for the photo source, say): leave them where they are.
+      if (modeNow.current !== "decks") return;
       if (result.success && result.deck) {
         const text = deckCardsToLackeyText(result.deck.cards || []);
         const deckType = formatToDeckType(deck.format);

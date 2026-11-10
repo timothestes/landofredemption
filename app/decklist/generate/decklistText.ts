@@ -31,17 +31,20 @@ export const deckTypeFromMain = (mainTotal: number): 'type_1' | 'type_2' =>
   impliedFamily(mainTotal) === 'T2' ? 'type_2' : 'type_1';
 
 /**
- * What the generators get. The photo source owns its own text and never a saved deck's id: sending one would
- * make the PDF of the saved deck, not of the photo.
+ * What the generators get. The photo source owns its own text and Deck Type and never a saved deck's id:
+ * sending one would make the PDF of the saved deck, not of the photo. The typed and saved-deck sources keep
+ * their own Deck Type, so a photo's read never changes the type a saved deck was loaded with.
  */
 export function effectiveDeck(a: {
   source: Source;
   typed: string;
   photoText: string;
   loadedDeckId: string | null;
-}): { decklist: string; deckId: string | null } {
-  if (a.source === 'photo') return { decklist: a.photoText, deckId: null };
-  return { decklist: normalizeDecklist(a.typed), deckId: a.loadedDeckId };
+  typedType: string;
+  photoType: string;
+}): { decklist: string; deckId: string | null; deckType: string } {
+  if (a.source === 'photo') return { decklist: a.photoText, deckId: null, deckType: a.photoType };
+  return { decklist: normalizeDecklist(a.typed), deckId: a.loadedDeckId, deckType: a.typedType };
 }
 
 /** Identifies a tray's outcomes, so a second Generate from an unchanged tray does not write them again. */

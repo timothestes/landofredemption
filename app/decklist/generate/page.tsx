@@ -67,13 +67,15 @@ const NO_PHOTO_DECK: PhotoDeck = { text: "", cards: 0, leftOut: 0, reading: fals
 
 export default function GenerateDeckList() {
   const [typedDecklist, setDecklist] = useState("");
-  const [deckType, setDeckType] = useState("type_1");
+  const [typedDeckType, setDeckType] = useState("type_1");
+  // The photo source keeps its own Deck Type: a read must not change the type a saved deck was loaded with.
+  const [photoDeckType, setPhotoDeckType] = useState("type_1");
   const [name, setName] = useState("");
   const [event, setEvent] = useState("");
   const [loading, setLoading] = useState(false);
   const [screenshotLoading, setScreenshotLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{ url: string; message: string } | null>(null);
+  const [success, setSuccess] = useState<{ url: string; message: string; deckName: string | null } | null>(null);
   const [screenshotSuccess, setScreenshotSuccess] = useState<{ url: string; message: string } | null>(null);
   const [showAlignment, setShowAlignment] = useState(false);
   const [nCardColumns, setNCardColumns] = useState(10);
@@ -127,7 +129,7 @@ export default function GenerateDeckList() {
     // The first report is the tray as it was restored, not a read made on this page.
     const restored = photoReports.current++ === 0;
     if (done > photosDone.current) {
-      if (!deckTypeTouched.current) setDeckType(deckTypeFromMain(t.main));
+      if (!deckTypeTouched.current) setPhotoDeckType(deckTypeFromMain(t.main));
       deckTypeTouched.current = false;
       if (!restored) markPhotoCalloutDone();
     }
@@ -135,8 +137,12 @@ export default function GenerateDeckList() {
   }, []);
 
   const chooseDeckType = (value: string) => {
-    deckTypeTouched.current = true;
-    setDeckType(value);
+    if (source === "photo") {
+      deckTypeTouched.current = true;
+      setPhotoDeckType(value);
+    } else {
+      setDeckType(value);
+    }
   };
 
   // Auto-scroll to success message when it appears
@@ -213,7 +219,9 @@ export default function GenerateDeckList() {
     setSuccess(null);
 
     // The photo source sends its own text and never a saved deck's id; typed text loses the builder's extra columns.
-    const { decklist, deckId: loadedDeckId } = effectiveDeck({ source, typed: typedDecklist, photoText: photo.text, loadedDeckId: typedDeckId });
+    const { decklist, deckId: loadedDeckId, deckType } = effectiveDeck({
+      source, typed: typedDecklist, photoText: photo.text, loadedDeckId: typedDeckId, typedType: typedDeckType, photoType: photoDeckType,
+    });
     const validation = validateForm(decklist, name, event);
     if (!validation.valid) {
       setError(validation.message || "Invalid form data");
@@ -251,6 +259,8 @@ export default function GenerateDeckList() {
       setSuccess({
         url: data.data.downloadUrl,
         message: data.message,
+        // The name belongs to the deck this PDF was made from, whatever source is showing when it is downloaded.
+        deckName: source === "photo" ? null : loadedDeckName,
       });
       if (source === "photo") recordPhotoOutcomes();
     } catch (err) {
@@ -261,7 +271,9 @@ export default function GenerateDeckList() {
   };
 
   const handleGenerateScreenshot = async () => {
-    const { decklist, deckId: loadedDeckId } = effectiveDeck({ source, typed: typedDecklist, photoText: photo.text, loadedDeckId: typedDeckId });
+    const { decklist, deckId: loadedDeckId, deckType } = effectiveDeck({
+      source, typed: typedDecklist, photoText: photo.text, loadedDeckId: typedDeckId, typedType: typedDeckType, photoType: photoDeckType,
+    });
     const validation = validateForm(decklist);
     if (!validation.valid) {
       setError(validation.message || "Invalid decklist format");
@@ -424,7 +436,7 @@ export default function GenerateDeckList() {
                     Deck Type
                   </label>
                   <select
-                    value={deckType}
+                    value={photoMode ? photoDeckType : typedDeckType}
                     onChange={(e) => chooseDeckType(e.target.value)}
                     className="w-full p-3 border rounded-lg bg-background focus:outline-none focus:border-ring"
                   >
@@ -589,7 +601,7 @@ export default function GenerateDeckList() {
                 </div>
               </div>
               <Button
-                onClick={() => window.open(decklistPdfDownloadUrl(success.url, photoMode ? null : loadedDeckName), '_blank')}
+                onClick={() => window.open(decklistPdfDownloadUrl(success.url, success.deckName), '_blank')}
                 gradientDuoTone="greenToBlue"
                 size="lg"
                 className="font-semibold"

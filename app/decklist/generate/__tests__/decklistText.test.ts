@@ -33,12 +33,16 @@ describe('deckTypeFromMain', () => {
 
 describe('effectiveDeck', () => {
   it('photo source sends the photo text and no deck id', () => {
-    expect(effectiveDeck({ source: 'photo', typed: '1\tOld', photoText: '2\tSaul', loadedDeckId: 'd1' }))
-      .toEqual({ decklist: '2\tSaul', deckId: null });
+    expect(effectiveDeck({ source: 'photo', typed: '1\tOld', photoText: '2\tSaul', loadedDeckId: 'd1', typedType: 'paragon', photoType: 'type_2' }))
+      .toEqual({ decklist: '2\tSaul', deckId: null, deckType: 'type_2' });
   });
   it('paste source normalizes and keeps the loaded deck id', () => {
-    expect(effectiveDeck({ source: 'paste', typed: '2\tSaul\tR\ts.jpg', photoText: 'x', loadedDeckId: 'd1' }))
-      .toEqual({ decklist: '2\tSaul', deckId: 'd1' });
+    expect(effectiveDeck({ source: 'paste', typed: '2\tSaul\tR\ts.jpg', photoText: 'x', loadedDeckId: 'd1', typedType: 'paragon', photoType: 'type_2' }))
+      .toEqual({ decklist: '2\tSaul', deckId: 'd1', deckType: 'paragon' });
+  });
+  it('a saved deck keeps its own type after a photo was read', () => {
+    expect(effectiveDeck({ source: 'decks', typed: '1\tA', photoText: 'x', loadedDeckId: 'd1', typedType: 'paragon', photoType: 'type_1' }).deckType)
+      .toBe('paragon');
   });
 });
 
