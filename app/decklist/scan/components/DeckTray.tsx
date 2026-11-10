@@ -164,6 +164,8 @@ export default function DeckTray({
   // Suggestions come with the picker: the read title's near misses and search hits.
   useEffect(() => {
     if (!picker || picker.for !== 'row' || picker.mode !== 'search' || !pickedEntry) return;
+    // A row that already has its card needs no guesses: its own name is searched, and it comes up first.
+    if (pickedEntry.kind === 'matched') return;
     const { title, near } = pickedEntry;
     if (!title && !near?.length) return;
     let live = true;
@@ -356,6 +358,8 @@ export default function DeckTray({
           suggestions={suggestions}
           selectQueryOnOpen
           title={picker.for === 'add' ? DECK_COPY.addCard : undefined}
+          // Which card is the question everywhere but Change printing.
+          oneRowPerCard={picker.for === 'add' || picker.mode !== 'printing'}
           quantities={NO_QUANTITIES}
           showPrices={false}
           getPrice={noPrice}

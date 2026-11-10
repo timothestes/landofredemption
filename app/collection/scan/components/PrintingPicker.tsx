@@ -7,6 +7,7 @@ import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { COPY, fill } from '../copy';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { Candidate } from '../types';
+import { moveActive, onePerCard } from '../lib/pickerRows';
 import type { PickerHit } from '../lib/pickerSearch';
 
 // The search pulls the whole card catalog, so it loads on the first keystroke, once.
@@ -23,6 +24,8 @@ interface Props {
   /** Focus the field and select its text on open. */
   selectQueryOnOpen?: boolean;
   title?: string;
+  /** List each card once instead of once per printing, cards legal in Limited first (a deck asks which card, not which printing). */
+  oneRowPerCard?: boolean;
   mode: PickerMode;
   quantities: Map<string, number>;
   showPrices: boolean;
@@ -33,7 +36,7 @@ interface Props {
 
 
 export default function PrintingPicker({
-  subject, suggestions, selectQueryOnOpen, title: titleOverride, mode, quantities, showPrices, getPrice, onPick, onClose,
+  subject, suggestions, selectQueryOnOpen, title: titleOverride, oneRowPerCard, mode, quantities, showPrices, getPrice, onPick, onClose,
 }: Props) {
   const trapRef = useRef<HTMLDivElement>(null);
   // Find card on a not_found row starts from what was read off the card.
@@ -42,6 +45,9 @@ export default function PrintingPicker({
   const [query, setQuery] = useState(initialQuery);
   const [hits, setHits] = useState<PickerHit[] | null>(null);
   const [close, setClose] = useState(false);
+  // The row Enter picks; the arrow keys move it.
+  const [active, setActive] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
   useFocusTrap(trapRef, true);
 
   const title = titleOverride ?? (mode === 'printing' ? COPY.pickerHeader : COPY.pickerNameHeader);
@@ -49,6 +55,7 @@ export default function PrintingPicker({
 
   const onSearch = async (value: string) => {
     setQuery(value);
+    setActive(0);
     latestQuery.current = value;
     if (!value.trim()) {
       setHits(null);
@@ -77,10 +84,28 @@ export default function PrintingPicker({
   };
 
   const searching = hits !== null;
-  const options: (Candidate | PickerHit)[] = searching ? hits : subject.candidates;
-  // The search opens on the read title, which is also what the suggestions come from: list a printing once.
-  const suggested = new Set((suggestions ?? []).map(c => c.key));
-  const rest = options.filter(c => !suggested.has(c.key));
+  const typed = query.trim();
+  // The catalog loads on the first search: say so instead of flashing "No cards match".
+  const loading = typed !== '' && hits === null;
+  // Suggestions answer the title that was read. Once the player types their own search, its results stand alone:
+  // left above them, the suggestions pushed the card being searched for to the bottom of the list.
+  const suggesting = !!suggestions?.length && (typed === '' || typed === initialQuery);
+  const shown = suggesting ? suggestions : [];
+  const found: { option: Candidate | PickerHit; printings: number }[] = !searching
+    ? subject.candidates.map(option => ({ option, printings: 1 }))
+    : oneRowPerCard
+      ? onePerCard(hits, subject.currentKey).map(r => ({ option: r.hit, printings: r.printings }))
+      : hits.map(option => ({ option, printings: 1 }));
+  // The search opens on the read title, which is also what the suggestions come from: list a card once.
+  const suggestedKeys = new Set(shown.map(c => c.key));
+  const suggestedCards = new Set(shown.map(c => c.identity));
+  const rest = found.filter(({ option }) =>
+    !suggestedKeys.has(option.key) && !(oneRowPerCard && 'identity' in option && suggestedCards.has(option.identity)));
+  const visible = [...shown.map(option => ({ option, pool: shown as PickerHit[] | undefined })), ...rest.map(r => ({ option: r.option, pool: undefined }))];
+
+  useEffect(() => {
+    listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'nearest' });
+  }, [active]);
 
   const pick = (c: Candidate | PickerHit, pool: PickerHit[] = hits ?? []) => {
     if ('identity' in c) {
@@ -92,7 +117,17 @@ export default function PrintingPicker({
     onClose();
   };
 
-  const renderOption = (c: Candidate | PickerHit, pool?: PickerHit[]) => {
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActive(a => moveActive(a, e.key === 'ArrowDown' ? 1 : -1, visible.length));
+    } else if (e.key === 'Enter' && visible[active]) {
+      e.preventDefault();
+      pick(visible[active].option, visible[active].pool);
+    }
+  };
+
+  const renderOption = (c: Candidate | PickerHit, index: number, pool?: PickerHit[], printings = 1) => {
     const current = c.key === subject.currentKey;
     const owned = quantities.get(c.key) ?? 0;
     const price = 'identity' in c ? getPrice(c.key) : c.price;
@@ -101,8 +136,10 @@ export default function PrintingPicker({
         <button
           type="button"
           aria-current={current ? 'true' : undefined}
+          data-active={index === active}
+          tabIndex={-1}
           onClick={() => pick(c, pool)}
-          className={`flex min-h-11 w-full items-center gap-3 rounded-md px-2 py-1.5 text-left hover:bg-muted focus:outline-none ${current ? 'bg-muted/60' : ''}`}
+          className={`flex min-h-11 w-full items-center gap-3 rounded-md px-2 py-1.5 text-left hover:bg-muted focus:outline-none ${index === active ? 'bg-muted' : ''}`}
         >
           <span className="flex h-[62px] w-11 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted">
             {c.imgFile && (
@@ -130,6 +167,7 @@ export default function PrintingPicker({
               </span>
             )}
             {current && <span className="text-xs font-medium text-muted-foreground">{COPY.pickerCurrent}</span>}
+            {printings > 1 && <span className="text-xs text-muted-foreground">{fill(COPY.pickerPrintings, { n: printings })}</span>}
           </span>
         </button>
       </li>
@@ -140,9 +178,10 @@ export default function PrintingPicker({
     <Dialog open onOpenChange={o => !o && onClose()}>
       <DialogContent
         size="md"
-        className="fixed inset-x-0 bottom-0 mx-0 max-h-[85vh] max-w-none rounded-b-none rounded-t-xl pb-[env(safe-area-inset-bottom)] sm:static sm:mx-4 sm:max-h-[calc(100dvh-2rem)] sm:max-w-md sm:rounded-lg sm:pb-0"
+        // One height whatever the list holds: sized to its content, the dialog grew, shrank and re-centred on every keystroke.
+        className="fixed inset-x-0 bottom-0 mx-0 h-[85dvh] max-w-none rounded-b-none rounded-t-xl pb-[env(safe-area-inset-bottom)] sm:static sm:mx-4 sm:h-[min(40rem,calc(100dvh-2rem))] sm:max-w-md sm:rounded-lg sm:pb-0"
       >
-        <div ref={trapRef} className="flex min-h-0 flex-col">
+        <div ref={trapRef} className="flex min-h-0 flex-1 flex-col">
           <DialogHeader className="space-y-3 px-4 py-3">
             <div className="flex items-center justify-between gap-2">
               <DialogTitle className="text-base">{title}</DialogTitle>
@@ -160,30 +199,37 @@ export default function PrintingPicker({
               type="search"
               value={query}
               onChange={e => void onSearch(e.target.value)}
+              onKeyDown={onKeyDown}
+              autoComplete="off"
               placeholder={COPY.pickerSearch}
               aria-label={COPY.pickerSearch}
-              className="h-11 w-full rounded-md border border-border bg-background px-3 text-base focus:outline-none sm:text-sm"
+              className="h-11 w-full rounded-md border border-border bg-background px-3 text-base focus:border-foreground/40 focus:outline-none focus:ring-0 sm:text-sm"
             />
           </DialogHeader>
-          <DialogBody className="px-2 py-2">
-            {searching && close && hits.length > 0 && (
-              <p className="px-2 pb-1 text-xs text-muted-foreground">{COPY.pickerClose}</p>
-            )}
-            {suggestions && suggestions.length > 0 && (
-              <div className="pb-2">
-                <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">Suggestions</p>
-                <ul className="space-y-1">{suggestions.map(c => renderOption(c, suggestions))}</ul>
-              </div>
-            )}
-            {options.length === 0 ? (
-              <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-                {searching ? COPY.pickerEmpty : COPY.pickerSearch}
-              </p>
-            ) : rest.length > 0 && (
-              <ul className="space-y-1">
-                {rest.map(c => renderOption(c))}
-              </ul>
-            )}
+          <DialogBody className="flex-1 px-2 py-2">
+            <div ref={listRef}>
+              {searching && close && hits.length > 0 && !suggesting && (
+                <p className="px-2 pb-1 text-xs text-muted-foreground">{COPY.pickerClose}</p>
+              )}
+              {suggesting && (
+                <div className="pb-2">
+                  <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">Suggestions</p>
+                  <ul className="space-y-1">{shown.map((c, i) => renderOption(c, i, shown))}</ul>
+                </div>
+              )}
+              {suggesting && rest.length > 0 && (
+                <p className="px-2 pb-1 text-xs font-medium text-muted-foreground">{COPY.pickerMore}</p>
+              )}
+              {rest.length > 0 ? (
+                <ul className="space-y-1">
+                  {rest.map((r, i) => renderOption(r.option, shown.length + i, undefined, r.printings))}
+                </ul>
+              ) : !suggesting && (
+                <p className="px-2 py-6 text-center text-sm text-muted-foreground">
+                  {loading ? COPY.pickerSearching : searching ? COPY.pickerEmpty : COPY.pickerSearch}
+                </p>
+              )}
+            </div>
           </DialogBody>
         </div>
       </DialogContent>
