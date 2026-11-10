@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useRef, useState, type Dispatch } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ToastNotification from '@/components/ui/toast-notification';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -15,12 +16,14 @@ import type { DeckTrayState } from '../types';
 interface Props {
   state: DeckTrayState;
   dispatch: Dispatch<DeckTrayAction>;
+  /** `builderOnly` is the one secondary button a host with its own primary hand-off shows (the generate page). */
+  variant?: 'sticky' | 'builderOnly';
 }
 
 type Note = { text: string; type: 'success' | 'error'; seq: number };
 
 /** Sticky footer: copy the deck as text, or save it and open it in the deck builder. */
-export default function HandoffBar({ state, dispatch }: Props) {
+export default function HandoffBar({ state, dispatch, variant = 'sticky' }: Props) {
   const router = useRouter();
   const saving = useRef(false);
   const [confirming, setConfirming] = useState(false);
@@ -66,10 +69,26 @@ export default function HandoffBar({ state, dispatch }: Props) {
 
   return (
     <>
+      {variant === 'builderOnly' ? (
+        <button
+          type="button"
+          onClick={() => (t.leftOut > 0 ? setConfirming(true) : void open())}
+          disabled={busy || saved === 0}
+          className="min-h-11 w-full rounded-lg border border-border bg-card px-4 text-sm font-medium transition-colors hover:bg-muted focus:outline-none disabled:opacity-50 sm:w-auto"
+        >
+          {DECK_COPY.open}
+        </button>
+      ) : (
       <div className="sticky bottom-0 z-30 -mx-4 border-t border-border bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
         {t.leftOut > 0 && (
           <p className="pb-2 text-sm text-amber-600 dark:text-amber-400">{fill(DECK_COPY.leftOut, { n: t.leftOut })}</p>
         )}
+        <p className="pb-2 text-xs text-muted-foreground">
+          {DECK_COPY.pdfLinkLead}{' '}
+          <Link href="/decklist/generate?source=photo" className="underline underline-offset-4 hover:text-foreground focus:outline-none">
+            {DECK_COPY.pdfLink}
+          </Link>
+        </p>
         <div className="flex gap-2">
           <button
             type="button"
@@ -89,6 +108,7 @@ export default function HandoffBar({ state, dispatch }: Props) {
           </button>
         </div>
       </div>
+      )}
 
       {confirming && (
         <Dialog open onOpenChange={o => !o && setConfirming(false)}>
