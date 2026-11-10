@@ -3,6 +3,7 @@ import {
   deckTrayReducer, initialDeckTray, restoreDeckTray, STORAGE_KEY, trayRows, zoneOf,
   type DeckTrayAction,
 } from '../lib/deckTrayReducer';
+import { deckOutcomes } from '../lib/handoff';
 import type { DeckTrayState } from '../types';
 import { deckResponse, rep } from './fixtures';
 
@@ -260,5 +261,47 @@ describe('restoreDeckTray', () => {
   it('reopens an interrupted save for editing', () => {
     const s = run(withPhoto('p1', deckResponse('s1', [])), { type: 'saving' });
     expect(restoreDeckTray(s, U).phase).toBe('editing');
+  });
+});
+
+describe('row evidence fields', () => {
+  const resp = deckResponse('s1', [
+    { group: 1, key: 'Moses|RoJ|moses', titleBox: [0.1, 0.1, 0.3, 0.14] },
+    { group: 1, key: 'Aaron|Pr|aaron' },
+    ...rep(3, { group: 1, key: null, kind: 'not_found', title: 'Zed' }),
+  ], [{ id: 1 }], 270);
+  const s = [
+    { type: 'photoAdded', photoId: 'p1' }, { type: 'photoStarted', photoId: 'p1', at: 1 }, { type: 'photoDone', photoId: 'p1', response: resp },
+  ].reduce((st, a) => deckTrayReducer(st, a as DeckTrayAction), initialDeckTray('u1'));
+
+  it('photoDone copies titleBox and rotation', () => {
+    expect(s.entries[0].titleBox).toEqual([0.1, 0.1, 0.3, 0.14]);
+    expect(s.entries[1].titleBox).toBeUndefined();
+    expect(s.photos[0].rotation).toBe(270);
+  });
+  it('survive persistence and restore', () => {
+    const back = restoreDeckTray(JSON.parse(JSON.stringify(s)), 'u1');
+    expect(back.entries[0].titleBox).toEqual([0.1, 0.1, 0.3, 0.14]);
+    expect(back.photos[0].rotation).toBe(270);
+  });
+  it('restore drops a malformed titleBox or rotation', () => {
+    const raw = JSON.parse(JSON.stringify(s));
+    raw.entries[0].titleBox = [0.1, 'x', 0.3];
+    raw.photos[0].rotation = 45;
+    const back = restoreDeckTray(raw, 'u1');
+    expect(back.entries[0].titleBox).toBeUndefined();
+    expect(back.photos[0].rotation).toBeUndefined();
+  });
+  it('a card added by + has no titleBox', () => {
+    const more = deckTrayReducer(s, { type: 'setQty', rowKey: trayRows(s)[0].rowKey, qty: 2 });
+    expect(more.entries.length).toBe(s.entries.length + 1);
+    expect(more.entries.at(-1)!.titleBox).toBeUndefined();
+  });
+  it('setCardOne on Not found x3 corrects one read and records a name change', () => {
+    const row = trayRows(s).find(r => r.kind === 'not_found')!;
+    const next = deckTrayReducer(s, { type: 'setCardOne', rowKey: row.rowKey, key: 'Zadok|Pr|zadok' });
+    expect(trayRows(next).find(r => r.kind === 'not_found')!.quantity).toBe(2);
+    const o = deckOutcomes(next).s1.find(x => x.finalKey === 'Zadok|Pr|zadok')!;
+    expect(o.nameChanged).toBe(true);
   });
 });
