@@ -9,7 +9,7 @@ import { deckFormatFilterFor, deckFamilyFilterFor } from "@/lib/api/cache";
 import { findCard } from "@/lib/cards/lookup";
 import { getSupabaseAdmin } from "@/lib/pricing/supabase-admin";
 import { isKnownCardKey } from "@/lib/scan/cardKeys";
-import { validateHandoff } from "./scan/lib/validateHandoff";
+import { cleanOutcomes, validateHandoff } from "./scan/lib/validateHandoff";
 import { forceMainOnly } from "./scan/lib/forceMainOnly";
 import type { DeckOutcome, SaveRow } from "./scan/lib/handoff";
 import { loadDeckTournamentContext, type DeckTournamentContext } from "./deckTournamentContext";
@@ -2270,20 +2270,42 @@ export async function createDeckFromScanAction(input: {
   const saved = await saveDeckAction({ name: payload.name, format: payload.format, cards });
   if (!saved.success || !saved.deckId) return { ok: false, code: "save_failed" };
 
+  await writeScanOutcomes(user.id, payload.outcomesByScanId);
+
+  return { ok: true, deckId: saved.deckId };
+}
+
+/** What the player did with each read, written to the read's own scan_events row. Never throws: it only feeds the eval data. */
+async function writeScanOutcomes(userId: string, outcomesByScanId: Record<string, DeckOutcome[]>): Promise<void> {
   try {
     const admin = getSupabaseAdmin();
-    for (const [scanId, outcomes] of Object.entries(payload.outcomesByScanId)) {
+    for (const [scanId, outcomes] of Object.entries(outcomesByScanId)) {
       const { error } = await admin
         .from("scan_events")
         .update({ outcomes })
         .eq("id", scanId)
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("mode", "deck");
-      if (error) console.error("createDeckFromScanAction: outcome write failed", scanId, error.message);
+      if (error) console.error("writeScanOutcomes: outcome write failed", scanId, error.message);
     }
   } catch (e) {
-    console.error("createDeckFromScanAction: outcome write failed", e);
+    console.error("writeScanOutcomes: outcome write failed", e);
   }
-
-  return { ok: true, deckId: saved.deckId };
 }
+
+/**
+ * Records a deck photo tray's outcomes when the hand-off is a deck-check PDF or deck image, not a saved deck:
+ * the same write createDeckFromScanAction makes, so the correction queries see PDF-only use too.
+ */
+export async function recordScanOutcomesAction(
+  outcomesByScanId: Record<string, DeckOutcome[]>,
+): Promise<{ ok: boolean }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false };
+  await writeScanOutcomes(user.id, cleanOutcomes(outcomesByScanId, isKnownCardKey));
+  return { ok: true };
+}
+
