@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import { DECK_COPY, fill } from '../copy';
 import type { DeckPhoto, Zone } from '../types';
 import AddCardRow from './AddCardRow';
-import GroupStrip, { SHOW_GROUP_STRIPS } from './GroupStrip';
 
 interface Props {
   /** Display number, in reading order across the tray. */
@@ -15,7 +14,7 @@ interface Props {
   /** Cards the scan read in this group. */
   readCount: number;
   zone: Zone;
-  /** The prepared photo's object URL; absent after a reload, so no strip. */
+  /** The prepared photo's object URL; absent after a reload, when the heading names the photo instead. */
   thumb?: string;
   editable: boolean;
   onZone: (zone: Zone) => void;
@@ -63,11 +62,6 @@ export default function GroupSection({
           ))}
         </div>
       </div>
-      {SHOW_GROUP_STRIPS && thumb && group && (
-        <div className="mt-2">
-          <GroupStrip photoUrl={thumb} group={group} label={label} />
-        </div>
-      )}
       <ul className="mt-2 divide-y divide-border/60">
         {children}
         <AddCardRow disabled={!editable} onAdd={onAdd} />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, type KeyboardEvent, type TouchEvent } from 'react';
+import { useRef, useState, type KeyboardEvent, type ReactNode, type TouchEvent } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { COPY } from '@/app/collection/scan/copy';
@@ -41,6 +41,10 @@ interface Props {
   /** Lost Soul picks made so far; a Lost Soul row shows "N picked" once there are any. */
   lostSoulsPicked: number;
   editable: boolean;
+  /** The photo's crop of this card's title band, shown above the name. */
+  evidence?: ReactNode;
+  /** One-tap suggestions, shown under a flagged row. */
+  chips?: ReactNode;
   onOpenPicker: () => void;
   onChangePrinting: () => void;
   onQty: (qty: number) => void;
@@ -58,7 +62,7 @@ function focusSibling(from: HTMLElement, step: 1 | -1): boolean {
 }
 
 export default function DeckRow({
-  row, readTitle, candidates, groupZone, lostSoulsPicked, editable,
+  row, readTitle, candidates, groupZone, lostSoulsPicked, editable, evidence, chips,
   onOpenPicker, onChangePrinting, onQty, onMove, onRemove, onOpenLostSouls,
 }: Props) {
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -156,13 +160,13 @@ export default function DeckRow({
           <span aria-hidden className="h-[62px] w-11 rounded-sm bg-muted" />
         )}
 
+        <div className={`min-w-0 ${lostSoul ? 'col-span-5' : ''}`}>
+        {!lostSoul && evidence}
         <button
           type="button"
           disabled={!editable}
           onClick={openRow}
-          className={`flex min-h-11 min-w-0 flex-col justify-center rounded-md px-2 text-left hover:bg-muted/40 focus:outline-none disabled:pointer-events-none ${
-            lostSoul ? 'col-span-5' : ''
-          }`}
+          className="flex min-h-11 w-full min-w-0 flex-col justify-center rounded-md px-2 text-left hover:bg-muted/40 focus:outline-none disabled:pointer-events-none"
         >
           {lostSoul ? (
             <span className="truncate text-sm font-medium">
@@ -188,6 +192,7 @@ export default function DeckRow({
             </>
           )}
         </button>
+        </div>
 
         {!lostSoul && (
           <>
@@ -262,6 +267,7 @@ export default function DeckRow({
         )}
       </div>
 
+      {chips && <div className="pb-2 pl-[60px] pr-2">{chips}</div>}
       {mainOnlyInReserve && <p className="pb-1.5 pl-[60px] text-xs text-muted-foreground">Counted in main deck</p>}
       {movedZone && <p className="pb-1.5 pl-[60px] text-xs text-muted-foreground">{movedZone}</p>}
 

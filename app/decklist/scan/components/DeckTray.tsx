@@ -7,6 +7,7 @@ import PrintingPicker, { type PickerMode } from '@/app/collection/scan/component
 import type { PickerHit } from '@/app/collection/scan/lib/pickerSearch';
 import { DECK_COPY, deckDoneLine, fill } from '../copy';
 import { useCheckWalker } from '../hooks/useCheckWalker';
+import { useTurnedPhotos } from '../hooks/useTurnedPhotos';
 import { trayRows, type DeckTrayAction, type TrayDeckRow } from '../lib/deckTrayReducer';
 import { totals } from '../lib/handoff';
 import type { Candidate, DeckPhoto, DeckTrayState, TrayEntry, Zone } from '../types';
@@ -14,6 +15,9 @@ import DeckRow, { AMBER_KINDS } from './DeckRow';
 import GroupSection from './GroupSection';
 import LostSoulPickRow from './LostSoulPickRow';
 import LostSoulSheet from './LostSoulSheet';
+import RowEvidence from './RowEvidence';
+import SuggestionChips from './SuggestionChips';
+import type { Chip } from '../lib/suggest';
 
 // suggest.ts pulls the card catalog: it loads with the picker, once.
 let suggestModule: Promise<typeof import('../lib/suggest')> | null = null;
@@ -66,6 +70,7 @@ export default function DeckTray({
   const closeToast = useCallback(() => setRemoved(null), []);
 
   const rows = useMemo(() => trayRows(state), [state]);
+  const turned = useTurnedPhotos(thumbs, state.photos);
   const entryById = useMemo(() => new Map(state.entries.map(e => [e.entryId, e])), [state.entries]);
   const firstEntry = (row: TrayDeckRow): TrayEntry | undefined => entryById.get(row.readIds[0]);
 
@@ -97,6 +102,27 @@ export default function DeckTray({
     }
     return { sectionsByPhoto: sections, amberIds: amber, readByPhoto: perPhoto };
   }, [rows, state.entries, state.photos]);
+
+  // One-tap suggestions for the flagged rows that have a read to go on; the catalog loads with the first one.
+  const [chips, setChips] = useState<Map<string, Chip[]>>(new Map());
+  const chipRows = rows.filter(r => r.kind === 'which' || r.kind === 'read_as' || r.kind === 'not_found');
+  const chipSig = chipRows.map(r => `${r.rowKey}:${r.readIds[0]}`).join('\n');
+  useEffect(() => {
+    if (!chipSig) return;
+    let live = true;
+    void loadSuggest().then(m => {
+      if (!live) return;
+      const next = new Map<string, Chip[]>();
+      for (const r of chipRows) {
+        const e = entryById.get(r.readIds[0]);
+        if (e) next.set(r.rowKey, m.chipsFor(e));
+      }
+      setChips(next);
+    });
+    return () => { live = false; };
+    // chipSig names every row and read the chips are for.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chipSig]);
 
   const walk = useCheckWalker(amberIds);
   const t = useMemo(() => totals(state), [state]);
@@ -219,6 +245,10 @@ export default function DeckTray({
                   >
                     {sec.rows.map(row => {
                       const e = firstEntry(row);
+                      // The row's first read, when the scan boxed its title and the photo is still in memory.
+                      const source = e?.original && e.titleBox ? turned.get(e.photoId) : undefined;
+                      const openRowPicker = () => openPicker({ for: 'row', rowKey: row.rowKey, mode: row.kind === 'which' ? 'candidates' : 'search' });
+                      const rowChips = chipSig ? chips.get(row.rowKey) : undefined;
                       return (
                         <Fragment key={row.rowKey}>
                         <DeckRow
@@ -228,7 +258,22 @@ export default function DeckTray({
                           groupZone={zone}
                           lostSoulsPicked={lostSoulsPicked}
                           editable={editable}
-                          onOpenPicker={() => openPicker({ for: 'row', rowKey: row.rowKey, mode: row.kind === 'which' ? 'candidates' : 'search' })}
+                          evidence={source && e?.titleBox && (
+                            <RowEvidence source={source} box={e.titleBox} orientation={sec.group?.orientation ?? 'upright'} />
+                          )}
+                          chips={editable && rowChips && rowChips.length > 0 && (
+                            <SuggestionChips
+                              chips={rowChips}
+                              disabled={!editable}
+                              onPick={c => dispatch({
+                                // One of a Not found ×N becomes the pick; the rest stay as they were.
+                                type: row.kind === 'not_found' && row.quantity > 1 ? 'setCardOne' : 'setCard',
+                                rowKey: row.rowKey, key: c.key, candidates: c.siblings,
+                              })}
+                              onOther={openRowPicker}
+                            />
+                          )}
+                          onOpenPicker={openRowPicker}
                           onChangePrinting={() => openPicker({ for: 'row', rowKey: row.rowKey, mode: 'printing' })}
                           onQty={qty => dispatch({ type: 'setQty', rowKey: row.rowKey, qty })}
                           onMove={z => dispatch({ type: 'moveRow', rowKey: row.rowKey, zone: z })}
