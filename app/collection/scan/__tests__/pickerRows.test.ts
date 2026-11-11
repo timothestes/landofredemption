@@ -9,7 +9,7 @@ const hit = (name: string, identity: string, legality = ''): PickerHit => ({
 describe('onePerCard', () => {
   it('lists each card once, on its Rotation printing, with how many printings it has', () => {
     const rows = onePerCard([hit('Moses (Pr)', 'moses'), hit('Moses (RoJ)', 'moses', 'Rotation'), hit('Moses (Wa)', 'moses')], null);
-    expect(rows).toEqual([{ hit: expect.objectContaining({ name: 'Moses (RoJ)' }), printings: 3 }]);
+    expect(rows).toEqual([expect.objectContaining({ hit: expect.objectContaining({ name: 'Moses (RoJ)' }), printings: 3 })]);
   });
   it('shows the regular printing before an alternate border', () => {
     const rows = onePerCard([hit('Moses (CoW AB)', 'moses', 'Rotation'), hit('Moses (CoW)', 'moses', 'Rotation')], null);
@@ -24,6 +24,12 @@ describe('onePerCard', () => {
       hit('Aaron', 'aaron-old'), hit('Aaron, the Voice', 'aaron-voice', 'Rotation'), hit('Abihu', 'abihu'), hit("Aaron's Rod", 'rod', 'Rotation'),
     ], null);
     expect(rows.map(r => r.hit.name)).toEqual(['Aaron, the Voice', "Aaron's Rod", 'Aaron', 'Abihu']);
+  });
+  it('keeps the card\'s other printings, Limited-legal ones first, for choosing between them', () => {
+    const hits = [hit('Moses (Pr)', 'moses'), hit('Moses (RoJ)', 'moses', 'Rotation'), hit('Moses (CoW AB)', 'moses', 'Rotation'), hit('Aaron', 'aaron')];
+    const rows = onePerCard(hits, null);
+    expect(rows[0].others.map(h => h.name)).toEqual(['Moses (CoW AB)', 'Moses (Pr)']);
+    expect(rows[1].others).toEqual([]);
   });
   it('is empty for no hits', () => expect(onePerCard([], null)).toEqual([]));
 });

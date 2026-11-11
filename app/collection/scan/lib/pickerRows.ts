@@ -2,8 +2,8 @@ import type { PickerHit } from './pickerSearch';
 
 const isAlternateBorder = (h: PickerHit) => /\bAB\b/.test(h.name) || /alternate border/i.test(h.officialSet);
 
-/** One search result row: the printing shown, and how many printings of that card the search found. */
-export interface PickerRow { hit: PickerHit; printings: number }
+/** One search result row: the printing shown, how many printings of that card the search found, and the rest of them. */
+export interface PickerRow { hit: PickerHit; printings: number; others: PickerHit[] }
 
 /**
  * Search hits as one row per card instead of one per printing: for a deck, which card matters and its printing
@@ -17,16 +17,21 @@ export function onePerCard(hits: PickerHit[], currentKey: string | null): Picker
     if (list) list.push(h);
     else byCard.set(h.identity, [h]);
   }
-  const rows = [...byCard.values()].map(list => ({
-    hit: list.find(h => h.key === currentKey)
+  const legalFirst = (a: PickerHit, b: PickerHit) => Number(b.legality === 'Rotation') - Number(a.legality === 'Rotation');
+  const rows = [...byCard.values()].map(list => {
+    const hit = list.find(h => h.key === currentKey)
       ?? list.find(h => h.legality === 'Rotation' && !isAlternateBorder(h))
       ?? list.find(h => h.legality === 'Rotation')
-      ?? list[0],
-    printings: list.length,
-    legal: list.some(h => h.legality === 'Rotation'),
-  }));
+      ?? list[0];
+    return {
+      hit,
+      printings: list.length,
+      others: list.filter(h => h !== hit).sort(legalFirst),
+      legal: list.some(h => h.legality === 'Rotation'),
+    };
+  });
   // Array.prototype.sort is stable: equal rows keep the search order.
-  return rows.sort((a, b) => Number(b.legal) - Number(a.legal)).map(({ hit, printings }) => ({ hit, printings }));
+  return rows.sort((a, b) => Number(b.legal) - Number(a.legal)).map(({ hit, printings, others }) => ({ hit, printings, others }));
 }
 
 /** The highlighted row after an arrow key: one step, held inside the list. */

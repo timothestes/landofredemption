@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { COPY, fill } from '../copy';
@@ -48,6 +48,8 @@ export default function PrintingPicker({
   // The row Enter picks; the arrow keys move it.
   const [active, setActive] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
+  // Cards whose printings were opened or closed by hand; the row's own card starts open, the rest closed.
+  const [flipped, setFlipped] = useState<Set<string>>(new Set());
   useFocusTrap(trapRef, true);
 
   const title = titleOverride ?? (mode === 'printing' ? COPY.pickerHeader : COPY.pickerNameHeader);
@@ -91,17 +93,31 @@ export default function PrintingPicker({
   // left above them, the suggestions pushed the card being searched for to the bottom of the list.
   const suggesting = !!suggestions?.length && (typed === '' || typed === initialQuery);
   const shown = suggesting ? suggestions : [];
-  const found: { option: Candidate | PickerHit; printings: number }[] = !searching
-    ? subject.candidates.map(option => ({ option, printings: 1 }))
+  const found: { option: Candidate | PickerHit; printings: number; others: PickerHit[] }[] = !searching
+    ? subject.candidates.map(option => ({ option, printings: 1, others: [] }))
     : oneRowPerCard
-      ? onePerCard(hits, subject.currentKey).map(r => ({ option: r.hit, printings: r.printings }))
-      : hits.map(option => ({ option, printings: 1 }));
+      ? onePerCard(hits, subject.currentKey).map(r => ({ option: r.hit, printings: r.printings, others: r.others }))
+      : hits.map(option => ({ option, printings: 1, others: [] }));
   // The search opens on the read title, which is also what the suggestions come from: list a card once.
   const suggestedKeys = new Set(shown.map(c => c.key));
   const suggestedCards = new Set(shown.map(c => c.identity));
-  const rest = found.filter(({ option }) =>
-    !suggestedKeys.has(option.key) && !(oneRowPerCard && 'identity' in option && suggestedCards.has(option.identity)));
+  // A card's other printings list under it when it is open: the card the row already has opens by itself, so a
+  // wrong printing is one tap from the right one.
+  const isOpen = (r: { option: Candidate | PickerHit; others: PickerHit[] }) =>
+    r.others.length > 0 && 'identity' in r.option && flipped.has(r.option.identity) !== (r.option.key === subject.currentKey);
+  const rest = found
+    .filter(({ option }) =>
+      !suggestedKeys.has(option.key) && !(oneRowPerCard && 'identity' in option && suggestedCards.has(option.identity)))
+    .flatMap(r => [
+      { ...r, sub: false, open: isOpen(r) },
+      ...(isOpen(r) ? r.others.map(option => ({ option, printings: 1, others: [] as PickerHit[], sub: true, open: false })) : []),
+    ]);
   const visible = [...shown.map(option => ({ option, pool: shown as PickerHit[] | undefined })), ...rest.map(r => ({ option: r.option, pool: undefined }))];
+  const flip = (identity: string) => setFlipped(prev => {
+    const next = new Set(prev);
+    if (!next.delete(identity)) next.add(identity);
+    return next;
+  });
 
   useEffect(() => {
     listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'nearest' });
@@ -127,19 +143,20 @@ export default function PrintingPicker({
     }
   };
 
-  const renderOption = (c: Candidate | PickerHit, index: number, pool?: PickerHit[], printings = 1) => {
+  const renderOption = (c: Candidate | PickerHit, index: number, pool?: PickerHit[], more?: { printings: number; sub: boolean; open: boolean }) => {
+    const printings = more?.printings ?? 1;
     const current = c.key === subject.currentKey;
     const owned = quantities.get(c.key) ?? 0;
     const price = 'identity' in c ? getPrice(c.key) : c.price;
     return (
-      <li key={c.key}>
+      <li key={c.key} className={`flex items-stretch gap-1 ${more?.sub ? 'pl-6' : ''}`}>
         <button
           type="button"
           aria-current={current ? 'true' : undefined}
           data-active={index === active}
           tabIndex={-1}
           onClick={() => pick(c, pool)}
-          className={`flex min-h-11 w-full items-center gap-3 rounded-md px-2 py-1.5 text-left hover:bg-muted focus:outline-none ${index === active ? 'bg-muted' : ''}`}
+          className={`flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-md px-2 py-1.5 text-left hover:bg-muted focus:outline-none ${index === active ? 'bg-muted' : ''}`}
         >
           <span className="flex h-[62px] w-11 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted">
             {c.imgFile && (
@@ -167,9 +184,20 @@ export default function PrintingPicker({
               </span>
             )}
             {current && <span className="text-xs font-medium text-muted-foreground">{COPY.pickerCurrent}</span>}
-            {printings > 1 && <span className="text-xs text-muted-foreground">{fill(COPY.pickerPrintings, { n: printings })}</span>}
           </span>
         </button>
+        {printings > 1 && 'identity' in c && (
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-expanded={!!more?.open}
+            onClick={() => flip(c.identity)}
+            className="flex min-h-11 shrink-0 items-center gap-1 rounded-md px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none"
+          >
+            {fill(COPY.pickerPrintings, { n: printings })}
+            <ChevronDown className={`h-3.5 w-3.5 ${more?.open ? 'rotate-180' : ''}`} aria-hidden />
+          </button>
+        )}
       </li>
     );
   };
@@ -222,7 +250,7 @@ export default function PrintingPicker({
               )}
               {rest.length > 0 ? (
                 <ul className="space-y-1">
-                  {rest.map((r, i) => renderOption(r.option, shown.length + i, undefined, r.printings))}
+                  {rest.map((r, i) => renderOption(r.option, shown.length + i, undefined, r))}
                 </ul>
               ) : !suggesting && (
                 <p className="px-2 py-6 text-center text-sm text-muted-foreground">
