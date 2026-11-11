@@ -24,6 +24,8 @@ interface Props {
   submitLabel: string;
   /** Why the button cannot be pressed yet, for a reason outside the tray (no display name). */
   blocked?: string | null;
+  /** Told whether the tray holds any photo yet, so the picker can keep the empty tab the size of the others. */
+  onTray?: (hasPhotos: boolean) => void;
   onSelect: (deckId: string, deckName: string) => void;
 }
 
@@ -32,11 +34,12 @@ interface Props {
  * checked against the event's format before anything is saved, so the player can fix a row or add a photo and
  * try again.
  */
-export default function PhotoDeckSource({ userId, code, eventName, eventFormat, active, submitLabel, blocked, onSelect }: Props) {
+export default function PhotoDeckSource({ userId, code, eventName, eventFormat, active, submitLabel, blocked, onTray, onSelect }: Props) {
   return (
     <DeckPhotoReader
       userId={userId}
       active={active}
+      onChange={(state) => onTray?.(state.photos.length > 0)}
       signInHref={`/sign-in?redirectTo=${encodeURIComponent(`/join/${code}`)}`}
       trayClassName="-mx-3"
       intro={<PhotoSteps then={submitLabel.startsWith("Join") ? "join" : "submit it"} />}

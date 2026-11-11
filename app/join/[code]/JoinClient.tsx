@@ -422,7 +422,8 @@ export default function JoinClient({
           standing, and decklist will be published with the results unless the host withholds them.
         </p>
 
-        {/* On the photo tab the tab's own button is the join; a second, dead Join under it would only confuse. */}
+        {/* Once the photo tab has photos its own button is the join; a second, dead Join under it would only
+            confuse. Before that the Join stays, so opening the tab does not resize the card. */}
         {info.requiresDecklist && selectedDeck === null && photoTab ? null : (
           <>
             {info.requiresDecklist && selectedDeck === null && (
