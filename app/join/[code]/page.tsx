@@ -28,6 +28,6 @@ export default async function JoinCodePage({
   }
 
   return (
-    <JoinClient info={info} code={code} signedIn={!!user} defaultName={defaultName} />
+    <JoinClient info={info} code={code} userId={user?.id ?? null} defaultName={defaultName} />
   );
 }

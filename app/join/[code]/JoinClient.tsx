@@ -118,12 +118,13 @@ function ActionErrorNotice({ res, deckId }: { res: FailedResult; deckId?: string
 export default function JoinClient({
   info: initialInfo,
   code,
-  signedIn,
+  userId,
   defaultName,
 }: {
   info: JoinInfo;
   code: string;
-  signedIn: boolean;
+  /** The signed-in user's id, or null when signed out. */
+  userId: string | null;
   defaultName: string;
 }) {
   const [info, setInfo] = useState<JoinInfo>(initialInfo);
@@ -171,6 +172,8 @@ export default function JoinClient({
   }
 
   async function handleResubmit(deckId: string) {
+    // The photo tab's button stays live once its deck is saved: one submit at a time.
+    if (submitting) return;
     setSubmitting(true);
     try {
       const r = await resubmitDeckAction(code, deckId);
@@ -227,7 +230,7 @@ export default function JoinClient({
   }
 
   // 3. Not signed in — show what they're joining, then send them to sign in.
-  if (signedIn === false) {
+  if (userId === null) {
     return (
       <Shell>
         <EventHeader info={info} />
@@ -283,17 +286,21 @@ export default function JoinClient({
                   >
                     {showChangeDeck ? "Cancel" : "Change decklist"}
                   </Button>
-                  {showChangeDeck && (
-                    <DeckPicker
-                      tournamentFormat={info.deckFormat}
-                      onSelect={(id) => handleResubmit(id)}
-                    />
-                  )}
                 </>
               )}
             </div>
           )}
         </div>
+
+        {/* Outside the box above: on a phone the picker's photo tab runs to the edges of the card. */}
+        {info.requiresDecklist && !info.hasStarted && showChangeDeck && (
+          <DeckPicker
+            tournamentFormat={info.deckFormat}
+            userId={userId}
+            code={code}
+            onSelect={(id) => handleResubmit(id)}
+          />
+        )}
 
         {/* Once the event is under way, the thing a checked-in player wants is
             their table — send them to the live page. Before that, players
@@ -369,6 +376,8 @@ export default function JoinClient({
             ) : (
               <DeckPicker
                 tournamentFormat={info.deckFormat}
+                userId={userId}
+                code={code}
                 onSelect={(id, name) => setSelectedDeck({ id, name })}
               />
             )}

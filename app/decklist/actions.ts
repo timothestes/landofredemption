@@ -7,6 +7,7 @@ import type { DeckCheckCard, DeckCheckResult } from "@/utils/deckcheck/types";
 import type { DeckZone } from "./card-search/types/deck";
 import { deckFormatFilterFor, deckFamilyFilterFor } from "@/lib/api/cache";
 import { findCard } from "@/lib/cards/lookup";
+import { FORMAT_IDS, type FormatId } from "@/lib/formats";
 import { getSupabaseAdmin } from "@/lib/pricing/supabase-admin";
 import { isKnownCardKey } from "@/lib/scan/cardKeys";
 import { cleanOutcomes, validateHandoff } from "./scan/lib/validateHandoff";
@@ -2243,7 +2244,8 @@ export async function updateDeckDescriptionAction(deckId: string, description: s
 
 export type CreateDeckFromScanResult =
   | { ok: true; deckId: string }
-  | { ok: false; code: "unauthorized" | "bad_request" | "save_failed" };
+  | { ok: false; code: "unauthorized" | "bad_request" | "save_failed" }
+  | { ok: false; code: "illegal"; issues: DeckCheckResult["issues"] };
 
 /**
  * Save a scanned deck through saveDeckAction, then record per-read outcomes on
@@ -2256,6 +2258,11 @@ export async function createDeckFromScanAction(input: {
   outcomesByScanId: Record<string, DeckOutcome[]>;
   name: string;
   format: "Type 1" | "Type 2";
+  /**
+   * A tournament's format, when the deck is being read to enter that event: the deck is checked against it
+   * first and saved only if it is legal there, under that format, so a failed check leaves nothing behind.
+   */
+  eventFormat?: FormatId;
 }): Promise<CreateDeckFromScanResult> {
   const supabase = await createClient();
   const {
@@ -2267,7 +2274,27 @@ export async function createDeckFromScanAction(input: {
   if (!payload) return { ok: false, code: "bad_request" };
 
   const cards = forceMainOnly(payload.rows, (r) => findCard(r.card_name, r.card_set, r.card_img_file)?.type);
-  const saved = await saveDeckAction({ name: payload.name, format: payload.format, cards });
+
+  const eventFormat = input.eventFormat;
+  if (eventFormat !== undefined) {
+    if (!FORMAT_IDS.includes(eventFormat)) return { ok: false, code: "bad_request" };
+    const toCheckCard = (r: SaveRow): DeckCheckCard => ({
+      name: r.card_name,
+      set: r.card_set,
+      quantity: r.quantity,
+      imgFile: r.card_img_file,
+    });
+    const result = await checkDeck(
+      cards.filter((r) => r.zone === "main").map(toCheckCard),
+      cards.filter((r) => r.zone === "reserve").map(toCheckCard),
+      eventFormat,
+    );
+    // The same bar the join itself holds a deck to (lib/tournament/deckSubmission.ts).
+    if (!result.valid || result.issues.some((i) => i.rule === "card-not-found"))
+      return { ok: false, code: "illegal", issues: result.issues };
+  }
+
+  const saved = await saveDeckAction({ name: payload.name, format: eventFormat ?? payload.format, cards });
   if (!saved.success || !saved.deckId) return { ok: false, code: "save_failed" };
 
   await writeScanOutcomes(user.id, payload.outcomesByScanId);
