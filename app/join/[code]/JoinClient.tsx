@@ -154,8 +154,6 @@ export default function JoinClient({
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
     if (submitting) return;
-    // Enter in one of the photo reader's inputs submits this form too: without a deck there is nothing to send.
-    if (info.success === true && info.requiresDecklist && selectedDeck === null) return;
     setSubmitting(true);
     const deckId = selectedDeck?.id;
     try {
@@ -286,19 +284,21 @@ export default function JoinClient({
                   >
                     {showChangeDeck ? "Cancel" : "Change decklist"}
                   </Button>
-                  {showChangeDeck && (
-                    <DeckPicker
-                      tournamentFormat={info.deckFormat}
-                      userId={userId}
-                      code={code}
-                      onSelect={(id) => handleResubmit(id)}
-                    />
-                  )}
                 </>
               )}
             </div>
           )}
         </div>
+
+        {/* Outside the box above: on a phone the picker's photo tab runs to the edges of the card. */}
+        {info.requiresDecklist && !info.hasStarted && showChangeDeck && (
+          <DeckPicker
+            tournamentFormat={info.deckFormat}
+            userId={userId}
+            code={code}
+            onSelect={(id) => handleResubmit(id)}
+          />
+        )}
 
         {/* Once the event is under way, the thing a checked-in player wants is
             their table — send them to the live page. Before that, players

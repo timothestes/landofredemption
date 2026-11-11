@@ -12,8 +12,8 @@ the physical deck in front of them without first building it in the deck builder
 The join page's deck picker (`app/join/[code]/DeckPicker.tsx`) has a fourth tab, **Photo**, hosting the deck
 photo reader (`DeckPhotoReader`) the way `/decklist/generate` does. Under the tray is **Use this deck**:
 
-1. It is off until every row has an answer: no unread, not-found or unpicked rows, and no Lost Souls left to
-   pick. Only matched rows are saved, so a deck with rows left out could otherwise pass as a smaller legal deck.
+1. It is off until every row has an answer: no unread, not-found or unpicked rows, no Lost Souls left to
+   pick, and no photo that failed to read. Only matched rows are saved, so a deck with rows left out could otherwise pass as a smaller legal deck.
 2. It calls `createDeckFromScanAction` with the event's format (`eventFormat`). The action checks the deck
    against that format first, with the same bar the join uses (`valid` and no `card-not-found`), and returns the
    issues without saving when it fails. The tray stays editable, so the player fixes a row or adds a photo.
@@ -33,5 +33,7 @@ photo reader (`DeckPhotoReader`) the way `/decklist/generate` does. Under the tr
 - Tab labels are short (My decks, Community, Link, Photo) so four fit on a phone.
 - On a phone the Photo tab runs to the edges of the join card; the tray's rows need the width.
 - The deck keeps the reader's default name ("Deck from photo" with the date).
-- The join form ignores a submit with no deck chosen: Enter in one of the reader's inputs would otherwise
-  submit it.
+- In the change-decklist view the picker sits below the registration box, not inside it, so the Photo tab
+  gets the same width there.
+- Once the deck is saved the button stays live and hands the same deck over again, so a failed submit (venue
+  wifi) can be retried without saving a second deck.

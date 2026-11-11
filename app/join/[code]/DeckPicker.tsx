@@ -176,7 +176,7 @@ export default function DeckPicker({ tournamentFormat, userId, code, onSelect }:
               setTab(t);
               if (t === "photo") setPhotoOpened(true);
             }}
-            className={`flex-auto whitespace-nowrap px-2 py-2 font-medium transition-colors ${
+            className={`flex-auto px-1 py-2 font-medium sm:px-2 transition-colors ${
               tab === t
                 ? "border-b-2 border-primary text-foreground"
                 : "text-muted-foreground hover:text-foreground"
