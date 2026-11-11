@@ -9,12 +9,13 @@ import { ACCEPT, validateMediaFile } from "../lib/media";
 import { updateAuthorProfileAction } from "../lib/authorProfile";
 
 const MAX_BIO = 500;
+const MAX_USERNAME = 40;
 const LABEL = "block text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground";
 
 type Toast = { message: string; type: "success" | "error" } | null;
 
 export default function AuthorProfileCard({
-  username,
+  username: initialUsername,
   initialAvatarUrl,
   initialBio,
 }: {
@@ -22,6 +23,7 @@ export default function AuthorProfileCard({
   initialAvatarUrl: string | null;
   initialBio: string | null;
 }) {
+  const [username, setUsername] = useState(initialUsername ?? "");
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl);
   const [bio, setBio] = useState(initialBio ?? "");
   const [uploading, setUploading] = useState(false);
@@ -57,7 +59,7 @@ export default function AuthorProfileCard({
 
   async function save() {
     setSaving(true);
-    const r = await updateAuthorProfileAction(bio, avatarUrl);
+    const r = await updateAuthorProfileAction(bio, avatarUrl, username);
     setSaving(false);
     if (r.success === false) {
       setToast({ message: r.error, type: "error" });
@@ -95,6 +97,20 @@ export default function AuthorProfileCard({
           <input ref={fileInput} type="file" accept={ACCEPT.image} className="hidden" onChange={handleAvatarPick} />
         </div>
         <div className="flex-1">
+          <label className={LABEL}>
+            Name on your articles
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value.slice(0, MAX_USERNAME));
+                setDirty(true);
+              }}
+              maxLength={MAX_USERNAME}
+              placeholder="How your name appears in the byline"
+              className="mb-3 mt-1 min-h-11 w-full rounded-md border border-input bg-background px-2 text-sm normal-case tracking-normal outline-none"
+            />
+          </label>
           <label className={LABEL}>
             Bio ({bio.length}/{MAX_BIO})
             <textarea
