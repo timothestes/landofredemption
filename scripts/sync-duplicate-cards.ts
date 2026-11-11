@@ -22,7 +22,7 @@ config({ path: join(__dirname, "..", ".env.local") });
 
 const DRY_RUN = process.argv.includes("--dry-run");
 
-const PDF_PATH = join(__dirname, "..", "ORDIR_PDF_7.0.0.pdf");
+const PDF_PATH = join(__dirname, "..", "ORDIR_PDF_7.1.0.pdf");
 
 // --- Types ---
 
@@ -61,8 +61,12 @@ const MANUAL_MAPPINGS: Record<string, string> = {
   // "Amram & Jochebed" is the alt-border name for "Moses' Parents" in CW set
   // Not a separate card in carddata — map to Moses' Parents
   "Amram & Jochebed": "Moses' Parents",
-  // Isaiah errata name — the PoC card uses this name per errata
-  "Isaiah, Prince of Prophets": "Isaiah, Prince of Prophets",
+  // RR2 names that end in a parenthesised alias, which the set-suffix stripper
+  // takes for a set code — point them at the exact carddata name instead.
+  "Barsabbas (Judas)": "Barsabbas (Judas) [RR2]",
+  "The Quelling Spirit (Que)": "The Quelling Spirit (Que) [RR2]",
+  // ORDIR adds a leading "The" that carddata does not have
+  "The Fourth Living Creature": "Fourth Living Creature",
 };
 
 // --- Extra members for printings released after the ORDIR PDF ---
@@ -545,16 +549,36 @@ async function syncToSupabase(
       .select("id")
       .single();
 
-    if (groupError) {
+    let groupId: number;
+    if (groupError?.code === "23505") {
+      // A manually-created group already owns this canonical name (it holds the
+      // same-name printings). Add the ORDIR members to it rather than dropping
+      // them, or a differently-named printing ("Abel, the Accepted") is never
+      // linked to the older "Abel" cards.
+      const { data: existing, error: existingError } = await supabase
+        .from("duplicate_card_groups")
+        .select("id")
+        .eq("canonical_name", group.canonicalName)
+        .single();
+      if (existingError) {
+        console.error(
+          `  Error reading existing group "${group.canonicalName}":`,
+          existingError.message
+        );
+        continue;
+      }
+      groupId = existing.id;
+      console.log(`  Merging into existing group "${group.canonicalName}"`);
+    } else if (groupError) {
       console.error(
         `  Error inserting group "${group.canonicalName}":`,
         groupError.message
       );
       continue;
+    } else {
+      groupCount++;
+      groupId = groupData.id;
     }
-
-    groupCount++;
-    const groupId = groupData.id;
 
     // Insert members
     for (const member of group.members) {

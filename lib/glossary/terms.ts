@@ -86,6 +86,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
   { term: "RA", expansion: "Rescue Attempt", kind: "term" },
   { term: "RDT", expansion: "RedDragonThorn", kind: "term", description: "Screen name for long-time Redemption player and multi-National champion, John Earley" },
   { term: "REG", expansion: "Redemption Exegesis Guide", kind: "term" },
+  { term: "REL", expansion: "Redemption Errata List", kind: "term" },
   { term: "RoA", expansion: "Rock of Ages", kind: "set" },
   { term: "RoJ", expansion: "Revelation of John", kind: "set" },
   { term: "RoJ (AB)", expansion: "Revelation of John (Alternate Border)", kind: "set" },
