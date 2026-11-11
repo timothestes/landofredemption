@@ -29,7 +29,7 @@ interface DeckPickerProps {
   photoBlocked?: string | null;
   /** A deck read from a photo and saved. Defaults to onSelect. */
   onPhotoDeck?: (deckId: string, deckName: string) => void;
-  /** Told when the photo tab is showing, so a host with its own submit can step aside for the tab's. */
+  /** Told when the photo tab is showing with photos in its tray, so a host with its own submit can step aside for the tab's. */
   onPhotoTab?: (showing: boolean) => void;
   onSelect: (deckId: string, deckName: string) => void;
 }
@@ -86,10 +86,13 @@ export default function DeckPicker({
   const [tab, setTab] = useState<Tab>("mine");
   const photoTab = useRef(onPhotoTab);
   photoTab.current = onPhotoTab;
+  // Until a photo is in, the photo tab is one more way to pick a deck and keeps the size of the other tabs,
+  // with the host's own submit under it. Once the tray has photos it takes over the submit and grows with the rows.
+  const [trayOpen, setTrayOpen] = useState(false);
   useEffect(() => {
-    photoTab.current?.(tab === "photo");
+    photoTab.current?.(tab === "photo" && trayOpen);
     return () => photoTab.current?.(false);
-  }, [tab]);
+  }, [tab, trayOpen]);
   // Once the player picks a tab themselves, the picker stops choosing one for them.
   const touched = useRef(false);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -395,8 +398,9 @@ export default function DeckPicker({
         )}
 
         {photoOpened && (
-          <div hidden={tab !== "photo"}>
+          <div className={tab !== "photo" ? "hidden" : trayOpen ? "flow-root" : "flow-root min-h-80"}>
             <PhotoDeckSource
+              onTray={setTrayOpen}
               userId={userId}
               code={code}
               eventName={eventName}
