@@ -1,12 +1,148 @@
 {
   "overrides": [
     {
+      "name": "Angel of Might",
+      "set": "Ki",
+      "fields": {
+        "identifier": ""
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Angel with a Secret Name [RR2]",
+      "set": "RR2",
+      "fields": {
+        "identifier": "Generic"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Babylon The Harlot (RoJ)",
+      "set": "RoJ",
+      "fields": {
+        "identifier": "Begins as a Site. Human"
+      },
+      "note": "REL 1.0.0 identifier errata: Babylonian removed"
+    },
+    {
+      "name": "Balaam (Di)",
+      "set": "Di",
+      "fields": {
+        "identifier": "Magician, False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "Balaam (FoM)",
+      "set": "FoM",
+      "fields": {
+        "identifier": "Magician, False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "Balaam Son of Beor",
+      "set": "IR",
+      "fields": {
+        "identifier": "Magician, False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "Caiaphas the Conspirator (GoC)",
+      "set": "GoC",
+      "fields": {
+        "identifier": "High Priest, Sadducee"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
       "name": "Captain of the Host (Roots)",
       "set": "RR",
       "fields": {
         "identifier": "Angel"
       },
       "note": "Not a prophet"
+    },
+    {
+      "name": "Damsel with Spirit of Divination (TxP)",
+      "set": "TxP",
+      "fields": {
+        "identifier": "Magician, Human, False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "Defrauders",
+      "set": "TPC",
+      "fields": {
+        "identifier": "Generic, Heretic"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Elizabeth (GoC)",
+      "set": "GoC",
+      "fields": {
+        "identifier": "[X = # of cards in hand] Gospel, Nativity"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Elymas the Sorcerer (Di)",
+      "set": "Di",
+      "fields": {
+        "identifier": "Magician, False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "Elymas the Sorcerer (EC)",
+      "set": "TEC",
+      "fields": {
+        "identifier": "Isrealite, Magician, False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "False Leaders (PoC)",
+      "set": "PoC",
+      "fields": {
+        "identifier": "Generic, Priest, False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "False Prophets (PoC)",
+      "set": "PoC",
+      "fields": {
+        "identifier": "Generic, False Prophet, Holds a single-brigade gray Curse"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "Fire, Smoke, and Sulfur",
+      "set": "FoOF",
+      "fields": {
+        "identifier": ""
+      },
+      "note": "REL 1.0.0 identifier errata: Plague removed"
+    },
+    {
+      "name": "Ithamar, Son of Aaron (1st Print - L)",
+      "set": "L1P",
+      "fields": {
+        "identifier": "House of Ithamar, Tabernacle Priest"
+      },
+      "note": "REL 1.0.0 identifier errata: Tabernacle High Priest is now Tabernacle Priest"
+    },
+    {
+      "name": "Jahaziel, Son of Zechariah (Roots)",
+      "set": "RR",
+      "fields": {
+        "identifier": "Musician"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
     },
     {
       "name": "Jeremiah, the Weeper [T2C AB]",
@@ -25,6 +161,94 @@
       "note": "Errata"
     },
     {
+      "name": "Joshua, Son of Nun (CoW AB)",
+      "set": "CoW (AB)",
+      "fields": {
+        "identifier": "Judge"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Joshua, Son of Nun",
+      "set": "CoW",
+      "fields": {
+        "identifier": "Judge"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Joshua, the Commander",
+      "set": "II",
+      "fields": {
+        "identifier": "Judge, Wilderness"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Joshua, the Conqueror (LoC)",
+      "set": "LoC",
+      "fields": {
+        "identifier": "Judge"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Joshua, the Faithful (1st Print - L)",
+      "set": "L1P",
+      "fields": {
+        "identifier": "Judge"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Joshua, the Faithful [L]",
+      "set": "L",
+      "fields": {
+        "identifier": "Judge, Wilderness"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "King Ahaz (Ki)",
+      "set": "Ki",
+      "fields": {
+        "identifier": "King of Judah"
+      },
+      "note": "REL 1.0.0 identifier errata: Israelite King is now King of Judah"
+    },
+    {
+      "name": "King Saul (Purple) (Ki)",
+      "set": "Ki",
+      "fields": {
+        "identifier": "Israelite King"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Mary, Holy Virgin / Mary, Willing Servant (GoC)",
+      "set": "GoC",
+      "fields": {
+        "identifier": "Jerusalem, Nativity, (top) Unity: Heroes (Gospel)"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Mary, the Expectant [RR2]",
+      "set": "RR2",
+      "fields": {
+        "identifier": "Jerusalem, Nativity"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Melchizedek (RoA)",
+      "set": "RoA",
+      "fields": {
+        "identifier": "King of Salem, Priest"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
       "name": "Naaman (PoC)",
       "set": "PoC",
       "fields": {
@@ -33,12 +257,228 @@
       "note": "Negated was mispelled"
     },
     {
+      "name": "Nicodemus (Di)",
+      "set": "Di",
+      "fields": {
+        "identifier": ""
+      },
+      "note": "REL 1.0.0 identifier errata: Pharisee removed"
+    },
+    {
+      "name": "One of Seven (RoJ AB)",
+      "set": "RoJ (AB)",
+      "fields": {
+        "identifier": ""
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "One of Seven (RoJ)",
+      "set": "RoJ",
+      "fields": {
+        "identifier": ""
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Paul (Promo)",
+      "set": "Pmo-P2",
+      "fields": {
+        "identifier": "Missionary, Martyr, Prophet, Roman"
+      },
+      "note": "REL 1.0.0 identifier errata: Pharisee removed"
+    },
+    {
+      "name": "Profane Daughters",
+      "set": "PoC",
+      "fields": {
+        "identifier": "Generic, Magician, False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "Prophets of Baal (PoC)",
+      "set": "PoC",
+      "fields": {
+        "identifier": "Generic, False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "Prophets of Samaria (PoC)",
+      "set": "PoC",
+      "fields": {
+        "identifier": "Generic, Samaritan, False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "Quirinius",
+      "set": "J",
+      "fields": {
+        "identifier": "Roman Governor"
+      },
+      "note": "REL 1.0.0 identifier errata: Syrian removed"
+    },
+    {
+      "name": "Shemaiah, the Deceitful [RR2]",
+      "set": "RR2",
+      "fields": {
+        "identifier": "False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "The Angel of Might (RoJ AB)",
+      "set": "RoJ (AB)",
+      "fields": {
+        "identifier": "X = # of your Revelation angels"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "The Angel of Might (RoJ)",
+      "set": "RoJ",
+      "fields": {
+        "identifier": "X = # of your Revelation angels"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "The Angel Under the Oak (Roots)",
+      "set": "RR",
+      "fields": {
+        "identifier": "Angel"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "The Bear",
+      "set": "RoA",
+      "fields": {
+        "identifier": "Male, Beast (Demon), Median-Persian"
+      },
+      "note": "REL 1.0.0 identifier errata: Genderless is now Male"
+    },
+    {
+      "name": "The Divining Damsel (Promo)",
+      "set": "Pmo-P2",
+      "fields": {
+        "identifier": "Magician, False Prophet, X = # of good brigades revealed"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "The Divining Damsel [Fundraiser]",
+      "set": "Fund",
+      "fields": {
+        "identifier": "Magician, False Prophet, X = # of good brigades revealed"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "The Egyptian Rebel",
+      "set": "TPC",
+      "fields": {
+        "identifier": "Egyptian"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "The False Prophet (EC)",
+      "set": "TEC",
+      "fields": {
+        "identifier": "Heretic, Magician, False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "The False Prophet (Pr)",
+      "set": "Prp",
+      "fields": {
+        "identifier": "Heretic, Magician, False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "The False Prophet (RoJ AB)",
+      "set": "RoJ (AB)",
+      "fields": {
+        "identifier": "Heretic, Magician, False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "The False Prophet (RoJ)",
+      "set": "RoJ",
+      "fields": {
+        "identifier": "Heretic, Magician, False Prophet"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "The Lying Prophet",
+      "set": "PoC",
+      "fields": {
+        "identifier": "False Prophet, X = # of good brigades revealed"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "The Messianic Messenger (GoC)",
+      "set": "GoC",
+      "fields": {
+        "identifier": "Angel, Gospel, Nativity"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
       "name": "The Roman Jailer",
       "set": "TEC",
       "fields": {
         "brigade": "Gray and Clay/Red"
       },
       "note": "Adding good brigades to match POC nebbie"
+    },
+    {
+      "name": "The Silver Trumpets",
+      "set": "Pri",
+      "fields": {
+        "identifier": "Priestly Artifact"
+      },
+      "note": "REL 1.0.0 identifier errata: Tabernacle Artifact is now Priestly Artifact"
+    },
+    {
+      "name": "The Woman with Child (RoJ AB)",
+      "set": "RoJ (AB)",
+      "fields": {
+        "identifier": ""
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "The Woman with Child (RoJ)",
+      "set": "RoJ",
+      "fields": {
+        "identifier": ""
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Zechariah, the Silent (GoC)",
+      "set": "GoC",
+      "fields": {
+        "identifier": "Gospel, Herod's Temple Priest, Nativity"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Zecharias, Father of John",
+      "set": "Pri",
+      "fields": {
+        "identifier": "Herod's Temple priest"
+      },
+      "note": "REL 1.0.0 identifier errata: Prophet removed"
     }
   ],
   "aliases": [

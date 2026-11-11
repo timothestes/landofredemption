@@ -20,6 +20,7 @@ describe('names', () => {
 describe('identity', () => {
   it('Son of God printings resolve by verse', () => { const m = matchDetection(det({ title: 'Son of God', reference: 'Revelation 3:12', type: 'Dominant' }), NO); expect(m.chosen?.name).toBe('Son of God (2019) (Promo)'); expect(m.printingReason).toBe('reference'); });
   it('reprints with changed text split on the corner code', () => { const m = matchDetection(det({ title: "Josiah's Covenant", reference: 'II Kings 23:3', printNumber: '12', abilityStart: 'Discard an evil card. Cannot be negated' }), NO); expect(m.status).toBe('matched'); expect(m.chosen?.name).toBe('Josiah’s Covenant (LoC)'); });
+  it('a printed identifier the errata removed still tells two printings apart', () => { const m = matchDetection(det({ title: 'Joshua, the Faithful', reference: 'Exodus 32:17', identifier: 'Judge, Prophet, Wilderness', strength: '9', toughness: '7', printNumber: 'L29', abilityStart: 'You may take a good Exodus', type: 'Hero' }), NO); expect(m.chosen?.name).toBe('Joshua, the Faithful [L]'); });
   it('reference against six words of ability text is Check this', () => { const m = matchDetection(det({ title: 'King Asa', reference: 'II Chronicles 14:2-3', abilityStart: 'Discard High Places and Queen Maachah.', strength: '7', toughness: '5' }), NO); expect(m.status).toBe('check'); expect(m.note).toMatch(/disagree/); });
 });
 describe('Lost Souls', () => {

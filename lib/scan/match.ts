@@ -71,6 +71,16 @@ const candidate = (c: CardData, prices: PriceMap): Candidate => {
 
 interface Scored { id: ScanIdentity; score: number; fields: string[] }
 
+const identifierTokens = (s: string | null | undefined) => new Set((s ?? '').split(',').map(normalizeTitle).filter(Boolean));
+
+/** Shared comma-separated identifiers over all of them: 0 when none are shared, always below 1 for a partial match. */
+function identifierOverlap(read: string | null | undefined, printed: string | null | undefined): number {
+  const a = identifierTokens(read), b = identifierTokens(printed);
+  const shared = [...a].filter(t => b.has(t)).length;
+  const union = new Set([...a, ...b]).size;
+  return shared && shared < union ? shared / union : 0;
+}
+
 function scoreIdentity(id: ScanIdentity, det: ScanDetection): Scored {
   let score = 0;
   const fields: string[] = [];
@@ -84,7 +94,14 @@ function scoreIdentity(id: ScanIdentity, det: ScanDetection): Scored {
   const ident = normalizeTitle(det.identifier);
   if (ident) {
     if (id.cards.some(c => normalizeTitle(c.identifier) === ident)) add(2, 'identifier');
-    else if (id.cards.some(c => { const ci = normalizeTitle(c.identifier); return !!ci && (ci.includes(ident) || ident.includes(ci)); })) add(1, 'identifier~');
+    else {
+      // Errata can drop or rename one identifier the card still prints ("Judge, Prophet,
+      // Wilderness" is "Judge, Wilderness" in the catalog), so a partial read is graded by
+      // how many identifiers it shares: two printings that differ by one are still told apart.
+      const overlap = Math.max(0, ...id.cards.map(c => identifierOverlap(det.identifier, c.identifier)));
+      if (overlap > 0) add(1 + overlap, 'identifier~');
+      else if (id.cards.some(c => { const ci = normalizeTitle(c.identifier); return !!ci && (ci.includes(ident) || ident.includes(ci)); })) add(1, 'identifier~');
+    }
   }
   if (id.cards.some(c => brigadeAgrees(det.brigade, c))) add(1, 'brigade');
 
