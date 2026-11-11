@@ -17,6 +17,14 @@
       "note": "REL 1.0.0 identifier errata: Prophet removed"
     },
     {
+      "name": "Babylon (The Harlot) (RoJ AB)",
+      "set": "RoJ (AB)",
+      "fields": {
+        "identifier": "Begins as a Site. Human"
+      },
+      "note": "REL 1.0.0 identifier errata: Babylonian removed"
+    },
+    {
       "name": "Babylon The Harlot (RoJ)",
       "set": "RoJ",
       "fields": {
@@ -78,7 +86,7 @@
       "fields": {
         "identifier": "Generic, Heretic"
       },
-      "note": "REL 1.0.0 identifier errata: Prophet removed"
+      "note": "REL 1.0.0 identifier errata: False Prophet removed"
     },
     {
       "name": "Elizabeth (GoC)",

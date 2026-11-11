@@ -73,12 +73,12 @@ interface Scored { id: ScanIdentity; score: number; fields: string[] }
 
 const identifierTokens = (s: string | null | undefined) => new Set((s ?? '').split(',').map(normalizeTitle).filter(Boolean));
 
-/** Shared comma-separated identifiers over all of them: 0 when none are shared, always below 1 for a partial match. */
+/** Shared comma-separated identifiers over all of them: 0 when none are shared, 1 when the two hold the same ones in any order. */
 function identifierOverlap(read: string | null | undefined, printed: string | null | undefined): number {
   const a = identifierTokens(read), b = identifierTokens(printed);
   const shared = [...a].filter(t => b.has(t)).length;
   const union = new Set([...a, ...b]).size;
-  return shared && shared < union ? shared / union : 0;
+  return shared ? shared / union : 0;
 }
 
 function scoreIdentity(id: ScanIdentity, det: ScanDetection): Scored {
