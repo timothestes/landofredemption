@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type Dispatch } from "react";
 import { createDeckFromScanAction } from "@/app/decklist/actions";
 import DeckPhotoReader from "@/app/decklist/scan/components/DeckPhotoReader";
 import type { TrayJumps } from "@/app/decklist/scan/components/DeckTray";
+import PhotoSteps from "@/app/decklist/scan/components/PhotoSteps";
 import type { DeckTrayAction } from "@/app/decklist/scan/lib/deckTrayReducer";
 import { deckFormat, deckName, deckOutcomes, saveRows, totals } from "@/app/decklist/scan/lib/handoff";
 import type { DeckTrayState } from "@/app/decklist/scan/types";
@@ -32,30 +33,13 @@ interface Props {
  * try again.
  */
 export default function PhotoDeckSource({ userId, code, eventName, eventFormat, active, submitLabel, blocked, onSelect }: Props) {
-  // Three steps a first-timer can take in at a glance; the finer hints (light, flash) are not worth the reading.
-  const steps = [
-    "Lay out your deck with every title showing. Reserve in its own row.",
-    "Take a photo from where you would read the cards. Big deck? Two photos, half each.",
-    `Fix anything we misread, then ${submitLabel.startsWith("Join") ? "join" : "submit it"}.`,
-  ];
   return (
     <DeckPhotoReader
       userId={userId}
       active={active}
       signInHref={`/sign-in?redirectTo=${encodeURIComponent(`/join/${code}`)}`}
       trayClassName="-mx-3"
-      intro={
-        <ol className="space-y-2.5 pb-1 text-sm text-foreground">
-          {steps.map((step, i) => (
-            <li key={step} className="flex gap-3">
-              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold tabular-nums">
-                {i + 1}
-              </span>
-              <span className="pt-0.5">{step}</span>
-            </li>
-          ))}
-        </ol>
-      }
+      intro={<PhotoSteps then={submitLabel.startsWith("Join") ? "join" : "submit it"} />}
       hideCrossLink
       footer={(ctx) => (
         <SubmitBar
@@ -170,6 +154,15 @@ function SubmitBar({
       failure.checked.photos === state.photos
     );
   const hints = issues ? [...new Set(issues.map((i) => hintFor(i.rule)).filter((h): h is string => h !== null))] : [];
+  // One line per card out of the pool turns a misread set of printings into a wall: name them on one line.
+  const pool = (issues ?? []).filter((i) => i.rule === "pool-legality" && i.cards?.length === 1);
+  const lines =
+    pool.length > 1
+      ? [
+          ...(issues ?? []).filter((i) => !pool.includes(i)).map((i) => i.message),
+          `Not in this event's card pool: ${pool.map((i) => i.cards![0]).join(", ")}.`,
+        ]
+      : (issues ?? []).map((i) => i.message);
 
   const jumpClass =
     "min-h-9 whitespace-nowrap font-medium text-amber-600 underline-offset-4 hover:underline focus:outline-none dark:text-amber-400";
@@ -182,11 +175,11 @@ function SubmitBar({
           className={`rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm ${edited ? "opacity-70" : ""}`}
         >
           <p className="font-medium text-foreground">
-            {edited ? "From your last check" : "This deck isn't legal for this event"}
+            {edited ? "From your last check. Press the button to check again." : "This deck isn't legal for this event"}
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
-            {issues.map((issue, i) => (
-              <li key={i}>{issue.message}</li>
+            {lines.map((line) => (
+              <li key={line}>{line}</li>
             ))}
           </ul>
           {hints.map((h) => (
@@ -194,9 +187,6 @@ function SubmitBar({
               {h}
             </p>
           ))}
-          <p className="mt-2 text-muted-foreground">
-            {edited ? "Press the button below to check again." : "Fix the rows above, then check again."}
-          </p>
         </div>
       )}
 
