@@ -4,11 +4,10 @@ import { useEffect, useMemo, useRef, useState, type Dispatch } from "react";
 import { createDeckFromScanAction } from "@/app/decklist/actions";
 import DeckPhotoReader from "@/app/decklist/scan/components/DeckPhotoReader";
 import type { TrayJumps } from "@/app/decklist/scan/components/DeckTray";
-import { DECK_COPY } from "@/app/decklist/scan/copy";
 import type { DeckTrayAction } from "@/app/decklist/scan/lib/deckTrayReducer";
 import { deckFormat, deckName, deckOutcomes, saveRows, totals } from "@/app/decklist/scan/lib/handoff";
 import type { DeckTrayState } from "@/app/decklist/scan/types";
-import { FORMATS, type FormatId } from "@/lib/formats";
+import type { FormatId } from "@/lib/formats";
 import type { DeckCheckIssue } from "@/utils/deckcheck/types";
 
 interface Props {
@@ -33,12 +32,11 @@ interface Props {
  * try again.
  */
 export default function PhotoDeckSource({ userId, code, eventName, eventFormat, active, submitLabel, blocked, onSelect }: Props) {
-  const tips = [
-    "Lay out the whole deck with every title showing, and the reserve in its own row. A big deck reads best as two photos, half each.",
-    DECK_COPY.captureTip,
-    eventFormat
-      ? `Your list is checked against ${FORMATS[eventFormat].label} and saved to your decks.`
-      : "Your list is saved to your decks.",
+  // Three steps a first-timer can take in at a glance; the finer hints (light, flash) are not worth the reading.
+  const steps = [
+    "Lay out your deck with every title showing. Reserve in its own row.",
+    "Take a photo from where you would read the cards. Big deck? Two photos, half each.",
+    `Fix anything we misread, then ${submitLabel.startsWith("Join") ? "join" : "submit it"}.`,
   ];
   return (
     <DeckPhotoReader
@@ -46,7 +44,18 @@ export default function PhotoDeckSource({ userId, code, eventName, eventFormat, 
       active={active}
       signInHref={`/sign-in?redirectTo=${encodeURIComponent(`/join/${code}`)}`}
       trayClassName="-mx-3"
-      tips={tips}
+      intro={
+        <ol className="space-y-2.5 pb-1 text-sm text-foreground">
+          {steps.map((step, i) => (
+            <li key={step} className="flex gap-3">
+              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold tabular-nums">
+                {i + 1}
+              </span>
+              <span className="pt-0.5">{step}</span>
+            </li>
+          ))}
+        </ol>
+      }
       hideCrossLink
       footer={(ctx) => (
         <SubmitBar

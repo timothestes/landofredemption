@@ -423,9 +423,7 @@ export default function JoinClient({
         </p>
 
         {/* On the photo tab the tab's own button is the join; a second, dead Join under it would only confuse. */}
-        {info.requiresDecklist && selectedDeck === null && photoTab ? (
-          <p className="text-xs text-muted-foreground">Photograph your deck above to join.</p>
-        ) : (
+        {info.requiresDecklist && selectedDeck === null && photoTab ? null : (
           <>
             {info.requiresDecklist && selectedDeck === null && (
               <p className="text-xs text-muted-foreground">Choose a decklist above to join.</p>
