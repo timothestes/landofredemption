@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { loadUserDecksAction, loadPublicDeckAction } from "@/app/decklist/actions";
 import { searchDecksForTournamentAction, type DeckSearchResult } from "@/app/tracker/tournaments/actions";
@@ -77,6 +77,9 @@ function DeckRow({
   );
 }
 
+/** One fixed height for the three list tabs: results arriving, or a switch between them, must not resize the card. */
+const LIST_PANE = "flex h-80 flex-col";
+
 export default function DeckPicker({
   tournamentFormat, userId, code, eventName, photoSubmitLabel, photoBlocked, onPhotoDeck, onPhotoTab, onSelect,
 }: DeckPickerProps) {
@@ -89,10 +92,54 @@ export default function DeckPicker({
   }, [tab]);
   // Once the player picks a tab themselves, the picker stops choosing one for them.
   const touched = useRef(false);
-  const openPhoto = () => {
-    setTab("photo");
-    setPhotoOpened(true);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  // The body's height just before a tab change, so the change can glide instead of snapping.
+  const heightBefore = useRef<number | null>(null);
+  const switchTab = (t: Tab) => {
+    heightBefore.current = bodyRef.current?.offsetHeight ?? null;
+    setTab(t);
+    if (t === "photo") setPhotoOpened(true);
   };
+  const openPhoto = () => switchTab("photo");
+
+  // The three list tabs share one height, so only the photo tab changes the picker's size. That change is
+  // animated: the join card is centred on the page, so a snap moves everything above the picker too.
+  useLayoutEffect(() => {
+    const el = bodyRef.current;
+    const inner = el?.firstElementChild as HTMLElement | null;
+    const from = heightBefore.current;
+    heightBefore.current = null;
+    if (!el || !inner || from === null) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Held at the old height for two frames: the photo reader mounts a frame after its tab first opens, and
+    // gliding toward the empty tab in the meantime would dip before it grows.
+    el.style.height = `${from}px`;
+    el.style.overflow = "clip";
+    const follow = () => {
+      el.style.height = `${inner.offsetHeight}px`;
+    };
+    const observer = new ResizeObserver(follow);
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        el.style.transition = "height 220ms cubic-bezier(0.22, 1, 0.36, 1)";
+        follow();
+        observer.observe(inner); // content still settling keeps moving the target
+      });
+    });
+    // Released when done: a fixed height would clip the tray as photos are read, and its sticky bar and menus.
+    const release = () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      el.style.height = "";
+      el.style.overflow = "";
+      el.style.transition = "";
+    };
+    const timer = window.setTimeout(release, 320);
+    return () => {
+      window.clearTimeout(timer);
+      release();
+    };
+  }, [tab]);
   // The photo reader mounts on the tab's first visit, then stays mounted so a read in flight survives a tab switch.
   const [photoOpened, setPhotoOpened] = useState(false);
 
@@ -214,8 +261,7 @@ export default function DeckPicker({
             type="button"
             onClick={() => {
               touched.current = true;
-              setTab(t);
-              if (t === "photo") setPhotoOpened(true);
+              switchTab(t);
             }}
             className={`flex-auto px-1 py-2 font-medium sm:px-2 transition-colors ${
               tab === t
@@ -228,9 +274,10 @@ export default function DeckPicker({
         ))}
       </div>
 
+      <div ref={bodyRef}>
       <div className="p-3">
         {tab === "mine" && (
-          <div>
+          <div className={LIST_PANE}>
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -253,7 +300,7 @@ export default function DeckPicker({
                 </button>
               </p>
             )}
-            <div className="mt-2 max-h-72 space-y-1 overflow-y-auto">
+            <div className="mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto">
               {compatibleMine.map((d) => (
                 <DeckRow key={d.id} name={d.name} format={d.format} onClick={() => onSelect(d.id, d.name)} />
               ))}
@@ -277,7 +324,7 @@ export default function DeckPicker({
         )}
 
         {tab === "community" && (
-          <div>
+          <div className={LIST_PANE}>
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -291,7 +338,14 @@ export default function DeckPicker({
             {!communityLoading && communityQuery.trim() && communityResults.length === 0 && (
               <p className="mt-3 text-sm text-muted-foreground">No decks found.</p>
             )}
-            <div className="mt-2 max-h-72 space-y-1 overflow-y-auto">
+            {!communityQuery.trim() && (
+              <p className="mt-3 text-sm text-muted-foreground">Search public decks by name.</p>
+            )}
+            {/* Keyed on the result set, so each new set fades in rather than swapping under the eye. */}
+            <div
+              key={communityResults.map((d) => d.id).join()}
+              className="mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto duration-200 animate-in fade-in"
+            >
               {communityResults.map((d) => (
                 <DeckRow
                   key={d.id}
@@ -306,7 +360,7 @@ export default function DeckPicker({
         )}
 
         {tab === "link" && (
-          <div>
+          <div className={LIST_PANE}>
             <div className="flex gap-2">
               <input
                 value={linkInput}
@@ -354,6 +408,7 @@ export default function DeckPicker({
             />
           </div>
         )}
+      </div>
       </div>
     </div>
   );

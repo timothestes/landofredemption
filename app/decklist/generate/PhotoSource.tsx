@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Camera } from "lucide-react";
 import DeckPhotoReader from "../scan/components/DeckPhotoReader";
 import HandoffBar from "../scan/components/HandoffBar";
+import PhotoSteps from "../scan/components/PhotoSteps";
 import { DECK_COPY } from "../scan/copy";
 import type { DeckTrayState } from "../scan/types";
 
@@ -52,6 +53,7 @@ export default function PhotoSource({ userId, active, onChange }: Props) {
       onChange={onChange}
       signInHref={`/sign-in?redirectTo=${RETURN_TO}`}
       trayClassName="-mx-5 sm:mx-0"
+      intro={<PhotoSteps then="generate below" />}
       footer={ctx => <HandoffBar {...ctx} variant="builderOnly" />}
     />
   );
