@@ -322,36 +322,6 @@ export async function deletePreviewLinkAction(id: string): Promise<ActionResult>
   }
 }
 
-export async function listMyPostsAction(): Promise<ActionResult<{ posts: PostRow[] }>> {
-  try {
-    const ctx = await requirePoster();
-    // PostgREST caps a single .select() at 1000 rows regardless of table size (see
-    // scripts/backfill-wp-post-ids.ts), so page through with .range() — without it,
-    // superusers silently lose posts past the first 1000 and the admin page's
-    // "Published · N" count reads a truncated 1000 instead of the real total.
-    const PAGE_SIZE = 1000;
-    const posts: PostRow[] = [];
-    for (let from = 0; ; from += PAGE_SIZE) {
-      let q = ctx.supabase
-        .from("posts")
-        .select(`${ROW}, author:profiles(username)`)
-        .order("updated_at", { ascending: false })
-        .range(from, from + PAGE_SIZE - 1);
-      if (!ctx.isSuperuser) q = q.eq("author_id", ctx.user.id);
-      const { data, error } = await q;
-      if (error) {
-        console.error("listMyPosts:", error);
-        return { success: false, error: "Could not load posts" };
-      }
-      posts.push(...((data ?? []) as unknown as PostRow[]));
-      if (!data || data.length < PAGE_SIZE) break;
-    }
-    return { success: true, posts };
-  } catch (e) {
-    return fail(e);
-  }
-}
-
 /** Tags from every post the caller can see (published + own drafts), most used first. */
 export async function listTagsAction(): Promise<ActionResult<{ tags: string[] }>> {
   try {
