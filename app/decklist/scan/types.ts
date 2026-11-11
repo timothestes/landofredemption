@@ -22,6 +22,8 @@ export interface DeckPhoto {
   busy?: boolean;
   /** Clockwise degrees the scan turned the photo before reading it; group and title boxes are in that turned frame. */
   rotation?: 0 | 90 | 180 | 270;
+  /** Taken to name the Lost Souls a deck photo could only count: its Lost Souls stand in for those, they are not added to them. */
+  lostSouls?: boolean;
   groups: { id: number; orientation: string; bbox: [number, number, number, number]; cardCount: number }[];
 }
 

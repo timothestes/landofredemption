@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Minus, Plus, X } from 'lucide-react';
+import { Camera, Minus, Plus, X } from 'lucide-react';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { useFocusTrap } from '@/app/collection/scan/hooks/useFocusTrap';
@@ -22,13 +22,15 @@ interface Props {
   picks: { key: string; qty: number }[];
   onDone: (picks: { key: string; qty: number }[]) => void;
   onSkip: () => void;
+  /** Opens the photo chooser for a photo of just the Lost Souls. */
+  onPhoto: () => void;
   onClose: () => void;
 }
 
 const stepButton =
   'flex h-11 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-40';
 
-export default function LostSoulSheet({ trayRows, placeholders, picks, onDone, onSkip, onClose }: Props) {
+export default function LostSoulSheet({ trayRows, placeholders, picks, onDone, onSkip, onPhoto, onClose }: Props) {
   const trapRef = useRef<HTMLDivElement>(null);
   useFocusTrap(trapRef, true);
   const [mod, setMod] = useState<typeof import('../lib/lostSouls') | null>(null);
@@ -149,6 +151,15 @@ export default function LostSoulSheet({ trayRows, placeholders, picks, onDone, o
             <p className="text-sm leading-snug text-muted-foreground">
               {DECK_COPY.lostSoulWhy} {DECK_COPY.lostSoulTip}
             </p>
+            <button
+              type="button"
+              // The chooser must open inside this tap; the sheet closes behind it.
+              onClick={() => { onPhoto(); onClose(); }}
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border px-4 text-sm font-medium hover:bg-muted focus:outline-none"
+            >
+              <Camera className="h-4 w-4" aria-hidden />
+              {DECK_COPY.lostSoulPhoto}
+            </button>
             <input
               type="search"
               value={query}

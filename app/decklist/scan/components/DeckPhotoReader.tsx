@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState, type Dispatch, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type Dispatch, type ReactNode } from 'react';
 import Link from 'next/link';
 import { COPY } from '@/app/collection/scan/copy';
-import { useScanQueue } from '@/app/collection/scan/hooks/useScanQueue';
+import { useScanQueue, type QueueAction } from '@/app/collection/scan/hooks/useScanQueue';
 import CaptureButtons from '@/app/collection/scan/components/CaptureButtons';
 import DeckTray from './DeckTray';
 import { DECK_COPY, SMALL_PHOTO_EDGE } from '../copy';
@@ -43,8 +43,15 @@ function Reader({
 }: DeckPhotoReaderProps) {
   const [state, dispatch] = useDeckTray(userId);
   // Under SMALL_PHOTO_EDGE most titles go unread: the queue stops before the upload until the player says Scan anyway.
-  const queue = useScanQueue<DeckScanResponse>(dispatch, { mode: 'deck', warnUnderEdge: SMALL_PHOTO_EDGE });
+  // True while the Lost Souls chooser's files join the queue: those photos are marked as they are added.
+  const lostSoulFiles = useRef(false);
+  const queueDispatch = useCallback((a: QueueAction<DeckScanResponse>) => {
+    dispatch(a);
+    if (a.type === 'photoAdded' && lostSoulFiles.current) dispatch({ type: 'markLostSoulPhoto', photoId: a.photoId });
+  }, [dispatch]);
+  const queue = useScanQueue<DeckScanResponse>(queueDispatch, { mode: 'deck', warnUnderEdge: SMALL_PHOTO_EDGE });
   const chooseInputRef = useRef<HTMLInputElement>(null);
+  const lostSoulInputRef = useRef<HTMLInputElement>(null);
 
   const editable = state.phase === 'editing';
   const empty = state.photos.length === 0;
@@ -113,9 +120,32 @@ function Reader({
             onRetry={queue.retry}
             onRemovePhoto={queue.remove}
             onChooseAnother={() => chooseInputRef.current?.click()}
+            onLostSoulPhoto={() => lostSoulInputRef.current?.click()}
           />
         )}
       </div>
+
+      <input
+        ref={lostSoulInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        tabIndex={-1}
+        aria-hidden
+        data-lost-soul-photo
+        onChange={e => {
+          const input = e.currentTarget;
+          const files = input.files ? Array.from(input.files) : [];
+          // A chooser opened before a save can return after it; those photos must not join a saved tray.
+          if (files.length > 0 && editable) {
+            lostSoulFiles.current = true;
+            queue.addFiles(files);
+            lostSoulFiles.current = false;
+          }
+          input.value = '';
+        }}
+      />
 
       {!empty && footer?.({ state, dispatch })}
     </div>

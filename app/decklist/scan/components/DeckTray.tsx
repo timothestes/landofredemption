@@ -42,6 +42,8 @@ interface Props {
   onRetry: (photoId: string) => void;
   onRemovePhoto: (photoId: string) => void;
   onChooseAnother: () => void;
+  /** Opens the photo chooser for a photo of just the Lost Souls. */
+  onLostSoulPhoto: () => void;
 }
 
 type Section = {
@@ -61,7 +63,7 @@ const keyName = (key: string | null): string | null => {
 
 /** The photos, each with its group sections and rows, then the totals line, the picker and the Undo toast. */
 export default function DeckTray({
-  state, dispatch, thumbs, editable, online, signInHref, canRetry, onRetry, onRemovePhoto, onChooseAnother,
+  state, dispatch, thumbs, editable, online, signInHref, canRetry, onRetry, onRemovePhoto, onChooseAnother, onLostSoulPhoto,
 }: Props) {
   const [picker, setPicker] = useState<Picker | null>(null);
   const [pickerSeq, setPickerSeq] = useState(0);
@@ -223,7 +225,7 @@ export default function DeckTray({
               thumb={thumb}
               detectionCount={n}
               mergedCount={0}
-              doneLine={deckDoneLine(n, photo.groups.length, photo.photoQuality, photo.longEdge)}
+              doneLine={(photo.lostSouls ? `${DECK_COPY.lostSoulPhotoLine} · ` : '') + deckDoneLine(n, photo.groups.length, photo.photoQuality, photo.longEdge)}
               signInHref={signInHref}
               editable={editable}
               online={online}
@@ -375,6 +377,7 @@ export default function DeckTray({
           picks={state.lostSoulPicks}
           onDone={picks => dispatch({ type: 'setLostSoulPicks', picks })}
           onSkip={() => dispatch({ type: 'skipLostSouls' })}
+          onPhoto={onLostSoulPhoto}
           onClose={() => setLostSoulsOpen(false)}
         />
       )}

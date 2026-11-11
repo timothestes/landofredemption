@@ -16,6 +16,8 @@ export type DeckTrayAction =
   | { type: 'addCard'; groupKey: string; key: string; candidates?: Candidate[] }
   | { type: 'setLostSoulPicks'; picks: { key: string; qty: number }[] }
   | { type: 'skipLostSouls' }
+  /** Sent right after photoAdded for a photo taken to name the Lost Souls. */
+  | { type: 'markLostSoulPhoto'; photoId: string }
   | { type: 'saving' }
   | { type: 'saved'; deckId: string }
   | { type: 'saveFailed' };
@@ -44,6 +46,36 @@ const isMainOnly = (e: TrayEntry): boolean => {
 const effectiveZone = (s: DeckTrayState, e: TrayEntry): Zone =>
   isMainOnly(e) ? 'main' : (e.zone ?? s.groupZones[groupKeyOf(e)] ?? 'main');
 
+const isNamedSoul = (e: TrayEntry): boolean => e.kind === 'matched' && !!e.key && e.key.startsWith('Lost Soul');
+
+/**
+ * Reads left out of the rows because a Lost Souls photo accounts for them. Each Lost Soul that photo names stands
+ * in for one the other photos saw: the same card if they named it too, else one they could only count. A Lost
+ * Soul it could not name is the same card as a counted one, so it is left out while any counted one remains.
+ */
+export function coveredByLostSoulPhoto(s: DeckTrayState): Set<string> {
+  const out = new Set<string>();
+  const special = new Set(s.photos.filter(p => p.lostSouls).map(p => p.photoId));
+  if (special.size === 0) return out;
+  const live = s.entries.filter(e => !e.removed);
+  const others = live.filter(e => !special.has(e.photoId));
+  const counted = others.filter(e => e.kind === 'lost_soul');
+  const named = others.filter(isNamedSoul);
+  const theirs = live.filter(e => special.has(e.photoId));
+  let used = 0;
+  for (const e of theirs) {
+    if (!isNamedSoul(e)) continue;
+    const twin = named.find(x => x.key === e.key && !out.has(x.entryId));
+    if (twin) out.add(twin.entryId);
+    else if (used < counted.length) out.add(counted[used++].entryId);
+  }
+  let left = counted.length - used;
+  for (const e of theirs) {
+    if (e.kind === 'lost_soul' && left > 0) { out.add(e.entryId); left -= 1; }
+  }
+  return out;
+}
+
 /**
  * Derived rows, merged by card and effective zone (a card split across main and Reserve is two rows).
  * A row's `rowKey` is `${zone}|${mergeKey}`; actions resolve it by recomputing this list.
@@ -53,9 +85,10 @@ export function trayRows(s: DeckTrayState): TrayDeckRow[] {
   const index = new Map(s.photos.map((p, i) => [p.photoId, i]));
   const byId = new Map<string, TrayEntry>();
   const perZone: Record<Zone, DeckEntry[]> = { main: [], reserve: [] };
+  const covered = coveredByLostSoulPhoto(s);
   for (const e of s.entries) {
     const photo = index.get(e.photoId);
-    if (e.removed || photo === undefined) continue;
+    if (e.removed || photo === undefined || covered.has(e.entryId)) continue;
     byId.set(e.entryId, e);
     perZone[effectiveZone(s, e)].push({
       readId: e.entryId, photo, group: e.group, kind: e.kind, key: e.key, title: e.title,
@@ -258,6 +291,8 @@ export function deckTrayReducer(s: DeckTrayState, a: DeckTrayAction): DeckTraySt
       return { ...s, lostSoulPicks: a.picks, lostSoulsSkipped: false };
     case 'skipLostSouls':
       return { ...s, lostSoulPicks: [], lostSoulsSkipped: true };
+    case 'markLostSoulPhoto':
+      return patchPhoto(s, a.photoId, { lostSouls: true });
     case 'saving':
       return { ...s, phase: 'saving' };
     case 'saved':
@@ -297,6 +332,7 @@ function cleanPhoto(p: unknown): DeckPhoto | null {
     ['queued', 'reading', 'done', 'failed'].includes(p.status) && Array.isArray(p.groups))) return null;
   const out = { ...p, groups: p.groups.filter(validGroup) } as DeckPhoto;
   if (![0, 90, 180, 270].includes(p.rotation)) delete out.rotation;
+  if (p.lostSouls !== true) delete out.lostSouls;
   return out;
 }
 
