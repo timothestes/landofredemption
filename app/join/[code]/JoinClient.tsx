@@ -21,7 +21,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   // backdrop, and without the panel it reads as bare text floating on art.
   return (
     <div className="flex min-h-[100dvh] items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-card/80 p-6 shadow-xl backdrop-blur-md sm:p-8">
+      <div className="w-full max-w-md rounded-2xl sm:max-w-xl border border-border bg-card/80 p-6 shadow-xl backdrop-blur-md sm:p-8">
         {children}
       </div>
     </div>
@@ -99,6 +99,7 @@ function ActionErrorNotice({ res, deckId }: { res: FailedResult; deckId?: string
           <Link
             href={`/decklist/card-search?deckId=${deckId}`}
             prefetch={false}
+            target="_blank"
             className="mt-2 inline-block text-primary hover:underline"
           >
             Open in deck builder
@@ -131,6 +132,7 @@ export default function JoinClient({
   const [displayName, setDisplayName] = useState(defaultName);
   const [selectedDeck, setSelectedDeck] = useState<{ id: string; name: string } | null>(null);
   const [showChangeDeck, setShowChangeDeck] = useState(false);
+  const [photoTab, setPhotoTab] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ res: JoinResult; deckId?: string } | null>(null);
 
@@ -151,11 +153,14 @@ export default function JoinClient({
     }
   }
 
-  async function handleJoin(e: React.FormEvent) {
+  function handleJoin(e: React.FormEvent) {
     e.preventDefault();
+    void join(selectedDeck?.id);
+  }
+
+  async function join(deckId: string | undefined) {
     if (submitting) return;
     setSubmitting(true);
-    const deckId = selectedDeck?.id;
     try {
       const r = await joinTournamentAction(code, { displayName, deckId });
       setResult({ res: r, deckId });
@@ -246,6 +251,7 @@ export default function JoinClient({
   // 4. Already registered.
   if (info.joined !== null) {
     const { joined } = info;
+    const changing = info.requiresDecklist && !info.hasStarted && showChangeDeck;
     return (
       <Shell>
         <EventHeader info={info} />
@@ -293,13 +299,27 @@ export default function JoinClient({
         </div>
 
         {/* Outside the box above: on a phone the picker's photo tab runs to the edges of the card. */}
-        {info.requiresDecklist && !info.hasStarted && showChangeDeck && (
-          <DeckPicker
-            tournamentFormat={info.deckFormat}
-            userId={userId}
-            code={code}
-            onSelect={(id) => handleResubmit(id)}
-          />
+        {changing && (
+          <>
+            {joined.submission && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Your current decklist stays until a new one is accepted.
+              </p>
+            )}
+            {result && result.res.success === false && (
+              <div className="mt-3">
+                <ActionErrorNotice res={result.res} deckId={result.deckId} />
+              </div>
+            )}
+            <DeckPicker
+              tournamentFormat={info.deckFormat}
+              userId={userId}
+              code={code}
+              eventName={info.tournamentName}
+              photoSubmitLabel="Submit this deck"
+              onSelect={(id) => handleResubmit(id)}
+            />
+          </>
         )}
 
         {/* Once the event is under way, the thing a checked-in player wants is
@@ -313,7 +333,7 @@ export default function JoinClient({
             <Link href={`/t/${code}`}>Live pairings &amp; standings</Link>
           </Button>
         ) : (
-          (!info.requiresDecklist || joined.submission !== null) && (
+          (!info.requiresDecklist || joined.submission !== null) && !changing && (
             <div className="mt-3 rounded-lg border border-border/60 bg-muted/30 p-3">
               <p className="text-sm text-foreground">
                 You're all set — you can close this page.
@@ -330,7 +350,7 @@ export default function JoinClient({
           )
         )}
 
-        {result && result.res.success === false && (
+        {!changing && result && result.res.success === false && (
           <div className="mt-3">
             <ActionErrorNotice res={result.res} deckId={result.deckId} />
           </div>
@@ -378,6 +398,15 @@ export default function JoinClient({
                 tournamentFormat={info.deckFormat}
                 userId={userId}
                 code={code}
+                eventName={info.tournamentName}
+                photoSubmitLabel="Join with this deck"
+                photoBlocked={displayName.trim().length === 0 ? "Enter a display name above to join." : null}
+                onPhotoTab={setPhotoTab}
+                // The photo tab's button is the join: the deck is checked and saved, then the player is in.
+                onPhotoDeck={(id, name) => {
+                  setSelectedDeck({ id, name });
+                  void join(id);
+                }}
                 onSelect={(id, name) => setSelectedDeck({ id, name })}
               />
             )}
@@ -393,9 +422,19 @@ export default function JoinClient({
           standing, and decklist will be published with the results unless the host withholds them.
         </p>
 
-        <Button type="submit" disabled={!canSubmit} className="w-full">
-          {submitting ? "Joining…" : "Join"}
-        </Button>
+        {/* On the photo tab the tab's own button is the join; a second, dead Join under it would only confuse. */}
+        {info.requiresDecklist && selectedDeck === null && photoTab ? (
+          <p className="text-xs text-muted-foreground">Photograph your deck above to join.</p>
+        ) : (
+          <>
+            {info.requiresDecklist && selectedDeck === null && (
+              <p className="text-xs text-muted-foreground">Choose a decklist above to join.</p>
+            )}
+            <Button type="submit" disabled={!canSubmit} className="w-full">
+              {submitting ? "Joining…" : "Join"}
+            </Button>
+          </>
+        )}
       </form>
     </Shell>
   );

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { COPY } from '@/app/collection/scan/copy';
 import { useScanQueue } from '@/app/collection/scan/hooks/useScanQueue';
 import CaptureButtons from '@/app/collection/scan/components/CaptureButtons';
-import DeckTray from './DeckTray';
+import DeckTray, { type TrayJumps } from './DeckTray';
 import { DECK_COPY, SMALL_PHOTO_EDGE } from '../copy';
 import { useDeckTray } from '../hooks/useDeckTray';
 import { usePhotoDropPaste } from '../hooks/usePhotoDropPaste';
@@ -17,13 +17,17 @@ export interface DeckPhotoReaderProps {
   /** Called after every tray change, and once on mount. */
   onChange?: (state: DeckTrayState) => void;
   /** The host's hand-off, rendered under the tray when it is not empty. */
-  footer?: (ctx: { state: DeckTrayState; dispatch: Dispatch<DeckTrayAction> }) => ReactNode;
+  footer?: (ctx: { state: DeckTrayState; dispatch: Dispatch<DeckTrayAction>; jumps: TrayJumps }) => ReactNode;
   /** Where a signed-out error on a photo sends the player. */
   signInHref?: string;
   /** False while the host hides the reader: page-wide drop and paste are off. */
   active?: boolean;
   /** Extra classes on the tray's wrapper (a host with a padded panel bleeds the rows past it). */
   trayClassName?: string;
+  /** Replaces the first-photo tips. */
+  tips?: string[];
+  /** Drops the link to the collection scanner, for a host the player should not be led away from. */
+  hideCrossLink?: boolean;
 }
 
 /**
@@ -40,11 +44,17 @@ export default function DeckPhotoReader(props: DeckPhotoReaderProps) {
 
 function Reader({
   userId, onChange, footer, signInHref = '/sign-in?redirectTo=/decklist/scan', active = true, trayClassName = '',
+  tips = [DECK_COPY.tips, DECK_COPY.captureTip], hideCrossLink = false,
 }: DeckPhotoReaderProps) {
   const [state, dispatch] = useDeckTray(userId);
   // Under SMALL_PHOTO_EDGE most titles go unread: the queue stops before the upload until the player says Scan anyway.
   const queue = useScanQueue<DeckScanResponse>(dispatch, { mode: 'deck', warnUnderEdge: SMALL_PHOTO_EDGE });
   const chooseInputRef = useRef<HTMLInputElement>(null);
+  const trayJumps = useRef<TrayJumps | null>(null);
+  const jumps = useRef<TrayJumps>({
+    walk: () => trayJumps.current?.walk(),
+    openLostSouls: () => trayJumps.current?.openLostSouls(),
+  }).current;
 
   const editable = state.phase === 'editing';
   const empty = state.photos.length === 0;
@@ -73,13 +83,15 @@ function Reader({
           accepting={editable}
           disabled={!editable}
           showTips={empty}
-          tips={[DECK_COPY.tips, DECK_COPY.captureTip]}
+          tips={tips}
         />
-        <p className="text-xs text-muted-foreground">
-          <Link href="/collection/scan" className="underline underline-offset-4 hover:text-foreground focus:outline-none">
-            {DECK_COPY.crossLinkHere}
-          </Link>
-        </p>
+        {!hideCrossLink && (
+          <p className="text-xs text-muted-foreground">
+            <Link href="/collection/scan" className="underline underline-offset-4 hover:text-foreground focus:outline-none">
+              {DECK_COPY.crossLinkHere}
+            </Link>
+          </p>
+        )}
         <details className="text-xs text-muted-foreground">
           <summary className="min-h-11 cursor-pointer py-3 hover:text-foreground focus:outline-none">
             {COPY.retentionSummary}
@@ -113,11 +125,12 @@ function Reader({
             onRetry={queue.retry}
             onRemovePhoto={queue.remove}
             onChooseAnother={() => chooseInputRef.current?.click()}
+            jumps={trayJumps}
           />
         )}
       </div>
 
-      {!empty && footer?.({ state, dispatch })}
+      {!empty && footer?.({ state, dispatch, jumps })}
     </div>
   );
 }
