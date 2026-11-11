@@ -1090,6 +1090,7 @@ export default function TournamentPage({
             tournamentId={id || ""}
             tournamentStarted={tournament?.has_started || false}
             tournamentEnded={tournament?.has_ended || false}
+            tournamentLoaded={!!tournament}
             tournamentName={tournament?.name}
             tournamentFormat={tournament?.deck_format || null}
             onTournamentEnd={async () => {
