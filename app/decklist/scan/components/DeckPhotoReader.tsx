@@ -26,6 +26,11 @@ export interface DeckPhotoReaderProps {
   trayClassName?: string;
   /** Replaces the first-photo tips. */
   tips?: string[];
+  /**
+   * Shown above the capture buttons while the tray is empty, in place of the tips and the empty-tray note: for a
+   * host where the reader is one step of a bigger job and a first-timer needs the steps, not a column of hints.
+   */
+  intro?: ReactNode;
   /** Drops the link to the collection scanner, for a host the player should not be led away from. */
   hideCrossLink?: boolean;
 }
@@ -44,7 +49,7 @@ export default function DeckPhotoReader(props: DeckPhotoReaderProps) {
 
 function Reader({
   userId, onChange, footer, signInHref = '/sign-in?redirectTo=/decklist/scan', active = true, trayClassName = '',
-  tips = [DECK_COPY.tips, DECK_COPY.captureTip], hideCrossLink = false,
+  tips = [DECK_COPY.tips, DECK_COPY.captureTip], hideCrossLink = false, intro,
 }: DeckPhotoReaderProps) {
   const [state, dispatch] = useDeckTray(userId);
   // Under SMALL_PHOTO_EDGE most titles go unread: the queue stops before the upload until the player says Scan anyway.
@@ -77,12 +82,13 @@ function Reader({
       )}
 
       <div className="space-y-3">
+        {empty && intro}
         <CaptureButtons
           addFiles={queue.addFiles}
           chooseInputRef={chooseInputRef}
           accepting={editable}
           disabled={!editable}
-          showTips={empty}
+          showTips={empty && !intro}
           tips={tips}
         />
         {!hideCrossLink && (
@@ -105,14 +111,15 @@ function Reader({
         </details>
       </div>
 
-      <div className={trayClassName}>
+      {/* With an intro and nothing to show, the tray's wrapper would only add a gap under the buttons. */}
+      {!(empty && intro && !waitingOffline) && <div className={trayClassName}>
         {waitingOffline && (
           <p role="status" className="pb-2 text-sm text-muted-foreground">
             {COPY.offline}
           </p>
         )}
         {empty ? (
-          <p className="border-t border-border/60 py-6 text-center text-sm text-muted-foreground">{COPY.emptyTray}</p>
+          !intro && <p className="border-t border-border/60 py-6 text-center text-sm text-muted-foreground">{COPY.emptyTray}</p>
         ) : (
           <DeckTray
             state={state}
@@ -128,7 +135,7 @@ function Reader({
             jumps={trayJumps}
           />
         )}
-      </div>
+      </div>}
 
       {!empty && footer?.({ state, dispatch, jumps })}
     </div>
