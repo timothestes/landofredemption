@@ -118,12 +118,13 @@ function ActionErrorNotice({ res, deckId }: { res: FailedResult; deckId?: string
 export default function JoinClient({
   info: initialInfo,
   code,
-  signedIn,
+  userId,
   defaultName,
 }: {
   info: JoinInfo;
   code: string;
-  signedIn: boolean;
+  /** The signed-in user's id, or null when signed out. */
+  userId: string | null;
   defaultName: string;
 }) {
   const [info, setInfo] = useState<JoinInfo>(initialInfo);
@@ -153,6 +154,8 @@ export default function JoinClient({
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault();
     if (submitting) return;
+    // Enter in one of the photo reader's inputs submits this form too: without a deck there is nothing to send.
+    if (info.success === true && info.requiresDecklist && selectedDeck === null) return;
     setSubmitting(true);
     const deckId = selectedDeck?.id;
     try {
@@ -227,7 +230,7 @@ export default function JoinClient({
   }
 
   // 3. Not signed in — show what they're joining, then send them to sign in.
-  if (signedIn === false) {
+  if (userId === null) {
     return (
       <Shell>
         <EventHeader info={info} />
@@ -286,6 +289,8 @@ export default function JoinClient({
                   {showChangeDeck && (
                     <DeckPicker
                       tournamentFormat={info.deckFormat}
+                      userId={userId}
+                      code={code}
                       onSelect={(id) => handleResubmit(id)}
                     />
                   )}
@@ -369,6 +374,8 @@ export default function JoinClient({
             ) : (
               <DeckPicker
                 tournamentFormat={info.deckFormat}
+                userId={userId}
+                code={code}
                 onSelect={(id, name) => setSelectedDeck({ id, name })}
               />
             )}

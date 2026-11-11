@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import { loadUserDecksAction, loadPublicDeckAction } from "@/app/decklist/actions";
 import { searchDecksForTournamentAction, type DeckSearchResult } from "@/app/tracker/tournaments/actions";
 import { FORMATS, normalizeFormat, type FormatId } from "@/lib/formats";
+import PhotoDeckSource from "./PhotoDeckSource";
 
 interface MyDeck {
   id: string;
@@ -12,10 +13,14 @@ interface MyDeck {
   format: string | null;
 }
 
-type Tab = "mine" | "community" | "link";
+type Tab = "mine" | "community" | "link" | "photo";
+
+const TAB_LABELS: Record<Tab, string> = { mine: "My decks", community: "Community", link: "Link", photo: "Photo" };
 
 interface DeckPickerProps {
   tournamentFormat: FormatId | "Other" | null;
+  userId: string;
+  code: string;
   onSelect: (deckId: string, deckName: string) => void;
 }
 
@@ -62,8 +67,10 @@ function DeckRow({
   );
 }
 
-export default function DeckPicker({ tournamentFormat, onSelect }: DeckPickerProps) {
+export default function DeckPicker({ tournamentFormat, userId, code, onSelect }: DeckPickerProps) {
   const [tab, setTab] = useState<Tab>("mine");
+  // The photo reader mounts on the tab's first visit, then stays mounted so a read in flight survives a tab switch.
+  const [photoOpened, setPhotoOpened] = useState(false);
 
   // My decks
   const [myDecks, setMyDecks] = useState<MyDeck[] | null>(null);
@@ -154,20 +161,28 @@ export default function DeckPicker({ tournamentFormat, onSelect }: DeckPickerPro
   }
 
   return (
-    <div className="mt-2 rounded-lg border border-border">
+    // On a phone the photo tray needs the width: the box runs to the edges of the join card (its p-6).
+    <div
+      className={`mt-2 border border-border ${
+        tab === "photo" ? "-mx-6 border-x-0 sm:mx-0 sm:rounded-lg sm:border-x" : "rounded-lg"
+      }`}
+    >
       <div className="flex border-b border-border text-sm">
-        {(["mine", "community", "link"] as Tab[]).map((t) => (
+        {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
-            onClick={() => setTab(t)}
-            className={`flex-1 px-3 py-2 font-medium transition-colors ${
+            onClick={() => {
+              setTab(t);
+              if (t === "photo") setPhotoOpened(true);
+            }}
+            className={`flex-auto whitespace-nowrap px-2 py-2 font-medium transition-colors ${
               tab === t
                 ? "border-b-2 border-primary text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {t === "mine" ? "My decks" : t === "community" ? "Community" : "Paste a link"}
+            {TAB_LABELS[t]}
           </button>
         ))}
       </div>
@@ -272,6 +287,18 @@ export default function DeckPicker({ tournamentFormat, onSelect }: DeckPickerPro
                 />
               </div>
             )}
+          </div>
+        )}
+
+        {photoOpened && (
+          <div hidden={tab !== "photo"}>
+            <PhotoDeckSource
+              userId={userId}
+              code={code}
+              eventFormat={tournamentFormat === "Other" ? null : tournamentFormat}
+              active={tab === "photo"}
+              onSelect={onSelect}
+            />
           </div>
         )}
       </div>
