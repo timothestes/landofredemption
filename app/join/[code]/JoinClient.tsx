@@ -172,6 +172,8 @@ export default function JoinClient({
   }
 
   async function handleResubmit(deckId: string) {
+    // The photo tab's button stays live once its deck is saved: one submit at a time.
+    if (submitting) return;
     setSubmitting(true);
     try {
       const r = await resubmitDeckAction(code, deckId);
