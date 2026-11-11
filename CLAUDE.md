@@ -24,6 +24,16 @@ I dispatch multiple agents on this repo often. A single git working directory ca
 - **Never stage broadly.** Only `git add <your specific files>` — never `git add -A`/`.`/`-a` — so you don't sweep up another agent's in-flight work.
 - **PRs base off `origin/main`** (fetch first), not off whatever branch happens to be checked out.
 
+## Bash Commands / Avoiding Permission Prompts
+
+Long compound Bash commands raise a permission prompt every time, even in auto and bypass mode. Keep each command short and readable at a glance:
+
+- **One job per Bash call.** Worktree add, `node_modules` copy, `.env.local` copy, dev server start, and the test run are separate calls — never one chain.
+- **Write scripts with the Write tool**, not `cat > file <<'EOF'` heredocs. Then run them with `node /absolute/path/script.mjs`.
+- **Literal absolute paths only.** No `S=/some/path; cd $S && ...`, no `cd ../other-worktree` mid-chain, no `~`.
+- **Start dev servers with `run_in_background: true`**, not `(nohup ... &)` inside a chain. Wait for the port in its own call.
+- If a short, simple command still prompts, tell me the exact command.
+
 ## Dev Commands
 
 ```bash
