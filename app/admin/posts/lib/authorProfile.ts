@@ -6,13 +6,21 @@ import { ARTICLES_TAG } from "@/app/articles/lib/queries";
 import type { ActionResult } from "../actions";
 
 const MAX_BIO = 500;
+const MAX_USERNAME = 40;
 
 export async function updateAuthorProfileAction(
   bio: string | null,
-  avatarUrl: string | null
+  avatarUrl: string | null,
+  username: string | null = null
 ): Promise<ActionResult> {
   try {
     const ctx = await requirePoster();
+
+    // The name shown on every article byline. Blank leaves it unchanged.
+    const cleanUsername = username?.trim().replace(/\s+/g, " ") || null;
+    if (cleanUsername && cleanUsername.length > MAX_USERNAME) {
+      return { success: false, error: `Name must be ${MAX_USERNAME} characters or fewer` };
+    }
 
     const cleanBio = bio && bio.trim() ? bio.trim() : null;
     if (cleanBio && cleanBio.length > MAX_BIO) {
@@ -25,8 +33,11 @@ export async function updateAuthorProfileAction(
 
     const { error } = await ctx.supabase
       .from("profiles")
-      .update({ bio: cleanBio, avatar_url: cleanAvatar })
+      .update({ bio: cleanBio, avatar_url: cleanAvatar, ...(cleanUsername ? { username: cleanUsername } : {}) })
       .eq("id", ctx.user.id);
+    if (error?.code === "23505") {
+      return { success: false, error: "That name is already taken" };
+    }
     if (error) {
       console.error("updateAuthorProfile:", error);
       return { success: false, error: "Could not save your author profile" };

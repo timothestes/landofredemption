@@ -53,6 +53,33 @@ describe("updateAuthorProfileAction", () => {
     expect(revalidateTag).toHaveBeenCalledWith(ARTICLES_TAG);
   });
 
+  it("rejects a name over 40 characters", async () => {
+    (requirePoster as any).mockResolvedValue(ctx());
+    const r = await updateAuthorProfileAction(null, null, "x".repeat(41));
+    expect(r).toEqual({ success: false, error: "Name must be 40 characters or fewer" });
+  });
+
+  it("saves a trimmed name, and leaves it alone when blank", async () => {
+    const update = vi.fn(() => ({ eq: vi.fn(async () => ({ error: null })) }));
+    const c = ctx();
+    c.supabase.from = vi.fn((table: string) =>
+      table === "profiles" ? { update } : (ctx().supabase.from as any)(table)
+    );
+    (requirePoster as any).mockResolvedValue(c);
+
+    await updateAuthorProfileAction(null, null, "  Redemption   Aggie ");
+    expect(update).toHaveBeenLastCalledWith({ bio: null, avatar_url: null, username: "Redemption Aggie" });
+
+    await updateAuthorProfileAction(null, null, "   ");
+    expect(update).toHaveBeenLastCalledWith({ bio: null, avatar_url: null });
+  });
+
+  it("says so when the name is already taken", async () => {
+    (requirePoster as any).mockResolvedValue(ctx({ error: { code: "23505" } }));
+    const r = await updateAuthorProfileAction(null, null, "Taken");
+    expect(r).toEqual({ success: false, error: "That name is already taken" });
+  });
+
   it("surfaces a database error", async () => {
     (requirePoster as any).mockResolvedValue(ctx({ error: { message: "boom" } }));
     const r = await updateAuthorProfileAction("hi", null);
