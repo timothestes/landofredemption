@@ -32,6 +32,10 @@ interface TournamentTabsProps {
   tournamentId: string;
   tournamentStarted?: boolean;
   tournamentEnded?: boolean;
+  /** False until the tournament row has loaded. Started/ended read false
+   * until then, so the buttons that only belong to some phases wait for it
+   * instead of showing and then vanishing. */
+  tournamentLoaded?: boolean;
   tournamentName?: string | null;
   // Tournament's raw deck_format column — threaded down to ParticipantTable's
   // AttachDeckDialog for its attach gate.
@@ -94,6 +98,7 @@ export default function TournamentTabs({
   tournamentId,
   tournamentStarted = false,
   tournamentEnded = false,
+  tournamentLoaded = true,
   tournamentName,
   tournamentFormat,
   onTournamentEnd,
@@ -176,7 +181,7 @@ export default function TournamentTabs({
           </h2>
           <div className="flex items-center gap-2 justify-end flex-wrap">
             {/* generate pods button only if more than one participant and tournament hasn't ended */}
-            {participants.length > 1 && !tournamentEnded && (
+            {tournamentLoaded && participants.length > 1 && !tournamentEnded && (
               <Button
                 type="button"
                 onClick={() => setShowPodsModal(true)}
@@ -201,7 +206,7 @@ export default function TournamentTabs({
             {/* QR Join — same eligibility window as the Start button: the
                 join code can only be generated/used before the tournament
                 has started, and it's moot once the event has ended. */}
-            {!tournamentStarted && !tournamentEnded && onOpenQrJoin && (
+            {tournamentLoaded && !tournamentStarted && !tournamentEnded && onOpenQrJoin && (
               <Button
                 type="button"
                 onClick={onOpenQrJoin}
@@ -229,7 +234,7 @@ export default function TournamentTabs({
                 <span className="hidden sm:inline">Live view</span>
               </Button>
             )}
-            {!tournamentEnded && (
+            {tournamentLoaded && !tournamentEnded && (
               <div className="relative group">
                 <Button
                   ref={addParticipantButtonRef}
