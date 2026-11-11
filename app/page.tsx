@@ -94,7 +94,7 @@ export default async function Index(props: {
           />
           <p className="mt-5 max-w-lg text-[hsl(215,16%,72%)] sm:text-lg">
             Strategy, deck building, and tournaments for Redemption — the collectible card
-            game of biblical battles.
+            game based on the Bible.
           </p>
           <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
             <Link
