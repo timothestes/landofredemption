@@ -65,8 +65,10 @@ const MANUAL_MAPPINGS: Record<string, string> = {
   // takes for a set code — point them at the exact carddata name instead.
   "Barsabbas (Judas)": "Barsabbas (Judas) [RR2]",
   "The Quelling Spirit (Que)": "The Quelling Spirit (Que) [RR2]",
-  // ORDIR adds a leading "The" that carddata does not have
-  "The Fourth Living Creature": "Fourth Living Creature",
+  // The duplicate list calls the RR2 Hero "The Fourth Living Creature"; the card (and the
+  // rest of the ORDIR) is "The Fourth Creature". "Fourth Living Creature" is a different
+  // card, the Priests Enhancement.
+  "The Fourth Living Creature": "The Fourth Creature [RR2]",
 };
 
 // --- Extra members for printings released after the ORDIR PDF ---
