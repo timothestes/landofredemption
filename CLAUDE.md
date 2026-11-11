@@ -55,8 +55,9 @@ make update-cards        # Download latest carddata.txt and regenerate TypeScrip
 | Deck state | `app/decklist/card-search/hooks/useDeckState.ts` |
 | Card data access | `lib/cards/lookup.ts` — canonical `CARDS` / `findCard` / `CardData`. Backed by generated `lib/cards/generated/cardData.ts`; regen with `make update-cards`. |
 | Nationals config | `app/config/nationals.ts` |
-| Official REG (v11) | qrpnuz0u6exnvyt8.public.blob.vercel-storage.com/wp/wp-content/uploads/2026/03/REG_PDF_11.0.0.pdf (`DOCS.reg` in `lib/resources.ts`) |
-| Official ORDIR (v7) | qrpnuz0u6exnvyt8.public.blob.vercel-storage.com/wp/wp-content/uploads/2026/03/ORDIR_PDF_7.0.0.pdf (`DOCS.ordir`) |
+| Official REG (v11.1) | qrpnuz0u6exnvyt8.public.blob.vercel-storage.com/wp/wp-content/uploads/2026/11/REG_PDF_11.1.0.pdf (`DOCS.reg` in `lib/resources.ts`) |
+| Official ORDIR (v7.1) | qrpnuz0u6exnvyt8.public.blob.vercel-storage.com/wp/wp-content/uploads/2026/11/ORDIR_PDF_7.1.0.pdf (`DOCS.ordir`). A copy sits at the repo root for `scripts/sync-duplicate-cards.ts`, which rebuilds the duplicate-card groups from it — re-run on every new ORDIR |
+| Official Errata List (v1.0) | qrpnuz0u6exnvyt8.public.blob.vercel-storage.com/wp/wp-content/uploads/2026/11/REL_PDF_1.0.0.pdf (`DOCS.errataList`) — errata moved here out of the ORDIR in Nov 2026 |
 | Deck Building Rules (v2.0) | qrpnuz0u6exnvyt8.public.blob.vercel-storage.com/wp/wp-content/uploads/2026/08/Deck_Building_Rules_2.0.pdf (`DOCS.deckBuildingRules`) |
 | Design system | `prompt_context/design_system.md` |
 | Design anti-references | `prompt_context/design_anti_references.md` — Topdeck Nexus teardown (Nov 2026): what not to copy, with a 23-point smell test for new pages and the play table |

@@ -37,8 +37,9 @@ const LOR_UPLOADS =
   "https://qrpnuz0u6exnvyt8.public.blob.vercel-storage.com/wp/wp-content/uploads";
 
 export const DOCS = {
-  reg: `${LOR_UPLOADS}/2026/03/REG_PDF_11.0.0.pdf`,
-  ordir: `${LOR_UPLOADS}/2026/03/ORDIR_PDF_7.0.0.pdf`,
+  reg: `${LOR_UPLOADS}/2026/11/REG_PDF_11.1.0.pdf`,
+  ordir: `${LOR_UPLOADS}/2026/11/ORDIR_PDF_7.1.0.pdf`,
+  errataList: `${LOR_UPLOADS}/2026/11/REL_PDF_1.0.0.pdf`,
   deckBuildingRules: `${LOR_UPLOADS}/2026/08/Deck_Building_Rules_2.0.pdf`,
   paragonRules: `${LOR_UPLOADS}/2026/07/Redemption-Paragon-Format-Rules.pdf`,
   paragonCards: `${LOR_UPLOADS}/2025/11/Paragon-Format-Paragons-v1.pdf`,
@@ -85,17 +86,26 @@ export const RESOURCE_SECTIONS: ResourceSection[] = [
         label: "REG (Official Rulebook)",
         description:
           "The Redemption Exegesis Guide — special ability structure, timing, and how the rules of the game actually resolve.",
-        version: "v11.0.0",
-        published: "March 13, 2026",
+        version: "v11.1.0",
+        published: "November 11, 2026",
         icon: PiPencilLineBold,
       },
       {
         href: DOCS.ordir,
         label: "ORDIR (Dictionary)",
         description:
-          "The Official Redemption Dictionary of Identifiers and References — set abbreviations, errata, and the glossary of terms.",
-        version: "v7.0.0",
-        published: "March 13, 2026",
+          "The Official Redemption Dictionary of Identifiers and References — set abbreviations, duplicate cards, and the glossary of terms.",
+        version: "v7.1.0",
+        published: "November 11, 2026",
+        icon: FaBookOpen,
+      },
+      {
+        href: DOCS.errataList,
+        label: "Errata List",
+        description:
+          "The Redemption Errata List — every card whose name, class, identifier, reference, or special ability has been corrected, plus how to read older wording.",
+        version: "v1.0.0",
+        published: "November 11, 2026",
         icon: FaBookOpen,
       },
       {
