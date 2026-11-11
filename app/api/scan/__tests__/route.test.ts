@@ -558,9 +558,11 @@ describe('POST /api/scan deck mode', () => {
       const cp = await cropResult();
       expect(cp.calls).toBe(1);
       const patch = update.mock.calls.at(-1)![0];
-      expect(patch).toMatchObject({ status: 'done', input_tokens: 101, output_tokens: 201, attempts: 2, latency_ms: 10 + cp.latencyMs });
+      // The turn and crop passes time themselves on the real clock: a slow runner makes either one 1 ms, not 0.
+      const latency = 10 + patch.photo.ms.turn + cp.latencyMs;
+      expect(patch).toMatchObject({ status: 'done', input_tokens: 101, output_tokens: 201, attempts: 2, latency_ms: latency });
       expect(patch.cost_usd).toBeCloseTo(0.06);
-      expect(body.usage.latencyMs).toBe(10 + cp.latencyMs);
+      expect(body.usage.latencyMs).toBe(latency);
       expect(body.usage.attempts).toBe(2);
       expect(body.usage.costUsd).toBeCloseTo(0.06);
     });
