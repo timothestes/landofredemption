@@ -59,7 +59,7 @@ export default async function Index(props: {
   const [lead, ...rest] = posts.slice(0, 5);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-background [.jayden_&]:bg-transparent">
       <TopNav />
       {/* Masthead. The one place the archived splash art appears, sharp and at
           full contrast. The band is the plate's own navy in BOTH themes: the art
@@ -67,15 +67,18 @@ export default async function Index(props: {
           it onto a light page only ever made a grey smear (see #447). A fixed dark
           nameplate over a light page is the classic editorial move, and it means
           one asset, no theme swap, no hydration flash. Art is hidden below `lg`,
-          where the text needs the full width. */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-[hsl(228,22%,12%)] text-[hsl(210,20%,96%)]">
+          where the text needs the full width.
+          Jayden is the exception: its whole look is the tinted plate behind the
+          page (components/ui/background.tsx), so there the band and the page go
+          transparent and the art is dropped (the plate already carries it). */}
+      <section className="relative overflow-hidden border-b border-white/10 bg-[hsl(228,22%,12%)] text-[hsl(210,20%,96%)] [.jayden_&]:bg-transparent">
         <img
           src="/brand/hero-splash.webp"
           alt=""
           aria-hidden
           width={900}
           height={650}
-          className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[min(56%,46rem)] object-cover object-[50%_18%] [mask-image:linear-gradient(to_right,transparent_0%,black_45%)] lg:block"
+          className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[min(56%,46rem)] object-cover object-[50%_18%] [mask-image:linear-gradient(to_right,transparent_0%,black_45%)] lg:block [.jayden_&]:hidden"
         />
         <div className="relative mx-auto w-full max-w-5xl px-4 py-10 sm:py-14 lg:py-20">
           <h1 className="sr-only">
