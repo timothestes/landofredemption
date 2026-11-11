@@ -914,7 +914,7 @@ on the scanner's schedule. `/privacy` gains one sentence.
 | pageTitle | Deck from photo |
 | lead | Photograph a deck laid out on a table, or drop in a photo from Discord, and get a decklist you can open in the deck builder. |
 | tips | Lay every card upright with the title showing. One column per brigade works best. Put the reserve in its own row. |
-| captureTip | Hold the phone along the rows. No flash; light from the side. |
+| captureTip | Stand where you would read the cards, so the titles are the right way up in the photo. No flash; light from the side. |
 | reading | Reading… |
 | readDone | Read {n} cards in {g} groups |
 | readingCrop | Reading {n} sideways group{s}… |

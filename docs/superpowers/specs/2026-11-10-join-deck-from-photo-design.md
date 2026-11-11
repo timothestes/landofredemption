@@ -37,3 +37,33 @@ photo reader (`DeckPhotoReader`) the way `/decklist/generate` does. Under the tr
   gets the same width there.
 - Once the deck is saved the button stays live and hands the same deck over again, so a failed submit (venue
   wifi) can be retried without saving a second deck.
+
+## Follow-up: the walk a player actually takes (2026-11-11)
+
+A critic walked the flow as a player at the table. What changed in response:
+
+- **One press to join.** On the join form the photo tab's button is "Join with this deck": the deck is checked,
+  saved, and the player is joined. The page's own Join steps aside while the photo tab is showing. In the
+  change-decklist view the same button reads "Submit this deck".
+- **A bar that stays in view.** The submit bar sticks to the bottom of the screen while the player works down the
+  rows. It shows what is left as two jumps, "N rows to check" (walks to the next flagged row) and "N Lost Souls
+  to pick" (opens the picker), and the main and reserve counts once nothing is left. The shared reader passes
+  these jumps to any host's footer (`jumps` on the footer context).
+- **The photo tab opens by itself** when the player has no saved decks, and when a photo tray is waiting from
+  before a reload.
+- **Issues stay up.** The not-legal box no longer disappears on the first edit; it is dimmed and headed "From
+  your last check". Pool, size and reserve issues carry a line on what usually fixes them.
+- **Copy.** The gate tells the player to tap the right card and to remove a row only if the card is not in the
+  deck. The join page has its own first-photo tips and drops the collection-scanner link (`tips` and
+  `hideCrossLink` on the shared reader). The shared capture tip "Hold the phone along the rows" is now "Stand
+  where you would read the cards, so the titles are the right way up in the photo."
+- **Join page.** A reason sits where a greyed-out Join gave none. The change-decklist view hides "You're all
+  set" while the picker is open, says the current list stays until a new one is accepted, and shows errors above
+  the picker. "Open in deck builder" opens a new tab. The card is wider on desktop.
+- **Deck name.** The saved deck is named after the event ("<event> deck").
+
+Left alone on purpose: the every-row-answered gate (no "accept all guesses"), the check before save, the shared
+row layout, and Lost Soul "Skip" (a deck without its Lost Souls fails the check anyway).
+
+Not done: marking the current guess among a flagged row's suggestion chips; card counts and a view link on the
+registered card; an outline "Add another photo" once the tray has photos.

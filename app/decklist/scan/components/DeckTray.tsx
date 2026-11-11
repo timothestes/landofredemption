@@ -42,6 +42,14 @@ interface Props {
   onRetry: (photoId: string) => void;
   onRemovePhoto: (photoId: string) => void;
   onChooseAnother: () => void;
+  /** Filled with the tray's own jumps, for a host whose hand-off bar offers them too. */
+  jumps?: { current: TrayJumps | null };
+}
+
+export interface TrayJumps {
+  /** Scrolls to the next row that needs checking. */
+  walk: () => void;
+  openLostSouls: () => void;
 }
 
 type Section = {
@@ -61,7 +69,7 @@ const keyName = (key: string | null): string | null => {
 
 /** The photos, each with its group sections and rows, then the totals line, the picker and the Undo toast. */
 export default function DeckTray({
-  state, dispatch, thumbs, editable, online, signInHref, canRetry, onRetry, onRemovePhoto, onChooseAnother,
+  state, dispatch, thumbs, editable, online, signInHref, canRetry, onRetry, onRemovePhoto, onChooseAnother, jumps,
 }: Props) {
   const [picker, setPicker] = useState<Picker | null>(null);
   const [pickerSeq, setPickerSeq] = useState(0);
@@ -127,6 +135,7 @@ export default function DeckTray({
   }, [chipSig]);
 
   const walk = useCheckWalker(amberIds);
+  if (jumps) jumps.current = { walk, openLostSouls: () => setLostSoulsOpen(true) };
   const t = useMemo(() => totals(state), [state]);
   const lostSoulsPicked = state.lostSoulPicks.reduce((n, p) => n + p.qty, 0);
   // Picks are deck-wide: they list under the first Lost Soul summary row only.

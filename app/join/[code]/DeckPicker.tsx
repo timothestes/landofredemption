@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { loadUserDecksAction, loadPublicDeckAction } from "@/app/decklist/actions";
 import { searchDecksForTournamentAction, type DeckSearchResult } from "@/app/tracker/tournaments/actions";
+import { STORAGE_KEY } from "@/app/decklist/scan/lib/deckTrayReducer";
 import { FORMATS, normalizeFormat, type FormatId } from "@/lib/formats";
 import PhotoDeckSource from "./PhotoDeckSource";
 
@@ -21,6 +22,15 @@ interface DeckPickerProps {
   tournamentFormat: FormatId | "Other" | null;
   userId: string;
   code: string;
+  eventName: string;
+  /** The photo tab's button label: there it is the page's submit, not a pick. */
+  photoSubmitLabel: string;
+  /** Why the photo tab's button cannot be pressed yet, for a reason outside the picker. */
+  photoBlocked?: string | null;
+  /** A deck read from a photo and saved. Defaults to onSelect. */
+  onPhotoDeck?: (deckId: string, deckName: string) => void;
+  /** Told when the photo tab is showing, so a host with its own submit can step aside for the tab's. */
+  onPhotoTab?: (showing: boolean) => void;
   onSelect: (deckId: string, deckName: string) => void;
 }
 
@@ -67,10 +77,37 @@ function DeckRow({
   );
 }
 
-export default function DeckPicker({ tournamentFormat, userId, code, onSelect }: DeckPickerProps) {
+export default function DeckPicker({
+  tournamentFormat, userId, code, eventName, photoSubmitLabel, photoBlocked, onPhotoDeck, onPhotoTab, onSelect,
+}: DeckPickerProps) {
   const [tab, setTab] = useState<Tab>("mine");
+  const photoTab = useRef(onPhotoTab);
+  photoTab.current = onPhotoTab;
+  useEffect(() => {
+    photoTab.current?.(tab === "photo");
+    return () => photoTab.current?.(false);
+  }, [tab]);
+  // Once the player picks a tab themselves, the picker stops choosing one for them.
+  const touched = useRef(false);
+  const openPhoto = () => {
+    setTab("photo");
+    setPhotoOpened(true);
+  };
   // The photo reader mounts on the tab's first visit, then stays mounted so a read in flight survives a tab switch.
   const [photoOpened, setPhotoOpened] = useState(false);
+
+  // A photo tray left from before a reload (or started on the scan page) opens straight away: the player's
+  // work must not look lost behind an empty My decks tab.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY(userId));
+      const photos = raw ? JSON.parse(raw)?.photos : null;
+      if (Array.isArray(photos) && photos.length > 0 && !touched.current) openPhoto();
+    } catch {
+      // Storage unavailable or unreadable: stay on My decks.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   // My decks
   const [myDecks, setMyDecks] = useState<MyDeck[] | null>(null);
@@ -82,7 +119,10 @@ export default function DeckPicker({ tournamentFormat, userId, code, onSelect }:
     setMyLoading(true);
     loadUserDecksAction()
       .then((res) => {
-        setMyDecks(res.success === true ? (res.decks as MyDeck[]) : []);
+        const decks = res.success === true ? (res.decks as MyDeck[]) : [];
+        setMyDecks(decks);
+        // No saved decks: the photo is the way in, not an empty list.
+        if (res.success === true && decks.length === 0 && !touched.current) openPhoto();
       })
       .catch(() => {
         // Network drop: fall back to the same empty state the non-throw
@@ -173,6 +213,7 @@ export default function DeckPicker({ tournamentFormat, userId, code, onSelect }:
             key={t}
             type="button"
             onClick={() => {
+              touched.current = true;
               setTab(t);
               if (t === "photo") setPhotoOpened(true);
             }}
@@ -201,7 +242,16 @@ export default function DeckPicker({ tournamentFormat, userId, code, onSelect }:
             </div>
             {myLoading && <p className="mt-3 text-sm text-muted-foreground">Loading your decks…</p>}
             {!myLoading && myDecks !== null && filteredMine.length === 0 && (
-              <p className="mt-3 text-sm text-muted-foreground">No decks found.</p>
+              <p className="mt-3 text-sm text-muted-foreground">
+                {myDecks.length === 0 ? "No saved decks yet." : "No decks found."}{" "}
+                <button
+                  type="button"
+                  onClick={openPhoto}
+                  className="font-medium text-foreground underline underline-offset-4 focus:outline-none"
+                >
+                  Photograph your deck instead
+                </button>
+              </p>
             )}
             <div className="mt-2 max-h-72 space-y-1 overflow-y-auto">
               {compatibleMine.map((d) => (
@@ -295,9 +345,12 @@ export default function DeckPicker({ tournamentFormat, userId, code, onSelect }:
             <PhotoDeckSource
               userId={userId}
               code={code}
+              eventName={eventName}
               eventFormat={tournamentFormat === "Other" ? null : tournamentFormat}
               active={tab === "photo"}
-              onSelect={onSelect}
+              submitLabel={photoSubmitLabel}
+              blocked={photoBlocked}
+              onSelect={onPhotoDeck ?? onSelect}
             />
           </div>
         )}
