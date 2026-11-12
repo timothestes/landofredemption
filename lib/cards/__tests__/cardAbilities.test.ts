@@ -451,6 +451,23 @@ describe('matchesDeckCard rules', () => {
     expect(fits({ identifier: 'Philistine King' }, { traits: ['philistine'] })).toBe(true);
   });
 
+  it('a possessive is not the trait: "Herod\'s Guard" is not a Herod', () => {
+    expect(fits({ cardName: "Herod's Guard", identifier: '' }, { traits: ['herod'] })).toBe(false);
+    expect(fits({ cardName: "King's Daughter", identifier: '' }, { traits: ['king'] })).toBe(false);
+    expect(fits({ cardName: 'Herod Antipas', identifier: '' }, { traits: ['herod'] })).toBe(true);
+    expect(fits({ cardName: 'Kings of the East', identifier: '' }, { traits: ['king'] })).toBe(true);
+  });
+
+  it('type + alignment must hold on the same half of a dual card', () => {
+    // A Seal: its Enhancement half is good, its Evil Character half evil.
+    const seal = { type: 'GE/Evil Character', alignment: 'Neutral' };
+    expect(fits(seal, { types: ['Enhancement'], alignments: ['evil'] })).toBe(false);
+    expect(fits(seal, { types: ['Enhancement'], alignments: ['good'] })).toBe(true);
+    expect(fits(seal, { types: ['Evil Character'], alignments: ['evil'] })).toBe(true);
+    expect(fits({ type: 'GE/EE', alignment: 'Neutral' }, { types: ['Enhancement'], alignments: ['evil'] })).toBe(true);
+    expect(fits({ type: 'Fortress', alignment: 'Good' }, { types: ['Fortress'], alignments: ['good'] })).toBe(true);
+  });
+
   it('unique means not Generic', () => {
     expect(fits({ identifier: 'Generic, Philistine' }, { unique: true })).toBe(false);
     expect(fits({ identifier: 'Philistine King' }, { unique: true })).toBe(true);

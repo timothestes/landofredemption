@@ -901,13 +901,21 @@ function hasAlignment(c: DeckCardFields, parts: string[], a: 'good' | 'evil' | '
   return c.alignment === 'Neutral';
 }
 
+/** The alignment of one type half: Hero/GE good, Evil Character/EE evil, else the card's. */
+function halfAlignment(c: DeckCardFields, half: string): string {
+  if (half === 'Hero' || half === 'GE') return 'good';
+  if (half === 'Evil Character' || half === 'EE') return 'evil';
+  return (c.alignment ?? '').toLowerCase();
+}
+
 /** "Pale Green" is its own brigade, so "Green" must not match it. */
 function brigadeWords(brigade: string): Set<string> {
   return new Set(brigade.toLowerCase().replace(/pale green/g, 'palegreen').split(/[^a-z]+/).filter(Boolean));
 }
 
+/** The word, optionally plural — but not possessive: "Herod's Guard" is not a Herod. */
 function wordPattern(word: string): RegExp {
-  return new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:s|es)?\\b`, 'i');
+  return new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:s|es)?\\b(?![’'])`, 'i');
 }
 
 /** Identifier minus its "X = # of …" counting notes, which name other cards' traits. */
@@ -929,8 +937,15 @@ function fitsDeckCardMatch(c: DeckCardFields, m: DeckCardMatch): boolean {
   const name = c.cardName ?? c.name ?? '';
   const parts = typeParts(c);
   const reference = c.reference ?? '';
-  if (m.types && !m.types.some((t) => isDeckCardType(parts, t))) return false;
-  if (m.alignments && !m.alignments.some((a) => hasAlignment(c, parts, a))) return false;
+  if (m.types && m.alignments) {
+    // "an evil Enhancement": ONE half must be both. A Seal (GE/Evil Character)
+    // is evil and an Enhancement, but its Enhancement half is good.
+    const ok = parts.some((h) => m.types!.some((t) => isDeckCardType([h], t)) && (m.alignments as string[]).includes(halfAlignment(c, h)));
+    if (!ok) return false;
+  } else {
+    if (m.types && !m.types.some((t) => isDeckCardType(parts, t))) return false;
+    if (m.alignments && !m.alignments.some((a) => hasAlignment(c, parts, a))) return false;
+  }
   if (m.testament && !inTestament(reference, m.testament)) return false;
   if (m.books) {
     const refs = referenceParts(reference).filter((r) => m.books!.includes(r.book));

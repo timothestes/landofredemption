@@ -291,6 +291,8 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
       if (ability?.type === 'search_deck') {
         // setShowDeckSearch is declared further down; it's only read when this
         // runs, never during render, so leaving it out of the deps is safe.
+        // (Star) searches fired from hand flash the card, as multiplayer does.
+        if (source && source.zone === 'hand') revealCardInHand(cardId);
         setDeckSearchAbility(ability);
         setShowDeckSearch(true);
         return;

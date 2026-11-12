@@ -80,7 +80,9 @@ function testamentOk(c, t) {
   return refs(c.reference).some((r) => BOOKS.includes(r.book) && (NT.has(r.book) ? 'NT' : 'OT') === t);
 }
 const brigadeSet = (c) => new Set(c.brigade.toLowerCase().replace(/pale green/g, 'palegreen').split(/[^a-z]+/).filter(Boolean));
-const wordRe = (w) => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:s|es)?\\b`, 'i');
+// Optionally plural, never possessive ("Herod's Guard" is not a Herod).
+const wordRe = (w) => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:s|es)?\\b(?![’'])`, 'i');
+const halfAlign = (c, h) => (h === 'Hero' || h === 'GE' ? 'good' : h === 'Evil Character' || h === 'EE' ? 'evil' : c.alignment.toLowerCase());
 const identText = (c) => c.identifier.replace(/X\s*=[^,\]]*/g, '');
 // A card "is" name N when its name (set suffix dropped), or either half of a
 // dual name, is N or is "N, <title>" — so "David" finds "David, the Shepherd".
@@ -89,8 +91,13 @@ function nameIs(cardName, n) {
   return base(cardName).split(' / ').some((h) => h === want || h.startsWith(`${want},`));
 }
 function matchOne(c, m) {
-  if (m.types && !m.types.some((t) => typeOk(c, t))) return false;
-  if (m.alignments && !m.alignments.some((a) => alignOk(c, a))) return false;
+  if (m.types && m.alignments) {
+    // One type half must carry both the type and the alignment.
+    if (!typeParts(c).some((h) => m.types.some((t) => typeOk({ type: h }, t)) && m.alignments.includes(halfAlign(c, h)))) return false;
+  } else {
+    if (m.types && !m.types.some((t) => typeOk(c, t))) return false;
+    if (m.alignments && !m.alignments.some((a) => alignOk(c, a))) return false;
+  }
   if (m.testament && !testamentOk(c, m.testament)) return false;
   if (m.books) {
     const rs = refs(c.reference).filter((r) => m.books.includes(r.book));
