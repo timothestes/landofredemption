@@ -107,6 +107,9 @@ export type CardAbility = AbilityBase & (
   // activator's Reserve Enhancements (O.T. only when `testament` is set) and
   // moves the chosen one to hand with a plain moveCard. No reducer involved.
   | { type: 'take_enhancement_from_reserve'; testament?: 'OT' }
+  // Abraham (CoW) / Joseph, the Dreamer: opens Search Deck filtered to the
+  // cards the text allows. Client-side, no reducer — see lib/cards/cardAbilities.ts.
+  | { type: 'search_deck'; book: string; fromChapter: number; toChapter: number; cardType?: 'Hero' }
   | { type: 'custom'; reducerName: string; label: string }
 );
 
@@ -340,7 +343,7 @@ export const CARD_ABILITIES: Record<string, CardAbility[]> = {
   'Honey from a Lion (CoW)':                             [{ type: 'look_at_own_deck', position: 'top', count: 6 }],
   'Hope':                                                [{ type: 'look_at_own_deck', position: 'top', count: 7 }],
   'Joel (PoC)':                                          [{ type: 'look_at_own_deck', position: 'top', count: 6, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
-  'Joseph, the Dreamer':                                 [{ type: 'look_at_own_deck', position: 'bottom', count: 6, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
+  'Joseph, the Dreamer':                                 [{ type: 'look_at_own_deck', position: 'bottom', count: 6, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }, { type: 'search_deck', book: 'Genesis', fromChapter: 37, toChapter: 50 }],
   "Joseph's Silver Cup (PoC)":                           [{ type: 'look_at_own_deck', position: 'top', count: 3 }],
   "Pharaoh's Magicians":                                 [{ type: 'look_at_own_deck', position: 'top', count: 1 }],
   'Philistine Soothsayers':                              [{ type: 'look_at_own_deck', position: 'top', count: 6 }],
@@ -513,6 +516,10 @@ export const CARD_ABILITIES: Record<string, CardAbility[]> = {
   // appears in the deck context menu while the toggle is active.
   // ---------------------------------------------------------------------------
   'The Foretelling Angel (PC)':                          [{ type: 'toggle_top_deck_reveal' }],
+
+  // Filtered deck search — see the matching block in lib/cards/cardAbilities.ts.
+  'Abraham (CoW)':                                       [{ type: 'search_deck', book: 'Genesis', fromChapter: 12, toChapter: 24, cardType: 'Hero' }],
+  'Abraham (CoW AB)':                                    [{ type: 'search_deck', book: 'Genesis', fromChapter: 12, toChapter: 24, cardType: 'Hero' }],
 };
 
 export function getAbilitiesForCard(identifier: string): CardAbility[] {

@@ -21,6 +21,8 @@ import {
   hasReferenceBook,
   getEffectiveAbilities,
   hasUsableAbilityInZone,
+  matchesSearchDeck,
+  searchDeckTargetLabel,
 } from '../cardAbilities';
 import { CARDS } from '../lookup';
 import {
@@ -327,6 +329,74 @@ describe('take_enhancement_from_reserve registration', () => {
       .toBe('Take an O.T. Enhancement from Reserve…');
     expect(abilityLabel({ type: 'take_enhancement_from_reserve' }))
       .toBe('Take an Enhancement from Reserve…');
+  });
+});
+
+describe('search_deck — Abraham (CoW) and Joseph, the Dreamer', () => {
+  const abraham = { type: 'search_deck', book: 'Genesis', fromChapter: 12, toChapter: 24, cardType: 'Hero' } as const;
+  const joseph = { type: 'search_deck', book: 'Genesis', fromChapter: 37, toChapter: 50 } as const;
+  const chapterOf = (ref: string) => Number(ref.match(/^Genesis (\d+)/)?.[1]);
+
+  it('registers both Abraham printings with the Genesis 12-24 Hero search', () => {
+    expect(CARD_ABILITIES['Abraham (CoW)']).toEqual([abraham]);
+    expect(CARD_ABILITIES['Abraham (CoW AB)']).toEqual([abraham]);
+  });
+
+  it("keeps Joseph's (Star) look first and adds the in-play search second", () => {
+    const [star, search] = CARD_ABILITIES['Joseph, the Dreamer'];
+    expect(star).toMatchObject({ type: 'look_at_own_deck', position: 'bottom', count: 6 });
+    expect(star.sourceZones).toContain('hand');
+    // "(Hero) You may take…" is the Hero's in-play ability, not a (Star).
+    expect(search).toEqual(joseph);
+  });
+
+  it('labels the menu item and the search window', () => {
+    expect(abilityLabel(abraham)).toBe('Search deck for a Genesis 12-24 Hero…');
+    expect(abilityLabel(joseph)).toBe('Search deck for a Genesis 37-50 card…');
+    expect(searchDeckTargetLabel(abraham)).toBe('Genesis 12-24 Heroes');
+    expect(searchDeckTargetLabel(joseph)).toBe('Genesis 37-50 cards');
+  });
+
+  it('matches on book, inclusive chapter range, and Hero when asked', () => {
+    const hero = (reference: string) => ({ type: 'Hero', reference });
+    expect(matchesSearchDeck(hero('Genesis 12:3'), abraham)).toBe(true);
+    expect(matchesSearchDeck(hero('Genesis 24:67'), abraham)).toBe(true);
+    expect(matchesSearchDeck(hero('Genesis 12:3 (Acts 3:25)'), abraham)).toBe(true);
+    expect(matchesSearchDeck(hero('Genesis 11:26'), abraham)).toBe(false);
+    expect(matchesSearchDeck(hero('Genesis 25:7'), abraham)).toBe(false);
+    expect(matchesSearchDeck(hero('Exodus 12:1'), abraham)).toBe(false);
+    expect(matchesSearchDeck(hero(''), abraham)).toBe(false);
+    expect(matchesSearchDeck({ type: 'GE', reference: 'Genesis 12:3' }, abraham)).toBe(false);
+    // Joseph takes any card type; multiplayer cards carry cardType, not type.
+    expect(matchesSearchDeck({ type: 'EE', reference: 'Genesis 37:8' }, joseph)).toBe(true);
+    expect(matchesSearchDeck({ cardType: 'Fortress', reference: 'Genesis 50:19-21' }, joseph)).toBe(true);
+    expect(matchesSearchDeck({ type: 'GE', reference: 'Genesis 3:15' }, joseph)).toBe(false);
+  });
+
+  it('finds the real Genesis 12-24 Heroes and nothing outside the range', () => {
+    // Guards against a carddata reformat (references stop leading with
+    // "Genesis <chapter>:") silently emptying the search.
+    const matches = CARDS.filter(c => matchesSearchDeck(c, abraham));
+    expect(matches.length).toBeGreaterThan(20);
+    for (const name of ['Abraham (CoW)', 'Isaac', 'Lot', 'Melchizedek', 'Sarah']) {
+      expect(matches.some(c => c.name === name), name).toBe(true);
+    }
+    for (const c of matches) {
+      expect(isHeroCard(c), c.name).toBe(true);
+      expect(chapterOf(c.reference), c.name).toBeGreaterThanOrEqual(12);
+      expect(chapterOf(c.reference), c.name).toBeLessThanOrEqual(24);
+    }
+  });
+
+  it('finds Genesis 37-50 cards of every type, Joseph himself included', () => {
+    const matches = CARDS.filter(c => matchesSearchDeck(c, joseph));
+    expect(matches.length).toBeGreaterThan(100);
+    expect(matches.some(c => c.name === 'Joseph, the Dreamer')).toBe(true);
+    expect(new Set(matches.map(c => c.type)).size).toBeGreaterThan(3);
+    for (const c of matches) {
+      expect(chapterOf(c.reference), c.name).toBeGreaterThanOrEqual(37);
+      expect(chapterOf(c.reference), c.name).toBeLessThanOrEqual(50);
+    }
   });
 });
 
