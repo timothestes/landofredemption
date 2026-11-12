@@ -9,9 +9,11 @@ interface GoldfishButtonProps {
   deckName?: string;
   format?: string;
   iconOnly?: boolean;
+  /** Runs before navigating (e.g. save the deck, since practice loads it from the database). Resolve false to stay put. */
+  beforeNavigate?: () => Promise<boolean>;
 }
 
-export function GoldfishButton({ deckId, deckName, format, iconOnly = false }: GoldfishButtonProps) {
+export function GoldfishButton({ deckId, deckName, format, iconOnly = false, beforeNavigate }: GoldfishButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -19,8 +21,20 @@ export function GoldfishButton({ deckId, deckName, format, iconOnly = false }: G
 
   const href = `/goldfish/${deckId}${format ? `?format=${encodeURIComponent(format)}` : ''}`;
 
-  const handleClick = () => {
+  const handleClick = async () => {
     setLoading(true);
+    if (beforeNavigate) {
+      let ok = false;
+      try {
+        ok = await beforeNavigate();
+      } catch {
+        ok = false;
+      }
+      if (!ok) {
+        setLoading(false);
+        return;
+      }
+    }
     router.push(href);
   };
 
