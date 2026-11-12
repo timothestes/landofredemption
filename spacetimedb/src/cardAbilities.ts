@@ -13,6 +13,8 @@
 // cardData.ts, which the lib-side registry test verifies).
 // -----------------------------------------------------------------------------
 
+import { DECK_SEARCH_ABILITIES } from './deckSearchAbilities';
+
 // Zone ids as strings (matches the stringified zone column on CardInstance).
 // Kept local — no import from shared types.
 type ZoneId = string;
@@ -107,13 +109,35 @@ export type CardAbility = AbilityBase & (
   // activator's Reserve Enhancements (O.T. only when `testament` is set) and
   // moves the chosen one to hand with a plain moveCard. No reducer involved.
   | { type: 'take_enhancement_from_reserve'; testament?: 'OT' }
-  // Abraham (CoW) / Joseph, the Dreamer: opens Search Deck filtered to the
-  // cards the text allows. Client-side, no reducer — see lib/cards/cardAbilities.ts.
-  | { type: 'search_deck'; book: string; fromChapter: number; toChapter: number; cardType?: 'Hero' }
+  // Filtered deck search / exchange (entries generated into
+  // deckSearchAbilities.ts). Client-side, no reducer — see lib/cards/cardAbilities.ts.
+  | { type: 'search_deck'; target: string; match: DeckCardMatch[] }
+  | { type: 'exchange_with_deck'; target: string; match: DeckCardMatch[] }
   | { type: 'custom'; reducerName: string; label: string }
 );
 
-export const CARD_ABILITIES: Record<string, CardAbility[]> = {
+// Filter shape for search_deck / exchange_with_deck. The server never
+// evaluates it; it's here so the registry copies stay type-identical.
+export type DeckCardMatch = {
+  types?: DeckCardType[];
+  alignments?: Array<'good' | 'evil' | 'neutral'>;
+  testament?: 'OT' | 'NT';
+  books?: string[];
+  chapters?: [number, number];
+  brigades?: string[];
+  singleBrigade?: boolean;
+  cardClass?: 'Warrior' | 'Weapon' | 'Cloud' | 'Star';
+  traits?: string[];
+  unique?: boolean;
+  names?: string[];
+  nameIncludes?: string[];
+};
+
+export type DeckCardType =
+  | 'Hero' | 'Evil Character' | 'character' | 'Enhancement' | 'GE' | 'EE'
+  | 'Fortress' | 'Site' | 'City' | 'Artifact' | 'Dominant' | 'Curse' | 'Covenant' | 'Lost Soul';
+
+const BASE_CARD_ABILITIES: Record<string, CardAbility[]> = {
   'Two Possessed (GoC)':                                 [{ type: 'spawn_token', tokenName: 'Violent Possessor Token', count: 2 }],
   'The Accumulator (GoC)':                               [{ type: 'spawn_token', tokenName: 'Wicked Spirit Token', count: 7 }],
   'The Proselytizers (GoC)':                             [{ type: 'spawn_token', tokenName: 'Proselyte Token' }],
@@ -343,7 +367,7 @@ export const CARD_ABILITIES: Record<string, CardAbility[]> = {
   'Honey from a Lion (CoW)':                             [{ type: 'look_at_own_deck', position: 'top', count: 6 }],
   'Hope':                                                [{ type: 'look_at_own_deck', position: 'top', count: 7 }],
   'Joel (PoC)':                                          [{ type: 'look_at_own_deck', position: 'top', count: 6, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
-  'Joseph, the Dreamer':                                 [{ type: 'look_at_own_deck', position: 'bottom', count: 6, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }, { type: 'search_deck', book: 'Genesis', fromChapter: 37, toChapter: 50 }],
+  'Joseph, the Dreamer':                                 [{ type: 'look_at_own_deck', position: 'bottom', count: 6, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
   "Joseph's Silver Cup (PoC)":                           [{ type: 'look_at_own_deck', position: 'top', count: 3 }],
   "Pharaoh's Magicians":                                 [{ type: 'look_at_own_deck', position: 'top', count: 1 }],
   'Philistine Soothsayers':                              [{ type: 'look_at_own_deck', position: 'top', count: 6 }],
@@ -516,11 +540,17 @@ export const CARD_ABILITIES: Record<string, CardAbility[]> = {
   // appears in the deck context menu while the toggle is active.
   // ---------------------------------------------------------------------------
   'The Foretelling Angel (PC)':                          [{ type: 'toggle_top_deck_reveal' }],
-
-  // Filtered deck search — see the matching block in lib/cards/cardAbilities.ts.
-  'Abraham (CoW)':                                       [{ type: 'search_deck', book: 'Genesis', fromChapter: 12, toChapter: 24, cardType: 'Hero' }],
-  'Abraham (CoW AB)':                                    [{ type: 'search_deck', book: 'Genesis', fromChapter: 12, toChapter: 24, cardType: 'Hero' }],
 };
+
+// Hand-written entries first, then the generated search/exchange entries —
+// same merge as lib/cards/cardAbilities.ts, so ability indexes line up.
+export const CARD_ABILITIES: Record<string, CardAbility[]> = mergeAbilities(BASE_CARD_ABILITIES, DECK_SEARCH_ABILITIES);
+
+function mergeAbilities(...maps: Array<Record<string, CardAbility[]>>): Record<string, CardAbility[]> {
+  const out: Record<string, CardAbility[]> = {};
+  for (const map of maps) for (const [name, list] of Object.entries(map)) out[name] = [...(out[name] ?? []), ...list];
+  return out;
+}
 
 export function getAbilitiesForCard(identifier: string): CardAbility[] {
   return CARD_ABILITIES[identifier] ?? [];

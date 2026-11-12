@@ -1660,8 +1660,9 @@ function reduceGame(state: GameState, action: GameAction): GameState {
           // with a plain MOVE_CARD. No-op here.
           return state;
         case 'search_deck':
-          // GoldfishCanvas opens the filtered Search Deck window; the player
-          // moves the pick with the window's own actions. No-op here.
+        case 'exchange_with_deck':
+          // GoldfishCanvas opens the filtered Search Deck / Exchange with Deck
+          // window; the player moves cards with the window's own actions.
           return state;
         case 'all_players_keep_one_shuffle_draw':
           // Interactive picker — dispatched via the dedicated

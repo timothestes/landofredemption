@@ -7,6 +7,7 @@
 // -----------------------------------------------------------------------------
 import type { ZoneId } from '@/app/shared/types/gameCard';
 import { findCard, type CardData } from './lookup';
+import { DECK_SEARCH_ABILITIES } from './deckSearchAbilities';
 
 // Per-ability override for the zones the source card may fire from. When
 // omitted, falls back to DEFAULT_ABILITY_SOURCE_ZONES (territory + both
@@ -103,15 +104,50 @@ export type CardAbility = AbilityBase & (
   // activator's Reserve Enhancements (O.T. only when `testament` is set) and
   // moves the chosen one to hand with a plain moveCard. No reducer involved.
   | { type: 'take_enhancement_from_reserve'; testament?: 'OT' }
-  // Abraham (CoW): "Search deck for a Genesis 12-24 Hero." Joseph, the
-  // Dreamer: "You may take a Genesis 37-50 card from deck." Opens Search Deck
-  // showing only the cards that qualify (see matchesSearchDeck): a reference in
-  // `book` chapters fromChapter–toChapter, and a Hero when `cardType` says so.
-  // Client-side, no reducer — the player moves the pick like any other search
-  // and the deck shuffles on close.
-  | { type: 'search_deck'; book: string; fromChapter: number; toChapter: number; cardType?: 'Hero' }
+  // Filtered deck search / exchange — the entries are generated from card
+  // text into deckSearchAbilities.ts. "Search deck for a Genesis 12-24 Hero",
+  // "take an evil N.T. Fortress from deck" open Search Deck showing only the
+  // cards that qualify; "exchange this card with a son of Jacob from deck"
+  // opens Exchange with Deck the same way. `target` is the printed wording
+  // (menu label + the window's filter line). Client-side, no reducer: the
+  // windows' own actions move the cards, and the deck shuffles as usual.
+  | { type: 'search_deck'; target: string; match: DeckCardMatch[] }
+  | { type: 'exchange_with_deck'; target: string; match: DeckCardMatch[] }
   | { type: 'custom'; reducerName: string; label: string }
 );
+
+/**
+ * One kind of deck card a search_deck / exchange_with_deck ability may pick.
+ * Every field that is set must hold. List fields accept any listed value,
+ * except `traits`, which must all appear ("a Canaanite giant"). A card
+ * qualifies when it fits ANY entry of the ability's `match` list ("a Site or
+ * good Fortress" is two entries). Evaluated by matchesDeckCard.
+ */
+export type DeckCardMatch = {
+  types?: DeckCardType[];
+  alignments?: Array<'good' | 'evil' | 'neutral'>;
+  testament?: 'OT' | 'NT';
+  /** Reference book, as printed in carddata ("Genesis", "I Samuel"). */
+  books?: string[];
+  /** Inclusive chapter range within `books`. */
+  chapters?: [number, number];
+  brigades?: string[];
+  /** One brigade at face value — the rulings' angel (silver) and demon (orange) definitions. */
+  singleBrigade?: boolean;
+  cardClass?: 'Warrior' | 'Weapon' | 'Cloud' | 'Star';
+  /** Identifier traits ("Philistine", "son of Jacob"); matched in identifier or name. */
+  traits?: string[];
+  /** Not Generic. */
+  unique?: boolean;
+  /** Card names ("David" also finds "David, the Shepherd"). */
+  names?: string[];
+  /** "with 'Trumpet' in the title". */
+  nameIncludes?: string[];
+};
+
+export type DeckCardType =
+  | 'Hero' | 'Evil Character' | 'character' | 'Enhancement' | 'GE' | 'EE'
+  | 'Fortress' | 'Site' | 'City' | 'Artifact' | 'Dominant' | 'Curse' | 'Covenant' | 'Lost Soul';
 
 /**
  * Registry keyed by GameCard.cardName (which embeds the set suffix for the
@@ -120,7 +156,7 @@ export type CardAbility = AbilityBase & (
  * omitted; cards that spawn multiple tokens per effect set count explicitly
  * so one click produces all of them atomically.
  */
-export const CARD_ABILITIES: Record<string, CardAbility[]> = {
+const BASE_CARD_ABILITIES: Record<string, CardAbility[]> = {
   'Two Possessed (GoC)':                                 [{ type: 'spawn_token', tokenName: 'Violent Possessor Token', count: 2 }],
   'The Accumulator (GoC)':                               [{ type: 'spawn_token', tokenName: 'Wicked Spirit Token', count: 7 }],
   'The Proselytizers (GoC)':                             [{ type: 'spawn_token', tokenName: 'Proselyte Token' }],
@@ -354,8 +390,8 @@ export const CARD_ABILITIES: Record<string, CardAbility[]> = {
   'Hope':                                                [{ type: 'look_at_own_deck', position: 'top', count: 7 }],
   'Joel (PoC)':                                          [{ type: 'look_at_own_deck', position: 'top', count: 6, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
   // (Star) look at the bottom 6 fires from hand; the Hero's "take a Genesis
-  // 37-50 card from deck" fires from play (see the filtered-search block below).
-  'Joseph, the Dreamer':                                 [{ type: 'look_at_own_deck', position: 'bottom', count: 6, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }, { type: 'search_deck', book: 'Genesis', fromChapter: 37, toChapter: 50 }],
+  // 37-50 card from deck" fires from play (deckSearchAbilities.ts appends it).
+  'Joseph, the Dreamer':                                 [{ type: 'look_at_own_deck', position: 'bottom', count: 6, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
   "Joseph's Silver Cup (PoC)":                           [{ type: 'look_at_own_deck', position: 'top', count: 3 }],
   "Pharaoh's Magicians":                                 [{ type: 'look_at_own_deck', position: 'top', count: 1 }],
   'Philistine Soothsayers':                              [{ type: 'look_at_own_deck', position: 'top', count: 6 }],
@@ -528,18 +564,22 @@ export const CARD_ABILITIES: Record<string, CardAbility[]> = {
   // appears in the deck context menu while the toggle is active.
   // ---------------------------------------------------------------------------
   'The Foretelling Angel (PC)':                          [{ type: 'toggle_top_deck_reveal' }],
-
-  // ---------------------------------------------------------------------------
-  // Filtered deck search
-  //
-  // Exceptions to the "leave tutoring to the Search Deck menu" rule above, for
-  // cards whose target is narrow enough to list: the item opens Search Deck
-  // showing only what the text allows. Joseph, the Dreamer's half is in the
-  // look-at-own-deck block above.
-  // ---------------------------------------------------------------------------
-  'Abraham (CoW)':                                       [{ type: 'search_deck', book: 'Genesis', fromChapter: 12, toChapter: 24, cardType: 'Hero' }],
-  'Abraham (CoW AB)':                                    [{ type: 'search_deck', book: 'Genesis', fromChapter: 12, toChapter: 24, cardType: 'Hero' }],
 };
+
+/**
+ * The full registry: the hand-written entries above, plus the filtered
+ * search / exchange entries generated into deckSearchAbilities.ts (which
+ * supersedes the "leave tutoring to the Search Deck menu" rule above for any
+ * target narrow enough to filter). A card in both keeps its hand-written
+ * abilities first, so their indexes don't move.
+ */
+export const CARD_ABILITIES: Record<string, CardAbility[]> = mergeAbilities(BASE_CARD_ABILITIES, DECK_SEARCH_ABILITIES);
+
+function mergeAbilities(...maps: Array<Record<string, CardAbility[]>>): Record<string, CardAbility[]> {
+  const out: Record<string, CardAbility[]> = {};
+  for (const map of maps) for (const [name, list] of Object.entries(map)) out[name] = [...(out[name] ?? []), ...list];
+  return out;
+}
 
 /**
  * Handcrafted tokens that don't exist in the generated CARDS dataset — their
@@ -798,31 +838,170 @@ export function hasReferenceBook(reference: string, book: string): boolean {
   return reference.trim().toLowerCase().startsWith(book.trim().toLowerCase());
 }
 
-type SearchDeckAbility = Extract<CardAbility, { type: 'search_deck' }>;
+// ---------------------------------------------------------------------------
+// Filtered deck search / exchange — matching a deck card against DeckCardMatch.
+// Client-only: the server never sees these searches. The generator that wrote
+// deckSearchAbilities.ts validated every entry with these same rules.
+// ---------------------------------------------------------------------------
+
+/** The fields a filter reads; GameCard and CardData both fit. */
+type DeckCardFields = {
+  cardName?: string; name?: string;
+  type?: string; cardType?: string;
+  alignment?: string; reference?: string; brigade?: string; identifier?: string;
+  cardClass?: string; class?: string;
+};
+
+const BIBLE_BOOKS = [
+  'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Joshua', 'Judges', 'Ruth', 'I Samuel', 'II Samuel',
+  'I Kings', 'II Kings', 'I Chronicles', 'II Chronicles', 'Ezra', 'Nehemiah', 'Esther', 'Job', 'Psalm', 'Proverbs',
+  'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos',
+  'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi',
+  'Matthew', 'Mark', 'Luke', 'John', 'Acts', 'Romans', 'I Corinthians', 'II Corinthians', 'Galatians', 'Ephesians',
+  'Philippians', 'Colossians', 'I Thessalonians', 'II Thessalonians', 'I Timothy', 'II Timothy', 'Titus', 'Philemon',
+  'Hebrews', 'James', 'I Peter', 'II Peter', 'I John', 'II John', 'III John', 'Jude', 'Revelation',
+];
+const NEW_TESTAMENT = new Set(BIBLE_BOOKS.slice(BIBLE_BOOKS.indexOf('Matthew')));
 
 /**
- * True when a deck card is a valid pick for a search_deck ability: its printed
- * reference is in the ability's book, at a chapter inside the range, and it is
- * a Hero when the ability asks for one. Every reference leads with one
- * "Book chapter:verse" (see hasReferenceBook), so the number right after the
- * book is the chapter. Client-only — the server never sees these searches.
+ * Every "Book chapter" a reference cites. Most cite one; 38 cards cite two
+ * ("Matthew 2:6/Micah 5:2", "Genesis 12:3 (Acts 3:25)"), and a card has
+ * every reference it prints, so filters test them all.
  */
-export function matchesSearchDeck(
-  card: { type?: string; cardType?: string; reference?: string },
-  a: SearchDeckAbility,
-): boolean {
-  if (a.cardType === 'Hero' && !isHeroCard(card)) return false;
-  const reference = card.reference ?? '';
-  if (!hasReferenceBook(reference, a.book)) return false;
-  const chapter = reference.trim().slice(a.book.trim().length).match(/^\s*(\d+)/);
-  if (!chapter) return false;
-  const n = Number(chapter[1]);
-  return n >= a.fromChapter && n <= a.toChapter;
+function referenceParts(reference: string): Array<{ book: string; chapter: number }> {
+  const out: Array<{ book: string; chapter: number }> = [];
+  for (const m of reference.matchAll(/((?:I{1,3}|IV)\s+)?([A-Z][a-z]+(?: of [A-Z][a-z]+)?)\.?\s+(\d+)/g)) {
+    out.push({ book: `${m[1] ? `${m[1].trim()} ` : ''}${m[2]}`, chapter: Number(m[3]) });
+  }
+  return out;
 }
 
-/** "Genesis 12-24 Heroes" / "Genesis 37-50 cards" — the search window's filter line. */
-export function searchDeckTargetLabel(a: SearchDeckAbility): string {
-  return `${a.book} ${a.fromChapter}-${a.toChapter} ${a.cardType === 'Hero' ? 'Heroes' : 'cards'}`;
+function inTestament(reference: string, t: 'OT' | 'NT'): boolean {
+  // A few promos print the testament instead of a verse.
+  if (/old testament/i.test(reference)) return t === 'OT';
+  if (/new testament/i.test(reference)) return t === 'NT';
+  return referenceParts(reference).some(
+    (r) => BIBLE_BOOKS.includes(r.book) && (NEW_TESTAMENT.has(r.book) ? 'NT' : 'OT') === t,
+  );
+}
+
+/** Each half of a dual type ("Hero/Evil Character", "GE/EE") counts. */
+function typeParts(c: DeckCardFields): string[] {
+  return (c.type ?? c.cardType ?? '').split('/').map((s) => s.trim());
+}
+
+function isDeckCardType(parts: string[], t: DeckCardType): boolean {
+  if (t === 'character') return parts.includes('Hero') || parts.includes('Evil Character');
+  if (t === 'Enhancement') return parts.includes('GE') || parts.includes('EE');
+  return parts.includes(t);
+}
+
+/** Good/evil also follow the type halves, so a GE/EE card is both. */
+function hasAlignment(c: DeckCardFields, parts: string[], a: 'good' | 'evil' | 'neutral'): boolean {
+  if (a === 'good') return c.alignment === 'Good' || parts.includes('GE') || parts.includes('Hero');
+  if (a === 'evil') return c.alignment === 'Evil' || parts.includes('EE') || parts.includes('Evil Character');
+  return c.alignment === 'Neutral';
+}
+
+/** The alignment of one type half: Hero/GE good, Evil Character/EE evil, else the card's. */
+function halfAlignment(c: DeckCardFields, half: string): string {
+  if (half === 'Hero' || half === 'GE') return 'good';
+  if (half === 'Evil Character' || half === 'EE') return 'evil';
+  return (c.alignment ?? '').toLowerCase();
+}
+
+/** "Pale Green" is its own brigade, so "Green" must not match it. */
+function brigadeWords(brigade: string): Set<string> {
+  return new Set(brigade.toLowerCase().replace(/pale green/g, 'palegreen').split(/[^a-z]+/).filter(Boolean));
+}
+
+/** The word, optionally plural — but not possessive: "Herod's Guard" is not a Herod. */
+function wordPattern(word: string): RegExp {
+  return new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:s|es)?\\b(?![’'])`, 'i');
+}
+
+/**
+ * Identifier minus its "X = # of …" counting notes and "Holds …" notes —
+ * both name OTHER cards' traits ("Holds a Heavenly Temple Artifact" is not
+ * one). Curly apostrophes normalized ("Solomon’s Temple").
+ */
+function identifierText(c: DeckCardFields): string {
+  return (c.identifier ?? '').replace(/[’‘]/g, "'").replace(/X\s*=[^,\]]*/g, '').replace(/\bholds?\b[^,\]]*/gi, '');
+}
+
+/** A trait in the card NAME counts unless it follows "of (the)": "Servants of the King" is no king. */
+function nameHasTrait(name: string, trait: string): boolean {
+  const n = name.replace(/[’‘]/g, "'");
+  const re = new RegExp(wordPattern(trait).source, 'gi');
+  for (const m of n.matchAll(re)) if (!/\bof (?:the )?$/i.test(n.slice(0, m.index))) return true;
+  return false;
+}
+
+function baseCardName(name: string): string {
+  return name.replace(/[’‘]/g, "'").replace(/\s*[([][^)\]]*[)\]]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+/**
+ * "David" is "David", "David, the Shepherd" and either half of a dual name.
+ * For a character, a title holding the whole name also counts (REG): "David
+ * the Psalmist", "Moses in Glory", "King Saul" — never a possessive ("David's Tent").
+ */
+function isNamed(cardName: string, name: string, isCharacter: boolean): boolean {
+  const want = name.replace(/[’‘]/g, "'").toLowerCase();
+  return baseCardName(cardName).split(' / ').some((h) => h === want || h.startsWith(`${want},`)
+    || (isCharacter && (h.startsWith(`${want} `) || h === `king ${want}` || h.startsWith(`king ${want} `) || h.startsWith(`king ${want},`))));
+}
+
+function fitsDeckCardMatch(c: DeckCardFields, m: DeckCardMatch): boolean {
+  const name = c.cardName ?? c.name ?? '';
+  const parts = typeParts(c);
+  const reference = c.reference ?? '';
+  if (m.types && m.alignments) {
+    // "an evil Enhancement": ONE half must be both. A Seal (GE/Evil Character)
+    // is evil and an Enhancement, but its Enhancement half is good.
+    const ok = parts.some((h) => m.types!.some((t) => isDeckCardType([h], t)) && (m.alignments as string[]).includes(halfAlignment(c, h)));
+    if (!ok) return false;
+  } else {
+    if (m.types && !m.types.some((t) => isDeckCardType(parts, t))) return false;
+    if (m.alignments && !m.alignments.some((a) => hasAlignment(c, parts, a))) return false;
+  }
+  if (m.testament && !inTestament(reference, m.testament)) return false;
+  if (m.books) {
+    const refs = referenceParts(reference).filter((r) => m.books!.includes(r.book));
+    if (!refs.length) return false;
+    if (m.chapters && !refs.some((r) => r.chapter >= m.chapters![0] && r.chapter <= m.chapters![1])) return false;
+  }
+  if (m.brigades) {
+    const words = brigadeWords(c.brigade ?? '');
+    if (!m.brigades.some((b) => words.has(b.toLowerCase().replace(/\s+/g, '')))) return false;
+  }
+  if (m.singleBrigade) {
+    const words = brigadeWords(c.brigade ?? '');
+    if (words.size !== 1 || words.has('multi')) return false;
+  }
+  if (m.cardClass) {
+    // Multiplayer only carries class for Forge cards; read the rest from the index.
+    const cls = c.cardClass ?? c.class ?? findCard(name)?.class ?? '';
+    if (!cls.split(/[,/]/).map((s) => s.trim()).includes(m.cardClass)) return false;
+  }
+  if (m.traits && !m.traits.every((t) => wordPattern(t).test(identifierText(c)) || nameHasTrait(name, t))) return false;
+  if (m.unique && /\bgeneric\b/i.test(c.identifier ?? '')) return false;
+  if (m.names) {
+    const character = parts.includes('Hero') || parts.includes('Evil Character');
+    if (!m.names.some((n) => isNamed(name, n, character))) return false;
+  }
+  if (m.nameIncludes && !m.nameIncludes.some((n) => name.toLowerCase().includes(n.toLowerCase()))) return false;
+  return true;
+}
+
+/** True when a deck card fits any of the ability's match entries. */
+export function matchesDeckCard(card: DeckCardFields, match: DeckCardMatch[]): boolean {
+  return match.some((m) => fitsDeckCardMatch(card, m));
+}
+
+/** The filter a search/exchange window takes for one of these abilities. */
+export function deckCardFilter(a: { target: string; match: DeckCardMatch[] }) {
+  return { label: a.target, matches: (card: DeckCardFields) => matchesDeckCard(card, a.match) };
 }
 
 /**
@@ -985,7 +1164,9 @@ export function abilityLabel(a: CardAbility): string {
     case 'take_enhancement_from_reserve':
       return a.testament === 'OT' ? 'Take an O.T. Enhancement from Reserve…' : 'Take an Enhancement from Reserve…';
     case 'search_deck':
-      return `Search deck for a ${a.book} ${a.fromChapter}-${a.toChapter} ${a.cardType ?? 'card'}…`;
+      return `Search deck for ${a.target}…`;
+    case 'exchange_with_deck':
+      return `Exchange this card with ${a.target} from deck…`;
     case 'custom':
       return a.label;
   }

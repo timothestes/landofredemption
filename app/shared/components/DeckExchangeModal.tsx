@@ -12,6 +12,7 @@ import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { useDraggableModal } from '@/app/shared/hooks/useDraggableModal';
 import { useInputMode } from '@/app/shared/hooks/useInputMode';
 import { DraggableTitleBar } from './DraggableTitleBar';
+import { DeckFilterBar, type DeckCardFilter } from './DeckFilterBar';
 
 interface DeckExchangeModalProps {
   /** The card instance IDs being sent into the deck */
@@ -26,6 +27,10 @@ interface DeckExchangeModalProps {
   validDropRef?: React.MutableRefObject<boolean>;
   /** Which zone the exchange cards land in. Defaults to 'deck'; set to 'soul-deck' for Paragon shared-soul exchange. */
   targetZone?: ZoneId;
+  /** Set when a card ability opened the exchange (exchange_with_deck, e.g.
+   *  Benjamin's "exchange this card with a son of Jacob from deck"): the grid
+   *  starts narrowed to the cards that qualify. */
+  filter?: DeckCardFilter;
 }
 
 export function DeckExchangeModal({
@@ -37,7 +42,9 @@ export function DeckExchangeModal({
   isDragActive,
   validDropRef,
   targetZone = 'deck',
+  filter,
 }: DeckExchangeModalProps) {
+  const [filterOn, setFilterOn] = useState(true);
   const { dragHandleProps, modalStyle } = useDraggableModal();
   const isTouch = useInputMode() === 'touch';
   const { zones, actions } = useModalGame();
@@ -109,9 +116,10 @@ export function DeckExchangeModal({
   }).filter(Boolean) as GameCard[];
 
   const deckCards = zones[targetZone] ?? [];
+  const pool = filter && filterOn ? deckCards.filter(filter.matches) : deckCards;
   const filtered = search
-    ? deckCards.filter(c => matchesSearch(c, search))
-    : deckCards;
+    ? pool.filter(c => matchesSearch(c, search))
+    : pool;
 
   const needCount = exchangeCardIds.length;
 
@@ -304,11 +312,15 @@ export function DeckExchangeModal({
             background: 'var(--gf-bg)',
             border: '1px solid var(--gf-border)',
             borderRadius: 8,
-            padding: 20,
-            width: '80vw',
-            maxWidth: 700,
-            height: '80vh',
-            overflow: 'hidden',
+            padding: isTouch ? 12 : 20,
+            width: isTouch ? 'calc(100vw - 16px)' : '80vw',
+            maxWidth: isTouch ? undefined : 700,
+            // Touch: nearly the whole screen, as in DeckSearchModal — on a
+            // landscape phone 80vh left no room for cards under the banner,
+            // the filter line and the search row.
+            height: isTouch ? 'calc(100dvh - 16px)' : '80vh',
+            overflowX: 'hidden',
+            overflowY: isTouch ? 'auto' : 'hidden',
             display: 'flex',
             flexDirection: 'column',
             opacity: isDragActive ? 0.15 : 1,
@@ -356,6 +368,17 @@ export function DeckExchangeModal({
               {selectedIds.size}/{needCount} selected
             </span>
           </div>
+
+          {/* Ability filter (exchange_with_deck) — what the card may become */}
+          {filter && (
+            <DeckFilterBar
+              label={filter.label}
+              shown={pool.length}
+              total={deckCards.length}
+              filterOn={filterOn}
+              onToggle={() => setFilterOn(v => !v)}
+            />
+          )}
 
           {/* Search input + field selector */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
@@ -446,22 +469,41 @@ export function DeckExchangeModal({
             </div>
           </div>
 
-          {/* Hint */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ color: 'var(--gf-border)', fontSize: 10 }}>
-              Click to select · Drag to a zone to exchange · Hover to enlarge
-            </span>
-          </div>
+          {/* Hint — mouse wording, and on a landscape phone the row is better
+              spent on the cards. */}
+          {!isTouch && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ color: 'var(--gf-border)', fontSize: 10 }}>
+                Click to select · Drag to a zone to exchange · Hover to enlarge
+              </span>
+            </div>
+          )}
 
-          {/* Card grid */}
-          <div style={{ overflow: 'auto', flex: 1 }}>
+          {/* Card grid — minHeight 0 lets it shrink and scroll instead of
+              pushing the Confirm row out of the window; on touch it keeps a
+              usable floor and the window scrolls instead. */}
+          <div style={{ overflow: 'auto', flex: 1, minHeight: isTouch ? 140 : 0 }}>
             {filtered.length === 0 ? (
               <p style={{ color: 'var(--gf-text-dim)', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>
-                {search ? 'No cards match your search' : (targetZone === 'soul-deck' ? 'Soul Deck is empty' : 'Deck is empty')}
+                {search
+                  ? 'No cards match your search'
+                  : filter && deckCards.length > 0
+                    ? `No cards in deck match ${filter.label}`
+                    : (targetZone === 'soul-deck' ? 'Soul Deck is empty' : 'Deck is empty')}
               </p>
             ) : (
               <div
-                style={{
+                // Touch: one height-filling row that scrolls sideways, as in
+                // DeckSearchModal — whole cards at whatever height is left.
+                style={isTouch ? {
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'stretch',
+                  gap: 8,
+                  height: '100%',
+                  position: 'relative',
+                  userSelect: 'none',
+                } : {
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
                   gap: 8,
@@ -475,7 +517,9 @@ export function DeckExchangeModal({
                   return (
                     <div
                       key={card.instanceId}
-                      style={{ position: 'relative', cursor: 'grab' }}
+                      style={isTouch
+                        ? { position: 'relative', cursor: 'grab', flex: '0 0 auto', height: '100%', aspectRatio: '5 / 7' }
+                        : { position: 'relative', cursor: 'grab' }}
                       onPointerDown={(e) => handlePointerDown(card, imageUrl, e)}
                       onPointerUp={() => handlePointerUp(card)}
                       onMouseEnter={(e) => onCardMouseEnter(card.cardImgFile, card.cardName, e, card.instanceId)}
@@ -492,6 +536,7 @@ export function DeckExchangeModal({
                             draggable={false}
                             style={{
                               width: '100%',
+                              ...(isTouch ? { height: '100%', objectFit: 'contain' as const, display: 'block' as const } : null),
                               borderRadius: 4,
                               border: isSelected ? '2px solid var(--gf-accent)' : '1px solid var(--gf-border)',
                               boxShadow: glowStyle?.boxShadow ?? selectedShadow,
@@ -502,6 +547,7 @@ export function DeckExchangeModal({
                           <div
                             style={{
                               width: '100%',
+                              ...(isTouch ? { height: '100%' } : null),
                               aspectRatio: '1/1.4',
                               background: 'rgb(var(--gf-panel-rgb))',
                               border: isSelected ? '2px solid var(--gf-accent)' : '1px solid var(--gf-border)',
@@ -521,17 +567,20 @@ export function DeckExchangeModal({
                           </div>
                         );
                       })()}
-                      <p style={{
-                        fontSize: 10,
-                        color: 'var(--gf-text-dim)',
-                        marginTop: 2,
-                        textAlign: 'center',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {card.cardName}
-                      </p>
+                      {/* Touch row cards fill the row height; a caption would overflow it. */}
+                      {!isTouch && (
+                        <p style={{
+                          fontSize: 10,
+                          color: 'var(--gf-text-dim)',
+                          marginTop: 2,
+                          textAlign: 'center',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {card.cardName}
+                        </p>
+                      )}
                     </div>
                   );
                 })}

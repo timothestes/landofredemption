@@ -61,7 +61,7 @@ import { isHeroCard, hasReferenceBook } from '@/lib/cards/cardAbilities';
 import { ModalGameProvider, type ModalGameContextValue } from '@/app/shared/contexts/ModalGameContext';
 import { DeckSearchModal } from '@/app/shared/components/DeckSearchModal';
 import { DeckPeekModal } from '@/app/shared/components/DeckPeekModal';
-import { countRedeemedSouls, getEffectiveAbilities, isCharacterCard, isDanielCard, isLostSoulCard, matchesSearchDeck, searchDeckTargetLabel, simplifyLostSoulName, type CardAbility } from '@/lib/cards/cardAbilities';
+import { countRedeemedSouls, deckCardFilter, getEffectiveAbilities, isCharacterCard, isDanielCard, isLostSoulCard, simplifyLostSoulName, type CardAbility } from '@/lib/cards/cardAbilities';
 import { DeckExchangeModal } from '@/app/shared/components/DeckExchangeModal';
 import { ZoneBrowseModal } from '@/app/shared/components/ZoneBrowseModal';
 import { useModalCardDrag } from '@/app/shared/hooks/useModalCardDrag';
@@ -1648,10 +1648,11 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
   const [deckSearchAbility, setDeckSearchAbility] = useState<Extract<CardAbility, { type: 'search_deck' }> | null>(null);
   const [peekState, setPeekState] = useState<{ position: 'top' | 'bottom' | 'random'; count: number; cardIds: string[]; source?: { cardName: string } } | null>(null);
   const [lookState, setLookState] = useState<{ count: number; position: 'top' | 'bottom' | 'random' } | null>(null);
-  const [exchangeState, setExchangeState] = useState<
-    { cardIds: string[]; targetZone: ZoneId } | null
-  >(null);
-  const exchangeStateRef = useRef<{ cardIds: string[]; targetZone: ZoneId } | null>(null);
+  // `ability` is set when a card's exchange_with_deck ability opened it
+  // (Benjamin, the Young) — the window then starts filtered to valid picks.
+  type ExchangeState = { cardIds: string[]; targetZone: ZoneId; ability?: Extract<CardAbility, { type: 'exchange_with_deck' }> };
+  const [exchangeState, setExchangeState] = useState<ExchangeState | null>(null);
+  const exchangeStateRef = useRef<ExchangeState | null>(null);
   useEffect(() => {
     exchangeStateRef.current = exchangeState;
   }, [exchangeState]);
@@ -2242,6 +2243,14 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         setShowDeckSearch(true);
         return;
       }
+      if (ability?.type === 'exchange_with_deck') {
+        // Exchange THIS card into your deck — so it has to be yours. The
+        // window and its exchange_from_deck reducer do the rest, as for the
+        // card menu's own Exchange with Deck.
+        if (!findMyCardById(sourceInstanceId)) return;
+        setExchangeState({ cardIds: [sourceInstanceId], targetZone: 'deck', ability });
+        return;
+      }
       if (ability?.type === 'look_at_opponent_deck') {
         // Requires opponent consent — routes through the existing
         // request_opponent_action flow. On approve, the approvedSearchRequest
@@ -2534,7 +2543,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     beginKeepOnePrompt: (sourceInstanceId, _abilityIndex, opts) =>
       setKeepOneReq({ mode: 'caster', sourceInstanceId, draw: opts?.draw ?? true }),
     undoKeepOneShuffleDraw: () => gameState.undoKeepOneShuffleDraw(),
-  }), [gameState, findAnyCardById, checkReserveProtection, checkReserveBatchProtection, undoStack, opponentHandRevealed, opponentHandBrigadeCounts, isMyFirstTurn, isOpponentFirstTurn, hasOpponent]);
+  }), [gameState, findAnyCardById, findMyCardById, checkReserveProtection, checkReserveBatchProtection, undoStack, opponentHandRevealed, opponentHandBrigadeCounts, isMyFirstTurn, isOpponentFirstTurn, hasOpponent]);
 
   // ---- ModalGameProvider value (for shared deck modals) ----
   const modalGameValue = useMemo<ModalGameContextValue>(() => ({
@@ -11064,10 +11073,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             onStartMultiDrag={modalStartMultiDrag}
             didDragRef={modalDidDragRef}
             isDragActive={modalDrag.isDragging}
-            filter={deckSearchAbility ? {
-              label: searchDeckTargetLabel(deckSearchAbility),
-              matches: (c) => matchesSearchDeck(c, deckSearchAbility),
-            } : undefined}
+            filter={deckSearchAbility ? deckCardFilter(deckSearchAbility) : undefined}
           />
         )}
 
@@ -11106,6 +11112,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             didDragRef={modalDidDragRef}
             isDragActive={modalDrag.isDragging}
             validDropRef={modalValidDropRef}
+            filter={exchangeState.ability ? deckCardFilter(exchangeState.ability) : undefined}
           />
         )}
       </ModalGameProvider>
