@@ -131,6 +131,7 @@ export type DeckCardMatch = {
   unique?: boolean;
   names?: string[];
   nameIncludes?: string[];
+  human?: boolean;
 };
 
 export type DeckCardType =

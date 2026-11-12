@@ -40,7 +40,7 @@ const CLASSES = [['weapons', 'Weapon'], ['weapon', 'Weapon'], ['warriors', 'Warr
 const CHAR_TRAITS = ['king of israel', 'king of judah', 'son of jacob', 'flood survivor', 'angel', 'demon', 'king', 'prophet', 'priest', 'disciple', 'apostle', 'judge', 'musician', 'heretic', 'magician', 'sadducee', 'pharisee', 'antediluvian', 'postexilic', 'patriarch', 'missionary', 'thief', 'giant', 'egyptian', 'philistine', 'moabite', 'canaanite', 'babylonian', 'roman', 'assyrian', 'persian', 'syrian', 'edomite', 'greek', 'samaritan', 'animal', 'lion', 'herod'];
 const OTHER_TRAITS = ["solomon's temple", 'armor of god', 'tabernacle artifact', 'temple artifact', 'priestly artifact', 'heavenly temple artifact', 'heavenly temple', 'involves music', 'involve music', 'nativity', 'idol', 'temple', 'tabernacle', 'wilderness', 'corinth', 'joppa', 'empty tomb', 'samaria'];
 // Words that make a target a judgement call — skip the clause.
-const JUDGEMENT = /\b(human|humans|male|female|royal|meek|generic|single-brigade|multi-brigade|single color|matching|random|toughness|strength|except|ability|depicting|dual icon|healing|X|reserved|from hand|of your choice|teal|child of|grim reaper|set-aside|reference|both of)\b|^(?:it|one|them|this card)$/i;
+const JUDGEMENT = /\b(male|female|royal|meek|generic|multi-brigade|single color|matching|random|toughness|strength|except|ability|depicting|dual icon|healing|X|reserved|from hand|of your choice|teal|child of|grim reaper|set-aside|reference|both of)\b|^(?:it|one|them|this card)$/i;
 // Card-name lookup. Keys are lowercased names with set suffixes stripped, plus
 // each half of a dual name ("Whirlwind / Everlasting Ground" → "whirlwind").
 const CARD_BASE = new Map();
@@ -79,7 +79,8 @@ function testamentOk(c, t) {
   if (/new testament/i.test(c.reference)) return t === 'NT';
   return refs(c.reference).some((r) => BOOKS.includes(r.book) && (NT.has(r.book) ? 'NT' : 'OT') === t);
 }
-const brigadeSet = (c) => new Set(c.brigade.toLowerCase().replace(/pale green/g, 'palegreen').split(/[^a-z]+/).filter(Boolean));
+// "Good Gold" (RR2) is one brigade: good/evil are not brigade words.
+const brigadeSet = (c) => new Set(c.brigade.toLowerCase().replace(/pale green/g, 'palegreen').split(/[^a-z]+/).filter((w) => w && w !== 'good' && w !== 'evil'));
 // Optionally plural, never possessive ("Herod's Guard" is not a Herod).
 const wordRe = (w) => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:s|es)?\\b(?![’'])`, 'i');
 const halfAlign = (c, h) => (h === 'Hero' || h === 'GE' ? 'good' : h === 'Evil Character' || h === 'EE' ? 'evil' : c.alignment.toLowerCase());
@@ -122,17 +123,49 @@ function matchOne(c, m) {
   if (m.unique && /\bgeneric\b/i.test(c.identifier)) return false;
   if (m.names && !m.names.some((n) => nameIs(c, n))) return false;
   if (m.nameIncludes && !m.nameIncludes.some((n) => c.name.toLowerCase().includes(n.toLowerCase()))) return false;
+  if (m.human && (!isCharacter(c) || NON_HUMAN.has(c.name))) return false;
   return true;
 }
 
+// ---------- humans (ORDIR 7.1) ----------
+// "Humans are characters that are not angels, animals, demons, and symbolic
+// characters." Non-human: a single-brigade silver Hero (every one is an angel)
+// or single-brigade orange Evil Character (every one is a demon); a role tag
+// in the identifier (Angel on a Hero, Demon or Animal on an Evil Character,
+// Symbolic on either); or a name on ORDIR's angel / animal / demon / symbolic
+// lists that carries neither — these are the only listed ones the first two
+// miss. A name covers every printing: they are the same character.
+const ORDIR_UNTAGGED_NON_HUMANS = [
+  'Abaddon the Destroyer', 'Admiral', 'Bear', 'Beast from the Earth', 'Beast from the Sea', 'Controlling Demon',
+  'Death & Hades', 'Demon in Armor', 'Evil Angel', 'Evil Spawn', 'Fallen Angel', 'Foul Spirit', 'Frog Demons',
+  'King of Tyrus', 'Legion', 'Leviathan', 'Locust from the Pit', 'Lying Spirit', 'Messenger of Satan', 'Mighty Warrior',
+  'Panic Demon', 'Possessing Demon', 'Prince of Greece', 'Prince of Persia', 'Prince of this World', 'Prince of Tyrus',
+  'Red Dragon', 'Self', 'Strong Demon', 'The Serpent', 'Unclean Spirit', 'Wandering Spirit', 'Warrior in Training',
+];
+const singleBrigadeOf = (c, b) => { const s = brigadeSet(c); return s.size === 1 && s.has(b); };
+// "Not Human, Not Demon" denies a role, so drop negated words first.
+const roleTag = (c, w) => wordRe(w).test(identText(c).replace(/\bnot \w+/gi, ''));
+function isNonHuman(c) {
+  // ORDIR: "rare exceptions where a card represents a mixed group of beings and
+  // has multiple roles" — Great Multitude is tagged "Human, Angel"; it is human.
+  if (roleTag(c, 'human')) return false;
+  const p = typeParts(c);
+  if (p.includes('Hero') && (singleBrigadeOf(c, 'silver') || roleTag(c, 'angel'))) return true;
+  if (p.includes('Evil Character') && (singleBrigadeOf(c, 'orange') || roleTag(c, 'demon') || roleTag(c, 'animal'))) return true;
+  if (roleTag(c, 'symbolic')) return true;
+  return ORDIR_UNTAGGED_NON_HUMANS.some((n) => base(c.name) === n.toLowerCase());
+}
+for (const n of ORDIR_UNTAGGED_NON_HUMANS) if (!cards.some((c) => isCharacter(c) && base(c.name) === n.toLowerCase())) throw new Error(`non-human name finds no character: ${n}`);
+const NON_HUMAN = new Set(cards.filter((c) => isCharacter(c) && isNonHuman(c)).map((c) => c.name));
+
 // ---------- target parser ----------
-const LEAD = /^(?:a|an|any|one|two|three|up to (?:\d+|two|three)|\d+)\s+/i;
+const LEAD = /^(?:a|an|any|one|two|three|up to (?:\d+|two|three|x)|\d+)\s+/i;
 function parseAlt(alt, titleWords) {
   // Whole alternative is a card name ("Whirlwind", "A Child is Born", "Phinehas, the Useless").
   const named = !alt.includes('TITLEPH') && lookupName(alt);
   if (named) return { names: [named] };
   // "different" (Edomite/Persian): a same-name copy in deck would also show — rare, and Show all covers the reverse.
-  let s = ` ${alt.replace(LEAD, '').toLowerCase().replace(/\b(?:your|brigade|class|that|different)\b/g, ' ').replace(/\s+/g, ' ').trim()} `;
+  let s = ` ${alt.replace(LEAD, '').toLowerCase().replace(/\bsingle-brigade\b/g, 'singlebrigade').replace(/\b(?:your|brigade|class|that|different)\b/g, ' ').replace(/\s+/g, ' ').trim()} `;
   const m = {};
   const take = (re) => { const hit = s.match(re); if (hit) s = s.replace(re, ' '); return hit; };
   let t;
@@ -141,6 +174,8 @@ function parseAlt(alt, titleWords) {
   if (take(/ good /)) (m.alignments ??= []).push('good');
   if (take(/ evil (?!characters? )/)) (m.alignments ??= []).push('evil');
   if (take(/ neutral /)) (m.alignments ??= []).push('neutral');
+  if (take(/ humans? /)) m.human = true;
+  if (take(/ singlebrigade /)) m.singleBrigade = true;
   if (take(/ ot /)) m.testament = 'OT';
   if (take(/ nt /)) m.testament = 'NT';
   for (const b of BRIGADES) if (take(new RegExp(` ${b} `))) (m.brigades ??= []).push(b === 'grey' ? 'Gray' : b.replace(/\b\w/g, (x) => x.toUpperCase()));
@@ -153,6 +188,8 @@ function parseAlt(alt, titleWords) {
     if (take(new RegExp(` ${tr}(?:s|es)? `))) (m.traits ??= []).push(tr === 'involve music' ? 'involves music' : tr);
   }
   for (const [w, ts] of TYPES) if (s.includes(` ${w} `)) { s = s.replace(` ${w} `, ' '); if (ts.length) (m.types ??= []).push(...ts); }
+  // "a Genesis human", "a Canaanite human or Site": human is the head noun, a character.
+  if (m.human && !m.types) m.types = ['character'];
   // A trait with no printed type is the head noun ("a king", "an idol"), not a
   // modifier — remember that, so a following "or weapon"/"or Curse" doesn't
   // inherit it. A character trait as head means a character.
@@ -194,7 +231,7 @@ function parseTarget(target) {
   const alts = clean.split(/\s*,\s*(?:or\s+)?|\s+or\s+|\s+and\/or\s+|\s+and\s+(?=an?\s)/i).filter(Boolean);
   const parsed = alts.map((a) => parseAlt(a, titleWords));
   // What each alternative printed itself, before any sharing.
-  const MODS = ['alignments', 'testament', 'brigades', 'books', 'cardClass', 'traits'];
+  const MODS = ['alignments', 'testament', 'brigades', 'singleBrigade', 'books', 'cardClass', 'traits'];
   const own = parsed.map((p) => new Set(MODS.filter((k) => p[k] !== undefined && !(k === 'traits' && p.traitIsHead) && !(k === 'cardClass' && p.classIsHead))));
   // Head noun shared backwards: "a Genesis or Exodus Fortress", "a good or
   // neutral Joshua card" — an alternative with no head borrows ONLY the next
@@ -256,13 +293,29 @@ const TEMPLE_ARTIFACTS = [...TABERNACLE_ARTIFACTS, 'Golden Cherubim', 'Windows o
 const EXTRA_GROUP_NAMES = {
   wilderness: ['Caleb', 'Hur', 'Miriam', 'Moses', 'Spy', 'Generations of Priests', 'Ordained Priests', 'The Israelite Foremen', 'The Tribal Elders', 'Indentured Servant'],
   postexilic: ['Haggai', 'Joshua the High Priest', 'Malachi'],
+  // The listed animals whose Patriarchs printings carry no tag.
+  animal: ['Leviathan', 'The Serpent'],
+  // ORDIR's Canaanite characters; most printings carry no identifier.
+  canaanite: [
+    'Ahimelek the Hittite', 'Ishmaiah the Gibeonite', 'King Hiram', 'Rahab', 'Uriah',
+    'Abimelech', 'Adoni-bezek, Thumbless', 'Afflicting Spirit', 'Ahiman, Son of Anak', 'Arba, Greatest Anakim', 'Army of Jericho',
+    'Basemath', 'Bera, King of Sodom', 'Canaan, the Cursed', 'Canaanite Wives', 'Concealed Canaanites', 'Doomed Canaanites',
+    'Foreign Wives', 'Gibeonite Delegates', 'Hamor', 'Jabin, the Assembler', 'Jezebel', 'Judith', 'King Abimelech', 'King of Tyrus',
+    "Lot's Daughters", "Lot's Wife", 'Og, King of Bashan', 'Prince of Tyrus', 'Shechem', 'Sheshai, Son of Anak', 'Sisera',
+    "Sisera's Army", 'Talmai, Son of Anak', 'The Clashing King', 'The Crafty Gibeonites', 'The Five Kings', 'The Woman of Thebez',
+    'Woman of Thebez', 'Zebul, the Fraud',
+  ],
 };
+// ORDIR "Canaanite Site": the Sites it names (a Canaanite character is marked).
+const CANAANITE_SITES = ['Canaan', 'Hebron', 'Hormah', 'Jericho', 'Pit of Dothan', 'Promised Land', 'Sodom', 'Sodom & Gomorrah'];
 const without = (m, trait) => { const traits = (m.traits ?? []).filter((t) => t !== trait); const o = { ...m, traits }; if (!traits.length) delete o.traits; return o; };
 function expandGroups(alts) {
   const out = [];
   for (const m of alts) {
     const t = m.traits ?? [];
-    if (t.includes('tabernacle artifact')) out.push({ ...without(m, 'tabernacle artifact'), types: ['Artifact'], names: TABERNACLE_ARTIFACTS });
+    // Two of them (Hebron, Sodom & Gomorrah) are Cities — a City is also a Site (REG).
+    if (t.includes('canaanite') && m.types?.length === 1 && m.types[0] === 'Site') out.push({ ...without(m, 'canaanite'), types: ['Site', 'City'], names: CANAANITE_SITES });
+    else if (t.includes('tabernacle artifact')) out.push({ ...without(m, 'tabernacle artifact'), types: ['Artifact'], names: TABERNACLE_ARTIFACTS });
     else if (t.includes('heavenly temple artifact')) out.push({ ...without(m, 'heavenly temple artifact'), types: ['Artifact'], traits: ['heavenly temple'] });
     else if (t.includes('temple artifact')) out.push({ ...without(m, 'temple artifact'), types: ['Artifact'], names: TEMPLE_ARTIFACTS });
     else if (t.includes('angel')) {
@@ -312,7 +365,10 @@ for (const c of cards) {
     const star = /^\s*(?:\(Star\)|STAR:)/.test(seg);
     for (const cl of CLAUSES) {
       for (const hit of seg.matchAll(cl.re)) {
-        if (!/\b(?:deck|draw pile)\b/i.test(hit[cl.piles])) continue;
+        // "from Reserve (or deck if you control a meek Lost Soul)": the deck is
+        // allowed on a condition the player judges, as with any other condition.
+        const conditionalDeck = /^\s*\(or (?:from )?(?:your )?deck\b[^)]*\)/i.test(seg.slice(hit.index + hit[0].length));
+        if (!/\b(?:deck|draw pile)\b/i.test(hit[cl.piles]) && !conditionalDeck) continue;
         let target = hit[cl.target].trim().replace(/^you may\s+/i, '');
         if (/opponent|top|bottom|discard pile/i.test(target)) continue;
         // "Opponent may take X from deck" — not the activator's effect.
@@ -328,7 +384,8 @@ for (const e of entries) {
   const { clean, parsed } = parseTarget(e.target);
   const flags = [];
   // Raw target too: parentheticals ("(except a Dominant)") are stripped from clean.
-  if (JUDGEMENT.test(clean) || JUDGEMENT.test(e.target)) flags.push('judgement');
+  // A leading "up to X" is a count, not a judgement.
+  if (JUDGEMENT.test(clean.replace(LEAD, '')) || JUDGEMENT.test(e.target.replace(LEAD, ''))) flags.push('judgement');
   if (parsed.some((p) => p.leftover)) flags.push(`leftover: ${parsed.map((p) => p.leftover).filter(Boolean).join(' | ')}`);
   // A rule-added alternative that matches nothing (an EVIL flood survivor, a
   // GOOD pharaoh) is just dropped; the printed one still decides the entry.
@@ -381,9 +438,6 @@ const EXTRA = {
   'Damascus (Promo)': [{ kind: 'search_deck', label: 'an Evil Character', match: [{ types: ['Evil Character'] }] }],
   'The Watchman (Promo)': [{ kind: 'exchange_with_deck', label: 'a Major or Minor prophet', match: [{ traits: ['major prophet'], types: ['character'] }, { traits: ['minor prophet'], types: ['character'] }] }],
   'False Peace (PoC)': [{ kind: 'search_deck', label: 'an O.T. card (except a Dominant)', match: [{ testament: 'OT', types: NOT_DOMINANT }] }],
-  // Wilderness characters are humans by definition.
-  'Wandering Israelites': [{ kind: 'exchange_with_deck', label: 'an evil wilderness human', match: [{ alignments: ['evil'], traits: ['wilderness'], types: ['character'] }] }],
-  'Lost Soul "Aimless" [Exodus 14:3]': [{ kind: 'search_deck', label: 'a wilderness human', match: [{ traits: ['wilderness'], types: ['character'] }, { names: EXTRA_GROUP_NAMES.wilderness }] }],
   'The Thief (GoC)': [{ kind: 'exchange_with_deck', label: 'a thief or generic demon', match: [{ traits: ['thief'], types: ['character'] }, { traits: ['demon', 'generic'], types: ['Evil Character'] }, { traits: ['generic'], types: ['Evil Character'], brigades: ['Orange'], singleBrigade: true }] }],
 };
 
@@ -436,8 +490,10 @@ const header = (copyNote) => `// GENERATED by scripts/generate-deck-search-abili
 // for X", "take/play/add X from deck" and "exchange this card with X from
 // deck". Each X is parsed into DeckCardMatch filters and checked against the
 // card pool (every filter matches at least one card). Targets that need
-// judgement the card data can't make — human, meek, female, "matching",
-// "with a … ability" — are skipped, as are clauses aimed at an opponent.
+// judgement the card data can't make — meek, female, "matching", "with a …
+// ability" — are skipped, as are clauses aimed at an opponent. "Human" follows
+// ORDIR (nonHumanCharacters.ts). A deck allowed on a condition ("from Reserve
+// (or deck if …)") is offered; the player judges the condition.
 // Hand corrections live in the generator's OVERRIDES. Merged after the
 // hand-written registry (cardAbilities.ts), so existing ability indexes hold.
 import type { CardAbility } from './cardAbilities';
@@ -455,6 +511,19 @@ for (const card of [...final.keys()].sort((a, b) => a.localeCompare(b))) {
 writeFileSync(`${repoRoot}/lib/cards/__tests__/fixtures/deckSearchCounts.json`, JSON.stringify(counts, null, 1) + '\n');
 writeFileSync(`${repoRoot}/lib/cards/deckSearchAbilities.ts`, header('Duplicated at spacetimedb/src/deckSearchAbilities.ts; the CARD_ABILITIES parity test keeps them equal.') + body);
 writeFileSync(`${repoRoot}/spacetimedb/src/deckSearchAbilities.ts`, header('Copy of lib/cards/deckSearchAbilities.ts (the module cannot import lib/); the parity test keeps them equal.') + body);
+// Client-only: the server never evaluates a filter, so no spacetimedb copy.
+writeFileSync(`${repoRoot}/lib/cards/nonHumanCharacters.ts`, `// GENERATED by scripts/generate-deck-search-abilities.mjs — do not edit by hand.
+//
+// Every character printing that is NOT human under ORDIR 7.1 ("Humans are
+// characters that are not angels, animals, demons, and symbolic characters"):
+// single-brigade silver Heroes, single-brigade orange Evil Characters, an
+// Angel / Demon / Animal / Symbolic identifier tag, or a name on ORDIR's lists —
+// unless also tagged Human (a mixed group, e.g. Great Multitude, is human too).
+// A DeckCardMatch with \`human\` matches characters NOT in this set.
+export const NON_HUMAN_CHARACTERS: ReadonlySet<string> = new Set([
+${[...NON_HUMAN].sort((a, b) => a.localeCompare(b)).map((n) => `  ${q(n)},`).join('\n')}
+]);
+`);
 console.log(`final cards: ${final.size}, entries: ${[...final.values()].reduce((n, l) => n + l.length, 0)}`);
 const ok = out.filter((e) => !e.flags.length);
 console.log(`clauses: ${out.length}; clean: ${ok.length} (search ${ok.filter((e) => e.kind === 'search_deck').length}, exchange ${ok.filter((e) => e.kind === 'exchange_with_deck').length}); flagged: ${out.length - ok.length}`);

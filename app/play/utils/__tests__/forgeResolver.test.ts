@@ -99,7 +99,7 @@ describe("resolveForgeCardName", () => {
 
   it("makes a forge card's abilities dispatchable; blank name finds none", () => {
     const vb = new Map([[ID, { ...entry, name: "Virgin Birth" }]]);
-    expect(getEffectiveAbilities({ cardName: resolveForgeCardName(forgeRow, vb) })).toHaveLength(1);
+    expect(getEffectiveAbilities({ cardName: resolveForgeCardName(forgeRow, vb) }).length).toBeGreaterThan(0);
     expect(getEffectiveAbilities({ cardName: forgeRow.cardName })).toHaveLength(0);
   });
 });
