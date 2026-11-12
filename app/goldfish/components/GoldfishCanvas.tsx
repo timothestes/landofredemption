@@ -61,7 +61,7 @@ import { computeEquipOffset, hitTestWarrior, MAX_EQUIPPED_WEAPONS_PER_WARRIOR } 
 import { gameCardIsWarrior, gameCardIsWeapon } from '../utils/equipClass';
 import { findCard } from '@/lib/cards/lookup';
 import { compareCardsDefault } from '@/lib/cards/defaultSort';
-import { countRedeemedSouls, getEffectiveAbilities, isDanielCard, isLostSoulCard, isHeroCard, matchesSearchDeck, searchDeckTargetLabel, simplifyLostSoulName, type CardAbility } from '@/lib/cards/cardAbilities';
+import { countRedeemedSouls, deckCardFilter, getEffectiveAbilities, isDanielCard, isLostSoulCard, isHeroCard, simplifyLostSoulName, type CardAbility } from '@/lib/cards/cardAbilities';
 import { ResurrectHeroesModal } from '@/app/shared/components/ResurrectHeroesModal';
 import { KeepOneModal } from '@/app/shared/components/KeepOneModal';
 import { ReserveEnhancementModal, isReserveEnhancement } from '@/app/shared/components/ReserveEnhancementModal';
@@ -216,6 +216,9 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
   // Dreamer) — narrows the window to the cards it can take. Null when the
   // player opened the search from the deck menu.
   const [deckSearchAbility, setDeckSearchAbility] = useState<Extract<CardAbility, { type: 'search_deck' }> | null>(null);
+  // Same for Exchange with Deck (exchange_with_deck, e.g. Benjamin, the Young).
+  // Cleared whenever the exchange window closes — its only exits.
+  const [exchangeAbility, setExchangeAbility] = useState<Extract<CardAbility, { type: 'exchange_with_deck' }> | null>(null);
 
   // Opens the "look at / reveal top N" peek modal for an own-deck inspection
   // ability. Shared by the fixed-count path (look_at_own_deck / reveal_own_deck)
@@ -290,6 +293,14 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
         // runs, never during render, so leaving it out of the deps is safe.
         setDeckSearchAbility(ability);
         setShowDeckSearch(true);
+        return;
+      }
+      if (ability?.type === 'exchange_with_deck') {
+        // Exchange THIS card: only your own card goes into your deck.
+        // setExchangeCardIds is declared further down — read only when this runs.
+        if (!source || source.ownerId !== 'player1') return;
+        setExchangeAbility(ability);
+        setExchangeCardIds([cardId]);
         return;
       }
       // Non-modal abilities fired from hand still flash the source so the
@@ -3210,10 +3221,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
             onStartMultiDrag={modalStartMultiDrag}
             didDragRef={modalDidDragRef}
             isDragActive={modalDrag.isDragging}
-            filter={deckSearchAbility ? {
-              label: searchDeckTargetLabel(deckSearchAbility),
-              matches: (c) => matchesSearchDeck(c, deckSearchAbility),
-            } : undefined}
+            filter={deckSearchAbility ? deckCardFilter(deckSearchAbility) : undefined}
           />
         )}
 
@@ -3476,12 +3484,15 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
             exchangeCardIds={exchangeCardIds}
             onComplete={() => {
               setExchangeCardIds(null);
+              setExchangeAbility(null);
               clearSelection();
             }}
             onCancel={() => {
               setExchangeCardIds(null);
+              setExchangeAbility(null);
               setCardRenderKey(k => k + 1);
             }}
+            filter={exchangeAbility ? deckCardFilter(exchangeAbility) : undefined}
             onStartDrag={modalStartDrag}
             didDragRef={modalDidDragRef}
             isDragActive={modalDrag.isDragging}

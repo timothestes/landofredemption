@@ -21,9 +21,13 @@ import {
   hasReferenceBook,
   getEffectiveAbilities,
   hasUsableAbilityInZone,
-  matchesSearchDeck,
-  searchDeckTargetLabel,
+  matchesDeckCard,
+  deckCardFilter,
+  type CardAbility,
+  type DeckCardMatch,
 } from '../cardAbilities';
+
+type SearchDeck = Extract<CardAbility, { type: 'search_deck' }>;
 import { CARDS } from '../lookup';
 import {
   IMITATE_SOUL_IMAGES as serverImitateImages,
@@ -306,7 +310,8 @@ describe('band_heroes_from_deck — Creation of the World', () => {
 
 describe('resurrect_heroes registration', () => {
   it('both cards are registered with the resurrect_heroes ability', () => {
-    expect(libCardAbilities['Emptying the Tombs (GoC)']).toEqual([{ type: 'resurrect_heroes' }]);
+    // Its "take a good Gospel Fortress from deck" half is appended after.
+    expect(libCardAbilities['Emptying the Tombs (GoC)'][0]).toEqual({ type: 'resurrect_heroes' });
     expect(libCardAbilities['Redemption [2025 - National]']).toEqual([{ type: 'resurrect_heroes' }]);
   });
 
@@ -333,8 +338,8 @@ describe('take_enhancement_from_reserve registration', () => {
 });
 
 describe('search_deck — Abraham (CoW) and Joseph, the Dreamer', () => {
-  const abraham = { type: 'search_deck', book: 'Genesis', fromChapter: 12, toChapter: 24, cardType: 'Hero' } as const;
-  const joseph = { type: 'search_deck', book: 'Genesis', fromChapter: 37, toChapter: 50 } as const;
+  const abraham: SearchDeck = { type: 'search_deck', target: 'a Genesis 12-24 Hero', match: [{ books: ['Genesis'], chapters: [12, 24], types: ['Hero'] }] };
+  const joseph: SearchDeck = { type: 'search_deck', target: 'a Genesis 37-50 card', match: [{ books: ['Genesis'], chapters: [37, 50] }] };
   const chapterOf = (ref: string) => Number(ref.match(/^Genesis (\d+)/)?.[1]);
 
   it('registers both Abraham printings with the Genesis 12-24 Hero search', () => {
@@ -350,33 +355,33 @@ describe('search_deck — Abraham (CoW) and Joseph, the Dreamer', () => {
     expect(search).toEqual(joseph);
   });
 
-  it('labels the menu item and the search window', () => {
+  it('labels the menu item with the printed target', () => {
     expect(abilityLabel(abraham)).toBe('Search deck for a Genesis 12-24 Hero…');
     expect(abilityLabel(joseph)).toBe('Search deck for a Genesis 37-50 card…');
-    expect(searchDeckTargetLabel(abraham)).toBe('Genesis 12-24 Heroes');
-    expect(searchDeckTargetLabel(joseph)).toBe('Genesis 37-50 cards');
   });
 
   it('matches on book, inclusive chapter range, and Hero when asked', () => {
     const hero = (reference: string) => ({ type: 'Hero', reference });
-    expect(matchesSearchDeck(hero('Genesis 12:3'), abraham)).toBe(true);
-    expect(matchesSearchDeck(hero('Genesis 24:67'), abraham)).toBe(true);
-    expect(matchesSearchDeck(hero('Genesis 12:3 (Acts 3:25)'), abraham)).toBe(true);
-    expect(matchesSearchDeck(hero('Genesis 11:26'), abraham)).toBe(false);
-    expect(matchesSearchDeck(hero('Genesis 25:7'), abraham)).toBe(false);
-    expect(matchesSearchDeck(hero('Exodus 12:1'), abraham)).toBe(false);
-    expect(matchesSearchDeck(hero(''), abraham)).toBe(false);
-    expect(matchesSearchDeck({ type: 'GE', reference: 'Genesis 12:3' }, abraham)).toBe(false);
+    const m = abraham.match;
+    expect(matchesDeckCard(hero('Genesis 12:3'), m)).toBe(true);
+    expect(matchesDeckCard(hero('Genesis 24:67'), m)).toBe(true);
+    expect(matchesDeckCard(hero('Genesis 12:3 (Acts 3:25)'), m)).toBe(true);
+    expect(matchesDeckCard(hero('Genesis 11:26'), m)).toBe(false);
+    expect(matchesDeckCard(hero('Genesis 25:7'), m)).toBe(false);
+    expect(matchesDeckCard(hero('Exodus 12:1'), m)).toBe(false);
+    expect(matchesDeckCard(hero(''), m)).toBe(false);
+    expect(matchesDeckCard({ type: 'GE', reference: 'Genesis 12:3' }, m)).toBe(false);
     // Joseph takes any card type; multiplayer cards carry cardType, not type.
-    expect(matchesSearchDeck({ type: 'EE', reference: 'Genesis 37:8' }, joseph)).toBe(true);
-    expect(matchesSearchDeck({ cardType: 'Fortress', reference: 'Genesis 50:19-21' }, joseph)).toBe(true);
-    expect(matchesSearchDeck({ type: 'GE', reference: 'Genesis 3:15' }, joseph)).toBe(false);
+    const j = joseph.match;
+    expect(matchesDeckCard({ type: 'EE', reference: 'Genesis 37:8' }, j)).toBe(true);
+    expect(matchesDeckCard({ cardType: 'Fortress', reference: 'Genesis 50:19-21' }, j)).toBe(true);
+    expect(matchesDeckCard({ type: 'GE', reference: 'Genesis 3:15' }, j)).toBe(false);
   });
 
   it('finds the real Genesis 12-24 Heroes and nothing outside the range', () => {
     // Guards against a carddata reformat (references stop leading with
     // "Genesis <chapter>:") silently emptying the search.
-    const matches = CARDS.filter(c => matchesSearchDeck(c, abraham));
+    const matches = CARDS.filter(c => matchesDeckCard(c, abraham.match));
     expect(matches.length).toBeGreaterThan(20);
     for (const name of ['Abraham (CoW)', 'Isaac', 'Lot', 'Melchizedek', 'Sarah']) {
       expect(matches.some(c => c.name === name), name).toBe(true);
@@ -389,7 +394,7 @@ describe('search_deck — Abraham (CoW) and Joseph, the Dreamer', () => {
   });
 
   it('finds Genesis 37-50 cards of every type, Joseph himself included', () => {
-    const matches = CARDS.filter(c => matchesSearchDeck(c, joseph));
+    const matches = CARDS.filter(c => matchesDeckCard(c, joseph.match));
     expect(matches.length).toBeGreaterThan(100);
     expect(matches.some(c => c.name === 'Joseph, the Dreamer')).toBe(true);
     expect(new Set(matches.map(c => c.type)).size).toBeGreaterThan(3);
@@ -397,6 +402,123 @@ describe('search_deck — Abraham (CoW) and Joseph, the Dreamer', () => {
       expect(chapterOf(c.reference), c.name).toBeGreaterThanOrEqual(37);
       expect(chapterOf(c.reference), c.name).toBeLessThanOrEqual(50);
     }
+  });
+});
+
+describe('matchesDeckCard rules', () => {
+  const fits = (card: Record<string, string>, m: DeckCardMatch) => matchesDeckCard(card, [m]);
+
+  it('reads each half of a dual type', () => {
+    expect(fits({ type: 'Hero/Evil Character' }, { types: ['Evil Character'] })).toBe(true);
+    expect(fits({ type: 'GE/EE' }, { types: ['Enhancement'] })).toBe(true);
+    expect(fits({ type: 'Hero' }, { types: ['character'] })).toBe(true);
+    expect(fits({ type: 'GE' }, { types: ['character'] })).toBe(false);
+  });
+
+  it('treats a GE/EE card as both good and evil', () => {
+    expect(fits({ type: 'GE/EE', alignment: 'Neutral' }, { alignments: ['good'] })).toBe(true);
+    expect(fits({ type: 'GE/EE', alignment: 'Neutral' }, { alignments: ['evil'] })).toBe(true);
+    expect(fits({ type: 'Dominant', alignment: 'Evil' }, { alignments: ['good'] })).toBe(false);
+  });
+
+  it('checks every reference a card cites, and printed testaments', () => {
+    expect(fits({ reference: 'Matthew 2:6/Micah 5:2' }, { testament: 'OT' })).toBe(true);
+    expect(fits({ reference: 'Matthew 2:6/Micah 5:2' }, { books: ['Micah'] })).toBe(true);
+    expect(fits({ reference: 'Old Testament' }, { testament: 'OT' })).toBe(true);
+    expect(fits({ reference: 'I Samuel 17:50' }, { books: ['Samuel'] })).toBe(false);
+    expect(fits({ reference: 'I Samuel 17:50' }, { books: ['I Samuel'] })).toBe(true);
+    expect(fits({ reference: 'Josephus' }, { testament: 'NT' })).toBe(false);
+  });
+
+  it('keeps Pale Green apart from Green', () => {
+    expect(fits({ brigade: 'Pale Green' }, { brigades: ['Green'] })).toBe(false);
+    expect(fits({ brigade: 'Pale Green' }, { brigades: ['Pale Green'] })).toBe(true);
+    expect(fits({ brigade: 'Green/Blue' }, { brigades: ['Blue'] })).toBe(true);
+  });
+
+  it('reads class from the card index when the game card has none', () => {
+    // Multiplayer only carries cardClass for Forge cards.
+    const warrior = CARDS.find(c => c.class.split(/[,/]/).map(s => s.trim()).includes('Warrior'))!;
+    expect(fits({ cardName: warrior.name, type: warrior.type }, { cardClass: 'Warrior' })).toBe(true);
+    expect(fits({ cardName: warrior.name, type: warrior.type, cardClass: '' }, { cardClass: 'Warrior' })).toBe(false);
+  });
+
+  it('needs every trait, in identifier or name, ignoring X-counting notes', () => {
+    expect(fits({ identifier: 'Canaanite, Giant' }, { traits: ['canaanite', 'giant'] })).toBe(true);
+    expect(fits({ identifier: 'Canaanite' }, { traits: ['canaanite', 'giant'] })).toBe(false);
+    expect(fits({ cardName: 'Angel at Bethesda', identifier: '' }, { traits: ['angel'] })).toBe(true);
+    expect(fits({ identifier: 'Generic, Animal, X = # of your lions' }, { traits: ['lion'] })).toBe(false);
+    expect(fits({ identifier: 'Philistine King' }, { traits: ['philistine'] })).toBe(true);
+  });
+
+  it('unique means not Generic', () => {
+    expect(fits({ identifier: 'Generic, Philistine' }, { unique: true })).toBe(false);
+    expect(fits({ identifier: 'Philistine King' }, { unique: true })).toBe(true);
+  });
+
+  it('a name finds its printings, its titled versions and either half of a dual card', () => {
+    expect(fits({ cardName: 'David (Roots)' }, { names: ['David'] })).toBe(true);
+    expect(fits({ cardName: 'David, the Shepherd (CoW AB)' }, { names: ['David'] })).toBe(true);
+    expect(fits({ cardName: 'Whirlwind / Everlasting Ground' }, { names: ['Whirlwind'] })).toBe(true);
+    expect(fits({ cardName: "David's Tent [K]" }, { names: ['David'] })).toBe(false);
+    expect(fits({ cardName: 'John the Baptist' }, { names: ['John'] })).toBe(false);
+    expect(fits({ cardName: 'Seven Trumpet Sounders' }, { nameIncludes: ['Trumpet'] })).toBe(true);
+  });
+
+  it('any match entry is enough', () => {
+    const siteOrGoodFortress: DeckCardMatch[] = [{ types: ['Site'] }, { alignments: ['good'], types: ['Fortress'] }];
+    expect(matchesDeckCard({ type: 'Site', alignment: 'Neutral' }, siteOrGoodFortress)).toBe(true);
+    expect(matchesDeckCard({ type: 'Fortress', alignment: 'Evil' }, siteOrGoodFortress)).toBe(false);
+  });
+});
+
+describe('generated search / exchange registry', () => {
+  const entries = Object.entries(CARD_ABILITIES).flatMap(([card, list]) =>
+    list
+      .filter((a): a is Extract<typeof a, { type: 'search_deck' | 'exchange_with_deck' }> => a.type === 'search_deck' || a.type === 'exchange_with_deck')
+      .map(a => ({ card, a })));
+
+  it('covers the scanned card pool', () => {
+    expect(entries.length).toBeGreaterThan(300);
+    expect(entries.filter(e => e.a.type === 'exchange_with_deck').length).toBeGreaterThan(10);
+  });
+
+  it('every filter matches at least one real card', () => {
+    // A typo'd trait or name would silently empty the window.
+    const dead: string[] = [];
+    for (const { card, a } of entries) {
+      a.match.forEach((m, i) => {
+        if (!CARDS.some(c => matchesDeckCard(c, [m]))) dead.push(`${card} — ${a.target} [${i}]`);
+      });
+    }
+    expect(dead).toEqual([]);
+  });
+
+  it('Benjamin, the Young exchanges itself with a son of Jacob', () => {
+    const [ex] = CARD_ABILITIES['Benjamin, the Young'];
+    expect(ex).toMatchObject({ type: 'exchange_with_deck', target: 'a son of Jacob' });
+    expect(abilityLabel(ex)).toBe('Exchange this card with a son of Jacob from deck…');
+    const sons = CARDS.filter(c => matchesDeckCard(c, (ex as { match: DeckCardMatch[] }).match));
+    expect(sons.some(c => c.name === 'Benjamin, the Young')).toBe(true);
+    expect(sons.some(c => c.name.startsWith('Judah'))).toBe(true);
+  });
+
+  it('a hand-written ability keeps its index when a search is appended', () => {
+    expect(CARD_ABILITIES['Hope'][0]).toMatchObject({ type: 'look_at_own_deck' });
+    expect(CARD_ABILITIES['Hope'][1]).toMatchObject({ type: 'search_deck', target: 'Joy, Peace or The Holy Spirit' });
+  });
+
+  it('lib and spacetimedb copies of the generated file are identical', async () => {
+    const lib = await import('../deckSearchAbilities');
+    const server = await import('@/spacetimedb/src/deckSearchAbilities');
+    expect(server.DECK_SEARCH_ABILITIES).toEqual(lib.DECK_SEARCH_ABILITIES);
+  });
+
+  it('deckCardFilter labels the window with the printed target', () => {
+    const f = deckCardFilter({ target: 'an evil N.T. Fortress', match: [{ alignments: ['evil'], testament: 'NT', types: ['Fortress'] }] });
+    expect(f.label).toBe('an evil N.T. Fortress');
+    expect(f.matches({ type: 'Fortress', alignment: 'Evil', reference: 'Acts 19:27' })).toBe(true);
+    expect(f.matches({ type: 'Fortress', alignment: 'Evil', reference: 'Exodus 1:11' })).toBe(false);
   });
 });
 
@@ -660,7 +782,9 @@ describe('star abilities are fireable from hand', () => {
   it.each(STAR_HALF_CARDS)('%s can fire from hand', (name) => {
     const abilities = CARD_ABILITIES[name];
     expect(abilities, `${name} missing from registry`).toBeDefined();
-    for (const a of abilities) {
+    // Generated search/exchange entries encode the card's in-play half (The
+    // Three Visitors' "(Hero) exchange this Hero…"), not its STAR.
+    for (const a of abilities.filter(a => a.type !== 'search_deck' && a.type !== 'exchange_with_deck')) {
       expect(a.sourceZones ?? DEFAULT_ABILITY_SOURCE_ZONES).toContain('hand');
     }
   });

@@ -13,6 +13,7 @@ import { useCardPreview } from '@/app/goldfish/state/CardPreviewContext';
 import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { useDraggableModal } from '@/app/shared/hooks/useDraggableModal';
 import { DraggableTitleBar } from './DraggableTitleBar';
+import { DeckFilterBar, type DeckCardFilter } from './DeckFilterBar';
 import { isOnScrollbar } from '@/app/shared/utils/scrollbarHit';
 
 const MOVE_ZONES: { id: ZoneId; label: string }[] = [
@@ -30,9 +31,8 @@ interface DeckSearchModalProps {
   isDragActive?: boolean;
   // Set when a card ability opened the search (search_deck, e.g. Abraham's
   // "Search deck for a Genesis 12-24 Hero"): the grid starts narrowed to the
-  // cards that qualify. "Show all" drops it — the player is searching the
-  // whole deck either way, and card data can be wrong.
-  filter?: { label: string; matches: (card: GameCard) => boolean };
+  // cards that qualify, with a DeckFilterBar to drop it.
+  filter?: DeckCardFilter;
 }
 
 function CardContextPopup({
@@ -748,41 +748,13 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
 
         {/* Ability filter (search_deck) — what the card lets you take */}
         {filter && (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 8,
-              marginBottom: 12,
-              padding: '6px 10px',
-              background: 'rgb(var(--gf-panel-rgb))',
-              border: '1px solid var(--gf-border)',
-              borderRadius: 4,
-            }}
-          >
-            <span style={{ color: 'var(--gf-text)', fontSize: 12, fontFamily: 'var(--font-cinzel), Georgia, serif' }}>
-              {filterOn
-                ? `${filter.label}: ${pool.length} of ${deckCards.length} cards`
-                : `Showing all ${deckCards.length} cards`}
-            </span>
-            <button
-              onClick={(e) => { e.stopPropagation(); setFilterOn(v => !v); }}
-              style={{
-                flexShrink: 0,
-                background: 'transparent',
-                border: '1px solid var(--gf-border)',
-                borderRadius: 4,
-                color: 'var(--gf-text-dim)',
-                fontSize: isTouch ? 12 : 10,
-                padding: isTouch ? '8px 12px' : '3px 8px',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-cinzel), Georgia, serif',
-              }}
-            >
-              {filterOn ? 'Show all' : `Show ${filter.label}`}
-            </button>
-          </div>
+          <DeckFilterBar
+            label={filter.label}
+            shown={pool.length}
+            total={deckCards.length}
+            filterOn={filterOn}
+            onToggle={() => setFilterOn(v => !v)}
+          />
         )}
 
         {/* Hint + auto-shuffle */}
@@ -879,7 +851,7 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
               {search
                 ? 'No cards match your search'
                 : filter && deckCards.length > 0
-                  ? `No ${filter.label} in deck`
+                  ? `No cards in deck match ${filter.label}`
                   : 'Deck is empty'}
             </p>
           ) : (

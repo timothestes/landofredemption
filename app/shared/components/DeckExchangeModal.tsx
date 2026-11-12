@@ -12,6 +12,7 @@ import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { useDraggableModal } from '@/app/shared/hooks/useDraggableModal';
 import { useInputMode } from '@/app/shared/hooks/useInputMode';
 import { DraggableTitleBar } from './DraggableTitleBar';
+import { DeckFilterBar, type DeckCardFilter } from './DeckFilterBar';
 
 interface DeckExchangeModalProps {
   /** The card instance IDs being sent into the deck */
@@ -26,6 +27,10 @@ interface DeckExchangeModalProps {
   validDropRef?: React.MutableRefObject<boolean>;
   /** Which zone the exchange cards land in. Defaults to 'deck'; set to 'soul-deck' for Paragon shared-soul exchange. */
   targetZone?: ZoneId;
+  /** Set when a card ability opened the exchange (exchange_with_deck, e.g.
+   *  Benjamin's "exchange this card with a son of Jacob from deck"): the grid
+   *  starts narrowed to the cards that qualify. */
+  filter?: DeckCardFilter;
 }
 
 export function DeckExchangeModal({
@@ -37,7 +42,9 @@ export function DeckExchangeModal({
   isDragActive,
   validDropRef,
   targetZone = 'deck',
+  filter,
 }: DeckExchangeModalProps) {
+  const [filterOn, setFilterOn] = useState(true);
   const { dragHandleProps, modalStyle } = useDraggableModal();
   const isTouch = useInputMode() === 'touch';
   const { zones, actions } = useModalGame();
@@ -109,9 +116,10 @@ export function DeckExchangeModal({
   }).filter(Boolean) as GameCard[];
 
   const deckCards = zones[targetZone] ?? [];
+  const pool = filter && filterOn ? deckCards.filter(filter.matches) : deckCards;
   const filtered = search
-    ? deckCards.filter(c => matchesSearch(c, search))
-    : deckCards;
+    ? pool.filter(c => matchesSearch(c, search))
+    : pool;
 
   const needCount = exchangeCardIds.length;
 
@@ -357,6 +365,17 @@ export function DeckExchangeModal({
             </span>
           </div>
 
+          {/* Ability filter (exchange_with_deck) — what the card may become */}
+          {filter && (
+            <DeckFilterBar
+              label={filter.label}
+              shown={pool.length}
+              total={deckCards.length}
+              filterOn={filterOn}
+              onToggle={() => setFilterOn(v => !v)}
+            />
+          )}
+
           {/* Search input + field selector */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -457,7 +476,11 @@ export function DeckExchangeModal({
           <div style={{ overflow: 'auto', flex: 1 }}>
             {filtered.length === 0 ? (
               <p style={{ color: 'var(--gf-text-dim)', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>
-                {search ? 'No cards match your search' : (targetZone === 'soul-deck' ? 'Soul Deck is empty' : 'Deck is empty')}
+                {search
+                  ? 'No cards match your search'
+                  : filter && deckCards.length > 0
+                    ? `No cards in deck match ${filter.label}`
+                    : (targetZone === 'soul-deck' ? 'Soul Deck is empty' : 'Deck is empty')}
               </p>
             ) : (
               <div
