@@ -8,6 +8,7 @@
 import type { ZoneId } from '@/app/shared/types/gameCard';
 import { findCard, type CardData } from './lookup';
 import { DECK_SEARCH_ABILITIES } from './deckSearchAbilities';
+import { NON_HUMAN_CHARACTERS } from './nonHumanCharacters';
 
 // Per-ability override for the zones the source card may fire from. When
 // omitted, falls back to DEFAULT_ABILITY_SOURCE_ZONES (territory + both
@@ -143,6 +144,8 @@ export type DeckCardMatch = {
   names?: string[];
   /** "with 'Trumpet' in the title". */
   nameIncludes?: string[];
+  /** A human character (ORDIR): not an angel, animal, demon or symbolic character. */
+  human?: boolean;
 };
 
 export type DeckCardType =
@@ -910,9 +913,12 @@ function halfAlignment(c: DeckCardFields, half: string): string {
   return (c.alignment ?? '').toLowerCase();
 }
 
-/** "Pale Green" is its own brigade, so "Green" must not match it. */
+/**
+ * "Pale Green" is its own brigade, so "Green" must not match it. "Good Gold"
+ * (RR2) is one brigade: good/evil are not brigade words.
+ */
 function brigadeWords(brigade: string): Set<string> {
-  return new Set(brigade.toLowerCase().replace(/pale green/g, 'palegreen').split(/[^a-z]+/).filter(Boolean));
+  return new Set(brigade.toLowerCase().replace(/pale green/g, 'palegreen').split(/[^a-z]+/).filter((w) => w && w !== 'good' && w !== 'evil'));
 }
 
 /** The word, optionally plural — but not possessive: "Herod's Guard" is not a Herod. */
@@ -991,6 +997,10 @@ function fitsDeckCardMatch(c: DeckCardFields, m: DeckCardMatch): boolean {
     if (!m.names.some((n) => isNamed(name, n, character))) return false;
   }
   if (m.nameIncludes && !m.nameIncludes.some((n) => name.toLowerCase().includes(n.toLowerCase()))) return false;
+  if (m.human) {
+    const character = parts.includes('Hero') || parts.includes('Evil Character');
+    if (!character || NON_HUMAN_CHARACTERS.has(name)) return false;
+  }
   return true;
 }
 

@@ -284,10 +284,11 @@ describe('hasReferenceBook', () => {
 describe('band_heroes_from_deck — Creation of the World', () => {
   it('is registered on the Patriarchs printing only', () => {
     // "Creation of the World (Roots)" is a different card — blue, "each player
-    // may play up to 3 animals, O.T. angels and/or Genesis humans".
+    // may play up to 3 animals, O.T. angels and/or Genesis humans" — so it gets
+    // that deck search, never the band.
     expect(CARD_ABILITIES['Creation of the World'])
       .toEqual([{ type: 'band_heroes_from_deck', referenceBook: 'Genesis' }]);
-    expect(CARD_ABILITIES['Creation of the World (Roots)']).toBeUndefined();
+    expect((CARD_ABILITIES['Creation of the World (Roots)'] ?? []).map(a => a.type)).toEqual(['search_deck']);
   });
 
   it('the referenceBook matches real Genesis Heroes and nothing else', () => {
@@ -430,6 +431,11 @@ describe('matchesDeckCard rules', () => {
     expect(fits({ reference: 'Josephus' }, { testament: 'NT' })).toBe(false);
   });
 
+  it('"Good Gold" is one brigade, not two', () => {
+    expect(fits({ brigade: 'Good Gold', type: 'GE' }, { singleBrigade: true })).toBe(true);
+    expect(fits({ brigade: 'Good Gold', type: 'GE' }, { brigades: ['Gold'] })).toBe(true);
+  });
+
   it('keeps Pale Green apart from Green', () => {
     expect(fits({ brigade: 'Pale Green' }, { brigades: ['Green'] })).toBe(false);
     expect(fits({ brigade: 'Pale Green' }, { brigades: ['Pale Green'] })).toBe(true);
@@ -504,6 +510,26 @@ describe('matchesDeckCard rules', () => {
     expect(fits({ cardName: 'Seven Trumpet Sounders' }, { nameIncludes: ['Trumpet'] })).toBe(true);
   });
 
+  it('human follows ORDIR: a character that is not an angel, animal, demon or symbolic', () => {
+    const human: DeckCardMatch = { human: true, types: ['character'] };
+    expect(fits({ cardName: 'Benjamin, the Young', type: 'Hero', brigade: 'Blue' }, human)).toBe(true);
+    // Multi-brigade silver is not automatically an angel.
+    expect(fits({ cardName: 'Moses in Glory (GoC)', type: 'Hero', brigade: 'Clay/Silver/White' }, human)).toBe(true);
+    // Single-brigade silver Hero: an angel.
+    expect(fits({ cardName: 'The Angel of the Winds', type: 'Hero', brigade: 'Silver' }, human)).toBe(false);
+    // ORDIR-listed demon with no tag and no orange.
+    expect(fits({ cardName: 'Red Dragon (Wa)', type: 'Evil Character', brigade: 'Crimson' }, human)).toBe(false);
+    // ORDIR-listed symbolic Hero.
+    expect(fits({ cardName: 'Mighty Warrior (L)', type: 'Hero', brigade: 'Red' }, human)).toBe(false);
+    // A mixed group tagged "Human, Angel" has both roles (ORDIR), so it is human.
+    expect(fits({ cardName: 'Great Multitude (RoJ)', type: 'Hero', brigade: 'Clay/Silver/White' }, human)).toBe(true);
+    // Untagged printings of ORDIR-listed demons and symbolic Heroes.
+    expect(fits({ cardName: 'Wandering Spirit (Ap)', type: 'Evil Character', brigade: 'Gold' }, human)).toBe(false);
+    expect(fits({ cardName: 'Warrior in Training', type: 'Hero', brigade: 'Blue' }, human)).toBe(false);
+    // Only characters are human.
+    expect(fits({ cardName: 'Faith of Abraham (CoW)', type: 'GE' }, { human: true })).toBe(false);
+  });
+
   it('any match entry is enough', () => {
     const siteOrGoodFortress: DeckCardMatch[] = [{ types: ['Site'] }, { alignments: ['good'], types: ['Fortress'] }];
     expect(matchesDeckCard({ type: 'Site', alignment: 'Neutral' }, siteOrGoodFortress)).toBe(true);
@@ -540,6 +566,26 @@ describe('generated search / exchange registry', () => {
     const sons = CARDS.filter(c => matchesDeckCard(c, (ex as { match: DeckCardMatch[] }).match));
     expect(sons.some(c => c.name === 'Benjamin, the Young')).toBe(true);
     expect(sons.some(c => c.name.startsWith('Judah'))).toBe(true);
+  });
+
+  it('human targets and "(or deck if …)" tutors are covered', () => {
+    const winds = CARD_ABILITIES['The Angel of the Winds'][0] as { type: string; target: string; match: DeckCardMatch[] };
+    expect(winds).toMatchObject({ type: 'exchange_with_deck', target: 'a human Hero' });
+    const picks = CARDS.filter(c => matchesDeckCard(c, winds.match));
+    expect(picks.some(c => c.name === 'Benjamin, the Young')).toBe(true);
+    expect(picks.some(c => c.name.startsWith('The Angel of the Winds'))).toBe(false);
+    const eden = CARD_ABILITIES['Covenant of Eden (PoC)'].find(a => a.type === 'search_deck');
+    expect(eden).toMatchObject({ target: 'a Genesis human' });
+    // "take an O.T. brown card from Reserve (or deck if you control a meek Lost Soul)"
+    const absalom = CARD_ABILITIES['Absalom’s Soldiers [RR2]'].find(a => a.type === 'search_deck');
+    expect(absalom).toMatchObject({ target: 'an O.T. brown card' });
+  });
+
+  it('every non-human name is a real character printing', async () => {
+    const { NON_HUMAN_CHARACTERS } = await import('../nonHumanCharacters');
+    const chars = new Set(CARDS.filter(c => /\b(?:Hero|Evil Character)\b/.test(c.type)).map(c => c.name));
+    expect([...NON_HUMAN_CHARACTERS].filter(n => !chars.has(n))).toEqual([]);
+    expect(NON_HUMAN_CHARACTERS.size).toBeGreaterThan(400);
   });
 
   it('a hand-written ability keeps its index when a search is appended', () => {

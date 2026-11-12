@@ -749,7 +749,8 @@ describe('band_heroes_from_deck — Creation of the World', () => {
   it('only the Patriarchs printing is registered — the Roots card is a different effect', () => {
     expect(getEffectiveAbilities({ cardName: 'Creation of the World' }))
       .toEqual([{ type: 'band_heroes_from_deck', referenceBook: 'Genesis' }]);
-    expect(getEffectiveAbilities({ cardName: 'Creation of the World (Roots)' })).toEqual([]);
+    // Roots gets its own text's deck search, never the band.
+    expect(getEffectiveAbilities({ cardName: 'Creation of the World (Roots)' }).map(a => a.type)).toEqual(['search_deck']);
   });
 });
 
