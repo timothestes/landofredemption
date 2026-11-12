@@ -625,15 +625,27 @@ describe('generated search / exchange registry', () => {
     const expected: Record<string, number> = JSON.parse(
       fs.readFileSync(path.join(__dirname, 'fixtures', 'deckSearchCounts.json'), 'utf8'),
     );
+    // Printings and a card's deck/Reserve twins share filters: count each
+    // distinct filter once over the whole pool.
+    const counted = new Map<string, number>();
+    const count = (m: DeckCardMatch) => {
+      const key = JSON.stringify(m);
+      let n = counted.get(key);
+      if (n === undefined) {
+        n = CARDS.filter(c => matchesDeckCard(c, [m])).length;
+        counted.set(key, n);
+      }
+      return n;
+    };
     const actual: Record<string, number> = {};
     for (const [card, list] of Object.entries(DECK_SEARCH_ABILITIES)) {
       list.forEach((a, i) => {
         if (a.type !== 'search_deck' && a.type !== 'exchange_with_deck' && a.type !== 'search_reserve' && a.type !== 'exchange_with_reserve') return;
-        a.match.forEach((m, j) => { actual[`${card} #${i}.${j}`] = CARDS.filter(c => matchesDeckCard(c, [m])).length; });
+        a.match.forEach((m, j) => { actual[`${card} #${i}.${j}`] = count(m); });
       });
     }
     expect(actual).toEqual(expected);
-  });
+  }, 30_000); // a full pass over every card; CI runners are slower than laptops
 
   it('lib and spacetimedb copies of the generated file are identical', async () => {
     const lib = await import('../deckSearchAbilities');
