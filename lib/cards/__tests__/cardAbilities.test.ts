@@ -468,6 +468,28 @@ describe('matchesDeckCard rules', () => {
     expect(fits({ type: 'Fortress', alignment: 'Good' }, { types: ['Fortress'], alignments: ['good'] })).toBe(true);
   });
 
+  it('single brigade means one brigade at face value', () => {
+    expect(fits({ brigade: 'Silver' }, { brigades: ['Silver'], singleBrigade: true })).toBe(true);
+    expect(fits({ brigade: 'Silver/Gold' }, { brigades: ['Silver'], singleBrigade: true })).toBe(false);
+    expect(fits({ brigade: 'Multi' }, { singleBrigade: true })).toBe(false);
+  });
+
+  it('ignores "Holds …" notes, reads curly apostrophes, skips "of the" in names', () => {
+    expect(fits({ type: 'Fortress', identifier: 'Holds a Heavenly Temple Artifact' }, { traits: ['heavenly temple'] })).toBe(false);
+    expect(fits({ identifier: 'Solomon’s Temple Priest' }, { traits: ["solomon's temple", 'priest'] })).toBe(true);
+    expect(fits({ cardName: 'Servants of the King', identifier: '' }, { traits: ['king'] })).toBe(false);
+    expect(fits({ cardName: 'Bera, King of Sodom', identifier: '' }, { traits: ['king'] })).toBe(true);
+  });
+
+  it('a character titled with the whole name counts as that name', () => {
+    expect(fits({ cardName: 'David the Psalmist', type: 'Hero' }, { names: ['David'] })).toBe(true);
+    expect(fits({ cardName: 'Moses in Glory', type: 'Hero' }, { names: ['Moses'] })).toBe(true);
+    expect(fits({ cardName: 'King Saul (CoW)', type: 'Hero/Evil Character' }, { names: ['Saul'] })).toBe(true);
+    expect(fits({ cardName: "David's Tent [K]", type: 'Hero' }, { names: ['David'] })).toBe(false);
+    // Not a character: only the exact name or "Name, …".
+    expect(fits({ cardName: 'Peace Offering', type: 'GE' }, { names: ['Peace'] })).toBe(false);
+  });
+
   it('unique means not Generic', () => {
     expect(fits({ identifier: 'Generic, Philistine' }, { unique: true })).toBe(false);
     expect(fits({ identifier: 'Philistine King' }, { unique: true })).toBe(true);
@@ -523,6 +545,23 @@ describe('generated search / exchange registry', () => {
   it('a hand-written ability keeps its index when a search is appended', () => {
     expect(CARD_ABILITIES['Hope'][0]).toMatchObject({ type: 'look_at_own_deck' });
     expect(CARD_ABILITIES['Hope'][1]).toMatchObject({ type: 'search_deck', target: 'Joy, Peace or The Holy Spirit' });
+  });
+
+  it("the app's matcher counts what the generator counted, filter by filter", async () => {
+    // The generator carries its own copy of the matching rules; this keeps
+    // the two from drifting apart.
+    const { DECK_SEARCH_ABILITIES } = await import('../deckSearchAbilities');
+    const expected: Record<string, number> = JSON.parse(
+      fs.readFileSync(path.join(__dirname, 'fixtures', 'deckSearchCounts.json'), 'utf8'),
+    );
+    const actual: Record<string, number> = {};
+    for (const [card, list] of Object.entries(DECK_SEARCH_ABILITIES)) {
+      list.forEach((a, i) => {
+        if (a.type !== 'search_deck' && a.type !== 'exchange_with_deck') return;
+        a.match.forEach((m, j) => { actual[`${card} #${i}.${j}`] = CARDS.filter(c => matchesDeckCard(c, [m])).length; });
+      });
+    }
+    expect(actual).toEqual(expected);
   });
 
   it('lib and spacetimedb copies of the generated file are identical', async () => {

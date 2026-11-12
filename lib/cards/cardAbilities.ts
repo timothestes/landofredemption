@@ -132,6 +132,8 @@ export type DeckCardMatch = {
   /** Inclusive chapter range within `books`. */
   chapters?: [number, number];
   brigades?: string[];
+  /** One brigade at face value — the rulings' angel (silver) and demon (orange) definitions. */
+  singleBrigade?: boolean;
   cardClass?: 'Warrior' | 'Weapon' | 'Cloud' | 'Star';
   /** Identifier traits ("Philistine", "son of Jacob"); matched in identifier or name. */
   traits?: string[];
@@ -918,19 +920,36 @@ function wordPattern(word: string): RegExp {
   return new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:s|es)?\\b(?![’'])`, 'i');
 }
 
-/** Identifier minus its "X = # of …" counting notes, which name other cards' traits. */
+/**
+ * Identifier minus its "X = # of …" counting notes and "Holds …" notes —
+ * both name OTHER cards' traits ("Holds a Heavenly Temple Artifact" is not
+ * one). Curly apostrophes normalized ("Solomon’s Temple").
+ */
 function identifierText(c: DeckCardFields): string {
-  return (c.identifier ?? '').replace(/X\s*=[^,\]]*/g, '');
+  return (c.identifier ?? '').replace(/[’‘]/g, "'").replace(/X\s*=[^,\]]*/g, '').replace(/\bholds?\b[^,\]]*/gi, '');
+}
+
+/** A trait in the card NAME counts unless it follows "of (the)": "Servants of the King" is no king. */
+function nameHasTrait(name: string, trait: string): boolean {
+  const n = name.replace(/[’‘]/g, "'");
+  const re = new RegExp(wordPattern(trait).source, 'gi');
+  for (const m of n.matchAll(re)) if (!/\bof (?:the )?$/i.test(n.slice(0, m.index))) return true;
+  return false;
 }
 
 function baseCardName(name: string): string {
   return name.replace(/[’‘]/g, "'").replace(/\s*[([][^)\]]*[)\]]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
-/** "David" is "David" and "David, the Shepherd", and either half of a dual name. */
-function isNamed(cardName: string, name: string): boolean {
+/**
+ * "David" is "David", "David, the Shepherd" and either half of a dual name.
+ * For a character, a title holding the whole name also counts (REG): "David
+ * the Psalmist", "Moses in Glory", "King Saul" — never a possessive ("David's Tent").
+ */
+function isNamed(cardName: string, name: string, isCharacter: boolean): boolean {
   const want = name.replace(/[’‘]/g, "'").toLowerCase();
-  return baseCardName(cardName).split(' / ').some((h) => h === want || h.startsWith(`${want},`));
+  return baseCardName(cardName).split(' / ').some((h) => h === want || h.startsWith(`${want},`)
+    || (isCharacter && (h.startsWith(`${want} `) || h === `king ${want}` || h.startsWith(`king ${want} `) || h.startsWith(`king ${want},`))));
 }
 
 function fitsDeckCardMatch(c: DeckCardFields, m: DeckCardMatch): boolean {
@@ -956,14 +975,21 @@ function fitsDeckCardMatch(c: DeckCardFields, m: DeckCardMatch): boolean {
     const words = brigadeWords(c.brigade ?? '');
     if (!m.brigades.some((b) => words.has(b.toLowerCase().replace(/\s+/g, '')))) return false;
   }
+  if (m.singleBrigade) {
+    const words = brigadeWords(c.brigade ?? '');
+    if (words.size !== 1 || words.has('multi')) return false;
+  }
   if (m.cardClass) {
     // Multiplayer only carries class for Forge cards; read the rest from the index.
     const cls = c.cardClass ?? c.class ?? findCard(name)?.class ?? '';
     if (!cls.split(/[,/]/).map((s) => s.trim()).includes(m.cardClass)) return false;
   }
-  if (m.traits && !m.traits.every((t) => wordPattern(t).test(identifierText(c)) || wordPattern(t).test(name))) return false;
+  if (m.traits && !m.traits.every((t) => wordPattern(t).test(identifierText(c)) || nameHasTrait(name, t))) return false;
   if (m.unique && /\bgeneric\b/i.test(c.identifier ?? '')) return false;
-  if (m.names && !m.names.some((n) => isNamed(name, n))) return false;
+  if (m.names) {
+    const character = parts.includes('Hero') || parts.includes('Evil Character');
+    if (!m.names.some((n) => isNamed(name, n, character))) return false;
+  }
   if (m.nameIncludes && !m.nameIncludes.some((n) => name.toLowerCase().includes(n.toLowerCase()))) return false;
   return true;
 }

@@ -125,6 +125,7 @@ export type DeckCardMatch = {
   books?: string[];
   chapters?: [number, number];
   brigades?: string[];
+  singleBrigade?: boolean;
   cardClass?: 'Warrior' | 'Weapon' | 'Cloud' | 'Star';
   traits?: string[];
   unique?: boolean;
