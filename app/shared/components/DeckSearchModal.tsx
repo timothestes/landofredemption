@@ -28,6 +28,11 @@ interface DeckSearchModalProps {
   onStartMultiDrag?: (cards: { card: GameCard; imageUrl: string }[], e: React.PointerEvent) => void;
   didDragRef?: React.MutableRefObject<boolean>;
   isDragActive?: boolean;
+  // Set when a card ability opened the search (search_deck, e.g. Abraham's
+  // "Search deck for a Genesis 12-24 Hero"): the grid starts narrowed to the
+  // cards that qualify. "Show all" drops it — the player is searching the
+  // whole deck either way, and card data can be wrong.
+  filter?: { label: string; matches: (card: GameCard) => boolean };
 }
 
 function CardContextPopup({
@@ -140,11 +145,12 @@ function rectsOverlap(
   return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 }
 
-export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDragRef, isDragActive }: DeckSearchModalProps) {
+export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDragRef, isDragActive, filter }: DeckSearchModalProps) {
   const { dragHandleProps, modalStyle } = useDraggableModal();
   const { zones, actions } = useModalGame();
   const { moveCard, moveCardsBatch, moveCardToTopOfDeck, moveCardToBottomOfDeck, shuffleDeck, logDeckSearchNoShuffle } = actions;
   const [search, setSearch] = useState('');
+  const [filterOn, setFilterOn] = useState(true);
   const [searchField, setSearchField] = useState<'all' | 'type' | 'name' | 'brigade' | 'alignment' | 'ability' | 'identifier' | 'reference'>('all');
   const [autoShuffle, setAutoShuffle] = useState(true);
   const [leaveOpen, setLeaveOpen] = useState(false);
@@ -262,9 +268,10 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
   };
 
   const deckCards = zones.deck ?? [];
+  const pool = filter && filterOn ? deckCards.filter(filter.matches) : deckCards;
   const filtered = search
-    ? deckCards.filter(c => matchesSearch(c, search))
-    : deckCards;
+    ? pool.filter(c => matchesSearch(c, search))
+    : pool;
 
   // Refs tracking right-click "Top of Deck" / "Bottom of Deck" intents
   // performed while the modal was open. We DEFER the actual placement until
@@ -739,6 +746,45 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
           </div>
         </div>
 
+        {/* Ability filter (search_deck) — what the card lets you take */}
+        {filter && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: 12,
+              padding: '6px 10px',
+              background: 'rgb(var(--gf-panel-rgb))',
+              border: '1px solid var(--gf-border)',
+              borderRadius: 4,
+            }}
+          >
+            <span style={{ color: 'var(--gf-text)', fontSize: 12, fontFamily: 'var(--font-cinzel), Georgia, serif' }}>
+              {filterOn
+                ? `${filter.label}: ${pool.length} of ${deckCards.length} cards`
+                : `Showing all ${deckCards.length} cards`}
+            </span>
+            <button
+              onClick={(e) => { e.stopPropagation(); setFilterOn(v => !v); }}
+              style={{
+                flexShrink: 0,
+                background: 'transparent',
+                border: '1px solid var(--gf-border)',
+                borderRadius: 4,
+                color: 'var(--gf-text-dim)',
+                fontSize: isTouch ? 12 : 10,
+                padding: isTouch ? '8px 12px' : '3px 8px',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-cinzel), Georgia, serif',
+              }}
+            >
+              {filterOn ? 'Show all' : `Show ${filter.label}`}
+            </button>
+          </div>
+        )}
+
         {/* Hint + auto-shuffle */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <span style={{ color: 'var(--gf-border)', fontSize: 10 }}>
@@ -830,7 +876,11 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
         <div ref={scrollContainerRef} style={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
           {filtered.length === 0 ? (
             <p style={{ color: 'var(--gf-text-dim)', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>
-              {search ? 'No cards match your search' : 'Deck is empty'}
+              {search
+                ? 'No cards match your search'
+                : filter && deckCards.length > 0
+                  ? `No ${filter.label} in deck`
+                  : 'Deck is empty'}
             </p>
           ) : (
             <div

@@ -5982,6 +5982,8 @@ export const execute_card_ability = spacetimedb.reducer(
         throw new SenderError('resurrect_heroes is dispatched via the resurrect_heroes reducer');
       case 'take_enhancement_from_reserve':
         throw new SenderError('take_enhancement_from_reserve is dispatched by the client, not this reducer');
+      case 'search_deck':
+        throw new SenderError('search_deck is dispatched by the client, not this reducer');
       case 'reserve_opponent_deck':
         throw new SenderError('reserve_opponent_deck is dispatched by the client, not this reducer');
       case 'reserve_top_of_deck':

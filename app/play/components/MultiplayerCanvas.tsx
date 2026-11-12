@@ -61,7 +61,7 @@ import { isHeroCard, hasReferenceBook } from '@/lib/cards/cardAbilities';
 import { ModalGameProvider, type ModalGameContextValue } from '@/app/shared/contexts/ModalGameContext';
 import { DeckSearchModal } from '@/app/shared/components/DeckSearchModal';
 import { DeckPeekModal } from '@/app/shared/components/DeckPeekModal';
-import { countRedeemedSouls, getEffectiveAbilities, isCharacterCard, isDanielCard, isLostSoulCard, simplifyLostSoulName } from '@/lib/cards/cardAbilities';
+import { countRedeemedSouls, getEffectiveAbilities, isCharacterCard, isDanielCard, isLostSoulCard, matchesSearchDeck, searchDeckTargetLabel, simplifyLostSoulName, type CardAbility } from '@/lib/cards/cardAbilities';
 import { DeckExchangeModal } from '@/app/shared/components/DeckExchangeModal';
 import { ZoneBrowseModal } from '@/app/shared/components/ZoneBrowseModal';
 import { useModalCardDrag } from '@/app/shared/hooks/useModalCardDrag';
@@ -1642,6 +1642,10 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
   const [soulDeckDrop, setSoulDeckDrop] = useState<{ x: number; y: number; cardId: string; batchIds?: string[] } | null>(null);
   const pendingBatchRef = useRef<string[] | null>(null);
   const [showDeckSearch, setShowDeckSearch] = useState(false);
+  // The search_deck ability that opened Search Deck (Abraham, Joseph, the
+  // Dreamer) — narrows the window to the cards it can take. Null when the
+  // player opened the search from the deck menu.
+  const [deckSearchAbility, setDeckSearchAbility] = useState<Extract<CardAbility, { type: 'search_deck' }> | null>(null);
   const [peekState, setPeekState] = useState<{ position: 'top' | 'bottom' | 'random'; count: number; cardIds: string[]; source?: { cardName: string } } | null>(null);
   const [lookState, setLookState] = useState<{ count: number; position: 'top' | 'bottom' | 'random' } | null>(null);
   const [exchangeState, setExchangeState] = useState<
@@ -2228,6 +2232,14 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         if (source) {
           gameState.logLookAtTop(ability.count, source.cardName, ability.position);
         }
+        return;
+      }
+      if (ability?.type === 'search_deck') {
+        // Same search as the deck menu's (same log line for the opponent),
+        // opened narrowed to the cards this ability can take.
+        gameState.logSearchDeck();
+        setDeckSearchAbility(ability);
+        setShowDeckSearch(true);
         return;
       }
       if (ability?.type === 'look_at_opponent_deck') {
@@ -10429,7 +10441,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
               : undefined
           }
           onClose={() => setDeckMenu(null)}
-          onSearchDeck={() => { logSearchDeck(); setDeckMenu(null); setShowDeckSearch(true); }}
+          onSearchDeck={() => { logSearchDeck(); setDeckMenu(null); setDeckSearchAbility(null); setShowDeckSearch(true); }}
           onLookAtTop={(n) => { logLookAtTop(n, undefined, 'top'); setDeckMenu(null); setLookState({ count: n, position: 'top' }); }}
           onLookAtBottom={(n) => { logLookAtTop(n, undefined, 'bottom'); setDeckMenu(null); setLookState({ count: n, position: 'bottom' }); }}
           onLookAtRandom={(n) => { logLookAtTop(n, undefined, 'random'); setDeckMenu(null); setLookState({ count: n, position: 'random' }); }}
@@ -11052,6 +11064,10 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             onStartMultiDrag={modalStartMultiDrag}
             didDragRef={modalDidDragRef}
             isDragActive={modalDrag.isDragging}
+            filter={deckSearchAbility ? {
+              label: searchDeckTargetLabel(deckSearchAbility),
+              matches: (c) => matchesSearchDeck(c, deckSearchAbility),
+            } : undefined}
           />
         )}
 

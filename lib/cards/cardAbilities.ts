@@ -103,6 +103,13 @@ export type CardAbility = AbilityBase & (
   // activator's Reserve Enhancements (O.T. only when `testament` is set) and
   // moves the chosen one to hand with a plain moveCard. No reducer involved.
   | { type: 'take_enhancement_from_reserve'; testament?: 'OT' }
+  // Abraham (CoW): "Search deck for a Genesis 12-24 Hero." Joseph, the
+  // Dreamer: "You may take a Genesis 37-50 card from deck." Opens Search Deck
+  // showing only the cards that qualify (see matchesSearchDeck): a reference in
+  // `book` chapters fromChapter–toChapter, and a Hero when `cardType` says so.
+  // Client-side, no reducer — the player moves the pick like any other search
+  // and the deck shuffles on close.
+  | { type: 'search_deck'; book: string; fromChapter: number; toChapter: number; cardType?: 'Hero' }
   | { type: 'custom'; reducerName: string; label: string }
 );
 
@@ -346,7 +353,9 @@ export const CARD_ABILITIES: Record<string, CardAbility[]> = {
   'Honey from a Lion (CoW)':                             [{ type: 'look_at_own_deck', position: 'top', count: 6 }],
   'Hope':                                                [{ type: 'look_at_own_deck', position: 'top', count: 7 }],
   'Joel (PoC)':                                          [{ type: 'look_at_own_deck', position: 'top', count: 6, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
-  'Joseph, the Dreamer':                                 [{ type: 'look_at_own_deck', position: 'bottom', count: 6, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
+  // (Star) look at the bottom 6 fires from hand; the Hero's "take a Genesis
+  // 37-50 card from deck" fires from play (see the filtered-search block below).
+  'Joseph, the Dreamer':                                 [{ type: 'look_at_own_deck', position: 'bottom', count: 6, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }, { type: 'search_deck', book: 'Genesis', fromChapter: 37, toChapter: 50 }],
   "Joseph's Silver Cup (PoC)":                           [{ type: 'look_at_own_deck', position: 'top', count: 3 }],
   "Pharaoh's Magicians":                                 [{ type: 'look_at_own_deck', position: 'top', count: 1 }],
   'Philistine Soothsayers':                              [{ type: 'look_at_own_deck', position: 'top', count: 6 }],
@@ -519,6 +528,17 @@ export const CARD_ABILITIES: Record<string, CardAbility[]> = {
   // appears in the deck context menu while the toggle is active.
   // ---------------------------------------------------------------------------
   'The Foretelling Angel (PC)':                          [{ type: 'toggle_top_deck_reveal' }],
+
+  // ---------------------------------------------------------------------------
+  // Filtered deck search
+  //
+  // Exceptions to the "leave tutoring to the Search Deck menu" rule above, for
+  // cards whose target is narrow enough to list: the item opens Search Deck
+  // showing only what the text allows. Joseph, the Dreamer's half is in the
+  // look-at-own-deck block above.
+  // ---------------------------------------------------------------------------
+  'Abraham (CoW)':                                       [{ type: 'search_deck', book: 'Genesis', fromChapter: 12, toChapter: 24, cardType: 'Hero' }],
+  'Abraham (CoW AB)':                                    [{ type: 'search_deck', book: 'Genesis', fromChapter: 12, toChapter: 24, cardType: 'Hero' }],
 };
 
 /**
@@ -778,6 +798,33 @@ export function hasReferenceBook(reference: string, book: string): boolean {
   return reference.trim().toLowerCase().startsWith(book.trim().toLowerCase());
 }
 
+type SearchDeckAbility = Extract<CardAbility, { type: 'search_deck' }>;
+
+/**
+ * True when a deck card is a valid pick for a search_deck ability: its printed
+ * reference is in the ability's book, at a chapter inside the range, and it is
+ * a Hero when the ability asks for one. Every reference leads with one
+ * "Book chapter:verse" (see hasReferenceBook), so the number right after the
+ * book is the chapter. Client-only — the server never sees these searches.
+ */
+export function matchesSearchDeck(
+  card: { type?: string; cardType?: string; reference?: string },
+  a: SearchDeckAbility,
+): boolean {
+  if (a.cardType === 'Hero' && !isHeroCard(card)) return false;
+  const reference = card.reference ?? '';
+  if (!hasReferenceBook(reference, a.book)) return false;
+  const chapter = reference.trim().slice(a.book.trim().length).match(/^\s*(\d+)/);
+  if (!chapter) return false;
+  const n = Number(chapter[1]);
+  return n >= a.fromChapter && n <= a.toChapter;
+}
+
+/** "Genesis 12-24 Heroes" / "Genesis 37-50 cards" — the search window's filter line. */
+export function searchDeckTargetLabel(a: SearchDeckAbility): string {
+  return `${a.book} ${a.fromChapter}-${a.toChapter} ${a.cardType === 'Hero' ? 'Heroes' : 'cards'}`;
+}
+
 /**
  * Extracts a short label from a Lost Soul cardName for the imitation overlay.
  * Priority: quoted name → first parenthetical → cardName with "Lost Soul " prefix stripped.
@@ -937,6 +984,8 @@ export function abilityLabel(a: CardAbility): string {
       return 'Play with top card of deck face up';
     case 'take_enhancement_from_reserve':
       return a.testament === 'OT' ? 'Take an O.T. Enhancement from Reserve…' : 'Take an Enhancement from Reserve…';
+    case 'search_deck':
+      return `Search deck for a ${a.book} ${a.fromChapter}-${a.toChapter} ${a.cardType ?? 'card'}…`;
     case 'custom':
       return a.label;
   }

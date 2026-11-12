@@ -61,7 +61,7 @@ import { computeEquipOffset, hitTestWarrior, MAX_EQUIPPED_WEAPONS_PER_WARRIOR } 
 import { gameCardIsWarrior, gameCardIsWeapon } from '../utils/equipClass';
 import { findCard } from '@/lib/cards/lookup';
 import { compareCardsDefault } from '@/lib/cards/defaultSort';
-import { countRedeemedSouls, getEffectiveAbilities, isDanielCard, isLostSoulCard, isHeroCard, simplifyLostSoulName } from '@/lib/cards/cardAbilities';
+import { countRedeemedSouls, getEffectiveAbilities, isDanielCard, isLostSoulCard, isHeroCard, matchesSearchDeck, searchDeckTargetLabel, simplifyLostSoulName, type CardAbility } from '@/lib/cards/cardAbilities';
 import { ResurrectHeroesModal } from '@/app/shared/components/ResurrectHeroesModal';
 import { KeepOneModal } from '@/app/shared/components/KeepOneModal';
 import { ReserveEnhancementModal, isReserveEnhancement } from '@/app/shared/components/ReserveEnhancementModal';
@@ -212,6 +212,10 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
   const [resurrectReq, setResurrectReq] = useState<{ sourceInstanceId: string; abilityIndex: number } | null>(null);
   const [keepOneReq, setKeepOneReq] = useState<{ sourceInstanceId: string; abilityIndex: number; draw: boolean } | null>(null);
   const [reserveEnhReq, setReserveEnhReq] = useState<{ sourceInstanceId: string; abilityIndex: number } | null>(null);
+  // The search_deck ability that opened Search Deck (Abraham, Joseph, the
+  // Dreamer) — narrows the window to the cards it can take. Null when the
+  // player opened the search from the deck menu.
+  const [deckSearchAbility, setDeckSearchAbility] = useState<Extract<CardAbility, { type: 'search_deck' }> | null>(null);
 
   // Opens the "look at / reveal top N" peek modal for an own-deck inspection
   // ability. Shared by the fixed-count path (look_at_own_deck / reveal_own_deck)
@@ -279,6 +283,13 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
       const ability = source ? getEffectiveAbilities(source)[abilityIndex] : undefined;
       if (ability?.type === 'reveal_own_deck' || ability?.type === 'look_at_own_deck') {
         openOwnDeckPeek(ability.position, ability.count, source);
+        return;
+      }
+      if (ability?.type === 'search_deck') {
+        // setShowDeckSearch is declared further down; it's only read when this
+        // runs, never during render, so leaving it out of the deps is safe.
+        setDeckSearchAbility(ability);
+        setShowDeckSearch(true);
         return;
       }
       // Non-modal abilities fired from hand still flash the source so the
@@ -2951,7 +2962,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
               : undefined
           }
           onClose={() => setDeckMenu(null)}
-          onSearchDeck={() => { setDeckMenu(null); setShowDeckSearch(true); }}
+          onSearchDeck={() => { setDeckMenu(null); setDeckSearchAbility(null); setShowDeckSearch(true); }}
           onLookAtTop={(count) => {
             setDeckMenu(null);
             const deck = state.zones.deck;
@@ -3199,6 +3210,10 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
             onStartMultiDrag={modalStartMultiDrag}
             didDragRef={modalDidDragRef}
             isDragActive={modalDrag.isDragging}
+            filter={deckSearchAbility ? {
+              label: searchDeckTargetLabel(deckSearchAbility),
+              matches: (c) => matchesSearchDeck(c, deckSearchAbility),
+            } : undefined}
           />
         )}
 
