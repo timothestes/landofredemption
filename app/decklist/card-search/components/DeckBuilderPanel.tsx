@@ -171,8 +171,10 @@ interface DeckBuilderPanelProps {
   canShare?: boolean;
   /** Callback to duplicate current deck */
   onDuplicate?: () => void;
-  /** Callback to load a deck from cloud by ID */
-  onLoadDeck?: (deckId: string) => void;
+  /** Callback to load a deck from cloud by ID. May resolve true once the deck is open (used to tell Duplicate when its copy is on screen). */
+  onLoadDeck?: (deckId: string) => void | Promise<boolean | void>;
+  /** Show (string) or clear (null) a toast that stays up while long work runs, e.g. Duplicate */
+  onProgress?: (message: string | null) => void;
   /** Replace the current deck's good half with another deck's good half (T2 only). */
   onReplaceGood?: (sourceDeckId: string) => void;
   /** Replace the current deck's evil half with another deck's evil half (T2 only). */
@@ -246,6 +248,7 @@ export default function DeckBuilderPanel({
   canShare = true,
   onDuplicate,
   onLoadDeck,
+  onProgress,
   onReplaceGood,
   onReplaceEvil,
   onNewDeck,
@@ -290,6 +293,7 @@ export default function DeckBuilderPanel({
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(deck.name);
   const [showMenu, setShowMenu] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [showGeneratePDFModal, setShowGeneratePDFModal] = useState(false);
   const [showGenerateImageModal, setShowGenerateImageModal] = useState(false);
   const [showDeleteDeckModal, setShowDeleteDeckModal] = useState(false);
@@ -335,6 +339,60 @@ export default function DeckBuilderPanel({
       setShowUsernameModal(true);
     } else {
       onNotify?.(result.error || "Failed to change visibility", "error");
+    }
+  };
+
+  // Copy the deck, then open the copy. Two server round trips, so say what is
+  // happening at each step, and refuse a second press while one is running
+  // (a second press would otherwise make a second copy).
+  const handleDuplicate = async () => {
+    if (duplicating || !deck.id) return;
+    setDuplicating(true);
+    onProgress?.("Copying your deck…");
+    try {
+      const result = await duplicateDeckAction(deck.id);
+      if (!result.success) {
+        onNotify?.(result.error || "Failed to duplicate deck", "error");
+        return;
+      }
+      if (!onLoadDeck || !result.deckId) {
+        onNotify?.("Deck duplicated. Find the copy in My Decks.", "success");
+        return;
+      }
+      onProgress?.("Opening your copy…");
+      const opened = await onLoadDeck(result.deckId);
+      if (opened === false) {
+        // Either the unsaved-changes prompt took over, or the copy failed to load.
+        onNotify?.("Deck duplicated. Find the copy in My Decks.", "success");
+      } else {
+        onNotify?.("Deck duplicated. You're now editing the copy.", "success");
+      }
+    } catch {
+      onNotify?.("Couldn't duplicate the deck. Check your connection and try again.", "error");
+    } finally {
+      setDuplicating(false);
+      setShowMenu(false);
+      onProgress?.(null);
+    }
+  };
+
+  // Practice loads the deck from the database, so unsaved edits would be left
+  // behind. Save first; if the save fails, stay here rather than practise a stale deck.
+  const saveBeforePractice = async (): Promise<boolean> => {
+    if (!hasUnsavedChanges || !onSaveDeck) return true;
+    onProgress?.("Saving your deck…");
+    try {
+      const result = await onSaveDeck();
+      if (!result.success) {
+        onNotify?.(result.error || "Couldn't save the deck, so Practice was cancelled.", "error");
+        return false;
+      }
+      return true;
+    } catch {
+      onNotify?.("Couldn't save the deck, so Practice was cancelled.", "error");
+      return false;
+    } finally {
+      onProgress?.(null);
     }
   };
 
@@ -656,7 +714,12 @@ export default function DeckBuilderPanel({
   // Close menu when clicking outside
   useEffect(() => {
     if (!showMenu) return;
-    const handleClick = () => setShowMenu(false);
+    // A control that runs work and closes the menu itself (Duplicate) opts out
+    // so its spinner stays visible while it runs.
+    const handleClick = (e: MouseEvent) => {
+      if ((e.target as Element | null)?.closest?.('[data-keep-menu-open]')) return;
+      setShowMenu(false);
+    };
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
   }, [showMenu]);
@@ -1263,7 +1326,7 @@ export default function DeckBuilderPanel({
 
             {/* Practice */}
             {deck.id && (
-              <GoldfishButton deckId={deck.id} deckName={deck.name} format={deck.format} iconOnly />
+              <GoldfishButton deckId={deck.id} deckName={deck.name} format={deck.format} iconOnly beforeNavigate={saveBeforePractice} />
             )}
 
             {/* View (mobile) — sliders icon */}
@@ -1363,22 +1426,23 @@ export default function DeckBuilderPanel({
                   )}
                   {canShare && onDuplicate && isAuthenticated && deck.id && (
                     <button
-                      onClick={async () => {
-                        setShowMenu(false);
-                        const result = await duplicateDeckAction(deck.id!);
-                        if (result.success) {
-                          onNotify?.('Deck duplicated successfully!', 'success');
-                          if (onLoadDeck && result.deckId) onLoadDeck(result.deckId);
-                        } else {
-                          onNotify?.(result.error || 'Failed to duplicate deck', 'error');
-                        }
-                      }}
-                      className="w-full px-4 py-2.5 text-left hover:bg-muted flex items-center gap-2.5 text-foreground text-sm"
+                      data-keep-menu-open
+                      onClick={() => { void handleDuplicate(); }}
+                      disabled={duplicating}
+                      aria-busy={duplicating}
+                      className="w-full px-4 py-2.5 text-left hover:bg-muted flex items-center gap-2.5 text-foreground text-sm disabled:opacity-70 disabled:cursor-wait"
                     >
-                      <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      Duplicate
+                      {duplicating ? (
+                        <svg className="w-4 h-4 text-muted-foreground animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                      {duplicating ? 'Duplicating…' : 'Duplicate'}
                     </button>
                   )}
                   {canLoadDeckList && onLoadDeck && isAuthenticated && (
@@ -1758,7 +1822,7 @@ export default function DeckBuilderPanel({
 
             {/* Practice Button */}
             {deck.id && (
-              <GoldfishButton deckId={deck.id} deckName={deck.name} format={deck.format} iconOnly />
+              <GoldfishButton deckId={deck.id} deckName={deck.name} format={deck.format} iconOnly beforeNavigate={saveBeforePractice} />
             )}
 
             {/* View Button (desktop) — sliders icon, icon-only to match neighbors */}
@@ -1872,26 +1936,24 @@ export default function DeckBuilderPanel({
               {/* Duplicate/Load Section */}
               {canShare && onDuplicate && isAuthenticated && deck.id && (
                 <button
-                  onClick={async () => {
-                    setShowMenu(false);
-                    const result = await duplicateDeckAction(deck.id!);
-                    if (result.success) {
-                      onNotify?.('Deck duplicated successfully!', 'success');
-                      // Optionally reload or navigate to the duplicated deck
-                      if (onLoadDeck && result.deckId) {
-                        onLoadDeck(result.deckId);
-                      }
-                    } else {
-                      onNotify?.(result.error || 'Failed to duplicate deck', 'error');
-                    }
-                  }}
-                  className="w-full px-4 py-2 text-left hover:bg-muted flex items-center gap-2 text-foreground text-sm"
+                  data-keep-menu-open
+                  onClick={() => { void handleDuplicate(); }}
+                  disabled={duplicating}
+                  aria-busy={duplicating}
+                  className="w-full px-4 py-2 text-left hover:bg-muted flex items-center gap-2 text-foreground text-sm disabled:opacity-70 disabled:cursor-wait"
                   title="Create a copy of this deck"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  Duplicate
+                  {duplicating ? (
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                  {duplicating ? 'Duplicating…' : 'Duplicate'}
                 </button>
               )}
               {canLoadDeckList && onLoadDeck && isAuthenticated && (

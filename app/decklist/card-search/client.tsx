@@ -278,6 +278,8 @@ export default function CardSearchClient({
 
   // Notification state
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
+  // Long-running work (duplicating a deck): stays on screen until the work ends, unlike `notification`.
+  const [progress, setProgress] = useState<string | null>(null);
 
   // Import/export state
   const [importText, setImportText] = useState("");
@@ -1618,20 +1620,23 @@ export default function CardSearchClient({
   async function openDeckById(deckId: string) {
     const ok = await loadDeckFromCloud(deckId);
     if (ok) config.onDeckLoaded?.(deckId);
+    return ok;
   }
 
   // Load a deck picked from the Load Deck modal (or a fresh duplicate). Loading
   // replaces the working deck in memory and in localStorage, so ask first when
   // it holds unsaved cards. Same "has cards" gate as handleNewDeck: a blank
   // deck reads as unsaved right after New Deck and must not nag.
-  function handleLoadDeckById(deckId: string) {
+  // Resolves true once the deck is open, false if it failed to load or the
+  // unsaved-changes prompt took over (the caller can tell "opened" from "asked").
+  async function handleLoadDeckById(deckId: string): Promise<boolean> {
     const stats = getDeckStats();
     if (hasUnsavedChanges && stats.mainDeckCount + stats.reserveCount > 0) {
       setPendingDeckAction(() => () => openDeckById(deckId));
       setShowUnsavedChangesModal(true);
-      return;
+      return false;
     }
-    void openDeckById(deckId);
+    return openDeckById(deckId);
   }
 
   // Import deck from text
@@ -3008,6 +3013,7 @@ export default function CardSearchClient({
             }}
             onNewDeck={handleNewDeck}
             onLoadDeck={handleLoadDeckById}
+            onProgress={setProgress}
             onReplaceGood={(sourceDeckId) => handleReplaceHalf("good", sourceDeckId)}
             onReplaceEvil={(sourceDeckId) => handleReplaceHalf("evil", sourceDeckId)}
             defaultTab={activeDeckTab}
@@ -3113,6 +3119,7 @@ export default function CardSearchClient({
               onDuplicate={() => {}}
               onNewDeck={handleNewDeck}
               onLoadDeck={handleLoadDeckById}
+              onProgress={setProgress}
               onReplaceGood={(sourceDeckId) => handleReplaceHalf("good", sourceDeckId)}
               onReplaceEvil={(sourceDeckId) => handleReplaceHalf("evil", sourceDeckId)}
               defaultTab={activeDeckTab}
@@ -3440,6 +3447,21 @@ export default function CardSearchClient({
         </div>
       )}
       
+      {/* In-progress work: a spinner toast that holds until the work finishes */}
+      {progress && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in flex items-center gap-2.5 bg-card text-foreground border border-border"
+        >
+          <svg className="w-4 h-4 animate-spin shrink-0" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          {progress}
+        </div>
+      )}
+
       {/* General notification */}
       {notification && (
         <div className={`fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in ${
