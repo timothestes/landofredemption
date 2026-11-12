@@ -428,9 +428,9 @@ export function CardContextMenu({ card: initialCard, x, y, actions, onClose, onE
             // disable when the opponent isn't currently revealing.
             const needsOpponentReveal = ability.type === 'draw_brigades';
             const opponentRevealMissing = needsOpponentReveal && !opponentHandRevealed;
-            // "Exchange this card…" sends THIS card into the activator's deck,
-            // so it only works on your own card (the canvases refuse it too).
-            const notYourCard = ability.type === 'exchange_with_deck' && card.ownerId !== 'player1';
+            // "Exchange this card…" sends THIS card into the activator's deck
+            // (or Reserve), so it only works on your own card (the canvases refuse it too).
+            const notYourCard = (ability.type === 'exchange_with_deck' || ability.type === 'exchange_with_reserve') && card.ownerId !== 'player1';
             const disabled = !isInAbilityZone || opponentRevealMissing || notYourCard;
             const disabledReason = opponentRevealMissing
               ? "Opponent's hand isn't revealed"

@@ -368,12 +368,16 @@ for (const c of cards) {
         // "from Reserve (or deck if you control a meek Lost Soul)": the deck is
         // allowed on a condition the player judges, as with any other condition.
         const conditionalDeck = /^\s*\(or (?:from )?(?:your )?deck\b[^)]*\)/i.test(seg.slice(hit.index + hit[0].length));
-        if (!/\b(?:deck|draw pile)\b/i.test(hit[cl.piles]) && !conditionalDeck) continue;
+        const toDeck = /\b(?:deck|draw pile)\b/i.test(hit[cl.piles]) || conditionalDeck;
+        // Capital R: "take a Hero or Site from Reserve or reserve" — the second is the verb.
+        // Storehouse has its own Reserve picker (take_enhancement_from_reserve).
+        const toReserve = /\bReserve\b/.test(hit[cl.piles]) && !registered.get(c.name)?.includes('take_enhancement_from_reserve');
+        if (!toDeck && !toReserve) continue;
         let target = hit[cl.target].trim().replace(/^you may\s+/i, '');
         if (/opponent|top|bottom|discard pile/i.test(target)) continue;
         // "Opponent may take X from deck" — not the activator's effect.
         if (/opponent\S*\s+(?:may|must)\s*$/i.test(seg.slice(Math.max(0, hit.index - 30), hit.index))) continue;
-        entries.push({ card: c.name, rotation: c.legality === 'Rotation', kind: cl.kind, star, clause: hit[0].trim(), target });
+        entries.push({ card: c.name, rotation: c.legality === 'Rotation', kind: cl.kind, toDeck, toReserve, star, clause: hit[0].trim(), target });
       }
     }
   }
@@ -436,8 +440,10 @@ const EXTRA = {
   // "SITE: If you play this Site and have no Evil Character, you may take one from deck."
   'Damascus (LoC)': [{ kind: 'search_deck', label: 'an Evil Character', match: [{ types: ['Evil Character'] }] }],
   'Damascus (Promo)': [{ kind: 'search_deck', label: 'an Evil Character', match: [{ types: ['Evil Character'] }] }],
-  'The Watchman (Promo)': [{ kind: 'exchange_with_deck', label: 'a Major or Minor prophet', match: [{ traits: ['major prophet'], types: ['character'] }, { traits: ['minor prophet'], types: ['character'] }] }],
-  'False Peace (PoC)': [{ kind: 'search_deck', label: 'an O.T. card (except a Dominant)', match: [{ testament: 'OT', types: NOT_DOMINANT }] }],
+  // "…in deck, territory, discard pile or Reserve" — both windows.
+  'The Watchman (Promo)': ['exchange_with_deck', 'exchange_with_reserve'].map((kind) => ({ kind, label: 'a Major or Minor prophet', match: [{ traits: ['major prophet'], types: ['character'] }, { traits: ['minor prophet'], types: ['character'] }] })),
+  // "…from deck or Reserve" — both windows.
+  'False Peace (PoC)': ['search_deck', 'search_reserve'].map((kind) => ({ kind, label: 'an O.T. card (except a Dominant)', match: [{ testament: 'OT', types: NOT_DOMINANT }] })),
   'The Thief (GoC)': [{ kind: 'exchange_with_deck', label: 'a thief or generic demon', match: [{ traits: ['thief'], types: ['character'] }, { traits: ['demon', 'generic'], types: ['Evil Character'] }, { traits: ['generic'], types: ['Evil Character'], brigades: ['Orange'], singleBrigade: true }] }],
 };
 
@@ -452,15 +458,34 @@ const add = (card, entry) => {
   if (!list.some((x) => x.kind === entry.kind && JSON.stringify(x.match) === JSON.stringify(entry.match))) list.push(entry);
   final.set(card, list);
 };
+// The same clause from the Reserve: "take X from deck or Reserve" gets both.
+const RESERVE_KIND = { search_deck: 'search_reserve', exchange_with_deck: 'exchange_with_reserve' };
+// Deck items first, then Reserve items, so a card's deck items keep their place.
 for (const e of out) {
-  if (e.card in OVERRIDES || e.flags.length) continue;
+  if (e.card in OVERRIDES || e.flags.length || !e.toDeck) continue;
   add(e.card, { kind: e.kind, label: e.label, match: e.match, star: e.star });
 }
+for (const e of out) {
+  if (e.card in OVERRIDES || e.flags.length || !e.toReserve) continue;
+  add(e.card, { kind: RESERVE_KIND[e.kind], label: e.label, match: e.match, star: e.star });
+}
+// An override replaces the parsed filter; it applies to whichever piles the
+// card's own clause of that kind names (deck, Reserve or both).
 for (const [card, list] of Object.entries(OVERRIDES)) {
-  if (list) final.set(card, list.map((x) => ({ ...x, star: false })));
-  else final.delete(card);
+  if (!list) { final.delete(card); continue; }
+  const scanned = out.filter((e) => e.card === card);
+  const deckItems = [], reserveItems = [];
+  for (const x of list) {
+    const s = scanned.filter((e) => e.kind === x.kind);
+    if (!s.length || s.some((e) => e.toDeck)) deckItems.push({ ...x, star: false });
+    if (s.some((e) => e.toReserve)) reserveItems.push({ ...x, kind: RESERVE_KIND[x.kind], star: false });
+  }
+  final.set(card, [...deckItems, ...reserveItems]);
 }
 for (const [card, list] of Object.entries(EXTRA)) for (const x of list) add(card, { star: false, ...x });
+// Deck items before Reserve items (hand additions are deck items).
+const isReserveKind = (k) => k === 'search_reserve' || k === 'exchange_with_reserve';
+for (const [card, list] of final) final.set(card, [...list.filter((x) => !isReserveKind(x.kind)), ...list.filter((x) => isReserveKind(x.kind))]);
 for (const [card, list] of final) {
   for (const x of list) {
     const counts = x.match.map((m) => cards.filter((c) => matchOne(c, m)).length);
@@ -493,7 +518,9 @@ const header = (copyNote) => `// GENERATED by scripts/generate-deck-search-abili
 // judgement the card data can't make — meek, female, "matching", "with a …
 // ability" — are skipped, as are clauses aimed at an opponent. "Human" follows
 // ORDIR (nonHumanCharacters.ts). A deck allowed on a condition ("from Reserve
-// (or deck if …)") is offered; the player judges the condition.
+// (or deck if …)") is offered; the player judges the condition. A clause
+// naming the Reserve also gets search_reserve / exchange_with_reserve (the
+// Reserve window, narrowed the same way); "deck or Reserve" gets both.
 // Hand corrections live in the generator's OVERRIDES. Merged after the
 // hand-written registry (cardAbilities.ts), so existing ability indexes hold.
 import type { CardAbility } from './cardAbilities';
@@ -525,6 +552,9 @@ ${[...NON_HUMAN].sort((a, b) => a.localeCompare(b)).map((n) => `  ${q(n)},`).joi
 ]);
 `);
 console.log(`final cards: ${final.size}, entries: ${[...final.values()].reduce((n, l) => n + l.length, 0)}`);
+const kinds = {};
+for (const l of final.values()) for (const x of l) kinds[x.kind] = (kinds[x.kind] ?? 0) + 1;
+console.log(kinds);
 const ok = out.filter((e) => !e.flags.length);
 console.log(`clauses: ${out.length}; clean: ${ok.length} (search ${ok.filter((e) => e.kind === 'search_deck').length}, exchange ${ok.filter((e) => e.kind === 'exchange_with_deck').length}); flagged: ${out.length - ok.length}`);
 const why = {};

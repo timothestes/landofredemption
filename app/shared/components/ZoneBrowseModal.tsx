@@ -12,6 +12,7 @@ import { useCardPreview } from '@/app/goldfish/state/CardPreviewContext';
 import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { useDraggableModal } from '@/app/shared/hooks/useDraggableModal';
 import { DraggableTitleBar } from './DraggableTitleBar';
+import { DeckFilterBar, type DeckCardFilter } from './DeckFilterBar';
 import { compareCardsDefault } from '@/lib/cards/defaultSort';
 import { hasUsableAbilityInZone } from '@/lib/cards/cardAbilities';
 import { isOnScrollbar } from '@/app/shared/utils/scrollbarHit';
@@ -174,9 +175,13 @@ interface ZoneBrowseModalProps {
   /** Read-only viewers (spectators) can't act on a card, but they still need
    *  to READ it — tap / long-press / click opens the caller's card reader. */
   onReadCard?: (card: GameCard) => void;
+  /** Set when a card ability opened the Reserve (search_reserve, e.g. "take a
+   *  clay card from Reserve"): the grid starts narrowed to the cards that
+   *  qualify, with a DeckFilterBar to drop it. */
+  filter?: DeckCardFilter;
 }
 
-export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag, didDragRef, isDragActive, readOnly, onRequestCardMenu, alwaysUseCardMenu, isCardFaceHidden, onReadCard }: ZoneBrowseModalProps) {
+export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag, didDragRef, isDragActive, readOnly, onRequestCardMenu, alwaysUseCardMenu, isCardFaceHidden, onReadCard, filter }: ZoneBrowseModalProps) {
   const { dragHandleProps, modalStyle } = useDraggableModal();
   // Touch has no clicks, lassos or right-clicks — say what actually works.
   const isTouchInput = useInputMode() === 'touch';
@@ -197,6 +202,8 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
         { name: b.cardName, type: b.type, brigade: b.brigade, alignment: b.alignment, strength: b.strength, reference: b.reference },
       ))
     : rawCards;
+  const [filterOn, setFilterOn] = useState(true);
+  const shownCards = filter && filterOn ? cards.filter(filter.matches) : cards;
   // Field of Battle only: both sides share the grid, so per-card owner badges
   // are what distinguish attacker from blocker (see ownerBadge below).
   const battleMixedOwners =
@@ -632,8 +639,21 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
           </div>
         )}
 
-        {cards.length === 0 ? (
-          <p style={{ color: 'var(--gf-text-dim)', fontStyle: 'italic' }}>Empty</p>
+        {/* Ability filter (search_reserve) — what the card lets you take */}
+        {filter && (
+          <DeckFilterBar
+            label={filter.label}
+            shown={shownCards.length}
+            total={cards.length}
+            filterOn={filterOn}
+            onToggle={() => setFilterOn(v => !v)}
+          />
+        )}
+
+        {shownCards.length === 0 ? (
+          <p style={{ color: 'var(--gf-text-dim)', fontStyle: 'italic' }}>
+            {filter && cards.length > 0 ? `No cards in ${ZONE_LABELS[zoneId]} match ${filter.label}` : 'Empty'}
+          </p>
         ) : (
           <div style={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
           <div
@@ -647,7 +667,7 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
               cursor: readOnly ? 'default' : 'crosshair',
             }}
           >
-            {cards.map((card) => {
+            {shownCards.map((card) => {
               // Hidden-info gate: render a card back and keep every read path
               // (reader, hover preview) inert for faces this viewer may not see.
               const faceHidden = isCardFaceHidden?.(card) ?? false;

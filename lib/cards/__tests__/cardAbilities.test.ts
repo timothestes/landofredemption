@@ -285,10 +285,10 @@ describe('band_heroes_from_deck — Creation of the World', () => {
   it('is registered on the Patriarchs printing only', () => {
     // "Creation of the World (Roots)" is a different card — blue, "each player
     // may play up to 3 animals, O.T. angels and/or Genesis humans" — so it gets
-    // that deck search, never the band.
+    // that deck (and Reserve) search, never the band.
     expect(CARD_ABILITIES['Creation of the World'])
       .toEqual([{ type: 'band_heroes_from_deck', referenceBook: 'Genesis' }]);
-    expect((CARD_ABILITIES['Creation of the World (Roots)'] ?? []).map(a => a.type)).toEqual(['search_deck']);
+    expect((CARD_ABILITIES['Creation of the World (Roots)'] ?? []).map(a => a.type)).toEqual(['search_deck', 'search_reserve']);
   });
 
   it('the referenceBook matches real Genesis Heroes and nothing else', () => {
@@ -540,12 +540,37 @@ describe('matchesDeckCard rules', () => {
 describe('generated search / exchange registry', () => {
   const entries = Object.entries(CARD_ABILITIES).flatMap(([card, list]) =>
     list
-      .filter((a): a is Extract<typeof a, { type: 'search_deck' | 'exchange_with_deck' }> => a.type === 'search_deck' || a.type === 'exchange_with_deck')
+      .filter((a): a is Extract<typeof a, { type: 'search_deck' | 'exchange_with_deck' | 'search_reserve' | 'exchange_with_reserve' }> =>
+        a.type === 'search_deck' || a.type === 'exchange_with_deck' || a.type === 'search_reserve' || a.type === 'exchange_with_reserve')
       .map(a => ({ card, a })));
 
   it('covers the scanned card pool', () => {
     expect(entries.length).toBeGreaterThan(300);
     expect(entries.filter(e => e.a.type === 'exchange_with_deck').length).toBeGreaterThan(10);
+    expect(entries.filter(e => e.a.type === 'search_reserve').length).toBeGreaterThan(200);
+    expect(entries.filter(e => e.a.type === 'exchange_with_reserve').length).toBeGreaterThan(10);
+  });
+
+  it('Reserve clauses get the Reserve window; "deck or Reserve" gets both, deck first', () => {
+    const types = (card: string) => CARD_ABILITIES[card].map(a => a.type);
+    // "You may take a clay card from Reserve."
+    expect(CARD_ABILITIES['Baptism of Jesus (GoC)']).toEqual([
+      expect.objectContaining({ type: 'search_reserve', target: 'a clay card' }),
+    ]);
+    expect(abilityLabel(CARD_ABILITIES['Baptism of Jesus (GoC)'][0])).toBe('Search Reserve for a clay card…');
+    // "take a good card from deck or Reserve"
+    expect(types("Crowd's Choice (GoC)").filter(t => t === 'search_deck' || t === 'search_reserve'))
+      .toEqual(['search_deck', 'search_deck', 'search_reserve', 'search_reserve']);
+    // "Exchange this card with a Curse from Reserve."
+    const accursed = CARD_ABILITIES['Accursed of God'][0];
+    expect(accursed).toMatchObject({ type: 'exchange_with_reserve', target: 'a Curse' });
+    expect(abilityLabel(accursed)).toBe('Exchange this card with a Curse from Reserve…');
+  });
+
+  it('Storehouse keeps its own Reserve picker, with no generated duplicate', () => {
+    for (const name of ['Storehouse (Promo)', 'Storehouse [IR]', 'Storehouse [Fundraiser]']) {
+      expect(CARD_ABILITIES[name]?.map(a => a.type)).toEqual(['take_enhancement_from_reserve']);
+    }
   });
 
   it('every filter matches at least one real card', () => {
@@ -600,15 +625,27 @@ describe('generated search / exchange registry', () => {
     const expected: Record<string, number> = JSON.parse(
       fs.readFileSync(path.join(__dirname, 'fixtures', 'deckSearchCounts.json'), 'utf8'),
     );
+    // Printings and a card's deck/Reserve twins share filters: count each
+    // distinct filter once over the whole pool.
+    const counted = new Map<string, number>();
+    const count = (m: DeckCardMatch) => {
+      const key = JSON.stringify(m);
+      let n = counted.get(key);
+      if (n === undefined) {
+        n = CARDS.filter(c => matchesDeckCard(c, [m])).length;
+        counted.set(key, n);
+      }
+      return n;
+    };
     const actual: Record<string, number> = {};
     for (const [card, list] of Object.entries(DECK_SEARCH_ABILITIES)) {
       list.forEach((a, i) => {
-        if (a.type !== 'search_deck' && a.type !== 'exchange_with_deck') return;
-        a.match.forEach((m, j) => { actual[`${card} #${i}.${j}`] = CARDS.filter(c => matchesDeckCard(c, [m])).length; });
+        if (a.type !== 'search_deck' && a.type !== 'exchange_with_deck' && a.type !== 'search_reserve' && a.type !== 'exchange_with_reserve') return;
+        a.match.forEach((m, j) => { actual[`${card} #${i}.${j}`] = count(m); });
       });
     }
     expect(actual).toEqual(expected);
-  });
+  }, 30_000); // a full pass over every card; CI runners are slower than laptops
 
   it('lib and spacetimedb copies of the generated file are identical', async () => {
     const lib = await import('../deckSearchAbilities');
@@ -886,7 +923,7 @@ describe('star abilities are fireable from hand', () => {
     expect(abilities, `${name} missing from registry`).toBeDefined();
     // Generated search/exchange entries encode the card's in-play half (The
     // Three Visitors' "(Hero) exchange this Hero…"), not its STAR.
-    for (const a of abilities.filter(a => a.type !== 'search_deck' && a.type !== 'exchange_with_deck')) {
+    for (const a of abilities.filter(a => !['search_deck', 'exchange_with_deck', 'search_reserve', 'exchange_with_reserve'].includes(a.type))) {
       expect(a.sourceZones ?? DEFAULT_ABILITY_SOURCE_ZONES).toContain('hand');
     }
   });

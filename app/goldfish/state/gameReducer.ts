@@ -1661,7 +1661,10 @@ function reduceGame(state: GameState, action: GameAction): GameState {
           return state;
         case 'search_deck':
         case 'exchange_with_deck':
+        case 'search_reserve':
+        case 'exchange_with_reserve':
           // GoldfishCanvas opens the filtered Search Deck / Exchange with Deck
+          // (or the Reserve browse / Exchange with Reserve)
           // window; the player moves cards with the window's own actions.
           return state;
         case 'all_players_keep_one_shuffle_draw':
