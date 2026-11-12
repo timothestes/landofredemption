@@ -345,6 +345,7 @@ if (outPath) writeFileSync(outPath, JSON.stringify(out, null, 2));
 
 // ---------- hand overrides (card name → replacement entries, or null = skip) ----------
 const GOSPEL = ['Matthew', 'Mark', 'Luke', 'John'];
+const ABRAHAM = ['Abraham', 'Abram', 'Father Abraham', 'Faithful Abraham', 'Abram/Abraham'];
 const OVERRIDES = {
   // "(except a Hero)": a Gospel character that isn't a Hero is a Gospel Evil Character.
   'Golgotha (GoC)': [{ kind: 'search_deck', label: 'a Gospel character (except a Hero)', match: [{ types: ['Evil Character'], books: GOSPEL }] }],
@@ -355,6 +356,16 @@ const OVERRIDES = {
   // (Genesis or Exodus) × (Site or Fortress).
   'The Murdering Pharaoh': [{ kind: 'search_deck', label: 'a Genesis or Exodus Site or Fortress', match: [{ books: ['Genesis', 'Exodus'], types: ['Site', 'Fortress'] }] }],
   'The Murdering Pharaoh (CoW AB)': [{ kind: 'search_deck', label: 'a Genesis or Exodus Site or Fortress', match: [{ books: ['Genesis', 'Exodus'], types: ['Site', 'Fortress'] }] }],
+  // "…to take an idol and add your priest from hand, deck, territory or
+  // Reserve to battle": the idol is taken from play; the priest is the deck pick.
+  'Captive Priest': [{ kind: 'search_deck', label: 'your priest', match: [{ traits: ['priest'], types: ['Hero'] }] }],
+  // ORDIR duplicates: Abram / Abraham / Faithful Abraham / Father Abraham are one character.
+  'Faith of Abraham (CoW)': [{ kind: 'search_deck', label: 'Abraham', match: [{ names: ABRAHAM }] }],
+  'Faith of Abraham (CoW AB)': [{ kind: 'search_deck', label: 'Abraham', match: [{ names: ABRAHAM }] }],
+  // ORDIR duplicate: Saul of Tarsus is Paul.
+  'Ananias of Damascus [RR2]': [{ kind: 'search_deck', label: 'Paul', match: [{ names: ['Paul', 'Saul of Tarsus'] }] }],
+  // A Hero adds a Hero to battle — the evil Tabernacle priests (Hophni, Nadab, …) don't qualify.
+  'Ahitub, the High Priest': [{ kind: 'search_deck', label: 'a Tabernacle priest', match: [{ traits: ['tabernacle', 'priest'], types: ['Hero'] }] }],
 };
 
 // ---------- hand additions (appended to whatever the text scan produced) ----------
@@ -364,11 +375,16 @@ const EXTRA = {
   'Boaz’ Offspring (LoC)': [DESCENDANT_STAR],
   "David's Descendant (LoC)": [DESCENDANT_STAR],
   "Abraham's Descendant (LoC)": [DESCENDANT_STAR],
+  'Zerubbabel’s Plumb Line (LoC)': [DESCENDANT_STAR],
+  // "SITE: If you play this Site and have no Evil Character, you may take one from deck."
+  'Damascus (LoC)': [{ kind: 'search_deck', label: 'an Evil Character', match: [{ types: ['Evil Character'] }] }],
+  'Damascus (Promo)': [{ kind: 'search_deck', label: 'an Evil Character', match: [{ types: ['Evil Character'] }] }],
+  'The Watchman (Promo)': [{ kind: 'exchange_with_deck', label: 'a Major or Minor prophet', match: [{ traits: ['major prophet'], types: ['character'] }, { traits: ['minor prophet'], types: ['character'] }] }],
   'False Peace (PoC)': [{ kind: 'search_deck', label: 'an O.T. card (except a Dominant)', match: [{ testament: 'OT', types: NOT_DOMINANT }] }],
   // Wilderness characters are humans by definition.
   'Wandering Israelites': [{ kind: 'exchange_with_deck', label: 'an evil wilderness human', match: [{ alignments: ['evil'], traits: ['wilderness'], types: ['character'] }] }],
   'Lost Soul "Aimless" [Exodus 14:3]': [{ kind: 'search_deck', label: 'a wilderness human', match: [{ traits: ['wilderness'], types: ['character'] }, { names: EXTRA_GROUP_NAMES.wilderness }] }],
-  'The Thief (GoC)': [{ kind: 'exchange_with_deck', label: 'a thief or generic demon', match: [{ traits: ['thief'], types: ['character'] }, { traits: ['demon', 'generic'], types: ['Evil Character'] }] }],
+  'The Thief (GoC)': [{ kind: 'exchange_with_deck', label: 'a thief or generic demon', match: [{ traits: ['thief'], types: ['character'] }, { traits: ['demon', 'generic'], types: ['Evil Character'] }, { traits: ['generic'], types: ['Evil Character'], brigades: ['Orange'], singleBrigade: true }] }],
 };
 
 const CARD_NAMES = new Set(cards.map((c) => c.name));
