@@ -1,6 +1,22 @@
 {
   "overrides": [
     {
+      "name": "Altar of Ahaz",
+      "set": "Pri",
+      "fields": {
+        "identifier": "Idol, False Religious Practice"
+      },
+      "note": "REL 1.0.0 identifier errata: Idol definition now includes this card"
+    },
+    {
+      "name": "Altar of Ahaz [RR2]",
+      "set": "RR2",
+      "fields": {
+        "identifier": "Idol"
+      },
+      "note": "REL 1.0.0 identifier errata: Idol definition now includes this card"
+    },
+    {
       "name": "Angel of Might",
       "set": "Ki",
       "fields": {
@@ -55,6 +71,14 @@
         "identifier": "Magician, False Prophet"
       },
       "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
+    },
+    {
+      "name": "Brass Serpent",
+      "set": "PoC",
+      "fields": {
+        "identifier": "Idol"
+      },
+      "note": "REL 1.0.0 identifier errata: Idol definition now includes this card"
     },
     {
       "name": "Caiaphas the Conspirator (GoC)",
@@ -231,6 +255,22 @@
         "identifier": "Israelite King"
       },
       "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Mark of the Beast (RoJ AB)",
+      "set": "RoJ (AB)",
+      "fields": {
+        "identifier": "Idol"
+      },
+      "note": "REL 1.0.0 identifier errata: Idol definition now includes this card"
+    },
+    {
+      "name": "Mark of the Beast (RoJ)",
+      "set": "RoJ",
+      "fields": {
+        "identifier": "Idol"
+      },
+      "note": "REL 1.0.0 identifier errata: Idol definition now includes this card"
     },
     {
       "name": "Mary, Holy Virgin / Mary, Willing Servant (GoC)",
@@ -471,6 +511,30 @@
         "identifier": ""
       },
       "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Unknown Nation",
+      "set": "Pri",
+      "fields": {
+        "identifier": "Idol"
+      },
+      "note": "REL 1.0.0 identifier errata: Idol definition now includes this card"
+    },
+    {
+      "name": "Unknown Nation (PoC)",
+      "set": "PoC",
+      "fields": {
+        "identifier": "Idol"
+      },
+      "note": "REL 1.0.0 identifier errata: Idol definition now includes this card"
+    },
+    {
+      "name": "Unknown Nation [RR2]",
+      "set": "RR2",
+      "fields": {
+        "identifier": "Idol"
+      },
+      "note": "REL 1.0.0 identifier errata: Idol definition now includes this card"
     },
     {
       "name": "Zechariah, the Silent (GoC)",
