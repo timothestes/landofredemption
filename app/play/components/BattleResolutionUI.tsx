@@ -29,7 +29,7 @@ import type { CardInstance } from '@/lib/spacetimedb/module_bindings/types';
 import type { DeckFormat } from '@/lib/deck-format';
 import { resolveCardImageUrl, type ForgeResolverMap } from '../utils/forgeResolver';
 
-type ResolutionAction = 'claim-victory' | 'battle-lost';
+type ResolutionAction = 'claim-victory' | 'battle-lost' | 'end-battle';
 
 interface BattleResolutionUIProps {
   /** Battle band rect (virtual coords). Caller gates mounting on this being present. */
@@ -71,16 +71,16 @@ interface BattleResolutionUIProps {
   /** True once the band holds at least one card. Win Battle / Battle Lost are
    *  confirm-free and consequence-heavy (a misclicked 🏳 with souls at stake
    *  goes straight into the surrender flow), so they stay hidden over an
-   *  empty band. There is no End Battle button — the attacker walks away by
-   *  progressing the phase (set_phase / end_turn auto-return any open battle
-   *  server-side, from 'active' AND 'awaiting-soul'). */
+   *  empty band. ↩ End Battle (both roles) follows the same rule; the attacker
+   *  can also still walk away by progressing the phase (set_phase / end_turn
+   *  auto-return any open battle server-side). */
   bandHasCards: boolean;
   /** Both Win Battle and Battle Lost dispatch the same server reducer (resolve_battle) —
    *  the server decides win/loss from caller identity, not from which button was pressed. */
   onResolveBattle: () => void;
-  /** Dispatches end_battle. Only the awaiting-soul CHOOSER uses it now (the
-   *  Decline / no-souls-left buttons) — the defender can't phase-progress on
-   *  the attacker's turn, so those need an explicit control. */
+  /** Dispatches end_battle. Used by the attacker's ↩ End Battle button and by
+   *  the awaiting-soul CHOOSER (Decline / no-souls-left) — the defender can't
+   *  phase-progress on the attacker's turn, so those need an explicit control. */
   onEndBattle: () => void;
   onSurrenderSoul: (cardInstanceId: bigint) => void;
   /** Phase Stops: phase currently holding the turn ('' = no hold). end_battle/
@@ -107,6 +107,7 @@ const BUTTON_COPY: Record<ResolutionAction, { label: string; compactLabel: strin
   // over its bottom card edge — the icons carry the verb, so the noun goes.
   'claim-victory': { label: '⚑ Win Battle', compactLabel: '⚑ Win' },
   'battle-lost': { label: '🏳 Battle Lost', compactLabel: '🏳 Lost' },
+  'end-battle': { label: '↩ End Battle', compactLabel: '↩ End' },
 };
 
 type Tone = 'gold' | 'red' | 'neutral';
@@ -151,6 +152,10 @@ function ResolutionButton({
         fontWeight: 600,
         letterSpacing: '0.05em',
         whiteSpace: 'nowrap',
+        // Never let a second button squeeze the first: the row's width is a
+        // scaled virtual constant, so on a small scale it is narrower than
+        // two buttons and flex would otherwise shrink them.
+        flexShrink: 0,
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.4 : 1,
         boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
@@ -594,7 +599,7 @@ export default function BattleResolutionUI({
           width: right.x - topLeft.x,
           display: 'flex',
           justifyContent: 'flex-start',
-          gap: 8,
+          gap: compact ? 12 : 10,
           pointerEvents: 'auto',
         }}
       >
@@ -608,15 +613,26 @@ export default function BattleResolutionUI({
             compact={compact}
           />
         )}
-        {/* No End Battle button: the attacker (= turn player) walks away by
-            progressing the phase — set_phase / end_turn auto-return the
-            battle server-side. One button per role: attacker ⚑ Win,
-            defender 🏳 Battle Lost. */}
         {isDefender && bandHasCards && (
           <ResolutionButton
             label={compact ? BUTTON_COPY['battle-lost'].compactLabel : BUTTON_COPY['battle-lost'].label}
             tone="red"
             onClick={onResolveBattle}
+            disabled={isTurnHeld}
+            title={holdTitle}
+            compact={compact}
+          />
+        )}
+        {/* Walk-away for BOTH roles, always second in the row: closes the
+            battle with no win (end_battle). Attacker press also moves on to
+            discard when in the battle phase; defender press only closes the
+            band. The row gap above is wider than the old 8px so a thumb aimed
+            at ⚑ Win / 🏳 Lost doesn't land here. */}
+        {(isAttacker || isDefender) && bandHasCards && (
+          <ResolutionButton
+            label={compact ? BUTTON_COPY['end-battle'].compactLabel : BUTTON_COPY['end-battle'].label}
+            tone="neutral"
+            onClick={onEndBattle}
             disabled={isTurnHeld}
             title={holdTitle}
             compact={compact}
