@@ -200,33 +200,31 @@ export function DeckExchangeModal({
     handleCardClick(card);
   }, [didDragRef, handleCardClick]);
 
+  // The exchanged-away cards go into the pile: shuffled into a deck, or simply
+  // into the Reserve (exchange_with_reserve) — never a deck shuffle for that.
+  const sendExchangeCardsAway = () => {
+    if (targetZone === 'reserve') {
+      for (const id of exchangeCardIds) actions.moveCard(id, 'reserve');
+      return;
+    }
+    for (const id of exchangeCardIds) {
+      moveCardToTopOfDeck(id);
+    }
+    shuffleDeck();
+  };
+
   // When a drag completes (isDragActive goes true→false), the shared hook
   // already moved the dragged card to the target zone at the drop position.
-  // We now send the exchange cards to the deck and complete.
+  // We now send the exchange cards to the pile and complete.
   // IMPORTANT: Only proceed if validDropRef indicates the drop landed on a
   // valid zone. Without this guard, dropping outside a zone would still move
-  // exchange cards to the deck with no replacement — causing a desync.
-  const dragCompleteRef = useRef(() => {
-    const draggedId = draggedCardIdRef.current;
-    if (draggedId && validDropRef?.current) {
-      for (const id of exchangeCardIds) {
-        moveCardToTopOfDeck(id);
-      }
-      shuffleDeck();
-      draggedCardIdRef.current = null;
-      onComplete();
-    } else {
-      // Invalid drop — reset drag state, keep modal open
-      draggedCardIdRef.current = null;
-    }
-  });
+  // exchange cards to the pile with no replacement — causing a desync.
+  // Reassigned every render below, so it always sees the current props.
+  const dragCompleteRef = useRef<() => void>(() => {});
   dragCompleteRef.current = () => {
     const draggedId = draggedCardIdRef.current;
     if (draggedId && validDropRef?.current) {
-      for (const id of exchangeCardIds) {
-        moveCardToTopOfDeck(id);
-      }
-      shuffleDeck();
+      sendExchangeCardsAway();
       draggedCardIdRef.current = null;
       onComplete();
     } else {
@@ -269,10 +267,14 @@ export function DeckExchangeModal({
         const source = exchangeCards[i];
         actions.moveCard(pickedIds[i], source.zone, undefined, source.posX, source.posY);
       }
-      for (const id of exchangeCardIds) {
-        moveCardToTopOfDeck(id);
+      if (targetZone === 'reserve') {
+        for (const id of exchangeCardIds) actions.moveCard(id, 'reserve');
+      } else {
+        for (const id of exchangeCardIds) {
+          moveCardToTopOfDeck(id);
+        }
+        shuffleDeck();
       }
-      shuffleDeck();
     }
 
     onComplete();
@@ -331,7 +333,7 @@ export function DeckExchangeModal({
         >
           <DraggableTitleBar
             dragHandleProps={dragHandleProps}
-            title={`Exchange — Pick ${needCount} card${needCount > 1 ? 's' : ''} from ${targetZone === 'soul-deck' ? 'Soul Deck' : 'Deck'}`}
+            title={`Exchange — Pick ${needCount} card${needCount > 1 ? 's' : ''} from ${targetZone === 'soul-deck' ? 'Soul Deck' : targetZone === 'reserve' ? 'Reserve' : 'Deck'}`}
             bottomGap={12}
             onClose={onCancel}
           >
@@ -350,7 +352,7 @@ export function DeckExchangeModal({
             marginBottom: 12,
           }}>
             <span style={{ color: 'var(--gf-text)', fontSize: 12, fontFamily: 'var(--font-cinzel), Georgia, serif' }}>
-              Sending to {targetZone === 'soul-deck' ? 'soul deck' : 'deck'}:
+              Sending to {targetZone === 'soul-deck' ? 'soul deck' : targetZone === 'reserve' ? 'Reserve' : 'deck'}:
             </span>
             {exchangeCards.map(c => (
               <span key={c.instanceId} style={{
@@ -488,8 +490,8 @@ export function DeckExchangeModal({
                 {search
                   ? 'No cards match your search'
                   : filter && deckCards.length > 0
-                    ? `No cards in deck match ${filter.label}`
-                    : (targetZone === 'soul-deck' ? 'Soul Deck is empty' : 'Deck is empty')}
+                    ? `No cards in ${targetZone === 'reserve' ? 'Reserve' : 'deck'} match ${filter.label}`
+                    : (targetZone === 'soul-deck' ? 'Soul Deck is empty' : targetZone === 'reserve' ? 'Reserve is empty' : 'Deck is empty')}
               </p>
             ) : (
               <div

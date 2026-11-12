@@ -191,6 +191,10 @@ export function useModalCardDrag({
                 // Keep screen coords for HTML popup positioning
                 onDeckDrop(primary.instanceId, e.clientX, e.clientY);
               }
+            } else if (targetZone === 'reserve' && primary.zone === 'reserve') {
+              // Back on its own pile: no move, and — like the deck above — not a
+              // valid exchange drop (Exchange with Reserve would otherwise send
+              // the source card in with nothing taken out).
             } else if (targetZone === 'territory' || targetZone === 'land-of-bondage') {
               validDropRef.current = true;
               if (isMulti) {

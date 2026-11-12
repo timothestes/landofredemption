@@ -113,6 +113,8 @@ export type CardAbility = AbilityBase & (
   // deckSearchAbilities.ts). Client-side, no reducer — see lib/cards/cardAbilities.ts.
   | { type: 'search_deck'; target: string; match: DeckCardMatch[] }
   | { type: 'exchange_with_deck'; target: string; match: DeckCardMatch[] }
+  | { type: 'search_reserve'; target: string; match: DeckCardMatch[] }
+  | { type: 'exchange_with_reserve'; target: string; match: DeckCardMatch[] }
   | { type: 'custom'; reducerName: string; label: string }
 );
 

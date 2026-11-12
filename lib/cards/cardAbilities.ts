@@ -114,6 +114,11 @@ export type CardAbility = AbilityBase & (
   // windows' own actions move the cards, and the deck shuffles as usual.
   | { type: 'search_deck'; target: string; match: DeckCardMatch[] }
   | { type: 'exchange_with_deck'; target: string; match: DeckCardMatch[] }
+  // The same for the Reserve ("take a clay card from Reserve", "exchange this
+  // card with a Curse from Reserve"): the Reserve browse window, or Exchange
+  // with Reserve, narrowed the same way. "From deck or Reserve" gets both.
+  | { type: 'search_reserve'; target: string; match: DeckCardMatch[] }
+  | { type: 'exchange_with_reserve'; target: string; match: DeckCardMatch[] }
   | { type: 'custom'; reducerName: string; label: string }
 );
 
@@ -1177,6 +1182,10 @@ export function abilityLabel(a: CardAbility): string {
       return `Search deck for ${a.target}…`;
     case 'exchange_with_deck':
       return `Exchange this card with ${a.target} from deck…`;
+    case 'search_reserve':
+      return `Search Reserve for ${a.target}…`;
+    case 'exchange_with_reserve':
+      return `Exchange this card with ${a.target} from Reserve…`;
     case 'custom':
       return a.label;
   }

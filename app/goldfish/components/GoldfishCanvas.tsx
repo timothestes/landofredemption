@@ -216,9 +216,13 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
   // Dreamer) — narrows the window to the cards it can take. Null when the
   // player opened the search from the deck menu.
   const [deckSearchAbility, setDeckSearchAbility] = useState<Extract<CardAbility, { type: 'search_deck' }> | null>(null);
-  // Same for Exchange with Deck (exchange_with_deck, e.g. Benjamin, the Young).
-  // Cleared whenever the exchange window closes — its only exits.
-  const [exchangeAbility, setExchangeAbility] = useState<Extract<CardAbility, { type: 'exchange_with_deck' }> | null>(null);
+  // Same for Exchange with Deck (exchange_with_deck, e.g. Benjamin, the Young)
+  // or with Reserve (exchange_with_reserve). Cleared whenever the exchange
+  // window closes — its only exits.
+  const [exchangeAbility, setExchangeAbility] = useState<Extract<CardAbility, { type: 'exchange_with_deck' | 'exchange_with_reserve' }> | null>(null);
+  // The search_reserve ability that opened the Reserve browse window ("take a
+  // clay card from Reserve"). Only applies while that window shows the Reserve.
+  const [reserveSearchAbility, setReserveSearchAbility] = useState<Extract<CardAbility, { type: 'search_reserve' }> | null>(null);
 
   // Opens the "look at / reveal top N" peek modal for an own-deck inspection
   // ability. Shared by the fixed-count path (look_at_own_deck / reveal_own_deck)
@@ -297,8 +301,15 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
         setShowDeckSearch(true);
         return;
       }
-      if (ability?.type === 'exchange_with_deck') {
-        // Exchange THIS card: only your own card goes into your deck.
+      if (ability?.type === 'search_reserve') {
+        // setBrowseZone is declared further down — read only when this runs.
+        if (source && source.zone === 'hand') revealCardInHand(cardId);
+        setReserveSearchAbility(ability);
+        setBrowseZone('reserve');
+        return;
+      }
+      if (ability?.type === 'exchange_with_deck' || ability?.type === 'exchange_with_reserve') {
+        // Exchange THIS card: only your own card goes into your deck / Reserve.
         // setExchangeCardIds is declared further down — read only when this runs.
         if (!source || source.ownerId !== 'player1') return;
         setExchangeAbility(ability);
@@ -443,6 +454,10 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
   const isDraggingRef = useRef(false);
   const dragSourceZoneRef = useRef<ZoneId | null>(null);
   const [browseZone, setBrowseZone] = useState<ZoneId | null>(null);
+  // A Reserve filter never outlives the Reserve window that it opened.
+  useEffect(() => {
+    if (browseZone !== 'reserve') setReserveSearchAbility(null);
+  }, [browseZone]);
   // Goldfish only ever bound `contextmenu`, so on a phone there was no path to
   // any card menu, pile browse, shuffle or flip — the whole action layer was
   // mouse-only. Touch gets the same long-press adapter multiplayer uses.
@@ -3198,8 +3213,10 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
       <ModalGameProvider value={modalGameValue}>
         {browseZone && (
           <ZoneBrowseModal
+            key={browseZone}
             zoneId={browseZone}
             onClose={() => setBrowseZone(null)}
+            filter={browseZone === 'reserve' && reserveSearchAbility ? deckCardFilter(reserveSearchAbility) : undefined}
             onStartDrag={modalStartDrag}
             onStartMultiDrag={modalStartMultiDrag}
             didDragRef={modalDidDragRef}
@@ -3495,6 +3512,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
               setCardRenderKey(k => k + 1);
             }}
             filter={exchangeAbility ? deckCardFilter(exchangeAbility) : undefined}
+            targetZone={exchangeAbility?.type === 'exchange_with_reserve' ? 'reserve' : undefined}
             onStartDrag={modalStartDrag}
             didDragRef={modalDidDragRef}
             isDragActive={modalDrag.isDragging}

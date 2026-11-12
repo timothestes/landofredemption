@@ -1596,6 +1596,12 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
 
   // ---- Zone browse overlay state ----
   const [browseMyZone, setBrowseMyZone] = useState<string | null>(null);
+  // The search_reserve ability that opened your Reserve ("take a clay card
+  // from Reserve"); never outlives that Reserve window.
+  const [reserveSearchAbility, setReserveSearchAbility] = useState<Extract<CardAbility, { type: 'search_reserve' }> | null>(null);
+  useEffect(() => {
+    if (browseMyZone !== 'reserve') setReserveSearchAbility(null);
+  }, [browseMyZone]);
   const [browseOpponentZone, setBrowseOpponentZone] = useState<string | null>(null);
   /** Touch: the "cards in play" sheet, and the full-screen card reader. */
   const [boardBrowseOpen, setBoardBrowseOpen] = useState(false);
@@ -1648,9 +1654,10 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
   const [deckSearchAbility, setDeckSearchAbility] = useState<Extract<CardAbility, { type: 'search_deck' }> | null>(null);
   const [peekState, setPeekState] = useState<{ position: 'top' | 'bottom' | 'random'; count: number; cardIds: string[]; source?: { cardName: string } } | null>(null);
   const [lookState, setLookState] = useState<{ count: number; position: 'top' | 'bottom' | 'random' } | null>(null);
-  // `ability` is set when a card's exchange_with_deck ability opened it
-  // (Benjamin, the Young) — the window then starts filtered to valid picks.
-  type ExchangeState = { cardIds: string[]; targetZone: ZoneId; ability?: Extract<CardAbility, { type: 'exchange_with_deck' }> };
+  // `ability` is set when a card's exchange_with_deck / exchange_with_reserve
+  // ability opened it (Benjamin, the Young) — the window then starts filtered
+  // to valid picks.
+  type ExchangeState = { cardIds: string[]; targetZone: ZoneId; ability?: Extract<CardAbility, { type: 'exchange_with_deck' | 'exchange_with_reserve' }> };
   const [exchangeState, setExchangeState] = useState<ExchangeState | null>(null);
   const exchangeStateRef = useRef<ExchangeState | null>(null);
   useEffect(() => {
@@ -1941,6 +1948,8 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     execute: () => void,
   ): boolean => {
     if (!isMyFirstTurn || !hasOpponent) return false;
+    // An Exchange with Reserve was already confirmed up front.
+    if (exchangeStateRef.current?.targetZone === 'reserve') return false;
     if (fromZone !== 'reserve' || toZone === 'reserve') return false;
     setPendingReserveMove({ kind: 'single', execute });
     return true;
@@ -1956,6 +1965,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     execute: () => void,
   ): boolean => {
     if (!isMyFirstTurn || !hasOpponent) return false;
+    if (exchangeStateRef.current?.targetZone === 'reserve') return false;
     if (toZone === 'reserve') return false;
     const anyFromReserve = cardIds.some(id => {
       const card = findMyCardById(id);
@@ -2249,6 +2259,37 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         // card menu's own Exchange with Deck.
         if (!findMyCardById(sourceInstanceId)) return;
         setExchangeState({ cardIds: [sourceInstanceId], targetZone: 'deck', ability });
+        return;
+      }
+      if (ability?.type === 'exchange_with_reserve') {
+        // Same, into your Reserve: the window moves both cards with plain moves.
+        // A card leaves the Reserve, so Turn 1 asks once, up front — the
+        // window's own moves skip the per-move prompt (checkReserveProtection),
+        // or a Cancel there would strand this card in the Reserve.
+        if (!findMyCardById(sourceInstanceId)) return;
+        const open = () => setExchangeState({ cardIds: [sourceInstanceId], targetZone: 'reserve', ability });
+        if (isMyFirstTurn && hasOpponent) {
+          setPendingReserveMove({
+            kind: 'single',
+            execute: open,
+            message: (
+              <>
+                Cards typically cannot leave the reserve on{' '}
+                <strong style={{ color: 'var(--gf-text-bright, #e8d5a3)' }}>Turn 1</strong>.
+                {' '}Exchange with your reserve anyway?
+              </>
+            ),
+            confirmLabel: 'Exchange Anyway',
+          });
+          return;
+        }
+        open();
+        return;
+      }
+      if (ability?.type === 'search_reserve') {
+        // Your own Reserve browse, opened narrowed to the cards this ability can take.
+        setReserveSearchAbility(ability);
+        setBrowseMyZone('reserve');
         return;
       }
       if (ability?.type === 'look_at_opponent_deck') {
@@ -11049,8 +11090,10 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
       <ModalGameProvider value={modalGameValue}>
         {browseMyZone && (
           <ZoneBrowseModal
+            key={browseMyZone}
             zoneId={browseMyZone as ZoneId}
             onClose={() => setBrowseMyZone(null)}
+            filter={browseMyZone === 'reserve' && reserveSearchAbility ? deckCardFilter(reserveSearchAbility) : undefined}
             onStartDrag={modalStartDrag}
             onStartMultiDrag={modalStartMultiDrag}
             didDragRef={modalDidDragRef}
