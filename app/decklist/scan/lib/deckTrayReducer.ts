@@ -14,8 +14,8 @@ export type DeckTrayAction =
   | { type: 'moveRow'; rowKey: string; zone: Zone }
   | { type: 'setGroupZone'; groupKey: string; zone: Zone }
   | { type: 'addCard'; groupKey: string; key: string; candidates?: Candidate[] }
-  | { type: 'setLostSoulPicks'; picks: { key: string; qty: number }[] }
-  | { type: 'skipLostSouls' }
+  /** `finished`: the player is done picking, so a count the photo got wrong no longer waits on them. Left out, it stays as it was. */
+  | { type: 'setLostSoulPicks'; picks: { key: string; qty: number }[]; finished?: boolean }
   | { type: 'saving' }
   | { type: 'saved'; deckId: string }
   | { type: 'saveFailed' };
@@ -181,7 +181,9 @@ export function deckTrayReducer(s: DeckTrayState, a: DeckTrayAction): DeckTraySt
         if (d.titleBox) e.titleBox = d.titleBox;
         return e;
       });
-      return withDefaultZones(s, { ...done, entries: [...done.entries, ...fresh] });
+      // Lost Souls in a new photo were not there when the player said they were done picking.
+      const lostSoulsSkipped = s.lostSoulsSkipped && !fresh.some(e => e.kind === 'lost_soul');
+      return withDefaultZones(s, { ...done, entries: [...done.entries, ...fresh], lostSoulsSkipped });
     }
     case 'photoFailed':
       return patchPhoto(s, a.photoId, { status: 'failed', error: a.error });
@@ -254,10 +256,14 @@ export function deckTrayReducer(s: DeckTrayState, a: DeckTrayAction): DeckTraySt
       const e = addedEntry(s, { photoId, group, kind: 'matched', key: a.key, title: null, type: '', candidates: a.candidates });
       return { ...s, entries: [...s.entries, e], addSeq: s.addSeq + 1 };
     }
-    case 'setLostSoulPicks':
-      return { ...s, lostSoulPicks: a.picks, lostSoulsSkipped: false };
-    case 'skipLostSouls':
-      return { ...s, lostSoulPicks: [], lostSoulsSkipped: true };
+    case 'setLostSoulPicks': {
+      const lostSoulsSkipped = a.finished ?? s.lostSoulsSkipped;
+      const same = a.picks.length === s.lostSoulPicks.length &&
+        a.picks.every((p, i) => p.key === s.lostSoulPicks[i].key && p.qty === s.lostSoulPicks[i].qty);
+      // Closing the sheet untouched changes nothing: the join page's last check is not marked as edited.
+      if (same && lostSoulsSkipped === s.lostSoulsSkipped) return s;
+      return { ...s, lostSoulPicks: same ? s.lostSoulPicks : a.picks, lostSoulsSkipped };
+    }
     case 'saving':
       return { ...s, phase: 'saving' };
     case 'saved':

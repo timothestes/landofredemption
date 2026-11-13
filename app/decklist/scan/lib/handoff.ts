@@ -83,8 +83,12 @@ export function deckOutcomes(s: DeckTrayState): Record<string, DeckOutcome[]> {
   return out;
 }
 
-export function totals(s: DeckTrayState): { main: number; reserve: number; lostSoulsToPick: number; unread: number; toCheck: number; leftOut: number } {
-  const t = { main: 0, reserve: 0, lostSoulsToPick: 0, unread: 0, toCheck: 0, leftOut: 0 };
+/**
+ * `lostSoulsToPick` is what still waits on the player: 0 once they say they are done. `lostSoulsShort` is how
+ * far the picks fall below what the photo showed, whatever they said, and `lostSoulsCounted` what it showed.
+ */
+export function totals(s: DeckTrayState): { main: number; reserve: number; lostSoulsToPick: number; lostSoulsShort: number; lostSoulsCounted: number; unread: number; toCheck: number; leftOut: number } {
+  const t = { main: 0, reserve: 0, lostSoulsToPick: 0, lostSoulsShort: 0, lostSoulsCounted: 0, unread: 0, toCheck: 0, leftOut: 0 };
   for (const r of saveRows(s)) t[r.zone] += r.quantity;
   let placeholders = 0;
   for (const r of trayRows(s)) {
@@ -94,7 +98,9 @@ export function totals(s: DeckTrayState): { main: number; reserve: number; lostS
     if (['not_found', 'unread', 'which', 'read_as'].includes(r.kind)) t.leftOut += r.quantity;
   }
   const picked = s.lostSoulPicks.reduce((n, p) => n + p.qty, 0);
-  t.lostSoulsToPick = s.lostSoulsSkipped ? 0 : Math.max(0, placeholders - picked);
+  t.lostSoulsCounted = placeholders;
+  t.lostSoulsShort = Math.max(0, placeholders - picked);
+  t.lostSoulsToPick = s.lostSoulsSkipped ? 0 : t.lostSoulsShort;
   return t;
 }
 

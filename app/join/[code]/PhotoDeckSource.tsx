@@ -44,6 +44,7 @@ export default function PhotoDeckSource({ userId, code, eventName, eventFormat, 
       trayClassName="-mx-3"
       intro={<PhotoSteps then={submitLabel.startsWith("Join") ? "join" : "submit it"} />}
       hideCrossLink
+      hideTotals
       footer={(ctx) => (
         <SubmitBar
           {...ctx}
@@ -64,8 +65,9 @@ type Failure = { kind: "illegal"; issues: DeckCheckIssue[]; checked: DeckTraySta
 function hintFor(rule: string): string | null {
   if (rule === "pool-legality" || rule === "banned-card")
     return "If you have a different printing, open the row's ⋯ menu and choose Change printing.";
-  if (rule.endsWith("deck-size") || rule.endsWith("lost-soul-count"))
-    return "If part of the deck is not in the photo, add another photo of the rest.";
+  // A Lost Soul count gets a button to the picker in place of a sentence about where to find it.
+  if (rule.endsWith("lost-soul-count")) return null;
+  if (rule.endsWith("deck-size")) return "If part of the deck is not in the photo, add another photo of the rest.";
   if (rule.endsWith("reserve-size") || rule === "t1-reserve-contents")
     return "Check each group is marked Main deck or Reserve correctly.";
   return null;
@@ -104,6 +106,21 @@ function SubmitBar({
   const busy = state.phase !== "editing" || reading;
   // A card left out of the save could turn an illegal deck into a smaller legal one: every row gets an answer first.
   const open = !isSaved && (t.toCheck > 0 || t.lostSoulsToPick > 0 || failedPhotos > 0);
+  // While rows or Lost Souls wait on the player the button is the way to them, not a dead grey bar under a
+  // small link: flagged rows first, then the Lost Souls.
+  const next =
+    isSaved || busy || failedPhotos > 0
+      ? null
+      : t.toCheck > 0
+        ? { label: `Check ${plural(t.toCheck, "row", "rows")}`, go: jumps.walk }
+        : t.lostSoulsToPick > 0
+          ? { label: `Pick ${plural(t.lostSoulsToPick, "Lost Soul", "Lost Souls")}`, go: jumps.openLostSouls }
+          : null;
+  // Done picking with fewer than the photo showed: nothing waits on the player, and it is still said.
+  const soulsShort = !isSaved && t.lostSoulsToPick === 0 && t.lostSoulsShort > 0;
+  const soulIssue = (failure?.kind === "illegal" ? failure.issues : []).some(
+    (i) => i.type === "error" && i.rule.endsWith("lost-soul-count"),
+  );
 
   // The deck goes to the host only once the saved tray has rendered: the tray clears its stored copy in that
   // commit, and a host that swaps the picker out on select would otherwise unmount it first and leave the
@@ -190,6 +207,15 @@ function SubmitBar({
               {h}
             </p>
           ))}
+          {soulIssue && (
+            <button
+              type="button"
+              onClick={jumps.openLostSouls}
+              className="mt-2 min-h-11 rounded-md border border-border bg-card px-4 text-sm font-medium text-foreground hover:bg-muted focus:outline-none"
+            >
+              Pick Lost Souls
+            </button>
+          )}
         </div>
       )}
 
@@ -203,20 +229,24 @@ function SubmitBar({
       <div className="sticky bottom-0 z-10 -mx-3 border-t border-border bg-card px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1">
         <div aria-live="polite" className="flex min-h-9 flex-wrap items-center gap-x-3 text-sm tabular-nums">
           {/* The counts once nothing is left to do; until then the to-dos have the line to themselves. */}
-          {(!open || reading) && (
-            <span className="text-muted-foreground">
-              Main {t.main} · Reserve {t.reserve}
-            </span>
-          )}
+          <span className="text-muted-foreground">
+            Main {t.main} · Reserve {t.reserve}
+          </span>
           {reading && <span className="text-muted-foreground">Reading… you can add the next photo now.</span>}
-          {!isSaved && t.toCheck > 0 && (
+          {/* The button is the next step. These are the steps it is not on, or cannot take yet. */}
+          {!isSaved && t.toCheck > 0 && !next && (
             <button type="button" onClick={jumps.walk} className={jumpClass}>
               {plural(t.toCheck, "row", "rows")} to check
             </button>
           )}
-          {!isSaved && t.lostSoulsToPick > 0 && (
+          {!isSaved && t.lostSoulsToPick > 0 && next?.go !== jumps.openLostSouls && (
             <button type="button" onClick={jumps.openLostSouls} className={jumpClass}>
               {plural(t.lostSoulsToPick, "Lost Soul", "Lost Souls")} to pick
+            </button>
+          )}
+          {soulsShort && (
+            <button type="button" onClick={jumps.openLostSouls} className={jumpClass}>
+              {plural(t.lostSoulsCounted - t.lostSoulsShort, "Lost Soul", "Lost Souls")} picked · photo showed {t.lostSoulsCounted}
             </button>
           )}
         </div>
@@ -230,11 +260,15 @@ function SubmitBar({
         {failure?.kind === "error" && <p className="text-sm text-destructive">Something went wrong — try again.</p>}
         <button
           type="button"
-          onClick={() => void submit()}
-          disabled={blocked !== null || (!isSaved && (busy || saved === 0 || open))}
+          onClick={() => (next ? next.go() : void submit())}
+          disabled={!next && (blocked !== null || (!isSaved && (busy || saved === 0 || open)))}
           className="min-h-11 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none disabled:opacity-50"
         >
-          {state.phase === "saving" ? "Checking…" : submitLabel}
+          {state.phase === "saving"
+            ? "Checking…"
+            : next
+              ? next.label
+              : submitLabel}
         </button>
       </div>
     </>

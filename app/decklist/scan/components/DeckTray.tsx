@@ -44,6 +44,8 @@ interface Props {
   onChooseAnother: () => void;
   /** Filled with the tray's own jumps, for a host whose hand-off bar offers them too. */
   jumps?: { current: TrayJumps | null };
+  /** The host's own bar says what is left: the tray's totals line would say it a second time, worded differently. */
+  hideTotals?: boolean;
 }
 
 export interface TrayJumps {
@@ -69,7 +71,7 @@ const keyName = (key: string | null): string | null => {
 
 /** The photos, each with its group sections and rows, then the totals line, the picker and the Undo toast. */
 export default function DeckTray({
-  state, dispatch, thumbs, editable, online, signInHref, canRetry, onRetry, onRemovePhoto, onChooseAnother, jumps,
+  state, dispatch, thumbs, editable, online, signInHref, canRetry, onRetry, onRemovePhoto, onChooseAnother, jumps, hideTotals,
 }: Props) {
   const [picker, setPicker] = useState<Picker | null>(null);
   const [pickerSeq, setPickerSeq] = useState(0);
@@ -138,7 +140,9 @@ export default function DeckTray({
   if (jumps) jumps.current = { walk, openLostSouls: () => setLostSoulsOpen(true) };
   const t = useMemo(() => totals(state), [state]);
   const lostSoulsPicked = state.lostSoulPicks.reduce((n, p) => n + p.qty, 0);
-  // Picks are deck-wide: they list under the first Lost Soul summary row only.
+  const lostSoulsCounted = rows.reduce((n, r) => n + (r.kind === 'lost_soul' ? r.quantity : 0), 0);
+  // Lost Souls are picked for the whole deck: one row asks for all of them, under the first group that has any,
+  // and the picks list under it. A row per group gave two counts for one job.
   const firstLostSoulRow = useMemo(() => {
     for (const p of state.photos) {
       for (const sec of sectionsByPhoto.get(p.photoId) ?? []) {
@@ -257,6 +261,14 @@ export default function DeckTray({
                     onAdd={() => openPicker({ for: 'add', groupKey: sec.key })}
                   >
                     {sec.rows.map(row => {
+                      if (row.kind === 'lost_soul' && row.rowKey !== firstLostSoulRow) {
+                        // Still said where they were seen, so the group's count adds up and is never left empty.
+                        return (
+                          <li key={row.rowKey} className="py-2 pl-[60px] pr-2 text-xs text-muted-foreground">
+                            {row.quantity === 1 ? DECK_COPY.lostSoulElsewhereOne : fill(DECK_COPY.lostSoulElsewhere, { n: row.quantity })}
+                          </li>
+                        );
+                      }
                       const e = firstEntry(row);
                       // The row's first read, when the scan boxed its title and the photo is still in memory.
                       const source = e?.original && e.titleBox ? turned.get(e.photoId) : undefined;
@@ -269,9 +281,11 @@ export default function DeckTray({
                           readTitle={e?.title ?? null}
                           candidates={e?.candidates ?? []}
                           groupZone={zone}
-                          lostSoulsPicked={lostSoulsPicked}
+                          lostSouls={{ picked: lostSoulsPicked, counted: lostSoulsCounted, finished: state.lostSoulsSkipped }}
                           editable={editable}
-                          evidence={source && e?.titleBox && (
+                          // Only a row that asks a question shows what the photo held: above a name that is
+                          // already right, a blurry crop is noise.
+                          evidence={AMBER_KINDS.includes(row.kind) && source && e?.titleBox && (
                             <RowEvidence source={source} box={e.titleBox} orientation={sec.group?.orientation ?? 'upright'} />
                           )}
                           chips={editable && rowChips && rowChips.length > 0 && (
@@ -334,13 +348,13 @@ export default function DeckTray({
               onClick={() => setLostSoulsOpen(true)}
               className="min-h-11 w-full px-3 text-left text-sm font-medium underline-offset-4 hover:underline focus:outline-none"
             >
-              {DECK_COPY.pickWhich}
+              {DECK_COPY.change}
             </button>
           )}
         </div>
       )}
 
-      {(rows.length > 0 || orphanPicks) && (
+      {!hideTotals && (rows.length > 0 || orphanPicks) && (
         <p aria-live="polite" className="mt-3 flex flex-wrap items-center gap-x-2 text-sm tabular-nums text-muted-foreground">
           <span>{totalsLine}</span>
           {t.toCheck > 0 && (
@@ -379,11 +393,10 @@ export default function DeckTray({
 
       {lostSoulsOpen && editable && (
         <LostSoulSheet
-          trayRows={rows.filter(r => r.kind === 'matched' && r.key).map(r => ({ key: r.key as string, qty: r.quantity }))}
-          placeholders={rows.reduce((n, r) => n + (r.kind === 'lost_soul' ? r.quantity : 0), 0)}
+          inTray={rows.filter(r => r.kind === 'matched' && r.key).map(r => r.key as string)}
+          placeholders={lostSoulsCounted}
           picks={state.lostSoulPicks}
-          onDone={picks => dispatch({ type: 'setLostSoulPicks', picks })}
-          onSkip={() => dispatch({ type: 'skipLostSouls' })}
+          onCommit={(picks, finished) => dispatch({ type: 'setLostSoulPicks', picks, finished })}
           onClose={() => setLostSoulsOpen(false)}
         />
       )}

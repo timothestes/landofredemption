@@ -33,6 +33,8 @@ export interface DeckPhotoReaderProps {
   intro?: ReactNode;
   /** Drops the link to the collection scanner, for a host the player should not be led away from. */
   hideCrossLink?: boolean;
+  /** Drops the tray's totals line, for a host whose footer already says what is left. */
+  hideTotals?: boolean;
 }
 
 /**
@@ -49,7 +51,7 @@ export default function DeckPhotoReader(props: DeckPhotoReaderProps) {
 
 function Reader({
   userId, onChange, footer, signInHref = '/sign-in?redirectTo=/decklist/scan', active = true, trayClassName = '',
-  tips = [DECK_COPY.tips, DECK_COPY.captureTip], hideCrossLink = false, intro,
+  tips = [DECK_COPY.tips, DECK_COPY.captureTip], hideCrossLink = false, hideTotals, intro,
 }: DeckPhotoReaderProps) {
   const [state, dispatch] = useDeckTray(userId);
   // Under SMALL_PHOTO_EDGE most titles go unread: the queue stops before the upload until the player says Scan anyway.
@@ -133,6 +135,7 @@ function Reader({
             onRemovePhoto={queue.remove}
             onChooseAnother={() => chooseInputRef.current?.click()}
             jumps={trayJumps}
+            hideTotals={hideTotals}
           />
         )}
       </div>}

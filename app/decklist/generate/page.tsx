@@ -121,7 +121,8 @@ export default function GenerateDeckList() {
     setPhoto({
       text: buildDeckText(state, { columns: 2 }),
       cards: t.main + t.reserve,
-      leftOut: t.leftOut + t.lostSoulsToPick,
+      // Short of what the photo showed, done picking or not: the PDF is never quietly a Lost Soul light.
+      leftOut: t.leftOut + t.lostSoulsShort,
       reading: state.photos.some((p) => p.status === "queued" || p.status === "reading"),
       outcomes: deckOutcomes(state),
     });

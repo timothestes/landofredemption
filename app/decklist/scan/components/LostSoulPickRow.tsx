@@ -17,10 +17,14 @@ function parts(key: string) {
 export default function LostSoulPickRow({
   pick, editable, onQty,
 }: { pick: { key: string; qty: number }; editable: boolean; onQty: (qty: number) => void }) {
-  const { name, set, imgFile } = parts(pick.key);
+  const { name: full, imgFile } = parts(pick.key);
+  // As the picker listed it: the nickname, then the rest of the name. "Lost Soul" on every row says nothing.
+  const rest = full.replace(/^Lost Souls?\s*/, '');
+  const name = /"([^"]+)"/.exec(rest)?.[1] ?? rest;
+  const detail = name === rest ? '' : rest.replace(/"[^"]+"\s*/, '').replace(/\]\s*\[/g, ' · ').replace(/[[\]]/g, '');
   return (
     <li>
-      <div className="grid grid-cols-[44px_minmax(0,1fr)_36px_28px_36px] items-center border-l-2 border-transparent py-1.5 pl-1.5">
+      <div className="grid grid-cols-[44px_minmax(0,1fr)_36px_28px_36px_48px] items-center border-l-2 border-transparent py-1.5 pl-1.5">
         <span className="flex h-[62px] w-11 items-center justify-center overflow-hidden rounded-sm bg-muted">
           {imgFile && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -29,9 +33,9 @@ export default function LostSoulPickRow({
         </span>
         <span className="flex min-w-0 flex-col px-2">
           <span className="line-clamp-2 break-words text-sm font-medium leading-snug">{name}</span>
-          <span className="truncate text-xs text-muted-foreground">{set}</span>
+          {detail && <span className="truncate text-xs text-muted-foreground">{detail}</span>}
         </span>
-        <button type="button" className={stepButton} aria-label={`One fewer ${name}`} disabled={!editable} onClick={() => onQty(pick.qty - 1)}>
+        <button type="button" className={stepButton} aria-label={`One fewer ${name}`} disabled={!editable || pick.qty <= 1} onClick={() => onQty(pick.qty - 1)}>
           <Minus className="h-4 w-4" aria-hidden />
         </button>
         <span className="text-center text-sm tabular-nums">{pick.qty}</span>

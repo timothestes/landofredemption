@@ -97,7 +97,9 @@ describe('totals', () => {
     const picked = run(base, { type: 'setLostSoulPicks', picks: [{ key: K('L'), qty: 2 }] });
     expect(totals(picked)).toMatchObject({ lostSoulsToPick: 1, main: 2, leftOut: 0 });
     expect(totals(run(picked, { type: 'setLostSoulPicks', picks: [{ key: K('L'), qty: 5 }] })).lostSoulsToPick).toBe(0);
-    expect(totals(run(base, { type: 'skipLostSouls' })).lostSoulsToPick).toBe(0);
+    // Done with fewer than the photo showed: nothing waits on the player, and the shortfall is still known.
+    const done = run(base, { type: 'setLostSoulPicks', picks: [{ key: K('L'), qty: 2 }], finished: true });
+    expect(totals(done)).toMatchObject({ lostSoulsToPick: 0, lostSoulsShort: 1, lostSoulsCounted: 3 });
   });
 });
 

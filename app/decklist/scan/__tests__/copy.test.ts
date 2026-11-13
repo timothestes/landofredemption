@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DECK_COPY, deckDoneLine, SMALL_PHOTO_EDGE } from '../copy';
+import { DECK_COPY, deckDoneLine, lostSoulRowLines, SMALL_PHOTO_EDGE } from '../copy';
 
 const SPEC: Record<string, string> = {
   pageTitle: 'Deck from photo',
@@ -40,13 +40,30 @@ const SPEC: Record<string, string> = {
   pasteHint: 'Or read it from a photo',
   zoneMain: 'Main deck',
   zoneReserve: 'Reserve',
-  lostSoulRow: 'Lost Soul ×{n} · Pick which',
-  lostSoulPicked: '{n} picked',
-  pickWhich: 'Pick which',
-  lostSoulRowWhy: 'Stacked Lost Souls show only their name, so we count them and you pick',
-  lostSoulWhy: 'Stacked Lost Souls can be counted, not told apart.',
-  lostSoulTip: 'Spread them out and they are usually read for you.',
-  sheetTitle: 'Pick your Lost Souls · {picked} of {target}',
+  lostSoulRow: 'Pick your {n} Lost Souls',
+  lostSoulRowOne: 'Pick your Lost Soul',
+  lostSoulRowWhy: 'Tap to say which ones.',
+  lostSoulPartial: '{picked} of {n} Lost Souls picked',
+  lostSoulMore: 'Pick {n} more',
+  lostSoulDone: '{n} Lost Souls picked',
+  lostSoulDoneOne: '1 Lost Soul picked',
+  lostSoulNone: 'No Lost Souls picked',
+  lostSoulPhotoShowed: 'Photo showed {n}',
+  lostSoulElsewhere: '{n} more Lost Souls, picked with the rest above',
+  lostSoulElsewhereOne: '1 more Lost Soul, picked with the rest above',
+  pick: 'Pick',
+  change: 'Change',
+  sheetTitle: 'Pick your Lost Souls',
+  sheetHint: 'Match the picture or verse on each card.',
+  sheetSearch: 'Search name or verse',
+  sheetOlder: 'All versions',
+  sheetShowOlder: 'Show {n} more versions',
+  sheetEmpty: 'No Lost Souls match.',
+  sheetInDeck: 'Read from the photo',
+  sheetCount: '{picked} of {target} picked',
+  sheetOver: '{picked} picked · photo showed {target}',
+  sheetSkip: 'Skip',
+  sheetDone: 'Done',
   unread: "Couldn't read this card",
   notFound: 'Not found: "{title}"',
   readAs: 'Read as "{title}"',
@@ -68,6 +85,24 @@ const SPEC: Record<string, string> = {
 describe('DECK_COPY', () => {
   it('has every spec key with the exact text and nothing extra', () => {
     expect({ ...DECK_COPY }).toEqual(SPEC);
+  });
+});
+
+describe('lostSoulRowLines', () => {
+  it('asks for the whole deck in one number', () => {
+    expect(lostSoulRowLines(0, 7, false)).toEqual({ title: 'Pick your 7 Lost Souls', sub: 'Tap to say which ones.', todo: true });
+    expect(lostSoulRowLines(0, 1, false).title).toBe('Pick your Lost Soul');
+  });
+  it('says what is left while short', () => {
+    expect(lostSoulRowLines(6, 7, false)).toEqual({ title: '6 of 7 Lost Souls picked', sub: 'Pick 1 more', todo: true });
+  });
+  it('is settled once every one is picked', () => {
+    expect(lostSoulRowLines(7, 7, false)).toEqual({ title: '7 Lost Souls picked', sub: null, todo: false });
+    expect(lostSoulRowLines(8, 7, false)).toEqual({ title: '8 Lost Souls picked', sub: 'Photo showed 7', todo: false });
+  });
+  it('stops asking once the player says that is all, and still flags the difference', () => {
+    expect(lostSoulRowLines(6, 7, true)).toEqual({ title: '6 Lost Souls picked', sub: 'Photo showed 7', todo: true });
+    expect(lostSoulRowLines(0, 7, true)).toEqual({ title: 'No Lost Souls picked', sub: 'Photo showed 7', todo: true });
   });
 });
 
