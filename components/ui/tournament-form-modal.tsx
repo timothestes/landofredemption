@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "./button";
-import { STANDARD_CATEGORIES } from "../../utils/tournament/categoryDefaults";
+import {
+  STANDARD_CATEGORIES,
+  otherCategories,
+} from "../../utils/tournament/categoryDefaults";
 import { buildTournamentName, isNameFrozen } from "../../utils/tournament/naming";
 import { TOURNAMENT_TIERS } from "../../utils/tournament/tiers";
 import { US_STATES, normalizeState } from "../../utils/tournament/usStates";
@@ -30,8 +33,9 @@ interface TournamentFormModalProps {
   // Location the source listing advertised, pre-filled when hosting from one.
   listingCity?: string;
   listingState?: string | null;
-  // Categories to offer. Defaults to the standard list when omitted (e.g. an
-  // official listing passes its own formats here).
+  // Categories to offer first. Defaults to the standard list when omitted (e.g.
+  // an official listing passes its own formats here); the standard categories
+  // it doesn't cover stay one click away under "Add other categories".
   categoryOptions?: string[];
   // Tier the source listing advertised, pre-selected when hosting from one.
   defaultTier?: string | null;
@@ -61,15 +65,20 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
   const [state, setState] = useState<string>("");
   // Once the host edits the name, we stop auto-building it from the category.
   const [nameTouched, setNameTouched] = useState(false);
+  // The standard categories beyond a listing's own formats start tucked away.
+  const [showOthers, setShowOthers] = useState(false);
 
+  const hasListingOptions = !!categoryOptions && categoryOptions.length > 0;
   const options = Array.from(
     new Set(
-      (categoryOptions && categoryOptions.length > 0
-        ? categoryOptions
-        : [...STANDARD_CATEGORIES]
-      ).map(cleanCategory)
+      (hasListingOptions ? categoryOptions : [...STANDARD_CATEGORIES]).map(
+        cleanCategory
+      )
     )
   );
+  // Only a listing narrows the list; with the standard list there is nothing
+  // more to add.
+  const extraOptions = hasListingOptions ? otherCategories(options) : [];
 
   useEffect(() => {
     if (!isOpen) return;
@@ -84,6 +93,7 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
     setCity(initialCity);
     setState(initialState);
     setNameTouched(false);
+    setShowOthers(false);
     setName(
       buildTournamentName(cleanCategory(initial[0] ?? ""), {
         tier: initialTier || null,
@@ -215,7 +225,7 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
                 Appears in the event name. Applies to every category you check.
               </p>
             </div>
-            <div className="grid grid-cols-[1fr_7rem] gap-2">
+            <div className="grid grid-cols-[1fr_10rem] gap-2">
               <div>
                 <label
                   htmlFor="city"
@@ -246,10 +256,10 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
                   onChange={(e) => handleStateChange(e.target.value)}
                   className={fieldClasses}
                 >
-                  <option value="">—</option>
+                  <option value="">Not specified</option>
                   {US_STATES.map((s) => (
                     <option key={s.code} value={s.code}>
-                      {s.code}
+                      {s.name}
                     </option>
                   ))}
                 </select>
@@ -267,25 +277,31 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
                 Categories
               </span>
               <div className="rounded-lg border border-border bg-card divide-y divide-border max-h-72 overflow-y-auto">
-                {options.map((opt, i) => {
-                  const checked = selected.includes(opt);
-                  return (
-                    <label
-                      key={opt}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-foreground cursor-pointer hover:bg-muted"
-                    >
-                      <input
-                        ref={i === 0 ? firstCheckboxRef : undefined}
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleCategory(opt)}
-                        className="h-4 w-4 accent-primary"
-                      />
-                      <span>{opt}</span>
-                    </label>
-                  );
-                })}
+                {[...options, ...(showOthers ? extraOptions : [])].map((opt, i) => (
+                  <label
+                    key={opt}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-foreground cursor-pointer hover:bg-muted"
+                  >
+                    <input
+                      ref={i === 0 ? firstCheckboxRef : undefined}
+                      type="checkbox"
+                      checked={selected.includes(opt)}
+                      onChange={() => toggleCategory(opt)}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <span>{opt}</span>
+                  </label>
+                ))}
               </div>
+              {extraOptions.length > 0 && !showOthers && (
+                <button
+                  type="button"
+                  onClick={() => setShowOthers(true)}
+                  className="mt-1.5 text-xs font-medium text-foreground underline underline-offset-2 hover:text-muted-foreground"
+                >
+                  + Add other categories
+                </button>
+              )}
               <p
                 id="category-group-help"
                 className="mt-1 text-xs text-muted-foreground"
