@@ -205,8 +205,30 @@ describe('deckTrayReducer', () => {
   it('records Lost Soul picks and the skip', () => {
     let s = run(initialDeckTray(U), { type: 'setLostSoulPicks', picks: [{ key: 'L', qty: 2 }] });
     expect(s.lostSoulPicks).toEqual([{ key: 'L', qty: 2 }]);
-    s = run(s, { type: 'skipLostSouls' });
-    expect(s).toMatchObject({ lostSoulPicks: [], lostSoulsSkipped: true });
+    // Done leaves out what is still unpicked; it never throws away a pick.
+    s = run(s, { type: 'setLostSoulPicks', picks: [{ key: 'L', qty: 2 }], finished: true });
+    expect(s).toMatchObject({ lostSoulPicks: [{ key: 'L', qty: 2 }], lostSoulsSkipped: true });
+    // Changing a pick's count in the tray does not undo it.
+    s = run(s, { type: 'setLostSoulPicks', picks: [{ key: 'L', qty: 1 }] });
+    expect(s).toMatchObject({ lostSoulPicks: [{ key: 'L', qty: 1 }], lostSoulsSkipped: true });
+    s = run(s, { type: 'setLostSoulPicks', picks: [{ key: 'L', qty: 1 }], finished: false });
+    expect(s.lostSoulsSkipped).toBe(false);
+  });
+
+  it('closing the sheet untouched leaves the state as it was', () => {
+    const s = run(initialDeckTray(U), { type: 'setLostSoulPicks', picks: [{ key: 'L', qty: 2 }] });
+    expect(run(s, { type: 'setLostSoulPicks', picks: [{ key: 'L', qty: 2 }] })).toBe(s);
+  });
+
+  it('a new photo with stacked Lost Souls reopens the picking', () => {
+    let s = withPhoto('p1', deckResponse('s1', [{ group: 1, key: null, kind: 'lost_soul' }]));
+    s = run(s, { type: 'setLostSoulPicks', picks: [], finished: true });
+    const more = run(s, { type: 'photoAdded', photoId: 'p2' },
+      { type: 'photoDone', photoId: 'p2', response: deckResponse('s2', [{ group: 1, key: null, kind: 'lost_soul' }]) });
+    expect(more.lostSoulsSkipped).toBe(false);
+    const plain = run(s, { type: 'photoAdded', photoId: 'p3' },
+      { type: 'photoDone', photoId: 'p3', response: deckResponse('s3', [{ group: 1, key: 'A' }]) });
+    expect(plain.lostSoulsSkipped).toBe(true);
   });
 });
 

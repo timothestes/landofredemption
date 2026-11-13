@@ -84,11 +84,53 @@ export function printingsForIdentity(identity: string): PickerHit[] {
   return printingsOf(identity).map(c => toHit(c, identity));
 }
 
-/** Every printing of each of the top name hits; `price` is null for the client to fill. */
-export function searchPrintings(query: string): { hits: PickerHit[]; close: boolean } {
+const SOUL_WORDS = ['lost', 'soul', 'souls'];
+
+/**
+ * Lost Souls for a query, read straight from the catalog. The name index cannot find them: a nickname sits
+ * inside quotes (`Lost Soul "Shepherds"`), so it only ever matches as a substring and is cut from the top
+ * eight, and the souls known only by verse share one stem. Every word must start a word of the name or verse;
+ * failing that, a nickname close to a typed word ("shephers"). A query of only "lost soul" lists them all.
+ */
+function lostSoulHits(query: string): PickerHit[] {
+  const typed = query.toLowerCase().split(/[^a-z0-9:'-]+/).filter(Boolean);
+  const words = typed.filter(w => !SOUL_WORDS.includes(w));
+  // Nothing to go on, and not because "lost soul" is all that was typed.
+  if (words.length === 0 && typed.length === 0) return [];
+  const souls = CARDS.filter(c => c.type === 'Lost Soul');
+  // Without the "Lost Soul" every name starts with: "s" or "lo" would match them all.
+  const text = (c: CardData) =>
+    ` ${`${c.name.replace(/^Lost Souls?\s*/, '')} ${c.reference}`.toLowerCase().replace(/["()[\]]/g, ' ')}`;
+  let found = souls.filter(c => words.every(w => text(c).includes(` ${w}`)));
+  if (found.length === 0) {
+    const nick = (c: CardData) => (/"([^"]+)"/.exec(c.name)?.[1] ?? '').toLowerCase();
+    const score = (c: CardData) => Math.max(0, ...words.map(w => pairSimilarity(w, nick(c))));
+    found = souls.filter(c => nick(c) && score(c) >= 0.6).sort((a, b) => score(b) - score(a));
+  }
+  return found.map(c => toHit(c, cardIdentityKey(c)));
+}
+
+/**
+ * Every printing of each of the top name hits; `price` is null for the client to fill.
+ * `lostSoulsFirst`: the row being changed holds a Lost Soul, so the Lost Souls that match lead the list.
+ */
+export function searchPrintings(query: string, opts: { lostSoulsFirst?: boolean } = {}): { hits: PickerHit[]; close: boolean } {
   const out: PickerHit[] = [];
   const seen = new Set<string>();
-  const { hits, close } = looseNameHits(query);
+  if (opts.lostSoulsFirst) {
+    // The matching printing, then the card's others: a pick carries them all for Change printing.
+    for (const h of lostSoulHits(query)) {
+      for (const p of [h, ...printingsOf(h.identity).map(c => toHit(c, h.identity))]) {
+        if (seen.has(p.key)) continue;
+        seen.add(p.key);
+        out.push(p);
+      }
+    }
+  }
+  const named = looseNameHits(query);
+  // Souls that matched are the answer: the name search's "no exact match" does not apply to them.
+  const { hits } = named;
+  const close = named.close && out.length === 0;
   for (const hit of hits) {
     // A hit's name is the stem when unique, so findCard can land on another printing; trust set|imgFile.
     const found = findCard(hit.name, hit.set, hit.imgFile);

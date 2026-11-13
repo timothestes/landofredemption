@@ -1,11 +1,11 @@
 'use client';
 
 import { useRef, useState, type KeyboardEvent, type ReactNode, type TouchEvent } from 'react';
-import { Minus, Pencil, Plus } from 'lucide-react';
+import { Layers, Minus, Pencil, Plus } from 'lucide-react';
 import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
 import { COPY } from '@/app/collection/scan/copy';
 import CardViewer from '@/app/collection/scan/components/CardViewer';
-import { DECK_COPY, fill } from '../copy';
+import { DECK_COPY, fill, lostSoulRowLines } from '../copy';
 import { MAX_QTY, type TrayDeckRow } from '../lib/deckTrayReducer';
 import { rowKeyAction } from '../lib/walker';
 import type { Candidate, Zone } from '../types';
@@ -38,10 +38,10 @@ interface Props {
   candidates: Candidate[];
   /** The zone of the group the row is listed under. */
   groupZone: Zone;
-  /** Lost Soul picks made so far; a Lost Soul row shows "N picked" once there are any. */
-  lostSoulsPicked: number;
+  /** The deck's Lost Souls: picks made, how many the photo showed, and whether the player called it done. */
+  lostSouls: { picked: number; counted: number; finished: boolean };
   editable: boolean;
-  /** The photo's crop of this card's title band, shown above the name. */
+  /** The photo's crop of this card's title band, shown under a flagged row. */
   evidence?: ReactNode;
   /** One-tap suggestions, shown under a flagged row. */
   chips?: ReactNode;
@@ -62,7 +62,7 @@ function focusSibling(from: HTMLElement, step: 1 | -1): boolean {
 }
 
 export default function DeckRow({
-  row, readTitle, candidates, groupZone, lostSoulsPicked, editable, evidence, chips,
+  row, readTitle, candidates, groupZone, lostSouls, editable, evidence, chips,
   onOpenPicker, onChangePrinting, onQty, onMove, onRemove, onOpenLostSouls,
 }: Props) {
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -71,7 +71,8 @@ export default function DeckRow({
   const touch = useRef<{ x: number; y: number } | null>(null);
 
   const lostSoul = row.kind === 'lost_soul';
-  const amber = AMBER_KINDS.includes(row.kind);
+  const soulLines = lostSoul ? lostSoulRowLines(lostSouls.picked, lostSouls.counted, lostSouls.finished) : null;
+  const amber = AMBER_KINDS.includes(row.kind) || !!soulLines?.todo;
   const unresolved = row.kind === 'not_found' || row.kind === 'unread';
   const card = row.key ? candidates.find(c => c.key === row.key) ?? null : null;
   const parts = keyParts(row.key);
@@ -136,7 +137,7 @@ export default function DeckRow({
       <div
         data-row-id={row.rowKey}
         role="group"
-        aria-label={lostSoul ? fill(DECK_COPY.lostSoulRow, { n: row.quantity }) : `${label} ×${row.quantity}`}
+        aria-label={soulLines ? soulLines.title : `${label} ×${row.quantity}`}
         tabIndex={0}
         onKeyDown={onKeyDown}
         onTouchStart={onTouchStart}
@@ -157,11 +158,12 @@ export default function DeckRow({
             <img src={thumbSrc} alt="" loading="lazy" className="h-full w-full object-contain" />
           </button>
         ) : (
-          <span aria-hidden className="h-[62px] w-11 rounded-sm bg-muted" />
+          <span aria-hidden className="flex h-[62px] w-11 items-center justify-center rounded-sm bg-muted text-muted-foreground">
+            {lostSoul && <Layers className="h-5 w-5" />}
+          </span>
         )}
 
         <div className={`min-w-0 ${lostSoul ? 'col-span-5' : ''}`}>
-        {!lostSoul && evidence}
         <button
           type="button"
           disabled={!editable}
@@ -169,15 +171,13 @@ export default function DeckRow({
           className="flex min-h-11 w-full min-w-0 items-center gap-1.5 rounded-md px-2 text-left hover:bg-muted/40 focus:outline-none disabled:pointer-events-none"
         >
           <span className="flex min-w-0 flex-1 flex-col justify-center">
-          {lostSoul ? (
+          {soulLines ? (
             <>
-            <span className="truncate text-sm font-medium">
-              {lostSoulsPicked > 0
-                ? fill(DECK_COPY.lostSoulPicked, { n: lostSoulsPicked })
-                : fill(DECK_COPY.lostSoulRow, { n: row.quantity })}
-            </span>
-            {lostSoulsPicked === 0 && (
-              <span className="line-clamp-2 text-xs leading-snug text-muted-foreground">{DECK_COPY.lostSoulRowWhy}</span>
+            <span className="truncate text-sm font-medium">{soulLines.title}</span>
+            {soulLines.sub && (
+              <span className={`line-clamp-2 text-xs leading-snug ${soulLines.todo ? 'font-medium text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
+                {soulLines.sub}
+              </span>
             )}
             </>
           ) : (
@@ -200,6 +200,12 @@ export default function DeckRow({
           </span>
           {/* The name is how a row's card is changed: say so, it does not look like a button on its own. */}
           {editable && !lostSoul && !unresolved && <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />}
+          {/* The whole row opens the picker; this says so. */}
+          {editable && lostSoul && (
+            <span className="mr-1 shrink-0 rounded-md border border-border px-3 py-1.5 text-sm font-medium">
+              {lostSouls.picked < lostSouls.counted && !lostSouls.finished ? DECK_COPY.pick : DECK_COPY.change}
+            </span>
+          )}
         </button>
         </div>
 
@@ -276,7 +282,8 @@ export default function DeckRow({
         )}
       </div>
 
-      {chips && <div className="pb-2 pl-[60px] pr-2">{chips}</div>}
+      {/* What the photo held, then the answers to pick from: under the row, so every row's controls sit on one line. */}
+      {(evidence || chips) && <div className="space-y-2 pb-2 pl-[60px] pr-2">{evidence}{chips}</div>}
       {mainOnlyInReserve && <p className="pb-1.5 pl-[60px] text-xs text-muted-foreground">Counted in main deck</p>}
       {movedZone && <p className="pb-1.5 pl-[60px] text-xs text-muted-foreground">{movedZone}</p>}
 

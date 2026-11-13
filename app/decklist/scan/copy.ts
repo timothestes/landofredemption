@@ -44,13 +44,30 @@ export const DECK_COPY = {
   pasteHint: 'Or read it from a photo',
   zoneMain: 'Main deck',
   zoneReserve: 'Reserve',
-  lostSoulRow: 'Lost Soul ×{n} · Pick which',
-  lostSoulPicked: '{n} picked',
-  pickWhich: 'Pick which',
-  lostSoulRowWhy: 'Stacked Lost Souls show only their name, so we count them and you pick',
-  lostSoulWhy: 'Stacked Lost Souls can be counted, not told apart.',
-  lostSoulTip: 'Spread them out and they are usually read for you.',
-  sheetTitle: 'Pick your Lost Souls · {picked} of {target}',
+  lostSoulRow: 'Pick your {n} Lost Souls',
+  lostSoulRowOne: 'Pick your Lost Soul',
+  lostSoulRowWhy: 'Tap to say which ones.',
+  lostSoulPartial: '{picked} of {n} Lost Souls picked',
+  lostSoulMore: 'Pick {n} more',
+  lostSoulDone: '{n} Lost Souls picked',
+  lostSoulDoneOne: '1 Lost Soul picked',
+  lostSoulNone: 'No Lost Souls picked',
+  lostSoulPhotoShowed: 'Photo showed {n}',
+  lostSoulElsewhere: '{n} more Lost Souls, picked with the rest above',
+  lostSoulElsewhereOne: '1 more Lost Soul, picked with the rest above',
+  pick: 'Pick',
+  change: 'Change',
+  sheetTitle: 'Pick your Lost Souls',
+  sheetHint: 'Match the picture or verse on each card.',
+  sheetSearch: 'Search name or verse',
+  sheetOlder: 'All versions',
+  sheetShowOlder: 'Show {n} more versions',
+  sheetEmpty: 'No Lost Souls match.',
+  sheetInDeck: 'Read from the photo',
+  sheetCount: '{picked} of {target} picked',
+  sheetOver: '{picked} picked · photo showed {target}',
+  sheetSkip: 'Skip',
+  sheetDone: 'Done',
   unread: "Couldn't read this card",
   notFound: 'Not found: "{title}"',
   readAs: 'Read as "{title}"',
@@ -68,6 +85,23 @@ export const DECK_COPY = {
   crossLinkScanner: 'Scanning a whole deck? Use Deck from photo.',
   privacy: 'Deck photos are handled the same way: sent to Anthropic to read the cards, not kept.',
 } as const;
+
+/**
+ * The deck's one Lost Soul row: how many the photo showed, how many are picked, and what is left to do.
+ * `todo` marks the row amber: it is, for as long as the picks are short of the photo. `finished` is the player
+ * saying they are done anyway, which stops the row asking for more but not flagging the difference.
+ */
+export function lostSoulRowLines(picked: number, counted: number, finished: boolean): { title: string; sub: string | null; todo: boolean } {
+  const todo = picked < counted;
+  if (picked === 0 && !finished) {
+    return { title: counted === 1 ? DECK_COPY.lostSoulRowOne : fill(DECK_COPY.lostSoulRow, { n: counted }), sub: DECK_COPY.lostSoulRowWhy, todo };
+  }
+  if (todo && !finished) {
+    return { title: fill(DECK_COPY.lostSoulPartial, { picked, n: counted }), sub: fill(DECK_COPY.lostSoulMore, { n: counted - picked }), todo };
+  }
+  const title = picked === 0 ? DECK_COPY.lostSoulNone : picked === 1 ? DECK_COPY.lostSoulDoneOne : fill(DECK_COPY.lostSoulDone, { n: picked });
+  return { title, sub: picked === counted ? null : fill(DECK_COPY.lostSoulPhotoShowed, { n: counted }), todo };
+}
 
 /** Under this long edge (px) titles mostly go unread: in the eval, 3% of cards on sideways photos and 34% upright, against 71-85% at 1500 and up. */
 export const SMALL_PHOTO_EDGE = 1500;

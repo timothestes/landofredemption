@@ -13,6 +13,22 @@ describe('searchPrintings', () => {
     expect(first.length).toBeGreaterThan(1);
   });
 
+  it('leads with Lost Souls when the row being changed holds one', () => {
+    // Without the flag the name index drops the soul: its nickname only matches inside the quotes.
+    expect(searchPrintings('shepherd').hits.some(h => h.name.startsWith('Lost Soul'))).toBe(false);
+    for (const typed of ['shep', 'shepherd', 'shephers....', 'sheperds', 'Lost Soul shepherds']) {
+      const { hits, close } = searchPrintings(typed, { lostSoulsFirst: true });
+      expect(hits[0].name).toContain('Lost Soul "Shepherds"');
+      expect(close).toBe(false);
+      expect(new Set(hits.map(h => h.key)).size).toBe(hits.length);
+    }
+    const all = searchPrintings('Lost Soul', { lostSoulsFirst: true }).hits;
+    expect(all.length).toBeGreaterThan(100);
+    expect(all.some(h => /token/i.test(h.name))).toBe(false);
+    // A search that names no soul is the ordinary search.
+    expect(searchPrintings('Son of God', { lostSoulsFirst: true })).toEqual(searchPrintings('Son of God'));
+  });
+
   it('returns nothing for a query no card matches', () => {
     expect(searchPrintings('zzqqxx qqzzyy')).toEqual({ hits: [], close: false });
   });

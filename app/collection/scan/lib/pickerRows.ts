@@ -30,8 +30,10 @@ export function onePerCard(hits: PickerHit[], currentKey: string | null): Picker
       legal: list.some(h => h.legality === 'Rotation'),
     };
   });
+  // A Lost Soul row is being changed: Lost Souls stay ahead of every other card, legal in Limited or not.
+  const soul = (h: PickerHit) => Number(!!currentKey?.startsWith('Lost Soul') && h.name.startsWith('Lost Soul'));
   // Array.prototype.sort is stable: equal rows keep the search order.
-  return rows.sort((a, b) => Number(b.legal) - Number(a.legal)).map(({ hit, printings, others }) => ({ hit, printings, others }));
+  return rows.sort((a, b) => soul(b.hit) - soul(a.hit) || Number(b.legal) - Number(a.legal)).map(({ hit, printings, others }) => ({ hit, printings, others }));
 }
 
 /** The highlighted row after an arrow key: one step, held inside the list. */

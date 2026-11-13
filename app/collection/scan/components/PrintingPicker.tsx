@@ -65,9 +65,12 @@ export default function PrintingPicker({
     }
     const mod = await loadSearch();
     if (latestQuery.current !== value) return;
-    const res = mod.searchPrintings(value);
+    // A row that holds a Lost Soul, or was read as one, is nearly always another Lost Soul: those lead the results.
+    const lostSoulsFirst = /^lost soul/i.test(subject.currentKey ?? subject.readTitle ?? '');
+    const res = mod.searchPrintings(value, { lostSoulsFirst });
     setHits(res.hits);
     setClose(res.close);
+    listRef.current?.parentElement?.scrollTo({ top: 0 });
   };
 
   useEffect(() => {

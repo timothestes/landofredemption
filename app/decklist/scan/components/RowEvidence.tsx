@@ -42,9 +42,10 @@ export default function RowEvidence({ source, box, orientation }: Props) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label={DECK_COPY.stripLabel}
-        className="mx-2 mb-1 block w-[calc(100%-1rem)] rounded-sm focus:outline-none sm:max-w-[240px]"
+        className="block max-w-full rounded-sm focus:outline-none"
       >
-        <canvas ref={strip} aria-hidden className="block h-auto max-h-16 w-full rounded-sm bg-muted object-cover" />
+        {/* One height, the strip's own shape: nothing the crop holds is cut off, and no bars pad it out. */}
+        <canvas ref={strip} aria-hidden className="block h-12 w-auto max-w-full rounded-sm bg-muted" />
       </button>
       {open && <PhotoViewer source={source} box={[x0, y0, x1, y1]} onClose={() => setOpen(false)} />}
     </>
