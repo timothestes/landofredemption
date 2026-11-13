@@ -131,3 +131,36 @@ describe("formatActionType — Philip's Daughters", () => {
     expect(asText(formatActionType('UNDO_KEEP_ONE_SHUFFLE_DRAW'))).not.toBe('undo keep one shuffle draw');
   });
 });
+
+// The row renderer prefixes the actor's name, so each of these is the tail of
+// "<roll winner> …" (or "<first player> …" for GAME_STARTED).
+describe('formatActionType — who chose to go first', () => {
+  const names = { '1': 'Alice', '2': 'Bob' };
+  const chose = (chosenPlayerId: string, chosenName: string, playerNames: Record<string, string> = names) =>
+    asText(formatActionType('CHOSE_WHO_GOES_FIRST', JSON.stringify({ chosenPlayerId, chosenName }), playerNames, '1', '2'));
+
+  it('says the roll winner chose to go first themselves', () => {
+    expect(chose('1', 'Alice')).toBe('chose to go first');
+  });
+
+  it('names the opponent when the roll winner hands over the first turn', () => {
+    expect(chose('2', 'Bob')).toBe('chose Bob to go first');
+  });
+
+  it('goes by player id, so two players with the same name still read correctly', () => {
+    expect(chose('2', 'Alice', { '1': 'Alice', '2': 'Alice' })).toBe('chose Alice to go first');
+  });
+
+  it('never claims a choice when the timer ran out', () => {
+    const out = asText(formatActionType('WENT_FIRST_BY_DEFAULT', '{}', names, '1', '2'));
+    expect(out).toContain('did not choose in time');
+    expect(out).not.toContain('chose');
+  });
+
+  it('reads the game-start line as a fact about its actor, the first player', () => {
+    const out = asText(
+      formatActionType('GAME_STARTED', JSON.stringify({ chosenSeat: '0', chosenName: 'Alice' }), names, '1', '2'),
+    );
+    expect(out).toBe('takes the first turn');
+  });
+});

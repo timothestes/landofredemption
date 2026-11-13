@@ -1211,6 +1211,26 @@ function clearChooseFirstTimeout(ctx: any, gameId: bigint): void {
   }
 }
 
+// Logs who decided the first turn, at the moment it is decided, against the
+// roll winner. GAME_STARTED can't carry this: it is logged later, against the
+// player who goes first. `timedOut` is the 30s auto-pick — nobody chose.
+function logFirstPlayerChoice(ctx: any, game: any, chosenSeat: bigint, timedOut: boolean): void {
+  let winner: any = null;
+  let chosen: any = null;
+  for (const p of [...ctx.db.Player.player_game_id.filter(game.id)]) {
+    if (p.seat.toString() === game.rollWinner) winner = p;
+    if (p.seat === chosenSeat) chosen = p;
+  }
+  if (!winner || !chosen) return;
+  if (timedOut) {
+    logAction(ctx, game.id, winner.id, 'WENT_FIRST_BY_DEFAULT', '{}', 0n, 'pregame');
+    return;
+  }
+  logAction(ctx, game.id, winner.id, 'CHOSE_WHO_GOES_FIRST',
+    JSON.stringify({ chosenPlayerId: chosen.id.toString(), chosenName: chosen.displayName }),
+    0n, 'pregame');
+}
+
 // ---------------------------------------------------------------------------
 // Reducer: pregame_choose_first
 // ---------------------------------------------------------------------------
@@ -1249,6 +1269,7 @@ export const pregame_choose_first = spacetimedb.reducer(
       pregameReady0: false,
       pregameReady1: false,
     });
+    logFirstPlayerChoice(ctx, latestGame, chosenSeat, false);
 
     // Arm the server-side backstop so a stalled client ack can't hang the game.
     scheduleRevealTimeout(ctx, gameId);
@@ -1664,6 +1685,7 @@ export const pregame_skip_to_reveal = spacetimedb.reducer(
       pregameReady0: false,
       pregameReady1: false,
     });
+    logFirstPlayerChoice(ctx, latestGame, chosenSeat, false);
 
     // Arm the server-side backstop so a stalled client ack can't hang the game.
     scheduleRevealTimeout(ctx, gameId);
@@ -2526,6 +2548,7 @@ export const handle_choose_first_timeout = spacetimedb.reducer(
       pregameReady0: false,
       pregameReady1: false,
     });
+    logFirstPlayerChoice(ctx, game, winnerSeat, true);
 
     // Arm the server-side backstop so a stalled client ack can't hang the game.
     scheduleRevealTimeout(ctx, arg.gameId);

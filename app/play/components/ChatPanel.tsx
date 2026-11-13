@@ -153,6 +153,15 @@ const ACTION_TYPE_LABELS: Record<string, string> = {
   LEAVE_GAME: 'left the game',
   UPDATE_CARD_POSITION: 'repositioned a card',
   PREGAME_ROLL: 'rolled for first player',
+  // Logged against the roll winner when the choice is made. The type names
+  // are true sentences on their own because a tab open across a module
+  // publish renders an unknown type through the raw-type fallback.
+  CHOSE_WHO_GOES_FIRST: 'chose who goes first',
+  WENT_FIRST_BY_DEFAULT: 'did not choose in time — goes first by default',
+  // Logged against the player who goes first, NOT the one who chose — so the
+  // line may only state that. It used to read "chose X to go first", which
+  // made every game say "X chose X to go first".
+  GAME_STARTED: 'takes the first turn',
   // REG Pre-Game Phase. PREGAME_STARS_REVEALED / PREGAME_STAR_RESOLVED carry
   // card payloads rendered in formatActionType; these are the parse-failure
   // fallbacks.
@@ -400,11 +409,13 @@ export function formatActionType(actionType: string, payload?: string, playerNam
       return '▶ passed — turn resumes'; // legacy rev-3 reasons (manual / toggle-off)
     } catch { /* fall through */ }
   }
-  if (actionType === 'GAME_STARTED' && payload) {
+  if (actionType === 'CHOSE_WHO_GOES_FIRST' && payload && actorPlayerId) {
     try {
       const data = JSON.parse(payload);
-      const chosenName = data.chosenName ?? ('Player ' + (Number(data.chosenSeat) + 1));
-      return `chose ${chosenName} to go first`;
+      // Compare ids, never names: two players can share a display name.
+      if (data.chosenPlayerId === actorPlayerId) return 'chose to go first';
+      const chosenName = playerNames?.[data.chosenPlayerId] ?? data.chosenName;
+      if (chosenName) return `chose ${chosenName} to go first`;
     } catch { /* fall through */ }
   }
   if (actionType === 'PREGAME_ROLL' && payload) {
