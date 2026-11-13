@@ -24,6 +24,23 @@ export const STANDARD_CATEGORIES = [
   "Unofficial",
 ] as const;
 
+// Loose identity for a category label, so "Booster Draft - 2 Player" (a listing's
+// wording) and "Booster Draft" (ours), or "Type 1 - 2 Player" and "Type 1
+// Limited", count as the same thing. \b keeps "Unlimited" from losing its tail.
+const categoryKey = (label: string) =>
+  label
+    .toLowerCase()
+    .replace(/\s*-?\s*2[\s-]*p(layers?)?$/, "")
+    .replace(/\s*-?\s*\blimited$/, "")
+    .trim();
+
+/** The standard categories a host could still add on top of `offered` (a
+ * listing's own formats), leaving out any that `offered` already covers. */
+export function otherCategories(offered: string[]): string[] {
+  const covered = new Set(offered.map(categoryKey));
+  return STANDARD_CATEGORIES.filter((c) => !covered.has(categoryKey(c)));
+}
+
 // Maps a category/format string (from a listing or the standard list) to its
 // defaults. Matching is fuzzy so listing strings like "Type 2 2-Player" or
 // "Booster Draft (GoC x3...)" still resolve correctly.

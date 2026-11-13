@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { categoryDefaults, STANDARD_CATEGORIES } from "../categoryDefaults";
+import {
+  categoryDefaults,
+  otherCategories,
+  STANDARD_CATEGORIES,
+} from "../categoryDefaults";
 
 describe("categoryDefaults", () => {
   it.each([
@@ -17,5 +21,27 @@ describe("categoryDefaults", () => {
 
   it("lists both T1 categories", () => {
     expect(STANDARD_CATEGORIES).toContain("Type 1 Unlimited");
+  });
+
+  describe("otherCategories", () => {
+    it("offers every standard category when nothing is offered", () => {
+      expect(otherCategories([])).toEqual([...STANDARD_CATEGORIES]);
+    });
+
+    it("drops a category the listing already offers, whatever its wording", () => {
+      const rest = otherCategories(["Booster Draft - 2 Player"]);
+      expect(rest).not.toContain("Booster Draft");
+      expect(rest).toContain("Type 2");
+    });
+
+    it("treats a listing's Type 1 as Type 1 Limited, not Unlimited", () => {
+      const rest = otherCategories(["Type 1 - 2 Player"]);
+      expect(rest).not.toContain("Type 1 Limited");
+      expect(rest).toContain("Type 1 Unlimited");
+    });
+
+    it("keeps Unlimited out of reach of the Limited rule", () => {
+      expect(otherCategories(["Type 1 Unlimited"])).toContain("Type 1 Limited");
+    });
   });
 });
