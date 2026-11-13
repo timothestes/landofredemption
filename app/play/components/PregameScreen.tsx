@@ -25,6 +25,10 @@ const RITUAL_TUMBLE_FRAMES = 18;
 const ROLLING_RESULT_DISPLAY_MS = 2200;
 const CHOOSE_TIME_LIMIT_S = 30;
 const REVEAL_AUTO_ACK_MS = 1500;
+// How long the roll winner can still change who goes first. Must stay well
+// under the server's 8s reveal backstop (REVEAL_TIMEOUT_MICROS), which is not
+// re-armed on a change, leaving the opponent time to re-ack after a late one.
+const REVEAL_CHANGE_WINDOW_MS = 5000;
 
 // ---------------------------------------------------------------------------
 // OpponentDisconnectBanner — shown during pregame when opponent drops
@@ -1025,14 +1029,21 @@ function RevealArea({
   // clear and restart this 1.5s timer. If updates arrive faster than that, the
   // ack never fires and the "Starting game…" screen lingers until the churn
   // happens to pause. The server-side handle_reveal_timeout is the backstop.
+  //
+  // The roll winner holds their ack longer: that hold is the window in which
+  // they can change a wrong choice. The server accepts a change only while
+  // the reveal is up, and resets both acks so the opponent sees the result.
+  const ackDelayMs = iWonRoll ? REVEAL_CHANGE_WINDOW_MS : REVEAL_AUTO_ACK_MS;
   const acknowledgeFirst = gameState.pregameAcknowledgeFirst;
   useEffect(() => {
     if (alreadyAcked) return;
     const timer = setTimeout(() => {
       acknowledgeFirst();
-    }, REVEAL_AUTO_ACK_MS);
+    }, ackDelayMs);
     return () => clearTimeout(timer);
-  }, [alreadyAcked, acknowledgeFirst]);
+  }, [alreadyAcked, acknowledgeFirst, ackDelayMs]);
+
+  const otherSeat = firstSeat === 0n ? 1n : 0n;
 
   return (
     <motion.div
@@ -1047,6 +1058,15 @@ function RevealArea({
         {alreadyAcked ? 'Waiting for opponent...' : 'Starting game...'}
       </p>
 
+      {iWonRoll && !alreadyAcked && (
+        <button
+          onClick={() => gameState.pregameChooseFirst(otherSeat)}
+          className="mt-3 w-full min-h-[44px] py-2.5 rounded border border-amber-200/15 bg-transparent font-cinzel text-xs font-bold uppercase tracking-wider text-amber-200/50 hover:text-amber-200/70 transition-colors"
+        >
+          {iGoFirst ? `Change: ${opponentName} goes first` : "Change: I'll go first"}
+        </button>
+      )}
+
       {/* Progress bar */}
       {!alreadyAcked && (
         <div className="mt-3">
@@ -1054,7 +1074,7 @@ function RevealArea({
             <motion.div
               initial={{ width: '100%' }}
               animate={{ width: '0%' }}
-              transition={{ duration: REVEAL_AUTO_ACK_MS / 1000, ease: 'linear' }}
+              transition={{ duration: ackDelayMs / 1000, ease: 'linear' }}
               className="h-full rounded-sm bg-[#c4955a]/40"
             />
           </div>

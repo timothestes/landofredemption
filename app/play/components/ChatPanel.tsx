@@ -413,8 +413,14 @@ export function formatActionType(actionType: string, payload?: string, playerNam
     try {
       const data = JSON.parse(payload);
       // Compare ids, never names: two players can share a display name.
-      if (data.chosenPlayerId === actorPlayerId) return 'chose to go first';
+      const self = data.chosenPlayerId === actorPlayerId;
       const chosenName = playerNames?.[data.chosenPlayerId] ?? data.chosenName;
+      // `changed`: the roll winner corrected their choice during the reveal.
+      if (data.changed) {
+        if (self) return 'changed their choice — will go first';
+        if (chosenName) return `changed their choice — ${chosenName} goes first`;
+      }
+      if (self) return 'chose to go first';
       if (chosenName) return `chose ${chosenName} to go first`;
     } catch { /* fall through */ }
   }
