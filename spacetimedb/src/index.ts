@@ -1214,7 +1214,7 @@ function clearChooseFirstTimeout(ctx: any, gameId: bigint): void {
 // Logs who decided the first turn, at the moment it is decided, against the
 // roll winner. GAME_STARTED can't carry this: it is logged later, against the
 // player who goes first. `timedOut` is the 30s auto-pick — nobody chose.
-function logFirstPlayerChoice(ctx: any, game: any, chosenSeat: bigint, timedOut: boolean): void {
+function logFirstPlayerChoice(ctx: any, game: any, chosenSeat: bigint, timedOut: boolean, changed = false): void {
   let winner: any = null;
   let chosen: any = null;
   for (const p of [...ctx.db.Player.player_game_id.filter(game.id)]) {
@@ -1227,7 +1227,7 @@ function logFirstPlayerChoice(ctx: any, game: any, chosenSeat: bigint, timedOut:
     return;
   }
   logAction(ctx, game.id, winner.id, 'CHOSE_WHO_GOES_FIRST',
-    JSON.stringify({ chosenPlayerId: chosen.id.toString(), chosenName: chosen.displayName }),
+    JSON.stringify({ chosenPlayerId: chosen.id.toString(), chosenName: chosen.displayName, changed }),
     0n, 'pregame');
 }
 
@@ -1243,12 +1243,32 @@ export const pregame_choose_first = spacetimedb.reducer(
     const game = ctx.db.Game.id.find(gameId);
     if (!game) throw new SenderError('Game not found');
     if (game.status !== 'pregame') throw new SenderError('Game is not in pregame');
-    if (game.pregamePhase !== 'choosing') throw new SenderError('Not in choosing phase');
+    if (game.pregamePhase !== 'choosing' && game.pregamePhase !== 'revealing') {
+      throw new SenderError('Not in choosing phase');
+    }
     if (chosenSeat !== 0n && chosenSeat !== 1n) throw new SenderError('Invalid seat');
 
     const player = findPlayerBySender(ctx, gameId);
     if (player.seat.toString() !== game.rollWinner) {
       throw new SenderError('Only the roll winner can choose');
+    }
+
+    // Changing a choice already made (a misclick, or the 30s auto-pick). Only
+    // while the reveal is still up: nothing new has been shown to either
+    // player since the choice, so the change gives no advantage. Both acks
+    // reset so each client shows the corrected result before the game starts.
+    // The reveal backstop is deliberately NOT re-armed — it stays at 8s from
+    // the first choice, so repeated changes can't hold the game open.
+    if (game.pregamePhase === 'revealing') {
+      if (game.currentTurn === chosenSeat) return;
+      ctx.db.Game.id.update({
+        ...game,
+        currentTurn: chosenSeat,
+        pregameReady0: false,
+        pregameReady1: false,
+      });
+      logFirstPlayerChoice(ctx, game, chosenSeat, false, true);
+      return;
     }
 
     // Cancel the server-side choose timeout

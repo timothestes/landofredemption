@@ -151,6 +151,13 @@ describe('formatActionType — who chose to go first', () => {
     expect(chose('2', 'Alice', { '1': 'Alice', '2': 'Alice' })).toBe('chose Alice to go first');
   });
 
+  it('says so when the roll winner changed their choice during the reveal', () => {
+    const changed = (chosenPlayerId: string, chosenName: string) =>
+      asText(formatActionType('CHOSE_WHO_GOES_FIRST', JSON.stringify({ chosenPlayerId, chosenName, changed: true }), names, '1', '2'));
+    expect(changed('1', 'Alice')).toBe('changed their choice — will go first');
+    expect(changed('2', 'Bob')).toBe('changed their choice — Bob goes first');
+  });
+
   it('never claims a choice when the timer ran out', () => {
     const out = asText(formatActionType('WENT_FIRST_BY_DEFAULT', '{}', names, '1', '2'));
     expect(out).toContain('did not choose in time');
