@@ -10,7 +10,8 @@ export default function DeckScanClient({ userId }: { userId: string }) {
     <DeckPhotoReader
       userId={userId}
       intro={<PhotoSteps then="open it in the deck builder" />}
-      footer={({ state, dispatch }) => <HandoffBar state={state} dispatch={dispatch} />}
+      hideTotals
+      footer={({ state, dispatch, jumps }) => <HandoffBar state={state} dispatch={dispatch} jumps={jumps} />}
     />
   );
 }
