@@ -416,6 +416,30 @@ describe('matchesDeckCard rules', () => {
     expect(fits({ type: 'GE' }, { types: ['character'] })).toBe(false);
   });
 
+  it('a Covenant or Curse is also an Enhancement and an Artifact; a City a Fortress and a Site', () => {
+    const covenant = { type: 'Covenant', alignment: 'Good', brigade: 'Blue', reference: 'Genesis 28:13' };
+    const curse = { type: 'Curse', alignment: 'Evil' };
+    const city = { type: 'City', alignment: 'Evil' };
+    // Jacob, Follower of God: "a Genesis Enhancement".
+    expect(fits(covenant, { books: ['Genesis'], types: ['Enhancement'] })).toBe(true);
+    expect(fits(covenant, { types: ['GE'] })).toBe(true);
+    expect(fits(covenant, { types: ['Artifact'] })).toBe(true);
+    expect(fits(covenant, { types: ['Covenant'] })).toBe(true);
+    expect(fits(covenant, { types: ['Enhancement'], alignments: ['good'] })).toBe(true);
+    expect(fits(covenant, { types: ['Enhancement'], alignments: ['evil'] })).toBe(false);
+    expect(fits(covenant, { types: ['EE'] })).toBe(false);
+    expect(fits(curse, { types: ['Enhancement'], alignments: ['evil'] })).toBe(true);
+    expect(fits(curse, { types: ['EE'] })).toBe(true);
+    expect(fits(curse, { types: ['Artifact'] })).toBe(true);
+    expect(fits(curse, { types: ['GE'] })).toBe(false);
+    expect(fits(city, { types: ['Fortress'], alignments: ['evil'] })).toBe(true);
+    expect(fits(city, { types: ['Site'] })).toBe(true);
+    expect(fits(city, { types: ['City'] })).toBe(true);
+    // One way only: a plain Artifact is no Covenant, a Fortress no City.
+    expect(fits({ type: 'Artifact' }, { types: ['Covenant'] })).toBe(false);
+    expect(fits({ type: 'Fortress' }, { types: ['City'] })).toBe(false);
+  });
+
   it('treats a GE/EE card as both good and evil', () => {
     expect(fits({ type: 'GE/EE', alignment: 'Neutral' }, { alignments: ['good'] })).toBe(true);
     expect(fits({ type: 'GE/EE', alignment: 'Neutral' }, { alignments: ['evil'] })).toBe(true);

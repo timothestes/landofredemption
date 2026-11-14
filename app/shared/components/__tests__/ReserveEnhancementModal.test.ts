@@ -11,6 +11,12 @@ describe('isReserveEnhancement', () => {
     expect(isReserveEnhancement(card('GE/Evil Character', 'Matthew 5:9'))).toBe(true);
   });
 
+  it('accepts Covenants and Curses, which are Enhancements too', () => {
+    expect(isReserveEnhancement(card('Covenant', 'Genesis 9:13'), 'OT')).toBe(true);
+    expect(isReserveEnhancement(card('Curse', 'Deuteronomy 28:15'), 'OT')).toBe(true);
+    expect(isReserveEnhancement(card('Artifact', 'Genesis 1:1'))).toBe(false);
+  });
+
   it('rejects non-enhancements', () => {
     expect(isReserveEnhancement(card('Hero', 'Genesis 1:1'))).toBe(false);
     expect(isReserveEnhancement(card('Evil Character', 'Genesis 1:1'))).toBe(false);
