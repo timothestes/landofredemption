@@ -54,6 +54,23 @@ describe('diffDeals', () => {
     expect(dealt).toEqual([]);
     expect(nextZones.get('1')).toBe('discard');
   });
+
+  it('with toZone "discard", flags deck → discard (a mill) and not deck → hand', () => {
+    const prev = new Map([
+      ['1', 'deck'],
+      ['2', 'deck'],
+      ['3', 'hand'],
+      ['4', 'deck'],
+    ]);
+    const cards = [
+      { id: '1', zone: 'discard' },
+      { id: '2', zone: 'hand' },
+      { id: '3', zone: 'discard' }, // discarded from hand — not a mill
+      { id: '4', zone: 'discard' },
+    ];
+    expect(diffDeals(prev, cards, 'discard').dealt).toEqual(['1', '4']);
+    expect(diffDeals(prev, cards).dealt).toEqual(['2']);
+  });
 });
 
 describe('scheduleDeals', () => {

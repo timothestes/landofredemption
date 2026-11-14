@@ -11,6 +11,8 @@ export interface DealCardSnapshot {
 export const DEAL_STAGGER_MS = 200;
 /** Faster stagger for the opening-hand deal (8 cards shouldn't take 2s). */
 export const DEAL_OPENING_STAGGER_MS = 90;
+/** Stagger for cards milled deck → discard: quick, one after another. */
+export const MILL_STAGGER_MS = 110;
 /** Flight duration for one card, deck pile → hand slot. */
 export const DEAL_FLIGHT_MS = 420;
 /** A batch never spreads its launches over more than this (big draws compress). */
@@ -28,10 +30,13 @@ export interface DealDiffResult {
  * whose previous zone was 'deck' and whose current zone is 'hand' counts as a
  * deal — cards returning from territory/reserve/search-inserts don't animate.
  * A null prevZones means "first snapshot" (page load / reconnect): never deal.
+ * `toZone` picks the destination watched: 'hand' for draws, 'discard' for
+ * cards milled from the deck.
  */
 export function diffDeals(
   prevZones: Map<string, string> | null,
   cards: DealCardSnapshot[],
+  toZone: string = 'hand',
 ): DealDiffResult {
   const nextZones = new Map<string, string>();
   for (const c of cards) nextZones.set(c.id, c.zone);
@@ -39,7 +44,7 @@ export function diffDeals(
 
   const dealt: string[] = [];
   for (const c of cards) {
-    if (c.zone === 'hand' && prevZones.get(c.id) === 'deck') dealt.push(c.id);
+    if (c.zone === toZone && prevZones.get(c.id) === 'deck') dealt.push(c.id);
   }
   return { dealt, nextZones };
 }

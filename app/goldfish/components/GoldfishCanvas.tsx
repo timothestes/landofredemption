@@ -52,6 +52,7 @@ import { useLostSoulCinematic } from '@/app/shared/hooks/useLostSoulCinematic';
 import { useLostSoulCinematicSetting } from '@/app/shared/hooks/useLostSoulCinematicSetting';
 import { LostSoulCinematic } from '@/app/shared/components/LostSoulCinematic';
 import { useDealAnimation } from '@/app/shared/hooks/useDealAnimation';
+import { MILL_STAGGER_MS } from '@/app/shared/hooks/dealAnimationCore';
 import { useHandLayoutTween } from '@/app/shared/hooks/useHandLayoutTween';
 import { DealLayer, type DealSpriteSpec } from '@/app/shared/components/DealLayer';
 import { useCardEnterPlayPrompt } from '@/app/shared/hooks/useCardEnterPlayPrompt';
@@ -80,6 +81,21 @@ interface GoldfishCanvasProps {
   virtualWidth: number;
   onLoadDeck?: () => void;
   hideBackButton?: boolean;
+}
+
+const MILL_ROUTE = { toZone: 'discard', staggerMs: MILL_STAGGER_MS };
+
+/** Stable per-card offset that gives the discard pile its untidy stack. */
+function discardJitter(instanceId: string): { x: number; y: number; rotation: number } {
+  let h = 0;
+  for (let c = 0; c < instanceId.length; c++) {
+    h = ((h << 5) - h + instanceId.charCodeAt(c)) | 0;
+  }
+  return {
+    x: ((h & 0xff) / 255 - 0.5) * 6,
+    y: (((h >> 8) & 0xff) / 255 - 0.5) * 6,
+    rotation: (((h >> 16) & 0xff) / 255 - 0.5) * 8,
+  };
 }
 
 export default function GoldfishCanvas({ containerWidth, containerHeight, scale, offsetX, offsetY, virtualWidth, onLoadDeck, hideBackButton }: GoldfishCanvasProps) {
@@ -166,6 +182,12 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
     glowIds: dealGlowIds,
     completeDeal,
   } = useDealAnimation(cardZoneSnapshot, true, state.sessionId);
+  // Milling — the same flight for cards that move deck → discard.
+  const {
+    deals: activeMills,
+    dealingIds: millingIds,
+    completeDeal: completeMill,
+  } = useDealAnimation(cardZoneSnapshot, true, null, MILL_ROUTE);
 
   // Drive 1s re-renders while any visible card has an active per-card reveal —
   // hand (30s flash) or reserve top (10s from Herod's Temple). Needed for the
@@ -2367,14 +2389,9 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
               return (
                 <Group key={zoneId}>
                   {cards.map((card, i) => {
-                    // Stable per-card jitter from instanceId hash
-                    let h = 0;
-                    for (let c = 0; c < card.instanceId.length; c++) {
-                      h = ((h << 5) - h + card.instanceId.charCodeAt(c)) | 0;
-                    }
-                    const jitterX = ((h & 0xff) / 255 - 0.5) * 6;
-                    const jitterY = (((h >> 8) & 0xff) / 255 - 0.5) * 6;
-                    const jitterRot = (((h >> 16) & 0xff) / 255 - 0.5) * 8;
+                    // A milled card joins the pile when its sprite lands.
+                    if (millingIds.has(card.instanceId)) return null;
+                    const { x: jitterX, y: jitterY, rotation: jitterRot } = discardJitter(card.instanceId);
                     return (
                       <GameCardNode
                         key={card.instanceId}
@@ -2789,6 +2806,37 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
               });
             }
             return <DealLayer sprites={sprites} onLanded={completeDeal} />;
+          })()}
+
+          {/* Mill sprites — deck pile → discard pile, flipping face up */}
+          {(() => {
+            const deckZone = zoneLayout['deck'];
+            const discardZone = zoneLayout['discard'];
+            if (!deckZone || !discardZone || activeMills.length === 0) return null;
+            const pileWidth = Math.min(sidebarCardWidth, deckZone.width - 4);
+            const originScale = sidebarCardWidth > 0 ? pileWidth / sidebarCardWidth : 1;
+            // Same resting spot the discard pile render gives each card.
+            const baseX = discardZone.x + discardZone.width / 2 - sidebarCardWidth / 2;
+            const baseY = discardZone.y + 24;
+            const sprites: DealSpriteSpec[] = [];
+            for (const deal of activeMills) {
+              const card = state.zones.discard.find(c => c.instanceId === deal.instanceId);
+              if (!card) continue;
+              const jitter = discardJitter(card.instanceId);
+              sprites.push({
+                deal,
+                origin: {
+                  x: deckZone.x + deckZone.width / 2 - (sidebarCardWidth * originScale) / 2,
+                  y: deckZone.y + deckZone.height / 2 - (sidebarCardHeight * originScale) / 2,
+                },
+                originScale,
+                target: { x: baseX + jitter.x, y: baseY + jitter.y, rotation: jitter.rotation },
+                cardWidth: sidebarCardWidth,
+                cardHeight: sidebarCardHeight,
+                image: getImage(card.cardImgFile),
+              });
+            }
+            return <DealLayer sprites={sprites} onLanded={completeMill} />;
           })()}
         </Layer>
 

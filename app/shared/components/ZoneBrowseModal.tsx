@@ -201,7 +201,11 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
         { name: a.cardName, type: a.type, brigade: a.brigade, alignment: a.alignment, strength: a.strength, reference: a.reference },
         { name: b.cardName, type: b.type, brigade: b.brigade, alignment: b.alignment, strength: b.strength, reference: b.reference },
       ))
-    : rawCards;
+    // Discard is stored oldest first (the newest card is the top of the pile);
+    // show it newest first so the cards just discarded are in the first row.
+    : zoneId === 'discard'
+      ? [...rawCards].reverse()
+      : rawCards;
   const [filterOn, setFilterOn] = useState(true);
   const shownCards = filter && filterOn ? cards.filter(filter.matches) : cards;
   // Field of Battle only: both sides share the grid, so per-card owner badges
