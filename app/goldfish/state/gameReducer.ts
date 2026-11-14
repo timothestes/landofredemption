@@ -632,7 +632,7 @@ function threeNailsResetInState(
   const zones = cloneZones(state.zones);
 
   const ownerId = source.ownerId;
-  const SWEEP_ZONES: ZoneId[] = ['hand', 'territory', 'land-of-bondage'];
+  const SWEEP_ZONES: ZoneId[] = ['hand', 'territory', 'land-of-bondage', 'battle'];
 
   // Pull the source out of whichever zone it's in and route to banish (cleared
   // in-play state). Not territory-only: Three Nails (GoC) is an Artifact and
@@ -655,9 +655,10 @@ function threeNailsResetInState(
     },
   ];
 
-  // Sweep the owner's cards from hand + territory + land-of-bondage into deck,
-  // clearing in-play state. Only the owner's cards move (single-player goldfish
-  // means there's only one player anyway, but be explicit).
+  // Sweep the owner's cards from hand + territory + land-of-bondage + battle
+  // into deck, clearing in-play state. Only the owner's cards move (single-player
+  // goldfish means there's only one player anyway, but be explicit). Tokens are
+  // removed rather than shuffled in, like every other deck move.
   const swept: GameCard[] = [];
   for (const zoneId of SWEEP_ZONES) {
     const remaining: GameCard[] = [];
@@ -666,6 +667,7 @@ function threeNailsResetInState(
         remaining.push(card);
         continue;
       }
+      if (card.isToken) continue;
       swept.push({
         ...card,
         zone: 'deck',
@@ -676,6 +678,7 @@ function threeNailsResetInState(
         outlineColor: undefined,
         notes: '',
         isMeek: false,
+        equippedTo: undefined,
       });
     }
     zones[zoneId] = remaining;
