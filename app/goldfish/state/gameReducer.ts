@@ -627,6 +627,7 @@ function discardCharactersFromReserveInState(
 function threeNailsResetInState(
   state: GameState,
   source: GameCard,
+  ability: Extract<CardAbility, { type: 'three_nails_reset' }>,
   history: GameState[],
 ): GameState {
   const zones = cloneZones(state.zones);
@@ -710,7 +711,12 @@ function threeNailsResetInState(
     zones.hand.push(card);
   }
 
-  return { ...state, zones, history, deckShuffles: (state.deckShuffles ?? 0) + 1 };
+  // "Begin a new turn" (A New Beginning printings): the REG makes it a begin a
+  // new phase effect that returns the current turn to the Draw Phase. Same
+  // turn number, no draw of 3.
+  const phase = ability.beginNewTurn ? 'draw' : state.phase;
+
+  return { ...state, zones, history, phase, deckShuffles: (state.deckShuffles ?? 0) + 1 };
 }
 
 function drawAndTopdeckSelfInState(
@@ -1647,7 +1653,7 @@ function reduceGame(state: GameState, action: GameAction): GameState {
           // never reach the goldfish reducer in v1. No-op defensively.
           return state;
         case 'three_nails_reset':
-          return threeNailsResetInState(state, source, history);
+          return threeNailsResetInState(state, source, ability, history);
         case 'imitate_lost_soul':
           // Targeting variant — dispatched via the dedicated IMITATE_LOST_SOUL
           // action which carries a target. No-op here.

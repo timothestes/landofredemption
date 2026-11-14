@@ -7407,7 +7407,8 @@ export const undo_keep_one_shuffle_draw = spacetimedb.reducer(
 // [RR2]), then sweeps every hand + territory + land-of-bondage + battle card
 // into its real owner's deck (shared paragon souls route back to the soul
 // deck, tokens are removed), closes any open battle, reshuffles, and has each
-// player draw 8.
+// player draw 8. A New Beginning printings (beginNewTurn) then return the turn
+// to the Draw Phase.
 // Dispatched by the requester after the opponent approves.
 // ---------------------------------------------------------------------------
 export const three_nails_reset_execute = spacetimedb.reducer(
@@ -7544,6 +7545,17 @@ export const three_nails_reset_execute = spacetimedb.reducer(
         JSON.stringify({ requesterId: player.id.toString(), cardName: source.cardName }),
         finalGame.turnNumber, finalGame.currentPhase,
       );
+    }
+
+    // "Begin a new turn" (A New Beginning printings, not Three Nails): per the
+    // REG a begin a new phase effect that returns the CURRENT turn to the Draw
+    // Phase — same player, same turn number, no turn flip and no draw of 3.
+    // The battle was closed above, so this is a plain phase write + SET_PHASE log.
+    const beginNewTurn = getEffectiveAbilities(source).some(
+      (a) => a.type === 'three_nails_reset' && a.beginNewTurn === true,
+    );
+    if (beginNewTurn && finalGame && finalGame.currentPhase !== 'draw') {
+      applyPhaseTransition(ctx, gameId, player.id, 'draw');
     }
   }
 );

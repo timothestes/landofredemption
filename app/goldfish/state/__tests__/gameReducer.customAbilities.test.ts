@@ -715,10 +715,30 @@ describe('three_nails_reset source zone', () => {
     expect(next.zones['land-of-redemption'].map(c => c.instanceId)).toEqual(['lor']);
   });
 
-  it('all three reset printings are registered', () => {
-    for (const name of ['Three Nails (GoC)', 'A New Beginning (FoM)', 'A New Beginning [RR2]']) {
-      expect(getEffectiveAbilities({ cardName: name })).toContainEqual({ type: 'three_nails_reset' });
+  it('all reset printings are registered; only A New Beginning begins a new turn', () => {
+    expect(getEffectiveAbilities({ cardName: 'Three Nails (GoC)' })).toContainEqual({ type: 'three_nails_reset' });
+    for (const name of ['A New Beginning', 'A New Beginning (FoM)', 'A New Beginning [RR2]']) {
+      expect(getEffectiveAbilities({ cardName: name })).toContainEqual({ type: 'three_nails_reset', beginNewTurn: true });
     }
+  });
+
+  it('A New Beginning returns the same turn to the Draw Phase', () => {
+    const source = makeCard({ instanceId: 'anb', cardName: 'A New Beginning [RR2]', type: 'GE', zone: 'battle' });
+    const state = { ...makeState([source]), phase: 'battle', turn: 4 } as GameState;
+
+    const next = gameReducer(state, act('anb', 0));
+
+    expect(next.phase).toBe('draw');
+    expect(next.turn).toBe(4);
+  });
+
+  it('Three Nails leaves the phase alone (its text has no "begin a new turn")', () => {
+    const source = makeCard({ instanceId: 'nails', cardName: 'Three Nails (GoC)', zone: 'territory' });
+    const state = { ...makeState([source]), phase: 'battle' } as GameState;
+
+    const next = gameReducer(state, act('nails', 0));
+
+    expect(next.phase).toBe('battle');
   });
 });
 
