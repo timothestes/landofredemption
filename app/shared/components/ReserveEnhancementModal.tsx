@@ -7,12 +7,12 @@ import { deriveTestamentAndGospel } from '@/app/decklist/card-search/data/testam
 
 /**
  * True when a Reserve card qualifies for take_enhancement_from_reserve: a GE
- * or EE segment in its type (there is no literal "Enhancement" type), and —
- * when `testament` is set — a reference from that testament (dual-testament
- * references count).
+ * or EE segment in its type (there is no literal "Enhancement" type) or a
+ * Covenant or Curse, which are Enhancements too, and — when `testament` is
+ * set — a reference from that testament (dual-testament references count).
  */
 export function isReserveEnhancement(card: GameCard, testament?: 'OT'): boolean {
-  const isEnhancement = card.type.split('/').map((s) => s.trim()).some((s) => s === 'GE' || s === 'EE');
+  const isEnhancement = card.type.split('/').map((s) => s.trim()).some((s) => s === 'GE' || s === 'EE' || s === 'Covenant' || s === 'Curse');
   if (!isEnhancement) return false;
   if (!testament) return true;
   return deriveTestamentAndGospel(card.reference).testament.split('/').includes(testament);

@@ -58,7 +58,10 @@ function lookupName(alt) {
 }
 
 // ---------- pool matcher (mirror of the runtime rule, for validation) ----------
-const typeParts = (c) => c.type.split('/').map((s) => s.trim());
+// A Covenant is also a good Enhancement and an Artifact, a Curse an evil
+// Enhancement and an Artifact, a City a Fortress and a Site (REG).
+const ALSO_TYPES = { Covenant: ['GE', 'Artifact'], Curse: ['EE', 'Artifact'], City: ['Fortress', 'Site'] };
+const typeParts = (c) => c.type.split('/').map((s) => s.trim()).flatMap((p) => [p, ...(ALSO_TYPES[p] ?? [])]);
 function typeOk(c, t) {
   const p = typeParts(c);
   if (t === 'character') return p.includes('Hero') || p.includes('Evil Character');

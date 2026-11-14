@@ -893,9 +893,20 @@ function inTestament(reference: string, t: 'OT' | 'NT'): boolean {
   );
 }
 
-/** Each half of a dual type ("Hero/Evil Character", "GE/EE") counts. */
+/** Types that are also other types (REG): a filter for either one finds them. */
+const ALSO_TYPES: Record<string, string[]> = {
+  Covenant: ['GE', 'Artifact'],
+  Curse: ['EE', 'Artifact'],
+  City: ['Fortress', 'Site'],
+};
+
+/**
+ * Each half of a dual type ("Hero/Evil Character", "GE/EE") counts, and so
+ * does every type a half also is (a Covenant is a good Enhancement and an
+ * Artifact).
+ */
 function typeParts(c: DeckCardFields): string[] {
-  return (c.type ?? c.cardType ?? '').split('/').map((s) => s.trim());
+  return (c.type ?? c.cardType ?? '').split('/').map((s) => s.trim()).flatMap((p) => [p, ...(ALSO_TYPES[p] ?? [])]);
 }
 
 function isDeckCardType(parts: string[], t: DeckCardType): boolean {
