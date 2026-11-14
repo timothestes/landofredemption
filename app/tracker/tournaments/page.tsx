@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, Suspense } from "react";
+import Link from "next/link";
 import Breadcrumb from "../../../components/ui/breadcrumb";
 import { createClient } from "../../../utils/supabase/client";
 import { getUserSafe } from "../../../utils/supabase/getUserSafe";
@@ -12,6 +13,7 @@ import TournamentFormModal from "../../../components/ui/tournament-form-modal";
 import JoinCodeDialog from "../../../components/ui/JoinCodeDialog";
 import { categoryDefaults, requireDecklistsDefault } from "../../../utils/tournament/categoryDefaults";
 import { normalizeTier } from "../../../utils/tournament/tiers";
+import { pageHostedEvents } from "../../../utils/tournament/hostedEvents";
 import { getFormatDef } from "@/lib/formats";
 
 const FORMAT_CHIP = "inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground";
@@ -37,11 +39,16 @@ function TournamentsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Fetch once on mount, not on every search-param change: turning the page
+  // only changes ?page= and pages through rows already loaded.
   useEffect(() => {
     fetchTournaments();
     // Reset document title when viewing tournaments list
     document.title = "Land of Redemption";
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  useEffect(() => {
     // Auto-open modal if coming from "Host This Event" on /tournaments
     const listingId = searchParams.get("from_listing");
     const city = searchParams.get("city");
@@ -147,6 +154,9 @@ function TournamentsPageInner() {
           setListingState(null);
           // Clean up URL params
           router.replace("/tracker/tournaments", { scroll: false });
+        } else if (searchParams.get("page")) {
+          // The new tournament is the newest, so it lands on page 1.
+          router.push("/tracker/tournaments");
         }
         fetchTournaments();
         setisAddTournamentModalOpen(false);
@@ -227,20 +237,14 @@ function TournamentsPageInner() {
   };
 
   // Tournaments linked to the same listing are one real-world event with
-  // multiple categories; everything else stands alone.
-  const { groups, ungrouped } = useMemo(() => {
-    const byListing = new Map<string, any[]>();
-    const standalone: any[] = [];
-    for (const t of tournaments) {
-      if (t.listing_id) {
-        if (!byListing.has(t.listing_id)) byListing.set(t.listing_id, []);
-        byListing.get(t.listing_id)!.push(t);
-      } else {
-        standalone.push(t);
-      }
-    }
-    return { groups: Array.from(byListing.entries()), ungrouped: standalone };
-  }, [tournaments]);
+  // multiple categories; everything else stands alone. Events page newest first.
+  const requestedPage = Number(searchParams.get("page")) || 1;
+  const { page, pageCount, blocks } = useMemo(
+    () => pageHostedEvents(tournaments, requestedPage),
+    [tournaments, requestedPage]
+  );
+  const pageHref = (n: number) =>
+    n > 1 ? `/tracker/tournaments?page=${n}` : "/tracker/tournaments";
 
   const formatCreatedAt = (value: string) =>
     new Intl.DateTimeFormat("en-US", {
@@ -382,7 +386,21 @@ function TournamentsPageInner() {
           <p className="text-muted-foreground">No tournaments found.</p>
         ) : (
           <div className="space-y-4">
-            {groups.map(([listingId, group]) => (
+            {blocks.map((block) => {
+              if (block.kind === "singles") {
+                return (
+                  <div
+                    key={block.tournaments[0].id}
+                    className="jayden-gradient-bg rounded-lg overflow-hidden border border-border"
+                  >
+                    <ul className="divide-y divide-border">
+                      {block.tournaments.map((t) => renderRow(t, true))}
+                    </ul>
+                  </div>
+                );
+              }
+              const { listingId, tournaments: group } = block;
+              return (
               <div
                 key={listingId}
                 className="jayden-gradient-bg rounded-lg overflow-hidden border border-border"
@@ -413,13 +431,28 @@ function TournamentsPageInner() {
                   {group.map((t) => renderRow(t, false))}
                 </ul>
               </div>
-            ))}
-            {ungrouped.length > 0 && (
-              <div className="jayden-gradient-bg rounded-lg overflow-hidden border border-border">
-                <ul className="divide-y divide-border">
-                  {ungrouped.map((t) => renderRow(t, true))}
-                </ul>
-              </div>
+              );
+            })}
+            {pageCount > 1 && (
+              <nav className="grid grid-cols-3 items-center text-sm" aria-label="Pagination">
+                {page > 1 ? (
+                  <Link href={pageHref(page - 1)} className="inline-flex min-h-11 items-center justify-self-start rounded-md px-3 hover:bg-muted">
+                    ← Newer
+                  </Link>
+                ) : (
+                  <span />
+                )}
+                <span className="text-center text-muted-foreground">
+                  Page {page} of {pageCount}
+                </span>
+                {page < pageCount ? (
+                  <Link href={pageHref(page + 1)} className="inline-flex min-h-11 items-center justify-self-end rounded-md px-3 hover:bg-muted">
+                    Older →
+                  </Link>
+                ) : (
+                  <span />
+                )}
+              </nav>
             )}
           </div>
         )}
