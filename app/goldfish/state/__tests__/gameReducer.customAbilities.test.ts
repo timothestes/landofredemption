@@ -689,10 +689,56 @@ describe('three_nails_reset source zone', () => {
     expect(all).toHaveLength(1);
   });
 
-  it('all three reset printings are registered', () => {
-    for (const name of ['Three Nails (GoC)', 'A New Beginning (FoM)', 'A New Beginning [RR2]']) {
-      expect(getEffectiveAbilities({ cardName: name })).toContainEqual({ type: 'three_nails_reset' });
+  it('shuffles the cards in battle back into the deck along with everything else', () => {
+    // The reported bug: the reset shuffled hand, territory and Land of Bondage
+    // but left every card in battle where it was.
+    const source = makeCard({ instanceId: 'nails', cardName: 'Three Nails (GoC)', zone: 'territory' });
+    const hero = makeCard({ instanceId: 'hero', cardName: 'Battle Hero', type: 'Hero', zone: 'battle' });
+    const weapon = makeCard({ instanceId: 'sword', cardName: 'Battle Weapon', type: 'GE', zone: 'battle', equippedTo: 'hero' });
+    const token = makeCard({ instanceId: 'tok', cardName: 'Soldier Token', zone: 'battle', isToken: true });
+    const saved = makeCard({ instanceId: 'lor', cardName: 'Rescued Soul', type: 'LS', zone: 'land-of-redemption' });
+    const state = makeState([source, hero, weapon, token, saved]);
+
+    const next = gameReducer(state, act('nails', 0));
+
+    expect(next.zones.battle).toHaveLength(0);
+    const all = Object.values(next.zones).flat();
+    // Hero and weapon are back in the library (deck or the fresh 8-card hand).
+    for (const id of ['hero', 'sword']) {
+      const card = all.find(c => c.instanceId === id);
+      expect(['deck', 'hand']).toContain(card?.zone);
+      expect(card?.equippedTo).toBeUndefined();
     }
+    // Tokens are removed, never shuffled in.
+    expect(all.some(c => c.instanceId === 'tok')).toBe(false);
+    // Land of Redemption stays put.
+    expect(next.zones['land-of-redemption'].map(c => c.instanceId)).toEqual(['lor']);
+  });
+
+  it('all reset printings are registered; only A New Beginning begins a new turn', () => {
+    expect(getEffectiveAbilities({ cardName: 'Three Nails (GoC)' })).toContainEqual({ type: 'three_nails_reset' });
+    for (const name of ['A New Beginning', 'A New Beginning (FoM)', 'A New Beginning [RR2]']) {
+      expect(getEffectiveAbilities({ cardName: name })).toContainEqual({ type: 'three_nails_reset', beginNewTurn: true });
+    }
+  });
+
+  it('A New Beginning returns the same turn to the Draw Phase', () => {
+    const source = makeCard({ instanceId: 'anb', cardName: 'A New Beginning [RR2]', type: 'GE', zone: 'battle' });
+    const state = { ...makeState([source]), phase: 'battle', turn: 4 } as GameState;
+
+    const next = gameReducer(state, act('anb', 0));
+
+    expect(next.phase).toBe('draw');
+    expect(next.turn).toBe(4);
+  });
+
+  it('Three Nails leaves the phase alone (its text has no "begin a new turn")', () => {
+    const source = makeCard({ instanceId: 'nails', cardName: 'Three Nails (GoC)', zone: 'territory' });
+    const state = { ...makeState([source]), phase: 'battle' } as GameState;
+
+    const next = gameReducer(state, act('nails', 0));
+
+    expect(next.phase).toBe('battle');
   });
 });
 

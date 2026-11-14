@@ -87,7 +87,9 @@ export type CardAbility = AbilityBase & (
   // multiplayer (opening it if closed, exactly as a manual drag does);
   // goldfish has no battle zone, so it bands into Territory instead.
   | { type: 'band_heroes_from_deck'; referenceBook: string }
-  | { type: 'three_nails_reset' }
+  // beginNewTurn: the card says "Begin a new turn" — per the REG a begin a
+  // new phase effect that returns the current turn to the Draw Phase.
+  | { type: 'three_nails_reset'; beginNewTurn?: boolean }
   | { type: 'imitate_lost_soul' }
   | { type: 'draw_and_topdeck_self' }
   | { type: 'resurrect_heroes' }
@@ -280,12 +282,12 @@ const BASE_CARD_ABILITIES: Record<string, CardAbility[]> = {
   // "If it is your turn banish this card: Shuffle all cards in play, set-aside,
   // and hands. Each player must draw 8. Begin a new turn." Same board reset as
   // Three Nails (GoC) — the reset banishes the source card.
-  'A New Beginning (FoM)':                               [{ type: 'three_nails_reset' }],
+  'A New Beginning (FoM)':                               [{ type: 'three_nails_reset', beginNewTurn: true }],
   // The original Patriarchs printing of the same reset: "ALL players shuffle ALL
   // cards in the field of play, set-aside areas and their hands back into their
-  // draw pile … ALL players Draw 8." A Good Enhancement, so it fires from the
+  // draw pile … ALL players Draw 8. Holder may begin a new turn." A Good Enhancement, so it fires from the
   // battle zone — the path #293 unblocked for the RR2 printing.
-  'A New Beginning':                                     [{ type: 'three_nails_reset' }],
+  'A New Beginning':                                     [{ type: 'three_nails_reset', beginNewTurn: true }],
   // "You may discard this card to discard all characters from a Reserve."
   // Surfaced as two menu items so the activating player picks which Reserve;
   // no in-menu target picker needed.
@@ -340,11 +342,11 @@ const BASE_CARD_ABILITIES: Record<string, CardAbility[]> = {
   // draw instead of Mayhem's fixed 6/6.
   'Philip’s Daughters [RR2]':                            [{ type: 'all_players_keep_one_shuffle_draw' }, { type: 'all_players_keep_one_shuffle_draw', skipDraw: true }],
   // "If attacking, banish this card: Shuffle all cards and all hands. End the
-  // battle. Each player must draw 8." Same board reset as Three Nails (GoC)
+  // battle. Each player must draw 8. Begin a new turn." Same board reset as Three Nails (GoC)
   // and A New Beginning (FoM) above — but this printing is a Good Enhancement
   // played into battle, not an Artifact or Dominant sitting in territory, so
   // the reset fires from the battle zone.
-  'A New Beginning [RR2]':                               [{ type: 'three_nails_reset' }],
+  'A New Beginning [RR2]':                               [{ type: 'three_nails_reset', beginNewTurn: true }],
 
   // ---------------------------------------------------------------------------
   // Full-pool audit (all sets outside Roots 2)

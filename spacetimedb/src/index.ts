@@ -7,6 +7,7 @@ import { makeSeed, seededShuffle, seededDiceRoll, xorshift64, generateGameCode }
 import { isLeavingPlayField } from './playField';
 import { makeFreeSpotAllocator, bandRowSlots, BAND_ROW_Y } from './battlePlacement';
 import { resolveDestinationOwnerId, resolveHomeOwnerId, type OwnerRouting } from './cardOwnership';
+import { planResetRoute } from './boardReset';
 import { captureKeepOneSnapshot, finishKeepOneSnapshot, planKeepOneUndo, type KeepOneSnapshot } from './keepOneUndo';
 import {
   getAbilitiesForCard,
@@ -7402,10 +7403,12 @@ export const undo_keep_one_shuffle_draw = spacetimedb.reducer(
 // Reducer: three_nails_reset_execute
 // Authorised via an approved ZoneSearchRequest (action='three_nails_reset').
 // Banishes the source reset card (any card registered with a
-// three_nails_reset ability — Three Nails (GoC), A New Beginning (FoM)),
-// then for each player sweeps their hand + territory + land-of-bondage into
-// their deck (lost souls owned by the shared paragon soul-deck route back
-// there), reshuffles, and draws 8.
+// three_nails_reset ability — Three Nails (GoC), A New Beginning (FoM) and
+// [RR2]), then sweeps every hand + territory + land-of-bondage + battle card
+// into its real owner's deck (shared paragon souls route back to the soul
+// deck, tokens are removed), closes any open battle, reshuffles, and has each
+// player draw 8. A New Beginning printings (beginNewTurn) then return the turn
+// to the Draw Phase.
 // Dispatched by the requester after the opponent approves.
 // ---------------------------------------------------------------------------
 export const three_nails_reset_execute = spacetimedb.reducer(
@@ -7474,7 +7477,7 @@ export const three_nails_reset_execute = spacetimedb.reducer(
     });
 
     const allPlayers = [...ctx.db.Player.player_game_id.filter(gameId)];
-    const SWEEP_ZONES = new Set(['hand', 'territory', 'land-of-bondage']);
+    const playerIds = allPlayers.map((p: any) => p.id);
 
     // Track swept card IDs for defensive cascade below.
     // Include the source (the reset card) so accessories linked to it are also cleared.
@@ -7482,27 +7485,38 @@ export const three_nails_reset_execute = spacetimedb.reducer(
 
     for (const card of [...ctx.db.CardInstance.card_instance_game_id.filter(gameId)]) {
       if (card.id === sourceInstanceId) continue; // already banished
-      if (!SWEEP_ZONES.has(card.zone)) continue;
 
-      // Routing: shared-paragon souls (ownerId === 0n sentinel) → soul-deck.
-      // All other cards → owner's deck.
-      const ownerIsActivePlayer = allPlayers.some((p: any) => p.id === card.ownerId);
-      const targetZone = ownerIsActivePlayer ? 'deck' : 'soul-deck';
+      // Hand, territory, Land of Bondage and battle → the real owner's deck;
+      // shared Paragon souls → soul deck; tokens are removed (planResetRoute).
+      const route = planResetRoute(card, playerIds);
+      if (route.kind === 'stay') continue;
+      sweptIds.add(card.id);
 
-      clearCountersIfLeavingPlay(ctx, card.id, card.zone, targetZone);
+      if (route.kind === 'delete') {
+        deleteTokenWithCounters(ctx, card);
+        continue;
+      }
+
+      clearCountersIfLeavingPlay(ctx, card.id, card.zone, route.zone);
 
       ctx.db.CardInstance.id.update({
         ...card,
-        ...leavePlayFieldOverrides(card, card.zone, targetZone),
-        zone: targetZone,
+        ...leavePlayFieldOverrides(card, card.zone, route.zone),
+        ownerId: route.ownerId,
+        zone: route.zone,
         zoneIndex: 0n,
         posX: '',
         posY: '',
         isFlipped: true,
         equippedToInstanceId: 0n,
       });
+    }
 
-      sweptIds.add(card.id);
+    // The battle zone is now empty, so the battle is over ("End the battle"
+    // on A New Beginning [RR2]) — same Game fields runBattleAutoReturn clears.
+    const gameAfterSweep = ctx.db.Game.id.find(gameId);
+    if (gameAfterSweep && gameAfterSweep.battleState !== '') {
+      ctx.db.Game.id.update({ ...gameAfterSweep, battleState: '', battleAttackerSeat: '', lastBattlePlayBySeat: '' });
     }
 
     // Defensive cascade — clear stale equippedToInstanceId on any card pointing
@@ -7531,6 +7545,17 @@ export const three_nails_reset_execute = spacetimedb.reducer(
         JSON.stringify({ requesterId: player.id.toString(), cardName: source.cardName }),
         finalGame.turnNumber, finalGame.currentPhase,
       );
+    }
+
+    // "Begin a new turn" (A New Beginning printings, not Three Nails): per the
+    // REG a begin a new phase effect that returns the CURRENT turn to the Draw
+    // Phase — same player, same turn number, no turn flip and no draw of 3.
+    // The battle was closed above, so this is a plain phase write + SET_PHASE log.
+    const beginNewTurn = getEffectiveAbilities(source).some(
+      (a) => a.type === 'three_nails_reset' && a.beginNewTurn === true,
+    );
+    if (beginNewTurn && finalGame && finalGame.currentPhase !== 'draw') {
+      applyPhaseTransition(ctx, gameId, player.id, 'draw');
     }
   }
 );

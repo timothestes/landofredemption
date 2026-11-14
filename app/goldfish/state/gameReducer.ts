@@ -627,12 +627,13 @@ function discardCharactersFromReserveInState(
 function threeNailsResetInState(
   state: GameState,
   source: GameCard,
+  ability: Extract<CardAbility, { type: 'three_nails_reset' }>,
   history: GameState[],
 ): GameState {
   const zones = cloneZones(state.zones);
 
   const ownerId = source.ownerId;
-  const SWEEP_ZONES: ZoneId[] = ['hand', 'territory', 'land-of-bondage'];
+  const SWEEP_ZONES: ZoneId[] = ['hand', 'territory', 'land-of-bondage', 'battle'];
 
   // Pull the source out of whichever zone it's in and route to banish (cleared
   // in-play state). Not territory-only: Three Nails (GoC) is an Artifact and
@@ -655,9 +656,10 @@ function threeNailsResetInState(
     },
   ];
 
-  // Sweep the owner's cards from hand + territory + land-of-bondage into deck,
-  // clearing in-play state. Only the owner's cards move (single-player goldfish
-  // means there's only one player anyway, but be explicit).
+  // Sweep the owner's cards from hand + territory + land-of-bondage + battle
+  // into deck, clearing in-play state. Only the owner's cards move (single-player
+  // goldfish means there's only one player anyway, but be explicit). Tokens are
+  // removed rather than shuffled in, like every other deck move.
   const swept: GameCard[] = [];
   for (const zoneId of SWEEP_ZONES) {
     const remaining: GameCard[] = [];
@@ -666,6 +668,7 @@ function threeNailsResetInState(
         remaining.push(card);
         continue;
       }
+      if (card.isToken) continue;
       swept.push({
         ...card,
         zone: 'deck',
@@ -676,6 +679,7 @@ function threeNailsResetInState(
         outlineColor: undefined,
         notes: '',
         isMeek: false,
+        equippedTo: undefined,
       });
     }
     zones[zoneId] = remaining;
@@ -707,7 +711,12 @@ function threeNailsResetInState(
     zones.hand.push(card);
   }
 
-  return { ...state, zones, history, deckShuffles: (state.deckShuffles ?? 0) + 1 };
+  // "Begin a new turn" (A New Beginning printings): the REG makes it a begin a
+  // new phase effect that returns the current turn to the Draw Phase. Same
+  // turn number, no draw of 3.
+  const phase = ability.beginNewTurn ? 'draw' : state.phase;
+
+  return { ...state, zones, history, phase, deckShuffles: (state.deckShuffles ?? 0) + 1 };
 }
 
 function drawAndTopdeckSelfInState(
@@ -1644,7 +1653,7 @@ function reduceGame(state: GameState, action: GameAction): GameState {
           // never reach the goldfish reducer in v1. No-op defensively.
           return state;
         case 'three_nails_reset':
-          return threeNailsResetInState(state, source, history);
+          return threeNailsResetInState(state, source, ability, history);
         case 'imitate_lost_soul':
           // Targeting variant — dispatched via the dedicated IMITATE_LOST_SOUL
           // action which carries a target. No-op here.

@@ -10799,6 +10799,9 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
           const p = JSON.parse(incomingSearchRequest.actionParams ?? '{}');
           if (p.cardName) resetCardName = p.cardName;
         } catch { /* legacy request without cardName */ }
+        const resetBeginsNewTurn = getEffectiveAbilities({ cardName: resetCardName }).some(
+          (a) => a.type === 'three_nails_reset' && a.beginNewTurn === true,
+        );
         return (
           <BoardRequestBanner
             maxWidth={460}
@@ -10807,7 +10810,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                 <strong style={{ color: 'var(--gf-accent)' }}>
                   {gameState.opponentPlayer?.displayName ?? 'Opponent'}
                 </strong>{' '}
-                is activating <strong style={{ color: 'var(--gf-accent)' }}>{resetCardName}</strong> — shuffles all hands, territories, and lands of bondage; each player draws 8.
+                is activating <strong style={{ color: 'var(--gf-accent)' }}>{resetCardName}</strong> — shuffles all hands, territories, lands of bondage, and the battle; each player draws 8{resetBeginsNewTurn ? '; the turn goes back to the Draw Phase' : ''}.
               </>
             }
             affirmLabel="Approve"
