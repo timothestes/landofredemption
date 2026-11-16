@@ -21,7 +21,12 @@ export const TEXT_METRICS = {
   verse: { size: 22.9, pitch: 23, bottom: 251.5 },
   // Bold, right-aligned, fixed, 5 pt: the design team's finished cards put its baseline
   // 937.6 px down the canvas, 26 px under the verse's last baseline.
-  reference: { size: 20.8, top: 252, pitch: 20.8 },
+  // When the verse's last line runs over the reference, the design team leaves an empty line
+  // between them. `slack` is how far the two measured widths may overlap before that happens.
+  // It is a guess: no printed card with the empty line has been measured. Its floor is Abram,
+  // the Blameless (Genesis 17:1), which prints with no empty line while these tables put its
+  // last line 20.3 px into the reference (print kerns the italic; the tables cannot).
+  reference: { size: 20.8, top: 252, pitch: 20.8, slack: 30 },
   // The light-to-dark gradient sits BETWEEN the ability and the verse. Measured on the design
   // team's finished End of Times cards (147, registered on their border lines): the box is
   // fully dark 8 px INTO the first verse line's box (about its x-height line; the caps rise
@@ -85,9 +90,12 @@ export type TextFit = {
   paragraphs: string[][];
   abilityLines: number;
   verseLines: string[];
+  /** The verse sits one line higher, leaving an empty line above the reference its last line runs over. */
+  referenceGap: boolean;
   /** Bottom of the last ability line box, offset from the box top. */
   abilityBottom: number;
-  /** Top of the first verse line box (the verse floor when there is no verse). */
+  /** Top of the first verse line box (the verse floor when there is no verse). The lines stack
+   *  down from here; with `referenceGap` the last one ends a line above the floor. */
   verseTop: number;
   /** Ability lines that collide with the verse (or its `minGap`); 0 means it fits as printed. */
   over: number;
@@ -101,8 +109,13 @@ export function textFit(card: DesignCard): TextFit {
   const abilityLines = paragraphs.reduce((n, p) => n + p.length, 0);
   const abilityBottom = M.ability.top + abilityLines * M.ability.pitch + Math.max(0, paragraphs.length - 1) * M.ability.paragraphGap;
   const verseLines = wrapLines((card.scripture ?? "").trim(), "italic", M.verse.size, TEXT_WIDTH);
-  const verseTop = M.verse.bottom - verseLines.length * M.verse.pitch;
+  const reference = (card.reference ?? "").trim().replace(/\s+/g, " ");
+  const referenceGap =
+    verseLines.length > 0 && reference !== "" &&
+    textWidth(verseLines[verseLines.length - 1], "italic", M.verse.size) + textWidth(reference, "bold", M.reference.size) >
+      TEXT_WIDTH + M.reference.slack;
+  const verseTop = M.verse.bottom - (verseLines.length + (referenceGap ? 1 : 0)) * M.verse.pitch;
   const over = abilityLines ? Math.max(0, Math.ceil((abilityBottom + M.minGap - verseTop) / M.ability.pitch)) : 0;
   const dark = verseTop - M.gradient.above;
-  return { paragraphs, abilityLines, verseLines, abilityBottom, verseTop, over, gradient: { light: dark - M.gradient.span, dark } };
+  return { paragraphs, abilityLines, verseLines, referenceGap, abilityBottom, verseTop, over, gradient: { light: dark - M.gradient.span, dark } };
 }

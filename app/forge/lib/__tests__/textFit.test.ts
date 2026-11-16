@@ -139,6 +139,35 @@ describe("textFit", () => {
     expect(f.over).toBe(0);
     expect(textFit({}).abilityLines).toBe(0);
   });
+  describe("empty line above a reference the verse's last line runs over", () => {
+    const kings = "And on His robe and on His thigh He has a name written: “KING OF KINGS, AND LORD OF LORDS.”";
+    it("moves the verse up one line, and the gradient with it", () => {
+      const bare = textFit({ scripture: kings });
+      const f = textFit({ scripture: kings, reference: "Revelation 19:16" });
+      expect(bare.referenceGap).toBe(false);
+      expect(f.referenceGap).toBe(true);
+      expect(f.verseLines).toEqual(bare.verseLines);
+      expect(f.verseTop).toBeCloseTo(bare.verseTop - V.pitch, 5);
+      expect(f.gradient.dark).toBeCloseTo(bare.gradient.dark - V.pitch, 5);
+    });
+    it("stays off for Abram, the Blameless, which prints without one (20 px measured overlap)", () => {
+      const f = textFit({ scripture: "Now when Abram was ninety-nine years old, the Lord appeared to Abram and said to him, “I am God Almighty; walk before Me, and be blameless.”", reference: "Genesis 17:1" });
+      expect(f.referenceGap).toBe(false);
+      expect(f.verseTop).toBeCloseTo(V.bottom - 3 * V.pitch, 5);
+    });
+    it("stays off for a short last line, a blank reference and a card with no verse", () => {
+      expect(textFit({ ...goat, reference: "Daniel 8:5" }).referenceGap).toBe(false);
+      expect(textFit({ scripture: kings, reference: "   " }).referenceGap).toBe(false);
+      expect(textFit({ rawText: "Draw 1.", reference: "Revelation 19:16" }).referenceGap).toBe(false);
+    });
+    it("counts against the ability: the line it takes can push the ability over", () => {
+      // Five ability lines end 177.6 px down; with minGap they need the verse to start at 195.6
+      // or lower. Two verse lines start at 205.5 (fits); the empty line moves them to 182.5.
+      const rawText = `${goat.rawText} Protect this card from capture. Cannot be negated by a Greek.`;
+      expect(textFit({ rawText, scripture: kings }).over).toBe(0);
+      expect(textFit({ rawText, scripture: kings, reference: "Revelation 19:16" }).over).toBe(1);
+    });
+  });
   it("widths come from the font tables", () => {
     expect(textWidth("", "bold", 31)).toBe(0);
     expect(textWidth("iii", "bold", 10)).toBeLessThan(textWidth("WWW", "bold", 10));

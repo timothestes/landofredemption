@@ -10,14 +10,14 @@ import VerseFinderPanel from "./VerseFinderPanel";
 
 // Reference + Scripture sit directly under the ability text: they are printed on the
 // card, like the ability, not deck metadata. The verse finder expands in place beneath
-// them. `onPreview` carries the panel's candidate excerpt to the card face only — it is
+// them. `onPreview` carries the panel's candidate excerpt and reference to the card face only — it is
 // never saved.
 export default function ScriptureFields({
   snapshot, update, onPreview,
 }: {
   snapshot: DesignCard;
   update: (patch: Partial<DesignCard>) => void;
-  onPreview: (scripture: string | null) => void;
+  onPreview: (candidate: { scripture: string; reference: string } | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
