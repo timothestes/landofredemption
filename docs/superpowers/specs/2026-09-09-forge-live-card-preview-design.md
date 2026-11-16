@@ -272,6 +272,19 @@ reference, so a wrap difference there only nudges the gradient. `over > 0` shows
 at the bottom left, "Ability doesn't fit · N lines over", next to the existing "preview
 approximate" pill, and the ability visibly runs into the verse.
 
+**Empty line above the reference (2026-11-16).** A designer reported that when the verse's
+last line runs over the right-aligned reference, the design team leaves an empty line between
+them; designers were typing a newline and a period into the verse to get it. `textFit` now
+does it: when the last verse line's width plus the reference's width exceeds the 570 px inset
+by more than `TEXT_METRICS.reference.slack` (30 px), `referenceGap` is true and `verseTop`
+sits one verse line higher. `over`, the gradient and Trim to fit follow because they all read
+`verseTop`; the verse finder measures the reference it is about to save, not the card's
+current one. **The slack is a guess.** No printed card with the empty line has been measured
+(0 of 14 sampled), and the one printed card whose measured last line reaches into the
+reference, Abram, the Blameless (Genesis 17:1, +20.3 px by these unkerned tables), has no
+empty line. 30 px is the smallest round number above that. One print file showing the empty
+line would let it be set from print.
+
 **Verification:** `textFit` tests pin the printed line breaks of six abilities and six
 verses; printed | preview pairs with the real verses typed in match line for line; synthetic
 cases cover 1 line over, 4 lines over, dual-type paragraphs and a card with no verse (the

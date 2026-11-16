@@ -81,7 +81,7 @@ export default function VerseFinderPanel({
   onUse: (patch: { reference: string; scripture: string }) => void;
   onClose: () => void;
   /** Candidate excerpt for the live card preview; null when nothing is loaded. Never saved. */
-  onPreview?: (scripture: string | null) => void;
+  onPreview?: (candidate: { scripture: string; reference: string } | null) => void;
 }) {
   // A bare book name ("Daniel") would classify as a malformed reference and dead-end; quoted it is a phrase search.
   const [prefill] = useState(() => {
@@ -352,11 +352,16 @@ export default function VerseFinderPanel({
     () => (ex ? wrapLines(ex.text, "italic", TEXT_METRICS.verse.size, TEXT_WIDTH) : []),
     [ex],
   );
-  const over = useMemo(() => (ex ? textFit({ ...snapshot, scripture: ex.text }).over : 0), [ex, snapshot]);
+  // The reference Use will save. The fit and the face preview measure this one, not the card's
+  // saved reference: whether the verse leaves an empty line above it depends on its width.
+  const reference = chapter && ex ? canonicalRef(chapter.bookId, chapter.chapter, ex.from, ex.to) : null;
+  const over = useMemo(
+    () => (ex && reference ? textFit({ ...snapshot, scripture: ex.text, reference }).over : 0),
+    [ex, reference, snapshot],
+  );
 
   function commit() {
-    if (!chapter || !ex || !ex.text) return;
-    const reference = canonicalRef(chapter.bookId, chapter.chapter, ex.from, ex.to);
+    if (!chapter || !ex || !ex.text || !reference) return;
     writeRecent(
       pushRecent(readRecent(), { id: `${chapter.bookId}.${chapter.chapter}`, label: `${chapter.book} ${chapter.chapter}` }),
     );
@@ -365,7 +370,7 @@ export default function VerseFinderPanel({
 
   function trim() {
     if (!chapter || !handles) return;
-    const next = trimToFit(chapter.verses, handles, snapshot);
+    const next = trimToFit(chapter.verses, handles, snapshot, (from, to) => canonicalRef(chapter.bookId, chapter.chapter, from, to));
     if (next) {
       setHandles(next);
       setStatus(null);
@@ -385,11 +390,12 @@ export default function VerseFinderPanel({
     }
   }
 
-  // Live preview: the candidate excerpt while a chapter is loaded, null otherwise and on unmount.
+  // Live preview: the candidate excerpt and its reference while a chapter is loaded, null
+  // otherwise and on unmount. Keyed on the two strings so a parent re-render does not re-send it.
   const previewText = chapter && ex ? ex.text : null;
   useEffect(() => {
-    onPreviewRef.current?.(previewText);
-  }, [previewText]);
+    onPreviewRef.current?.(previewText !== null && reference ? { scripture: previewText, reference } : null);
+  }, [previewText, reference]);
   useEffect(() => () => onPreviewRef.current?.(null), []);
 
   // Keep focus inside the panel so Esc / ⌘Enter / handle keys keep working. Opening a hit or a chip,

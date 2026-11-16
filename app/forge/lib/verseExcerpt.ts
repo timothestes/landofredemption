@@ -171,8 +171,14 @@ export function excerpt(verses: Verse[], h: Handles): { text: string; from: numb
   };
 }
 
-export function trimToFit(verses: Verse[], h: Handles, card: DesignCard): Handles | null {
-  const fits = (x: Handles) => textFit({ ...card, scripture: excerpt(verses, x).text }).over === 0;
+/** `refOf` names the reference an excerpt of verses from..to would be saved with. The fit
+ *  depends on it (a last line that runs over the reference costs a line), and it changes as
+ *  the end handle crosses a verse. Without it the card's own reference is measured. */
+export function trimToFit(verses: Verse[], h: Handles, card: DesignCard, refOf?: (from: number, to: number) => string): Handles | null {
+  const fits = (x: Handles) => {
+    const ex = excerpt(verses, x);
+    return textFit({ ...card, scripture: ex.text, ...(refOf ? { reference: refOf(ex.from, ex.to) } : {}) }).over === 0;
+  };
   const { rows, total } = layout(verses);
   let cur = h;
   while (!fits(cur)) {

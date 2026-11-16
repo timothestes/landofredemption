@@ -106,7 +106,7 @@ describe("RENDER_VERSION guard", () => {
       .map((card, i) => render(props(card, { noArt: i % 2 === 1, rasters: { art: i % 2 === 1 ? null : "data:art" } })))
       .join("");
     const hash = createHash("sha256").update(markup).digest("hex");
-    expect({ RENDER_VERSION, hash }).toEqual({ RENDER_VERSION: 7, hash: "ca0b510a992f905b3656c5e8fb12ccf0575c5cd69bfa6e552af2d3d11e1ea844" });
+    expect({ RENDER_VERSION, hash }).toEqual({ RENDER_VERSION: 8, hash: "ca0b510a992f905b3656c5e8fb12ccf0575c5cd69bfa6e552af2d3d11e1ea844" });
   });
 });
 

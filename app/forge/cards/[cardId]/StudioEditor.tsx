@@ -127,7 +127,7 @@ export default function StudioEditor({
   const [pendingFinished, setPendingFinished] = useState<File | null>(null);
   const [uploading, setUploading] = useState<"finished" | "removing" | null>(null);
   // The verse finder's candidate excerpt, drawn on the preview face only. Never saved.
-  const [previewScripture, setPreviewScripture] = useState<string | null>(null);
+  const [previewScripture, setPreviewScripture] = useState<{ scripture: string; reference: string } | null>(null);
   const [peeking, setPeeking] = useState(() => peekCarriesOver); // the large face over the form, below lg
   useEffect(() => { peekCarriesOver = false; }, []);
   const router = useRouter();
@@ -319,7 +319,7 @@ export default function StudioEditor({
   // cache each t-stamped art URL indefinitely and still swap after router.refresh().
   const t = Date.parse(card.updatedAt) || 0;
   const activeSourceId = artCandidates.find((c) => c.isActiveSource)?.id ?? null;
-  const previewCard = previewScripture === null ? snapshot : { ...snapshot, scripture: previewScripture };
+  const previewCard = previewScripture === null ? snapshot : { ...snapshot, ...previewScripture };
   // Local, like the face and the field: card.title only catches up after the save and a refresh.
   // A name still undefined means it was never edited, so a title set at creation stands.
   const crumbName = (snapshot.name ?? card.title)?.trim() || "Untitled";
