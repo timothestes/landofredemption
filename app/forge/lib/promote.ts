@@ -15,6 +15,7 @@ import { requireForgeSuperadmin } from "@/app/forge/lib/auth";
 import { requireSuperuser } from "@/app/admin/permissions/lib/auth";
 import { readForgeArt } from "@/app/forge/lib/art";
 import { cardRawText, type DesignCard } from "@/app/forge/lib/designCard";
+import { foldQuotes } from "@/app/forge/lib/quotes";
 import {
   catalogImgFileSlug, designCardToCatalogRow, parseImageTransform,
   type ReleaseImageTransform,
@@ -192,7 +193,8 @@ async function buildReport(
   for (const c of CARDS) {
     upstreamCodes.add(c.set);
     upstreamOfficial.add(c.officialSet.toLowerCase());
-    if (!upstreamNamesLower.has(c.name.toLowerCase())) upstreamNamesLower.set(c.name.toLowerCase(), c.name);
+    const key = foldQuotes(c.name).toLowerCase();
+    if (!upstreamNamesLower.has(key)) upstreamNamesLower.set(key, c.name);
     upstreamImgFiles.add(c.imgFile.toLowerCase());
   }
   const sameSetPrior = prior.some((r: any) => r.set_id === setId && r.set_code === code);
@@ -229,7 +231,9 @@ async function buildReport(
       continue;
     }
     const data = version.data;
-    const name = (data.name ?? c.title ?? "").trim();
+    // Forge names carry the curly quotes print uses; the public catalog's names are typed by
+    // players and looked up exactly (findCard), so a released name gets straight ones.
+    const name = foldQuotes((data.name ?? c.title ?? "").trim());
     if (!name) {
       blockers.push({ code: "name_missing", cardId: c.id, message: "A card has no name." });
       continue;

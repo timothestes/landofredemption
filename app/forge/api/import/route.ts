@@ -5,6 +5,7 @@ import { pgrestInList } from "@/lib/pricing/helpers";
 import { isEmptyPatch } from "@/app/forge/lib/cardSave";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 import { overwritePatch, type RowPreview } from "@/app/forge/import/overwrite";
+import { curlAll, foldQuotes } from "@/app/forge/lib/quotes";
 
 export const dynamic = "force-dynamic";
 
@@ -63,10 +64,12 @@ export async function POST(req: Request): Promise<Response> {
     .from("forge_cards")
     .select("id, title, working_snapshot, status")
     .eq("set_id", setId)
-    .filter("title", "in", pgrestInList(names)); // .in() can't take a quoted Lost Soul name
+    // A sheet types straight quotes where the card editor writes curly ones, so a row matches
+    // its card under either spelling; a miss here would import a second copy of the card.
+    .filter("title", "in", pgrestInList([...new Set(names.flatMap((n) => [n, curlAll(n), foldQuotes(n)]))])); // .in() can't take a quoted Lost Soul name
   if (existErr) return badRequest(existErr.message);
   const existingByTitle = new Map(
-    (existing ?? []).map((r: { id: string; title: string; working_snapshot: DesignCard; status: string }) => [r.title, r]),
+    (existing ?? []).map((r: { id: string; title: string; working_snapshot: DesignCard; status: string }) => [foldQuotes(r.title), r]),
   );
 
   const results: CardResult[] = await Promise.all(
@@ -95,7 +98,7 @@ export async function POST(req: Request): Promise<Response> {
       // Idempotency: a card with this title already in the target set → skip (safe re-runs),
       // unless overwrite is on — then merge what the row carries into its working draft, and
       // replace its finished image if the row has one. A row that changes nothing writes nothing.
-      const dup = existingByTitle.get(name);
+      const dup = existingByTitle.get(foldQuotes(name));
       const dupId = dup?.id;
       const patch = dup && overwritePatch(
         dup.working_snapshot ?? {},

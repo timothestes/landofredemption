@@ -147,7 +147,16 @@ describe("POST /forge/api/import finding existing cards", () => {
       overwrite: true, preview: true,
       cards: [{ name: 'Lost Soul "Invented" [Gen 1:1]', snapshot: {} }, { name: "Plain Card", snapshot: {} }],
     });
-    expect(q.filter).toHaveBeenCalledWith("title", "in", '("Lost Soul \\"Invented\\" [Gen 1:1]","Plain Card")');
+    expect(q.filter).toHaveBeenCalledWith("title", "in", '("Lost Soul \\"Invented\\" [Gen 1:1]","Lost Soul “Invented” [Gen 1:1]","Plain Card")');
+  });
+
+  // The card editor writes curly quotes into names; a sheet types straight ones.
+  it("matches a row to its card whichever kind of quote either one uses", async () => {
+    const { rpc, q } = rig([{ ...EXISTING, title: "Gideon’s Sword" }]);
+    const res = await post({ cards: [{ name: "Gideon's Sword", snapshot: { name: "Gideon's Sword" } }] });
+    expect(q.filter).toHaveBeenCalledWith("title", "in", '("Gideon\'s Sword","Gideon’s Sword")');
+    expect((await results(res))[0]).toMatchObject({ skipped: true, cardId: "card-1" });
+    expect(rpc).not.toHaveBeenCalled();
   });
 });
 
