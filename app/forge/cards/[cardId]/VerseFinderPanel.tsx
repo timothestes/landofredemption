@@ -762,8 +762,9 @@ function ChapterView({
     />
   );
 
-  const lead = excerptText.startsWith("…");
-  const trail = excerptText.endsWith("…");
+  // The excerpt may wrap its ellipsis in a quotation mark it added or kept: `“…you`, `war…”`.
+  const lead = /^[“‘]*…/.test(excerptText);
+  const trail = /…[’”]*$/.test(excerptText);
   const items: ReactNode[] = [];
   for (const row of rows) {
     items.push(

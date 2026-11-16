@@ -301,8 +301,15 @@ Input: the chapter's verses as word arrays, and the handles as
 - A trailing `…` replaces trailing `,` `;` `:` on the last kept word; sentence
   punctuation `.` `!` `?` (optionally followed by a closing quote) is kept
   (`chose.`) and no ellipsis is added after it, even mid-verse.
-- A closing quotation mark immediately after a kept sentence end is kept; an
-  opening quotation mark at the cut start is dropped.
+- A closing quotation mark immediately after a kept sentence end is kept, and
+  so is an opening quotation mark at the cut start.
+- A quotation the excerpt cuts in half gets its other end (`balanceQuotes`,
+  added 2026-11-16): one still open at the end is closed after any trailing
+  `…` (`“Enter the ark…”`), and a closing `”` with nothing open gets one `“` at
+  the very start, before a leading `…`. Nested quotations close innermost
+  first. `’` counts as a closing mark only while a `‘` is open and no letter
+  follows, and a `‘` is never added. An excerpt that sits wholly inside a
+  longer speech and carries no mark of its own is left as it is.
 - No other character is altered.
 
 `trimToFit(verses, handles, card)` (pure, same module): moves the end handle

@@ -7,6 +7,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useFocusTrap } from "@/app/collection/scan/hooks/useFocusTrap";
 import type { DesignCard, CardType, Brigade } from "@/app/forge/lib/designCard";
 import { cardRawText, CARD_TYPES, BRIGADES } from "@/app/forge/lib/designCard";
+import { foldQuotes } from "@/app/forge/lib/quotes";
 import { textFit } from "@/app/forge/lib/textFit";
 import { typeLabel, brigadeLabel } from "@/app/forge/lib/filterIcons";
 import ForgeCardFace from "@/app/forge/components/ForgeCardFace";
@@ -158,8 +159,8 @@ export default function RevealGrid({ items, currentUserId, initialCardId }: { it
   const filtered = useMemo(() => sorted.filter((it) => {
     const d = it.data;
     if (q) {
-      const needle = q.toLowerCase();
-      const hay = `${d.name ?? ""}\n${cardRawText(d)}`.toLowerCase();
+      const needle = foldQuotes(q).toLowerCase();
+      const hay = foldQuotes(`${d.name ?? ""}\n${cardRawText(d)}`).toLowerCase();
       if (!hay.includes(needle)) return false;
     }
     if (type && !(d.cardType ?? []).includes(type)) return false;
