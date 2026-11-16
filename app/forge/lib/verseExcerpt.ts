@@ -109,6 +109,35 @@ export function nearestWord(boxes: { left: number; right: number; top: number; b
   return best;
 }
 
+/** Gives a quotation the excerpt cut in half its other end, so the card never prints one
+ *  mark without its partner: a quotation still open at the end is closed, and a closing `”`
+ *  with nothing open gets one `“` at the very start. Quotations nest (“ … ‘ … “ … ” ’ ”), so
+ *  the open ones are a stack. A `“` directly inside another `“` is the source re-opening a
+ *  speech at a new paragraph, not a new quotation. `’` is also the apostrophe: it closes only
+ *  while a `‘` is open and no letter follows, and a `‘` is never invented for it. Straight
+ *  quotes are left alone. */
+export function balanceQuotes(text: string): string {
+  const open: ("“" | "‘")[] = [];
+  let prepend = false;
+  const chars = [...text];
+  chars.forEach((ch, i) => {
+    const top = open[open.length - 1];
+    if (ch === "“") {
+      if (top !== "“") open.push("“");
+    } else if (ch === "‘") {
+      if (top !== "‘") open.push("‘");
+    } else if (ch === "”") {
+      const at = open.lastIndexOf("“");
+      if (at >= 0) open.length = at;
+      else prepend = true;
+    } else if (ch === "’" && top === "‘" && !/\p{L}/u.test(chars[i + 1] ?? "")) {
+      open.pop();
+    }
+  });
+  const closers = open.reverse().map((q) => (q === "“" ? "”" : "’")).join("");
+  return (prepend ? "“" : "") + text + closers;
+}
+
 export function excerpt(verses: Verse[], h: Handles): { text: string; from: number; to: number } {
   const { rows, total } = layout(verses);
   const c = clampHandles(verses, h);
@@ -127,7 +156,6 @@ export function excerpt(verses: Verse[], h: Handles): { text: string; from: numb
   const cutEnd = lastKept.at + 1 < rowOf(lastKept.n).offset + rowOf(lastKept.n).w.length;
   const trailing = (cutEnd || /[,;:][”’"]?$/.test(last)) && !SENTENCE_END.test(last);
 
-  if (leading) parts[0] = bare;
   // The ellipsis replaces trailing punctuation and sits before a closing quote: `war,”` -> `war…”`.
   let closing = "";
   if (trailing) {
@@ -137,7 +165,7 @@ export function excerpt(verses: Verse[], h: Handles): { text: string; from: numb
     parts[parts.length - 1] = closing ? tail.slice(0, -1) : tail;
   }
   return {
-    text: (leading ? "…" : "") + parts.join(" ") + (trailing ? "…" + closing : ""),
+    text: balanceQuotes((leading ? "…" : "") + parts.join(" ") + (trailing ? "…" + closing : "")),
     from: kept[0].n,
     to: kept[kept.length - 1].n,
   };

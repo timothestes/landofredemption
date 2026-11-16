@@ -3,6 +3,7 @@
 // card page's arrows and the tests all answer the same way and can't disagree.
 
 import { BRIGADES, CARD_TYPES, cardRawText, type Brigade, type CardType } from "./designCard";
+import { foldQuotes } from "./quotes";
 import type { ForgeCardFull } from "./cards";
 import type { ReleaseInfo } from "./versions";
 
@@ -98,8 +99,8 @@ type Releases = Record<string, ReleaseInfo>;
 export function cardMatchesFilters(card: FilterableCard, filters: CardFilters, releases?: Releases): boolean {
   const s = card.snapshot ?? {};
   if (filters.q) {
-    const hay = `${card.title ?? ""}\n${cardRawText(s)}`.toLowerCase();
-    if (!hay.includes(filters.q.toLowerCase())) return false;
+    const hay = foldQuotes(`${card.title ?? ""}\n${cardRawText(s)}`).toLowerCase();
+    if (!hay.includes(foldQuotes(filters.q).toLowerCase())) return false;
   }
   if (filters.status && card.status !== filters.status) return false;
   if (filters.type && !(s.cardType ?? []).includes(filters.type)) return false;

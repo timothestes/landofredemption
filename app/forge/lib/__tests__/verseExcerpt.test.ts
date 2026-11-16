@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { excerpt, clampHandles, moveHandle, snapHandle, placeHandle, nearestWord, wholeRange, trimToFit, words, verseOverCopy } from "@/app/forge/lib/verseExcerpt";
+import { excerpt, balanceQuotes, clampHandles, moveHandle, snapHandle, placeHandle, nearestWord, wholeRange, trimToFit, words, verseOverCopy } from "@/app/forge/lib/verseExcerpt";
 import { textFit } from "@/app/forge/lib/textFit";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 
@@ -34,9 +34,44 @@ it("all of verse 8 after a 7-8 lookup is 8..8 (leading … because it opens lowe
   expect(excerpt(rev12, wholeRange(rev12, 8, 8))).toEqual({ text: "…" + rev12[1].text, from: 8, to: 8 }));
 it("a cut after a sentence end adds no ellipsis", () =>
   expect(excerpt(rev12, { start: { verse: 7, word: 0 }, end: { verse: 7, word: 15 } }).text.endsWith("dragon.")).toBe(true));
-it("drops an opening quote at the cut start and keeps a closing quote after a sentence end", () => {
+it("keeps both ends of a quotation that starts at the cut", () => {
   const v = [{ n: 1, text: "Then the Lord said to Noah, “Enter the ark, you and all your household.”" }];
-  expect(excerpt(v, { start: { verse: 1, word: 6 }, end: { verse: 1, word: 14 } }).text).toBe("…Enter the ark, you and all your household.”");
+  expect(excerpt(v, { start: { verse: 1, word: 6 }, end: { verse: 1, word: 14 } }).text).toBe("…“Enter the ark, you and all your household.”");
+});
+it("a cut inside a quotation gets the missing end: closed after the ellipsis, opened before it", () => {
+  const v = [{ n: 1, text: "Then the Lord said to Noah, “Enter the ark, you and all your household.”" }];
+  expect(excerpt(v, { start: { verse: 1, word: 0 }, end: { verse: 1, word: 9 } }).text).toBe("Then the Lord said to Noah, “Enter the ark…”");
+  expect(excerpt(v, { start: { verse: 1, word: 9 }, end: { verse: 1, word: 14 } }).text).toBe("“…you and all your household.”");
+});
+it("a quotation that runs into the next verse is closed in the first and opened in the second", () => {
+  const v = [
+    { n: 3, text: "And He said to them, “Go into all the world." },
+    { n: 4, text: "Preach the gospel to all creation.”" },
+  ];
+  expect(excerpt(v, wholeRange(v, 3, 3)).text).toBe("And He said to them, “Go into all the world.”");
+  expect(excerpt(v, wholeRange(v, 4, 4)).text).toBe("“Preach the gospel to all creation.”");
+  expect(excerpt(v, wholeRange(v, 3, 4)).text).toBe(`${v[0].text} ${v[1].text}`);
+});
+it("balanceQuotes leaves balanced and quote-free text alone, however deep it nests", () => {
+  for (const t of [
+    "In the beginning God created the heavens and the earth.",
+    "The Lord’s brothers’ house stood.",
+    "He said, “Tell them, ‘This is what the Lord says: “Return to Me.”’”",
+    "“First paragraph of a speech. “Second paragraph of the same speech.”",
+    `He said, "Go."`,
+  ]) expect(balanceQuotes(t)).toBe(t);
+});
+it("balanceQuotes closes what is still open, innermost first", () => {
+  expect(balanceQuotes("He said, “Tell them, ‘Return to Me")).toBe("He said, “Tell them, ‘Return to Me’”");
+  expect(balanceQuotes("He said, “Tell them, ‘This is what the Lord says: “Return")).toBe("He said, “Tell them, ‘This is what the Lord says: “Return”’”");
+});
+it("a possessive inside a single quotation does not close it", () => {
+  expect(balanceQuotes("“Say, ‘The Lord’s hand is on you")).toBe("“Say, ‘The Lord’s hand is on you’”");
+});
+it("opens a closing double mark that has no partner, once, and never invents a single", () => {
+  expect(balanceQuotes("…and be blameless.”")).toBe("“…and be blameless.”");
+  expect(balanceQuotes("Return to Me.’”")).toBe("“Return to Me.’”");
+  expect(balanceQuotes("the brothers’ flock")).toBe("the brothers’ flock");
 });
 it("a comma under a closing quote becomes an ellipsis before the quote", () => {
   const v = [{ n: 1, text: "“The kings of the earth waged war,” and then the end came." }];

@@ -39,6 +39,7 @@ import CopyCardImageButton from "./CopyCardImageButton";
 import RemoveFinishedButton from "./RemoveFinishedButton";
 import { FINISHED_HELP_ON, FINISHED_NOTE, PLACEHOLDER_HELP, PLACEHOLDER_NOTE, placeholderShowing } from "@/app/forge/lib/artStatus";
 import ScriptureFields from "./ScriptureFields";
+import QuoteTextarea from "./QuoteTextarea";
 
 // DESCOPE (2026-07-03): the structured template (FullModeForm) was removed from the
 // studio; it remains on disk (unused) for recovery. A card is a name + raw text +
@@ -553,9 +554,11 @@ export default function StudioEditor({
             <input autoFocus={!card.title?.trim()} value={snapshot.name ?? ""} onChange={(e) => update({ name: e.target.value })}
               placeholder="Name your card…" className="w-full rounded-md border bg-background px-3 py-2 text-lg" />
 
-            <textarea value={snapshot.rawText ?? ""} onChange={(e) => update({ rawText: e.target.value })}
-              placeholder="Type the card's special ability."
-              className="max-h-[60vh] min-h-40 w-full rounded-md border bg-background px-3 py-2 text-base [field-sizing:content] sm:text-sm" />
+            <div>
+              <QuoteTextarea value={snapshot.rawText ?? ""} onChange={(e) => update({ rawText: e.target.value })}
+                placeholder="Type the card's special ability."
+                className="max-h-[60vh] min-h-40 w-full rounded-md border bg-background px-3 py-2 text-base [field-sizing:content] sm:text-sm" />
+            </div>
 
             <ScriptureFields snapshot={snapshot} update={update} onPreview={setPreviewScripture} />
 

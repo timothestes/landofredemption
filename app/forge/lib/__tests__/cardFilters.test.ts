@@ -103,6 +103,13 @@ describe("cardMatchesFilters", () => {
     expect(cardMatchesFilters(c, f({ q: "nothing" }))).toBe(false);
   });
 
+  it("finds curly-quoted text from a search typed with straight quotes, and the reverse", () => {
+    const curly = card("Lamp", { snapshot: { rawText: "Negate an opponent’s card." } });
+    const straight = card("Lamp", { snapshot: { rawText: "Negate an opponent's card." } });
+    expect(cardMatchesFilters(curly, f({ q: "opponent's" }))).toBe(true);
+    expect(cardMatchesFilters(straight, f({ q: "opponent’s" }))).toBe(true);
+  });
+
   it("filters on status, any of a card's types, and any of its brigades", () => {
     const c = card("a", { status: "playtesting", snapshot: { cardType: ["Hero", "GE"], brigades: ["Blue", "Clay"] } });
     expect(cardMatchesFilters(c, f({ status: "playtesting" }))).toBe(true);

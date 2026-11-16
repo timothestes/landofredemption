@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
+import QuoteTextarea from "./QuoteTextarea";
 import { Button } from "@/components/ui/button";
 import type { DesignCard } from "@/app/forge/lib/designCard";
 import { canonicalRef, parseRef } from "@/app/forge/lib/scriptureRef";
@@ -21,6 +22,7 @@ export default function ScriptureFields({
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const scriptureId = useId();
 
   // Testament is never stored — it's derived from the reference. Mirror what the
   // deckbuilder's N.T./O.T. filter will see so designers get instant feedback
@@ -82,14 +84,16 @@ export default function ScriptureFields({
       </div>
 
       {/* Scripture — the verse text printed on the card */}
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium">Scripture</span>
-        <textarea
+      {/* A div, not a wrapping label: the "Make curly" line under the box is not part of its name. */}
+      <div>
+        <label htmlFor={scriptureId} className="mb-1 block text-sm font-medium">Scripture</label>
+        <QuoteTextarea
+          id={scriptureId}
           value={snapshot.scripture ?? ""}
           onChange={(e) => edit({ scripture: e.target.value || undefined })}
           placeholder="The scripture text printed on the card."
           className="h-20 w-full rounded-md border bg-background px-3 py-2 text-base sm:text-sm" />
-      </label>
+      </div>
 
       {/* Mounted only while open, so every open starts from the card's current reference. */}
       {open && (
