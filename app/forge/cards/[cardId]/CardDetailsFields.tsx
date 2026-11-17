@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   CARD_TYPES, ALIGNMENTS, CLASSES, ICONS, RARITIES, MULTI_BRIGADES, ICON_SIDES,
   toggleMultiBrigade, brigadeLabels, brigadeSides, toggleCardType, iconSide, defaultIconSide,
@@ -102,6 +102,7 @@ export default function CardDetailsFields({
   // Open on a card with no type yet, where the type is the next thing to say. Seeded once at
   // mount: choosing the type must not close the block under someone who is still filling it in.
   const [startOpen] = useState(types.length === 0);
+  const identifiersId = useId();
 
   // Collapsed once there is a type (the block is tall); the summary previews what's set
   // so the card stays readable at a glance without opening it.
@@ -274,14 +275,16 @@ export default function CardDetailsFields({
       </div>
 
       {/* Identifier(s) */}
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium">Identifier(s)</span>
+      {/* A div, not a wrapping label: the "Make curly" line under the box is not part of its name. */}
+      <div>
+        <label htmlFor={identifiersId} className="mb-1 block text-sm font-medium">Identifier(s)</label>
         <IdentifiersInput
+          id={identifiersId}
           value={snapshot.identifiers ?? []}
           onChange={(identifiers) => update({ identifiers })}
           placeholder="Comma-separated, e.g. Genesis, Patriarch"
           className="min-h-11 w-full rounded-md border bg-background px-3 py-2 text-base placeholder:text-sm sm:min-h-0 sm:text-sm" />
-      </label>
+      </div>
       </div>
     </details>
   );

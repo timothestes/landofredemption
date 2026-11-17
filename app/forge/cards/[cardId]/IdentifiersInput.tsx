@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { QuoteInput } from "./QuoteTextarea";
 
 // Comma-separated identifier list edited as free text. Like StatInput, it holds a
 // local draft so transient input isn't clobbered by the controlled value. Parsing on
@@ -11,11 +12,13 @@ import { useEffect, useState } from "react";
 // only when the model changes to something it doesn't already represent (an external
 // load/reset), never on our own commits.
 export default function IdentifiersInput({
+  id,
   value,
   onChange,
   className,
   placeholder,
 }: {
+  id?: string;
   value: string[];
   onChange: (ids: string[]) => void;
   className?: string;
@@ -30,7 +33,8 @@ export default function IdentifiersInput({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
   return (
-    <input
+    <QuoteInput
+      id={id}
       value={draft}
       onChange={(e) => {
         setDraft(e.target.value);

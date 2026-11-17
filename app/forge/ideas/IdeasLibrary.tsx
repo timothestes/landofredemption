@@ -12,6 +12,7 @@ import { typeLabel, brigadeLabel } from "@/app/forge/lib/filterIcons";
 import { noMatchCopy } from "@/app/forge/lib/cardFilters";
 import { useGridPlace } from "@/app/forge/lib/useGridPlace";
 import type { ForgeSetSummary } from "@/app/forge/lib/sets";
+import { foldQuotes } from "@/app/forge/lib/quotes";
 import { Button } from "@/components/ui/button";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 
@@ -29,7 +30,7 @@ export default function IdeasLibrary({ cards, canCreate, sets }: { cards: ForgeC
 
   const filtered = useMemo(() => cards.filter((c) => {
     const s = c.snapshot ?? {};
-    if (q && !(c.title ?? "").toLowerCase().includes(q.toLowerCase())) return false;
+    if (q && !foldQuotes(c.title ?? "").toLowerCase().includes(foldQuotes(q).toLowerCase())) return false;
     if (type && !(s.cardType ?? []).includes(type)) return false;
     if (brigade && !(s.brigades ?? []).includes(brigade)) return false;
     return true;
