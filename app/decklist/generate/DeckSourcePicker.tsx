@@ -6,6 +6,7 @@ import { loadUserDecksAction, loadDeckByIdAction, DeckData, DeckCardData } from 
 import { createClient } from "@/utils/supabase/client";
 import { getUserSafe } from "@/utils/supabase/getUserSafe";
 import { getFormatDef } from "@/lib/formats";
+import { MyDeckList } from "@/components/ui/MyDeckList";
 import { DECK_COPY } from "../scan/copy";
 import type { Source } from "./decklistText";
 
@@ -44,21 +45,6 @@ function formatToDeckType(format?: string): string | null {
   if (!format) return null;
   const fam = getFormatDef(format).family;
   return fam === "T2" ? "type_2" : fam === "Paragon" ? "paragon" : "type_1";
-}
-
-function formatDeckType(format?: string): string {
-  return getFormatDef(format).id;
-}
-
-function getDeckTypeBadgeClasses(format?: string): string {
-  const t = formatDeckType(format);
-  if (t === "T2")
-    return "px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 rounded text-[11px] font-semibold leading-none";
-  if (t === "Paragon")
-    return "px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 rounded text-[11px] font-semibold leading-none";
-  if (t === "Limited")
-    return "px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900/60 text-orange-700 dark:text-orange-300 rounded text-[11px] font-semibold leading-none";
-  return "px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded text-[11px] font-semibold leading-none";
 }
 
 interface DeckSourcePickerProps {
@@ -108,7 +94,6 @@ export default function DeckSourcePicker({
   const [loading, setLoading] = useState(false);
   const [loadingDeckId, setLoadingDeckId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
 
   // Check auth + preload deck count on mount
   useEffect(() => {
@@ -148,7 +133,6 @@ export default function DeckSourcePicker({
 
   const handleSwitchToDecks = () => {
     setMode("decks");
-    setSearchQuery("");
     setError(null);
     loadDecks();
   };
@@ -174,10 +158,6 @@ export default function DeckSourcePicker({
       setLoadingDeckId(null);
     }
   };
-
-  const filteredDecks = decks.filter((d) =>
-    d.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const showDeckOption = typeof userId === "string";
   const chip = (active: boolean) =>
@@ -291,98 +271,27 @@ export default function DeckSourcePicker({
       {/* Decks mode: inline deck picker */}
       {mode === "decks" && (
         <div className="border border-border rounded-lg overflow-hidden bg-background">
-          {/* Search */}
-          <div className="px-4 py-2.5 border-b border-border">
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-muted-foreground flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Search decks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoFocus
-                className="w-full text-sm bg-transparent border-none outline-none placeholder:text-muted-foreground text-foreground"
-              />
-            </div>
-          </div>
-
-          {/* Deck list */}
-          <div className="max-h-[17rem] overflow-y-auto">
-            {loading ? (
-              <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
-                <svg className="animate-spin mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Loading decks...
-              </div>
-            ) : error ? (
-              <div className="py-10 text-center text-sm text-red-500">{error}</div>
-            ) : filteredDecks.length === 0 ? (
-              <div className="py-10 text-center">
-                <p className="text-sm text-muted-foreground">
-                  {searchQuery ? "No decks match your search" : "No saved decks yet"}
+          <MyDeckList
+            decks={decks}
+            loading={loading}
+            error={error}
+            onPick={handleSelectDeck}
+            busyDeckId={loadingDeckId}
+            autoFocus
+            listClassName="max-h-[17rem] overflow-y-auto"
+            emptyMessage={
+              <>
+                <p className="text-sm text-muted-foreground">No saved decks yet</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Build a deck in the{" "}
+                  <a href="/decklist/card-search" className="text-blue-500 hover:underline">
+                    deck builder
+                  </a>{" "}
+                  to use it here
                 </p>
-                {!searchQuery && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Build a deck in the{" "}
-                    <a href="/decklist/card-search" className="text-blue-500 hover:underline">
-                      deck builder
-                    </a>{" "}
-                    to use it here
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div>
-                {filteredDecks.map((deck) => {
-                  const isLoadingThis = loadingDeckId === deck.id;
-                  return (
-                    <button
-                      key={deck.id}
-                      type="button"
-                      onClick={() => handleSelectDeck(deck)}
-                      disabled={!!loadingDeckId}
-                      className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border last:border-b-0 disabled:opacity-50"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-foreground truncate">
-                              {deck.name}
-                            </span>
-                            <span className={getDeckTypeBadgeClasses(deck.format)}>
-                              {formatDeckType(deck.format)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
-                            <span>{deck.card_count || 0} cards</span>
-                            {deck.updated_at && (
-                              <span>
-                                {new Date(deck.updated_at).toLocaleDateString()}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        {isLoadingThis ? (
-                          <svg className="animate-spin h-4 w-4 text-muted-foreground flex-shrink-0" viewBox="0 0 24 24" fill="none">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                          </svg>
-                        ) : (
-                          <svg className="w-4 h-4 text-muted-foreground flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+              </>
+            }
+          />
         </div>
       )}
     </div>

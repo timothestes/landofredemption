@@ -13,6 +13,7 @@ import {
 } from "./dialog";
 import { searchDecksForTournamentAction, type DeckSearchResult } from "../../app/tracker/tournaments/actions";
 import { FORMATS, normalizeFormat, normalizeTournamentFormat } from "../../lib/formats";
+import { FormatBadge } from "./FormatBadge";
 
 interface AttachDeckDialogProps {
   open: boolean;
@@ -23,21 +24,6 @@ interface AttachDeckDialogProps {
   // "attach anything," matching today's ungated behavior (spec §6).
   tournamentFormat?: string | null;
   onSelect: (deck: DeckSearchResult) => void;
-}
-
-function getDeckTypeBadgeClasses(format?: string | null): string {
-  const id = normalizeFormat(format);
-  const base = "min-w-[3.25rem] text-center inline-block px-1.5 py-0.5 rounded text-xs font-medium";
-  if (id === "T2") {
-    return `${base} bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200`;
-  }
-  if (id === "Paragon") {
-    return `${base} bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200`;
-  }
-  if (id === "Limited") {
-    return `${base} bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200`;
-  }
-  return `${base} bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200`;
 }
 
 // Whether `deck` is attachable to a tournament normalized to `tf`, and if not,
@@ -229,9 +215,7 @@ export default function AttachDeckDialog({
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{deck.name}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className={getDeckTypeBadgeClasses(deck.format)}>
-                          {FORMATS[normalizeFormat(deck.format)].badge}
-                        </span>
+                        <FormatBadge format={deck.format} className="min-w-[3.25rem]" />
                         <span>{deck.card_count} cards</span>
                         {deck.username && deck.username !== "You" && (
                           <span className="truncate">by {deck.username}</span>
