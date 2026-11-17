@@ -10,25 +10,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { getFormatDef } from "@/lib/formats";
+import { MyDeckList } from "@/components/ui/MyDeckList";
 
 // Helper function to normalize deck format display
 function formatDeckType(format?: string): string {
   return getFormatDef(format).id;
-}
-
-// Helper function to get badge colors based on deck type
-function getDeckTypeBadgeClasses(format?: string): string {
-  const deckType = formatDeckType(format);
-  if (deckType === "T2") {
-    return "px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded text-xs font-semibold";
-  }
-  if (deckType === "Paragon") {
-    return "px-2 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 rounded text-xs font-semibold";
-  }
-  if (deckType === "Limited") {
-    return "px-2 py-0.5 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded text-xs font-semibold";
-  }
-  return "px-2 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs font-semibold";
 }
 
 interface LoadDeckModalProps {
@@ -55,7 +41,6 @@ export default function LoadDeckModal({
   const [decks, setDecks] = useState<DeckListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
 
   // Load user's decks
   useEffect(() => {
@@ -90,9 +75,8 @@ export default function LoadDeckModal({
     loadDecks();
   }, [listDecks]);
 
-  const filteredDecks = decks.filter(deck =>
-    deck.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-    (!matchFormat || formatDeckType(deck.format) === formatDeckType(matchFormat))
+  const formatDecks = decks.filter(deck =>
+    !matchFormat || formatDeckType(deck.format) === formatDeckType(matchFormat)
   );
 
   const handleDeckClick = (deckId: string) => {
@@ -142,74 +126,20 @@ export default function LoadDeckModal({
           </div>
         </DialogHeader>
 
-        {/* Search Bar */}
-        <div className="px-6 py-3 border-b border-border">
-          <input
-            type="text"
-            placeholder="Search decks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
+        {/* Search + deck list */}
+        <div className="flex-1 min-h-0 flex flex-col">
+          <MyDeckList
+            decks={formatDecks}
+            loading={loading}
+            error={error}
+            onPick={(d) => handleDeckClick(d.id)}
+            listClassName="flex-1 overflow-y-auto"
+            emptyMessage={
+              <p className="text-sm text-muted-foreground">
+                {matchFormat ? `No ${formatDeckType(matchFormat)} decks found` : "No saved decks found"}
+              </p>
+            }
           />
-        </div>
-
-        {/* Deck List */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          {loading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading decks...</div>
-          ) : error ? (
-            <div className="text-center py-8 text-red-500">{error}</div>
-          ) : filteredDecks.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {searchQuery
-                ? "No decks match your search"
-                : matchFormat
-                  ? `No ${formatDeckType(matchFormat)} decks found`
-                  : "No saved decks found"}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {filteredDecks.map((deck) => (
-                <button
-                  key={deck.id}
-                  onClick={() => handleDeckClick(deck.id)}
-                  className="w-full text-left p-4 bg-muted/50 hover:bg-muted rounded-lg border border-border transition-colors group"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                          {deck.name}
-                        </h4>
-                        <span className={getDeckTypeBadgeClasses(deck.format)}>
-                          {formatDeckType(deck.format)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                          </svg>
-                          {deck.card_count || 0} cards
-                        </span>
-                        <span className="text-xs">
-                          {deck.updated_at && new Date(deck.updated_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                    <svg
-                      className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Footer */}

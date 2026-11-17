@@ -6,6 +6,7 @@ import { loadUserDecksAction, loadPublicDeckAction } from "@/app/decklist/action
 import { searchDecksForTournamentAction, type DeckSearchResult } from "@/app/tracker/tournaments/actions";
 import { STORAGE_KEY } from "@/app/decklist/scan/lib/deckTrayReducer";
 import { FORMATS, normalizeFormat, type FormatId } from "@/lib/formats";
+import { FormatBadge } from "@/components/ui/FormatBadge";
 import PhotoDeckSource from "./PhotoDeckSource";
 
 interface MyDeck {
@@ -44,15 +45,6 @@ function isCompatible(deckFormat: string | null | undefined, tf: FormatId | "Oth
   return df === tf || (tf === "Unlimited" && df === "Limited");
 }
 
-function badgeClasses(format?: string | null) {
-  const id = normalizeFormat(format);
-  const base = "min-w-[2.5rem] flex-shrink-0 text-center inline-block px-1.5 py-0.5 rounded text-xs font-medium";
-  if (id === "T2") return `${base} bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200`;
-  if (id === "Paragon") return `${base} bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200`;
-  if (id === "Limited") return `${base} bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200`;
-  return `${base} bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200`;
-}
-
 function DeckRow({
   name,
   format,
@@ -70,7 +62,7 @@ function DeckRow({
       onClick={onClick}
       className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-muted"
     >
-      <span className={badgeClasses(format)}>{FORMATS[normalizeFormat(format)].badge}</span>
+      <FormatBadge format={format} className="min-w-[2.5rem] flex-shrink-0" />
       <span className="min-w-0 flex-1 truncate text-foreground">{name}</span>
       {subtitle && <span className="flex-shrink-0 text-xs text-muted-foreground">{subtitle}</span>}
     </button>
