@@ -31,6 +31,7 @@ import { ALL_CARDS } from "../data/cardIndex";
 import { CardThumb } from "../components/CardThumb";
 import { useHoverPreview } from "../hooks/useHoverPreview";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { Dialog, DialogContent, DialogBody } from "@/components/ui/dialog";
 import type { Card } from "../utils";
 import {
   POOL_ID,
@@ -266,11 +267,14 @@ function ExportModal({
   }, [state, title]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div
-        className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-border bg-card p-4 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Dialog
+      open={true}
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+    >
+      <DialogContent className="max-w-3xl">
+        <DialogBody className="p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Tier list image</h2>
           <button
@@ -316,13 +320,14 @@ function ExportModal({
             </p>
           </>
         )}
-      </div>
-    </div>
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Page                                                               */
+/*  Page                                                             */
 /* ------------------------------------------------------------------ */
 
 export default function TierListClient() {

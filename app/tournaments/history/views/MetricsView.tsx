@@ -7,6 +7,7 @@ import type { ViewId } from "../NavTabs";
 import { SectionTitle } from "../components/SectionTitle";
 import { EmptyState } from "../components/EmptyState";
 import { DataCoverageModal } from "../components/DataCoverageModal";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   AM_MODES,
   AM_COLS,
@@ -1090,14 +1091,13 @@ export function MetricsView({ setView }: MetricsViewProps) {
 
       {/* Format multi-select modal */}
       {state.fmtModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          onClick={(e) => {
-            if (e.target === e.currentTarget)
-              dispatch({ type: "CLOSE_FMT_MODAL" });
+        <Dialog
+          open={true}
+          onOpenChange={(o) => {
+            if (!o) dispatch({ type: "CLOSE_FMT_MODAL" });
           }}
         >
-          <div className="bg-card border border-border rounded-xl shadow-xl p-5 w-full max-w-sm mx-4">
+          <DialogContent className="rounded-xl p-5">
             <h3 className="text-sm font-semibold text-foreground mb-3">
               Select Formats
             </h3>
@@ -1162,8 +1162,8 @@ export function MetricsView({ setView }: MetricsViewProps) {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

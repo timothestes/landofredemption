@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
+import { Dialog, DialogContent, DialogBody } from "../../../components/ui/dialog";
 import TopNav from "../../../components/top-nav";
 import { createClient } from "../../../utils/supabase/client";
 import { getUserSafe } from "../../../utils/supabase/getUserSafe";
@@ -1325,12 +1326,14 @@ export default function AdminRegistrationsPage() {
 
         {/* Email Modal */}
         {showEmailModal && (
-          <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={(e) => { if (e.target === e.currentTarget && !sending) handleCloseEmailModal(); }}
+          <Dialog
+            open={true}
+            onOpenChange={(o) => {
+              if (!o && !sending) handleCloseEmailModal();
+            }}
           >
-            <div className="bg-card border rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
-              <div className="p-6">
+            <DialogContent className="max-w-2xl">
+              <DialogBody className="p-6">
                 {emailResult?.type === "success" ? (
                   <div className="text-center py-6 space-y-5">
                     <div className="w-14 h-14 bg-green-500/10 dark:bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
@@ -1417,9 +1420,9 @@ export default function AdminRegistrationsPage() {
                     </div>
                   </>
                 )}
-              </div>
-            </div>
-          </div>
+              </DialogBody>
+            </DialogContent>
+          </Dialog>
         )}
 
         {/* Tournament Modal */}

@@ -17,6 +17,7 @@ import { useTradeLogState } from "./hooks/useTradeLogState";
 import { useShowPrices } from "../../hooks/useShowPrices";
 import { compareCardsDefault } from "@/lib/cards/defaultSort";
 import { PARAGON_EXCLUDED_SETS } from "@/lib/formats";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const BATCH_SIZE = 60;
 const RARITY_OPTIONS = ["Common", "Rare", "Ultra Rare", "Promo"];
@@ -902,14 +903,13 @@ export default function CollectionClient({
 
       {/* Clear confirm */}
       {showClearConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          onClick={() => setShowClearConfirm(false)}
+        <Dialog
+          open={true}
+          onOpenChange={(o) => {
+            if (!o) setShowClearConfirm(false);
+          }}
         >
-          <div
-            className="bg-background border border-border rounded-xl w-full max-w-sm p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <DialogContent className="rounded-xl p-5">
             <h2 className="text-lg font-semibold mb-2">Clear collection?</h2>
             <p className="text-sm text-muted-foreground mb-4">
               This removes all {stats.uniqueOwned.toLocaleString()} cards from your
@@ -935,8 +935,8 @@ export default function CollectionClient({
                 Download backup &amp; clear
               </button>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

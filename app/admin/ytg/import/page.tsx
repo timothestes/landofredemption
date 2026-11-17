@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 // Mirrors lib/shopify/importSet.ts. Inlined (not imported) because that
 // module pulls server-only deps (Supabase admin client, Shopify token) into
@@ -631,11 +632,13 @@ export default function AdminImportSetPage() {
       </div>
 
       {confirmOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-          onClick={(e) => { if (e.target === e.currentTarget && !running) setConfirmOpen(false); }}
+        <Dialog
+          open={true}
+          onOpenChange={(o) => {
+            if (!o && !running) setConfirmOpen(false);
+          }}
         >
-          <div className="bg-card border rounded-lg shadow-lg p-6 w-full max-w-md">
+          <DialogContent className="p-6 max-w-md">
             <h2 className="text-xl font-semibold mb-3">Confirm import</h2>
             <div className="space-y-2 mb-6">
               <p className="text-sm">{confirmImportIntro(createCount, updateCount, includedCount)}</p>
@@ -662,8 +665,8 @@ export default function AdminImportSetPage() {
                 Import {includedCount} card{includedCount === 1 ? "" : "s"}
               </Button>
             </div>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
