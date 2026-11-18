@@ -36,6 +36,7 @@ import {
   normalizeHref,
   prefixLines,
   replaceOnce,
+  toggleReveal,
   wrapSelection,
   type EditResult,
 } from "../lib/textarea";
@@ -153,6 +154,7 @@ export default function PostEditor({
 
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
+  const spoilerInput = useRef<HTMLInputElement>(null);
   const audioInput = useRef<HTMLInputElement>(null);
   const coverInput = useRef<HTMLInputElement>(null);
   const coverZone = useRef<HTMLDivElement>(null);
@@ -356,6 +358,11 @@ export default function PostEditor({
         return setDeckPickerOpen(true);
       case "image":
         return imageInput.current?.click();
+      case "spoiler": {
+        // On an image's line: hide or show that image. Anywhere else: upload one hidden.
+        const r = toggleReveal(body, sel);
+        return r ? applyEdit(r) : spoilerInput.current?.click();
+      }
       case "audio":
         return audioInput.current?.click();
     }
@@ -410,7 +417,7 @@ export default function PostEditor({
       .finally(() => setUploadCount((n) => n - 1));
   };
 
-  const onPickMedia = async (kind: UploadKind, files: FileList | null) => {
+  const onPickMedia = async (kind: UploadKind, files: FileList | null, reveal = false) => {
     const file = files?.[0];
     if (!file) return;
     // Before ensureId(): a bad file on a new post must not create a draft row.
@@ -435,7 +442,7 @@ export default function PostEditor({
       ({ url }) => {
         // A camera name ("IMG_4821") would ship as the published alt text.
         const label = kind === "image" ? altFromFileName(file.name) : file.name.replace(/\.[^.]+$/, "");
-        return kind === "image" ? `![${label}](${url})` : `[${label}](${url})`;
+        return kind === "image" ? `![${label}](${url}${reveal ? ' "reveal"' : ""})` : `[${label}](${url})`;
       },
       (e: unknown) => {
         fail(e instanceof Error ? e.message : "Upload failed");
@@ -1285,6 +1292,16 @@ export default function PostEditor({
         className="hidden"
         onChange={(e) => {
           void onPickMedia("image", e.target.files);
+          e.target.value = "";
+        }}
+      />
+      <input
+        ref={spoilerInput}
+        type="file"
+        accept={ACCEPT.image}
+        className="hidden"
+        onChange={(e) => {
+          void onPickMedia("image", e.target.files, true);
           e.target.value = "";
         }}
       />
