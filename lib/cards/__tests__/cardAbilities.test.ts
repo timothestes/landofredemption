@@ -580,8 +580,8 @@ describe('matchesDeckCard rules', () => {
 describe('generated search / exchange registry', () => {
   const entries = Object.entries(CARD_ABILITIES).flatMap(([card, list]) =>
     list
-      .filter((a): a is Extract<typeof a, { type: 'search_deck' | 'exchange_with_deck' | 'search_reserve' | 'exchange_with_reserve' }> =>
-        a.type === 'search_deck' || a.type === 'exchange_with_deck' || a.type === 'search_reserve' || a.type === 'exchange_with_reserve')
+      .filter((a): a is Extract<typeof a, { type: 'search_deck' | 'exchange_with_deck' | 'search_reserve' | 'exchange_with_reserve' | 'search_discard' }> =>
+        a.type === 'search_deck' || a.type === 'exchange_with_deck' || a.type === 'search_reserve' || a.type === 'exchange_with_reserve' || a.type === 'search_discard')
       .map(a => ({ card, a })));
 
   it('covers the scanned card pool', () => {
@@ -589,6 +589,22 @@ describe('generated search / exchange registry', () => {
     expect(entries.filter(e => e.a.type === 'exchange_with_deck').length).toBeGreaterThan(10);
     expect(entries.filter(e => e.a.type === 'search_reserve').length).toBeGreaterThan(200);
     expect(entries.filter(e => e.a.type === 'exchange_with_reserve').length).toBeGreaterThan(10);
+    expect(entries.filter(e => e.a.type === 'search_discard').length).toBeGreaterThan(100);
+  });
+
+  it('discard pile clauses get the Discard window, after the deck and Reserve items', () => {
+    // "Search deck or discard pile for a good Dominant."
+    expect(CARD_ABILITIES['The Second Coming'].map(a => a.type)).toEqual(['search_deck', 'search_discard']);
+    const secondComing = CARD_ABILITIES['The Second Coming'][1];
+    expect(secondComing).toMatchObject({ type: 'search_discard', target: 'a good Dominant' });
+    expect(abilityLabel(secondComing)).toBe('Search discard pile for a good Dominant…');
+    // "…take a good gold Gospel Enhancement from discard pile or Reserve."
+    // The hand-written "reserve the top card of a deck" item stays first.
+    expect(CARD_ABILITIES['Bartimaeus (2022 - Regional)'].map(a => a.type)).toEqual(['reserve_opponent_deck', 'search_reserve', 'search_discard']);
+    expect(CARD_ABILITIES['Bartimaeus (2022 - Regional)'][2]).toMatchObject({ type: 'search_discard', target: 'a good gold Gospel Enhancement' });
+    // Exchanges have no discard window: The Watchman ("…in deck, territory,
+    // discard pile or Reserve") keeps only its deck and Reserve exchanges.
+    expect(CARD_ABILITIES['The Watchman (Promo)'].map(a => a.type)).not.toContain('search_discard');
   });
 
   it('Reserve clauses get the Reserve window; "deck or Reserve" gets both, deck first', () => {
@@ -680,7 +696,7 @@ describe('generated search / exchange registry', () => {
     const actual: Record<string, number> = {};
     for (const [card, list] of Object.entries(DECK_SEARCH_ABILITIES)) {
       list.forEach((a, i) => {
-        if (a.type !== 'search_deck' && a.type !== 'exchange_with_deck' && a.type !== 'search_reserve' && a.type !== 'exchange_with_reserve') return;
+        if (a.type !== 'search_deck' && a.type !== 'exchange_with_deck' && a.type !== 'search_reserve' && a.type !== 'exchange_with_reserve' && a.type !== 'search_discard') return;
         a.match.forEach((m, j) => { actual[`${card} #${i}.${j}`] = count(m); });
       });
     }
@@ -963,7 +979,7 @@ describe('star abilities are fireable from hand', () => {
     expect(abilities, `${name} missing from registry`).toBeDefined();
     // Generated search/exchange entries encode the card's in-play half (The
     // Three Visitors' "(Hero) exchange this Hero…"), not its STAR.
-    for (const a of abilities.filter(a => !['search_deck', 'exchange_with_deck', 'search_reserve', 'exchange_with_reserve'].includes(a.type))) {
+    for (const a of abilities.filter(a => !['search_deck', 'exchange_with_deck', 'search_reserve', 'exchange_with_reserve', 'search_discard'].includes(a.type))) {
       expect(a.sourceZones ?? DEFAULT_ABILITY_SOURCE_ZONES).toContain('hand');
     }
   });

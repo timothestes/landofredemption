@@ -1617,12 +1617,13 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
 
   // ---- Zone browse overlay state ----
   const [browseMyZone, setBrowseMyZone] = useState<string | null>(null);
-  // The search_reserve ability that opened your Reserve ("take a clay card
-  // from Reserve"); never outlives that Reserve window.
-  const [reserveSearchAbility, setReserveSearchAbility] = useState<Extract<CardAbility, { type: 'search_reserve' }> | null>(null);
+  // The search_reserve / search_discard ability that opened your Reserve or
+  // Discard ("take a clay card from Reserve"); never outlives that window.
+  const [pileSearchAbility, setPileSearchAbility] = useState<Extract<CardAbility, { type: 'search_reserve' | 'search_discard' }> | null>(null);
+  const pileSearchZone = pileSearchAbility?.type === 'search_discard' ? 'discard' : 'reserve';
   useEffect(() => {
-    if (browseMyZone !== 'reserve') setReserveSearchAbility(null);
-  }, [browseMyZone]);
+    if (browseMyZone !== pileSearchZone) setPileSearchAbility(null);
+  }, [browseMyZone, pileSearchZone]);
   const [browseOpponentZone, setBrowseOpponentZone] = useState<string | null>(null);
   /** Touch: the "cards in play" sheet, and the full-screen card reader. */
   const [boardBrowseOpen, setBoardBrowseOpen] = useState(false);
@@ -2307,10 +2308,10 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         open();
         return;
       }
-      if (ability?.type === 'search_reserve') {
-        // Your own Reserve browse, opened narrowed to the cards this ability can take.
-        setReserveSearchAbility(ability);
-        setBrowseMyZone('reserve');
+      if (ability?.type === 'search_reserve' || ability?.type === 'search_discard') {
+        // Your own Reserve / Discard browse, opened narrowed to the cards this ability can take.
+        setPileSearchAbility(ability);
+        setBrowseMyZone(ability.type === 'search_discard' ? 'discard' : 'reserve');
         return;
       }
       if (ability?.type === 'look_at_opponent_deck') {
@@ -11174,7 +11175,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             key={browseMyZone}
             zoneId={browseMyZone as ZoneId}
             onClose={() => setBrowseMyZone(null)}
-            filter={browseMyZone === 'reserve' && reserveSearchAbility ? deckCardFilter(reserveSearchAbility) : undefined}
+            filter={pileSearchAbility && browseMyZone === pileSearchZone ? deckCardFilter(pileSearchAbility) : undefined}
             onStartDrag={modalStartDrag}
             onStartMultiDrag={modalStartMultiDrag}
             didDragRef={modalDidDragRef}
