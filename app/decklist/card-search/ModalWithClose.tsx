@@ -857,13 +857,15 @@ export default function ModalWithClose({
   const quantityInDeck = getCardQuantity ? getCardQuantity(modalCard.name, modalCard.set, 'main') : 0;
   const quantityInReserve = getCardQuantity ? getCardQuantity(modalCard.name, modalCard.set, 'reserve') : 0;
 
-  // Mobile footer needs row 2 when minus buttons are showing or the collection stepper is present.
+  // Mobile footer: with deck controls it is always two rows (add/remove buttons, then
+  // collection stepper + Shop), so the footer never changes height when the first copy
+  // is added or the collection loads late, and the add buttons stay under the thumb.
+  // Without deck controls Shop sits in row 1 and row 2 is only for the collection stepper.
   // Versions/rulings moved to the header details sheet, so they no longer force a taller footer.
-  // Minus buttons only push Shop down to row 2, and a Forge card has no Shop.
-  const hasMinusButtons = quantityInDeck > 0 || quantityInReserve > 0;
+  const hasDeckControls = !!(onAddCard && onRemoveCard && getCardQuantity);
   const hasDuplicates = duplicateSiblings && duplicateSiblings.length > 0;
   const hasCollection = !!(collectionQuantities && onAdjustCollection);
-  const needsFooterRow2 = (hasMinusButtons && !forgeCard) || hasCollection;
+  const needsFooterRow2 = hasDeckControls || hasCollection;
 
   return (
     <div
@@ -1060,28 +1062,26 @@ export default function ModalWithClose({
         {/* Mobile Footer — pinned above bottom nav, fixed 2-row layout */}
         <div className="absolute bottom-[calc(3.5rem+env(safe-area-inset-bottom))] left-0 right-0 px-3 py-2 border-t border-border bg-card/95 backdrop-blur-sm">
           {/* Row 1: Deck controls or public metadata */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {onAddCard && onRemoveCard && getCardQuantity && (
               <>
-                {/* Main deck group */}
+                {/* Main deck group. Each "−" is always laid out (disabled at 0) so the
+                    first add doesn't slide the + button out from under the thumb; the
+                    tighter px-2 / gap-1 spacing keeps the three groups on a 360px phone. */}
                 <div className="flex flex-shrink-0">
-                  {getCardQuantity(modalCard.name, modalCard.set, 'main') > 0 && (
-                    <button
-                      onClick={() => onRemoveCard(modalCard.name, modalCard.set, 'main')}
-                      className="h-10 w-8 flex items-center justify-center rounded-l-lg bg-primary active:bg-primary/90 text-primary-foreground"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
-                      </svg>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => onRemoveCard(modalCard.name, modalCard.set, 'main')}
+                    disabled={getCardQuantity(modalCard.name, modalCard.set, 'main') === 0}
+                    aria-label="Remove one from main deck"
+                    className="h-10 w-8 flex items-center justify-center rounded-l-lg bg-primary active:bg-primary/90 text-primary-foreground disabled:text-primary-foreground/40"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
+                    </svg>
+                  </button>
                   <button
                     onClick={() => onAddCard(modalCard, 'main')}
-                    className={`h-10 px-3 bg-primary active:bg-primary/90 text-primary-foreground flex items-center gap-1.5 font-medium text-sm transition-colors ${
-                      getCardQuantity(modalCard.name, modalCard.set, 'main') > 0
-                        ? 'rounded-r-lg border-l border-primary/30'
-                        : 'rounded-lg'
-                    }`}
+                    className="h-10 px-2 bg-primary active:bg-primary/90 text-primary-foreground flex items-center gap-1 font-medium text-sm transition-colors rounded-r-lg border-l border-primary/30"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1097,23 +1097,19 @@ export default function ModalWithClose({
                 </div>
                 {/* Reserve group */}
                 <div className="flex flex-shrink-0">
-                  {getCardQuantity(modalCard.name, modalCard.set, 'reserve') > 0 && (
-                    <button
-                      onClick={() => onRemoveCard(modalCard.name, modalCard.set, 'reserve')}
-                      className="h-10 w-8 flex items-center justify-center rounded-l-lg bg-amber-700 active:bg-amber-800 text-white"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
-                      </svg>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => onRemoveCard(modalCard.name, modalCard.set, 'reserve')}
+                    disabled={getCardQuantity(modalCard.name, modalCard.set, 'reserve') === 0}
+                    aria-label="Remove one from reserve"
+                    className="h-10 w-8 flex items-center justify-center rounded-l-lg bg-amber-700 active:bg-amber-800 text-white disabled:text-white/40"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
+                    </svg>
+                  </button>
                   <button
                     onClick={() => onAddCard(modalCard, 'reserve')}
-                    className={`h-10 px-3 bg-amber-600 active:bg-amber-700 text-white flex items-center gap-1.5 font-medium text-sm transition-colors ${
-                      getCardQuantity(modalCard.name, modalCard.set, 'reserve') > 0
-                        ? 'rounded-r-lg border-l border-amber-500/30'
-                        : 'rounded-lg'
-                    }`}
+                    className="h-10 px-2 bg-amber-600 active:bg-amber-700 text-white flex items-center gap-1 font-medium text-sm transition-colors rounded-r-lg border-l border-amber-500/30"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1129,23 +1125,19 @@ export default function ModalWithClose({
                 </div>
                 {/* Maybeboard group */}
                 <div className="flex flex-shrink-0">
-                  {getCardQuantity(modalCard.name, modalCard.set, 'maybeboard') > 0 && (
-                    <button
-                      onClick={() => onRemoveCard(modalCard.name, modalCard.set, 'maybeboard')}
-                      className="h-10 w-8 flex items-center justify-center rounded-l-lg bg-violet-700 active:bg-violet-800 text-white"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
-                      </svg>
-                    </button>
-                  )}
+                  <button
+                    onClick={() => onRemoveCard(modalCard.name, modalCard.set, 'maybeboard')}
+                    disabled={getCardQuantity(modalCard.name, modalCard.set, 'maybeboard') === 0}
+                    aria-label="Remove one from maybeboard"
+                    className="h-10 w-8 flex items-center justify-center rounded-l-lg bg-violet-700 active:bg-violet-800 text-white disabled:text-white/40"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
+                    </svg>
+                  </button>
                   <button
                     onClick={() => onAddCard(modalCard, 'maybeboard')}
-                    className={`h-10 px-3 bg-violet-600 active:bg-violet-700 text-white flex items-center gap-1.5 font-medium text-sm transition-colors ${
-                      getCardQuantity(modalCard.name, modalCard.set, 'maybeboard') > 0
-                        ? 'rounded-r-lg border-l border-violet-500/30'
-                        : 'rounded-lg'
-                    }`}
+                    className="h-10 px-2 bg-violet-600 active:bg-violet-700 text-white flex items-center gap-1 font-medium text-sm transition-colors rounded-r-lg border-l border-violet-500/30"
                     title="Add to maybeboard"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -1200,9 +1192,10 @@ export default function ModalWithClose({
               );
             })()}
           </div>
-          {/* Row 2: Collection stepper + Shop — when minus buttons show or collection is tracked */}
+          {/* Row 2: Collection stepper + Shop — always with deck controls, else when collection is tracked.
+              Fixed height so the footer keeps its size even when the row is empty (a Forge card has no Shop). */}
           {needsFooterRow2 && (
-            <div className="flex items-center justify-between mt-1.5">
+            <div className="flex items-center justify-between mt-1.5 h-9">
               <div className="flex items-center gap-2">
                 {/* Collection stepper — compact sky pill */}
                 {hasCollection && (() => {
