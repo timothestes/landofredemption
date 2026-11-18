@@ -666,19 +666,23 @@ export default function TournamentPage({
   useEffect(() => {
     if (tournament) {
       (async () => {
-        const client = createClient();
+        // A tournament that hasn't started has no current round; querying
+        // round_number=eq.null makes Postgres reject "null" as an integer.
+        if (tournament.current_round != null) {
+          const client = createClient();
 
-        const { data } = await client
-          .from("rounds")
-          .select("round_number, started_at, ended_at, is_completed")
-          .eq("tournament_id", tournament.id)
-          .eq("round_number", tournament.current_round)
-          .maybeSingle();
+          const { data } = await client
+            .from("rounds")
+            .select("round_number, started_at, ended_at, is_completed")
+            .eq("tournament_id", tournament.id)
+            .eq("round_number", tournament.current_round)
+            .maybeSingle();
 
-        if (data) {
-          setLatestRound(data);
-          if (!data.is_completed && data.started_at && !data.ended_at) {
-            setIsRoundActive(true);
+          if (data) {
+            setLatestRound(data);
+            if (!data.is_completed && data.started_at && !data.ended_at) {
+              setIsRoundActive(true);
+            }
           }
         }
 
