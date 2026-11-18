@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { GameCard } from '@/app/shared/types/gameCard';
 import { getCardImageUrl, CARD_IMAGE_ASPECT_RATIO } from '@/app/shared/utils/cardImageUrl';
 import { deriveTestamentAndGospel } from '@/app/decklist/card-search/data/testament';
@@ -27,11 +27,20 @@ interface ReserveEnhancementModalProps {
   kindLabel: string;
   onConfirm: (instanceId: string) => void;
   onCancel: () => void;
+  /** Drag-out handlers (same infra the zone-browse modals use). When given,
+   *  a card can be dragged onto the board; a plain click still selects it. */
+  onStartDrag?: (card: GameCard, imageUrl: string, e: React.PointerEvent) => void;
+  didDragRef?: React.MutableRefObject<boolean>;
+  /** True while a card from this modal is being dragged. The modal fades and
+   *  goes pointer-through so the drop reaches the board, and closes when the
+   *  drag ends — the card has been taken by hand. */
+  isDragActive?: boolean;
 }
 
 /**
  * Picker for `take_enhancement_from_reserve` (Storehouse): choose one
- * Enhancement from your Reserve; on confirm it goes to your hand.
+ * Enhancement from your Reserve; on confirm it goes to your hand. A card can
+ * also be dragged straight to any zone, like the other browse windows.
  */
 export function ReserveEnhancementModal({
   cards,
@@ -39,8 +48,43 @@ export function ReserveEnhancementModal({
   kindLabel,
   onConfirm,
   onCancel,
+  onStartDrag,
+  didDragRef,
+  isDragActive,
 }: ReserveEnhancementModalProps) {
   const [selected, setSelected] = useState<string | null>(null);
+  const pointerDownCardRef = useRef<string | null>(null);
+
+  // Close once a drag-out ends (isDragActive true → false). Refs keep the
+  // effect keyed to that transition alone, not to callback identity.
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
+  const prevDragActive = useRef(false);
+  useEffect(() => {
+    if (prevDragActive.current && !isDragActive) {
+      if (didDragRef) didDragRef.current = false;
+      onCancelRef.current();
+    }
+    prevDragActive.current = !!isDragActive;
+  }, [isDragActive, didDragRef]);
+
+  const handlePointerDown = (card: GameCard, e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    pointerDownCardRef.current = card.instanceId;
+    if (didDragRef) didDragRef.current = false;
+    onStartDrag?.(card, getCardImageUrl(card.cardImgFile), e);
+  };
+
+  // Only a click (no drag) on the same card selects it.
+  const handlePointerUp = (card: GameCard) => {
+    if (pointerDownCardRef.current !== card.instanceId) return;
+    pointerDownCardRef.current = null;
+    if (didDragRef?.current) {
+      didDragRef.current = false;
+      return;
+    }
+    setSelected(card.instanceId);
+  };
 
   // Esc closes.
   useEffect(() => {
@@ -65,6 +109,8 @@ export function ReserveEnhancementModal({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        // Pointer-through while dragging so the drop reaches the board below.
+        pointerEvents: isDragActive ? 'none' : 'auto',
       }}
     >
       <div
@@ -78,6 +124,9 @@ export function ReserveEnhancementModal({
           display: 'flex',
           flexDirection: 'column',
           boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
+          opacity: isDragActive ? 0.15 : 1,
+          pointerEvents: isDragActive ? 'none' : 'auto',
+          transition: 'opacity 0.2s ease',
         }}
         onContextMenu={(e) => e.preventDefault()}
       >
@@ -121,10 +170,15 @@ export function ReserveEnhancementModal({
                 return (
                   <div
                     key={card.instanceId}
-                    onClick={() => setSelected(card.instanceId)}
+                    onPointerDown={(e) => handlePointerDown(card, e)}
+                    onPointerUp={() => handlePointerUp(card)}
                     onDoubleClick={() => onConfirm(card.instanceId)}
                     title={card.cardName}
-                    style={{ position: 'relative', cursor: 'pointer' }}
+                    style={{
+                      position: 'relative',
+                      cursor: onStartDrag ? 'grab' : 'pointer',
+                      touchAction: onStartDrag ? 'none' : undefined,
+                    }}
                   >
                     {imageUrl ? (
                       <img
