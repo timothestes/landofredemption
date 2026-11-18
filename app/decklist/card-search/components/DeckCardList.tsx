@@ -4,6 +4,7 @@ import { DeckCard, DeckZone } from "../types/deck";
 import { Card } from "../utils";
 import { CardThumb } from "./CardThumb";
 import { useCardPrices } from "../hooks/useCardPrices";
+import { isForgeCard } from "@/app/forge/lib/deckAdapter";
 import { DeckSelectionContext, selectionKey } from "./DeckSelectionContext";
 
 /**
@@ -485,15 +486,16 @@ export default function DeckCardList({
                 </div>
               </div>
             </div>
-            {/* Price label below card */}
-            {showPrices && (() => {
+            {/* Price label below card. Holds its height before /api/prices answers, so
+                rows and their −/+ buttons don't drop when prices land. A Forge card never has a price. */}
+            {showPrices && !isForgeCard(card) && (() => {
               const priceKey = `${card.name}|${card.set}|${card.imgFile}`;
               const priceInfo = getPrice(priceKey);
-              return priceInfo ? (
-                <div className="text-[10px] text-green-600 dark:text-green-400 text-center mt-0.5 tabular-nums font-medium truncate">
-                  ${priceInfo.price.toFixed(2)}
+              return (
+                <div className="h-4 leading-4 text-[10px] text-green-600 dark:text-green-400 text-center mt-0.5 tabular-nums font-medium truncate">
+                  {priceInfo ? `$${priceInfo.price.toFixed(2)}` : null}
                 </div>
-              ) : null;
+              );
             })()}
             </DraggableRow>
           );

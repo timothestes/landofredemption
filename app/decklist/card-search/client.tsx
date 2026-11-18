@@ -19,6 +19,7 @@ import {
 import { DeckBuilderConfig, PUBLIC_BUILDER_CONFIG, BuilderConfigProvider } from "./builderConfig";
 import { readStickyFilters, writeStickyFilters, type AltArtMode } from "./stickyFilters";
 import { hasAbReprint } from "@/lib/cards/lookup";
+import { isForgeCard } from "@/app/forge/lib/deckAdapter";
 import { compareCardsDefault } from "@/lib/cards/defaultSort";
 import { isBannedInFormat, normalizeFormat, PARAGON_EXCLUDED_SETS } from "@/lib/formats";
 import { useDeckState } from "./hooks/useDeckState";
@@ -2792,12 +2793,16 @@ export default function CardSearchClient({
                   </div>
 
                   <p className="text-xs sm:text-sm mt-1 text-center truncate hidden sm:block">{c.name}</p>
-                  {(() => {
+                  {/* Price line holds its height before /api/prices answers, so rows don't drop
+                      under a thumb when prices land. A Forge card never has a price. */}
+                  {!isForgeCard(c) && (() => {
                     const priceKey = `${c.name}|${c.set}|${c.imgFile}`;
                     const priceInfo = getPrice(priceKey);
-                    return priceInfo ? (
-                      <p className="text-xs sm:text-xs text-center text-muted-foreground font-medium">${priceInfo.price.toFixed(2)}</p>
-                    ) : null;
+                    return (
+                      <p className="h-4 text-xs sm:text-xs text-center text-muted-foreground font-medium">
+                        {priceInfo ? `$${priceInfo.price.toFixed(2)}` : null}
+                      </p>
+                    );
                   })()}
                 </div>
               );

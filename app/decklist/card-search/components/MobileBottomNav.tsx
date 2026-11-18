@@ -20,16 +20,22 @@ export function MobileBottomNav({
   isSaving = false,
   isAuthenticated = false,
 }: MobileBottomNavProps) {
+  // The Save slot is always laid out, even before auth resolves and while the deck
+  // is empty, so Search and Deck never slide sideways under a thumb. Signed-out
+  // players keep the slot invisible and inert; an empty deck shows Save disabled.
+  const hasChangesToSave = hasUnsavedChanges && deckCardCount > 0;
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-[70] bg-card border-t border-border flex items-center justify-around h-14 pb-[env(safe-area-inset-bottom)]">
-      {isAuthenticated && onSaveDeck && deckCardCount > 0 && (
+      {onSaveDeck && (
         <button
           onClick={onSaveDeck}
-          disabled={isSaving || !hasUnsavedChanges}
+          disabled={!isAuthenticated || isSaving || !hasChangesToSave}
           className={`relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg transition-colors ${
+            isAuthenticated ? "" : "invisible"
+          } ${
             isSaving
               ? "text-muted-foreground"
-              : hasUnsavedChanges
+              : hasChangesToSave
                 ? "text-green-600 dark:text-green-400"
                 : "text-muted-foreground"
           }`}
@@ -47,7 +53,7 @@ export function MobileBottomNav({
           <span className="text-[10px] font-medium">
             {isSaving ? "Saving" : "Save"}
           </span>
-          {hasUnsavedChanges && !isSaving && (
+          {hasChangesToSave && !isSaving && (
             <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-green-500 rounded-full" />
           )}
         </button>
