@@ -554,6 +554,22 @@ describe('matchesDeckCard rules', () => {
     expect(fits({ cardName: 'Faith of Abraham (CoW)', type: 'GE' }, { human: true })).toBe(false);
   });
 
+  it('"except a Hero" also drops a dual Hero/Evil Character card', () => {
+    const notHero: DeckCardMatch = { types: ['character'], exceptTypes: ['Hero'], books: ['Luke'] };
+    expect(fits({ cardName: 'Herod Antipas', type: 'Evil Character', reference: 'Luke 23:7' }, notHero)).toBe(true);
+    expect(fits({ cardName: 'The Prodigal Son (GoC)', type: 'Hero/Evil Character', reference: 'Luke 15:11-32' }, notHero)).toBe(false);
+    expect(fits({ cardName: 'Peter', type: 'Hero', reference: 'Luke 5:8' }, notHero)).toBe(false);
+  });
+
+  it('a dual-alignment Dominant (stored Neutral) is both a good and an evil Dominant', () => {
+    const crowdsChoice = { cardName: "Crowd's Choice (GoC)", type: 'Dominant', alignment: 'Neutral' };
+    expect(fits(crowdsChoice, { alignments: ['good'], types: ['Dominant'] })).toBe(true);
+    expect(fits(crowdsChoice, { alignments: ['evil'], types: ['Dominant'] })).toBe(true);
+    expect(fits(crowdsChoice, { alignments: ['good'] })).toBe(true);
+    // Other neutral cards stay neutral.
+    expect(fits({ cardName: 'Bethlehem', type: 'Site', alignment: 'Neutral' }, { alignments: ['good'] })).toBe(false);
+  });
+
   it('any match entry is enough', () => {
     const siteOrGoodFortress: DeckCardMatch[] = [{ types: ['Site'] }, { alignments: ['good'], types: ['Fortress'] }];
     expect(matchesDeckCard({ type: 'Site', alignment: 'Neutral' }, siteOrGoodFortress)).toBe(true);

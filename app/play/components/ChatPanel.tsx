@@ -506,6 +506,27 @@ export function formatActionType(actionType: string, payload?: string, playerNam
       return <>{drewText} via {sourceNode}</>;
     } catch { /* fall through */ }
   }
+  if (actionType === 'DISCARD_SELF_AND_DRAW' && payload) {
+    try {
+      const data = JSON.parse(payload);
+      const count = Number(data.count ?? 0);
+      const isViewer = actorPlayerId && viewerPlayerId && actorPlayerId === viewerPlayerId;
+      const hasCards = Array.isArray(data.cards) && data.cards.length > 0;
+      const sourceNode = <HoverableCard name={data.sourceCardName ?? 'a card'} img={data.sourceCardImgFile ?? ''} />;
+      const drewText = `drew ${count} card${count === 1 ? '' : 's'}`;
+      if (isViewer && hasCards) {
+        return (
+          <>
+            discarded {sourceNode} and {drewText}: <CardNameList cards={data.cards} />
+            <span style={{ fontSize: 'calc(9px * var(--chat-fs, 1))', fontStyle: 'italic', color: 'rgba(var(--gf-text-bright-rgb), 0.35)', marginLeft: 4 }}>
+              (only visible to you)
+            </span>
+          </>
+        );
+      }
+      return <>discarded {sourceNode} and {drewText}</>;
+    } catch { /* fall through */ }
+  }
   if ((actionType === 'MEEK' || actionType === 'MEEK_CARD') && payload) {
     try {
       const data = JSON.parse(payload);

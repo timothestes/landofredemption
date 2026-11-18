@@ -68,10 +68,12 @@ function typeOk(c, t) {
   if (t === 'Enhancement') return p.includes('GE') || p.includes('EE');
   return p.includes(t);
 }
+// A Dominant is always good or evil, so a Neutral one is a dual good/evil Dominant.
+const dualDominant = (c, p) => p.includes('Dominant') && c.alignment === 'Neutral';
 function alignOk(c, a) {
   const p = typeParts(c);
-  if (a === 'good') return c.alignment === 'Good' || p.includes('GE') || p.includes('Hero');
-  if (a === 'evil') return c.alignment === 'Evil' || p.includes('EE') || p.includes('Evil Character');
+  if (a === 'good') return c.alignment === 'Good' || p.includes('GE') || p.includes('Hero') || dualDominant(c, p);
+  if (a === 'evil') return c.alignment === 'Evil' || p.includes('EE') || p.includes('Evil Character') || dualDominant(c, p);
   return c.alignment === 'Neutral';
 }
 const REF_RE = /((?:I{1,3}|IV)\s+)?([A-Z][a-z]+(?: of [A-Z][a-z]+)?)\.?\s+(\d+)/g;
@@ -86,7 +88,7 @@ function testamentOk(c, t) {
 const brigadeSet = (c) => new Set(c.brigade.toLowerCase().replace(/pale green/g, 'palegreen').split(/[^a-z]+/).filter((w) => w && w !== 'good' && w !== 'evil'));
 // Optionally plural, never possessive ("Herod's Guard" is not a Herod).
 const wordRe = (w) => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:s|es)?\\b(?![’'])`, 'i');
-const halfAlign = (c, h) => (h === 'Hero' || h === 'GE' ? 'good' : h === 'Evil Character' || h === 'EE' ? 'evil' : c.alignment.toLowerCase());
+const halfAligns = (c, h) => (h === 'Hero' || h === 'GE' ? ['good'] : h === 'Evil Character' || h === 'EE' ? ['evil'] : dualDominant(c, [h]) ? ['good', 'evil'] : [c.alignment.toLowerCase()]);
 // Identifier minus "X = …" counting notes and "Holds …" notes — both name
 // OTHER cards' traits ("Holds a Heavenly Temple Artifact" is not one).
 const identText = (c) => c.identifier.replace(/[’‘]/g, "'").replace(/X\s*=[^,\]]*/g, '').replace(/\bholds?\b[^,\]]*/gi, '');
@@ -108,11 +110,12 @@ function nameIs(c, n) {
 function matchOne(c, m) {
   if (m.types && m.alignments) {
     // One type half must carry both the type and the alignment.
-    if (!typeParts(c).some((h) => m.types.some((t) => typeOk({ type: h }, t)) && m.alignments.includes(halfAlign(c, h)))) return false;
+    if (!typeParts(c).some((h) => m.types.some((t) => typeOk({ type: h }, t)) && halfAligns(c, h).some((a) => m.alignments.includes(a)))) return false;
   } else {
     if (m.types && !m.types.some((t) => typeOk(c, t))) return false;
     if (m.alignments && !m.alignments.some((a) => alignOk(c, a))) return false;
   }
+  if (m.exceptTypes && m.exceptTypes.some((t) => typeOk(c, t))) return false;
   if (m.testament && !testamentOk(c, m.testament)) return false;
   if (m.books) {
     const rs = refs(c.reference).filter((r) => m.books.includes(r.book));
@@ -162,7 +165,7 @@ for (const n of ORDIR_UNTAGGED_NON_HUMANS) if (!cards.some((c) => isCharacter(c)
 const NON_HUMAN = new Set(cards.filter((c) => isCharacter(c) && isNonHuman(c)).map((c) => c.name));
 
 // ---------- target parser ----------
-const LEAD = /^(?:a|an|any|one|two|three|up to (?:\d+|two|three|x)|\d+)\s+/i;
+const LEAD = /^(?:a|an|another|any|one|two|three|up to (?:\d+|two|three|x)|\d+)\s+/i;
 function parseAlt(alt, titleWords) {
   // Whole alternative is a card name ("Whirlwind", "A Child is Born", "Phinehas, the Useless").
   const named = !alt.includes('TITLEPH') && lookupName(alt);
@@ -354,8 +357,8 @@ const PILE = String.raw`(?:(?:your|the|own)\s+)?(?:deck|draw pile|discard pile|R
 const PILES = String.raw`${PILE}(?:(?:,\s*(?:or\s+)?|\s+or\s+)${PILE})*`;
 const CLAUSES = [
   { kind: 'search_deck', re: new RegExp(String.raw`\bsearch (${PILES}) for ([^.:;]+)`, 'gi'), target: 2, piles: 1 },
-  { kind: 'search_deck', re: new RegExp(String.raw`\b(?:take|play|add)\s+((?:(?!\bfrom\b)[^.:;])+?)\s+from (${PILES})`, 'gi'), target: 1, piles: 2 },
-  { kind: 'exchange_with_deck', re: new RegExp(String.raw`\bexchange this (?:card|Hero) with ((?:(?!\b(?:from|in)\b)[^.:;])+?)\s+(?:from|in) (${PILES})`, 'gi'), target: 1, piles: 2 },
+  { kind: 'search_deck', re: new RegExp(String.raw`\b(?:take|play|add|activate)\s+((?:(?!\b(?:from|take|play|add|activate)\b)[^.:;])+?)\s+from (${PILES})`, 'gi'), target: 1, piles: 2 },
+  { kind: 'exchange_with_deck', re: new RegExp(String.raw`\bexchange (?:this (?:card|Hero)|it) with((?:(?!\b(?:from|in)\b)[^.:;])+?)\s+(?:from|in) (${PILES})`, 'gi'), target: 1, piles: 2 },
 ];
 const entries = [];
 for (const c of cards) {
@@ -414,9 +417,9 @@ if (outPath) writeFileSync(outPath, JSON.stringify(out, null, 2));
 const GOSPEL = ['Matthew', 'Mark', 'Luke', 'John'];
 const ABRAHAM = ['Abraham', 'Abram', 'Father Abraham', 'Faithful Abraham', 'Abram/Abraham'];
 const OVERRIDES = {
-  // "(except a Hero)": a Gospel character that isn't a Hero is a Gospel Evil Character.
-  'Golgotha (GoC)': [{ kind: 'search_deck', label: 'a Gospel character (except a Hero)', match: [{ types: ['Evil Character'], books: GOSPEL }] }],
-  'Golgotha [2022 - GoC P]': [{ kind: 'search_deck', label: 'a Gospel character (except a Hero)', match: [{ types: ['Evil Character'], books: GOSPEL }] }],
+  // "(except a Hero)": a dual Hero/Evil Character (Judas, Zaccheus, …) is a Hero too.
+  'Golgotha (GoC)': [{ kind: 'search_deck', label: 'a Gospel character (except a Hero)', match: [{ types: ['character'], exceptTypes: ['Hero'], books: GOSPEL }] }],
+  'Golgotha [2022 - GoC P]': [{ kind: 'search_deck', label: 'a Gospel character (except a Hero)', match: [{ types: ['character'], exceptTypes: ['Hero'], books: GOSPEL }] }],
   // Two picks ("… and …"): show both kinds.
   'The Resurrection (GoC)': [{ kind: 'search_deck', label: 'a good Gospel Fortress and an empty tomb Hero', match: [{ alignments: ['good'], books: GOSPEL, types: ['Fortress'] }, { traits: ['empty tomb'], types: ['Hero'] }] }],
   'The Resurrection [UR+] (GoC)': [{ kind: 'search_deck', label: 'a good Gospel Fortress and an empty tomb Hero', match: [{ alignments: ['good'], books: GOSPEL, types: ['Fortress'] }, { traits: ['empty tomb'], types: ['Hero'] }] }],
@@ -451,6 +454,19 @@ const EXTRA = {
   // "…from deck or Reserve" — both windows.
   'False Peace (PoC)': ['search_deck', 'search_reserve'].map((kind) => ({ kind, label: 'an O.T. card (except a Dominant)', match: [{ testament: 'OT', types: NOT_DOMINANT }] })),
   'The Thief (GoC)': [{ kind: 'exchange_with_deck', label: 'a thief or generic demon', match: [{ traits: ['thief'], types: ['character'] }, { traits: ['demon', 'generic'], types: ['Evil Character'] }, { traits: ['generic'], types: ['Evil Character'], brigades: ['Orange'], singleBrigade: true }] }],
+  // Lost Souls whose wording the scan doesn't read. "Exchange a card from
+  // hand with X from deck": the window takes X; the hand card goes back by hand.
+  'Lost Soul "Dread" [Exodus 15:16 - K]': [{ kind: 'search_deck', label: 'an evil Egyptian', match: [{ alignments: ['evil'], traits: ['egyptian'], types: ['character'] }] }],
+  'Lost Soul "Outcry" [I Samuel 5:12 - L]': [{ kind: 'search_deck', label: 'an evil Philistine', match: [{ alignments: ['evil'], traits: ['philistine'], types: ['character'] }] }],
+  // "…of matching brigade": the brigade depends on the hand card, so the player picks.
+  'Lost Soul "Galileans" [Luke 13:2]': [{ kind: 'search_deck', label: 'an evil N.T. card of matching brigade', match: [{ alignments: ['evil'], testament: 'NT' }] }],
+  // "Search a deck or discard pile for a Lost Soul and put it in play" — your deck.
+  'Lost Soul "Awake" [Ephesians 5:14 - TPC]': [{ kind: 'search_deck', label: 'a Lost Soul', match: [{ types: ['Lost Soul'] }] }],
+  // "Take an O.T. Lost Soul from a deck to territory to shuffle this card" — your deck.
+  'Lost Soul "Hunter" [Exodus 11:5 - FoM]': [{ kind: 'exchange_with_deck', label: 'an O.T. Lost Soul', match: [{ testament: 'OT', types: ['Lost Soul'] }] }],
+  // "Topdeck X from Reserve": the Reserve window's Top of Deck.
+  'Lost Soul "Covenant Breakers" [Daniel 9:5]': [{ kind: 'search_reserve', label: 'a * card', match: [{ cardClass: 'Star' }] }],
+  'Lost Soul "Foreigner" [Jeremiah 22:3]': [{ kind: 'search_reserve', label: 'a good card', match: [{ alignments: ['good'] }] }],
 };
 
 const CARD_NAMES = new Set(cards.map((c) => c.name));

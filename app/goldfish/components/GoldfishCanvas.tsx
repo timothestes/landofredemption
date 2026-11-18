@@ -3656,6 +3656,9 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
               setReserveEnhReq(null);
             }}
             onCancel={() => setReserveEnhReq(null)}
+            onStartDrag={modalStartDrag}
+            didDragRef={modalDidDragRef}
+            isDragActive={modalDrag.isDragging}
           />
         );
       })()}

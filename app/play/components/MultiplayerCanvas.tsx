@@ -11803,6 +11803,9 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
               setReserveEnhReq(null);
             }}
             onCancel={() => setReserveEnhReq(null)}
+            onStartDrag={modalStartDrag}
+            didDragRef={modalDidDragRef}
+            isDragActive={modalDrag.isDragging}
           />
         );
       })()}

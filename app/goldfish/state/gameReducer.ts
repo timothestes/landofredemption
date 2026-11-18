@@ -759,6 +759,27 @@ function drawAndTopdeckSelfInState(
   return { ...state, zones, history };
 }
 
+// Four-Drachma Coin: "discard this card to draw 4". Runs the same MOVE_CARD
+// and DRAW_MULTIPLE a player would do by hand, as one undo step.
+function discardSelfAndDrawInState(
+  state: GameState,
+  source: GameCard,
+  ability: Extract<CardAbility, { type: 'discard_self_and_draw' }>,
+  history: GameState[],
+): GameState {
+  if (ability.count < 1) return state;
+  const base = { id: '', playerId: 'player1' as const, timestamp: 0 };
+  const discarded = reduceGame(
+    { ...state, history: [] },
+    { ...base, type: 'MOVE_CARD', payload: { cardInstanceId: source.instanceId, toZone: 'discard' } },
+  );
+  const drawn = reduceGame(
+    { ...discarded, history: [] },
+    { ...base, type: 'DRAW_MULTIPLE', payload: { quantity: ability.count } },
+  );
+  return { ...drawn, history };
+}
+
 function underdeckTopOfDeckInState(
   state: GameState,
   _source: GameCard,
@@ -1660,6 +1681,8 @@ function reduceGame(state: GameState, action: GameAction): GameState {
           return state;
         case 'draw_and_topdeck_self':
           return drawAndTopdeckSelfInState(state, source, history);
+        case 'discard_self_and_draw':
+          return discardSelfAndDrawInState(state, source, ability, history);
         case 'resurrect_heroes':
           // Interactive picker — dispatched via the dedicated RESURRECT_HEROES
           // action which carries the selected card ids. No-op here.

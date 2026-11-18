@@ -6,7 +6,7 @@ import { ScheduleAt, Timestamp } from 'spacetimedb';
 import { makeSeed, seededShuffle, seededDiceRoll, xorshift64, generateGameCode } from './utils';
 import { isLeavingPlayField } from './playField';
 import { makeFreeSpotAllocator, bandRowSlots, BAND_ROW_Y } from './battlePlacement';
-import { resolveDestinationOwnerId, resolveHomeOwnerId, type OwnerRouting } from './cardOwnership';
+import { resolveDestinationOwnerId, resolveHomeOwnerId, resolveTrueHomeOwnerId, type OwnerRouting } from './cardOwnership';
 import { planResetRoute } from './boardReset';
 import { captureKeepOneSnapshot, finishKeepOneSnapshot, planKeepOneUndo, type KeepOneSnapshot } from './keepOneUndo';
 import {
@@ -5431,6 +5431,73 @@ function drawAndTopdeckSelfImpl(
 }
 
 // ---------------------------------------------------------------------------
+// Helper: discardSelfAndDrawImpl
+// Four-Drachma Coin: "discard this card to draw 4". Sends the source to the
+// top of its true owner's discard pile (same field clearing as a manual drag
+// to discard), then draws `count` for the activator via drawCardsForPlayer —
+// the same path as the Draw button, so Lost Souls auto-route and the hand
+// limit applies.
+// ---------------------------------------------------------------------------
+function discardSelfAndDrawImpl(
+  ctx: any,
+  source: any,
+  ability: Extract<CardAbility, { type: 'discard_self_and_draw' }>,
+  player: any,
+  gameId: bigint,
+) {
+  if (ability.count < 1) throw new SenderError('Invalid count');
+
+  const game = ctx.db.Game.id.find(gameId);
+  if (!game) throw new SenderError('Game not found');
+
+  const fromZone = source.zone;
+  const gameCards = [...ctx.db.CardInstance.card_instance_game_id.filter(gameId)];
+  const discardOwnerId = resolveTrueHomeOwnerId(source);
+
+  let maxDiscardIdx = -1n;
+  for (const c of gameCards) {
+    if (c.ownerId === discardOwnerId && c.zone === 'discard' && c.zoneIndex > maxDiscardIdx) {
+      maxDiscardIdx = c.zoneIndex;
+    }
+  }
+
+  clearCountersIfLeavingPlay(ctx, source.id, fromZone, 'discard');
+  ctx.db.CardInstance.id.update({
+    ...source,
+    ...leavePlayFieldOverrides(source, fromZone, 'discard'),
+    zone: 'discard',
+    zoneIndex: maxDiscardIdx + 1n,
+    ownerId: discardOwnerId,
+    posX: '',
+    posY: '',
+    isFlipped: false,
+    equippedToInstanceId: 0n,
+  });
+  // Anything attached to the source stays where it is, just unlinked.
+  for (const c of gameCards) {
+    if (c.equippedToInstanceId === source.id) {
+      ctx.db.CardInstance.id.update({ ...c, equippedToInstanceId: 0n });
+    }
+  }
+  if (fromZone === 'land-of-bondage') {
+    compactLobIndices(ctx, gameId, source.ownerId, gameCards, source.id);
+  }
+
+  const result = drawCardsForPlayer(ctx, game, player, ability.count);
+
+  logAction(
+    ctx, gameId, player.id, 'DISCARD_SELF_AND_DRAW',
+    JSON.stringify({
+      sourceCardName: source.cardName,
+      sourceCardImgFile: source.cardImgFile,
+      count: result.drawn,
+      cards: result.cards,
+    }),
+    game.turnNumber, game.currentPhase,
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Helper: reserveTopOfDeckImpl
 // Moves the top `count` cards of the acting player's deck into their reserve.
 // "Top" is defined by ascending zoneIndex (same convention as drawCardsForPlayer).
@@ -6060,6 +6127,8 @@ export const execute_card_ability = spacetimedb.reducer(
         return bandHeroesFromDeckImpl(ctx, source, ability, player, gameId);
       case 'draw_and_topdeck_self':
         return drawAndTopdeckSelfImpl(ctx, source, player, gameId);
+      case 'discard_self_and_draw':
+        return discardSelfAndDrawImpl(ctx, source, ability, player, gameId);
       case 'draw_brigades':
         throw new SenderError('draw_brigades is dispatched via matthew_draw_brigades, not this reducer');
       case 'toggle_top_deck_reveal': {

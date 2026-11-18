@@ -561,6 +561,73 @@ describe('EXECUTE_CARD_ABILITY — discard_bottom_of_deck (The Gates of Hell)', 
   });
 });
 
+describe('EXECUTE_CARD_ABILITY — discard_self_and_draw (Four-Drachma Coin)', () => {
+  const coin = (overrides: Partial<GameCard> = {}) => makeCard({
+    instanceId: 'coin', cardName: 'Four-Drachma Coin (GoC)', type: 'Artifact', zone: 'territory', posX: 300, posY: 200,
+    counters: [{ color: 'red', count: 1 }] as any, notes: 'note', ...overrides,
+  });
+  const deckCard = (n: number) => makeCard({ instanceId: `d${n}`, cardName: `Deck ${n}`, zone: 'deck', isFlipped: true });
+
+  it('discards the coin and draws the top 4 cards of deck', () => {
+    const state = makeState([coin(), ...[1, 2, 3, 4, 5].map(deckCard)]);
+
+    const next = gameReducer(state, act('coin', 0));
+
+    expect(next.zones.territory).toHaveLength(0);
+    expect(next.zones.discard.map(c => c.instanceId)).toEqual(['coin']);
+    const discarded = next.zones.discard[0];
+    expect(discarded.zone).toBe('discard');
+    expect(discarded.posX).toBeUndefined();
+    expect(discarded.counters).toEqual([]);
+    expect(discarded.notes).toBe('');
+    expect(next.zones.hand.map(c => c.instanceId)).toEqual(['d1', 'd2', 'd3', 'd4']);
+    expect(next.zones.hand.every(c => c.zone === 'hand' && !c.isFlipped)).toBe(true);
+    expect(next.zones.deck.map(c => c.instanceId)).toEqual(['d5']);
+  });
+
+  it('is a single undo step back to the pre-ability state', () => {
+    const state = makeState([coin(), ...[1, 2, 3, 4].map(deckCard)]);
+
+    const next = gameReducer(state, act('coin', 0));
+
+    expect(next.history).toHaveLength(1);
+    expect(next.history[0].zones.territory.map(c => c.instanceId)).toEqual(['coin']);
+    expect(next.history[0].zones.hand).toHaveLength(0);
+  });
+
+  it('auto-routes a drawn Lost Soul and draws a replacement', () => {
+    const soul = makeCard({ instanceId: 'ls', cardName: 'Lost Soul Romans 3:23', type: 'Lost Soul', zone: 'deck', isFlipped: true });
+    const state = makeState([coin(), deckCard(1), soul, deckCard(2), deckCard(3), deckCard(4)]);
+    (state.options as any).autoRouteLostSouls = true;
+
+    const next = gameReducer(state, act('coin', 0));
+
+    expect(next.zones['land-of-bondage'].map(c => c.instanceId)).toEqual(['ls']);
+    expect(next.zones.hand.map(c => c.instanceId)).toEqual(['d1', 'd2', 'd3', 'd4']);
+  });
+
+  it('still discards the coin when the deck holds fewer than 4', () => {
+    const state = makeState([coin(), deckCard(1)]);
+
+    const next = gameReducer(state, act('coin', 0));
+
+    expect(next.zones.discard.map(c => c.instanceId)).toEqual(['coin']);
+    expect(next.zones.hand.map(c => c.instanceId)).toEqual(['d1']);
+  });
+
+  it('does nothing from hand', () => {
+    const state = makeState([coin({ zone: 'hand' }), deckCard(1)]);
+
+    expect(gameReducer(state, act('coin', 0))).toBe(state);
+  });
+
+  it('both Four-Drachma Coin printings are registered', () => {
+    for (const name of ['Four-Drachma Coin', 'Four-Drachma Coin (GoC)']) {
+      expect(getEffectiveAbilities({ cardName: name })).toEqual([{ type: 'discard_self_and_draw', count: 4 }]);
+    }
+  });
+});
+
 describe("KEEP_ONE_SHUFFLE_DRAW (Philip's Daughters)", () => {
   // Deck cards are distinct from hand cards so we can tell a redrawn card from
   // a card that never left the hand.
