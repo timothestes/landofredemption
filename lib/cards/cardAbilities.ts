@@ -121,6 +121,9 @@ export type CardAbility = AbilityBase & (
   // with Reserve, narrowed the same way. "From deck or Reserve" gets both.
   | { type: 'search_reserve'; target: string; match: DeckCardMatch[] }
   | { type: 'exchange_with_reserve'; target: string; match: DeckCardMatch[] }
+  // And the discard pile ("search deck or discard pile for a good Dominant"):
+  // the Discard browse window, narrowed the same way.
+  | { type: 'search_discard'; target: string; match: DeckCardMatch[] }
   | { type: 'custom'; reducerName: string; label: string }
 );
 
@@ -1199,6 +1202,8 @@ export function abilityLabel(a: CardAbility): string {
       return `Search Reserve for ${a.target}…`;
     case 'exchange_with_reserve':
       return `Exchange this card with ${a.target} from Reserve…`;
+    case 'search_discard':
+      return `Search discard pile for ${a.target}…`;
     case 'custom':
       return a.label;
   }

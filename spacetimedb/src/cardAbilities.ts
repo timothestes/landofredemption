@@ -117,6 +117,7 @@ export type CardAbility = AbilityBase & (
   | { type: 'exchange_with_deck'; target: string; match: DeckCardMatch[] }
   | { type: 'search_reserve'; target: string; match: DeckCardMatch[] }
   | { type: 'exchange_with_reserve'; target: string; match: DeckCardMatch[] }
+  | { type: 'search_discard'; target: string; match: DeckCardMatch[] }
   | { type: 'custom'; reducerName: string; label: string }
 );
 

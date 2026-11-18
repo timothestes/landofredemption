@@ -6034,6 +6034,8 @@ export const execute_card_ability = spacetimedb.reducer(
         throw new SenderError('search_reserve is dispatched by the client, not this reducer');
       case 'exchange_with_reserve':
         throw new SenderError('exchange_with_reserve is dispatched by the client, not this reducer');
+      case 'search_discard':
+        throw new SenderError('search_discard is dispatched by the client, not this reducer');
       case 'reserve_opponent_deck':
         throw new SenderError('reserve_opponent_deck is dispatched by the client, not this reducer');
       case 'reserve_top_of_deck':

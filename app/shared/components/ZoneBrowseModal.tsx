@@ -175,9 +175,9 @@ interface ZoneBrowseModalProps {
   /** Read-only viewers (spectators) can't act on a card, but they still need
    *  to READ it — tap / long-press / click opens the caller's card reader. */
   onReadCard?: (card: GameCard) => void;
-  /** Set when a card ability opened the Reserve (search_reserve, e.g. "take a
-   *  clay card from Reserve"): the grid starts narrowed to the cards that
-   *  qualify, with a DeckFilterBar to drop it. */
+  /** Set when a card ability opened the Reserve or Discard (search_reserve /
+   *  search_discard, e.g. "take a clay card from Reserve"): the grid starts
+   *  narrowed to the cards that qualify, with a DeckFilterBar to drop it. */
   filter?: DeckCardFilter;
 }
 
@@ -658,7 +658,7 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
           </div>
         )}
 
-        {/* Ability filter (search_reserve) — what the card lets you take */}
+        {/* Ability filter (search_reserve / search_discard) — what the card lets you take */}
         {filter && (
           <DeckFilterBar
             label={filter.label}

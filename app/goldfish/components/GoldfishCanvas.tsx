@@ -242,9 +242,11 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
   // or with Reserve (exchange_with_reserve). Cleared whenever the exchange
   // window closes — its only exits.
   const [exchangeAbility, setExchangeAbility] = useState<Extract<CardAbility, { type: 'exchange_with_deck' | 'exchange_with_reserve' }> | null>(null);
-  // The search_reserve ability that opened the Reserve browse window ("take a
-  // clay card from Reserve"). Only applies while that window shows the Reserve.
-  const [reserveSearchAbility, setReserveSearchAbility] = useState<Extract<CardAbility, { type: 'search_reserve' }> | null>(null);
+  // The search_reserve / search_discard ability that opened the Reserve or
+  // Discard browse window ("take a clay card from Reserve"). Only applies
+  // while that window shows the pile it opened.
+  const [pileSearchAbility, setPileSearchAbility] = useState<Extract<CardAbility, { type: 'search_reserve' | 'search_discard' }> | null>(null);
+  const pileSearchZone: ZoneId = pileSearchAbility?.type === 'search_discard' ? 'discard' : 'reserve';
 
   // Opens the "look at / reveal top N" peek modal for an own-deck inspection
   // ability. Shared by the fixed-count path (look_at_own_deck / reveal_own_deck)
@@ -323,11 +325,11 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
         setShowDeckSearch(true);
         return;
       }
-      if (ability?.type === 'search_reserve') {
+      if (ability?.type === 'search_reserve' || ability?.type === 'search_discard') {
         // setBrowseZone is declared further down — read only when this runs.
         if (source && source.zone === 'hand') revealCardInHand(cardId);
-        setReserveSearchAbility(ability);
-        setBrowseZone('reserve');
+        setPileSearchAbility(ability);
+        setBrowseZone(ability.type === 'search_discard' ? 'discard' : 'reserve');
         return;
       }
       if (ability?.type === 'exchange_with_deck' || ability?.type === 'exchange_with_reserve') {
@@ -476,10 +478,10 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
   const isDraggingRef = useRef(false);
   const dragSourceZoneRef = useRef<ZoneId | null>(null);
   const [browseZone, setBrowseZone] = useState<ZoneId | null>(null);
-  // A Reserve filter never outlives the Reserve window that it opened.
+  // A Reserve / Discard filter never outlives the window that it opened.
   useEffect(() => {
-    if (browseZone !== 'reserve') setReserveSearchAbility(null);
-  }, [browseZone]);
+    if (browseZone !== pileSearchZone) setPileSearchAbility(null);
+  }, [browseZone, pileSearchZone]);
   // Goldfish only ever bound `contextmenu`, so on a phone there was no path to
   // any card menu, pile browse, shuffle or flip — the whole action layer was
   // mouse-only. Touch gets the same long-press adapter multiplayer uses.
@@ -3264,7 +3266,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
             key={browseZone}
             zoneId={browseZone}
             onClose={() => setBrowseZone(null)}
-            filter={browseZone === 'reserve' && reserveSearchAbility ? deckCardFilter(reserveSearchAbility) : undefined}
+            filter={pileSearchAbility && browseZone === pileSearchZone ? deckCardFilter(pileSearchAbility) : undefined}
             onStartDrag={modalStartDrag}
             onStartMultiDrag={modalStartMultiDrag}
             didDragRef={modalDidDragRef}
