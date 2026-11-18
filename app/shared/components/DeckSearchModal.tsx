@@ -10,7 +10,7 @@ import { GameCard, ZoneId, ZONE_LABELS } from '@/app/shared/types/gameCard';
 import { X, Search } from 'lucide-react';
 import { useModalCardHover, ModalCardHoverPreview, getHoverGlowStyle } from './ModalCardHoverPreview';
 import { useCardPreview } from '@/app/goldfish/state/CardPreviewContext';
-import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
+import { getCardImageUrl, CARD_IMAGE_ASPECT_RATIO } from '@/app/shared/utils/cardImageUrl';
 import { useDraggableModal } from '@/app/shared/hooks/useDraggableModal';
 import { DraggableTitleBar } from './DraggableTitleBar';
 import { DeckFilterBar, type DeckCardFilter } from './DeckFilterBar';
@@ -909,6 +909,9 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
                           draggable={false}
                           style={{
                             width: '100%',
+                            // Reserve the card's height before the image loads.
+                            aspectRatio: CARD_IMAGE_ASPECT_RATIO,
+                            objectFit: 'contain',
                             // The wrapper is height-constrained in the touch
                             // scroller — fill it instead of deriving height
                             // from width (which overflowed the row).

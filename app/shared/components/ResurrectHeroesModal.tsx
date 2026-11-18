@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GameCard } from '@/app/shared/types/gameCard';
-import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
+import { getCardImageUrl, CARD_IMAGE_ASPECT_RATIO } from '@/app/shared/utils/cardImageUrl';
 
 export interface ResurrectHeroesPage {
   ownerId: string;
@@ -255,6 +255,9 @@ export function ResurrectHeroesModal({ pages, onConfirm, onCancel, isDragActive 
                         draggable={false}
                         style={{
                           width: '100%',
+                          // Reserve the card's height before the image loads.
+                          aspectRatio: CARD_IMAGE_ASPECT_RATIO,
+                          objectFit: 'contain',
                           borderRadius: 4,
                           border: isSelected ? '2px solid var(--gf-accent)' : '1px solid var(--gf-border)',
                           boxShadow: isSelected ? '0 0 8px rgba(var(--gf-accent-rgb), 0.5)' : 'none',
