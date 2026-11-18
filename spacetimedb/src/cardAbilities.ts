@@ -92,6 +92,10 @@ export type CardAbility = AbilityBase & (
   | { type: 'three_nails_reset'; beginNewTurn?: boolean }
   | { type: 'imitate_lost_soul' }
   | { type: 'draw_and_topdeck_self' }
+  // "Discard this card to draw N" (Four-Drachma Coin). The source goes to its
+  // owner's discard pile, then the activator draws N through the normal draw
+  // path (Lost Souls auto-route when that option is on; hand limit applies).
+  | { type: 'discard_self_and_draw'; count: number }
   | { type: 'resurrect_heroes' }
   // Draw cards equal to the number of distinct brigades of a given alignment in
   // the opponent's revealed hand. `alignment: 'total'` counts all brigades
@@ -160,6 +164,8 @@ const BASE_CARD_ABILITIES: Record<string, CardAbility[]> = {
   'Lost Soul "Imitate" [III John 1:11]':                 [{ type: 'imitate_lost_soul' }],
   'Lost Soul "Imitate" [III John 1:11]  [AB - RoJ]':     [{ type: 'imitate_lost_soul' }],
   'Lost Soul "The First" [Luke 13:30]':                  [{ type: 'draw_and_topdeck_self' }],
+  'Four-Drachma Coin':                                   [{ type: 'discard_self_and_draw', count: 4 }],
+  'Four-Drachma Coin (GoC)':                             [{ type: 'discard_self_and_draw', count: 4 }],
   'Lost Soul "Lost Souls" [Proverbs 2:16-17]':           [{ type: 'spawn_token', tokenName: 'Lost Souls Token' }],
   // "This card counts as two Lost Souls. It must be rescued twice." Turning
   // the card sideways in the Land of Bondage marks the first rescue; once in
