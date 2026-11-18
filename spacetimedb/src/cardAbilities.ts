@@ -124,6 +124,7 @@ export type CardAbility = AbilityBase & (
 // evaluates it; it's here so the registry copies stay type-identical.
 export type DeckCardMatch = {
   types?: DeckCardType[];
+  exceptTypes?: DeckCardType[];
   alignments?: Array<'good' | 'evil' | 'neutral'>;
   testament?: 'OT' | 'NT';
   books?: string[];
@@ -496,7 +497,7 @@ const BASE_CARD_ABILITIES: Record<string, CardAbility[]> = {
   'Nadab, the Wicked':                                   [{ type: 'reserve_opponent_deck', position: 'bottom', count: 1 }],
   'Ridicule (GoC)':                                      [{ type: 'reserve_opponent_deck', position: 'top', count: 2, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
   'Samaritan Water Jar (GoC)':                           [{ type: 'reserve_opponent_deck', position: 'top', count: 3 }],
-  'Simon of Cyrene (Roots)':                             [{ type: 'reserve_opponent_deck', position: 'top', count: 1 }],
+  'Simon of Cyrene (Roots)':                             [{ type: 'reserve_opponent_deck', position: 'top', count: 1 }, { type: 'reserve_top_of_deck', count: 1 }],
   'The Good Samaritan (GoC)':                            [{ type: 'reserve_opponent_deck', position: 'top', count: 1 }],
   'Watchful Servant (GoC)':                              [{ type: 'reserve_opponent_deck', position: 'bottom', count: 1 }],
 
