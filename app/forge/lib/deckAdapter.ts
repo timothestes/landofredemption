@@ -100,6 +100,8 @@ export function designCardToCard(data: DesignCard, cardId: string, setName: stri
     // legality to "Rotation". That makes shared cards visible under the deckbuilder's default
     // legality filter; a designer can still explicitly pick another legality in the card editor.
     legality: data.legality ?? "Rotation",
+    // The credit the card prints, so the deck builder's Artist search finds it.
+    artist: (data.artistCredit ?? "").trim(),
     testament,
     isGospel,
   };

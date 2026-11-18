@@ -145,6 +145,20 @@ describe("applyCardArtists", () => {
     expect(sameCredit("Jason Weingart", "Artist Unknown")).toBe(false);
   });
 
+  it("keeps a Forge release's own credit over any sheet or scan match", () => {
+    const rows = [row("Abigail [Wo]", "Women", "Sue Dawe")];
+    const cues = { "Abigail (Wo)|Wom|Abigail_(Wo)": { illustrator: "Illus. Someone Else" } };
+    expect(run(card({ artist: " Gustave Doré " }), rows, cues)).toEqual({ artist: "Gustave Doré", method: "forge" });
+    // A Forge card released with no credit is filled like any other printing.
+    expect(run(card({ artist: "" }), rows)).toEqual({ artist: "Sue Dawe", method: "sheetSet" });
+  });
+
+  it("does not merge credits that have no Latin letters into one name", () => {
+    const cards = ["Μιχαηλ Καρρολλ", "李明", "李明", "—"].map((artist, i) => card({ name: `Forge ${i}`, artist }));
+    applyCardArtists(cards, { rows: [] }, {});
+    expect(cards.map((c) => (c as Record<string, string>).artist)).toEqual(["Μιχαηλ Καρρολλ", "李明", "李明", "—"]);
+  });
+
   it("leaves a printing nobody can place empty", () => {
     expect(run(card({ name: "Nowhere Card" }), [])).toEqual({ artist: "", method: undefined });
   });

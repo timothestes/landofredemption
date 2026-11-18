@@ -299,6 +299,7 @@ function PreflightSection({ setId, setName, setStatus, identityLocked, defaultSe
                     <th className="py-1 pr-3 font-medium">Type</th>
                     <th className="py-1 pr-3 font-medium">Brigade</th>
                     <th className="py-1 pr-3 font-medium">Legality</th>
+                    <th className="py-1 pr-3 font-medium">Artist</th>
                     <th className="py-1 pr-3 font-medium">Image file</th>
                   </tr>
                 </thead>
@@ -309,6 +310,7 @@ function PreflightSection({ setId, setName, setStatus, identityLocked, defaultSe
                       <td className="py-1 pr-3">{r.type}</td>
                       <td className="py-1 pr-3">{r.brigade}</td>
                       <td className="py-1 pr-3">{r.legality}</td>
+                      <td className="py-1 pr-3">{r.artist || "—"}</td>
                       <td className="py-1 pr-3 font-mono">{r.imgFile}</td>
                     </tr>
                   ))}

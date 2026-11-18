@@ -45,6 +45,7 @@ describe("designCardToCatalogRow", () => {
       rarity: "Rare",
       reference: "Judges 6:12",
       legality: "Rotation",
+      artistCredit: "  Doug Gray ",
     };
     const row = designCardToCatalogRow(card, ctx);
     expect(row).toEqual({
@@ -63,7 +64,7 @@ describe("designCardToCatalogRow", () => {
       reference: "Judges 6:12",
       alignment: "Good",
       legality: "Rotation",
-      artist: "",
+      artist: "Doug Gray", // the designer's credit, trimmed
     });
   });
 
@@ -72,6 +73,7 @@ describe("designCardToCatalogRow", () => {
     expect(row.strength).toBe("");
     expect(row.toughness).toBe("");
     expect(row.brigade).toBe("");
+    expect(row.artist).toBe("");
     // The "—" placeholder is designCardToCard's display convention; a catalog
     // row carrying it would corrupt lookups and validation.
     expect(Object.values(row)).not.toContain("—");

@@ -207,10 +207,20 @@ function applyCardArtists(cards, snapshot, printingCues) {
   // row for the title agrees, but none is filed under this printing's set.
   // sheetFuzzy: our name is a misspelling of a title in the printing's own set.
   // scanOverride: the scan named a different artist than the sheet's pick.
-  const stats = { sheetSet: 0, sheetName: 0, sheetFuzzy: 0, scanOverride: 0, scan: 0, none: 0 };
+  // forge: a forge-released row arrived with its designer's credit.
+  const stats = { forge: 0, sheetSet: 0, sheetName: 0, sheetFuzzy: 0, scanOverride: 0, scan: 0, none: 0 };
   const unresolved = [];
   const methods = new Map();
   for (const card of cards) {
+    // The credit the Forge printed on the card image ("Illus. …") is the
+    // source, not a match — keep it. Only forge-released rows arrive with one.
+    const own = cleanCredit(typeof card.artist === 'string' ? card.artist : '');
+    if (own) {
+      card.artist = own;
+      stats.forge++;
+      methods.set(card, 'forge');
+      continue;
+    }
     const title = titleKey(card.name);
     const attempts = [
       [byExact.get(exactKey(card.name)), false],
@@ -272,11 +282,13 @@ function applyCardArtists(cards, snapshot, printingCues) {
   }
   // One spelling per artist, so an Artist search for "Jean-Leon Gerome" finds
   // the printings credited "Jean Leon Gerome" too: the most common spelling,
-  // ties going to the accented one ("Zurbarán" over "Zurbaran").
+  // ties going to the accented one ("Zurbarán" over "Zurbaran"). A credit
+  // with no Latin letters or digits has an empty key and is left as written,
+  // or every such credit would collapse into one name.
   const spellings = new Map();
   for (const card of cards) {
-    if (!card.artist) continue;
-    const k = artistKey(card.artist);
+    const k = card.artist ? artistKey(card.artist) : '';
+    if (!k) continue;
     if (!spellings.has(k)) spellings.set(k, new Map());
     const counts = spellings.get(k);
     counts.set(card.artist, (counts.get(card.artist) || 0) + 1);
@@ -289,7 +301,10 @@ function applyCardArtists(cards, snapshot, printingCues) {
     );
     canonical.set(k, best[0]);
   }
-  for (const card of cards) if (card.artist) card.artist = canonical.get(artistKey(card.artist));
+  for (const card of cards) {
+    const k = card.artist ? artistKey(card.artist) : '';
+    if (k) card.artist = canonical.get(k);
+  }
 
   return { stats, unresolved, methods };
 }

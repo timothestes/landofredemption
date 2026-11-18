@@ -9,7 +9,7 @@
 
 const EDITABLE_FIELDS = [
   'officialSet', 'type', 'brigade', 'strength', 'toughness', 'class',
-  'identifier', 'specialAbility', 'rarity', 'reference', 'alignment', 'legality',
+  'identifier', 'specialAbility', 'rarity', 'reference', 'alignment', 'legality', 'artist',
 ];
 const IDENTITY_FIELDS = ['name', 'set', 'imgFile'];
 
