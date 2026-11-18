@@ -215,12 +215,22 @@ export function parseDeckText(
     // Route to the appropriate zone.
     const zone: DeckZone = isTokens ? 'maybeboard' : (inReserve ? 'reserve' : 'main');
 
-    // Add to deck
-    deckCards.push({
-      card: matchingCard,
-      quantity,
-      zone,
-    });
+    // Add to deck. A card named twice in one section (two decklists pasted
+    // together) becomes one entry: a deck holds one row per card and zone, and
+    // a second row fails the save.
+    const card = matchingCard;
+    const existing = deckCards.find(
+      (dc) => dc.card.name === card.name && dc.card.set === card.set && dc.zone === zone
+    );
+    if (existing) {
+      existing.quantity += quantity;
+    } else {
+      deckCards.push({
+        card,
+        quantity,
+        zone,
+      });
+    }
   }
   
   // Create a deck object if we have cards
