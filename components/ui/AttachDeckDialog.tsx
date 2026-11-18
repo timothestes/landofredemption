@@ -125,7 +125,9 @@ export default function AttachDeckDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="md" className="max-w-xl max-h-[85vh] flex flex-col">
+      {/* One height: with only a min-h on the list, the centered box grew past
+          four results and shrank back to the spinner on every search. */}
+      <DialogContent size="md" className="max-w-xl h-[min(40rem,85vh)] flex flex-col">
         <DialogHeader>
           <DialogTitle>Attach Deck</DialogTitle>
           <DialogDescription>
@@ -156,9 +158,10 @@ export default function AttachDeckDialog({
             )}
           </div>
 
-          {/* Results — min-h keeps modal size stable between empty/loaded states */}
+          {/* Results — a refined search keeps the old rows (dimmed) until the
+              new ones land, so the rows do not vanish under the pointer. */}
           <div ref={listRef} className="flex-1 overflow-y-auto min-h-[300px] -mx-6 px-6">
-            {loading && (
+            {loading && results.length === 0 && (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground" />
               </div>
@@ -179,8 +182,8 @@ export default function AttachDeckDialog({
               </div>
             )}
 
-            {!loading && results.length > 0 && (
-              <div className="space-y-0.5">
+            {results.length > 0 && (
+              <div className={`space-y-0.5 transition-opacity ${loading ? "opacity-60" : ""}`}>
                 {results.map((deck, index) => {
                   const attach = deckAttachability(tf, deck);
                   return (

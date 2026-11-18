@@ -68,7 +68,9 @@ export function ForgeDeckPicker({ decks, sharedDecks, selectedDeckId, onSelect }
 
       {isDesktop ? (
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent size="md" className="max-h-[85vh] flex flex-col">
+          {/* One height: sized to its list, the centered box re-centered as
+              decks loaded and as the search narrowed them. */}
+          <DialogContent size="md" className="h-[min(40rem,85vh)] flex flex-col">
             <DialogHeader>
               <DialogTitle>Choose a deck</DialogTitle>
             </DialogHeader>
@@ -142,7 +144,8 @@ export function ForgeDeckPickerModal({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent size="md" className="max-h-[85vh] flex flex-col">
+        {/* One height whatever the list holds — see the lobby dialog above. */}
+        <DialogContent size="md" className="h-[min(40rem,85vh)] flex flex-col">
           <DialogHeader>
             <DialogTitle>Choose a deck</DialogTitle>
           </DialogHeader>
