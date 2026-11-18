@@ -1,6 +1,7 @@
 import { forgotPasswordAction } from "../../../app/actions";
 import { FormMessage, Message } from "../../../components/form-message";
 import { SubmitButton } from "../../../components/submit-button";
+import { Turnstile } from "../../../components/turnstile";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import Link from "next/link";
@@ -37,6 +38,10 @@ export default async function ForgotPassword(props: {
             />
           </div>
         </div>
+
+        {/* A new key on every server render: tokens are single-use, so a
+            failed submit that lands back here needs a fresh widget. */}
+        <Turnstile key={Date.now()} />
 
         <SubmitButton
           className="mt-4 h-11 w-full"
