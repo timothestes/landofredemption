@@ -71,9 +71,10 @@ interface BattleResolutionUIProps {
   /** True once the band holds at least one card. Win Battle / Battle Lost are
    *  confirm-free and consequence-heavy (a misclicked 🏳 with souls at stake
    *  goes straight into the surrender flow), so they stay hidden over an
-   *  empty band. ↩ End Battle (both roles) follows the same rule; the attacker
-   *  can also still walk away by progressing the phase (set_phase / end_turn
-   *  auto-return any open battle server-side). */
+   *  empty band. ↩ End Battle (both roles) does NOT follow this rule: the
+   *  server never closes a battle when its last card leaves, so an emptied
+   *  band (both sides' cards discarded/banished) still holds an open battle
+   *  that the defender otherwise has no control to close. */
   bandHasCards: boolean;
   /** Both Win Battle and Battle Lost dispatch the same server reducer (resolve_battle) —
    *  the server decides win/loss from caller identity, not from which button was pressed. */
@@ -627,8 +628,10 @@ export default function BattleResolutionUI({
             battle with no win (end_battle). Attacker press also moves on to
             discard when in the battle phase; defender press only closes the
             band. The row gap above is wider than the old 8px so a thumb aimed
-            at ⚑ Win / 🏳 Lost doesn't land here. */}
-        {(isAttacker || isDefender) && bandHasCards && (
+            at ⚑ Win / 🏳 Lost doesn't land here. Shown over an empty band
+            too (see bandHasCards) — it's the only way out of an emptied
+            battle for the defender. */}
+        {(isAttacker || isDefender) && (
           <ResolutionButton
             label={compact ? BUTTON_COPY['end-battle'].compactLabel : BUTTON_COPY['end-battle'].label}
             tone="neutral"
