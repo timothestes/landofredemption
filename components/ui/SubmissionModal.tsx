@@ -238,8 +238,10 @@ export default function SubmissionModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* `size="lg"` is only max-w-lg (512px) — fine for the text list, far too
           narrow for card art, which came out ~70px wide and unreadable. Widen
-          it the way the other image-bearing modals do. */}
-      <DialogContent size="lg" className="max-w-4xl">
+          it the way the other image-bearing modals do. One height: sized to
+          its content, the centered box re-centered when "Loading…" gave way
+          to the deck and when the view toggled. */}
+      <DialogContent size="lg" className="max-w-4xl h-[85vh]">
         <DialogHeader>
           <div className="flex items-center justify-between gap-2">
             <DialogTitle>{submission?.snapshot.deckName ?? "Decklist"}</DialogTitle>

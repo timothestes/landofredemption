@@ -28,12 +28,13 @@ export default function QuickLookModal({
       if (!active) return;
       if (result.success && result.deck) {
         const list = (((result.deck as any).cards as DeckCardData[]) || []);
-        setCards(list);
-        setLoading(false);
-        // Enrich with card data for the default sort (lazy-loaded dataset).
-        const info = await buildSortInfo(list);
+        // Enrich with card data for the default sort (lazy-loaded dataset)
+        // before showing, so the cards do not re-sort under the pointer.
+        const info = await buildSortInfo(list).catch(() => ({}));
         if (!active) return;
+        setCards(list);
         setSortInfo(info);
+        setLoading(false);
       } else {
         setLoading(false);
       }
@@ -103,7 +104,9 @@ export default function QuickLookModal({
       onClick={onClose}
     >
       <div
-        className="bg-background rounded-t-xl sm:rounded-xl shadow-2xl w-full sm:max-w-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh]"
+        // One height: sized to its content, the box re-centered when the
+        // spinner gave way to the deck and when the view toggled.
+        className="bg-background rounded-t-xl sm:rounded-xl shadow-2xl w-full sm:max-w-2xl flex flex-col h-[95vh] sm:h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

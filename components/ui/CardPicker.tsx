@@ -99,7 +99,9 @@ export default function CardPicker({
         if (!o) onClose();
       }}
     >
-      <DialogContent size="md">
+      {/* One height: sized to its hits, the centered box re-centered on every
+          keystroke and moved the search input being typed in. */}
+      <DialogContent size="md" className="h-[min(32rem,calc(100dvh-2rem))]">
         <DialogHeader>
           <DialogTitle>Mention a card</DialogTitle>
           <input

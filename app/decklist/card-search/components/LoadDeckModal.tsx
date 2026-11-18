@@ -86,7 +86,9 @@ export default function LoadDeckModal({
 
   return (
     <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent size="lg" className="max-w-2xl max-h-[80vh] flex flex-col">
+      {/* One height: sized to its list, the centered box re-centered when
+          "Loading decks…" gave way to the decks and on every search. */}
+      <DialogContent size="lg" className="max-w-2xl h-[80vh] flex flex-col">
         {/* Header */}
         <DialogHeader className="bg-primary/10 border-primary/30">
           <div className="flex items-center justify-between">

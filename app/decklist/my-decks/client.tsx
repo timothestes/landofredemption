@@ -2202,10 +2202,14 @@ function CoverPickerModal({
       if (!active) return;
       if (result.success && result.deck) {
         const mainCards = ((result.deck as any).cards?.filter((c: DeckCardData) => c.zone === 'main') || []) as DeckCardData[];
+        // Sort before showing: the grid used to render in name order and
+        // re-sort by type when the card data arrived, swapping the card under
+        // the pointer for another.
+        const info = await buildSortInfo(mainCards).catch(() => ({}));
+        if (!active) return;
         setCards(mainCards);
+        setSortInfo(info);
         setLoading(false);
-        const info = await buildSortInfo(mainCards);
-        if (active) setSortInfo(info);
       } else {
         setLoading(false);
       }
@@ -2244,7 +2248,8 @@ function CoverPickerModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/60" onClick={onClose}>
-      <div className="bg-background rounded-t-xl sm:rounded-xl shadow-2xl w-full sm:max-w-2xl flex flex-col max-h-[95vh] sm:max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+      {/* One height, so the box does not re-center as the search narrows the grid. */}
+      <div className="bg-background rounded-t-xl sm:rounded-xl shadow-2xl w-full sm:max-w-2xl flex flex-col h-[95vh] sm:h-[90vh]" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-border flex-shrink-0">
           <h2 className="text-base sm:text-lg font-semibold">Cover Cards</h2>
