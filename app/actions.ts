@@ -5,6 +5,19 @@ import { createClient } from "../utils/supabase/server";
 import { safeRedirectPath } from "../utils/auth/safeRedirectPath";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { extractClientIp } from "../lib/api/rateLimit";
+import { verifyTurnstileToken } from "../lib/turnstile";
+
+const BOT_CHECK_FAILED =
+  "We couldn't confirm you're not a bot. Wait for the check above the button to finish, then try again.";
+
+// Sign-up and password reset each send an email to whatever address is typed
+// in, so a script filling these forms can mail strangers from our domain. The
+// Turnstile widget in the form posts its token as `cf-turnstile-response`.
+async function passedBotCheck(formData: FormData) {
+  const ip = extractClientIp(new Request("http://x", { headers: await headers() }));
+  return verifyTurnstileToken(formData.get("cf-turnstile-response")?.toString(), ip);
+}
 
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
@@ -18,6 +31,10 @@ export const signUpAction = async (formData: FormData) => {
       "/sign-up",
       "Email and password are required",
     );
+  }
+
+  if (!(await passedBotCheck(formData))) {
+    return encodedRedirect("error", "/sign-up", BOT_CHECK_FAILED);
   }
 
   const { error } = await supabase.auth.signUp({
@@ -88,6 +105,10 @@ export const forgotPasswordAction = async (formData: FormData) => {
 
   if (!email) {
     return encodedRedirect("error", "/forgot-password", "Email is required");
+  }
+
+  if (!(await passedBotCheck(formData))) {
+    return encodedRedirect("error", "/forgot-password", BOT_CHECK_FAILED);
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {

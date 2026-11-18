@@ -2,6 +2,7 @@ import { signUpAction } from "../../../app/actions";
 import { FormMessage, Message } from "../../../components/form-message";
 import { OAuthSignInButtons } from "../../../components/oauth-sign-in-buttons";
 import { SubmitButton } from "../../../components/submit-button";
+import { Turnstile } from "../../../components/turnstile";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import { safeRedirectPath } from "../../../utils/auth/safeRedirectPath";
@@ -80,6 +81,10 @@ export default async function Signup(props: {
             />
           </div>
         </div>
+
+        {/* A new key on every server render: tokens are single-use, so a
+            failed submit that lands back here needs a fresh widget. */}
+        <Turnstile key={Date.now()} />
 
         <SubmitButton
           className="mt-4 h-11 w-full"

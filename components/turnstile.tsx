@@ -20,8 +20,12 @@ const SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js?render
  * Cloudflare Turnstile widget. Calls onToken with a fresh token, or null when
  * the token expires or the widget errors. Tokens are single-use: remount the
  * component (change its `key`) after a failed submit to get a new one.
+ *
+ * Inside a <form> the widget also adds a hidden `cf-turnstile-response` field
+ * holding the token, so a plain server-action form can omit onToken and read
+ * the field from its FormData.
  */
-export function Turnstile({ onToken }: { onToken: (token: string | null) => void }) {
+export function Turnstile({ onToken }: { onToken?: (token: string | null) => void }) {
   const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const host = useRef<HTMLDivElement>(null);
   const onTokenRef = useRef(onToken);
@@ -39,9 +43,9 @@ export function Turnstile({ onToken }: { onToken: (token: string | null) => void
       widgetId = window.turnstile.render(el, {
         sitekey: siteKey,
         theme: resolvedTheme === "dark" ? "dark" : "light",
-        callback: (token: string) => onTokenRef.current(token),
-        "expired-callback": () => onTokenRef.current(null),
-        "error-callback": () => onTokenRef.current(null),
+        callback: (token: string) => onTokenRef.current?.(token),
+        "expired-callback": () => onTokenRef.current?.(null),
+        "error-callback": () => onTokenRef.current?.(null),
       });
     };
 
