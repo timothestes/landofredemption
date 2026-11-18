@@ -54,6 +54,8 @@ async function fetchOverlayRows(supabase) {
         reference: c.reference,
         alignment: c.alignment,
         legality: c.legality,
+        // The designer's credit (migration 129); '' lets the sheet/scan match fill it.
+        artist: c.artist ?? '',
         // … plus tags for absorption tracking (stripped at codegen):
         releaseId: c.release_id,
         setCode: c.set_code,

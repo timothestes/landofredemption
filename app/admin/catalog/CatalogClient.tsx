@@ -46,6 +46,7 @@ const FIELD_LABELS: Record<EditableField, string> = {
   reference: "Reference",
   alignment: "Alignment",
   legality: "Legality",
+  artist: "Artist",
 };
 
 const MULTILINE_FIELDS: ReadonlySet<EditableField> = new Set(["specialAbility", "identifier"]);

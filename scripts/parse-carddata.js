@@ -103,7 +103,7 @@ if (fs.existsSync(forgeReleasedPath)) {
   const CARD_FIELDS = [
     'name', 'set', 'imgFile', 'officialSet', 'type', 'brigade', 'strength',
     'toughness', 'class', 'identifier', 'specialAbility', 'rarity', 'reference',
-    'alignment', 'legality',
+    'alignment', 'legality', 'artist',
   ];
   for (const [releaseId, rows] of byRelease) {
     if (rows.some((r) => /\(AB\)/.test(r.set || ''))) {
@@ -134,6 +134,49 @@ if (fs.existsSync(forgeReleasedPath)) {
   }
   const appended = cards.length - upstreamCount;
   if (appended > 0) console.log(`🔥 ${appended} forge-released cards appended from overlay`);
+}
+
+// ---- Artist credits --------------------------------------------------------
+// Upstream carddata.txt has no artist column. A forge-released row brings its
+// designer's credit; everything else comes from a snapshot of the community
+// "Redemption Card List" sheet (`make pull-card-artists`), with the scanner's
+// machine-read credit line as the fallback. Matching lives in
+// scripts/lib/applyCardArtists.js; a printing it can't place gets ''.
+// Runs BEFORE the card overrides so an artist fixed in /admin/catalog wins.
+// The trade-off: matching sees the unpatched officialSet/reference, so an
+// admin fix to either does not re-match the artist — override the artist too.
+{
+  let snapshot = { rows: [] };
+  if (fs.existsSync(cardArtistsPath)) {
+    try {
+      snapshot = JSON.parse(fs.readFileSync(cardArtistsPath, 'utf-8'));
+    } catch (e) {
+      console.error(`❌ Failed to read ${cardArtistsPath}: ${e.message}`);
+      process.exit(1);
+    }
+    if (!Array.isArray(snapshot.rows)) {
+      console.error(`❌ ${cardArtistsPath} has no rows array`);
+      process.exit(1);
+    }
+  } else {
+    console.log(`⚠️  ${path.relative(process.cwd(), cardArtistsPath)} missing — run make pull-card-artists`);
+  }
+  let printingCues = {};
+  if (fs.existsSync(printingCuesPath)) {
+    try {
+      printingCues = JSON.parse(fs.readFileSync(printingCuesPath, 'utf-8'));
+    } catch (e) {
+      console.error(`❌ Failed to read ${printingCuesPath}: ${e.message}`);
+      process.exit(1);
+    }
+  }
+  const { stats } = applyCardArtists(cards, snapshot, printingCues);
+  console.log(
+    `🎨 artists: ${stats.forge} from Forge releases, ` +
+      `${stats.sheetSet + stats.sheetName + stats.sheetFuzzy} from the sheet, ` +
+      `${stats.scan + stats.scanOverride} from scans (${stats.scanOverride} overruling the sheet), ` +
+      `${stats.none} unknown`
+  );
 }
 
 // ---- Card-override overlay (catalog admin editor) --------------------------
@@ -183,44 +226,6 @@ const cardAliases = (() => {
   }
   return aliases;
 })();
-
-// ---- Artist credits --------------------------------------------------------
-// Upstream carddata.txt has no artist column. Credits come from a snapshot of
-// the community "Redemption Card List" sheet (`make pull-card-artists`), with
-// the scanner's machine-read credit line as the fallback. Matching lives in
-// scripts/lib/applyCardArtists.js; a printing it can't place gets ''.
-{
-  let snapshot = { rows: [] };
-  if (fs.existsSync(cardArtistsPath)) {
-    try {
-      snapshot = JSON.parse(fs.readFileSync(cardArtistsPath, 'utf-8'));
-    } catch (e) {
-      console.error(`❌ Failed to read ${cardArtistsPath}: ${e.message}`);
-      process.exit(1);
-    }
-    if (!Array.isArray(snapshot.rows)) {
-      console.error(`❌ ${cardArtistsPath} has no rows array`);
-      process.exit(1);
-    }
-  } else {
-    console.log(`⚠️  ${path.relative(process.cwd(), cardArtistsPath)} missing — run make pull-card-artists`);
-  }
-  let printingCues = {};
-  if (fs.existsSync(printingCuesPath)) {
-    try {
-      printingCues = JSON.parse(fs.readFileSync(printingCuesPath, 'utf-8'));
-    } catch (e) {
-      console.error(`❌ Failed to read ${printingCuesPath}: ${e.message}`);
-      process.exit(1);
-    }
-  }
-  const { stats } = applyCardArtists(cards, snapshot, printingCues);
-  console.log(
-    `🎨 artists: ${stats.sheetSet + stats.sheetName + stats.sheetFuzzy} from the sheet, ` +
-      `${stats.scan + stats.scanOverride} from scans (${stats.scanOverride} overruling the sheet), ` +
-      `${stats.none} unknown`
-  );
-}
 
 // Diff summary against previous generated data, if present
 function loadPreviousCards() {

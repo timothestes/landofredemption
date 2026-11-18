@@ -55,10 +55,9 @@ export function designCardToCatalogRow(card: DesignCard, ctx: LackeyRowContext):
     // The release makes cards tournament-legal: an unset legality freezes as
     // Rotation (the same default the forge deckbuilder applies).
     legality: cell("Legality") || "Rotation",
-    // The release path (promote RPC → forge-released.json) has no artist column
-    // yet, so a released Forge card is uncredited until the community sheet or
-    // the scanner cue table lists it.
-    artist: "",
+    // Preview only: forge_promote_set stores the credit from the approved
+    // version itself (migration 129), the same text CardSvg prints.
+    artist: (card.artistCredit ?? "").trim(),
   };
 }
 

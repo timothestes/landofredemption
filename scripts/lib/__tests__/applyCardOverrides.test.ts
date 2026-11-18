@@ -20,6 +20,16 @@ describe("applyCardOverrides", () => {
     expect(c.specialAbility).toBe("Protect."); // untouched fields flow through
   });
 
+  it("patches the artist credit", () => {
+    const c = { ...card(), artist: "From the sheet" };
+    const r = applyCardOverrides([c], {
+      overrides: [{ name: "Angel of God", set: "I", fields: { artist: "Doug Gray" }, note: "n" }],
+      imageVersions: {},
+    });
+    expect(r.errors).toEqual([]);
+    expect(c.artist).toBe("Doug Gray");
+  });
+
   it("errors on an orphan override (no catalog match) and names the recovery path", () => {
     const r = applyCardOverrides([card()], {
       overrides: [{ name: "Nope", set: "I", fields: { type: "Hero" }, note: "n" }],
@@ -77,8 +87,8 @@ describe("applyCardOverrides", () => {
     expect(applyCardOverrides([card()], {}).errors).toEqual([]);
   });
 
-  it("field constants: 12 editable + 3 identity, disjoint", () => {
-    expect(EDITABLE_FIELDS).toHaveLength(12);
+  it("field constants: 13 editable + 3 identity, disjoint", () => {
+    expect(EDITABLE_FIELDS).toHaveLength(13);
     expect(IDENTITY_FIELDS).toEqual(["name", "set", "imgFile"]);
     expect(EDITABLE_FIELDS.some((f: string) => IDENTITY_FIELDS.includes(f))).toBe(false);
   });

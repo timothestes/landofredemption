@@ -4,7 +4,7 @@ import { findCard, type CardData } from "@/lib/cards/lookup";
 
 export const EDITABLE_FIELDS = [
   "officialSet", "type", "brigade", "strength", "toughness", "class",
-  "identifier", "specialAbility", "rarity", "reference", "alignment", "legality",
+  "identifier", "specialAbility", "rarity", "reference", "alignment", "legality", "artist",
 ] as const;
 export type EditableField = (typeof EDITABLE_FIELDS)[number];
 export const IDENTITY_FIELDS = ["name", "set", "imgFile"] as const;
