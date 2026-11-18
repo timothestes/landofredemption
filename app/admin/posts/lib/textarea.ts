@@ -87,6 +87,35 @@ export function minimalEdit(oldValue: string, newValue: string): { start: number
   return { start, end: oldEnd, text: newValue.slice(start, newEnd) };
 }
 
+// `![alt](url)` with an optional quoted title. The URL must be non-empty, so
+// an upload still in flight (`![Uploading a.png 1…]()`) never matches: the
+// upload swaps its placeholder by exact text and would lose a retitled one.
+const IMAGE = /!\[([^\]\n]*)\]\(([^()\s]+)(?:\s+"([^"\n]*)")?\)/g;
+
+/**
+ * Spoiler toggle for the images on the lines the selection touches: hides
+ * them behind the card back (the `"reveal"` title ArticleBody reads), or,
+ * when every one is already hidden, shows them again. The caret lands after
+ * the last image changed. Null when those lines hold no image.
+ */
+export function toggleReveal(value: string, sel: Selection): EditResult | null {
+  const lineStart = value.lastIndexOf("\n", sel.start - 1) + 1;
+  const nl = value.indexOf("\n", sel.end);
+  const lineEnd = nl === -1 ? value.length : nl;
+  const hits = [...value.slice(lineStart, lineEnd).matchAll(IMAGE)];
+  if (hits.length === 0) return null;
+  const hide = hits.some((m) => m[3] !== "reveal");
+  let next = value.slice(0, lineStart);
+  let from = lineStart;
+  for (const m of hits) {
+    const at = lineStart + m.index!;
+    next += value.slice(from, at) + `![${m[1]}](${m[2]}${hide ? ' "reveal"' : ""})`;
+    from = at + m[0].length;
+  }
+  const caret = next.length;
+  return { value: next + value.slice(from), selectionStart: caret, selectionEnd: caret };
+}
+
 const LIST_LINE = /^(\s*)([-*+]|\d+\.|>)\s(.*)$/;
 
 /**

@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { wrapSelection, prefixLines, insertBlock, replaceOnce, minimalEdit, continueList, normalizeHref } from "../textarea";
+import {
+  wrapSelection,
+  prefixLines,
+  insertBlock,
+  replaceOnce,
+  minimalEdit,
+  continueList,
+  normalizeHref,
+  toggleReveal,
+} from "../textarea";
 
 describe("wrapSelection", () => {
   it("wraps the selected text and keeps it selected", () => {
@@ -114,5 +123,40 @@ describe("continueList", () => {
     expect(continueList("plain", { start: 5, end: 5 })).toBeNull();
     expect(continueList("-", { start: 1, end: 1 })).toBeNull();
     expect(continueList("- a", { start: 2, end: 3 })).toBeNull();
+  });
+});
+
+describe("toggleReveal", () => {
+  const img = "![Accuser](https://x.test/a.jpg)";
+  const hidden = '![Accuser](https://x.test/a.jpg "reveal")';
+
+  it("hides the image on the caret's line and puts the caret after it", () => {
+    const value = `intro\n\n${img}\n\nmore`;
+    const r = toggleReveal(value, { start: 10, end: 10 });
+    expect(r?.value).toBe(`intro\n\n${hidden}\n\nmore`);
+    expect([r?.selectionStart, r?.selectionEnd]).toEqual([7 + hidden.length, 7 + hidden.length]);
+  });
+  it("finds the image from anywhere on its line", () => {
+    expect(toggleReveal(`see ${img} here`, { start: 0, end: 0 })?.value).toBe(`see ${hidden} here`);
+  });
+  it("shows a hidden image again", () => {
+    expect(toggleReveal(hidden, { start: 3, end: 3 })?.value).toBe(img);
+  });
+  it("replaces another title when hiding", () => {
+    expect(toggleReveal('![a](https://x.test/a.jpg "caption")', { start: 0, end: 0 })?.value).toBe(
+      '![a](https://x.test/a.jpg "reveal")',
+    );
+  });
+  it("hides every image the selection touches unless all are already hidden", () => {
+    const value = `${img}\n\n${hidden}`;
+    const all = { start: 0, end: value.length };
+    expect(toggleReveal(value, all)?.value).toBe(`${hidden}\n\n${hidden}`);
+    expect(toggleReveal(`${hidden}\n\n${hidden}`, all)?.value).toBe(`${img}\n\n${img}`);
+  });
+  it("leaves images on other lines alone", () => {
+    expect(toggleReveal(`${img}\n\nplain`, { start: 36, end: 36 })).toBeNull();
+  });
+  it("ignores an upload still in flight, whose placeholder the upload must find unchanged", () => {
+    expect(toggleReveal("![Uploading a.png 1…]()", { start: 3, end: 3 })).toBeNull();
   });
 });
