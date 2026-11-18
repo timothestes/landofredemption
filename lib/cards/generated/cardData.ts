@@ -29,6 +29,8 @@ export interface CardData {
   reference: string;
   alignment: string;
   legality: string;
+  /** Illustrator credit, '' when unknown (scripts/lib/applyCardArtists.js). */
+  artist: string;
 }
 
 export const CARDS: readonly CardData[] = cardData as readonly CardData[];

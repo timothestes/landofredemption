@@ -627,6 +627,7 @@ export const SPECIAL_TOKEN_CARDS: Record<string, CardData> = {
     reference: 'John 4:35',
     alignment: 'Neutral',
     legality: '',
+    artist: '',
   },
   'Lost Souls Token': {
     name: 'Lost Soul Token "Lost Souls"',
@@ -644,6 +645,7 @@ export const SPECIAL_TOKEN_CARDS: Record<string, CardData> = {
     reference: 'Proverbs 2:16-17',
     alignment: 'Neutral',
     legality: '',
+    artist: '',
   },
   'Daniel Soul Token': {
     name: 'Daniel Soul Token',
@@ -661,6 +663,7 @@ export const SPECIAL_TOKEN_CARDS: Record<string, CardData> = {
     reference: '',
     alignment: 'Neutral',
     legality: '',
+    artist: '',
   },
   // Special cycling Heavenly Host tokens — an easter egg for the gated users on
   // 'The Heavenly Host (GoC)'. Metadata mirrors the standard Heavenly Host
@@ -681,6 +684,7 @@ export const SPECIAL_TOKEN_CARDS: Record<string, CardData> = {
     reference: 'Luke 2:13',
     alignment: 'Good',
     legality: '',
+    artist: '',
   },
   'Heavenly Host Token (Purple)': {
     name: 'Heavenly Host Token (Purple)',
@@ -698,6 +702,7 @@ export const SPECIAL_TOKEN_CARDS: Record<string, CardData> = {
     reference: 'Luke 2:13',
     alignment: 'Good',
     legality: '',
+    artist: '',
   },
   'Heavenly Host Token (Silver)': {
     name: 'Heavenly Host Token (Silver)',
@@ -715,6 +720,7 @@ export const SPECIAL_TOKEN_CARDS: Record<string, CardData> = {
     reference: 'Luke 2:13',
     alignment: 'Good',
     legality: '',
+    artist: '',
   },
 };
 

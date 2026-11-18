@@ -18,6 +18,8 @@ export interface Card {
   reference: string;
   alignment: string;
   legality: string;
+  /** Illustrator credit; absent on Forge cards and on placeholder rows. */
+  artist?: string;
   testament: string;
   isGospel: boolean;
 }

@@ -51,6 +51,7 @@ export const ALL_CARDS: Card[] = CARDS.map((c) => {
     reference: c.reference,
     alignment: c.alignment,
     legality: c.legality,
+    artist: c.artist,
     testament,
     isGospel,
   };

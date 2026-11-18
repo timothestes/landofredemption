@@ -19,6 +19,7 @@ function makeCard(overrides: Partial<CardData> = {}): CardData {
     reference: '',
     alignment: 'Good',
     legality: '',
+    artist: '',
     ...overrides,
   };
 }

@@ -41,6 +41,7 @@ help:
 	@echo "  make forge-fonts     - Upload the printed card faces (tmp/) to the private Forge Blob store"
 	@echo "  make forge-font-metrics - Regenerate the body + title advance widths for the preview's text fit (needs tmp/SYMPHOBL.TTF)"
 	@echo "  make pull-card-overrides - Sync catalog admin edits into the overlay"
+	@echo "  make pull-card-artists - Snapshot artist credits from the community card-list sheet"
 	@echo ""
 
 # Install dependencies
@@ -126,6 +127,10 @@ pull-card-overrides:
 	@echo "📥 Syncing card overrides from Supabase..."
 	@node scripts/pull-card-overrides.js
 
+# Snapshot artist credits from the community "Redemption Card List" sheet + regenerate the catalog.
+pull-card-artists:
+	@node scripts/pull-card-artists.js
+
 # Regenerate the Forge frame kit (public/forge/frames) + app/forge/lib/frameGeometry.ts from
 # the design team's Illustrator card template. The .ai is confidential and gitignored (tmp/);
 # only the derived files are committed. Needs python3.11 + Pillow, zstd, poppler.
@@ -145,4 +150,4 @@ forge-fonts:
 forge-font-metrics:
 	@python3.11 scripts/forge-font-metrics.py --title "$(FORGE_FONTS_DIR)/SYMPHOBL.TTF"
 
-.PHONY: all install run dev dev-windows build start stop setup clean fresh update-paragons paragons update-cards cards update-scan-cues pull-forge-releases pull-card-overrides forge-frames forge-fonts forge-font-metrics
+.PHONY: all install run dev dev-windows build start stop setup clean fresh update-paragons paragons update-cards cards update-scan-cues pull-forge-releases pull-card-overrides pull-card-artists forge-frames forge-fonts forge-font-metrics
