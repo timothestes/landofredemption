@@ -47,12 +47,19 @@ function prefersReducedMotion(): boolean {
  * stagger — regardless of previous zone. Callers pass a value that changes
  * exactly when a fresh game begins (goldfish: state.sessionId; multiplayer:
  * a key derived from playingStartedAtMicros), and null/undefined otherwise.
+ *
+ * `route` retargets the hook at another deck → pile movement. The mill
+ * animation passes `{ toZone: 'discard', staggerMs: MILL_STAGGER_MS }` and no
+ * openingKey.
  */
 export function useDealAnimation(
   cards: DealCardSnapshot[],
   enabled: boolean,
   openingKey?: string | null,
+  route?: { toZone: string; staggerMs?: number },
 ) {
+  const toZone = route?.toZone ?? 'hand';
+  const routeStaggerMs = route?.staggerMs;
   const prevZonesRef = useRef<Map<string, string> | null>(null);
   const prevOpeningKeyRef = useRef<string | null>(null);
   const lastStartAtRef = useRef(-Infinity);
@@ -101,12 +108,12 @@ export function useDealAnimation(
   }, []);
 
   useBeforePaintEffect(() => {
-    const { dealt, nextZones } = diffDeals(prevZonesRef.current, cards);
+    const { dealt, nextZones } = diffDeals(prevZonesRef.current, cards, toZone);
     prevZonesRef.current = nextZones;
 
     // Cancel deals whose card left the hand mid-flight (undo, direct play).
     setDeals(prev => {
-      const stillDealing = prev.filter(d => nextZones.get(d.instanceId) === 'hand');
+      const stillDealing = prev.filter(d => nextZones.get(d.instanceId) === toZone);
       return stillDealing.length === prev.length ? prev : stillDealing;
     });
 
@@ -115,9 +122,9 @@ export function useDealAnimation(
     const openingChanged = openingKey != null && openingKey !== prevOpeningKeyRef.current;
     if (openingKey != null) prevOpeningKeyRef.current = openingKey;
     let toDeal = dealt;
-    let staggerMs: number | undefined;
+    let staggerMs: number | undefined = routeStaggerMs;
     if (openingChanged) {
-      const handIds = cards.filter(c => c.zone === 'hand').map(c => c.id);
+      const handIds = cards.filter(c => c.zone === toZone).map(c => c.id);
       if (handIds.length > 0) {
         toDeal = handIds;
         staggerMs = DEAL_OPENING_STAGGER_MS;
@@ -149,7 +156,7 @@ export function useDealAnimation(
       if (existing) clearTimeout(existing);
       failsafeTimersRef.current.set(instanceId, t);
     });
-  }, [cards, enabled, openingKey, completeDeal]);
+  }, [cards, enabled, openingKey, completeDeal, toZone, routeStaggerMs]);
 
   const dealingIds = useMemo(() => new Set(deals.map(d => d.instanceId)), [deals]);
 

@@ -11,7 +11,7 @@ import type { ActiveDeal } from '../hooks/useDealAnimation';
 export interface DealSpriteSpec {
   deal: ActiveDeal;
   /** Card top-left at the deck pile, game-layer coords. */
-  origin: { x: number; y: number };
+  origin: { x: number; y: number; rotation?: number };
   /** Initial group scale so the back matches the pile card size. */
   originScale: number;
   /** Final hand-slot position/rotation (same values the real card renders with). */
@@ -118,6 +118,7 @@ function DealSprite({
       ref={groupRef}
       x={spec.origin.x}
       y={spec.origin.y}
+      rotation={spec.origin.rotation ?? 0}
       scaleX={spec.originScale}
       scaleY={spec.originScale}
       // Mounted hidden so the sprite can't paint at the deck pile before its
