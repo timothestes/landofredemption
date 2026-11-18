@@ -29,7 +29,7 @@ const supabase = createClient();
 // `prefetch: false` opts a link out of Next's viewport/hover prefetch. The deck
 // builder routes bundle the whole card catalog (~350 KB brotli), so every page
 // that rendered a prefetching link to them downloaded it.
-export type NavLink = { href: string; label: string; icon: IconType; highlight?: boolean; authRequired?: boolean; isNew?: boolean; prefetch?: false };
+export type NavLink = { href: string; label: string; icon: IconType; highlight?: boolean; authRequired?: boolean; prefetch?: false };
 
 export const navLinks: NavLink[] = [
   // Hidden until Nationals 2026 registration reopens next year — re-enable this link and the NATIONALS_CONFIG import above.
@@ -46,15 +46,15 @@ export const tournamentLinks: NavLink[] = [
   { href: "/tournaments/rnrs-points", label: "RNRS Points", icon: HiChartBar },
   { href: "/tournaments/history", label: "Nationals History", icon: FaBookOpen },
   { href: "/tracker/tournaments", label: "My Tournaments", icon: FaTrophy, authRequired: true },
-  { href: "/brackets", label: "Gauntlets", icon: HiViewList, authRequired: true, isNew: true },
+  { href: "/brackets", label: "Gauntlets", icon: HiViewList, authRequired: true },
 ];
 
 export const deckLinks: NavLink[] = [
   { href: "/decklist/community", label: "Community Decks", icon: HiGlobeAlt },
   { href: "/decklist/my-decks", label: "My Decks", icon: TbCardsFilled, authRequired: true },
-  { href: "/collection", label: "My Collection", icon: HiCollection, authRequired: true, isNew: true },
-  { href: "/decklist/generate", label: "Deck Check PDF", icon: TbCardsFilled, isNew: true },
-  { href: "/decklist/card-search/tier-list", label: "Tier List Maker", icon: TbListNumbers, isNew: true, prefetch: false },
+  { href: "/collection", label: "My Collection", icon: HiCollection, authRequired: true },
+  { href: "/decklist/generate", label: "Deck Check PDF", icon: TbCardsFilled },
+  { href: "/decklist/card-search/tier-list", label: "Tier List Maker", icon: TbListNumbers, prefetch: false },
 ];
 
 // hideGameLinks: a playtester's Forge pages have their own Play, Decks and Deckbuilder right below
@@ -426,11 +426,6 @@ const TopNav: React.FC<{ hideGameLinks?: boolean }> = ({ hideGameLinks = false }
                         >
                           <Icon className="w-4 h-4" />
                           {link.label}
-                          {link.isNew && (
-                            <span className="ml-auto px-1.5 py-0.5 bg-primary/15 text-primary text-[10px] font-bold rounded uppercase">
-                              New
-                            </span>
-                          )}
                         </Link>
                       );
                     })}
@@ -501,11 +496,6 @@ const TopNav: React.FC<{ hideGameLinks?: boolean }> = ({ hideGameLinks = false }
                           >
                             <Icon className="w-4 h-4" />
                             {link.label}
-                            {link.isNew && (
-                              <span className="ml-auto px-1.5 py-0.5 bg-primary/15 text-primary text-[10px] font-bold rounded uppercase">
-                                New
-                              </span>
-                            )}
                           </Link>
                         );
                       })}
@@ -828,11 +818,6 @@ const TopNav: React.FC<{ hideGameLinks?: boolean }> = ({ hideGameLinks = false }
                       >
                         <Icon className="w-4 h-4" />
                         {link.label}
-                        {link.isNew && (
-                          <span className="ml-auto px-1.5 py-0.5 bg-primary/15 text-primary text-[10px] font-bold rounded uppercase">
-                            New
-                          </span>
-                        )}
                       </Link>
                     );
                   })}
@@ -875,11 +860,6 @@ const TopNav: React.FC<{ hideGameLinks?: boolean }> = ({ hideGameLinks = false }
                         >
                           <Icon className="w-4 h-4" />
                           {link.label}
-                          {link.isNew && (
-                            <span className="ml-auto px-1.5 py-0.5 bg-primary/15 text-primary text-[10px] font-bold rounded uppercase">
-                              New
-                            </span>
-                          )}
                         </Link>
                       );
                     })}
