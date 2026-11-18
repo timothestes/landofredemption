@@ -6,11 +6,7 @@ import { CARD_BY_FULL_KEY } from "../data/cardIndex";
 import { buildReplacedHalf, type ReplaceAlignment } from "../utils/replaceHalf";
 import { applyZoneMoves, type ZoneMove } from "../utils/zoneMoves";
 import type { DeckBuilderPersistence } from "../builderConfig";
-
-const STORAGE_KEY = "redemption-deck-builder-current-deck";
-// The last cloud-synced snapshot, kept beside the draft so a later mount that
-// restores the draft can tell whether it is dirty (see isDisplacedDraft).
-const SAVED_SNAPSHOT_KEY = "redemption-deck-builder-saved-snapshot";
+import { deckHasContent, openDraftTab, writeDraft, writeDraftSnapshot, type DraftTab } from "../utils/deckDrafts";
 
 // Public default persistence: the `decks` table. Module-level so it's a stable
 // reference (no re-creation per render) when no override is injected.
@@ -118,68 +114,106 @@ export function useDeckState(
   // draft on this device. The host shows the draft and confirms before loading.
   const [deferredDeckId, setDeferredDeckId] = useState<string | null>(null);
 
+  // This tab's slot for the deck in progress (see utils/deckDrafts). Null until
+  // the tab has claimed it, and always null when the host turns storage off.
+  const draftTabRef = useRef<DraftTab | null>(null);
+
   // Record the cloud-synced state in memory and on this device.
   const commitSavedSnapshot = (snapshot: string) => {
     lastSavedSnapshotRef.current = snapshot;
-    if (localStoragePersistRef.current) saveSavedSnapshotToStorage(snapshot);
+    const tab = draftTabRef.current;
+    if (tab) writeDraftSnapshot(tab.store, tab.tabId, snapshot);
   };
 
   useEffect(() => {
     deckRef.current = deck;
   }, [deck]);
 
-  // Track the initial params to avoid re-running on hydration changes
-  const initialParamsRef = useRef<{ deckId?: string; isNew?: boolean; initialized: boolean }>({ initialized: false });
-
-  // Load from localStorage on client mount (after hydration)
-  // Use a small delay to ensure searchParams has hydrated
+  // On mount, claim this tab's storage slot, then open what the URL asked for:
+  // the cloud deck for ?deckId=, a blank deck for New Deck, otherwise this tab's
+  // deck in progress (or one a closed tab left). Runs once, with the first
+  // render's URL — the host's URL sync rewrites the address before a deck has
+  // loaded. Deferred a tick so React's dev double-mount clears the timer
+  // instead of claiming the slot twice.
   useEffect(() => {
-    // Skip if already processed or if still on first render before hydration settles
-    if (hasLoadedFromStorage.current) return;
-    
-    // Wait a tick for searchParams to hydrate properly
-    const timer = setTimeout(() => {
-      if (hasLoadedFromStorage.current) return;
-      
-      // Mark the initial params we're working with
-      if (!initialParamsRef.current.initialized) {
-        initialParamsRef.current = { deckId: initialDeckId, isNew: isNewDeck, initialized: true };
-      }
-      
-      // Only load from storage if no deckId and not creating new deck
-      if (!initialDeckId && !isNewDeck) {
-        if (localStoragePersistRef.current) {
-          const storedDeck = loadDeckFromStorage();
-          // Only update if there's actually a deck in storage (not just the default)
-          if (storedDeck.cards.length > 0 || storedDeck.name !== "Untitled Deck" || storedDeck.id) {
-            // Restore the sync baseline too, so a clean cloud deck reopened from
-            // the bare URL is not flagged as unsaved.
-            lastSavedSnapshotRef.current = loadSavedSnapshotFromStorage();
-            setDeck(storedDeck);
-          }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const restoring = !initialDeckId && !isNewDeck;
+      let tab: DraftTab | null = null;
+      if (localStoragePersistRef.current) {
+        try {
+          tab = await openDraftTab(restoring);
+        } catch (error) {
+          // Storage blocked (private mode, site data off): build without it.
+          console.error("Error opening deck storage:", error);
         }
-        // This path owns initialization; the cloud-load and new-deck effects own
-        // theirs. Flipping isInitializing here when a deckId is present would
-        // prematurely hide the "Loading deck..." indicator while the cloud fetch
-        // is still in flight, leaving a blank "Untitled Deck" panel on screen.
+        if (cancelled) {
+          tab?.release();
+          return;
+        }
+      }
+      draftTabRef.current = tab;
+      hasLoadedFromStorage.current = true;
+      const draft = tab?.draft ?? null;
+
+      if (initialDeckId) {
+        // Loading the cloud deck also persists it over this tab's draft. If
+        // that draft is unsaved work (an anonymous deck, or edits never
+        // synced), show it instead and let the host confirm.
+        if (draft && isDisplacedDraft(draft.deck, draft.savedSnapshot, initialDeckId)) {
+          lastSavedSnapshotRef.current = draft.savedSnapshot;
+          setDeck(draft.deck);
+          setIsInitializing(false);
+          setDeferredDeckId(initialDeckId);
+        } else {
+          loadDeckFromCloud(initialDeckId);
+        }
+      } else if (isNewDeck) {
+        // Create a fresh blank deck (with optional folderId)
+        console.log('[useDeckState] Creating new deck with folderId:', initialFolderId);
+        setDeck({
+          name: "Untitled Deck",
+          cards: [],
+          description: "",
+          format: undefined,
+          folderId: initialFolderId || undefined,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        setHasUnsavedChanges(false);
+        setIsInitializing(false);
+      } else {
+        if (draft && deckHasContent(draft.deck)) {
+          // Restore the sync baseline too, so a clean cloud deck reopened from
+          // the bare URL is not flagged as unsaved.
+          lastSavedSnapshotRef.current = draft.savedSnapshot;
+          setDeck(draft.deck);
+        }
         setIsInitializing(false);
       }
-      hasLoadedFromStorage.current = true;
     }, 0);
-    
-    return () => clearTimeout(timer);
-  }, [initialDeckId, isNewDeck]);
 
-  // Persist deck to localStorage whenever it changes — but not before the
-  // deferred initial read below has run, or the SSR default overwrites the draft.
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      // Closing the builder frees this tab's deck for another tab to pick up.
+      draftTabRef.current?.release();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the first render's URL only (see above)
+  }, []);
+
+  // Persist the deck to this tab's slot whenever it changes — but not before
+  // the tab has opened its deck, or the SSR default overwrites the draft.
   useEffect(() => {
+    const tab = draftTabRef.current;
     if (
+      tab &&
       canPersistDeckToStorage({
         hasLoadedFromStorage: hasLoadedFromStorage.current,
         localStoragePersist: localStoragePersistRef.current,
       })
     ) {
-      saveDeckToStorage(deck);
+      writeDraft(tab.store, tab.tabId, deck, lastSavedSnapshotRef.current);
     }
 
     // Derive the dirty flag from the saved-snapshot ref so it reflects reality
@@ -189,40 +223,11 @@ export function useDeckState(
     }
   }, [deck]);
 
-  // Load deck from cloud on mount if deckId provided, or create new deck with folderId if provided
+  // After the persist effect's first run: the default deck on the first render
+  // is not an unsaved change.
   useEffect(() => {
-    if (initialDeckId && isInitialMount.current) {
-      // Loading the cloud deck also persists it over whatever draft is in
-      // localStorage. If that draft is unsaved work (an anonymous deck, or
-      // edits never synced), show it instead and let the host confirm.
-      const draft = localStoragePersistRef.current ? loadDeckFromStorage() : null;
-      const savedSnapshot = draft ? loadSavedSnapshotFromStorage() : null;
-      if (draft && isDisplacedDraft(draft, savedSnapshot, initialDeckId)) {
-        lastSavedSnapshotRef.current = savedSnapshot;
-        setDeck(draft);
-        setIsInitializing(false);
-        setDeferredDeckId(initialDeckId);
-      } else {
-        // Load existing deck from cloud
-        loadDeckFromCloud(initialDeckId);
-      }
-    } else if (isNewDeck && isInitialMount.current) {
-      // Create a fresh blank deck (with optional folderId)
-      console.log('[useDeckState] Creating new deck with folderId:', initialFolderId);
-      setDeck({
-        name: "Untitled Deck",
-        cards: [],
-        description: "",
-        format: undefined,
-        folderId: initialFolderId || undefined,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-      setHasUnsavedChanges(false);
-      setIsInitializing(false);
-    }
     isInitialMount.current = false;
-  }, [initialDeckId, initialFolderId, isNewDeck]);
+  }, []);
 
   /**
    * Load deck from cloud by ID
@@ -872,42 +877,6 @@ function dbCardToDeckCard(
 }
 
 /**
- * Load deck from localStorage
- */
-function loadDeckFromStorage(): Deck {
-  // Check if we're in the browser (not SSR)
-  if (typeof window === 'undefined') {
-    return getDefaultDeck();
-  }
-
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      // Migrate legacy isReserve:boolean to zone:DeckZone (pre-PR-1 localStorage drafts)
-      const migratedCards = Array.isArray(parsed.cards)
-        ? parsed.cards.map((c: any) => {
-            if (c?.zone) return c;
-            const zone: DeckZone = c?.isReserve ? 'reserve' : 'main';
-            const { isReserve: _drop, ...rest } = c ?? {};
-            return { ...rest, zone };
-          })
-        : [];
-      return {
-        ...parsed,
-        cards: migratedCards,
-        createdAt: new Date(parsed.createdAt),
-        updatedAt: new Date(parsed.updatedAt),
-      };
-    }
-  } catch (error) {
-    console.error("Error loading deck from storage:", error);
-  }
-
-  return getDefaultDeck();
-}
-
-/**
  * Get default empty deck
  */
 function getDefaultDeck(): Deck {
@@ -922,36 +891,3 @@ function getDefaultDeck(): Deck {
   };
 }
 
-function loadSavedSnapshotFromStorage(): string | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    return localStorage.getItem(SAVED_SNAPSHOT_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function saveSavedSnapshotToStorage(snapshot: string): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(SAVED_SNAPSHOT_KEY, snapshot);
-  } catch (error) {
-    console.error("Error saving deck snapshot to storage:", error);
-  }
-}
-
-/**
- * Save deck to localStorage
- */
-function saveDeckToStorage(deck: Deck): void {
-  // Check if we're in the browser (not SSR)
-  if (typeof window === 'undefined') {
-    return;
-  }
-  
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(deck));
-  } catch (error) {
-    console.error("Error saving deck to storage:", error);
-  }
-}
