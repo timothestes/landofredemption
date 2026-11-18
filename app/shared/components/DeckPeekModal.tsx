@@ -7,10 +7,10 @@ import { beginCardPress, moveCardPress, cancelCardPress, cardPressFired, consume
 import { useModalGame } from '@/app/shared/contexts/ModalGameContext';
 import { GameCard, ZoneId } from '@/app/shared/types/gameCard';
 import { ArrowUp, ArrowDown, Shuffle } from 'lucide-react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { useModalCardHover, ModalCardHoverPreview, getHoverGlowStyle } from './ModalCardHoverPreview';
 import { useCardPreview } from '@/app/goldfish/state/CardPreviewContext';
-import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
+import { getCardImageUrl, CARD_IMAGE_ASPECT_RATIO } from '@/app/shared/utils/cardImageUrl';
 import { useDraggableModal } from '@/app/shared/hooks/useDraggableModal';
 import { DraggableTitleBar } from './DraggableTitleBar';
 import { isOnScrollbar } from '@/app/shared/utils/scrollbarHit';
@@ -249,6 +249,17 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
   const remainingIds = peekedCards.map(c => c.instanceId);
   const hasRemaining = remainingIds.length > 0;
 
+  // The box sits centred, so when it shrinks (a card moved out drops a row) it
+  // re-centres and slides every card under the pointer. Hold its slot at the
+  // tallest the box has been instead: the box then shrinks from the bottom and
+  // its top stays put. Capped at the box's largest max height (92dvh on a short
+  // touch screen, globals.css) so a rotated phone still fits it.
+  const [heldHeight, setHeldHeight] = useState(0);
+  useLayoutEffect(() => {
+    const px = modalBoxRef.current?.offsetHeight ?? 0;
+    setHeldHeight((prev) => Math.max(prev, px));
+  }, [peekedCards.length]);
+
   // Auto-close when all revealed cards have been moved
   useEffect(() => {
     if (!hasRemaining && peekedIds.length > 0 && onClose && !keepOpen) {
@@ -476,7 +487,10 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
         pointerEvents: 'none',
       }}
     >
-      <div ref={modalBoxRef} style={modalStyle}>
+      <div
+        ref={modalBoxRef}
+        style={{ ...modalStyle, minHeight: heldHeight ? `min(${heldHeight}px, 92dvh)` : undefined }}
+      >
       <motion.div
         data-peek-modal
         initial={false}
@@ -639,6 +653,10 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
                         draggable={false}
                         style={{
                           width: '100%',
+                          // Reserve the card's height before the image loads,
+                          // so the grid doesn't grow and shift under the pointer.
+                          aspectRatio: CARD_IMAGE_ASPECT_RATIO,
+                          objectFit: 'contain',
                           borderRadius: 4,
                           border: isSelected ? '2px solid var(--gf-accent)' : '1px solid var(--gf-border)',
                           boxShadow: glowStyle?.boxShadow ?? selectedShadow,

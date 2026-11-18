@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { isPrimaryPointer } from '@/app/play/lib/pointerButton';
 import { beginCardPress, moveCardPress, cancelCardPress, cardPressFired, consumeCardPressFired, isCardPressLive, type CardPressTracker } from '@/app/shared/utils/modalCardPress';
@@ -9,7 +9,7 @@ import { useModalGame } from '@/app/shared/contexts/ModalGameContext';
 import { ZoneId, ZONE_LABELS, GameCard } from '@/app/shared/types/gameCard';
 import { useModalCardHover, ModalCardHoverPreview, getHoverGlowStyle } from './ModalCardHoverPreview';
 import { useCardPreview } from '@/app/goldfish/state/CardPreviewContext';
-import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
+import { getCardImageUrl, CARD_IMAGE_ASPECT_RATIO } from '@/app/shared/utils/cardImageUrl';
 import { useDraggableModal } from '@/app/shared/hooks/useDraggableModal';
 import { DraggableTitleBar } from './DraggableTitleBar';
 import { DeckFilterBar, type DeckCardFilter } from './DeckFilterBar';
@@ -228,6 +228,19 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
   // Lasso selection state
   const gridRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // The box sits centred, so when it shrinks (a card moved out with "Leave
+  // open" drops a row) it re-centres and slides every card under the pointer.
+  // Hold its slot at the tallest the box has been for this zone instead: the
+  // box then shrinks from the bottom and its top stays put. Capped at the box's
+  // own 85vh max so a rotated phone still fits it.
+  const [heldHeight, setHeldHeight] = useState<{ zoneId: ZoneId; px: number } | null>(null);
+  const holdPx = heldHeight?.zoneId === zoneId ? heldHeight.px : 0;
+  useLayoutEffect(() => {
+    const px = contentRef.current?.offsetHeight ?? 0;
+    setHeldHeight((prev) => (prev?.zoneId === zoneId && prev.px >= px ? prev : { zoneId, px }));
+  }, [zoneId, shownCards.length]);
+
   const [lassoRect, setLassoRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const lassoStart = useRef<{ x: number; y: number } | null>(null);
   const isLassoing = useRef(false);
@@ -534,6 +547,8 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
         pointerEvents: 'none',
       }}
     >
+      {/* Holds the box's centred slot (see heldHeight); inherits pointer-events: none. */}
+      <div style={{ minHeight: holdPx ? `min(${holdPx}px, 85vh)` : undefined }}>
       <div
         ref={contentRef}
         onClick={() => setContextCard(null)}
@@ -741,6 +756,11 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
                         draggable={false}
                         style={{
                           width: '100%',
+                          // Reserve the card's height before the image loads,
+                          // so the grid doesn't grow and shift under the pointer.
+                          // The card back is 375×525, not a card image's 345×495.
+                          aspectRatio: faceHidden ? '375 / 525' : CARD_IMAGE_ASPECT_RATIO,
+                          objectFit: 'contain',
                           borderRadius: 4,
                           border: isSelected ? '2px solid var(--gf-accent)' : '1px solid var(--gf-border)',
                           boxShadow: glowStyle?.boxShadow ?? selectedShadow,
@@ -814,6 +834,7 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
           </div>
           </div>
         )}
+      </div>
       </div>
 
       {!readOnly && contextCard && (

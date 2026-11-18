@@ -8,7 +8,7 @@ import { GameCard, ZoneId } from '@/app/shared/types/gameCard';
 import { X, Search, ArrowLeftRight } from 'lucide-react';
 import { useModalCardHover, ModalCardHoverPreview, getHoverGlowStyle } from './ModalCardHoverPreview';
 import { useCardPreview } from '@/app/goldfish/state/CardPreviewContext';
-import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
+import { getCardImageUrl, CARD_IMAGE_ASPECT_RATIO } from '@/app/shared/utils/cardImageUrl';
 import { useDraggableModal } from '@/app/shared/hooks/useDraggableModal';
 import { useInputMode } from '@/app/shared/hooks/useInputMode';
 import { DraggableTitleBar } from './DraggableTitleBar';
@@ -538,6 +538,9 @@ export function DeckExchangeModal({
                             draggable={false}
                             style={{
                               width: '100%',
+                              // Reserve the card's height before the image loads.
+                              aspectRatio: CARD_IMAGE_ASPECT_RATIO,
+                              objectFit: 'contain',
                               ...(isTouch ? { height: '100%', objectFit: 'contain' as const, display: 'block' as const } : null),
                               borderRadius: 4,
                               border: isSelected ? '2px solid var(--gf-accent)' : '1px solid var(--gf-border)',

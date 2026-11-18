@@ -87,7 +87,9 @@ export function LobbyList({ selectedDeckId, selectedDeckFormat, joiningCode, onJ
   );
 
   // Client-side filter as safety net (subscription already filters server-side)
-  // Sort newest first so freshest games appear at top
+  // Sort oldest first. Games arrive live, so a new one appends at the bottom
+  // instead of pushing every Join/Watch button down under the pointer, and the
+  // game that has waited longest sits on top.
   const openGames = (games || [])
     .filter(
       (g) =>
@@ -98,7 +100,7 @@ export function LobbyList({ selectedDeckId, selectedDeckFormat, joiningCode, onJ
     .sort((a, b) => {
       const aTime = Number(a.createdAt.microsSinceUnixEpoch);
       const bTime = Number(b.createdAt.microsSinceUnixEpoch);
-      return bTime - aTime;
+      return aTime - bTime;
     });
 
   // Build a map of gameId -> spectator count for the watching indicator

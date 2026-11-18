@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { GameCard } from '@/app/shared/types/gameCard';
-import { getCardImageUrl } from '@/app/shared/utils/cardImageUrl';
+import { getCardImageUrl, CARD_IMAGE_ASPECT_RATIO } from '@/app/shared/utils/cardImageUrl';
 import { deriveTestamentAndGospel } from '@/app/decklist/card-search/data/testament';
 
 /**
@@ -133,6 +133,9 @@ export function ReserveEnhancementModal({
                         draggable={false}
                         style={{
                           width: '100%',
+                          // Reserve the card's height before the image loads.
+                          aspectRatio: CARD_IMAGE_ASPECT_RATIO,
+                          objectFit: 'contain',
                           borderRadius: 4,
                           border: isSelected ? `2px solid ${GREEN}` : '1px solid var(--gf-border)',
                           boxShadow: isSelected ? '0 0 8px rgba(22, 163, 74, 0.5)' : 'none',

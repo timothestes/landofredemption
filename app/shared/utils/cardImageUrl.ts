@@ -9,6 +9,12 @@ import imgVersions from "@/lib/cards/generated/imgVersions.json";
 
 const BLOB_BASE_URL = process.env.NEXT_PUBLIC_BLOB_BASE_URL || '';
 
+/** CSS aspect-ratio of the card images getCardImageUrl points at: the blob
+ *  store's cards are 345×495 (the size catalogRow.ts's CARD_IMAGE_WIDTH /
+ *  CARD_IMAGE_HEIGHT normalize released art to). Set it on an <img> to reserve
+ *  the card's height before the image loads. */
+export const CARD_IMAGE_ASPECT_RATIO = '345 / 495';
+
 // imgFile → replacement version (catalog editor). Keyed on SANITIZED names;
 // non-empty entries append ?v= so a deploy busts every cached replaced image.
 const IMG_VERSIONS = imgVersions as Record<string, number>;

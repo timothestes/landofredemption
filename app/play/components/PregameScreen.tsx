@@ -3,7 +3,7 @@
 import { useGameBackground } from '@/app/shared/hooks/useGameBackground';
 import { WaitingBackgroundControl } from './WaitingBackgroundControl';
 import { LobbySettingRow, LobbySwitch, lobbyTextButtonClass } from './LobbySettingRow';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeftRight, Check, Copy, Pencil } from 'lucide-react';
 import TopNav from '@/components/top-nav';
@@ -29,6 +29,14 @@ const REVEAL_AUTO_ACK_MS = 1500;
 // under the server's 8s reveal backstop (REVEAL_TIMEOUT_MICROS), which is not
 // re-armed on a change, leaving the opponent time to re-ack after a late one.
 const REVEAL_CHANGE_WINDOW_MS = 5000;
+// Taps on the Change button are ignored this long after it appears (and after
+// each change), so the second tap of a double-tap can't reverse the choice.
+const CHANGE_TAP_GUARD_MS = 400;
+// The roll winner's action area keeps this height from the choice buttons to
+// the reveal, so the card doesn't shrink and re-centre under their pointer.
+// The choice buttons end 128px down; the reveal pins Change to the bottom of
+// this height, 140px down, so it never sits where either choice button was.
+const WINNER_ACTION_AREA_MIN_H = 'min-h-[184px]';
 
 // ---------------------------------------------------------------------------
 // OpponentDisconnectBanner — shown during pregame when opponent drops
@@ -943,6 +951,7 @@ function RollAndChooseArea({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
+      className={iWonRoll ? WINNER_ACTION_AREA_MIN_H : undefined}
     >
       <p className="font-cinzel text-sm font-bold text-amber-200/90 tracking-wide">
         {winnerName} the roll!
@@ -1004,6 +1013,14 @@ function RevealArea({
   iWonRoll: boolean;
 }) {
   const { game } = gameState;
+
+  // Change mounts the moment the choice lands; ignore it briefly so a
+  // double-tap on a choice button can't fall through to it.
+  const changeReadyAtRef = useRef(0);
+  useLayoutEffect(() => {
+    changeReadyAtRef.current = Date.now() + CHANGE_TAP_GUARD_MS;
+  }, []);
+
   if (!game || !myPlayer) return null;
 
   const isSeat0 = myPlayer.seat.toString() === '0';
@@ -1045,11 +1062,18 @@ function RevealArea({
 
   const otherSeat = firstSeat === 0n ? 1n : 0n;
 
+  const handleChange = () => {
+    if (Date.now() < changeReadyAtRef.current) return;
+    changeReadyAtRef.current = Date.now() + CHANGE_TAP_GUARD_MS;
+    gameState.pregameChooseFirst(otherSeat);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
+      className={`flex flex-col ${iWonRoll ? WINNER_ACTION_AREA_MIN_H : ''}`}
     >
       <p className="font-cinzel text-sm font-bold text-amber-200/90 tracking-wide">
         {headline}
@@ -1057,15 +1081,6 @@ function RevealArea({
       <p className="mt-2 text-xs text-amber-200/40">
         {alreadyAcked ? 'Waiting for opponent...' : 'Starting game...'}
       </p>
-
-      {iWonRoll && !alreadyAcked && (
-        <button
-          onClick={() => gameState.pregameChooseFirst(otherSeat)}
-          className="mt-3 w-full min-h-[44px] py-2.5 rounded border border-amber-200/15 bg-transparent font-cinzel text-xs font-bold uppercase tracking-wider text-amber-200/50 hover:text-amber-200/70 transition-colors"
-        >
-          {iGoFirst ? `Change: ${opponentName} goes first` : "Change: I'll go first"}
-        </button>
-      )}
 
       {/* Progress bar */}
       {!alreadyAcked && (
@@ -1078,6 +1093,19 @@ function RevealArea({
               className="h-full rounded-sm bg-[#c4955a]/40"
             />
           </div>
+        </div>
+      )}
+
+      {/* Pinned to the bottom of the reserved height: the space above it,
+          where the choice buttons were, stays empty for a stray second tap. */}
+      {iWonRoll && !alreadyAcked && (
+        <div className="mt-auto pt-3">
+          <button
+            onClick={handleChange}
+            className="w-full min-h-[44px] py-2.5 rounded border border-amber-200/15 bg-transparent font-cinzel text-xs font-bold uppercase tracking-wider text-amber-200/50 hover:text-amber-200/70 transition-colors"
+          >
+            {iGoFirst ? `Change: ${opponentName} goes first` : "Change: I'll go first"}
+          </button>
         </div>
       )}
     </motion.div>
