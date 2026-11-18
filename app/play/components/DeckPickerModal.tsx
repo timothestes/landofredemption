@@ -60,7 +60,10 @@ export function DeckPickerModal({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+        {/* One height whatever the grid holds: sized to its content, the
+            centered box grew and re-centered as decks loaded (Loading… →
+            tiles, then the pagination row), moving tiles under the cursor. */}
+        <DialogContent className="max-w-2xl h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Select a Deck</DialogTitle>
           </DialogHeader>
