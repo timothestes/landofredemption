@@ -29,6 +29,25 @@ describe("parseDeckText: which lines count as dropped", () => {
   });
 });
 
+describe("parseDeckText: a card named twice", () => {
+  it("adds a repeated line to the first one in the same section", () => {
+    const { deck } = parseDeckText(
+      ["1\tInvented Hero", "2\tInvented Hero", "Reserve:", "1\tInvented Hero"].join("\n"),
+      pool,
+    );
+    expect(deck!.cards.map((dc) => [dc.card.name, dc.quantity, dc.zone])).toEqual([
+      ["Invented Hero", 3, "main"],
+      ["Invented Hero", 1, "reserve"],
+    ]);
+  });
+
+  it("merges two name-only lines that resolve to the same printing", () => {
+    const { deck } = parseDeckText(["1\tInvented Twin", "1\tInvented Twin"].join("\n"), pool);
+    expect(deck!.cards).toHaveLength(1);
+    expect(deck!.cards[0].quantity).toBe(2);
+  });
+});
+
 describe("nextImportStep", () => {
   const deck = parseDeckText("1\tInvented Hero", pool).deck;
 

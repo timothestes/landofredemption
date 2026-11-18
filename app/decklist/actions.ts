@@ -14,6 +14,7 @@ import { cleanOutcomes, validateHandoff } from "./scan/lib/validateHandoff";
 import { forceMainOnly } from "./scan/lib/forceMainOnly";
 import type { DeckOutcome, SaveRow } from "./scan/lib/handoff";
 import { loadDeckTournamentContext, type DeckTournamentContext } from "./deckTournamentContext";
+import { mergeDeckCardRows } from "./mergeDeckCards";
 
 // Three-state deck visibility. Mirrors the `visibility` column on `decks`.
 //   private  -> owner only
@@ -149,13 +150,7 @@ export async function saveDeckAction(params: SaveDeckParams) {
       }
 
       // Atomically replace deck cards — if insert fails, delete rolls back too
-      const cardsForRpc = cards.map((card) => ({
-        card_name: card.card_name,
-        card_set: card.card_set || null,
-        card_img_file: card.card_img_file || null,
-        quantity: card.quantity,
-        zone: card.zone ?? 'main',
-      }));
+      const cardsForRpc = mergeDeckCardRows(cards);
 
       const { error: replaceError } = await supabase.rpc("replace_deck_cards", {
         p_deck_id: deckId,
@@ -233,13 +228,9 @@ export async function saveDeckAction(params: SaveDeckParams) {
 
       // Insert cards in batches to avoid payload size limits
       if (cards.length > 0) {
-        const cardsToInsert = cards.map((card) => ({
+        const cardsToInsert = mergeDeckCardRows(cards).map((card) => ({
           deck_id: deck.id,
-          card_name: card.card_name,
-          card_set: card.card_set || null,
-          card_img_file: card.card_img_file || null,
-          quantity: card.quantity,
-          zone: card.zone,
+          ...card,
         }));
 
         const BATCH_SIZE = 500;
