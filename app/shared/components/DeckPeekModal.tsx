@@ -15,6 +15,11 @@ import { useDraggableModal } from '@/app/shared/hooks/useDraggableModal';
 import { DraggableTitleBar } from './DraggableTitleBar';
 import { isOnScrollbar } from '@/app/shared/utils/scrollbarHit';
 
+// Cinzel stays on the title and the action buttons. Helper text, the selection
+// count and the checkbox label are read, not scanned: Cinzel has no lowercase,
+// so at 11-12px every line of it set as a run of small capitals and wrapped.
+const UI_FONT = 'var(--font-geist-sans), system-ui, sans-serif';
+
 const MOVE_ZONES: { id: ZoneId; label: string }[] = [
   { id: 'hand', label: 'Hand' },
   { id: 'territory', label: 'Territory' },
@@ -115,7 +120,9 @@ function PeekActionButton({ icon, label, onClick, style }: {
       style={{
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'center',
         gap: 5,
+        whiteSpace: 'nowrap',
         minHeight: isTouch ? 40 : undefined,
         padding: isTouch ? '8px 14px' : '5px 12px',
         background: 'var(--gf-bg)',
@@ -488,7 +495,10 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
           border: '1px solid var(--gf-border)',
           borderRadius: 8,
           padding: 20,
-          width: `min(90vw, ${Math.min(peekedIds.length, 4) * 152 + 40}px)`,
+          // Never narrower than the chrome needs: sizing purely off the card
+          // count left one or two cards in a 192-344px box, which truncated
+          // the title and wrapped the hint, checkbox and footer buttons.
+          width: `min(90vw, ${Math.max(Math.min(peekedIds.length, 4) * 152 + 40, 500)}px)`,
           maxHeight: '85vh',
           overflow: 'hidden',
           display: 'flex',
@@ -501,59 +511,68 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
           dragHandleProps={dragHandleProps}
           title={title}
           onClose={onClose ? handleDismiss : undefined}
-        >
-          {selectedIds.size > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{
-                color: 'var(--gf-accent)',
-                fontSize: 12,
-                fontFamily: 'var(--font-cinzel), Georgia, serif',
-              }}>
+        />
+
+        <div data-peek-scroll style={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
+        {/* Info row: the hint, or the selection count while cards are selected.
+            The count used to sit in the title bar, where it squeezed the title
+            to "Opponent Bott..." and wrapped onto two lines itself. */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 16,
+          minHeight: 22,
+          marginBottom: 12,
+          fontFamily: UI_FONT,
+          fontSize: 12,
+          lineHeight: 1.4,
+        }}>
+          {selectedIds.size > 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+              <span style={{ color: 'var(--gf-text-bright)', fontWeight: 500 }}>
                 {selectedIds.size} selected
               </span>
               <button
                 onClick={(e) => { e.stopPropagation(); setSelectedIds(new Set()); }}
                 style={{
                   background: 'transparent',
-                  border: '1px solid var(--gf-border)',
-                  borderRadius: 4,
-                  color: 'var(--gf-text-dim)',
-                  fontSize: 10,
-                  padding: '2px 6px',
+                  border: 'none',
+                  padding: 0,
+                  color: 'var(--gf-accent)',
+                  font: 'inherit',
+                  textDecoration: 'underline',
+                  textUnderlineOffset: 2,
                   cursor: 'pointer',
-                  fontFamily: 'var(--font-cinzel), Georgia, serif',
                 }}
               >
                 Deselect
               </button>
             </div>
+          ) : (
+            <p style={{ margin: 0, minWidth: 0 }}>
+              {isPrivateLook && (
+                <span style={{ color: 'var(--gf-accent)' }}>Only you can see this {'\u00b7'} </span>
+              )}
+              <span style={{ color: 'var(--gf-text)', opacity: 0.7 }}>
+                {isPrivateLook
+                  ? (isTouch ? 'Tap to select \u00b7 Long-press for actions' : 'Drag to a zone \u00b7 Click to select')
+                  : onClose
+                    ? (isTouch ? 'Tap to select \u00b7 Long-press a card for actions' : 'Drag to a zone \u00b7 Click to select \u00b7 Lasso to multi-select')
+                    : 'Your opponent is revealing cards'}
+              </span>
+            </p>
           )}
-        </DraggableTitleBar>
-
-        <div data-peek-scroll style={{ overflow: 'auto', flex: 1, minHeight: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <p style={{
-            fontFamily: 'var(--font-cinzel), Georgia, serif',
-            color: isPrivateLook ? 'var(--gf-accent)' : 'var(--gf-text-dim)',
-            fontSize: 11,
-            margin: 0,
-          }}>
-            {isPrivateLook
-              ? (isTouch ? 'Only you can see this \u00b7 Tap to select \u00b7 Long-press for actions' : 'Only you can see this \u00b7 Drag to a zone \u00b7 Click to select')
-              : onClose
-                ? (isTouch ? 'Tap to select \u00b7 Long-press a card for actions' : 'Drag to a zone \u00b7 Click to select \u00b7 Lasso to multi-select')
-                : 'Your opponent is revealing cards'}
-          </p>
           {onClose && (
             <label
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                color: 'var(--gf-text-dim)',
-                fontSize: 11,
+                color: 'var(--gf-text)',
                 cursor: 'pointer',
-                fontFamily: 'var(--font-cinzel), Georgia, serif',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
             >
               <span
@@ -589,8 +608,9 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
 
         {peekedCards.length === 0 ? (
           <p style={{
-            fontFamily: 'var(--font-cinzel), Georgia, serif',
-            color: 'var(--gf-border)',
+            fontFamily: UI_FONT,
+            color: 'var(--gf-text)',
+            opacity: 0.7,
             fontSize: 13,
             textAlign: 'center',
             padding: 20,
@@ -603,7 +623,10 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
             data-peek-grid
             style={{
               display: 'grid',
-              gridTemplateColumns: `repeat(${Math.min(peekedIds.length, 4)}, minmax(140px, 1fr))`,
+              // Capped columns, centred: one or two cards in the wider box
+              // stay card-sized instead of stretching to fill it.
+              gridTemplateColumns: `repeat(${Math.min(peekedIds.length, 4)}, minmax(140px, 220px))`,
+              justifyContent: 'center',
               gap: 12,
               position: 'relative',
               userSelect: 'none',
@@ -696,16 +719,16 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
         <div data-peek-footer style={{
           marginTop: 16,
           paddingTop: 12,
-          borderTop: '1px solid #3d2e1a',
+          borderTop: '1px solid rgba(var(--gf-border-rgb), 0.4)',
         }}>
           {hasRemaining && onClose && sourceZone === 'deck' ? (
             <>
+              {/* A quiet label: in tracked uppercase Cinzel it was the loudest
+                  text in the window, louder than the title. */}
               <div style={{
-                fontFamily: 'var(--font-cinzel), Georgia, serif',
-                color: 'var(--gf-text-bright)',
+                fontFamily: UI_FONT,
+                color: 'var(--gf-text)',
                 fontSize: 12,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
                 marginBottom: 8,
               }}>
                 Put remaining {remainingIds.length} {remainingIds.length === 1 ? 'card' : 'cards'} back to:
@@ -715,16 +738,19 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
                   icon={<ArrowUp size={13} />}
                   label="Top of Deck"
                   onClick={() => handleCloseAction('top')}
+                  style={{ flex: '1 1 auto' }}
                 />
                 <PeekActionButton
                   icon={<ArrowDown size={13} />}
                   label="Bottom of Deck"
                   onClick={() => handleCloseAction('bottom')}
+                  style={{ flex: '1 1 auto' }}
                 />
                 <PeekActionButton
                   icon={<Shuffle size={13} />}
                   label="Shuffle In"
                   onClick={() => handleCloseAction('shuffle')}
+                  style={{ flex: '1 1 auto' }}
                 />
               </div>
             </>
