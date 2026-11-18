@@ -38,6 +38,7 @@ import { buildPrioritizedImageUrls, buildCriticalImageUrls } from '@/app/play/li
 import { DeckPickerModal } from '../components/DeckPickerModal';
 import { ForgeDeckPickerModal } from '@/app/forge/play/games/ForgeDeckPicker';
 import { getRandomLoadingMessage } from '@/app/shared/constants/loadingMessages';
+import { LoadingMessageText } from '@/app/shared/components/LoadingMessageText';
 import { ArrowLeft } from 'lucide-react';
 import { loadDeckForGame } from '../actions';
 import { useUndoStack } from '../hooks/useUndoStack';
@@ -1511,7 +1512,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
         />
         <div className="relative z-10 text-center">
           <p className="font-cinzel text-xl tracking-wide text-amber-200/90 mb-6">
-            {lifecycle === 'joining' && isConnected ? 'Connected — starting game…' : loadingMessage}
+            {lifecycle === 'joining' && isConnected ? 'Connected — starting game…' : <LoadingMessageText message={loadingMessage} />}
           </p>
           <div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-amber-200/50 border-t-transparent mx-auto" />
         </div>

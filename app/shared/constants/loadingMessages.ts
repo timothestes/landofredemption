@@ -49,7 +49,8 @@ export const LOADING_MESSAGES = [
   'Composing a Psalm (Selah)',
   "Clearing out Herod's Temple...",
   'Praying for you :)',
-  'Building the next 100 card monstrosity...',
+  // ~~text~~ is drawn struck out by LoadingMessageText.
+  'Building the next ~~100~~ 70 card monstrosity...',
   'Listening to a Threshing Floor podcast...',
   'Monkeying around...',
   'Waiting for Boaz to wake up...',
@@ -69,6 +70,15 @@ export const LOADING_MESSAGES = [
   'Filling water jars...',
   'Counting the cost...',
   'Searching the Scriptures...',
+  'Gathering two or three together...',
+  'Sending out invitations to the wedding feast...',
+  'Rummaging through the baggage...',
+  'Shuffling seventy times seven...',
+  'Putting out a fleece...',
+  "Counting Gideon's 300...",
+  'Picking five smooth stones...',
+  'Watering ten camels...',
+  "Holding up Moses' arms...",
 ];
 
 export function getRandomLoadingMessage(): string {

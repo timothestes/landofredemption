@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { LOADING_MESSAGES } from '@/app/shared/constants/loadingMessages';
+import { LoadingMessageText } from '@/app/shared/components/LoadingMessageText';
 import { useGameBackground } from '@/app/shared/hooks/useGameBackground';
 
 export function LoadingScreen({ progress, isForge }: { progress: number; isForge?: boolean }) {
@@ -64,7 +65,7 @@ export function LoadingScreen({ progress, isForge }: { progress: number; isForge
             marginBottom: 24,
           }}
         >
-          {message}
+          <LoadingMessageText message={message} />
         </p>
 
         {/* Progress bar */}
