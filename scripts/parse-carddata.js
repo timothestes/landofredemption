@@ -23,6 +23,9 @@ const imgVersionsPath = path.join(__dirname, '../lib/cards/generated/imgVersions
 const cardAliasesPath = path.join(__dirname, '../lib/cards/generated/cardAliases.json');
 const { applyCardOverrides } = require('./lib/applyCardOverrides');
 const { applyCardAliases } = require('./lib/applyCardAliases');
+const { applyCardArtists } = require('./lib/applyCardArtists');
+const cardArtistsPath = path.join(__dirname, 'data/card-artists-sheet.json');
+const printingCuesPath = path.join(__dirname, '../lib/scan/generated/printingCues.json');
 
 const raw = fs.readFileSync(txtPath, 'utf-8');
 const lines = raw.split('\n');
@@ -180,6 +183,44 @@ const cardAliases = (() => {
   }
   return aliases;
 })();
+
+// ---- Artist credits --------------------------------------------------------
+// Upstream carddata.txt has no artist column. Credits come from a snapshot of
+// the community "Redemption Card List" sheet (`make pull-card-artists`), with
+// the scanner's machine-read credit line as the fallback. Matching lives in
+// scripts/lib/applyCardArtists.js; a printing it can't place gets ''.
+{
+  let snapshot = { rows: [] };
+  if (fs.existsSync(cardArtistsPath)) {
+    try {
+      snapshot = JSON.parse(fs.readFileSync(cardArtistsPath, 'utf-8'));
+    } catch (e) {
+      console.error(`❌ Failed to read ${cardArtistsPath}: ${e.message}`);
+      process.exit(1);
+    }
+    if (!Array.isArray(snapshot.rows)) {
+      console.error(`❌ ${cardArtistsPath} has no rows array`);
+      process.exit(1);
+    }
+  } else {
+    console.log(`⚠️  ${path.relative(process.cwd(), cardArtistsPath)} missing — run make pull-card-artists`);
+  }
+  let printingCues = {};
+  if (fs.existsSync(printingCuesPath)) {
+    try {
+      printingCues = JSON.parse(fs.readFileSync(printingCuesPath, 'utf-8'));
+    } catch (e) {
+      console.error(`❌ Failed to read ${printingCuesPath}: ${e.message}`);
+      process.exit(1);
+    }
+  }
+  const { stats } = applyCardArtists(cards, snapshot, printingCues);
+  console.log(
+    `🎨 artists: ${stats.sheetSet + stats.sheetName + stats.sheetFuzzy} from the sheet, ` +
+      `${stats.scan + stats.scanOverride} from scans (${stats.scanOverride} overruling the sheet), ` +
+      `${stats.none} unknown`
+  );
+}
 
 // Diff summary against previous generated data, if present
 function loadPreviousCards() {
@@ -403,6 +444,8 @@ export interface CardData {
   reference: string;
   alignment: string;
   legality: string;
+  /** Illustrator credit, '' when unknown (scripts/lib/applyCardArtists.js). */
+  artist: string;
 }
 
 export const CARDS: readonly CardData[] = cardData as readonly CardData[];

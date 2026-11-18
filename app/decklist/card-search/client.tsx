@@ -1091,8 +1091,17 @@ export default function CardSearchClient({
                 return fieldMatches(searchableIdentifier(c), queryObj);
               case 'reference':
                 return fieldMatches(c.reference, queryObj);
-              default:
-                return fieldMatches(`${Object.values(c).join(" ")} ${searchableIdentifier(c)}`, queryObj);
+              case 'artist': {
+                // Accent-blind, so "Gerome" finds "Jean-Léon Gérôme".
+                const plain = (s: string) => s.normalize("NFKD").replace(/[̀-ͯ]/g, "");
+                return fieldMatches(plain(c.artist ?? ""), { ...queryObj, text: plain(queryObj.text) });
+              }
+              default: {
+                // Artist stays out of "All": "Gray" would otherwise pull in
+                // every Doug Gray card alongside the Gray brigade.
+                const values = Object.entries(c).filter(([k]) => k !== "artist").map(([, v]) => v);
+                return fieldMatches(`${values.join(" ")} ${searchableIdentifier(c)}`, queryObj);
+              }
             }
           };
           
@@ -1906,6 +1915,7 @@ export default function CardSearchClient({
                     <option value="setName">Set Name</option>
                     <option value="identifier">Identifier</option>
                     <option value="reference">Reference</option>
+                    <option value="artist">Artist</option>
                   </select>
                   
                   {/* Operator dropdown - shown for all queries */}
@@ -2207,6 +2217,7 @@ export default function CardSearchClient({
               {queryObj.field === 'setName' && `Set: "${queryObj.text}"`}
               {queryObj.field === 'identifier' && `ID: "${queryObj.text}"`}
               {queryObj.field === 'reference' && `Ref: "${queryObj.text}"`}
+              {queryObj.field === 'artist' && `Artist: "${queryObj.text}"`}
               <span className="ml-1">×</span>
             </span>
           );

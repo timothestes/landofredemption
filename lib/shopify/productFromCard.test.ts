@@ -29,6 +29,7 @@ const I_AM_HAS_SENT_ME: CardData = {
   reference: 'Exodus 3:14',
   alignment: 'Good',
   legality: 'Rotation',
+  artist: '',
 };
 
 const ABUSIVE_SOLDIERS: CardData = {
@@ -48,6 +49,7 @@ const ABUSIVE_SOLDIERS: CardData = {
   reference: 'Luke 23:11',
   alignment: 'Evil',
   legality: 'Rotation',
+  artist: '',
 };
 
 const ROMAN_SOLDIERS_FAITH: CardData = {
@@ -66,6 +68,7 @@ const ROMAN_SOLDIERS_FAITH: CardData = {
   reference: 'Matthew 8:5-6',
   alignment: 'Good',
   legality: '',
+  artist: '',
 };
 
 describe('baseCardName', () => {

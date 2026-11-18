@@ -63,6 +63,7 @@ describe("designCardToCatalogRow", () => {
       reference: "Judges 6:12",
       alignment: "Good",
       legality: "Rotation",
+      artist: "",
     });
   });
 
