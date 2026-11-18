@@ -133,6 +133,8 @@ export type CardAbility = AbilityBase & (
  */
 export type DeckCardMatch = {
   types?: DeckCardType[];
+  /** "(except a Hero)": no type half may be one of these — a dual Hero/Evil Character card is a Hero. */
+  exceptTypes?: DeckCardType[];
   alignments?: Array<'good' | 'evil' | 'neutral'>;
   testament?: 'OT' | 'NT';
   /** Reference book, as printed in carddata ("Genesis", "I Samuel"). */
@@ -525,7 +527,7 @@ const BASE_CARD_ABILITIES: Record<string, CardAbility[]> = {
   'Nadab, the Wicked':                                   [{ type: 'reserve_opponent_deck', position: 'bottom', count: 1 }],
   'Ridicule (GoC)':                                      [{ type: 'reserve_opponent_deck', position: 'top', count: 2, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
   'Samaritan Water Jar (GoC)':                           [{ type: 'reserve_opponent_deck', position: 'top', count: 3 }],
-  'Simon of Cyrene (Roots)':                             [{ type: 'reserve_opponent_deck', position: 'top', count: 1 }],
+  'Simon of Cyrene (Roots)':                             [{ type: 'reserve_opponent_deck', position: 'top', count: 1 }, { type: 'reserve_top_of_deck', count: 1 }],
   'The Good Samaritan (GoC)':                            [{ type: 'reserve_opponent_deck', position: 'top', count: 1 }],
   'Watchful Servant (GoC)':                              [{ type: 'reserve_opponent_deck', position: 'bottom', count: 1 }],
 
@@ -917,18 +919,25 @@ function isDeckCardType(parts: string[], t: DeckCardType): boolean {
   return parts.includes(t);
 }
 
+/**
+ * A Dominant is always good or evil, so one stored as Neutral is a dual
+ * good/evil Dominant (Crowd's Choice, Three Woes, the LAMB/REAPER cards).
+ */
+const isDualDominant = (c: DeckCardFields, parts: string[]) => parts.includes('Dominant') && c.alignment === 'Neutral';
+
 /** Good/evil also follow the type halves, so a GE/EE card is both. */
 function hasAlignment(c: DeckCardFields, parts: string[], a: 'good' | 'evil' | 'neutral'): boolean {
-  if (a === 'good') return c.alignment === 'Good' || parts.includes('GE') || parts.includes('Hero');
-  if (a === 'evil') return c.alignment === 'Evil' || parts.includes('EE') || parts.includes('Evil Character');
+  if (a === 'good') return c.alignment === 'Good' || parts.includes('GE') || parts.includes('Hero') || isDualDominant(c, parts);
+  if (a === 'evil') return c.alignment === 'Evil' || parts.includes('EE') || parts.includes('Evil Character') || isDualDominant(c, parts);
   return c.alignment === 'Neutral';
 }
 
-/** The alignment of one type half: Hero/GE good, Evil Character/EE evil, else the card's. */
-function halfAlignment(c: DeckCardFields, half: string): string {
-  if (half === 'Hero' || half === 'GE') return 'good';
-  if (half === 'Evil Character' || half === 'EE') return 'evil';
-  return (c.alignment ?? '').toLowerCase();
+/** The alignments of one type half: Hero/GE good, Evil Character/EE evil, a dual Dominant both, else the card's. */
+function halfAlignments(c: DeckCardFields, half: string): string[] {
+  if (half === 'Hero' || half === 'GE') return ['good'];
+  if (half === 'Evil Character' || half === 'EE') return ['evil'];
+  if (isDualDominant(c, [half])) return ['good', 'evil'];
+  return [(c.alignment ?? '').toLowerCase()];
 }
 
 /**
@@ -983,12 +992,13 @@ function fitsDeckCardMatch(c: DeckCardFields, m: DeckCardMatch): boolean {
   if (m.types && m.alignments) {
     // "an evil Enhancement": ONE half must be both. A Seal (GE/Evil Character)
     // is evil and an Enhancement, but its Enhancement half is good.
-    const ok = parts.some((h) => m.types!.some((t) => isDeckCardType([h], t)) && (m.alignments as string[]).includes(halfAlignment(c, h)));
+    const ok = parts.some((h) => m.types!.some((t) => isDeckCardType([h], t)) && halfAlignments(c, h).some((a) => (m.alignments as string[]).includes(a)));
     if (!ok) return false;
   } else {
     if (m.types && !m.types.some((t) => isDeckCardType(parts, t))) return false;
     if (m.alignments && !m.alignments.some((a) => hasAlignment(c, parts, a))) return false;
   }
+  if (m.exceptTypes && m.exceptTypes.some((t) => isDeckCardType(parts, t))) return false;
   if (m.testament && !inTestament(reference, m.testament)) return false;
   if (m.books) {
     const refs = referenceParts(reference).filter((r) => m.books!.includes(r.book));
