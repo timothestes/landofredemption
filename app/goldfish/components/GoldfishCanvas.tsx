@@ -1200,39 +1200,55 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
         }
         node.getLayer()?.batchDraw();
       } else if (targetZone === 'deck' && card.zone !== 'deck') {
-        // Snap the card back to its drag-start position so it doesn't sit at
-        // the deck position while the popup is open. If the user picks an
-        // action, moveCard runs and the card animates from the source zone;
-        // if they cancel, the card glides back home.
-        // Leave the card sitting where it was dropped (on the pile) while the
-        // popup is open — committing an option moves it into the deck;
-        // canceling glides it back to its drag-start position.
-        if (dragStartPosition?.instanceId === card.instanceId) {
-          let group: NonNullable<typeof deckDropHoldRef.current>['group'];
-          if (pendingGroupSettleRef.current) {
-            pendingGroupSettleRef.current = null; // claim — the settle microtask no-ops
-            group = {
-              ghost: heldGhost,
-              ghostHomeX: ghostOffset ? dragStartPosition.x + ghostOffset.dx : null,
-              ghostHomeY: ghostOffset ? dragStartPosition.y + ghostOffset.dy : null,
-              followerIds: heldFollowerIds,
+        // Tokens never enter a deck — the reducer deletes them on every deck
+        // move. The popup must open on a real card: handleDeckDrop deletes a
+        // token instead of opening it, which would strand the held ghost
+        // stack and hidden followers below (and leave batchDeckDropIds stale
+        // for the next deck drop).
+        const allZoneCards = Object.values(state.zones).flat();
+        const popupCardId = cardIds.find(
+          id => !allZoneCards.find(c => c.instanceId === id)?.isToken,
+        );
+        if (!popupCardId) {
+          // Only tokens: delete them, no popup. The group-settle microtask
+          // clears any ghost.
+          moveCardsBatch(cardIds, 'deck');
+          if (isGroupDrag) clearSelection();
+        } else {
+          // Snap the card back to its drag-start position so it doesn't sit at
+          // the deck position while the popup is open. If the user picks an
+          // action, moveCard runs and the card animates from the source zone;
+          // if they cancel, the card glides back home.
+          // Leave the card sitting where it was dropped (on the pile) while the
+          // popup is open — committing an option moves it into the deck;
+          // canceling glides it back to its drag-start position.
+          if (dragStartPosition?.instanceId === card.instanceId) {
+            let group: NonNullable<typeof deckDropHoldRef.current>['group'];
+            if (pendingGroupSettleRef.current) {
+              pendingGroupSettleRef.current = null; // claim — the settle microtask no-ops
+              group = {
+                ghost: heldGhost,
+                ghostHomeX: ghostOffset ? dragStartPosition.x + ghostOffset.dx : null,
+                ghostHomeY: ghostOffset ? dragStartPosition.y + ghostOffset.dy : null,
+                followerIds: heldFollowerIds,
+              };
+            }
+            deckDropHoldRef.current = {
+              instanceId: card.instanceId,
+              homeX: dragStartPosition.x,
+              homeY: dragStartPosition.y,
+              group,
             };
           }
-          deckDropHoldRef.current = {
-            instanceId: card.instanceId,
-            homeX: dragStartPosition.x,
-            homeY: dragStartPosition.y,
-            group,
-          };
-        }
-        const stage = stageRef.current;
-        if (stage) {
-          const rect = stage.container().getBoundingClientRect();
-          if (isGroupDrag) {
-            setBatchDeckDropIds(cardIds);
+          const stage = stageRef.current;
+          if (stage) {
+            const rect = stage.container().getBoundingClientRect();
+            if (isGroupDrag) {
+              setBatchDeckDropIds(cardIds);
+            }
+            const screenPos = virtualToScreen(centerX, centerY, scale, offsetX, offsetY);
+            handleDeckDrop(popupCardId, rect.left + screenPos.x, rect.top + screenPos.y);
           }
-          const screenPos = virtualToScreen(centerX, centerY, scale, offsetX, offsetY);
-          handleDeckDrop(card.instanceId, rect.left + screenPos.x, rect.top + screenPos.y);
         }
       } else if (targetZone === 'soul-deck' && card.zone !== 'soul-deck') {
         // Paragon: dropping on the soul deck pile opens a top/bottom/shuffle popup.
@@ -1318,7 +1334,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
         }, 700);
       }
     },
-    [findZoneAtPosition, moveCard, moveCardsBatch, handleDeckDrop, cardWidth, cardHeight, selectedIds, clearSelection, state.turn, scale, offsetX, offsetY, state.zones.hand, state.zones['land-of-bondage'], state.zones.territory, state.isSpreadHand, virtualWidth, reorderHand, zoneLayout, attachCard]
+    [findZoneAtPosition, moveCard, moveCardsBatch, handleDeckDrop, cardWidth, cardHeight, selectedIds, clearSelection, state.turn, scale, offsetX, offsetY, state.zones, state.zones.hand, state.zones['land-of-bondage'], state.zones.territory, state.isSpreadHand, virtualWidth, reorderHand, zoneLayout, attachCard]
   );
 
   // Konva fires `dblclick` whenever two pointer-ups happen on the same shape
