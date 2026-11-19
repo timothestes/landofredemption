@@ -136,6 +136,7 @@ import SurrenderSoulReducer from "./surrender_soul_reducer";
 import ThreeNailsResetExecuteReducer from "./three_nails_reset_execute_reducer";
 import ToggleRevealHandReducer from "./toggle_reveal_hand_reducer";
 import ToggleRevealReserveReducer from "./toggle_reveal_reserve_reducer";
+import UndoGameEndReducer from "./undo_game_end_reducer";
 import UndoKeepOneShuffleDrawReducer from "./undo_keep_one_shuffle_draw_reducer";
 import UnmeekCardReducer from "./unmeek_card_reducer";
 import UpdateCardPositionReducer from "./update_card_position_reducer";
@@ -595,6 +596,7 @@ const reducersSchema = __reducers(
   __reducerSchema("three_nails_reset_execute", ThreeNailsResetExecuteReducer),
   __reducerSchema("toggle_reveal_hand", ToggleRevealHandReducer),
   __reducerSchema("toggle_reveal_reserve", ToggleRevealReserveReducer),
+  __reducerSchema("undo_game_end", UndoGameEndReducer),
   __reducerSchema("undo_keep_one_shuffle_draw", UndoKeepOneShuffleDrawReducer),
   __reducerSchema("unmeek_card", UnmeekCardReducer),
   __reducerSchema("update_card_position", UpdateCardPositionReducer),

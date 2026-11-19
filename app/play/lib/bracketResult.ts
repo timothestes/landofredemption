@@ -17,6 +17,8 @@ export function resolveWinnerSeat(
 ): { kind: EndKind; winnerSeat: 0 | 1 | null } {
   for (let i = actions.length - 1; i >= 0; i--) {
     const type = (actions[i].actionType ?? '').toUpperCase();
+    // A rescue win that was taken back: nothing before it ended the game.
+    if (type === 'WIN_UNDONE') break;
     const kind: EndKind | null =
       type === 'WIN' ? 'win' : type === 'RESIGN' ? 'resign' : type === 'TIMEOUT' ? 'timeout' : null;
     if (!kind) continue;

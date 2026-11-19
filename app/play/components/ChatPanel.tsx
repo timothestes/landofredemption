@@ -210,6 +210,7 @@ const ACTION_TYPE_LABELS: Record<string, string> = {
   REMATCH_STARTED: 'started a rematch',
   REMATCH_DECLINED: 'declined the rematch',
   REMATCH_CANCELLED: 'cancelled the rematch',
+  WIN_UNDONE: 'undid the end of the game — play continues',
   PREGAME_DECK_CHANGE: 'switched decks before the game',
   PLAYER_LEFT: 'left the game',
   RELOAD_DECK: 'reloaded their deck',

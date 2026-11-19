@@ -266,6 +266,8 @@ interface TurnIndicatorProps {
   winnerName?: string;
   onPlayAgain?: () => void;
   onBackToLobby?: () => void;
+  /** Finished by a rescue win this player was credited with — take it back. */
+  onUndoGameEnd?: () => void;
   /** Destination for the exit/leave-to-lobby navigations. Defaults to the
    *  public play lobby; Forge games pass the Forge play lobby instead. */
   lobbyPath?: string;
@@ -333,6 +335,7 @@ export default function TurnIndicator({
   winnerName,
   onPlayAgain,
   onBackToLobby,
+  onUndoGameEnd,
   lobbyPath = '/play',
   myScore = 0,
   opponentScore = 0,
@@ -1249,7 +1252,9 @@ export default function TurnIndicator({
             is the surface — this button just disables (the server refuses
             movement until the prompt is answered). On touch it renders in the
             fixed right cluster instead (see endTurnButton above). */}
-        {!isTouchBar && endTurnButton}
+        {/* A finished game that can be undone gives End Turn's spot (it is
+            disabled there anyway) to the Undo End button on the right. */}
+        {!isTouchBar && !(isFinished && onUndoGameEnd) && endTurnButton}
 
         {/* Spectators can never act, so this is a non-interactive status span —
             not a button — but still surfaces the hold + countdown (spec §8.4). */}
@@ -1292,6 +1297,40 @@ export default function TurnIndicator({
         {/* While a rematch request is pending, the button retracts it; otherwise
             it starts a one-tap rematch. The "Waiting for opponent…" copy lives on
             the GameOverOverlay toast, so this slot just offers the action. */}
+        {/* Desktop bar only: the phone bar has no room, and the result screen
+            carries the same action there. */}
+        {isFinished && onUndoGameEnd && !isTouchBar && (
+          <button
+            onClick={onUndoGameEnd}
+            title="The game ended by mistake — put it back in play"
+            style={{
+              padding: '5px 12px',
+              background: 'transparent',
+              border: '1px solid rgba(var(--gf-border-rgb), 0.4)',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-cinzel), Georgia, serif',
+              fontSize: FZ.ui,
+              letterSpacing: '0.07em',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+              color: 'rgba(var(--gf-accent-rgb), 0.6)',
+              transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(var(--gf-accent-rgb), 0.12)';
+              e.currentTarget.style.borderColor = 'rgba(var(--gf-accent-rgb), 0.4)';
+              e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.85)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.borderColor = 'rgba(var(--gf-border-rgb), 0.4)';
+              e.currentTarget.style.color = 'rgba(var(--gf-accent-rgb), 0.6)';
+            }}
+          >
+            Undo End
+          </button>
+        )}
         {isFinished && onPlayAgain && !hideRematch && rematchPending && !isSolo && (
           <button
             onClick={onCancelRematch}
@@ -1339,6 +1378,7 @@ export default function TurnIndicator({
               fontSize: FZ.ui,
               letterSpacing: '0.07em',
               textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
               color: 'var(--gf-text-bright)',
               transition: 'background 0.15s, border-color 0.15s, color 0.15s',
             }}

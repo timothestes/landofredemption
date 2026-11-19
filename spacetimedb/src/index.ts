@@ -2059,6 +2059,20 @@ export const cancel_rematch = spacetimedb.reducer(
   }
 );
 
+// ---------------------------------------------------------------------------
+// Reducer: undo_game_end — the declared winner of a rescue win takes it back
+// and the game goes on (see undoRescueWin).
+// ---------------------------------------------------------------------------
+export const undo_game_end = spacetimedb.reducer(
+  { gameId: t.u64() },
+  (ctx, { gameId }) => {
+    const player = findPlayerBySender(ctx, gameId);
+    if (!undoRescueWin(ctx, gameId, player, 'button')) {
+      throw new SenderError('This game cannot be put back in play');
+    }
+  }
+);
+
 // ===========================================================================
 // Pause reducers (mutually-agreed, honor-system pause)
 // ===========================================================================
@@ -3716,16 +3730,73 @@ function isLostSoulRow(c: any): boolean {
 // moveLostSoulToLor primitive + the move_card / move_cards_batch drag paths).
 // Idempotent: fires only while the game is still playing, and re-reads the
 // Game row because callers may hold a stale snapshot.
+function redeemedSoulCount(ctx: any, gameId: bigint, playerId: bigint): number {
+  let count = 0;
+  for (const c of ctx.db.CardInstance.card_instance_game_id.filter(gameId)) {
+    if (c.ownerId === playerId && c.zone === 'land-of-redemption') count += redeemedSoulValue(c);
+  }
+  return count;
+}
+
+// Undo a rescue win that was a mistake (a soul mis-dropped into Land of
+// Redemption). Two ways in:
+//  - 'soul_removed': a card was just moved out of a Land of Redemption on a
+//    finished game. If the declared winner is now below the goal, the win no
+//    longer stands, whoever moved the card.
+//  - 'button': the declared winner pressed Undo End Game. Souls are not
+//    re-counted; the next soul into Land of Redemption re-checks the win.
+// Only a rescue win can be undone: the latest game-ending log entry must be a
+// WIN. Resigns and timeouts stay final. Solo (Deck Bracket) games are skipped
+// because their result is recorded to the series the moment they finish.
+// Returns whether the game was put back in play.
+function undoRescueWin(ctx: any, gameId: bigint, actor: any, reason: 'soul_removed' | 'button'): boolean {
+  const game = ctx.db.Game.id.find(gameId);
+  if (!game || game.status !== 'finished') return false;
+  if (soloGameRow(ctx, gameId)) return false;
+
+  let last: any = null;
+  for (const a of ctx.db.GameAction.game_action_game_id.filter(gameId)) {
+    if (a.actionType !== 'WIN' && a.actionType !== 'RESIGN' && a.actionType !== 'TIMEOUT' && a.actionType !== 'WIN_UNDONE') continue;
+    const at = a.timestamp.microsSinceUnixEpoch;
+    if (!last || at > last.timestamp.microsSinceUnixEpoch || (at === last.timestamp.microsSinceUnixEpoch && a.id > last.id)) last = a;
+  }
+  if (!last || last.actionType !== 'WIN') return false;
+
+  if (reason === 'button') {
+    if (last.playerId !== actor.id) return false;
+  } else {
+    const goal = normalizeFormat(game.format) === 'T2' ? 7 : 5;
+    if (redeemedSoulCount(ctx, gameId, last.playerId) >= goal) return false;
+  }
+
+  // Back in play. A rematch request made on the result screen no longer applies.
+  ctx.db.Game.id.update({
+    ...game,
+    status: 'playing',
+    rematchRequestedBy: '',
+    rematchDeckId0: '',
+    rematchDeckData0: '',
+    rematchDeckId1: '',
+    rematchDeckData1: '',
+    rematchParagon0: '',
+    rematchParagon1: '',
+    rematchResponse: '',
+    rematchCode: '',
+  });
+  logAction(
+    ctx, gameId, actor.id, 'WIN_UNDONE',
+    JSON.stringify({ byName: actor.displayName, reason }),
+    game.turnNumber, game.currentPhase,
+  );
+  return true;
+}
+
 function checkAndApplyWin(ctx: any, gameId: bigint) {
   const game = ctx.db.Game.id.find(gameId);
   if (!game || game.status !== 'playing') return;
   const goal = normalizeFormat(game.format) === 'T2' ? 7 : 5;
-  const rows = [...ctx.db.CardInstance.card_instance_game_id.filter(gameId)];
   for (const player of ctx.db.Player.player_game_id.filter(gameId)) {
-    let count = 0;
-    for (const c of rows) {
-      if (c.ownerId === player.id && c.zone === 'land-of-redemption') count += redeemedSoulValue(c);
-    }
+    const count = redeemedSoulCount(ctx, gameId, player.id);
     if (count >= goal) {
       ctx.db.Game.id.update({ ...game, status: 'finished' });
       logAction(
@@ -4073,6 +4144,7 @@ export const move_card = spacetimedb.reducer(
         }),
         game.turnNumber, game.currentPhase,
       );
+      if (fromZone === 'land-of-redemption') undoRescueWin(ctx, gameId, player, 'soul_removed');
       return;
     }
 
@@ -4371,6 +4443,12 @@ export const move_card = spacetimedb.reducer(
       refillSoulDeck(ctx, game.id);
     }
 
+    // A soul dragged back out of land-of-redemption after a rescue win: the
+    // game is no longer won.
+    if (fromZone === 'land-of-redemption') {
+      undoRescueWin(ctx, gameId, player, 'soul_removed');
+    }
+
     // Rescue win: a soul dragged into land-of-redemption may complete the goal.
     if (toZone === 'land-of-redemption') {
       checkAndApplyWin(ctx, gameId);
@@ -4427,6 +4505,9 @@ export const move_cards_batch = spacetimedb.reducer(
     // rescued from the shared LoB into a land-of-redemption. Only those rescues
     // trigger a soul-deck refill.
     let anyRescueToLor = false;
+    // Whether any card in this batch started in a land-of-redemption — a
+    // finished game may no longer be won once it has left (undoRescueWin).
+    let anyLeftLor = false;
 
     const game = ctx.db.Game.id.find(gameId);
     if (!game) throw new SenderError('Game not found');
@@ -4787,6 +4868,7 @@ export const move_cards_batch = spacetimedb.reducer(
       // move_card rule (TOKEN_REMOVE_ZONES). The earlier movedCards / hand+LOB
       // compaction bookkeeping already accounted for this card when its zone
       // changed, so just remove it and skip ahead.
+      if (card.zone === 'land-of-redemption') anyLeftLor = true;
       const TOKEN_REMOVE_ZONES = ['reserve', 'banish', 'discard', 'hand', 'deck'];
       if (card.isToken && TOKEN_REMOVE_ZONES.includes(cardFinalZone)) {
         deleteTokenWithCounters(ctx, card);
@@ -4887,6 +4969,13 @@ export const move_cards_batch = spacetimedb.reducer(
     // card into a land-of-redemption. Other destinations leave the LoB short.
     if (normalizeFormat(game.format) === 'Paragon' && anyRescueToLor) {
       refillSoulDeck(ctx, game.id);
+    }
+
+    // A soul dragged back out of land-of-redemption after a rescue win: the
+    // game is no longer won. Re-check in case the batch moved it into the
+    // other player's land-of-redemption instead.
+    if (anyLeftLor && undoRescueWin(ctx, gameId, player, 'soul_removed')) {
+      checkAndApplyWin(ctx, gameId);
     }
   }
 );
