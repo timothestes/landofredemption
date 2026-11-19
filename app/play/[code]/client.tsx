@@ -1106,6 +1106,9 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     } else if (game.status === 'pregame') {
       setLifecycle('pregame');
     } else if (game.status === 'playing') {
+      // finished → playing only happens when a rescue win is undone (a
+      // rematch goes back through pregame).
+      if (lifecycle === 'finished') showGameToast('The game is back in play', 4000);
       setLifecycle('playing');
     } else if (game.status === 'finished' && lifecycle === 'pregame') {
       setErrorFromPregame(true);
@@ -1957,6 +1960,11 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     // In either case, no rematch is possible — surface Back to Lobby instead.
     const opponentDisconnected =
       endLabel === 'Opponent disconnected' || gameState.opponentPlayer?.isConnected === false;
+    // A rescue win declared by mistake (a soul mis-dropped into Land of
+    // Redemption): the winner can take it back. Not in bracket games — their
+    // result is already recorded to the series.
+    const onUndoGameEnd =
+      endLabel === 'You won' && !gameParams?.bracket && !gameState.isSolo ? gameState.undoGameEnd : undefined;
 
     // Bracket host: the series overlay replaces GameOverOverlay. It renders once
     // the winner is known (the recovery screen covers "no result").
@@ -2007,6 +2015,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
                 onBackToLobby={opponentDisconnected ? handleReturnToLobby : undefined}
                 rematchPending={rematchPending}
                 onCancelRematch={gameState.cancelRematch}
+                onUndoGameEnd={onUndoGameEnd}
                 myScore={gameState.soulsRescued.me}
                 opponentScore={gameState.soulsRescued.opponent}
                 timerDisplay={gameTimer.formatted}
@@ -2201,6 +2210,7 @@ function GameInner({ code, isConnected }: GameInnerProps) {
               onBackToLobby={opponentDisconnected ? handleReturnToLobby : undefined}
               rematchPending={rematchPending}
               onCancelRematch={gameState.cancelRematch}
+              onUndoGameEnd={onUndoGameEnd}
               myScore={gameState.soulsRescued.me}
               opponentScore={gameState.soulsRescued.opponent}
               timerDisplay={gameTimer.formatted}

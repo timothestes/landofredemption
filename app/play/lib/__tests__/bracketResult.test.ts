@@ -12,6 +12,8 @@ describe('resolveWinnerSeat', () => {
     expect(resolveWinnerSeat([{ actionType: 'TIMEOUT', playerId: 10n, payload: '{oops' }], players)).toEqual({ kind: 'none', winnerSeat: null });
   });
   it('no ending action → none', () => expect(resolveWinnerSeat([{ actionType: 'MOVE', playerId: 10n }], players)).toEqual({ kind: 'none', winnerSeat: null }));
+  it('a win that was undone is not a result', () => expect(resolveWinnerSeat([{ actionType: 'WIN', playerId: 10n }, { actionType: 'WIN_UNDONE', playerId: 10n }], players)).toEqual({ kind: 'none', winnerSeat: null }));
+  it('a win after an undone win counts', () => expect(resolveWinnerSeat([{ actionType: 'WIN', playerId: 10n }, { actionType: 'WIN_UNDONE', playerId: 10n }, { actionType: 'WIN', playerId: 11n }], players).winnerSeat).toBe(1));
   it('uses the last ending action', () => expect(resolveWinnerSeat([{ actionType: 'WIN', playerId: 10n }, { actionType: 'RESIGN', playerId: 10n }], players).winnerSeat).toBe(1));
 });
 

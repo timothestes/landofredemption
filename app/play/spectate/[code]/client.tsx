@@ -739,6 +739,8 @@ function deriveSpectatorResult(
     const action = gameActions[i];
     const actionType: string = (action.actionType ?? '').toUpperCase();
     const actorId = action.playerId ?? action.actorId;
+    // A rescue win that was taken back: nothing before it ended the game.
+    if (actionType === 'WIN_UNDONE') break;
     if (actionType === 'WIN') {
       return { headline: `${nameOf(actorId)} wins`, detail: '' };
     }

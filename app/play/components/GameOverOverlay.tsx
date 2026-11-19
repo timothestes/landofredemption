@@ -49,6 +49,9 @@ function deriveEndReason(
     const action = gameActions[i];
     const actionType: string = (action.actionType ?? '').toUpperCase();
 
+    // A rescue win that was taken back: nothing before it ended the game.
+    if (actionType === 'WIN_UNDONE') break;
+
     if (actionType === 'WIN') {
       const winnerId = action.playerId ?? action.actorId;
       const iWon = myPlayer?.id !== undefined && winnerId === myPlayer.id;
@@ -310,6 +313,10 @@ export default function GameOverOverlay({
             handleChangeDeck(opponentRequested ? 'respond' : 'request');
           }}
           onLeave={onLeave}
+          // A rescue win declared by mistake (a soul mis-dropped into Land of
+          // Redemption): the winner can take it back. Not in bracket games —
+          // their result is already recorded to the series.
+          onUndoEnd={label === 'You won' && !hideRematch && !gameState.isSolo ? gameState.undoGameEnd : undefined}
           onDismiss={() => setModalDismissed(true)}
         />
       )}
@@ -478,6 +485,7 @@ function GameOverModal({
   onPlayAgain,
   onChangeDeck,
   onLeave,
+  onUndoEnd,
   onDismiss,
 }: {
   didWin: boolean;
@@ -493,6 +501,8 @@ function GameOverModal({
   /** Normal games only — open the deck picker instead of one-tap reuse. */
   onChangeDeck?: () => void;
   onLeave?: () => void;
+  /** Rescue winner only — put the game back in play. */
+  onUndoEnd?: () => void;
   onDismiss: () => void;
 }) {
   const isTouch = useInputMode() === 'touch';
@@ -656,9 +666,10 @@ function GameOverModal({
 
         {/* Quiet secondary links: Change deck (normal games only) and Back to
             lobby (unless it's already the primary button). */}
-        {(onChangeDeck || leaveLink) && (
-          <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', gap: 20 }}>
+        {(onUndoEnd || onChangeDeck || leaveLink) && (
+          <div style={{ margin: '14px -20px 0', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '4px 16px' }}>
             {[
+              onUndoEnd && { label: 'Undo end game', onClick: onUndoEnd },
               onChangeDeck && { label: 'Change deck', onClick: onChangeDeck },
               leaveLink && { label: 'Back to lobby', onClick: leaveLink },
             ].filter((link): link is { label: string; onClick: () => void } => !!link).map(link => (
@@ -674,6 +685,7 @@ function GameOverModal({
                   fontFamily: 'Georgia, serif',
                   fontSize: 12,
                   letterSpacing: '0.04em',
+                  whiteSpace: 'nowrap',
                   textDecoration: 'underline',
                   textUnderlineOffset: 3,
                   cursor: 'pointer',
