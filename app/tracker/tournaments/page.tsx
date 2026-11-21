@@ -18,7 +18,9 @@ import { pageHostedEvents } from "../../../utils/tournament/hostedEvents";
 import { parseTournamentName, sharedEventParts, shortTournamentName } from "../../../utils/tournament/displayName";
 import { getFormatDef } from "@/lib/formats";
 
-const FORMAT_CHIP = "inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground";
+const CREATE_FAILED = "Couldn't create the tournament. Try again.";
+
+const FORMAT_CHIP ="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground";
 
 const supabase = createClient();
 
@@ -26,6 +28,13 @@ function TournamentsPageInner() {
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState(false);
+  // The list request itself failed. Kept apart from an empty list so a dropped
+  // connection never reads as "No tournaments found".
+  const [loadError, setLoadError] = useState(false);
+  // A failed create is shown inside the create dialog, which covers the page's
+  // toasts; a failed delete is shown as a toast.
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState(false);
   const [showDeleteToast, setShowDeleteToast] = useState(false);
   // The tournament the trash icon was tapped on, held until the host confirms.
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -101,6 +110,7 @@ function TournamentsPageInner() {
     }[]
   ) => {
     if (items.length === 0) return;
+    setCreateError(null);
     try {
       const {
         data: { user },
@@ -109,6 +119,7 @@ function TournamentsPageInner() {
 
       if (userError) {
         console.error("Error fetching user:", userError);
+        setCreateError(CREATE_FAILED);
         return;
       }
       // A silently-gone session returns no error but a null user; surface it the
@@ -143,6 +154,7 @@ function TournamentsPageInner() {
         .select("id");
       if (error) {
         console.error("Error adding tournament:", error);
+        setCreateError(CREATE_FAILED);
       } else {
         // If created from a listing, point the listing back at the first new
         // tournament so the public page can show it's been picked up.
@@ -167,6 +179,7 @@ function TournamentsPageInner() {
       }
     } catch (error) {
       console.error("Unexpected error:", error);
+      setCreateError(CREATE_FAILED);
     }
   };
 
@@ -212,6 +225,7 @@ function TournamentsPageInner() {
     } else {
       setTournaments(tournaments);
     }
+    setLoadError(!!error);
     setLoading(false);
   };
 
@@ -232,8 +246,10 @@ function TournamentsPageInner() {
 
   const deleteTournament = async (id) => {
     const { error } = await supabase.from("tournaments").delete().eq("id", id);
-    if (error) console.error("Error deleting tournament:", error);
-    else {
+    if (error) {
+      console.error("Error deleting tournament:", error);
+      setDeleteError(true);
+    } else {
       fetchTournaments();
       setShowDeleteToast(true);
       setTimeout(() => setShowDeleteToast(false), 2000); // 2 seconds
@@ -364,6 +380,7 @@ function TournamentsPageInner() {
             isOpen={isAddTournamentModalOpen}
             onClose={() => {
               setisAddTournamentModalOpen(false);
+              setCreateError(null);
               if (fromListingId) {
                 setFromListingId(null);
                 setListingCity("");
@@ -374,6 +391,7 @@ function TournamentsPageInner() {
               }
             }}
             onSubmit={handleAddTournament}
+            error={createError}
             listingCity={listingCity}
             categoryOptions={listingFormats.length > 0 ? listingFormats : undefined}
             listingState={listingState}
@@ -395,6 +413,22 @@ function TournamentsPageInner() {
               lost. Reload to sign back in.
             </p>
             <Button onClick={() => window.location.reload()}>Reload</Button>
+          </div>
+        ) : loadError ? (
+          <div className="rounded-lg border border-border bg-card px-4 py-6 text-center space-y-3">
+            <p className="font-medium text-foreground">Couldn&apos;t load your tournaments</p>
+            <p className="text-sm text-muted-foreground">
+              The request didn&apos;t go through. None of your data is lost.
+              Check your connection and try again.
+            </p>
+            <Button
+              onClick={() => {
+                setLoading(true);
+                fetchTournaments();
+              }}
+            >
+              Try again
+            </Button>
           </div>
         ) : tournaments.length === 0 ? (
           <p className="text-muted-foreground">No tournaments found.</p>
@@ -481,6 +515,12 @@ function TournamentsPageInner() {
           message="Tournament deleted successfully!"
           show={showDeleteToast}
           onClose={() => setShowDeleteToast(false)}
+        />
+        <ToastNotification
+          message="Couldn't delete the tournament. Try again."
+          show={deleteError}
+          onClose={() => setDeleteError(false)}
+          type="error"
         />
         <ConfirmationDialog
           open={deleteTarget !== null}

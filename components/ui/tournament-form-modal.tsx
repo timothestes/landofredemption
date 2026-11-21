@@ -29,7 +29,9 @@ interface TournamentFormModalProps {
       city: string | null;
       state: string | null;
     }[]
-  ) => void;
+  ) => void | Promise<void>;
+  // Why the last create failed. Shown above the buttons; the dialog stays open.
+  error?: string | null;
   // Location the source listing advertised, pre-filled when hosting from one.
   listingCity?: string;
   listingState?: string | null;
@@ -48,6 +50,7 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  error,
   listingCity,
   listingState,
   categoryOptions,
@@ -67,6 +70,9 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
   const [nameTouched, setNameTouched] = useState(false);
   // The standard categories beyond a listing's own formats start tucked away.
   const [showOthers, setShowOthers] = useState(false);
+  // True while the create request is running, so a second tap on Add cannot
+  // create the tournament twice.
+  const [submitting, setSubmitting] = useState(false);
 
   const hasListingOptions = !!categoryOptions && categoryOptions.length > 0;
   const options = Array.from(
@@ -160,28 +166,38 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
     resyncName(selected, { state: value });
   };
 
+  const submit = async (items: Parameters<typeof onSubmit>[0]) => {
+    setSubmitting(true);
+    try {
+      await onSubmit(items);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (submitting) return;
     const shared = {
       tier: tier || null,
       city: city.trim() || null,
       state: state || null,
     };
     if (isMulti) {
-      onSubmit(
+      submit(
         selected.map((c) => ({ name: generatedName(c), category: c, ...shared }))
       );
       return;
     }
     if (frozen) {
-      onSubmit([
+      submit([
         { name: generatedName(selected[0]), category: selected[0], ...shared },
       ]);
       return;
     }
     const trimmed = name.trim();
     if (!trimmed) return;
-    onSubmit([{ name: trimmed, category: selected[0] ?? null, ...shared }]);
+    submit([{ name: trimmed, category: selected[0] ?? null, ...shared }]);
   };
 
   const fieldClasses =
@@ -366,9 +382,18 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
               </div>
             )}
           </DialogBody>
+          {error && (
+            <p role="alert" className="shrink-0 px-6 pb-3 text-sm text-destructive">
+              {error}
+            </p>
+          )}
           <DialogFooter className="justify-end">
-            <Button type="submit" variant="success" disabled={!canSubmit}>
-              {isMulti ? `Add ${selected.length} tournaments` : "Add"}
+            <Button type="submit" variant="success" disabled={!canSubmit || submitting}>
+              {submitting
+                ? "Adding…"
+                : isMulti
+                  ? `Add ${selected.length} tournaments`
+                  : "Add"}
             </Button>
             <Button type="button" variant="cancel" onClick={onClose}>
               Cancel
