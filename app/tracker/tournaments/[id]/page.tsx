@@ -20,6 +20,8 @@ import { suggestNumberOfRounds } from "../../../../utils/tournamentUtils";
 import { createPairing } from "../../../../utils/tournament/pairingUtilsV2";
 import { buildStateFromSupabase } from "../../../../utils/tournament/stateAdapter";
 import { isNameFrozen } from "../../../../utils/tournament/naming";
+import { parseTournamentName, shortTournamentName } from "../../../../utils/tournament/displayName";
+import { TournamentName } from "../../../../components/tournament/TournamentName";
 import { recomputeTotalsFromHistory } from "../../../../lib/tournament/results";
 import {
   forfeitMatchWrite,
@@ -819,7 +821,8 @@ export default function TournamentPage({
         <Breadcrumb
           items={[
             { label: "Tournaments", href: "/tracker/tournaments" },
-            { label: tournament?.name || "Loading..." },
+            // The heading right below carries the year.
+            { label: tournament?.name ? shortTournamentName(tournament.name, { year: false }) : "Loading..." },
           ]}
         />
         <ToastNotification
@@ -880,9 +883,10 @@ export default function TournamentPage({
                 <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                   <h1 className="text-xl sm:text-2xl font-bold max-w-full">
                     {nameFrozen ? (
-                      <span title="Official events use standardized names. Change the tier, category, or location in Settings to update it.">
-                        {tournament.name}
-                      </span>
+                      <TournamentName
+                        name={tournament.name}
+                        title="Official events use standardized names. Change the tier, category, or location in Settings to update it."
+                      />
                     ) : (
                       <button
                         type="button"
@@ -890,10 +894,13 @@ export default function TournamentPage({
                           setNewTournamentName(tournament.name);
                           setIsEditTournamentModalOpen(true);
                         }}
-                        className="group inline-flex items-center gap-2 -mx-1 px-1 py-0.5 rounded-md text-left hover:bg-muted transition-colors max-w-full"
+                        // The cap allows for the negative margin: at a plain 100% a
+                        // name short enough to fit on one line is 8px too wide for
+                        // its own heading and wraps.
+                        className="group inline-flex items-center gap-2 -mx-1 px-1 py-0.5 rounded-md text-left hover:bg-muted transition-colors max-w-[calc(100%+0.5rem)]"
                         aria-label="Edit tournament name"
                       >
-                        <span>{tournament.name}</span>
+                        <TournamentName name={tournament.name} />
                         <HiPencil className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                       </button>
                     )}
@@ -958,30 +965,35 @@ export default function TournamentPage({
                   </div>
                 </div>
 
-                {/* Row 2: condensed dates — hidden on mobile to reclaim chrome. */}
-                <p className="hidden sm:block text-xs text-muted-foreground mt-1">
-                  Created {new Intl.DateTimeFormat("en-US", {
+                {/* Row 2: condensed dates — hidden on mobile to reclaim chrome.
+                    The created date is left out when the line under the
+                    heading already gives the same day. */}
+                {(() => {
+                  const created = new Intl.DateTimeFormat("en-US", {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
-                  }).format(new Date(tournament.created_at))}
-                  {tournament.started_at && (
-                    <> · Started {new Intl.DateTimeFormat("en-US", {
+                  }).format(new Date(tournament.created_at));
+                  const time = (value: string) =>
+                    new Intl.DateTimeFormat("en-US", {
                       month: "short",
                       day: "numeric",
                       hour: "2-digit",
                       minute: "2-digit",
-                    }).format(new Date(tournament.started_at))}</>
-                  )}
-                  {tournament.ended_at && (
-                    <> · Ended {new Intl.DateTimeFormat("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }).format(new Date(tournament.ended_at))}</>
-                  )}
-                </p>
+                    }).format(new Date(value));
+                  const dates = [
+                    parseTournamentName(tournament.name).date === created ? null : `Created ${created}`,
+                    tournament.started_at && `Started ${time(tournament.started_at)}`,
+                    tournament.ended_at && `Ended ${time(tournament.ended_at)}`,
+                  ].filter(Boolean);
+                  return (
+                    dates.length > 0 && (
+                      <p className="hidden sm:block text-xs text-muted-foreground mt-1">
+                        {dates.join(" · ")}
+                      </p>
+                    )
+                  );
+                })()}
               </header>
 
               {/* Backstop for the gate above: a frozen event has no rename

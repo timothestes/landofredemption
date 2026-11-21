@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { TournamentBreakdown } from "@/lib/tournament/breakdown";
+import { shortTournamentName } from "@/utils/tournament/displayName";
 
 type SortKey = "place" | "spice" | "size";
 
@@ -104,8 +105,8 @@ export default function DeckDna({ breakdown }: { breakdown: TournamentBreakdown 
                 {/* Across events a placement is meaningless without its field,
                     so the event rides alongside it. */}
                 {showEvents && deck.event && (
-                  <span className="truncate font-medium not-italic text-muted-foreground/80">
-                    {deck.event.name}
+                  <span className="truncate font-medium not-italic text-muted-foreground/80" title={deck.event.name}>
+                    {shortTournamentName(deck.event.name)}
                   </span>
                 )}
                 <span>
@@ -145,7 +146,7 @@ export default function DeckDna({ breakdown }: { breakdown: TournamentBreakdown 
                       deck.neighbors[0].eventName &&
                       deck.neighbors[0].eventName !== deck.event?.name && (
                         <span className="ml-1 text-muted-foreground/70">
-                          (from {deck.neighbors[0].eventName})
+                          (from {shortTournamentName(deck.neighbors[0].eventName)})
                         </span>
                       )}
                   </span>

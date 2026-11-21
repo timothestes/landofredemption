@@ -3,6 +3,7 @@ import TopNav from "@/components/top-nav";
 import SiteFooter from "@/components/site-footer";
 import { loadPublicResultsIndexAction } from "../actions";
 import ResultsSectionTabs from "@/components/metagame/ResultsSectionTabs";
+import { parseTournamentName } from "@/utils/tournament/displayName";
 
 export const metadata = {
   title: "Tournament Results",
@@ -86,7 +87,10 @@ export default async function TournamentResultsIndexPage() {
 
         <div className="divide-y divide-border/60 border-y border-border/60">
           {events.map((e) => {
-            const dateLabel = formatEndedAt(e.endedAt);
+            // The line under the title carries the date and category for every
+            // row, so a generated name gives up its own copies of them.
+            const parts = parseTournamentName(e.name);
+            const dateLabel = formatEndedAt(e.endedAt) ?? parts.date;
             return (
               // divide-y draws on the direct child; keep that at container width
               // and let only the hover fill bleed (same shape as the agenda rows).
@@ -95,16 +99,24 @@ export default async function TournamentResultsIndexPage() {
                   href={`/tournaments/results/${e.id}`}
                   className="-mx-2 block px-2 py-3 transition-colors hover:bg-muted/40"
                 >
-                  <span className="text-sm font-medium text-foreground">{e.name}</span>
+                  <span className="text-sm font-medium text-foreground" title={e.name}>
+                    {parts.title}
+                  </span>
                   {/* Name alone is not unique — the date, category and format are
                       what tell two same-day events apart. */}
                   <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                     <span className="tabular-nums">{dateLabel ?? "Date not recorded"}</span>
                     <span aria-hidden>·</span>
+                    {parts.location && (
+                      <>
+                        <span>{parts.location}</span>
+                        <span aria-hidden>·</span>
+                      </>
+                    )}
                     <span>
                       {e.playerCount} player{e.playerCount !== 1 ? "s" : ""}
                     </span>
-                    {e.category && (
+                    {e.category && !e.name.includes(e.category) && (
                       <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 font-semibold tracking-wide">
                         {e.category}
                       </span>

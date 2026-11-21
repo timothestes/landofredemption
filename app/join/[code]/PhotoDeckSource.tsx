@@ -10,6 +10,7 @@ import { deckFormat, deckName, deckOutcomes, saveRows, totals } from "@/app/deck
 import type { DeckTrayState } from "@/app/decklist/scan/types";
 import type { FormatId } from "@/lib/formats";
 import type { DeckCheckIssue } from "@/utils/deckcheck/types";
+import { shortTournamentName } from "@/utils/tournament/displayName";
 
 interface Props {
   userId: string;
@@ -139,7 +140,9 @@ function SubmitBar({
     saving.current = true;
     setFailure(null);
     dispatch({ type: "saving" });
-    const name = (savedName.current = eventName.trim() ? `${eventName.trim().slice(0, 90)} deck` : deckName(new Date()));
+    // The short form of the event's name, so a row in My Decks or the roster is not mostly date and place.
+    const event = shortTournamentName(eventName.trim());
+    const name = (savedName.current = event ? `${event.slice(0, 90)} deck` : deckName(new Date()));
     try {
       const res = await createDeckFromScanAction({
         rows: saveRows(state),

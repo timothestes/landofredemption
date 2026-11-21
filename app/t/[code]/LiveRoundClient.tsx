@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { TournamentName } from "@/components/tournament/TournamentName";
 import { useRoundCountdown } from "@/components/ui/useRoundCountdown";
 import { normalizeTournamentFormat } from "@/lib/formats";
 import {
@@ -227,7 +228,9 @@ export default function LiveRoundClient({
           Live pairings &amp; standings
         </p>
         {pendingName && (
-          <h1 className="mt-1 font-cinzel text-2xl font-bold text-foreground">{pendingName}</h1>
+          <h1 className="mt-1 font-cinzel text-2xl font-bold text-foreground">
+            <TournamentName name={pendingName} />
+          </h1>
         )}
         <div className="mt-6 border-y border-border/60 py-5">
           <p className="font-medium text-foreground">This event hasn&apos;t started yet</p>
@@ -265,6 +268,8 @@ export default function LiveRoundClient({
       : "text-foreground";
 
   const format = normalizeTournamentFormat(tournament.deck_format);
+  // A generated name already says its category, so the chip would repeat the heading.
+  const showCategory = !!tournament.category && !tournament.name.includes(tournament.category);
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-16 pt-6">
@@ -279,11 +284,11 @@ export default function LiveRoundClient({
           </p>
         </div>
         <h1 className="mt-1 font-cinzel text-xl font-bold leading-tight text-foreground sm:text-2xl">
-          {tournament.name}
+          <TournamentName name={tournament.name} />
         </h1>
-        {(tournament.category || format) && (
+        {(showCategory || format) && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            {tournament.category && <Chip>{tournament.category}</Chip>}
+            {showCategory && <Chip>{tournament.category}</Chip>}
             {format && <Chip>{format}</Chip>}
           </div>
         )}

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { getCardImageUrl } from "@/app/shared/utils/cardImageUrl";
 import type { BreakdownDeck } from "@/lib/tournament/breakdown";
 import type { DerivedCard } from "@/lib/tournament/derive";
+import { shortTournamentName } from "@/utils/tournament/displayName";
 import TopCutControl from "./TopCutControl";
 
 type SortKey = "decks" | "copies" | "delta" | "reserve" | "name";
@@ -456,7 +457,7 @@ function CardDetail({
                     {/* A finish is only readable next to the field it was
                         earned in — #1 of six is not #1 of seventy-two. */}
                     {showEvents && deck.event && (
-                      <span className="ml-1 text-muted-foreground/70">{deck.event.name}</span>
+                      <span className="ml-1 text-muted-foreground/70">{shortTournamentName(deck.event.name)}</span>
                     )}
                   </span>
                   <span className="shrink-0 text-xs text-muted-foreground tabular-nums">

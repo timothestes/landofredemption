@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { useRoundCountdown } from "@/components/ui/useRoundCountdown";
 import { derivePanelState } from "@/lib/tournament/roundTimer";
+import { parseTournamentName } from "@/utils/tournament/displayName";
 import type { BoardTournament } from "./boardData";
 
 export function BoardPanel({ tournament }: { tournament: BoardTournament }) {
@@ -20,8 +21,12 @@ export function BoardPanel({ tournament }: { tournament: BoardTournament }) {
         expired ? "border-2 border-destructive bg-card" : "border-border bg-card",
       )}
     >
-      <h2 className="line-clamp-2 font-cinzel text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
-        {tournament.name}
+      {/* Title only: the room knows the date and the place, and small grey text is lost on a projector. */}
+      <h2
+        className="line-clamp-2 font-cinzel text-2xl font-bold text-foreground sm:text-3xl md:text-4xl"
+        title={tournament.name}
+      >
+        {parseTournamentName(tournament.name).title}
       </h2>
       <p className="text-lg text-muted-foreground sm:text-xl">
         Round {tournament.current_round} of {tournament.n_rounds}
