@@ -10,6 +10,7 @@ import {
   forfeitSideForDrops,
   forfeitSideOf,
   matchOutcomeColumns,
+  matchesAwaitingResult,
 } from "../../lib/tournament/dropForfeit";
 import { buildStateFromSupabase } from "../../utils/tournament/stateAdapter";
 import { reassignRoundTables } from "../../utils/tournament/reassignTables";
@@ -444,7 +445,7 @@ export default function TournamentRounds({
     const { data, error } = await client
       .from("matches")
       .select(
-        "id, match_order, table_number, player1_pin_overridden, player2_pin_overridden, player1_match_points, player2_match_points, differential, differential2, player1_id:participants!matches_player1_id_fkey(name,id,assigned_seat), player2_id:participants!matches_player2_id_fkey(name,id,assigned_seat), player1_score, player2_score, player1_forfeit, player2_forfeit"
+        "id, match_order, table_number, player1_pin_overridden, player2_pin_overridden, player1_match_points, player2_match_points, differential, differential2, player1_id:participants!matches_player1_id_fkey(name,id,assigned_seat,dropped_out), player2_id:participants!matches_player2_id_fkey(name,id,assigned_seat,dropped_out), player1_score, player2_score, player1_forfeit, player2_forfeit"
       )
       .eq("tournament_id", tournamentId)
       .eq("round", currentPage)
@@ -660,6 +661,19 @@ export default function TournamentRounds({
       showToast(`Round ${currentPage} could not be ended. Press End Round to try again.`, "error");
     }
   }, [matches, tournamentInfo, byes]);
+
+  // Results still missing, from the saved rows. Counted next to End Round, and
+  // checked before the confirmation so the host is not asked to confirm a
+  // round that cannot end yet. handleEndRound checks again after confirming.
+  const awaitingResult = matchesAwaitingResult(matches);
+  const handleEndRoundClick = () => {
+    if (awaitingResult.length > 0) {
+      setMatchErrorIndex(awaitingResult);
+      showToast("Please add scores to all matches.", "warning");
+      return;
+    }
+    setEndRoundConfirmOpen(true);
+  };
 
   const handleRepairClick = (match: any, isPlayer2 = false) => {
     if (repairMode) {
@@ -1178,13 +1192,21 @@ export default function TournamentRounds({
                                 <span className="sm:hidden">Slips</span>
                               </Button>
                             </div>
+                            {isRoundActive && matches.length > 0 && (
+                              // Its own line under the buttons, so End Round
+                              // stays where Start Round was; on a wide screen
+                              // that line ends under End Round.
+                              <span className="order-last w-full text-sm text-muted-foreground tabular-nums sm:text-right">
+                                {matches.length - awaitingResult.length} of {matches.length} results in
+                              </span>
+                            )}
                             <Button
                               variant={isRoundActive ? "destructive" : "default"}
                               size="sm"
                               className="sm:ml-auto"
                               onClick={
                                 isRoundActive
-                                  ? () => setEndRoundConfirmOpen(true)
+                                  ? handleEndRoundClick
                                   : handleStartRound
                               }
                               disabled={matchEnding}
