@@ -61,6 +61,9 @@ function TournamentsPageInner() {
   const [listingState, setListingState] = useState<string | null>(null);
   // The event's day ("2026-11-28") the create form starts on, when known.
   const [listingDate, setListingDate] = useState<string | null>(null);
+  // The create form was opened from "Host another category", so it starts
+  // with nothing ticked rather than a category the event may already have.
+  const [addingCategory, setAddingCategory] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -185,6 +188,7 @@ function TournamentsPageInner() {
           setListingTier(null);
           setListingState(null);
           setListingDate(null);
+          setAddingCategory(false);
           // Clean up URL params
           if (!onlyId) router.replace("/tracker/tournaments", { scroll: false });
         } else if (!onlyId && searchParams.get("page")) {
@@ -222,6 +226,7 @@ function TournamentsPageInner() {
     setListingTier(group.map((t) => t.tier).find(Boolean) ?? null);
     setListingDate(nameDateToInputValue(sharedEventParts(group.map((t) => t.name)).date));
     setListingFormats([]);
+    setAddingCategory(true);
     setisAddTournamentModalOpen(true);
   };
 
@@ -424,6 +429,7 @@ function TournamentsPageInner() {
                 setListingTier(null);
                 setListingState(null);
                 setListingDate(null);
+                setAddingCategory(false);
                 router.replace("/tracker/tournaments", { scroll: false });
               }
             }}
@@ -434,6 +440,7 @@ function TournamentsPageInner() {
             listingState={listingState}
             defaultTier={listingTier}
             defaultDate={listingDate}
+            startEmpty={addingCategory}
           />
           <JoinCodeDialog
             isOpen={isJoinDialogOpen}

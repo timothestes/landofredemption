@@ -49,6 +49,9 @@ interface TournamentFormModalProps {
   // The day of the event as "2026-11-28": the listing's start date, or the day
   // the event's other categories carry. Today when omitted.
   defaultDate?: string | null;
+  // Open with no category ticked. For adding a category to an existing event,
+  // where a pre-ticked first category would be created a second time.
+  startEmpty?: boolean;
 }
 
 // Drop a trailing "- 2P" / "2P" player-count suffix; it reads as clutter.
@@ -64,6 +67,7 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
   categoryOptions,
   defaultTier,
   defaultDate,
+  startEmpty,
 }) => {
   const firstCheckboxRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
@@ -102,7 +106,8 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
     if (!isOpen) return;
     // Pre-check the first type so the modal opens ready to add one tournament,
     // matching the previous single-select default. The host can check more.
-    const initial = options[0] ? [options[0]] : [];
+    // Not when adding to an existing event, which may already have that type.
+    const initial = options[0] && !startEmpty ? [options[0]] : [];
     const initialTier = defaultTier ?? "";
     const initialDate = toDateInputValue(
       fromDateInputValue(defaultDate) ?? new Date()
@@ -117,18 +122,20 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
     setNameTouched(false);
     setShowOthers(false);
     setName(
-      buildTournamentName(cleanCategory(initial[0] ?? ""), {
-        date: fromDateInputValue(initialDate) ?? undefined,
-        tier: initialTier || null,
-        city: initialCity || null,
-        state: initialState || null,
-      })
+      initial[0]
+        ? buildTournamentName(cleanCategory(initial[0]), {
+            date: fromDateInputValue(initialDate) ?? undefined,
+            tier: initialTier || null,
+            city: initialCity || null,
+            state: initialState || null,
+          })
+        : ""
     );
     requestAnimationFrame(() => {
       firstCheckboxRef.current?.focus();
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, defaultTier, defaultDate, listingCity, listingState]);
+  }, [isOpen, defaultTier, defaultDate, listingCity, listingState, startEmpty]);
 
   // Creating multiple tournaments at once: each gets an auto-built name, so the
   // single editable name field is replaced by a preview list.
@@ -336,7 +343,9 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
               >
                 Categories
               </span>
-              <div className="rounded-lg border border-border bg-card divide-y divide-border max-h-72 overflow-y-auto">
+              {/* No height limit of its own: the dialog body scrolls, and a
+                  second scroller inside it hid the last category. */}
+              <div className="rounded-lg border border-border bg-card divide-y divide-border overflow-hidden">
                 {[...options, ...(showOthers ? extraOptions : [])].map((opt, i) => (
                   <label
                     key={opt}
