@@ -23,7 +23,7 @@ import { Button } from "./button";
 import ToastNotification from "./toast-notification";
 import ConfirmationDialog from "./confirmation-dialog";
 import InfoHint, { MP_ROUND_HINT, DIFF_ROUND_HINT } from "./InfoHint";
-import { ScoreCell, SaveIndicator } from "./ScoreCell";
+import { ScoreCell, SaveIndicator, UnsavedNotice } from "./ScoreCell";
 import { useScoreGrid } from "./useScoreGrid";
 import { ScoreShortcutsButton, ScoreShortcutsDialog } from "./ScoreShortcutsDialog";
 import {
@@ -993,6 +993,15 @@ export default function TournamentRounds({
     },
     onOpenHelp: () => setShortcutsOpen(true),
   });
+  // Rows where a failed save left the screen and the saved result disagreeing.
+  // A first entry that never saved is not counted: End Round stops on it as a
+  // missing score anyway.
+  const unsavedCount = matches.filter(
+    (m) =>
+      scoreGrid.isUnsaved(m.id) &&
+      m.player1_score !== null &&
+      m.player2_score !== null,
+  ).length;
 
   // Post-save callback for the pencil dialog on a live round. Its result is
   // the newest word on the row, so whatever was typed into that row's score
@@ -1361,6 +1370,7 @@ export default function TournamentRounds({
                                 </td>
                                 <td className={`px-4 py-2 text-center border-r tabular-nums ${matchErrorIndex.includes(index) ? "border-red-400" : "border-border"}`}>
                                   {gridEnabled && !forfeitSideOf(match) ? (
+                                    <>
                                     <div className="flex items-center justify-center gap-1.5">
                                       {([0, 1] as const).map((col) => (
                                         <ScoreCell
@@ -1391,6 +1401,13 @@ export default function TournamentRounds({
                                         error={scoreGrid.saveError[match.id]}
                                       />
                                     </div>
+                                    {scoreGrid.isUnsaved(match.id) && (
+                                      <UnsavedNotice
+                                        error={scoreGrid.saveError[match.id]}
+                                        onRetry={() => scoreGrid.retryRow(index)}
+                                      />
+                                    )}
+                                    </>
                                   ) : hasResult ? (
                                     <span className="font-medium text-foreground">
                                       {forfeitLabel(match) ?? (
@@ -1939,7 +1956,17 @@ export default function TournamentRounds({
         }
         confirmLabel="End round"
         cancelLabel="Cancel"
-      />
+      >
+        {/* A correction that failed to save still shows its new digits, while
+            End Round reads the saved rows — say so before the host commits. */}
+        {unsavedCount > 0 && (
+          <p className="text-sm text-foreground">
+            {unsavedCount === 1
+              ? "1 match shows a change that did not save. It is marked Not saved in the table. Ending the round now keeps its last saved result."
+              : `${unsavedCount} matches show changes that did not save. They are marked Not saved in the table. Ending the round now keeps their last saved results.`}
+          </p>
+        )}
+      </ConfirmationDialog>
       <ScoreShortcutsDialog
         open={shortcutsOpen}
         onOpenChange={setShortcutsOpen}
