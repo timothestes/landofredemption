@@ -20,7 +20,7 @@ import { suggestNumberOfRounds } from "../../../../utils/tournamentUtils";
 import { createPairing } from "../../../../utils/tournament/pairingUtilsV2";
 import { buildStateFromSupabase } from "../../../../utils/tournament/stateAdapter";
 import { isNameFrozen } from "../../../../utils/tournament/naming";
-import { tournamentReadOutcome } from "../../../../utils/tournament/hostPageLoad";
+import { initialHostTab, tournamentReadOutcome } from "../../../../utils/tournament/hostPageLoad";
 import { parseTournamentName, shortTournamentName } from "../../../../utils/tournament/displayName";
 import { TournamentName } from "../../../../components/tournament/TournamentName";
 import { recomputeTotalsFromHistory } from "../../../../lib/tournament/results";
@@ -73,6 +73,7 @@ export default function TournamentPage({
   const [isEditTournamentModalOpen, setIsEditTournamentModalOpen] =
     useState<boolean>(false);
   const [activeTab, setActiveTab] = useState(0);
+  const initialTabChosenRef = useRef(false);
   const [isEditParticipantModalOpen, setIsEditParticipantModalOpen] =
     useState<boolean>(false);
   const [loading, setLoading] = useState(true);
@@ -195,6 +196,12 @@ export default function TournamentPage({
         return;
       }
       if (outcome === "failed") throw error;
+      // Once, on the first load: a reload mid-event lands on Rounds, and after
+      // the end on Standings. Later reads leave the host's own tab alone.
+      if (!initialTabChosenRef.current) {
+        initialTabChosenRef.current = true;
+        setActiveTab(initialHostTab(data));
+      }
       setTournament(data);
       setTournamentNotFound(false);
       setTournamentLoadFailed(false);

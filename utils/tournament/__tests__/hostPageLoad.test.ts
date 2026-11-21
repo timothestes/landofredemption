@@ -1,5 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { tournamentReadOutcome } from "../hostPageLoad";
+import { initialHostTab, tournamentReadOutcome } from "../hostPageLoad";
+
+describe("initialHostTab", () => {
+  it("opens Participants before the event starts", () => {
+    expect(initialHostTab({ has_started: false, has_ended: false })).toBe(0);
+    expect(initialHostTab({ has_started: null, has_ended: null })).toBe(0);
+  });
+
+  it("opens Rounds while the event is running", () => {
+    expect(initialHostTab({ has_started: true, has_ended: false })).toBe(1);
+  });
+
+  it("opens Standings once the event has ended", () => {
+    expect(initialHostTab({ has_started: true, has_ended: true })).toBe(2);
+  });
+
+  it("stays on Participants for an ended event that never started, which has no Standings tab", () => {
+    expect(initialHostTab({ has_started: false, has_ended: true })).toBe(0);
+  });
+});
 
 describe("tournamentReadOutcome", () => {
   it("is loaded when the row came back", () => {
