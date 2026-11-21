@@ -885,7 +885,7 @@ export default function TournamentPage({
                     {nameFrozen ? (
                       <TournamentName
                         name={tournament.name}
-                        title="Official events use standardized names. Change the tier, category, or location in Settings to update it."
+                        title="Official events use standardized names. Change the tier, category, date, or location in Settings to update it."
                       />
                     ) : (
                       <button

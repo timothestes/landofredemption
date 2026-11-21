@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { planEventTypeChange, renameForEventType } from "../eventType";
+import { eventDateInputValue, planEventTypeChange, renameForEventType } from "../eventType";
 import { normalizeTier, TOURNAMENT_TIERS } from "../tiers";
 import { formatLocation } from "../naming";
 import { normalizeState } from "../usStates";
@@ -145,6 +145,37 @@ describe("renameForEventType", () => {
       )
     ).toMatch(/ Type 2 Tournament — Wichita, KS$/);
   });
+
+  it("writes the day the host picked over the one in the name", () => {
+    expect(
+      renameForEventType(
+        "Jul 28, 2026 Regional Type 2 Tournament — Wichita, KS",
+        { tier: "Regional", category: "Type 2", city: "Wichita", state: "KS", date: new Date(2026, 7, 1, 12) },
+        UNLIMITED.created_at
+      )
+    ).toBe("Aug 1, 2026 Regional Type 2 Tournament — Wichita, KS");
+  });
+
+  it("uses the picked day instead of created_at for a free-form name", () => {
+    expect(
+      renameForEventType(
+        "Friday Night Redemption",
+        { tier: null, category: "Type 2", city: null, state: null, date: new Date(2026, 7, 1, 12) },
+        UNLIMITED.created_at
+      )
+    ).toBe("Aug 1, 2026 Type 2 Tournament");
+  });
+});
+
+describe("eventDateInputValue", () => {
+  it("reads the day out of a generated name, not out of created_at", () => {
+    // created_at is Jul 29 in UTC; the name, written in the host's timezone, says Jul 28.
+    expect(eventDateInputValue(UNLIMITED.name, UNLIMITED.created_at)).toBe("2026-07-28");
+  });
+
+  it("falls back to the local day of created_at for a free-form name", () => {
+    expect(eventDateInputValue("Friday Night Redemption", new Date(2026, 7, 1, 12).toISOString())).toBe("2026-08-01");
+  });
 });
 
 describe("formatLocation", () => {
@@ -195,6 +226,31 @@ describe("planEventTypeChange", () => {
     expect(plan.max_score).toBeUndefined();
     expect(plan.round_length).toBeUndefined();
     expect(plan.deck_format).toBe("Unlimited");
+  });
+
+  it("renames on a date-only change, and the date is not a column to write", () => {
+    const plan = planEventTypeChange(
+      UNLIMITED,
+      { tier: null, category: "Type 1 Unlimited", city: null, state: null, date: new Date(2026, 7, 1, 12) },
+      UNLOCKED
+    );
+    expect(plan).toEqual({
+      tier: null,
+      category: "Type 1 Unlimited",
+      city: null,
+      state: null,
+      deck_format: "Unlimited",
+      name: "Aug 1, 2026 Type 1 Unlimited Tournament",
+    });
+  });
+
+  it("leaves an Unofficial event's own name alone whatever day is picked", () => {
+    const plan = planEventTypeChange(
+      { ...UNLIMITED, name: "Friday Night Redemption", category: "Unofficial", deck_format: "Other", require_decklists: false },
+      { tier: null, category: "Unofficial", city: null, state: null, date: new Date(2026, 7, 1, 12) },
+      UNLOCKED
+    );
+    expect(plan.name).toBeUndefined();
   });
 
   it("preserves a setting the host overrode", () => {

@@ -8,7 +8,8 @@ import { FORMAT_IDS, normalizeTournamentFormat, type FormatId } from "../../lib/
 import { STANDARD_CATEGORIES } from "../../utils/tournament/categoryDefaults";
 import { TOURNAMENT_TIERS } from "../../utils/tournament/tiers";
 import { US_STATES } from "../../utils/tournament/usStates";
-import { planEventTypeChange, type EventTypePlan } from "../../utils/tournament/eventType";
+import { eventDateInputValue, planEventTypeChange, type EventTypePlan } from "../../utils/tournament/eventType";
+import { fromDateInputValue, isNameFrozen } from "../../utils/tournament/naming";
 import { getJoinStatsAction } from "../../app/tracker/tournaments/actions";
 
 interface TournamentInfo {
@@ -99,6 +100,9 @@ export default function TournamentSettings({
   const [category, setCategory] = useState<string>("");
   const [city, setCity] = useState<string>("");
   const [state, setState] = useState<string>("");
+  // The day of the event as the date field holds it ("2026-11-28"). It is not
+  // a column: it is read out of the generated name and written back into it.
+  const [eventDate, setEventDate] = useState<string>("");
   const [unofficialFormat, setUnofficialFormat] = useState<FormatId | "Other">("Other");
 
   const suggestedRounds = suggestNumberOfRounds(participantCount);
@@ -127,6 +131,7 @@ export default function TournamentSettings({
       setCategory(data.category ?? "");
       setCity(data.city ?? "");
       setState(data.state ?? "");
+      setEventDate(eventDateInputValue(data.name, data.created_at));
       setUnofficialFormat(normalizeTournamentFormat(data.deck_format) ?? "Other");
 
       // Only used to warn that changing the format leaves existing deck-check
@@ -167,11 +172,19 @@ export default function TournamentSettings({
   const savedCity = savedInfo.city ?? "";
   const savedState = savedInfo.state ?? "";
   const savedUnofficialFormat = normalizeTournamentFormat(savedInfo.deck_format) ?? "Other";
+  // Only an official category has a generated name for the date to go into,
+  // and a cleared field is not a change.
+  const pickedDate = fromDateInputValue(eventDate);
+  const dateDirty =
+    isNameFrozen(category) &&
+    !!pickedDate &&
+    eventDate !== eventDateInputValue(savedInfo.name, savedInfo.created_at);
   const eventTypeDirty =
     tier !== savedTier ||
     category !== savedCategory ||
     city.trim() !== savedCity ||
     state !== savedState ||
+    dateDirty ||
     (category === "Unofficial" && unofficialFormat !== savedUnofficialFormat);
 
   // The same plan drives the preview and the persisted patch, so what the host
@@ -199,6 +212,7 @@ export default function TournamentSettings({
         category,
         city: city.trim() || null,
         state: state || null,
+        date: dateDirty ? fromDateInputValue(eventDate) ?? undefined : undefined,
         unofficialFormat: category === "Unofficial" ? unofficialFormat : undefined,
       },
       { maxScoreLocked },
@@ -212,6 +226,8 @@ export default function TournamentSettings({
     tier,
     city,
     state,
+    eventDate,
+    dateDirty,
     unofficialFormat,
     maxScoreLocked,
   ]);
@@ -414,6 +430,23 @@ export default function TournamentSettings({
                   ))}
                 </select>
               </label>
+
+              {/* Official events only: an Unofficial event's name is the
+                  host's own, so there is no date in it to correct. */}
+              {isNameFrozen(category) && (
+                <label className="block">
+                  <span className="text-sm font-medium text-foreground mb-1.5 block">
+                    Event date
+                  </span>
+                  <input
+                    type="date"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    disabled={editingDisabled}
+                    className={inputClasses}
+                  />
+                </label>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_9rem] gap-4">

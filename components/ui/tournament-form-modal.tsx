@@ -4,7 +4,12 @@ import {
   STANDARD_CATEGORIES,
   otherCategories,
 } from "../../utils/tournament/categoryDefaults";
-import { buildTournamentName, isNameFrozen } from "../../utils/tournament/naming";
+import {
+  buildTournamentName,
+  fromDateInputValue,
+  isNameFrozen,
+  toDateInputValue,
+} from "../../utils/tournament/naming";
 import { TOURNAMENT_TIERS } from "../../utils/tournament/tiers";
 import { US_STATES, normalizeState } from "../../utils/tournament/usStates";
 import {
@@ -41,6 +46,9 @@ interface TournamentFormModalProps {
   categoryOptions?: string[];
   // Tier the source listing advertised, pre-selected when hosting from one.
   defaultTier?: string | null;
+  // The day of the event as "2026-11-28": the listing's start date, or the day
+  // the event's other categories carry. Today when omitted.
+  defaultDate?: string | null;
 }
 
 // Drop a trailing "- 2P" / "2P" player-count suffix; it reads as clutter.
@@ -55,6 +63,7 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
   listingState,
   categoryOptions,
   defaultTier,
+  defaultDate,
 }) => {
   const firstCheckboxRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
@@ -64,6 +73,9 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
   // creates — one event is one tier in one place even when it runs several
   // categories. "" means unspecified.
   const [tier, setTier] = useState<string>("");
+  // The day of the event, as the date field holds it. It goes into the
+  // generated name, so a host setting up the night before can say so.
+  const [eventDate, setEventDate] = useState<string>("");
   const [city, setCity] = useState<string>("");
   const [state, setState] = useState<string>("");
   // Once the host edits the name, we stop auto-building it from the category.
@@ -92,16 +104,21 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
     // matching the previous single-select default. The host can check more.
     const initial = options[0] ? [options[0]] : [];
     const initialTier = defaultTier ?? "";
+    const initialDate = toDateInputValue(
+      fromDateInputValue(defaultDate) ?? new Date()
+    );
     const initialCity = listingCity ?? "";
     const initialState = normalizeState(listingState) ?? "";
     setSelected(initial);
     setTier(initialTier);
+    setEventDate(initialDate);
     setCity(initialCity);
     setState(initialState);
     setNameTouched(false);
     setShowOthers(false);
     setName(
       buildTournamentName(cleanCategory(initial[0] ?? ""), {
+        date: fromDateInputValue(initialDate) ?? undefined,
         tier: initialTier || null,
         city: initialCity || null,
         state: initialState || null,
@@ -111,7 +128,7 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
       firstCheckboxRef.current?.focus();
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, defaultTier, listingCity, listingState]);
+  }, [isOpen, defaultTier, defaultDate, listingCity, listingState]);
 
   // Creating multiple tournaments at once: each gets an auto-built name, so the
   // single editable name field is replaced by a preview list.
@@ -124,9 +141,11 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
   // editable field, so what the host sees while typing is what gets created.
   const generatedName = (
     category: string,
-    over?: { tier?: string; city?: string; state?: string }
+    over?: { tier?: string; date?: string; city?: string; state?: string }
   ) =>
     buildTournamentName(cleanCategory(category), {
+      // A cleared date field falls back to today, as before there was a field.
+      date: fromDateInputValue(over?.date ?? eventDate) ?? undefined,
       tier: (over?.tier ?? tier) || null,
       city: (over?.city ?? city) || null,
       state: (over?.state ?? state) || null,
@@ -136,7 +155,7 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
   // taken the name over or isn't on exactly one category.
   const resyncName = (
     next: string[],
-    over?: { tier?: string; city?: string; state?: string }
+    over?: { tier?: string; date?: string; city?: string; state?: string }
   ) => {
     if (nameTouched) return;
     if (next.length === 1) setName(generatedName(next[0], over));
@@ -154,6 +173,11 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
   const handleTierChange = (value: string) => {
     setTier(value);
     resyncName(selected, { tier: value });
+  };
+
+  const handleDateChange = (value: string) => {
+    setEventDate(value);
+    resyncName(selected, { date: value });
   };
 
   const handleCityChange = (value: string) => {
@@ -218,27 +242,47 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-col">
           <DialogBody className="space-y-3">
             <div>
-              <label
-                htmlFor="tier"
-                className="block text-xs font-medium text-muted-foreground mb-1"
-              >
-                Tier
-              </label>
-              <select
-                id="tier"
-                value={tier}
-                onChange={(e) => handleTierChange(e.target.value)}
-                className={fieldClasses}
-              >
-                <option value="">Not specified</option>
-                {TOURNAMENT_TIERS.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label
+                    htmlFor="tier"
+                    className="block text-xs font-medium text-muted-foreground mb-1"
+                  >
+                    Tier
+                  </label>
+                  <select
+                    id="tier"
+                    value={tier}
+                    onChange={(e) => handleTierChange(e.target.value)}
+                    className={fieldClasses}
+                  >
+                    <option value="">Not specified</option>
+                    {TOURNAMENT_TIERS.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="min-w-0">
+                  <label
+                    htmlFor="event-date"
+                    className="block text-xs font-medium text-muted-foreground mb-1"
+                  >
+                    Event date
+                  </label>
+                  <input
+                    id="event-date"
+                    type="date"
+                    required
+                    value={eventDate}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    className={fieldClasses}
+                  />
+                </div>
+              </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Appears in the event name. Applies to every category you check.
+                Both appear in the event name and apply to every category you check.
               </p>
             </div>
             <div className="grid grid-cols-[1fr_10rem] gap-2">

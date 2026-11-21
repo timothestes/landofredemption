@@ -16,6 +16,7 @@ import { categoryDefaults, requireDecklistsDefault } from "../../../utils/tourna
 import { normalizeTier } from "../../../utils/tournament/tiers";
 import { pageHostedEvents } from "../../../utils/tournament/hostedEvents";
 import { parseTournamentName, sharedEventParts, shortTournamentName } from "../../../utils/tournament/displayName";
+import { nameDateToInputValue } from "../../../utils/tournament/naming";
 import { getFormatDef } from "@/lib/formats";
 
 const CREATE_FAILED = "Couldn't create the tournament. Try again.";
@@ -49,6 +50,8 @@ function TournamentsPageInner() {
   const [listingFormats, setListingFormats] = useState<string[]>([]);
   const [listingTier, setListingTier] = useState<string | null>(null);
   const [listingState, setListingState] = useState<string | null>(null);
+  // The event's day ("2026-11-28") the create form starts on, when known.
+  const [listingDate, setListingDate] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -77,6 +80,7 @@ function TournamentsPageInner() {
       setFromListingId(listingId);
       setListingFormats(formats ? formats.split("|").filter(Boolean) : []);
       setListingTier(normalizeTier(type));
+      setListingDate(searchParams.get("date"));
       setisAddTournamentModalOpen(true);
     }
   }, [searchParams]);
@@ -168,6 +172,7 @@ function TournamentsPageInner() {
           setListingFormats([]);
           setListingTier(null);
           setListingState(null);
+          setListingDate(null);
           // Clean up URL params
           router.replace("/tracker/tournaments", { scroll: false });
         } else if (searchParams.get("page")) {
@@ -188,14 +193,15 @@ function TournamentsPageInner() {
   // Tier and location are inherited from the siblings so the new category's
   // generated name matches the rest of the event. Not every sibling
   // necessarily has them set, so scan the whole group rather than just the
-  // most recent one. Note: the generated date is today's, not the original
-  // event date — a category added after the fact carries the date it was
-  // created.
+  // most recent one. The date field starts on the day the siblings share, so
+  // a category added after the fact is not dated the day it was added; when
+  // they disagree it starts on today and the host picks.
   const openHostAnotherCategory = (listingId: string, group: any[]) => {
     setFromListingId(listingId);
     setListingCity(group.map((t) => t.city).find(Boolean) ?? "");
     setListingState(group.map((t) => t.state).find(Boolean) ?? null);
     setListingTier(group.map((t) => t.tier).find(Boolean) ?? null);
+    setListingDate(nameDateToInputValue(sharedEventParts(group.map((t) => t.name)).date));
     setListingFormats([]);
     setisAddTournamentModalOpen(true);
   };
@@ -387,6 +393,7 @@ function TournamentsPageInner() {
                 setListingFormats([]);
                 setListingTier(null);
                 setListingState(null);
+                setListingDate(null);
                 router.replace("/tracker/tournaments", { scroll: false });
               }
             }}
@@ -396,6 +403,7 @@ function TournamentsPageInner() {
             categoryOptions={listingFormats.length > 0 ? listingFormats : undefined}
             listingState={listingState}
             defaultTier={listingTier}
+            defaultDate={listingDate}
           />
           <JoinCodeDialog
             isOpen={isJoinDialogOpen}

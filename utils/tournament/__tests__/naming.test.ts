@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { buildTournamentName, isNameFrozen } from "../naming";
+import {
+  buildTournamentName,
+  fromDateInputValue,
+  isNameFrozen,
+  nameDateToInputValue,
+  toDateInputValue,
+} from "../naming";
 import { requireDecklistsDefault, categoryDefaults, STANDARD_CATEGORIES } from "../categoryDefaults";
 
 describe("buildTournamentName", () => {
@@ -10,6 +16,33 @@ describe("buildTournamentName", () => {
   it("appends listing city", () => {
     expect(buildTournamentName("Type 1 Limited", { date: d, city: "Wichita" }))
       .toBe("Aug 2, 2026 Type 1 Limited Tournament — Wichita");
+  });
+});
+
+describe("event date field", () => {
+  it("names the event after the day the host picked, not today", () => {
+    expect(buildTournamentName("Type 2", { date: fromDateInputValue("2026-11-28")!, tier: "Regional" }))
+      .toBe("Nov 28, 2026 Regional Type 2 Tournament");
+  });
+  it("reads a picked day as that local day, first and last of the month included", () => {
+    expect(toDateInputValue(fromDateInputValue("2026-03-01")!)).toBe("2026-03-01");
+    expect(toDateInputValue(fromDateInputValue("2026-12-31")!)).toBe("2026-12-31");
+    expect(toDateInputValue(new Date(2026, 7, 2))).toBe("2026-08-02");
+  });
+  it("returns null for anything that is not a real day", () => {
+    for (const bad of ["", "tomorrow", "2026-13-01", "2026-02-30", "11/28/2026", null, undefined]) {
+      expect(fromDateInputValue(bad)).toBeNull();
+    }
+  });
+  it("turns the date written in a generated name back into a field value", () => {
+    expect(nameDateToInputValue("Nov 7, 2026")).toBe("2026-11-07");
+    expect(nameDateToInputValue("Jul 28, 2026")).toBe("2026-07-28");
+    expect(nameDateToInputValue("Summer Bash")).toBeNull();
+    expect(nameDateToInputValue(null)).toBeNull();
+  });
+  it("round-trips whatever buildTournamentName writes", () => {
+    const name = buildTournamentName("Type 2", { date: fromDateInputValue("2026-01-09")! });
+    expect(nameDateToInputValue(name.slice(0, "Jan 9, 2026".length))).toBe("2026-01-09");
   });
 });
 

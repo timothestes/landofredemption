@@ -351,7 +351,7 @@ function ListingRow({
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <Link
-              href={`/tracker/tournaments?from_listing=${listing.id}&city=${encodeURIComponent(listing.city)}&state=${encodeURIComponent(listing.state)}${listing.formats.length > 0 ? `&formats=${encodeURIComponent(listing.formats.map((f) => f.format).join("|"))}` : ""}${listing.tournament_type ? `&type=${encodeURIComponent(listing.tournament_type)}` : ""}`}
+              href={`/tracker/tournaments?from_listing=${listing.id}&date=${listing.start_date}&city=${encodeURIComponent(listing.city)}&state=${encodeURIComponent(listing.state)}${listing.formats.length > 0 ? `&formats=${encodeURIComponent(listing.formats.map((f) => f.format).join("|"))}` : ""}${listing.tournament_type ? `&type=${encodeURIComponent(listing.tournament_type)}` : ""}`}
               className="inline-flex min-h-11 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               Host This Event
