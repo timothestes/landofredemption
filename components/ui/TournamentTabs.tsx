@@ -50,7 +50,7 @@ interface TournamentTabsProps {
     isActive: boolean,
     roundStartTime: string | null
   ) => void;
-  createPairing: (round: number) => void;
+  createPairing: (round: number) => Promise<boolean>;
   matchErrorIndex: any;
   setMatchErrorIndex: Dispatch<SetStateAction<any>>;
   activeTab: number;

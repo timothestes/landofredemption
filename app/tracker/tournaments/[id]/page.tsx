@@ -613,7 +613,7 @@ export default function TournamentPage({
     if (success) {
       showToast(`Round ${round} pairings created successfully!`, "success");
     } else {
-      showToast(`Failed to create pairings for round ${round}`, "error");
+      showToast(`Round ${round} could not be paired. Press End Round to try again.`, "error");
     }
     return success;
   };

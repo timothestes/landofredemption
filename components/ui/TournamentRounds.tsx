@@ -96,7 +96,9 @@ interface TournamentRoundsProps {
   ) => void;
   roundInfo?: RoundInfo;
   setLatestRound: Dispatch<SetStateAction<any>>;
-  createPairing: (round: number) => void;
+  /** Resolves false when the round could not be paired (the page has then
+   * already told the host). */
+  createPairing: (round: number) => Promise<boolean>;
   matchErrorIndex: any;
   setMatchErrorIndex: Dispatch<SetStateAction<any>>;
   activeTab: number;
@@ -427,6 +429,7 @@ export default function TournamentRounds({
       setMatchLoading(true);
     } catch (error) {
       console.error("Error starting round:", error);
+      showToast(`Round ${currentPage} could not be started. Press Start Round to try again.`, "error");
     }
   };
 
@@ -593,7 +596,15 @@ export default function TournamentRounds({
         // Tournament is now complete — surface the final results.
         onTournamentEnded?.();
       } else {
-        await createPairing(currentPage + 1);
+        const paired = await createPairing(currentPage + 1);
+        if (!paired) {
+          // The page has already said so. Stop before current_round moves on
+          // to a round with no matches. End Round can be pressed again: the
+          // writes above repeat safely, and createPairing leaves a round that
+          // is already paired alone.
+          setMatchEnding(false);
+          return;
+        }
 
         // createPairing inserts the next round's bye row, but the
         // recomputeTotalsFromHistory loop above ran BEFORE that insert and so
@@ -646,6 +657,7 @@ export default function TournamentRounds({
     } catch (error) {
       console.error("Error ending round:", error);
       setMatchEnding(false);
+      showToast(`Round ${currentPage} could not be ended. Press End Round to try again.`, "error");
     }
   }, [matches, tournamentInfo, byes]);
 
