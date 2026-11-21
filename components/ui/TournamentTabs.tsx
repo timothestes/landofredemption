@@ -18,6 +18,7 @@ import { Button } from "./button";
 import ExportTrackerButton from "./ExportTrackerButton";
 import { AuditLogPanel } from "./AuditLogPanel";
 import type { TournamentDecklistRow } from "../../app/tracker/tournaments/actions";
+import { showsPods } from "../../utils/tournament/categoryDefaults";
 
 interface TournamentTabsProps {
   participants: any[];
@@ -40,6 +41,9 @@ interface TournamentTabsProps {
   // Tournament's raw deck_format column — threaded down to ParticipantTable's
   // AttachDeckDialog for its attach gate.
   tournamentFormat?: string | null;
+  /** Tournament's category ("Booster Draft", "Type 2", "Unofficial"…). Decides
+   * whether the Pods button is offered. */
+  tournamentCategory?: string | null;
   onTournamentEnd?: () => void;
   /** Fired only when the FINAL round's End Round button completes the
    * tournament (not on every round end, and not on the admin-menu End
@@ -101,6 +105,7 @@ export default function TournamentTabs({
   tournamentLoaded = true,
   tournamentName,
   tournamentFormat,
+  tournamentCategory,
   onTournamentEnd,
   onTournamentAutoPublish,
   setLatestRound,
@@ -185,14 +190,16 @@ export default function TournamentTabs({
             Participants{participants.length > 0 && ` (${participants.length})`}
           </h2>
           <div className="flex items-center gap-2 justify-end flex-wrap">
-            {/* generate pods button only if more than one participant and tournament hasn't ended */}
-            {tournamentLoaded && participants.length > 1 && !tournamentEnded && (
+            {/* generate pods button only if more than one participant and tournament hasn't ended,
+                and not for a constructed event, which never drafts */}
+            {tournamentLoaded && participants.length > 1 && !tournamentEnded && showsPods(tournamentCategory) && (
               <Button
                 type="button"
                 onClick={() => setShowPodsModal(true)}
                 variant="outline"
                 size="sm"
-                className="gap-1.5"
+                className="gap-1.5 max-sm:h-11 max-sm:min-w-11"
+                aria-label="Draft pods"
               >
                 <GiCardPickup className="w-4 h-4" />
                 <span className="hidden sm:inline">Pods</span>
@@ -217,10 +224,11 @@ export default function TournamentTabs({
                 onClick={onOpenQrJoin}
                 variant="outline"
                 size="sm"
-                className="gap-1.5"
+                className="gap-1.5 max-sm:h-11"
               >
                 <FaQrcode className="w-4 h-4" />
-                <span className="hidden sm:inline">QR Join</span>
+                {/* Labelled at every width: this is how players get in. */}
+                <span>QR Join</span>
               </Button>
             )}
             {/* Live view — the players' /t/[code] page. Useful in every
@@ -232,8 +240,9 @@ export default function TournamentTabs({
                 onClick={onOpenLiveRound}
                 variant="outline"
                 size="sm"
-                className="gap-1.5"
+                className="gap-1.5 max-sm:h-11 max-sm:min-w-11"
                 title="Live pairings & standings for players"
+                aria-label="Live view"
               >
                 <FaTowerBroadcast className="w-4 h-4" />
                 <span className="hidden sm:inline">Live view</span>
@@ -244,7 +253,7 @@ export default function TournamentTabs({
                 <Button
                   ref={addParticipantButtonRef}
                   onClick={() => !tournamentStarted && setIsModalOpen(true)}
-                  className={`flex items-center gap-2 ${tournamentStarted ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`flex items-center gap-2 max-sm:h-11 ${tournamentStarted ? "opacity-50 cursor-not-allowed" : ""}`}
                   variant="success"
                   disabled={tournamentStarted}
                 >
@@ -296,11 +305,25 @@ export default function TournamentTabs({
         ) : participants.length === 0 ? (
           <div className="w-full max-w-[800px] mx-auto overflow-x-auto">
             <div className="rounded-lg border border-border bg-card jayden-gradient-bg shadow-sm">
-              <div className="flex flex-col items-center justify-center py-12 px-6">
-                <p className="text-foreground font-medium mb-2">No participants found</p>
-                <p className="text-sm text-muted-foreground">
-                  Add participants to get started
-                </p>
+              <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                <p className="text-foreground font-medium mb-2">No participants yet</p>
+                {tournamentLoaded && !tournamentStarted && !tournamentEnded && (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      Players can join by scanning a QR code, or you can type their names.
+                    </p>
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                      {onOpenQrJoin && (
+                        <Button type="button" variant="outline" className="min-h-11" onClick={onOpenQrJoin}>
+                          Show QR code
+                        </Button>
+                      )}
+                      <Button type="button" variant="outline" className="min-h-11" onClick={() => setIsModalOpen(true)}>
+                        Type a name
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

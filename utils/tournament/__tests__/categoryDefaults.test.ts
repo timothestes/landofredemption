@@ -2,8 +2,31 @@ import { describe, it, expect } from "vitest";
 import {
   categoryDefaults,
   otherCategories,
+  showsPods,
   STANDARD_CATEGORIES,
 } from "../categoryDefaults";
+
+describe("showsPods", () => {
+  it.each(["Booster Draft", "Booster Draft - 2 Player", "Sealed Deck", "Closed Deck - 2 Player"])(
+    "offers pods for %s",
+    (category) => {
+      expect(showsPods(category)).toBe(true);
+    }
+  );
+
+  it.each(["Type 1 Limited", "Type 1 Unlimited", "Type 2", "Teams", "Type A", "Paragon"])(
+    "leaves pods out for %s, a constructed event",
+    (category) => {
+      expect(showsPods(category)).toBe(false);
+    }
+  );
+
+  it("keeps pods where the event's type is not known", () => {
+    expect(showsPods("Unofficial")).toBe(true);
+    expect(showsPods(null)).toBe(true);
+    expect(showsPods(undefined)).toBe(true);
+  });
+});
 
 describe("categoryDefaults", () => {
   it.each([

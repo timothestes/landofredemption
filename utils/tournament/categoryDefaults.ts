@@ -71,6 +71,16 @@ export function categoryDefaults(category: string): CategoryDefaults {
   return { deck_format: "Limited", max_score: 5, round_length: 45 };
 }
 
+/** Whether the host page offers the draft pod generator. Pods are for events
+ * played from sealed product. A constructed category never uses them, so the
+ * button is left out there; an Unofficial event, or one with no category, can
+ * be anything, so it keeps the button. */
+export function showsPods(category: string | null | undefined): boolean {
+  if (!category) return true;
+  const c = category.toLowerCase();
+  return c.includes("draft") || c.includes("sealed") || c.includes("closed") || c.includes("unofficial");
+}
+
 /** Whether a decklist is required to QR-join, by category. Derives from the
  * category's RESOLVED format (so listing strings like "Type 1" count), with
  * explicit carve-outs: Type A and Teams also resolve to Limited but default

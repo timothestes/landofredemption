@@ -1100,12 +1100,6 @@ export default function TournamentPage({
                 setTournamentName={setNewTournamentName}
               />
 
-              {participants.length === 0 && (
-                <p className="text-sm text-muted-foreground mb-4">
-                  Add participants to get started
-                </p>
-              )}
-
               {/* Publish decklists section — kept inline below the header since
                   it's a substantial post-tournament panel, not a quick action. */}
               {tournament?.has_ended && (
@@ -1181,6 +1175,7 @@ export default function TournamentPage({
             tournamentLoaded={!!tournament}
             tournamentName={tournament?.name}
             tournamentFormat={tournament?.deck_format || null}
+            tournamentCategory={tournament?.category ?? null}
             onTournamentEnd={async () => {
               // End Round writes new match_points/differential to participants;
               // refresh both so Standings doesn't render stale zeros.

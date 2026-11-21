@@ -23,6 +23,11 @@ import dynamic from "next/dynamic";
 // open — no loading placeholder needed.
 const SubmissionModal = dynamic(() => import("./SubmissionModal"), { ssr: false });
 
+// A row's edit / drop / delete icon. 36px in the desktop table; in the phone
+// card list (below md) it is a 44px tap target.
+const ROW_ICON_BUTTON =
+  "inline-flex items-center justify-center p-2 max-md:min-h-11 max-md:min-w-11 rounded-md text-muted-foreground touch-manipulation transition-colors";
+
 interface Participant {
   id: string;
   name: string;
@@ -192,7 +197,7 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
       <div className="flex items-center gap-1">
         <button
           onClick={() => onEdit(participant)}
-          className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 touch-manipulation transition-colors"
+          className={`${ROW_ICON_BUTTON} hover:text-primary hover:bg-primary/10`}
           aria-label={`Edit ${participant.name}`}
         >
           <HiPencil className="w-5 h-5" />
@@ -201,7 +206,7 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
           participant.dropped_out ? (
             <button
               onClick={() => onDropIn(participant.id)}
-              className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 touch-manipulation transition-colors"
+              className={`${ROW_ICON_BUTTON} hover:text-primary hover:bg-primary/10`}
               aria-label={`Restore ${participant.name}`}
               title="Restore participant"
             >
@@ -210,7 +215,7 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
           ) : (
             <button
               onClick={() => setDropTarget(participant)}
-              className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 touch-manipulation transition-colors"
+              className={`${ROW_ICON_BUTTON} hover:text-destructive hover:bg-destructive/10`}
               aria-label={`Drop ${participant.name}`}
               title="Drop from tournament"
             >
@@ -224,7 +229,7 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
                 ? setRemoveBlockTarget(participant)
                 : setDeleteTarget(participant)
             }
-            className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 touch-manipulation transition-colors"
+            className={`${ROW_ICON_BUTTON} hover:text-destructive hover:bg-destructive/10`}
             aria-label={`Delete ${participant.name}`}
             title="Remove participant"
           >
@@ -293,7 +298,9 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
           setAttachTarget(participant);
           setAttachDialogOpen(true);
         }}
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors group"
+        // 44px tall to the thumb on a phone; the negative margin keeps the
+        // card the height it was.
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors group max-md:min-h-11 max-md:-my-3.5"
       >
         <BookOpen className="w-3.5 h-3.5" />
         <span className="group-hover:underline">Attach deck</span>
