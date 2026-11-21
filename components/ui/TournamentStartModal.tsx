@@ -16,16 +16,17 @@ interface TournamentStartModalProps {
   onClose: () => void;
   // Resolves once the tournament is started and round 1 is paired (or that
   // failed). The Start button stays disabled until then.
-  onConfirm: (numberOfRounds: number, roundLength: number, maxScore: number, byePoints: number, byeDifferential: number, startingTableNumber: number, soundNotifications: boolean) => void | Promise<void>;
+  onConfirm: (numberOfRounds: number, roundLength: number, maxScore: number, startingTableNumber: number, soundNotifications: boolean) => void | Promise<void>;
   participantCount: number;
   suggestedRounds: number;
+  // The round count the host saved in Settings before starting, if any. The
+  // dialog opens on it rather than on the suggestion.
+  savedRounds?: number | null;
   // Persisted tournament settings to seed the form with (e.g. values prefilled
   // from the chosen category, or anything the host set beforehand). Each falls
   // back to the standard default when null/undefined.
   defaultRoundLength?: number | null;
   defaultMaxScore?: number | null;
-  defaultByePoints?: number | null;
-  defaultByeDifferential?: number | null;
   defaultStartingTableNumber?: number | null;
   defaultSoundNotifications?: boolean | null;
   // "N of M participants have decklists" — same figure shown pre-start under
@@ -40,26 +41,22 @@ export default function TournamentStartModal({
   onConfirm,
   participantCount,
   suggestedRounds,
+  savedRounds,
   defaultRoundLength,
   defaultMaxScore,
-  defaultByePoints,
-  defaultByeDifferential,
   defaultStartingTableNumber,
   defaultSoundNotifications,
   decklistSummary,
 }: TournamentStartModalProps) {
+  const initialRounds = savedRounds ?? suggestedRounds;
   const initialRoundLength = defaultRoundLength ?? 45;
   const initialMaxScore = defaultMaxScore ?? 5;
-  const initialByePoints = defaultByePoints ?? 3;
-  const initialByeDifferential = defaultByeDifferential ?? 0;
   const initialStartingTableNumber = defaultStartingTableNumber ?? 1;
   const initialSoundNotifications = defaultSoundNotifications ?? false;
 
-  const [numberOfRounds, setNumberOfRounds] = useState(suggestedRounds);
+  const [numberOfRounds, setNumberOfRounds] = useState(initialRounds);
   const [roundLength, setRoundLength] = useState(initialRoundLength);
   const [maxScore, setMaxScore] = useState(initialMaxScore);
-  const [byePoints, setByePoints] = useState(initialByePoints);
-  const [byeDifferential, setByeDifferential] = useState(initialByeDifferential);
   const [startingTableNumber, setStartingTableNumber] = useState(initialStartingTableNumber);
   const [soundNotifications, setSoundNotifications] = useState(initialSoundNotifications);
 
@@ -67,8 +64,6 @@ export default function TournamentStartModal({
   // standard default, so a prefilled souls score (etc.) isn't hidden.
   const hasNonDefaultAdvanced =
     initialMaxScore !== 5 ||
-    initialByePoints !== 3 ||
-    initialByeDifferential !== 0 ||
     initialStartingTableNumber !== 1 ||
     initialSoundNotifications !== false;
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(hasNonDefaultAdvanced);
@@ -81,11 +76,9 @@ export default function TournamentStartModal({
   // and starting table all silently snap back to defaults.
   useEffect(() => {
     if (!isOpen) return;
-    setNumberOfRounds(suggestedRounds);
+    setNumberOfRounds(initialRounds);
     setRoundLength(initialRoundLength);
     setMaxScore(initialMaxScore);
-    setByePoints(initialByePoints);
-    setByeDifferential(initialByeDifferential);
     setStartingTableNumber(initialStartingTableNumber);
     setSoundNotifications(initialSoundNotifications);
     setIsAdvancedOpen(hasNonDefaultAdvanced);
@@ -101,7 +94,7 @@ export default function TournamentStartModal({
     startingRef.current = true;
     setIsStarting(true);
     try {
-      await onConfirm(numberOfRounds, roundLength, maxScore, byePoints, byeDifferential, startingTableNumber, soundNotifications);
+      await onConfirm(numberOfRounds, roundLength, maxScore, startingTableNumber, soundNotifications);
     } finally {
       startingRef.current = false;
       setIsStarting(false);
@@ -262,42 +255,6 @@ export default function TournamentStartModal({
                 >
                   <option value="5">5 Lost Souls</option>
                   <option value="7">7 Lost Souls</option>
-                </select>
-              </div>
-
-              {/* Bye Points */}
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Match Points for Bye
-                </label>
-                <select
-                  value={byePoints}
-                  onChange={(e) => setByePoints(Number(e.target.value))}
-                  className={inputClasses}
-                >
-                  <option value="1">1 Point</option>
-                  <option value="1.5">1.5 Points</option>
-                  <option value="2">2 Points</option>
-                  <option value="3">3 Points</option>
-                </select>
-              </div>
-
-              {/* Bye Differential */}
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Differential for Bye
-                </label>
-                <select
-                  value={byeDifferential}
-                  onChange={(e) => setByeDifferential(Number(e.target.value))}
-                  className={inputClasses}
-                >
-                  <option value="0">0 (No Differential)</option>
-                  <option value="1">+1</option>
-                  <option value="2">+2</option>
-                  <option value="3">+3</option>
-                  <option value="4">+4</option>
-                  <option value="5">+5</option>
                 </select>
               </div>
 

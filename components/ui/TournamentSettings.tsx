@@ -16,8 +16,6 @@ interface TournamentInfo {
   current_round: number | null;
   round_length: number | null;
   max_score: number | null;
-  bye_points: number | null;
-  bye_differential: number | null;
   starting_table_number: number | null;
   sound_notifications: boolean | null;
   numbering_mode: string | null;
@@ -49,8 +47,6 @@ const EMPTY_INFO: TournamentInfo = {
   current_round: null,
   round_length: null,
   max_score: null,
-  bye_points: null,
-  bye_differential: null,
   starting_table_number: null,
   sound_notifications: null,
   numbering_mode: "tables",
@@ -72,8 +68,6 @@ const EDITABLE_KEYS = [
   "round_length",
   "max_score",
   "starting_table_number",
-  "bye_points",
-  "bye_differential",
   "sound_notifications",
   "numbering_mode",
 ] as const;
@@ -111,7 +105,7 @@ export default function TournamentSettings({
       const { data, error } = await client
         .from("tournaments")
         .select(
-          "n_rounds, current_round, round_length, max_score, bye_points, bye_differential, starting_table_number, sound_notifications, has_started, has_ended, numbering_mode, name, tier, category, city, state, deck_format, require_decklists, created_at",
+          "n_rounds, current_round, round_length, max_score, starting_table_number, sound_notifications, has_started, has_ended, numbering_mode, name, tier, category, city, state, deck_format, require_decklists, created_at",
         )
         .eq("id", tournamentId)
         .single();
@@ -668,46 +662,6 @@ export default function TournamentSettings({
                 disabled={editingDisabled}
                 className={inputClasses}
               />
-            </label>
-
-            <label className="block">
-              <span className="text-sm font-medium text-foreground mb-1.5 block">
-                Match Points for Bye
-              </span>
-              <select
-                value={tournamentInfo.bye_points ?? 3}
-                onChange={(e) =>
-                  setTournamentInfo((prev) => ({ ...prev, bye_points: Number(e.target.value) }))
-                }
-                disabled={editingDisabled}
-                className={inputClasses}
-              >
-                <option value="1">1 Point</option>
-                <option value="1.5">1.5 Points</option>
-                <option value="2">2 Points</option>
-                <option value="3">3 Points</option>
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="text-sm font-medium text-foreground mb-1.5 block">
-                Differential for Bye
-              </span>
-              <select
-                value={tournamentInfo.bye_differential ?? 0}
-                onChange={(e) =>
-                  setTournamentInfo((prev) => ({ ...prev, bye_differential: Number(e.target.value) }))
-                }
-                disabled={editingDisabled}
-                className={inputClasses}
-              >
-                <option value="0">0 (No Differential)</option>
-                <option value="1">+1</option>
-                <option value="2">+2</option>
-                <option value="3">+3</option>
-                <option value="4">+4</option>
-                <option value="5">+5</option>
-              </select>
             </label>
 
             <label className="block">

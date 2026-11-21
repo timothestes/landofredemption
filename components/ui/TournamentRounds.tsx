@@ -825,14 +825,6 @@ export default function TournamentRounds({
       const bye = byes.find((b) => b.id === targetByeId);
       if (!bye) throw new Error("Bye not found");
 
-      const { data: tournament, error: tournamentError } = await client
-        .from("tournaments")
-        .select("bye_points, bye_differential")
-        .eq("id", tournamentId)
-        .single();
-
-      if (tournamentError) throw tournamentError;
-
       const playerId = isSourcePlayer2 ? sourceMatch.player2_id.id : sourceMatch.player1_id.id;
 
       // Structural mutation 1: swap the match's player seat with the bye holder
@@ -858,10 +850,11 @@ export default function TournamentRounds({
       // Structural mutation 2: reassign the bye to the swapped-in player.
       // Per-bye match_points/differential store the bye CONTRIBUTION, not
       // cumulative — match the regenerate_current_round_pairings convention.
+      // Always 3 and 0 (algorithm.md), the same values pairing writes.
       await client.from("byes").update({
         participant_id: playerId,
-        match_points: tournament.bye_points,
-        differential: tournament.bye_differential,
+        match_points: 3,
+        differential: 0,
       }).eq("id", targetByeId);
 
       // Now derive participant totals from history. This is what was missing

@@ -561,8 +561,6 @@ export default function TournamentPage({
     numberOfRounds: number,
     roundLength: number,
     maxScore: number,
-    byePoints: number,
-    byeDifferential: number,
     startingTableNumber: number,
     soundNotifications: boolean
   ) => {
@@ -579,8 +577,6 @@ export default function TournamentPage({
           current_round: 1,
           round_length: roundLength,
           max_score: maxScore,
-          bye_points: byePoints,
-          bye_differential: byeDifferential,
           starting_table_number: startingTableNumber,
           sound_notifications: soundNotifications,
         })
@@ -1305,10 +1301,9 @@ export default function TournamentPage({
           onConfirm={handleStartTournament}
           participantCount={participants.length}
           suggestedRounds={suggestNumberOfRounds(participants.length)}
+          savedRounds={tournament?.n_rounds}
           defaultRoundLength={tournament?.round_length}
           defaultMaxScore={tournament?.max_score}
-          defaultByePoints={tournament?.bye_points}
-          defaultByeDifferential={tournament?.bye_differential}
           defaultStartingTableNumber={tournament?.starting_table_number}
           defaultSoundNotifications={tournament?.sound_notifications}
           decklistSummary={decklistSummary}
