@@ -11,7 +11,7 @@ import {
 import { orderByTiebreakers } from "../../lib/tournament/standings";
 import { forfeitSideOf } from "../../lib/tournament/dropForfeit";
 import type { Tiebreak } from "../../lib/tournament/types";
-import { printFinalStandings } from "../../utils/printUtils";
+import { openBlankPrintWindow, printFinalStandings } from "../../utils/printUtils";
 
 interface Participant {
   id: string;
@@ -247,6 +247,8 @@ async function fetchStandingsInputs(tournamentId: string): Promise<{
   byes: ByeRow[];
   startedRounds: number[];
   maxScore: number;
+  /** A read failed (a dropped connection, say); the lists above are then incomplete. */
+  failed: boolean;
 }> {
   const client = createClient();
   const [matchesRes, byesRes, roundsRes, tournamentRes] = await Promise.all([
@@ -282,6 +284,7 @@ async function fetchStandingsInputs(tournamentId: string): Promise<{
       .filter((r: any) => r.started_at != null)
       .map((r: any) => Number(r.round_number)),
     maxScore: ms != null ? Number(ms) : DEFAULT_MAX_SCORE,
+    failed: [matchesRes, byesRes, roundsRes, tournamentRes].some((r) => r.error != null),
   };
 }
 
@@ -297,7 +300,16 @@ export async function printFinalStandingsFor(
   participants: Participant[],
   tournamentName?: string | null,
 ): Promise<void> {
+  // Open the tab first, while this still runs inside the click; opened after
+  // the reads below it could be blocked as a pop-up.
+  const printWindow = openBlankPrintWindow();
+  if (!printWindow) return;
   const inputs = await fetchStandingsInputs(tournamentId);
+  if (inputs.failed) {
+    printWindow.close();
+    alert("Couldn't load the standings to print. Check your connection and try again.");
+    return;
+  }
   const rows = buildStandings(
     participants,
     inputs.matches,
@@ -307,6 +319,7 @@ export async function printFinalStandingsFor(
     inputs.maxScore,
   );
   printFinalStandings(
+    printWindow,
     rows.map((r) => ({
       place: r.place,
       name: r.participant.name,
