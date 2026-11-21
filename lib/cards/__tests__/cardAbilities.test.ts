@@ -1134,3 +1134,37 @@ describe('redeemedSoulValue / countRedeemedSouls (Land of Redemption count)', ()
     }
   });
 });
+
+// A captured human in a Land of Bondage can be surrendered / rescued like a
+// Lost Soul; a captured angel, demon or animal cannot.
+describe('isHumanCharacter', () => {
+  const samples = [
+    { cardName: 'Benjamin, the Young', cardType: 'Hero', human: true },
+    { cardName: 'Jezebel', cardType: 'Evil Character', human: true },
+    { cardName: 'Great Multitude (RoJ)', cardType: 'Hero', human: true },
+    { cardName: 'The Angel of the Winds', cardType: 'Hero', human: false },
+    { cardName: 'Red Dragon (Wa)', cardType: 'Evil Character', human: false },
+    { cardName: 'Wandering Spirit (Ap)', cardType: 'Evil Character', human: false },
+    { cardName: 'Lost Soul "Harvest" [John 4:35]', cardType: 'Lost Soul', human: false },
+    { cardName: 'Faith of Abraham (CoW)', cardType: 'GE', human: false },
+    { cardName: 'Ark of the Covenant', cardType: 'Artifact', human: false },
+  ];
+
+  it('is true only for a Hero or Evil Character that ORDIR counts as human', async () => {
+    const { isHumanCharacter } = await import('../cardAbilities');
+    for (const s of samples) {
+      expect(isHumanCharacter(s), s.cardName).toBe(s.human);
+    }
+  });
+
+  it('SpacetimeDB duplicate behaves identically (the surrender picker and surrender_soul must agree)', async () => {
+    const lib = await import('../cardAbilities');
+    const server = await import('@/spacetimedb/src/cardAbilities');
+    for (const s of samples) {
+      expect(server.isHumanCharacter(s), `parity for ${s.cardName}`).toBe(lib.isHumanCharacter(s));
+    }
+    const { NON_HUMAN_CHARACTERS } = await import('../nonHumanCharacters');
+    const serverList = await import('@/spacetimedb/src/nonHumanCharacters');
+    expect([...serverList.NON_HUMAN_CHARACTERS]).toEqual([...NON_HUMAN_CHARACTERS]);
+  });
+});

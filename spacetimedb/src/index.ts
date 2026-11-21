@@ -17,6 +17,7 @@ import {
   IMITATE_ORIGINAL_IMG,
   isNewTestamentLostSoul,
   isCharacterCard,
+  isHumanCharacter,
   isHeroCard,
   hasReferenceBook,
   simplifyLostSoulName,
@@ -3813,20 +3814,28 @@ function checkAndApplyWin(ctx: any, gameId: bigint) {
 // Helper: battleStakesLobLostSouls
 // The Lost Souls "at stake" for the battle currently in progress: the
 // defender's (non-attacker-seat player's) Land of Bondage for T1/T2, or the
-// shared Paragon Land of Bondage (ownerId 0n) for Paragon. Used by both
+// shared Paragon Land of Bondage (ownerId 0n) for Paragon. A captured human
+// sitting there is at stake too (isStakesSoulRow). Used by both
 // resolve_battle (to decide active -> awaiting-soul vs. auto-return) and
 // surrender_soul (to validate the chosen card is actually at stake).
 // ---------------------------------------------------------------------------
+// A Lost Soul, or a captured human character — a human in a Land of Bondage is
+// surrendered / rescued like a Lost Soul; a captured angel, demon or animal is
+// not. Callers supply the Land of Bondage check.
+function isStakesSoulRow(c: any): boolean {
+  return isLostSoulRow(c) || isHumanCharacter(c);
+}
+
 function battleStakesLobLostSouls(ctx: any, gameId: bigint, format: 'T1' | 'T2' | 'Paragon', attackerSeat: string): any[] {
   const all = [...ctx.db.CardInstance.card_instance_game_id.filter(gameId)];
   if (format === 'Paragon') {
-    return all.filter((c: any) => c.ownerId === 0n && c.zone === 'land-of-bondage' && isLostSoulRow(c));
+    return all.filter((c: any) => c.ownerId === 0n && c.zone === 'land-of-bondage' && isStakesSoulRow(c));
   }
   const defender = [...ctx.db.Player.player_game_id.filter(gameId)].find(
     (p: any) => p.seat.toString() !== attackerSeat,
   );
   if (!defender) return [];
-  return all.filter((c: any) => c.ownerId === defender.id && c.zone === 'land-of-bondage' && isLostSoulRow(c));
+  return all.filter((c: any) => c.ownerId === defender.id && c.zone === 'land-of-bondage' && isStakesSoulRow(c));
 }
 
 // ---------------------------------------------------------------------------
@@ -3918,7 +3927,7 @@ export const surrender_soul = spacetimedb.reducer(
     const card = ctx.db.CardInstance.id.find(cardInstanceId);
     if (!card) throw new SenderError('Card not found');
     if (card.gameId !== gameId) throw new SenderError('Card not in this game');
-    if (!isLostSoulRow(card)) throw new SenderError('Card is not a Lost Soul');
+    if (!isStakesSoulRow(card)) throw new SenderError('Card is not a Lost Soul or a captured human');
 
     const stakesLostSouls = battleStakesLobLostSouls(ctx, gameId, format, game.battleAttackerSeat);
     if (!stakesLostSouls.some((c: any) => c.id === card.id)) {
