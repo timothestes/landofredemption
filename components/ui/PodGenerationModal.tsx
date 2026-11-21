@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "./button";
 import {
   Dialog,
@@ -18,16 +18,15 @@ interface PodGenerationModalProps {
 }
 
 export default function PodGenerationModal({ show, participants, onClose }: PodGenerationModalProps) {
+  // Pods change only when the host presses Generate. They used to be cleared
+  // whenever the dialog opened or the player count moved, so closing it, or a
+  // player joining by QR while it was open (the roster refreshes in the
+  // background), threw away pods the room had already been told.
   const [podSize, setPodSize] = useState(4);
   const [pods, setPods] = useState<any[][]>([]);
-
-  useEffect(() => {
-    if (show) {
-      const maxSize = Math.min(participants.length, 8);
-      setPodSize(Math.min(4, maxSize));
-      setPods([]);
-    }
-  }, [show, participants.length]);
+  // The chosen size, capped by the roster, so a short roster doesn't
+  // overwrite the host's choice.
+  const size = Math.min(podSize, participants.length, 8);
 
   const handleGenerate = () => {
     const shuffled = [...participants];
@@ -36,7 +35,7 @@ export default function PodGenerationModal({ show, participants, onClose }: PodG
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     const total = shuffled.length;
-    const S = podSize;
+    const S = size;
     const fullPods = Math.floor(total / S);
     const remainder = total - fullPods * S;
     const podsArr: any[][] = [];
@@ -70,7 +69,7 @@ export default function PodGenerationModal({ show, participants, onClose }: PodG
             <label htmlFor="pod-size" className="text-sm font-medium text-foreground block mb-1">Pod Size</label>
             <select
               id="pod-size"
-              value={podSize.toString()}
+              value={size.toString()}
               onChange={(e) => setPodSize(Number(e.target.value))}
               className="w-full rounded-lg border border-border bg-card text-foreground px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
             >
@@ -101,7 +100,7 @@ export default function PodGenerationModal({ show, participants, onClose }: PodG
             Generate Pods
           </Button>
           <Button type="button" variant="cancel" onClick={onClose}>
-            Cancel
+            Close
           </Button>
         </DialogFooter>
       </DialogContent>
