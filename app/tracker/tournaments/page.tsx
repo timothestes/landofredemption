@@ -13,15 +13,13 @@ import TournamentFormModal from "../../../components/ui/tournament-form-modal";
 import JoinCodeDialog from "../../../components/ui/JoinCodeDialog";
 import ConfirmationDialog from "../../../components/ui/confirmation-dialog";
 import { categoryDefaults, requireDecklistsDefault } from "../../../utils/tournament/categoryDefaults";
+import { nameDateToInputValue } from "../../../utils/tournament/naming";
 import { normalizeTier } from "../../../utils/tournament/tiers";
 import { hostedStatus, pageHostedEvents, type HostedStatus } from "../../../utils/tournament/hostedEvents";
 import { parseTournamentName, sharedEventParts, shortTournamentName } from "../../../utils/tournament/displayName";
-import { nameDateToInputValue } from "../../../utils/tournament/naming";
 import { getFormatDef } from "@/lib/formats";
 
-const CREATE_FAILED = "Couldn't create the tournament. Try again.";
-
-const FORMAT_CHIP ="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground";
+const FORMAT_CHIP = "inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground";
 
 // The host page's status pill colours: amber before the start, foreground
 // while running, muted once ended. Green marks the one finished state.
@@ -31,6 +29,8 @@ const STATUS_TONE: Record<HostedStatus["kind"], string> = {
   ended: "bg-muted text-muted-foreground",
   published: "bg-primary/10 text-primary",
 };
+
+const CREATE_FAILED = "Couldn't create the tournament. Try again.";
 
 const supabase = createClient();
 
@@ -276,14 +276,13 @@ function TournamentsPageInner() {
 
   const deleteTournament = async (id) => {
     const { error } = await supabase.from("tournaments").delete().eq("id", id);
-    if (error) {
-      console.error("Error deleting tournament:", error);
-      setDeleteError(true);
-    } else {
+    if (error) console.error("Error deleting tournament:", error);
+    else {
       fetchTournaments();
       setShowDeleteToast(true);
       setTimeout(() => setShowDeleteToast(false), 2000); // 2 seconds
     }
+    return !error;
   };
 
   // Tournaments linked to the same listing are one real-world event with
@@ -571,7 +570,14 @@ function TournamentsPageInner() {
           open={deleteTarget !== null}
           onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
           onConfirm={() => {
-            if (deleteTarget) deleteTournament(deleteTarget.id);
+            if (!deleteTarget) return;
+            // A delete that was refused comes back false; one that never
+            // reached the server throws. Either way the host is told.
+            deleteTournament(deleteTarget.id)
+              .catch(() => false)
+              .then((deleted) => {
+                if (!deleted) setDeleteError(true);
+              });
           }}
           variant="destructive"
           title={deleteTarget ? `Delete ${shortTournamentName(deleteTarget.name)}?` : ""}
