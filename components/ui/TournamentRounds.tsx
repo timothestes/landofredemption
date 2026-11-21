@@ -1934,10 +1934,15 @@ export default function TournamentRounds({
           // rather than promising next-round pairings that won't come.
           tournamentInfo.n_rounds !== null &&
           currentPage === tournamentInfo.n_rounds
-            ? "The tournament will be ended."
+            ? "The tournament will be ended. This cannot be undone. Need another round? Add one in Settings first."
             : "New pairings will be generated for the next round."
         }
-        confirmLabel="End round"
+        confirmLabel={
+          tournamentInfo.n_rounds !== null &&
+          currentPage === tournamentInfo.n_rounds
+            ? "End round and finish"
+            : "End round"
+        }
         cancelLabel="Cancel"
       />
       <ScoreShortcutsDialog
