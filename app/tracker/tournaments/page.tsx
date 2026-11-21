@@ -11,10 +11,11 @@ import { HiPencil, HiTrash, HiPlus, HiOutlineDesktopComputer, HiOutlineLogin } f
 import { useRouter, useSearchParams } from "next/navigation";
 import TournamentFormModal from "../../../components/ui/tournament-form-modal";
 import JoinCodeDialog from "../../../components/ui/JoinCodeDialog";
+import ConfirmationDialog from "../../../components/ui/confirmation-dialog";
 import { categoryDefaults, requireDecklistsDefault } from "../../../utils/tournament/categoryDefaults";
 import { normalizeTier } from "../../../utils/tournament/tiers";
 import { pageHostedEvents } from "../../../utils/tournament/hostedEvents";
-import { parseTournamentName, sharedEventParts } from "../../../utils/tournament/displayName";
+import { parseTournamentName, sharedEventParts, shortTournamentName } from "../../../utils/tournament/displayName";
 import { getFormatDef } from "@/lib/formats";
 
 const FORMAT_CHIP = "inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground";
@@ -26,6 +27,8 @@ function TournamentsPageInner() {
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState(false);
   const [showDeleteToast, setShowDeleteToast] = useState(false);
+  // The tournament the trash icon was tapped on, held until the host confirms.
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddTournamentModalOpen, setisAddTournamentModalOpen] =
     useState(false);
@@ -311,7 +314,7 @@ function TournamentsPageInner() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              deleteTournament(tournament.id);
+              setDeleteTarget(tournament);
             }}
             className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors touch-manipulation"
             aria-label="Delete"
@@ -478,7 +481,18 @@ function TournamentsPageInner() {
           message="Tournament deleted successfully!"
           show={showDeleteToast}
           onClose={() => setShowDeleteToast(false)}
-          type="error"
+        />
+        <ConfirmationDialog
+          open={deleteTarget !== null}
+          onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+          onConfirm={() => {
+            if (deleteTarget) deleteTournament(deleteTarget.id);
+          }}
+          variant="destructive"
+          title={deleteTarget ? `Delete ${shortTournamentName(deleteTarget.name)}?` : ""}
+          description="This permanently removes its players, pairings, results and decklists. This cannot be undone."
+          confirmLabel="Delete tournament"
+          cancelLabel="Cancel"
         />
       </div>
     </div>
