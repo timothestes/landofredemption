@@ -27,7 +27,9 @@ export const openBlankPrintWindow = (): Window | null => {
  * real, committed document, so both the on-screen page and the printout render.
  */
 const loadPrintWindow = (printWindow: Window, html: string): void => {
-  const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  // The charset matters: without it the browser reads the page as Windows-1252
+  // and the long dash in a generated tournament name prints as "â€”".
+  const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
   printWindow.location.href = url;
   // Release the blob once the document has had time to load.
   setTimeout(() => URL.revokeObjectURL(url), 60000);

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resolveObjectURL } from "node:buffer";
 
 // The standings reads go through the browser Supabase client. `failReads`
 // makes every read come back the way supabase-js reports a dropped
@@ -69,6 +70,13 @@ describe("printFinalStandingsFor", () => {
     expect(printWindow.close).toHaveBeenCalledTimes(1);
     expect(printWindow.location.href).toBe("");
     expect(alert).toHaveBeenCalledTimes(1);
+  });
+
+  it("declares UTF-8, so the long dash in a generated name does not print as mojibake", async () => {
+    await printFinalStandingsFor("t1", players, "Aug 2, 2026 Type 2 Tournament — Wichita, KS");
+    const blob = resolveObjectURL(printWindow.location.href);
+    expect(blob?.type).toBe("text/html;charset=utf-8");
+    expect(await blob?.text()).toContain("Tournament — Wichita, KS - Final Standings");
   });
 
   it("reads nothing when the browser blocks the tab", async () => {
