@@ -51,23 +51,36 @@ export function toMatchResult(m: any, soulCap: number): MatchResult | undefined 
     : { p1Souls, p2Souls, p1Outcome: loserOutcome, p2Outcome: winnerOutcome };
 }
 
-/** Build a TournamentState from a tournament's DB rows. */
+/**
+ * Build a TournamentState from a tournament's DB rows.
+ *
+ * A read that fails is treated as "no rows" unless `throwOnReadError` is set.
+ * Pairing sets it: a round paired from a half-loaded history (no players, or
+ * no earlier results) would be written as if it were right.
+ */
 export async function buildStateFromSupabase(
   client: AnyClient,
   tournamentId: string,
+  opts: { throwOnReadError?: boolean } = {},
 ): Promise<TournamentState | null> {
-  const { data: t } = await client
+  const check = (error: unknown) => {
+    if (opts.throwOnReadError && error) throw error;
+  };
+
+  const { data: t, error: tError } = await client
     .from("tournaments")
     .select("id, n_rounds, current_round, max_score, has_started, has_ended, starting_table_number, numbering_mode")
     .eq("id", tournamentId)
     .single();
+  check(tError);
   if (!t) return null;
   const soulCap = t.max_score ?? 5;
 
-  const { data: parts } = await client
+  const { data: parts, error: partsError } = await client
     .from("participants")
     .select("id, name, joined_at, dropped_out, assigned_seat")
     .eq("tournament_id", tournamentId);
+  check(partsError);
   const participants: Participant[] = (parts || []).map((p: any) => ({
     id: p.id,
     name: p.name ?? "",
@@ -76,10 +89,11 @@ export async function buildStateFromSupabase(
     assignedSeat: p.assigned_seat ?? undefined,
   }));
 
-  const { data: matchRows } = await client
+  const { data: matchRows, error: matchesError } = await client
     .from("matches")
     .select("id, round, player1_id, player2_id, match_order, player1_score, player2_score, is_tie, winner_id, player1_forfeit, player2_forfeit")
     .eq("tournament_id", tournamentId);
+  check(matchesError);
   const matches: Match[] = (matchRows || []).map((m: any) => ({
     id: m.id,
     round: m.round,
@@ -89,10 +103,11 @@ export async function buildStateFromSupabase(
     result: toMatchResult(m, soulCap),
   }));
 
-  const { data: byeRows } = await client
+  const { data: byeRows, error: byesError } = await client
     .from("byes")
     .select("participant_id, round_number")
     .eq("tournament_id", tournamentId);
+  check(byesError);
   const byes: Bye[] = (byeRows || []).map((b: any) => ({
     participantId: b.participant_id,
     round: Number(b.round_number),
@@ -101,10 +116,11 @@ export async function buildStateFromSupabase(
   // Rounds that have actually started. A bye only scores once its round has
   // started (Option C) — a round staged by End Round but not yet started must
   // not award its bye's points. recomputeTotalsFromHistory reads this.
-  const { data: roundRows } = await client
+  const { data: roundRows, error: roundsError } = await client
     .from("rounds")
     .select("round_number, started_at")
     .eq("tournament_id", tournamentId);
+  check(roundsError);
   const startedRounds: number[] = (roundRows || [])
     .filter((r: any) => r.started_at != null)
     .map((r: any) => Number(r.round_number));

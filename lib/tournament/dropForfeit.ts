@@ -72,6 +72,28 @@ export function forfeitSideForDrops(
 }
 
 /**
+ * Positions of the matches a round is still waiting on before it can end.
+ * An unscored match with a dropped player is not one of them: End Round
+ * forfeits it (forfeitSideForDrops), so the host has nothing to enter.
+ */
+export function matchesAwaitingResult(
+  matches: Array<{
+    player1_score: number | null;
+    player2_score: number | null;
+    player1_id?: { dropped_out?: boolean | null } | null;
+    player2_id?: { dropped_out?: boolean | null } | null;
+  }>,
+): number[] {
+  const awaiting: number[] = [];
+  matches.forEach((m, index) => {
+    if (m.player1_score !== null && m.player2_score !== null) return;
+    if (forfeitSideForDrops(!!m.player1_id?.dropped_out, !!m.player2_id?.dropped_out)) return;
+    awaiting.push(index);
+  });
+  return awaiting;
+}
+
+/**
  * `is_tie` / `winner_id` for a scored match row. A forfeit is never a tie
  * (its stored souls are 0–0) — the non-forfeiting player wins, and a double
  * forfeit has no winner.

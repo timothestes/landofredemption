@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "./button";
 import {
   Dialog,
@@ -14,16 +14,19 @@ import {
 interface TournamentStartModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (numberOfRounds: number, roundLength: number, maxScore: number, byePoints: number, byeDifferential: number, startingTableNumber: number, soundNotifications: boolean) => void;
+  // Resolves once the tournament is started and round 1 is paired (or that
+  // failed). The Start button stays disabled until then.
+  onConfirm: (numberOfRounds: number, roundLength: number, maxScore: number, startingTableNumber: number, soundNotifications: boolean) => void | Promise<void>;
   participantCount: number;
   suggestedRounds: number;
+  // The round count the host saved in Settings before starting, if any. The
+  // dialog opens on it rather than on the suggestion.
+  savedRounds?: number | null;
   // Persisted tournament settings to seed the form with (e.g. values prefilled
   // from the chosen category, or anything the host set beforehand). Each falls
   // back to the standard default when null/undefined.
   defaultRoundLength?: number | null;
   defaultMaxScore?: number | null;
-  defaultByePoints?: number | null;
-  defaultByeDifferential?: number | null;
   defaultStartingTableNumber?: number | null;
   defaultSoundNotifications?: boolean | null;
   // "N of M participants have decklists" — same figure shown pre-start under
@@ -38,26 +41,22 @@ export default function TournamentStartModal({
   onConfirm,
   participantCount,
   suggestedRounds,
+  savedRounds,
   defaultRoundLength,
   defaultMaxScore,
-  defaultByePoints,
-  defaultByeDifferential,
   defaultStartingTableNumber,
   defaultSoundNotifications,
   decklistSummary,
 }: TournamentStartModalProps) {
+  const initialRounds = savedRounds ?? suggestedRounds;
   const initialRoundLength = defaultRoundLength ?? 45;
   const initialMaxScore = defaultMaxScore ?? 5;
-  const initialByePoints = defaultByePoints ?? 3;
-  const initialByeDifferential = defaultByeDifferential ?? 0;
   const initialStartingTableNumber = defaultStartingTableNumber ?? 1;
   const initialSoundNotifications = defaultSoundNotifications ?? false;
 
-  const [numberOfRounds, setNumberOfRounds] = useState(suggestedRounds);
+  const [numberOfRounds, setNumberOfRounds] = useState(initialRounds);
   const [roundLength, setRoundLength] = useState(initialRoundLength);
   const [maxScore, setMaxScore] = useState(initialMaxScore);
-  const [byePoints, setByePoints] = useState(initialByePoints);
-  const [byeDifferential, setByeDifferential] = useState(initialByeDifferential);
   const [startingTableNumber, setStartingTableNumber] = useState(initialStartingTableNumber);
   const [soundNotifications, setSoundNotifications] = useState(initialSoundNotifications);
 
@@ -65,8 +64,6 @@ export default function TournamentStartModal({
   // standard default, so a prefilled souls score (etc.) isn't hidden.
   const hasNonDefaultAdvanced =
     initialMaxScore !== 5 ||
-    initialByePoints !== 3 ||
-    initialByeDifferential !== 0 ||
     initialStartingTableNumber !== 1 ||
     initialSoundNotifications !== false;
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(hasNonDefaultAdvanced);
@@ -79,16 +76,30 @@ export default function TournamentStartModal({
   // and starting table all silently snap back to defaults.
   useEffect(() => {
     if (!isOpen) return;
-    setNumberOfRounds(suggestedRounds);
+    setNumberOfRounds(initialRounds);
     setRoundLength(initialRoundLength);
     setMaxScore(initialMaxScore);
-    setByePoints(initialByePoints);
-    setByeDifferential(initialByeDifferential);
     setStartingTableNumber(initialStartingTableNumber);
     setSoundNotifications(initialSoundNotifications);
     setIsAdvancedOpen(hasNonDefaultAdvanced);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  // A second tap while the first is still saving would pair round 1 twice.
+  // The ref closes the gap before the disabled state reaches the button.
+  const [isStarting, setIsStarting] = useState(false);
+  const startingRef = useRef(false);
+  const handleConfirm = async () => {
+    if (startingRef.current) return;
+    startingRef.current = true;
+    setIsStarting(true);
+    try {
+      await onConfirm(numberOfRounds, roundLength, maxScore, startingTableNumber, soundNotifications);
+    } finally {
+      startingRef.current = false;
+      setIsStarting(false);
+    }
+  };
 
   const handleIncrement = () => {
     setNumberOfRounds(prev => prev + 1);
@@ -111,13 +122,20 @@ export default function TournamentStartModal({
   const inputClasses = "w-full bg-background border border-border text-foreground rounded-lg p-2.5 focus:outline-none focus:border-primary/60 transition-colors";
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !isStarting) onClose(); }}>
       <DialogContent size="lg" className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">Start Tournament</DialogTitle>
         </DialogHeader>
 
         <DialogBody className="space-y-6">
+          {/* The roster locks at Start (Add Participant and QR join both
+              close). Say so while the host can still act on it. */}
+          <p className="text-sm text-center text-balance text-muted-foreground">
+            After you start, participants can&apos;t be added.{" "}
+            <span className="font-medium text-foreground">{participantCount}</span>{" "}
+            {participantCount === 1 ? "is" : "are"} in.
+          </p>
           {decklistSummary && (
             <p className="text-sm text-center text-muted-foreground">
               <span className="font-medium text-foreground">
@@ -240,42 +258,6 @@ export default function TournamentStartModal({
                 </select>
               </div>
 
-              {/* Bye Points */}
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Match Points for Bye
-                </label>
-                <select
-                  value={byePoints}
-                  onChange={(e) => setByePoints(Number(e.target.value))}
-                  className={inputClasses}
-                >
-                  <option value="1">1 Point</option>
-                  <option value="1.5">1.5 Points</option>
-                  <option value="2">2 Points</option>
-                  <option value="3">3 Points</option>
-                </select>
-              </div>
-
-              {/* Bye Differential */}
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Differential for Bye
-                </label>
-                <select
-                  value={byeDifferential}
-                  onChange={(e) => setByeDifferential(Number(e.target.value))}
-                  className={inputClasses}
-                >
-                  <option value="0">0 (No Differential)</option>
-                  <option value="1">+1</option>
-                  <option value="2">+2</option>
-                  <option value="3">+3</option>
-                  <option value="4">+4</option>
-                  <option value="5">+5</option>
-                </select>
-              </div>
-
               {/* Starting Table Number */}
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">
@@ -322,12 +304,13 @@ export default function TournamentStartModal({
 
         <DialogFooter className="justify-end">
           <Button
-            onClick={() => onConfirm(numberOfRounds, roundLength, maxScore, byePoints, byeDifferential, startingTableNumber, soundNotifications)}
+            onClick={handleConfirm}
             variant="success"
+            disabled={isStarting}
           >
-            Start Tournament
+            {isStarting ? "Starting…" : "Start Tournament"}
           </Button>
-          <Button variant="cancel" onClick={onClose}>
+          <Button variant="cancel" onClick={onClose} disabled={isStarting}>
             Cancel
           </Button>
         </DialogFooter>

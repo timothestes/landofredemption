@@ -561,8 +561,6 @@ export default function TournamentPage({
     numberOfRounds: number,
     roundLength: number,
     maxScore: number,
-    byePoints: number,
-    byeDifferential: number,
     startingTableNumber: number,
     soundNotifications: boolean
   ) => {
@@ -579,8 +577,6 @@ export default function TournamentPage({
           current_round: 1,
           round_length: roundLength,
           max_score: maxScore,
-          bye_points: byePoints,
-          bye_differential: byeDifferential,
           starting_table_number: startingTableNumber,
           sound_notifications: soundNotifications,
         })
@@ -589,9 +585,16 @@ export default function TournamentPage({
         .single();
       if (error) throw error;
       setTournament(data);
-      setShowStartModal(false);
       // Creating pairing for the first round if the user has started the tournament.
-      await createPairing(data.id, 1);
+      const paired = await createPairing(data.id, 1);
+      if (!paired) {
+        // The dialog stays open so Start Tournament can be pressed again:
+        // createPairing leaves a round that is already paired alone, so the
+        // retry cannot pair round 1 twice.
+        showToast("Round 1 could not be paired. Press Start Tournament to try again.", "error");
+        return;
+      }
+      setShowStartModal(false);
       setActiveTab(1);
       showToast("Tournament started successfully!", "success");
     } catch (error) {
@@ -606,7 +609,7 @@ export default function TournamentPage({
     if (success) {
       showToast(`Round ${round} pairings created successfully!`, "success");
     } else {
-      showToast(`Failed to create pairings for round ${round}`, "error");
+      showToast(`Round ${round} could not be paired. Press End Round to try again.`, "error");
     }
     return success;
   };
@@ -1298,10 +1301,9 @@ export default function TournamentPage({
           onConfirm={handleStartTournament}
           participantCount={participants.length}
           suggestedRounds={suggestNumberOfRounds(participants.length)}
+          savedRounds={tournament?.n_rounds}
           defaultRoundLength={tournament?.round_length}
           defaultMaxScore={tournament?.max_score}
-          defaultByePoints={tournament?.bye_points}
-          defaultByeDifferential={tournament?.bye_differential}
           defaultStartingTableNumber={tournament?.starting_table_number}
           defaultSoundNotifications={tournament?.sound_notifications}
           decklistSummary={decklistSummary}

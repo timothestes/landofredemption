@@ -7,6 +7,7 @@ import {
   matchOutcomeColumns,
   isForfeitedMatch,
   forfeitSideOf,
+  matchesAwaitingResult,
 } from '../dropForfeit';
 import { gameScoreFor, lostSoulScoreFor } from '../scoring';
 
@@ -141,5 +142,40 @@ describe('isForfeitedMatch / forfeitSideOf', () => {
     expect(forfeitSideOf({ player1_forfeit: false, player2_forfeit: true })).toBe('player2');
     expect(forfeitSideOf({ player1_forfeit: true, player2_forfeit: true })).toBe('both');
     expect(forfeitSideOf({ player1_forfeit: false, player2_forfeit: false })).toBeNull();
+  });
+});
+
+describe('matchesAwaitingResult', () => {
+  const player = (dropped_out = false) => ({ dropped_out });
+  const row = (p1: number | null, p2: number | null, p1Dropped = false, p2Dropped = false) => ({
+    player1_score: p1,
+    player2_score: p2,
+    player1_id: player(p1Dropped),
+    player2_id: player(p2Dropped),
+  });
+
+  it('lists the rows with no saved result, by position', () => {
+    expect(matchesAwaitingResult([row(5, 2), row(null, null), row(3, 3), row(null, null)]))
+      .toEqual([1, 3]);
+  });
+  it('is empty when every result is in, and for a round with no matches', () => {
+    expect(matchesAwaitingResult([row(5, 2), row(0, 0)])).toEqual([]);
+    expect(matchesAwaitingResult([])).toEqual([]);
+  });
+  it('a half-entered score is still awaiting', () => {
+    expect(matchesAwaitingResult([row(5, null), row(null, 2)])).toEqual([0, 1]);
+  });
+  it('an unscored match with a dropped player is not awaiting: End Round forfeits it', () => {
+    expect(matchesAwaitingResult([
+      row(null, null, true, false),
+      row(null, null, false, true),
+      row(null, null, true, true),
+      row(null, null),
+    ])).toEqual([3]);
+  });
+  it('treats a row loaded without the dropped flag as not dropped', () => {
+    expect(matchesAwaitingResult([
+      { player1_score: null, player2_score: null, player1_id: {}, player2_id: null },
+    ])).toEqual([0]);
   });
 });

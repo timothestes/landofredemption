@@ -50,7 +50,7 @@ interface TournamentTabsProps {
     isActive: boolean,
     roundStartTime: string | null
   ) => void;
-  createPairing: (round: number) => void;
+  createPairing: (round: number) => Promise<boolean>;
   matchErrorIndex: any;
   setMatchErrorIndex: Dispatch<SetStateAction<any>>;
   activeTab: number;
@@ -249,12 +249,6 @@ export default function TournamentTabs({
                     <span className="sm:hidden">Add</span>
                   </div>
                 </Button>
-                {tournamentStarted && (
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-foreground text-background text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    Cannot add participants after tournament has started
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full -mt-1 border-4 border-transparent border-t-foreground"></div>
-                  </div>
-                )}
               </div>
             )}
             <ParticipantFormModal
@@ -282,6 +276,14 @@ export default function TournamentTabs({
               {decklistSummary.submitted} of {decklistSummary.total}
             </span>{" "}
             participants have decklists
+          </p>
+        )}
+        {/* Why Add is disabled, as text. This replaced a hover tooltip, which
+            a phone never shows and whose hidden box made the page scroll
+            sideways at phone width. */}
+        {tournamentStarted && !tournamentEnded && (
+          <p className="text-sm text-muted-foreground -mt-4 mb-4">
+            Participants can&apos;t be added after the tournament has started.
           </p>
         )}
         {loading ? (
