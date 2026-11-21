@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { TournamentName } from "@/components/tournament/TournamentName";
+import { normalizeJoinCode } from "@/lib/tournament/joinCodeShared";
 import DeckPicker from "./DeckPicker";
 import SubmissionPdfButton from "@/components/tournament/SubmissionPdfButton";
 import {
@@ -98,6 +99,16 @@ function ChosenDeck({ name, onChange }: { name: string; onChange: () => void }) 
   );
 }
 
+/** A date and time in the phone's own time zone, without seconds. Drawn after the page loads: the server would
+ *  draw it in its time zone, and the page would keep that. */
+function LocalTime({ iso }: { iso: string }) {
+  const [text, setText] = useState<string | null>(null);
+  useEffect(() => {
+    setText(new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }));
+  }, [iso]);
+  return <>{text}</>;
+}
+
 const ERROR_MESSAGES: Partial<Record<FailedResult["error"], string>> = {
   blocked: "The host has blocked you from this event.",
   already_joined: "You're already registered for this event — refreshing…",
@@ -170,6 +181,20 @@ export default function JoinClient({
   const [photoTab, setPhotoTab] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ res: JoinResult; deckId?: string } | null>(null);
+
+  // The pairings page opens on the name saved under this key (LiveRoundClient), so a player who joined here is
+  // not asked to type it again. Guests too: their cookie is not sent there. A name already saved stays.
+  const liveCode = normalizeJoinCode(code) ?? code;
+  const joinedName = info.success === true ? (info.joined?.displayName ?? null) : null;
+  useEffect(() => {
+    if (!joinedName) return;
+    try {
+      const key = `live-round-name:${liveCode}`;
+      if (!localStorage.getItem(key)) localStorage.setItem(key, joinedName);
+    } catch {
+      // Private mode / blocked storage: the pairings page asks for the name instead.
+    }
+  }, [liveCode, joinedName]);
 
   async function refresh() {
     try {
@@ -367,7 +392,7 @@ export default function JoinClient({
                     <LegalityBadge isLegal={joined.submission.isLegal} />
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Submitted {new Date(joined.submission.submittedAt).toLocaleString()}
+                    Submitted <LocalTime iso={joined.submission.submittedAt} />
                   </p>
                   {/* The sheet to hand in at deck check, made from the list on record. Keyed by the
                       submission, so a PDF of an older list is never offered after a change. */}
@@ -521,22 +546,21 @@ export default function JoinClient({
             submitted, "you can close this" would be wrong. */}
         {info.hasStarted ? (
           <Button asChild className="mt-3 w-full">
-            <Link href={`/t/${code}`}>Live pairings &amp; standings</Link>
+            <Link href={`/t/${liveCode}`}>Live pairings &amp; standings</Link>
           </Button>
         ) : (
           (!info.requiresDecklist || joined.submission !== null) && !changing && !editing && (
             <div className="mt-3 rounded-lg border border-border/60 bg-muted/30 p-3">
               <p className="text-sm text-foreground">
-                You're all set — you can close this page.
+                You&apos;re all set — nothing else to do here.
               </p>
               <p className="mt-1.5 text-xs text-muted-foreground">
-                Once the host starts round 1, your table, the round timer and the standings will
-                be live at{" "}
-                <Link href={`/t/${code}`} className="font-medium text-primary hover:underline">
-                  this page
-                </Link>
-                .
+                Once the host starts round 1, your table, the round timer and the standings go live
+                on the pairings page.
               </p>
+              <Button asChild variant="outline" className="mt-3 w-full">
+                <Link href={`/t/${liveCode}`}>Pairings and standings</Link>
+              </Button>
             </div>
           )
         )}
