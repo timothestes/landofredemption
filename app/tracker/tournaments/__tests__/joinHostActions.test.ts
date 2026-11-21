@@ -15,8 +15,12 @@ vi.mock("@/lib/pricing/supabase-admin", () => ({
 }));
 
 const mockBuildDeckSubmission = vi.fn();
+const mockCleanSnapshotCards = vi.fn();
+const mockCheckSnapshotCards = vi.fn();
 vi.mock("@/lib/tournament/deckSubmission", () => ({
   buildDeckSubmission: (...args: any[]) => mockBuildDeckSubmission(...args),
+  cleanSnapshotCards: (...args: any[]) => mockCleanSnapshotCards(...args),
+  checkSnapshotCards: (...args: any[]) => mockCheckSnapshotCards(...args),
 }));
 
 const mockGenerateJoinCode = vi.fn();
@@ -50,6 +54,7 @@ import {
   setResultsPublishedAction,
   publishTournamentDecklistsAction,
   refreshFinalPlacesAction,
+  updateSubmissionAsHostAction,
 } from "../actions";
 
 const REDEMPTIONCCG_USER_ID = "a0a8e980-f372-4ebd-be25-d2f26507e98f";
@@ -529,6 +534,78 @@ describe("recheckAllSubmissionsAction", () => {
 });
 
 // ─── setResultsPublishedAction / persistFinalPlaces ─────────────────────
+
+describe("updateSubmissionAsHostAction", () => {
+  const CARDS = [{ name: "Card A", set: "TPC", imgFile: "a", quantity: 50, zone: "main" }];
+  const asHost = (deckFormat: string | null) => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "host1" } } });
+    const tournaments = makeNode();
+    tournaments._resp = { data: { id: "t1", deck_format: deckFormat }, error: null };
+    userClientImpl = makeClient({ tournaments });
+    const submissions = makeNode();
+    submissions._resp = { data: { id: "s1", deck_snapshot: { deckName: "D1", deckFormat: "Type 1", cards: [] } }, error: null };
+    adminImpl = makeClient({ tournament_deck_submissions: submissions });
+    return submissions;
+  };
+
+  beforeEach(() => {
+    mockCleanSnapshotCards.mockImplementation((c: any) => c);
+    mockCheckSnapshotCards.mockResolvedValue({ isLegal: true, issues: [], hasUnresolvedCards: false });
+  });
+
+  it("saves the corrected list under the host's name, with the check's verdict", async () => {
+    const submissions = asHost("Limited");
+    const issues = [{ type: "error", rule: "x", message: "too few" }];
+    mockCheckSnapshotCards.mockResolvedValue({ isLegal: false, issues, hasUnresolvedCards: false });
+
+    const r = await updateSubmissionAsHostAction("t1", "p1", CARDS);
+
+    // Saved even though it fails the check: the host's list is recorded, not gated.
+    expect(r).toEqual({ success: true, isLegal: false, issues });
+    expect(mockCheckSnapshotCards).toHaveBeenCalledWith(CARDS, "Limited");
+    expect(submissions.eq).toHaveBeenCalledWith("tournament_id", "t1");
+    expect(submissions.eq).toHaveBeenCalledWith("participant_id", "p1");
+    expect(submissions.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deck_snapshot: { deckName: "D1", deckFormat: "Type 1", cards: CARDS },
+        is_legal: false,
+        deckcheck_issues: issues,
+        submitted_by: "host1",
+        source: "host",
+      })
+    );
+  });
+
+  it("no declared format: saved without a verdict, and the check never runs", async () => {
+    const submissions = asHost(null);
+    const r = await updateSubmissionAsHostAction("t1", "p1", CARDS);
+    expect(r).toEqual({ success: true, isLegal: null, issues: [] });
+    expect(mockCheckSnapshotCards).not.toHaveBeenCalled();
+    expect(submissions.update).toHaveBeenCalledWith(expect.objectContaining({ is_legal: null, deckcheck_issues: null }));
+  });
+
+  it("non-host -> failure, admin client never touched", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "someone" } } });
+    const tournaments = makeNode(); // RLS hides the row from a non-host
+    userClientImpl = makeClient({ tournaments });
+    adminImpl = null;
+    expect(await updateSubmissionAsHostAction("t1", "p1", CARDS)).toEqual({ success: false, error: "not_found" });
+  });
+
+  it("a participant with no submission in this tournament -> failure, nothing written", async () => {
+    const submissions = asHost("Limited");
+    submissions._resp = { data: null, error: null };
+    expect(await updateSubmissionAsHostAction("t1", "other-events-participant", CARDS)).toEqual({ success: false, error: "not_found" });
+    expect(submissions.update).not.toHaveBeenCalled();
+  });
+
+  it("input that is not a card list -> failure, nothing read or written", async () => {
+    const submissions = asHost("Limited");
+    mockCleanSnapshotCards.mockReturnValue(null);
+    expect(await updateSubmissionAsHostAction("t1", "p1", { not: "cards" })).toEqual({ success: false, error: "invalid_cards" });
+    expect(submissions.update).not.toHaveBeenCalled();
+  });
+});
 
 describe("setResultsPublishedAction", () => {
   it("published=true persists final places (via the shared persistFinalPlaces helper)", async () => {
