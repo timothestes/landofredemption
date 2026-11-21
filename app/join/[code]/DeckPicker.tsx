@@ -154,29 +154,35 @@ export default function DeckPicker({
   // My decks
   const [myDecks, setMyDecks] = useState<MyDeck[] | null>(null);
   const [myLoading, setMyLoading] = useState(false);
+  // A load that failed is not an empty list: a player with decks must not be told they have none.
+  const [myFailed, setMyFailed] = useState(false);
   const [myQuery, setMyQuery] = useState("");
 
   useEffect(() => {
-    if (myDecks !== null) return;
+    if (myDecks !== null || myFailed) return;
     setMyLoading(true);
     loadUserDecksAction()
       .then((res) => {
-        const decks = res.success === true ? (res.decks as MyDeck[]) : [];
+        if (res.success !== true) {
+          setMyFailed(true);
+          return;
+        }
+        const decks = res.decks as MyDeck[];
         setMyDecks(decks);
         // No saved decks: the photo is the way in, not an empty list.
-        if (res.success === true && decks.length === 0 && !touched.current) openPhoto();
+        if (decks.length === 0 && !touched.current) openPhoto();
       })
       .catch(() => {
-        // Network drop: fall back to the same empty state the non-throw
-        // failure path already uses, rather than leaving myLoading stuck.
-        setMyDecks([]);
+        // Network drop: the same "could not load" line, with its Try again.
+        setMyFailed(true);
       })
       .finally(() => {
         setMyLoading(false);
       });
     // Load once regardless of which tab is active first — cheap and avoids a
     // spinner if the player switches to "My decks" after browsing others.
-  }, [myDecks]);
+    // Clearing myFailed (Try again) runs it once more.
+  }, [myDecks, myFailed]);
 
   const filteredMine = (myDecks ?? []).filter((d) =>
     d.name.toLowerCase().includes(myQuery.trim().toLowerCase())
@@ -283,6 +289,27 @@ export default function DeckPicker({
               />
             </div>
             {myLoading && <p className="mt-3 text-sm text-muted-foreground">Loading your decks…</p>}
+            {!myLoading && myFailed && (
+              <div className="mt-3 text-sm">
+                <p className="text-foreground">Couldn&apos;t load your decks.</p>
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <button
+                    type="button"
+                    onClick={() => setMyFailed(false)}
+                    className="min-h-11 rounded-md border border-border px-4 font-medium text-foreground hover:bg-muted focus:outline-none"
+                  >
+                    Try again
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openPhoto}
+                    className="min-h-11 font-medium text-foreground underline underline-offset-4 focus:outline-none"
+                  >
+                    Photograph your deck instead
+                  </button>
+                </div>
+              </div>
+            )}
             {!myLoading && myDecks !== null && filteredMine.length === 0 && (
               <p className="mt-3 text-sm text-muted-foreground">
                 {myDecks.length === 0 ? "No saved decks yet." : "No decks found."}{" "}
