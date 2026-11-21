@@ -975,6 +975,15 @@ export default function TournamentRounds({
     onOpenHelp: () => setShortcutsOpen(true),
   });
 
+  // Post-save callback for the pencil dialog on a live round. Its result is
+  // the newest word on the row, so whatever was typed into that row's score
+  // cells goes — a typed value outranks the saved one for as long as it lives.
+  // Dropped after the refetch so the cells go straight to the new result.
+  const refreshAfterDialogSave = (matchId: string) => async () => {
+    await refreshMatchesAndNotify();
+    scoreGrid.discardDraft(matchId);
+  };
+
   /** Persisted table with legacy fallback to positional numbering. */
   const displayTable = (match: any, index: number): number =>
     match.table_number ?? index + (tournamentInfo.starting_table_number || 1);
@@ -1412,7 +1421,7 @@ export default function TournamentRounds({
                                       <MatchEditModal
                                         key={`${match.player1_score}-${match.player2_score}-${match.player1_forfeit}-${match.player2_forfeit}`}
                                         match={match}
-                                        fetchCurrentRoundData={refreshMatchesAndNotify}
+                                        fetchCurrentRoundData={refreshAfterDialogSave(match.id)}
                                         setMatchErrorIndex={setMatchErrorIndex}
                                         isRoundActive={isRoundActive}
                                         index={index}
@@ -1582,7 +1591,7 @@ export default function TournamentRounds({
                                     <MatchEditModal
                                       key={`${match.player1_score}-${match.player2_score}-${match.player1_forfeit}-${match.player2_forfeit}`}
                                       match={match}
-                                      fetchCurrentRoundData={refreshMatchesAndNotify}
+                                      fetchCurrentRoundData={refreshAfterDialogSave(match.id)}
                                       setMatchErrorIndex={setMatchErrorIndex}
                                       isRoundActive={isRoundActive}
                                       index={index}
