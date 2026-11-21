@@ -26,12 +26,14 @@ interface Props {
    */
   onCommit: (picks: { key: string; qty: number }[], finished?: boolean) => void;
   onClose: () => void;
+  /** What a soul already in the list says under its name; the default is the photo reader's. */
+  listedLabel?: string;
 }
 
 const stepButton =
   'flex h-11 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-40';
 
-export default function LostSoulSheet({ inTray, placeholders, picks, onCommit, onClose }: Props) {
+export default function LostSoulSheet({ inTray, placeholders, picks, onCommit, onClose, listedLabel = DECK_COPY.sheetInDeck }: Props) {
   const trapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -128,7 +130,7 @@ export default function LostSoulSheet({ inTray, placeholders, picks, onCommit, o
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium">{o.title}</span>
-            <span className="block truncate text-xs text-muted-foreground">{inDeck ? DECK_COPY.sheetInDeck : o.detail}</span>
+            <span className="block truncate text-xs text-muted-foreground">{inDeck ? listedLabel : o.detail}</span>
           </span>
         </button>
         {/* Its width is held by the row's padding until then, so picking a row never moves its text. */}

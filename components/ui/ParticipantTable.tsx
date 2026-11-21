@@ -539,6 +539,7 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
         tournamentId={tournamentId}
         participantId={submissionTarget?.id ?? null}
         participantName={submissionTarget?.name ?? ""}
+        onChanged={onDecklistsChange}
       />
 
       <ToastNotification

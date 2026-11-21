@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import DeckPicker from "./DeckPicker";
 import {
@@ -11,6 +12,12 @@ import {
   type JoinInfo,
   type JoinResult,
 } from "../actions";
+
+// The list editor loads the card catalog: it is fetched when a player opens it, not with the join page.
+const SubmissionEditor = dynamic(() => import("./SubmissionEditor"), {
+  ssr: false,
+  loading: () => <p className="mt-3 text-sm text-muted-foreground">Loading your decklist…</p>,
+});
 
 type JoinedState = Extract<JoinInfo, { success: true }>;
 type FailedResult = Extract<JoinResult, { success: false }>;
@@ -135,6 +142,7 @@ export default function JoinClient({
   const [displayName, setDisplayName] = useState(defaultName);
   const [selectedDeck, setSelectedDeck] = useState<{ id: string; name: string } | null>(null);
   const [showChangeDeck, setShowChangeDeck] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [photoTab, setPhotoTab] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ res: JoinResult; deckId?: string } | null>(null);
@@ -255,6 +263,7 @@ export default function JoinClient({
   if (info.joined !== null) {
     const { joined } = info;
     const changing = info.requiresDecklist && !info.hasStarted && showChangeDeck;
+    const editing = info.requiresDecklist && !info.hasStarted && showEdit && joined.submission !== null;
     return (
       <Shell>
         <EventHeader info={info} />
@@ -285,17 +294,38 @@ export default function JoinClient({
                   {joined.submission === null &&
                     " Talk to your host if you still need to hand in a decklist."}
                 </p>
+              ) : editing ? null : showChangeDeck || joined.submission === null ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-3 w-full"
+                  onClick={() => setShowChangeDeck((v) => !v)}
+                >
+                  {showChangeDeck ? "Cancel" : "Change decklist"}
+                </Button>
               ) : (
-                <>
+                // Two different jobs: fix a card or two in the list that was handed in, or hand in another deck.
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                   <Button
                     type="button"
                     variant="outline"
-                    className="mt-3 w-full"
-                    onClick={() => setShowChangeDeck((v) => !v)}
+                    className="flex-1"
+                    onClick={() => {
+                      setResult(null);
+                      setShowEdit(true);
+                    }}
                   >
-                    {showChangeDeck ? "Cancel" : "Change decklist"}
+                    Edit cards
                   </Button>
-                </>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setShowChangeDeck(true)}
+                  >
+                    Use a different deck
+                  </Button>
+                </div>
               )}
             </div>
           )}
@@ -325,6 +355,17 @@ export default function JoinClient({
           </>
         )}
 
+        {editing && (
+          <SubmissionEditor
+            code={code}
+            onCancel={() => setShowEdit(false)}
+            onSaved={() => {
+              setShowEdit(false);
+              void refresh();
+            }}
+          />
+        )}
+
         {/* Once the event is under way, the thing a checked-in player wants is
             their table — send them to the live page. Before that, players
             don't otherwise know whether this page is meant to stay open (it
@@ -336,7 +377,7 @@ export default function JoinClient({
             <Link href={`/t/${code}`}>Live pairings &amp; standings</Link>
           </Button>
         ) : (
-          (!info.requiresDecklist || joined.submission !== null) && !changing && (
+          (!info.requiresDecklist || joined.submission !== null) && !changing && !editing && (
             <div className="mt-3 rounded-lg border border-border/60 bg-muted/30 p-3">
               <p className="text-sm text-foreground">
                 You're all set — you can close this page.

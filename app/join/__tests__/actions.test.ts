@@ -24,11 +24,21 @@ vi.mock("@/lib/pricing/supabase-admin", () => ({
 }));
 
 const mockBuildDeckSubmission = vi.fn();
+const mockCleanSnapshotCards = vi.fn();
+const mockCheckSnapshotCards = vi.fn();
 vi.mock("@/lib/tournament/deckSubmission", () => ({
   buildDeckSubmission: (...args: any[]) => mockBuildDeckSubmission(...args),
+  cleanSnapshotCards: (...args: any[]) => mockCleanSnapshotCards(...args),
+  checkSnapshotCards: (...args: any[]) => mockCheckSnapshotCards(...args),
 }));
 
-import { getJoinInfoAction, joinTournamentAction, resubmitDeckAction } from "../actions";
+import {
+  getJoinInfoAction,
+  getMySubmissionAction,
+  joinTournamentAction,
+  resubmitDeckAction,
+  updateMySubmissionAction,
+} from "../actions";
 
 // --- fake PostgREST chain: .from(table).select().eq()[.eq()][.in()].maybeSingle()/.single() ---
 function chainFrom(data: any) {
@@ -355,5 +365,106 @@ describe("resubmitDeckAction", () => {
     );
     const r = await resubmitDeckAction(VALID_CODE, "d2");
     expect(r).toEqual({ success: false, error: "not_joined" });
+  });
+});
+
+describe("the player's own submitted list", () => {
+  const CARDS = [{ name: "Card A", set: "TPC", imgFile: "a", quantity: 50, zone: "main" }];
+  const stored = {
+    deck_id: "d1",
+    deck_snapshot: { deckName: "My deck", deckFormat: "Type 1", cards: CARDS },
+    is_legal: true,
+    deckcheck_issues: null,
+  };
+  const joinedAdmin = (tournament: Record<string, any> = {}, rpc?: { data?: any; error?: any }) =>
+    makeAdmin(
+      {
+        tournaments: baseTournament({ require_decklists: true, ...tournament }),
+        participants: { id: "p1" },
+        tournament_deck_submissions: stored,
+      },
+      rpc
+    );
+
+  beforeEach(() => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "u1" } } });
+    mockCleanSnapshotCards.mockImplementation((c: any) => c);
+    mockCheckSnapshotCards.mockResolvedValue({ isLegal: true, issues: [], hasUnresolvedCards: false });
+  });
+
+  it("reads back the cards that were handed in", async () => {
+    mockAdminImpl = joinedAdmin();
+    expect(await getMySubmissionAction(VALID_CODE)).toEqual({
+      success: true,
+      deckName: "My deck",
+      cards: CARDS,
+      hasStarted: false,
+    });
+  });
+
+  it("signed out, or not in the event: nothing is read", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+    mockAdminImpl = joinedAdmin();
+    expect(await getMySubmissionAction(VALID_CODE)).toEqual({ success: false, error: "not_signed_in" });
+    mockGetUser.mockResolvedValue({ data: { user: { id: "u1" } } });
+    mockAdminImpl = makeAdmin({ tournaments: baseTournament(), participants: null });
+    expect(await getMySubmissionAction(VALID_CODE)).toEqual({ success: false, error: "not_joined" });
+  });
+
+  it("a legal edit is saved as a resubmit that keeps the deck's name and where it came from", async () => {
+    const admin = joinedAdmin();
+    mockAdminImpl = admin;
+    const edited = [{ ...CARDS[0], quantity: 49 }, { name: "Card B", set: "TPC", imgFile: "b", quantity: 1, zone: "main" }];
+    expect(await updateMySubmissionAction(VALID_CODE, edited)).toEqual({ success: true });
+    expect(mockCheckSnapshotCards).toHaveBeenCalledWith(edited, "Limited");
+    const args = admin.rpc.mock.calls[0][1];
+    expect(admin.rpc.mock.calls[0][0]).toBe("tournament_qr_join");
+    expect(args).toMatchObject({ p_code: VALID_CODE, p_user_id: "u1", p_display_name: null, p_deck_id: "d1", p_resubmit: true, p_is_legal: true, p_issues: null });
+    expect(args.p_snapshot).toEqual({ deckName: "My deck", deckFormat: "Type 1", cards: edited });
+  });
+
+  it("an edit that fails the deck check is not saved, and its issues come back", async () => {
+    const admin = joinedAdmin();
+    mockAdminImpl = admin;
+    const issues = [{ type: "error", rule: "t1-deck-size", message: "Too few cards" }];
+    mockCheckSnapshotCards.mockResolvedValue({ isLegal: false, issues, hasUnresolvedCards: false });
+    expect(await updateMySubmissionAction(VALID_CODE, CARDS)).toEqual({ success: false, error: "deck_illegal", issues });
+    expect(admin.rpc).not.toHaveBeenCalled();
+  });
+
+  it("a card the catalog does not have blocks the save even when the check passes", async () => {
+    const admin = joinedAdmin();
+    mockAdminImpl = admin;
+    mockCheckSnapshotCards.mockResolvedValue({ isLegal: true, issues: [], hasUnresolvedCards: true });
+    expect((await updateMySubmissionAction(VALID_CODE, CARDS)).success).toBe(false);
+    expect(admin.rpc).not.toHaveBeenCalled();
+  });
+
+  it("locked once the event has started, before anything is checked", async () => {
+    const admin = joinedAdmin({ has_started: true });
+    mockAdminImpl = admin;
+    expect(await updateMySubmissionAction(VALID_CODE, CARDS)).toEqual({ success: false, error: "started" });
+    expect(mockCheckSnapshotCards).not.toHaveBeenCalled();
+    expect(admin.rpc).not.toHaveBeenCalled();
+  });
+
+  it("the start landing mid-save is reported as started", async () => {
+    mockAdminImpl = joinedAdmin({}, { data: { ok: false, error: "started" }, error: null });
+    expect(await updateMySubmissionAction(VALID_CODE, CARDS)).toEqual({ success: false, error: "started" });
+  });
+
+  it("refuses input that is not a card list, a player with no submission, and a signed-out caller", async () => {
+    const admin = joinedAdmin();
+    mockAdminImpl = admin;
+    mockCleanSnapshotCards.mockReturnValue(null);
+    expect(await updateMySubmissionAction(VALID_CODE, "nope")).toEqual({ success: false, error: "join_failed" });
+    expect(admin.rpc).not.toHaveBeenCalled();
+
+    mockCleanSnapshotCards.mockImplementation((c: any) => c);
+    mockAdminImpl = makeAdmin({ tournaments: baseTournament({ require_decklists: true }), participants: { id: "p1" }, tournament_deck_submissions: null });
+    expect(await updateMySubmissionAction(VALID_CODE, CARDS)).toEqual({ success: false, error: "not_joined" });
+
+    mockGetUser.mockResolvedValue({ data: { user: null } });
+    expect(await updateMySubmissionAction(VALID_CODE, CARDS)).toEqual({ success: false, error: "not_signed_in" });
   });
 });

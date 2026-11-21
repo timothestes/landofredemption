@@ -4,7 +4,13 @@ import { headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { getSupabaseAdmin } from "@/lib/pricing/supabase-admin";
 import { normalizeJoinCode } from "@/lib/tournament/joinCodes";
-import { buildDeckSubmission } from "@/lib/tournament/deckSubmission";
+import {
+  buildDeckSubmission,
+  checkSnapshotCards,
+  cleanSnapshotCards,
+  type DeckSnapshot,
+  type DeckSnapshotCard,
+} from "@/lib/tournament/deckSubmission";
 import { normalizeTournamentFormat, type FormatId } from "@/lib/formats";
 import { rateLimitForUnauthIp, extractClientIp } from "@/lib/api/rateLimit";
 import type { DeckCheckIssue } from "@/utils/deckcheck";
@@ -211,4 +217,102 @@ export async function joinTournamentAction(
 
 export async function resubmitDeckAction(rawCode: string, deckId: string): Promise<JoinResult> {
   return submitToTournament(rawCode, deckId, null, true);
+}
+
+/** The signed-in player's participant row and submission for the event with this code, read admin-side. */
+async function findMySubmission(tournamentId: string, userId: string) {
+  const admin = getSupabaseAdmin();
+  const { data: p } = await admin
+    .from("participants")
+    .select("id")
+    .eq("tournament_id", tournamentId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!p) return null;
+  const { data: sub } = await admin
+    .from("tournament_deck_submissions")
+    .select("deck_id, deck_snapshot, is_legal, deckcheck_issues")
+    .eq("participant_id", p.id)
+    .maybeSingle();
+  return sub ?? null;
+}
+
+export type MySubmission =
+  | { success: true; deckName: string; cards: DeckSnapshotCard[]; hasStarted: boolean }
+  | { success: false; error: "invalid_code" | "not_signed_in" | "not_joined" };
+
+/** The card list the signed-in player handed in for this event, so they can read it and touch it up. */
+export async function getMySubmissionAction(rawCode: string): Promise<MySubmission> {
+  const code = normalizeJoinCode(rawCode);
+  if (!code) return { success: false, error: "invalid_code" };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "not_signed_in" };
+  const t = await findTournamentByCode(code);
+  if (!t) return { success: false, error: "invalid_code" };
+  const sub = await findMySubmission(t.id, user.id);
+  if (!sub) return { success: false, error: "not_joined" };
+  const snapshot = sub.deck_snapshot as DeckSnapshot;
+  return {
+    success: true,
+    deckName: snapshot?.deckName ?? "Deck",
+    cards: snapshot?.cards ?? [],
+    hasStarted: t.has_started === true,
+  };
+}
+
+/**
+ * Replaces the cards of the player's own submitted list with an edited copy. The same rules as a resubmit: only
+ * before the event starts, and only a list that passes the event's deck check is accepted, so the list on record
+ * stays as it was until the new one is legal. The deck the list first came from is not changed.
+ */
+export async function updateMySubmissionAction(rawCode: string, cards: unknown): Promise<JoinResult> {
+  const code = normalizeJoinCode(rawCode);
+  if (!code) return { success: false, error: "invalid_code" };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "not_signed_in" };
+  const t = await findTournamentByCode(code);
+  if (!t) return { success: false, error: "invalid_code" };
+  if (t.has_started === true) return { success: false, error: "started" };
+
+  const sub = await findMySubmission(t.id, user.id);
+  if (!sub) return { success: false, error: "not_joined" };
+  const cleaned = cleanSnapshotCards(cards);
+  if (!cleaned) return { success: false, error: "join_failed" };
+  const format = normalizeTournamentFormat(t.deck_format);
+  if (format === null || format === "Other") return { success: false, error: "decklist_required" };
+
+  const verdict = await checkSnapshotCards(cleaned, format);
+  if (verdict.isLegal === false || verdict.hasUnresolvedCards === true)
+    return { success: false, error: "deck_illegal", issues: verdict.issues };
+
+  const before = sub.deck_snapshot as DeckSnapshot;
+  const snapshot: DeckSnapshot = {
+    deckName: before?.deckName ?? "Deck",
+    deckFormat: before?.deckFormat ?? "",
+    cards: cleaned,
+  };
+  // The join function again, as a resubmit: it locks the event row, so an edit cannot land after the host starts.
+  const { data, error } = await getSupabaseAdmin().rpc("tournament_qr_join", {
+    p_code: code,
+    p_user_id: user.id,
+    p_display_name: null,
+    p_deck_id: sub.deck_id ?? null,
+    p_snapshot: snapshot,
+    p_is_legal: verdict.isLegal,
+    p_issues: verdict.issues.length ? verdict.issues : null,
+    p_resubmit: true,
+  });
+  if (error) return { success: false, error: "join_failed" };
+  const out = data as { ok: boolean; error?: string };
+  if (out.ok !== true) {
+    const known = out.error === "started" || out.error === "blocked" || out.error === "not_joined";
+    return { success: false, error: known ? (out.error as "started" | "blocked" | "not_joined") : "join_failed" };
+  }
+  return { success: true };
 }

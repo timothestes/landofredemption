@@ -5,7 +5,12 @@ import { getSupabaseAdmin } from "@/lib/pricing/supabase-admin";
 import { computeFinalStandings } from "@/lib/tournament/standings";
 import { buildStateFromSupabase } from "@/utils/tournament/stateAdapter";
 import { generateJoinCode } from "@/lib/tournament/joinCodes";
-import { buildDeckSubmission, type DeckSnapshot } from "@/lib/tournament/deckSubmission";
+import {
+  buildDeckSubmission,
+  checkSnapshotCards,
+  cleanSnapshotCards,
+  type DeckSnapshot,
+} from "@/lib/tournament/deckSubmission";
 import { normalizeTournamentFormat, type FormatId } from "@/lib/formats";
 import { checkDeck, type DeckCheckCard, type DeckCheckIssue } from "@/utils/deckcheck";
 import { derivePreviewCards } from "@/lib/tournament/previewCards";
@@ -648,6 +653,61 @@ export async function getSubmissionAction(
       submittedByUsername,
     },
   };
+}
+
+// ─── Host corrects a submitted list ──────────────────────────────────
+
+/**
+ * Replaces the cards of a participant's submitted list with the host's corrected copy. Allowed at any point in
+ * the event, as attach and detach are, and saved whatever the deck check says: the verdict is recorded, not
+ * enforced. The row is marked as the host's from then on, so the roster shows who last changed it.
+ */
+export async function updateSubmissionAsHostAction(
+  tournamentId: string,
+  participantId: string,
+  cards: unknown
+): Promise<{ success: boolean; isLegal?: boolean | null; issues?: DeckCheckIssue[]; error?: string }> {
+  const host = await requireHost(tournamentId);
+  if (!host) return { success: false, error: "not_found" };
+
+  const cleaned = cleanSnapshotCards(cards);
+  if (!cleaned) return { success: false, error: "invalid_cards" };
+
+  const admin = getSupabaseAdmin();
+  // Matched on both ids: requireHost proves the caller hosts tournamentId, not that the participant is in it.
+  const { data: sub } = await admin
+    .from("tournament_deck_submissions")
+    .select("id, deck_snapshot")
+    .eq("tournament_id", tournamentId)
+    .eq("participant_id", participantId)
+    .maybeSingle();
+  if (!sub) return { success: false, error: "not_found" };
+
+  const supabase = await createClient();
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select("deck_format")
+    .eq("id", tournamentId)
+    .maybeSingle();
+  const format = normalizeTournamentFormat(tournament?.deck_format);
+  // No declared format: there is nothing to check against, so the list is saved without a verdict.
+  const verdict = format === null || format === "Other" ? null : await checkSnapshotCards(cleaned, format);
+
+  const before = sub.deck_snapshot as DeckSnapshot;
+  const { error } = await admin
+    .from("tournament_deck_submissions")
+    .update({
+      deck_snapshot: { deckName: before?.deckName ?? "Deck", deckFormat: before?.deckFormat ?? "", cards: cleaned },
+      is_legal: verdict ? verdict.isLegal : null,
+      deckcheck_issues: verdict && verdict.issues.length > 0 ? verdict.issues : null,
+      submitted_by: host.userId,
+      source: "host",
+      submitted_at: new Date().toISOString(),
+    })
+    .eq("id", sub.id);
+  if (error) return { success: false, error: error.message };
+
+  return { success: true, isLegal: verdict ? verdict.isLegal : null, issues: verdict?.issues ?? [] };
 }
 
 // ─── Remove participant (with optional rejoin block) ───────────────────
