@@ -615,11 +615,21 @@ export async function getSubmissionAction(
     submittedAt: string;
     source: "player" | "host";
     submittedByUsername: string | null;
+    /** The event's name and format, for the deck check PDF's heading and sheet. */
+    eventName: string;
+    eventFormat: string | null;
   };
   error?: string;
 }> {
   const host = await requireHost(tournamentId);
   if (!host) return { success: false, error: "not_found" };
+
+  const supabase = await createClient();
+  const { data: tournament } = await supabase
+    .from("tournaments")
+    .select("name, deck_format")
+    .eq("id", tournamentId)
+    .maybeSingle();
 
   const admin = getSupabaseAdmin();
   const { data: sub, error } = await admin
@@ -651,6 +661,8 @@ export async function getSubmissionAction(
       submittedAt: sub.submitted_at,
       source: sub.source,
       submittedByUsername,
+      eventName: tournament?.name ?? "",
+      eventFormat: tournament?.deck_format ?? null,
     },
   };
 }

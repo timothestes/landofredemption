@@ -12,6 +12,7 @@ import {
 } from "./dialog";
 import { getSubmissionAction, updateSubmissionAsHostAction } from "@/app/tracker/tournaments/actions";
 import DecklistEditor from "@/components/tournament/DecklistEditor";
+import SubmissionPdfButton from "@/components/tournament/SubmissionPdfButton";
 import { findCard } from "@/lib/cards/lookup";
 import { sameCards, zoneTotals } from "@/lib/tournament/snapshotEdit";
 import {
@@ -42,6 +43,8 @@ interface SubmissionDetail {
   submittedAt: string;
   source: "player" | "host";
   submittedByUsername: string | null;
+  eventName: string;
+  eventFormat: string | null;
 }
 
 type Group = { label: string; cards: DeckSnapshotCard[] };
@@ -457,6 +460,21 @@ export default function SubmissionModal({
           </DialogFooter>
         ) : (
           <DialogFooter className="justify-end gap-2">
+            {submission && !loading && (
+              // Keyed by the save time: after the host corrects the list, the PDF is made again from the new one.
+              <SubmissionPdfButton
+                key={submission.submittedAt}
+                fileName={`${participantName} ${submission.snapshot.deckName}`}
+                className="mr-auto inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-60"
+                load={() => ({
+                  cards: submission.snapshot.cards,
+                  format: submission.eventFormat,
+                  playerName: participantName,
+                  eventName: submission.eventName,
+                  isLegal: submission.isLegal,
+                })}
+              />
+            )}
             {submission && !loading && (
               <button
                 type="button"

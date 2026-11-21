@@ -6,8 +6,10 @@ import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { TournamentName } from "@/components/tournament/TournamentName";
 import DeckPicker from "./DeckPicker";
+import SubmissionPdfButton from "@/components/tournament/SubmissionPdfButton";
 import {
   getJoinInfoAction,
+  getMySubmissionAction,
   joinTournamentAction,
   resubmitDeckAction,
   type JoinInfo,
@@ -285,6 +287,26 @@ export default function JoinClient({
                   <p className="mt-1 text-xs text-muted-foreground">
                     Submitted {new Date(joined.submission.submittedAt).toLocaleString()}
                   </p>
+                  {/* The sheet to hand in at deck check, made from the list on record. Keyed by the
+                      submission, so a PDF of an older list is never offered after a change. */}
+                  {!changing && !editing && (
+                    <SubmissionPdfButton
+                      key={joined.submission.submittedAt}
+                      fileName={`${joined.displayName} ${joined.submission.deckName}`}
+                      className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-foreground underline-offset-4 hover:underline focus:outline-none disabled:opacity-60"
+                      load={async () => {
+                        const mine = await getMySubmissionAction(code);
+                        if (mine.success !== true) return null;
+                        return {
+                          cards: mine.cards,
+                          format: info.deckFormat,
+                          playerName: joined.displayName,
+                          eventName: info.tournamentName,
+                          isLegal: joined.submission?.isLegal ?? null,
+                        };
+                      }}
+                    />
+                  )}
                 </>
               ) : (
                 <p className="text-sm text-amber-600 dark:text-amber-400">No decklist submitted yet.</p>
