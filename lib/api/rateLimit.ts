@@ -58,6 +58,25 @@ function perIpUnauthMinute(): Ratelimit {
   return _perIpUnauthMinute;
 }
 
+// Players at an event share the venue's connection, and a room scans the host's QR at once. One event takes up
+// to 250 guests (migration 130), so the allowance is above that. Join codes are 6 random characters out of 32
+// (about a billion): this many tries a minute, kept up all day, would still need months to hit one of a few
+// dozen live codes.
+const JOIN_PER_IP_MINUTE = 300;
+
+let _perIpJoinMinute: Ratelimit | null = null;
+function perIpJoinMinute(): Ratelimit {
+  if (!_perIpJoinMinute) {
+    _perIpJoinMinute = new Ratelimit({
+      redis: redis(),
+      limiter: Ratelimit.slidingWindow(JOIN_PER_IP_MINUTE, "1 m"),
+      analytics: false,
+      prefix: "rtt:join:ip",
+    });
+  }
+  return _perIpJoinMinute;
+}
+
 /** Vercel-verified client IP; comma-separated lists return the first entry. */
 export function extractClientIp(req: Request): string {
   const vercel = req.headers.get("x-vercel-forwarded-for");
@@ -86,6 +105,21 @@ export async function rateLimitForUnauthIp(ip: string): Promise<RateLimitResult>
   return {
     success: r.success,
     limit: 30,
+    remaining: r.remaining,
+    reset: Math.ceil(r.reset / 1000),
+  };
+}
+
+/**
+ * Signed-out traffic on the tournament join page, per connection: looking a code up, and joining as a guest,
+ * each counted on its own. Apart from rateLimitForUnauthIp, so a room pressing "Deck check PDF" (or anything
+ * else on that shared allowance) cannot lock the next player out of joining, and the other way round.
+ */
+export async function rateLimitForJoinIp(bucket: "lookup" | "guest-join", ip: string): Promise<RateLimitResult> {
+  const r = await perIpJoinMinute().limit(`${bucket}:${ip}`);
+  return {
+    success: r.success,
+    limit: JOIN_PER_IP_MINUTE,
     remaining: r.remaining,
     reset: Math.ceil(r.reset / 1000),
   };

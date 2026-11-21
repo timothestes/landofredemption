@@ -23,6 +23,7 @@ import { isNameFrozen } from "../../../../utils/tournament/naming";
 import { parseTournamentName, shortTournamentName } from "../../../../utils/tournament/displayName";
 import { TournamentName } from "../../../../components/tournament/TournamentName";
 import { recomputeTotalsFromHistory } from "../../../../lib/tournament/results";
+import { typedDoubles } from "../../../../lib/tournament/rosterDoubles";
 import {
   forfeitMatchWrite,
   forfeitSideForDrops,
@@ -821,6 +822,13 @@ export default function TournamentPage({
     tournament?.require_decklists === true
       ? { submitted: decklists.length, total: participants.length }
       : null;
+  // Names typed by the host that a player then joined by QR under, for the
+  // Start dialog's "may be listed twice" notice.
+  const startTypedDoubles = typedDoubles(participants as any[]).map((p) => ({
+    id: p.id,
+    name: p.name,
+    hasDeck: decklists.some((d) => d.participant_id === p.id),
+  }));
 
   return (
     <div className="flex min-h-screen px-3 sm:px-5 w-full jayden-gradient-bg">
@@ -1311,6 +1319,8 @@ export default function TournamentPage({
           defaultStartingTableNumber={tournament?.starting_table_number}
           defaultSoundNotifications={tournament?.sound_notifications}
           decklistSummary={decklistSummary}
+          typedDoubles={startTypedDoubles}
+          onRemoveTypedDouble={deleteParticipant}
         />
         {tournament && !tournament.has_started && !tournament.has_ended && (
           <QRJoinDialog

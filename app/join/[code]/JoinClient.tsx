@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { TournamentName } from "@/components/tournament/TournamentName";
+import { normalizeJoinCode } from "@/lib/tournament/joinCodeShared";
 import DeckPicker from "./DeckPicker";
 import SubmissionPdfButton from "@/components/tournament/SubmissionPdfButton";
 import {
@@ -81,6 +82,33 @@ function LegalityBadge({ isLegal }: { isLegal: boolean | null }) {
   return null;
 }
 
+/** The deck picked from the list, with the way back to the list. */
+function ChosenDeck({ name, onChange }: { name: string; onChange: () => void }) {
+  return (
+    <div className="mt-1 flex items-stretch justify-between rounded-md border border-border bg-card text-sm">
+      <span className="min-w-0 self-center truncate px-3 py-2 font-medium text-foreground">{name}</span>
+      {/* As tall as the row, and a thumb high: a small word alone is easy to miss on a phone. */}
+      <button
+        type="button"
+        onClick={onChange}
+        className="min-h-11 flex-shrink-0 px-3 text-xs text-muted-foreground hover:text-foreground focus:outline-none"
+      >
+        Change
+      </button>
+    </div>
+  );
+}
+
+/** A date and time in the phone's own time zone, without seconds. Drawn after the page loads: the server would
+ *  draw it in its time zone, and the page would keep that. */
+function LocalTime({ iso }: { iso: string }) {
+  const [text, setText] = useState<string | null>(null);
+  useEffect(() => {
+    setText(new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }));
+  }, [iso]);
+  return <>{text}</>;
+}
+
 const ERROR_MESSAGES: Partial<Record<FailedResult["error"], string>> = {
   blocked: "The host has blocked you from this event.",
   already_joined: "You're already registered for this event — refreshing…",
@@ -153,6 +181,20 @@ export default function JoinClient({
   const [photoTab, setPhotoTab] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ res: JoinResult; deckId?: string } | null>(null);
+
+  // The pairings page opens on the name saved under this key (LiveRoundClient), so a player who joined here is
+  // not asked to type it again. Guests too: their cookie is not sent there. A name already saved stays.
+  const liveCode = normalizeJoinCode(code) ?? code;
+  const joinedName = info.success === true ? (info.joined?.displayName ?? null) : null;
+  useEffect(() => {
+    if (!joinedName) return;
+    try {
+      const key = `live-round-name:${liveCode}`;
+      if (!localStorage.getItem(key)) localStorage.setItem(key, joinedName);
+    } catch {
+      // Private mode / blocked storage: the pairings page asks for the name instead.
+    }
+  }, [liveCode, joinedName]);
 
   async function refresh() {
     try {
@@ -350,7 +392,7 @@ export default function JoinClient({
                     <LegalityBadge isLegal={joined.submission.isLegal} />
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Submitted {new Date(joined.submission.submittedAt).toLocaleString()}
+                    Submitted <LocalTime iso={joined.submission.submittedAt} />
                   </p>
                   {/* The sheet to hand in at deck check, made from the list on record. Keyed by the
                       submission, so a PDF of an older list is never offered after a change. */}
@@ -396,7 +438,10 @@ export default function JoinClient({
                   type="button"
                   variant="outline"
                   className="mt-3 w-full"
-                  onClick={() => setShowChangeDeck((v) => !v)}
+                  onClick={() => {
+                    setSelectedDeck(null);
+                    setShowChangeDeck((v) => !v);
+                  }}
                 >
                   {showChangeDeck ? "Cancel" : "Change decklist"}
                 </Button>
@@ -418,7 +463,11 @@ export default function JoinClient({
                     type="button"
                     variant="outline"
                     className="flex-1"
-                    onClick={() => setShowChangeDeck(true)}
+                    onClick={() => {
+                      // The deck this player joined with is still held from the join form: start with none picked.
+                      setSelectedDeck(null);
+                      setShowChangeDeck(true);
+                    }}
                   >
                     Use a different deck
                   </Button>
@@ -441,14 +490,40 @@ export default function JoinClient({
                 <ActionErrorNotice res={result.res} deckId={result.deckId} />
               </div>
             )}
-            <DeckPicker
-              tournamentFormat={info.deckFormat}
-              userId={userId}
-              code={code}
-              eventName={info.tournamentName}
-              photoSubmitLabel="Submit this deck"
-              onSelect={(id) => handleResubmit(id)}
-            />
+            {selectedDeck ? (
+              // As on the join form: a tap picks, and replacing the list on record takes a press of its own,
+              // which shows that it is being checked.
+              <>
+                <div className="mt-2">
+                  <ChosenDeck name={selectedDeck.name} onChange={() => setSelectedDeck(null)} />
+                </div>
+                <Button
+                  type="button"
+                  className="mt-3 w-full"
+                  disabled={submitting}
+                  onClick={() => void handleResubmit(selectedDeck.id)}
+                >
+                  <span className="min-w-0 truncate">
+                    {submitting ? "Submitting…" : `Submit ${selectedDeck.name}`}
+                  </span>
+                </Button>
+              </>
+            ) : (
+              <DeckPicker
+                tournamentFormat={info.deckFormat}
+                userId={userId}
+                code={code}
+                eventName={info.tournamentName}
+                photoSubmitLabel="Submit this deck"
+                // The photo tab's button is the submit: the deck is checked and saved, then handed in. The picker
+                // steps aside for the chosen deck, so the progress and any failure show here, not above a long tray.
+                onPhotoDeck={(id, name) => {
+                  setSelectedDeck({ id, name });
+                  void handleResubmit(id);
+                }}
+                onSelect={(id, name) => setSelectedDeck({ id, name })}
+              />
+            )}
           </>
         )}
 
@@ -471,22 +546,21 @@ export default function JoinClient({
             submitted, "you can close this" would be wrong. */}
         {info.hasStarted ? (
           <Button asChild className="mt-3 w-full">
-            <Link href={`/t/${code}`}>Live pairings &amp; standings</Link>
+            <Link href={`/t/${liveCode}`}>Live pairings &amp; standings</Link>
           </Button>
         ) : (
           (!info.requiresDecklist || joined.submission !== null) && !changing && !editing && (
             <div className="mt-3 rounded-lg border border-border/60 bg-muted/30 p-3">
               <p className="text-sm text-foreground">
-                You're all set — you can close this page.
+                You&apos;re all set — nothing else to do here.
               </p>
               <p className="mt-1.5 text-xs text-muted-foreground">
-                Once the host starts round 1, your table, the round timer and the standings will
-                be live at{" "}
-                <Link href={`/t/${code}`} className="font-medium text-primary hover:underline">
-                  this page
-                </Link>
-                .
+                Once the host starts round 1, your table, the round timer and the standings go live
+                on the pairings page.
               </p>
+              <Button asChild variant="outline" className="mt-3 w-full">
+                <Link href={`/t/${liveCode}`}>Pairings and standings</Link>
+              </Button>
             </div>
           )
         )}
@@ -524,16 +598,7 @@ export default function JoinClient({
           <div>
             <p className="text-sm font-medium text-foreground">Decklist</p>
             {selectedDeck ? (
-              <div className="mt-1 flex items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm">
-                <span className="truncate font-medium text-foreground">{selectedDeck.name}</span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedDeck(null)}
-                  className="ml-2 flex-shrink-0 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Change
-                </button>
-              </div>
+              <ChosenDeck name={selectedDeck.name} onChange={() => setSelectedDeck(null)} />
             ) : (
               <DeckPicker
                 tournamentFormat={info.deckFormat}

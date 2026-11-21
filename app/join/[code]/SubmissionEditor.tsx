@@ -29,7 +29,9 @@ const MESSAGES: Record<string, string> = {
 export default function SubmissionEditor({ code, onSaved, onCancel }: Props) {
   const [original, setOriginal] = useState<DeckSnapshotCard[] | null>(null);
   const [cards, setCards] = useState<DeckSnapshotCard[]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  // `retry` is false when asking again cannot help (the event started, the player was removed or signed out).
+  const [loadError, setLoadError] = useState<{ message: string; retry: boolean } | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [saving, setSaving] = useState(false);
   const [issues, setIssues] = useState<{ list: DeckCheckIssue[]; checked: DeckSnapshotCard[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -43,15 +45,17 @@ export default function SubmissionEditor({ code, onSaved, onCancel }: Props) {
         if (res.success === true) {
           setOriginal(res.cards);
           setCards(res.cards);
+        } else if (MESSAGES[res.error]) {
+          setLoadError({ message: MESSAGES[res.error], retry: false });
         } else {
-          setLoadError(MESSAGES[res.error] ?? "Couldn't load your decklist. Try again.");
+          setLoadError({ message: "Couldn't load your decklist.", retry: true });
         }
       })
-      .catch(() => live && setLoadError("Couldn't load your decklist. Try again."));
+      .catch(() => live && setLoadError({ message: "Couldn't load your decklist.", retry: true }));
     return () => {
       live = false;
     };
-  }, [code]);
+  }, [code, attempt]);
 
   const totals = useMemo(() => zoneTotals(cards), [cards]);
   const changed = original !== null && !sameCards(original, cards);
@@ -74,7 +78,33 @@ export default function SubmissionEditor({ code, onSaved, onCancel }: Props) {
     }
   };
 
-  if (loadError) return <p className="mt-3 text-sm text-muted-foreground">{loadError}</p>;
+  // The page hides its own buttons while the editor is open, so a failed load needs its way out here.
+  if (loadError) {
+    const outButton =
+      "min-h-11 flex-1 rounded-lg border border-border bg-card px-4 text-sm font-medium transition-colors hover:bg-muted focus:outline-none";
+    return (
+      <div className="mt-3">
+        <p className="text-sm text-foreground">{loadError.message}</p>
+        <div className="mt-2 flex gap-2">
+          <button type="button" onClick={onCancel} className={outButton}>
+            Cancel
+          </button>
+          {loadError.retry && (
+            <button
+              type="button"
+              onClick={() => {
+                setLoadError(null);
+                setAttempt((n) => n + 1);
+              }}
+              className={outButton}
+            >
+              Try again
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
   if (original === null) return <p className="mt-3 text-sm text-muted-foreground">Loading your decklist…</p>;
 
   const errors = issues ? issues.list.filter((i) => i.type === "error") : [];

@@ -17,6 +17,7 @@ import { LegalityDot } from "./LegalityDot";
 import ToastNotification from "./toast-notification";
 import { Dialog, DialogContent, DialogHeader, DialogFooter } from "./dialog";
 import dynamic from "next/dynamic";
+import { typedDoubles } from "../../lib/tournament/rosterDoubles";
 
 // The submission modal reaches the whole card catalog through lib/cards/lookup
 // (findCard, to group the snapshot by type). It loads on demand so the catalog
@@ -33,6 +34,8 @@ interface Participant {
   dropped_out: boolean;
   assigned_seat?: number | null;
   user_id?: string | null;
+  // Set when the player joined by QR as a guest, without an account.
+  guest_key?: string | null;
 }
 
 interface ParticipantTableProps {
@@ -262,6 +265,32 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
     );
   }
 
+  // A name the host typed that a player then joined by QR under: probably one person listed twice. Flagged
+  // while the roster can still change, because an entry left in is paired in round 1.
+  const doubledIds = useMemo(
+    () => new Set(tournamentStarted ? [] : typedDoubles(participants).map((p) => p.id)),
+    [participants, tournamentStarted]
+  );
+
+  function renderDoubleFlag(participant: Participant) {
+    if (!doubledIds.has(participant.id)) return null;
+    return (
+      <span className="flex basis-full flex-wrap items-center gap-x-2 text-xs font-normal text-amber-600 dark:text-amber-400">
+        Same name as a player who joined by QR.
+        {/* A deck the host attached would go with the entry, so that removal is left to the trash icon. */}
+        {!decklistMap.has(participant.id) && (
+          <button
+            type="button"
+            onClick={() => onDelete(participant.id)}
+            className="min-h-11 font-medium text-foreground underline underline-offset-4 focus:outline-none"
+          >
+            Remove typed entry
+          </button>
+        )}
+      </span>
+    );
+  }
+
   function renderDeckCell(participant: Participant) {
     const linkedDeck = decklistMap.get(participant.id);
     if (linkedDeck) {
@@ -387,6 +416,7 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
                         {participant.assigned_seat}
                       </span>
                     )}
+                    {renderDoubleFlag(participant)}
                   </div>
                   <div className="mt-2">{renderDeckCell(participant)}</div>
                 </div>
@@ -463,6 +493,7 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
                           {participant.assigned_seat}
                         </span>
                       )}
+                      {renderDoubleFlag(participant)}
                     </div>
                   </Table.Cell>
 
