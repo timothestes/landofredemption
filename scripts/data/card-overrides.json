@@ -1,6 +1,14 @@
 {
   "overrides": [
     {
+      "name": "Altar of Ahaz [RR2]",
+      "set": "RR2",
+      "fields": {
+        "identifier": "Idol"
+      },
+      "note": "REL 1.0.0 identifier errata: Idol definition now includes this card"
+    },
+    {
       "name": "Altar of Ahaz",
       "set": "Pri",
       "fields": {
@@ -9,12 +17,36 @@
       "note": "REL 1.0.0 identifier errata: Idol definition now includes this card"
     },
     {
-      "name": "Altar of Ahaz [RR2]",
-      "set": "RR2",
+      "name": "Altar of Burnt Offering [L]",
+      "set": "L",
       "fields": {
-        "identifier": "Idol"
+        "identifier": "Herod's Temple, Tabernacle, Zerubbabel's Temple, Solomon's Temple, Herod's Temple Artifact"
       },
-      "note": "REL 1.0.0 identifier errata: Idol definition now includes this card"
+      "note": "Herod's Temple Artifact identifier tag"
+    },
+    {
+      "name": "Altar of Burnt Offering",
+      "set": "Pri",
+      "fields": {
+        "identifier": "Tabernacle Artifact, Temple Artifact, Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
+    },
+    {
+      "name": "Altar of Incense (E)",
+      "set": "3E",
+      "fields": {
+        "identifier": "Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
+    },
+    {
+      "name": "Altar of Incense (Pi)",
+      "set": "Pri",
+      "fields": {
+        "identifier": "Tabernacle Artifact, Temple Artifact, Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
     },
     {
       "name": "Angel of Might",
@@ -161,6 +193,38 @@
       "note": "REL 1.0.0 identifier errata: Plague removed"
     },
     {
+      "name": "Golden Cherubim",
+      "set": "RoA 3",
+      "fields": {
+        "identifier": "Temple Artifact, Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
+    },
+    {
+      "name": "Holy of Holies (D)",
+      "set": "2E",
+      "fields": {
+        "identifier": "Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
+    },
+    {
+      "name": "Holy of Holies (Pi)",
+      "set": "Pri",
+      "fields": {
+        "identifier": "Tabernacle Artifact, Temple Artifact, Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
+    },
+    {
+      "name": "Holy of Holies (Roots)",
+      "set": "RR",
+      "fields": {
+        "identifier": "Herod's Temple, Solomon's Temple, Tabernacle, Zerubbabel's Temple, Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
+    },
+    {
       "name": "Ithamar, Son of Aaron (1st Print - L)",
       "set": "L1P",
       "fields": {
@@ -255,6 +319,14 @@
         "identifier": "Israelite King"
       },
       "note": "REL 1.0.0 identifier errata: Prophet removed"
+    },
+    {
+      "name": "Lampstand of the Sanctuary",
+      "set": "Pri",
+      "fields": {
+        "identifier": "Tabernacle Artifact, Temple Artifact, Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
     },
     {
       "name": "Mark of the Beast (RoJ AB)",
@@ -377,6 +449,30 @@
       "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
     },
     {
+      "name": "Table of Showbread",
+      "set": "Pri",
+      "fields": {
+        "identifier": "Tabernacle Artifact, Temple Artifact, Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
+    },
+    {
+      "name": "Temple Veil (GoC)",
+      "set": "GoC",
+      "fields": {
+        "identifier": "Temple Artifact, Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
+    },
+    {
+      "name": "Temple Veil",
+      "set": "3E",
+      "fields": {
+        "identifier": "Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
+    },
+    {
       "name": "The Angel of Might (RoJ AB)",
       "set": "RoJ (AB)",
       "fields": {
@@ -407,6 +503,22 @@
         "identifier": "Male, Beast (Demon), Median-Persian"
       },
       "note": "REL 1.0.0 identifier errata: Genderless is now Male"
+    },
+    {
+      "name": "The Bronze Laver (LoC)",
+      "set": "LoC",
+      "fields": {
+        "identifier": "Tabernacle, Temple, Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
+    },
+    {
+      "name": "The Bronze Laver",
+      "set": "Pri",
+      "fields": {
+        "identifier": "Tabernacle Artifact, Temple Artifact, Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
     },
     {
       "name": "The Divining Damsel (Promo)",
@@ -465,6 +577,14 @@
       "note": "REL 1.0.0 identifier errata: Prophet is now False Prophet"
     },
     {
+      "name": "The Golden Lampstand [RR2]",
+      "set": "RR2",
+      "fields": {
+        "identifier": "Tabernacle, Temple, Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
+    },
+    {
       "name": "The Lying Prophet",
       "set": "PoC",
       "fields": {
@@ -513,14 +633,6 @@
       "note": "REL 1.0.0 identifier errata: Prophet removed"
     },
     {
-      "name": "Unknown Nation",
-      "set": "Pri",
-      "fields": {
-        "identifier": "Idol"
-      },
-      "note": "REL 1.0.0 identifier errata: Idol definition now includes this card"
-    },
-    {
       "name": "Unknown Nation (PoC)",
       "set": "PoC",
       "fields": {
@@ -535,6 +647,30 @@
         "identifier": "Idol"
       },
       "note": "REL 1.0.0 identifier errata: Idol definition now includes this card"
+    },
+    {
+      "name": "Unknown Nation",
+      "set": "Pri",
+      "fields": {
+        "identifier": "Idol"
+      },
+      "note": "REL 1.0.0 identifier errata: Idol definition now includes this card"
+    },
+    {
+      "name": "Windows of Narrow Light (LoC)",
+      "set": "LoC",
+      "fields": {
+        "identifier": "Temple, Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
+    },
+    {
+      "name": "Windows of Narrow Light",
+      "set": "Pmo-P1",
+      "fields": {
+        "identifier": "Temple item, Herod's Temple Artifact"
+      },
+      "note": "Herod's Temple Artifact identifier tag"
     },
     {
       "name": "Zechariah, the Silent (GoC)",
