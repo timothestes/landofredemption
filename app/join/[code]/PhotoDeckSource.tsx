@@ -191,11 +191,14 @@ function SubmitBar({
   return (
     <>
       {issues && (
+        // A list of what is left to fix, not an error: the player is part-way through getting the deck to pass.
         <div
-          className={`rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm ${edited ? "opacity-70" : ""}`}
+          className={`rounded-md border border-border border-l-2 border-l-amber-500 bg-muted/40 p-3 text-sm ${edited ? "opacity-70" : ""}`}
         >
           <p className="font-medium text-foreground">
-            {edited ? "From your last check. Press the button to check again." : "This deck isn't legal for this event"}
+            {edited
+              ? "From your last check. Press the button to check again."
+              : `${plural(lines.length, "thing", "things")} to fix before this deck passes`}
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
             {lines.map((line) => (

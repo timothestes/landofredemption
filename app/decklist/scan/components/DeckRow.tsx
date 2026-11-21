@@ -72,7 +72,8 @@ export default function DeckRow({
 
   const lostSoul = row.kind === 'lost_soul';
   const soulLines = lostSoul ? lostSoulRowLines(lostSouls.picked, lostSouls.counted, lostSouls.finished) : null;
-  const amber = AMBER_KINDS.includes(row.kind) || !!soulLines?.todo;
+  // The Lost Soul row is not flagged: it is not a misread, and the hand-off bar already counts what is left to pick.
+  const amber = AMBER_KINDS.includes(row.kind);
   const unresolved = row.kind === 'not_found' || row.kind === 'unread';
   const card = row.key ? candidates.find(c => c.key === row.key) ?? null : null;
   const parts = keyParts(row.key);
@@ -101,7 +102,12 @@ export default function DeckRow({
     switch (action) {
       case 'open': openRow(); break;
       case 'inc': if (!lostSoul && row.quantity < MAX_QTY) onQty(row.quantity + 1); break;
-      case 'dec': if (!lostSoul && row.quantity > 1) onQty(row.quantity - 1); break;
+      case 'dec':
+        if (lostSoul) break;
+        if (row.quantity > 1) { onQty(row.quantity - 1); break; }
+        if (!focusSibling(e.currentTarget, 1)) focusSibling(e.currentTarget, -1);
+        onRemove();
+        break;
       case 'remove':
         if (lostSoul) break;
         // Keep the keyboard in the list: focus moves on before this row goes.
@@ -175,7 +181,7 @@ export default function DeckRow({
             <>
             <span className="truncate text-sm font-medium">{soulLines.title}</span>
             {soulLines.sub && (
-              <span className={`line-clamp-2 text-xs leading-snug ${soulLines.todo ? 'font-medium text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
+              <span className="line-clamp-2 text-xs leading-snug text-muted-foreground">
                 {soulLines.sub}
               </span>
             )}
@@ -214,9 +220,10 @@ export default function DeckRow({
             <button
               type="button"
               className={stepButton}
-              aria-label={`One fewer ${label}`}
-              disabled={!editable || row.quantity <= 1}
-              onClick={() => onQty(row.quantity - 1)}
+              // At one copy, minus takes the card out of the deck: the toast that follows offers Undo.
+              aria-label={row.quantity <= 1 ? `Remove ${label}` : `One fewer ${label}`}
+              disabled={!editable}
+              onClick={() => (row.quantity <= 1 ? onRemove() : onQty(row.quantity - 1))}
             >
               <Minus className="h-4 w-4" aria-hidden />
             </button>

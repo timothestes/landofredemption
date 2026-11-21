@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { searchPrintings } from '../lib/pickerSearch';
+import { searchPrintings, withIdentity } from '../lib/pickerSearch';
 
 describe('searchPrintings', () => {
   it('expands a name hit to every printing of that card, unpriced and deduped', () => {
@@ -27,6 +27,23 @@ describe('searchPrintings', () => {
     expect(all.some(h => /token/i.test(h.name))).toBe(false);
     // A search that names no soul is the ordinary search.
     expect(searchPrintings('Son of God', { lostSoulsFirst: true })).toEqual(searchPrintings('Son of God'));
+  });
+
+  it('lists both cards when two different cards share a name, type and brigade', () => {
+    // The name index keeps one row for the pair, and its printing is the I deck card.
+    for (const typed of ['Legion of Angels', 'Legion']) {
+      const { hits } = searchPrintings(typed);
+      const legions = hits.filter(h => h.name.startsWith('Legion of Angels'));
+      expect(legions.map(h => h.name).sort()).toEqual(['Legion of Angels', 'Legion of Angels (GoC)']);
+      expect(new Set(legions.map(h => h.identity)).size).toBe(2);
+    }
+  });
+
+  it('tags candidates with their card, so printings of one card share an identity', () => {
+    const { hits } = searchPrintings("Crowd's Choice");
+    const bare = hits.map(({ identity: _identity, ...c }) => c);
+    expect(withIdentity(bare)).toEqual(hits);
+    expect(new Set(hits.map(h => h.identity)).size).toBe(1);
   });
 
   it('returns nothing for a query no card matches', () => {

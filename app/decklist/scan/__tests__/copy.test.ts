@@ -40,9 +40,9 @@ const SPEC: Record<string, string> = {
   pasteHint: 'Or read it from a photo',
   zoneMain: 'Main deck',
   zoneReserve: 'Reserve',
-  lostSoulRow: 'Pick your {n} Lost Souls',
-  lostSoulRowOne: 'Pick your Lost Soul',
-  lostSoulRowWhy: 'Tap to say which ones.',
+  lostSoulRow: '{n} Lost Souls to pick',
+  lostSoulRowOne: '1 Lost Soul to pick',
+  lostSoulRowWhy: 'Fanned out, each one only shows its title.',
   lostSoulPartial: '{picked} of {n} Lost Souls picked',
   lostSoulMore: 'Pick {n} more',
   lostSoulDone: '{n} Lost Souls picked',
@@ -90,8 +90,8 @@ describe('DECK_COPY', () => {
 
 describe('lostSoulRowLines', () => {
   it('asks for the whole deck in one number', () => {
-    expect(lostSoulRowLines(0, 7, false)).toEqual({ title: 'Pick your 7 Lost Souls', sub: 'Tap to say which ones.', todo: true });
-    expect(lostSoulRowLines(0, 1, false).title).toBe('Pick your Lost Soul');
+    expect(lostSoulRowLines(0, 7, false)).toEqual({ title: '7 Lost Souls to pick', sub: 'Fanned out, each one only shows its title.', todo: true });
+    expect(lostSoulRowLines(0, 1, false).title).toBe('1 Lost Soul to pick');
   });
   it('says what is left while short', () => {
     expect(lostSoulRowLines(6, 7, false)).toEqual({ title: '6 of 7 Lost Souls picked', sub: 'Pick 1 more', todo: true });

@@ -20,9 +20,12 @@ describe('suggestFor', () => {
   it('orders near stems by ascending distance regardless of input order', () => {
     const a = searchPrintings('Son of God').hits[0].identity;
     const b = searchPrintings('Moses').hits[0].identity;
-    const out = suggestFor(null, [{ stem: 'Moses', d: 3 }, { stem: 'Son of God', d: 1 }]);
+    const out = suggestFor(null, [{ stem: 'Moses', d: 3 }, { stem: 'Son of God', d: 1 }], 50);
     expect(out[0].identity).toBe(a);
-    expect(out[1].identity).toBe(b);
+    // Every card named Son of God comes before the first Moses: a name can be more than one card.
+    const firstMoses = out.findIndex(h => h.identity === b);
+    expect(firstMoses).toBeGreaterThan(0);
+    expect(out.slice(0, firstMoses).every(h => h.name.startsWith('Son of God'))).toBe(true);
   });
 
   it('does not repeat a card the read title and a near stem both find', () => {

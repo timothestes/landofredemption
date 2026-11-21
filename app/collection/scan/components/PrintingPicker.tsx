@@ -44,6 +44,8 @@ export default function PrintingPicker({
   const latestQuery = useRef('');
   const [query, setQuery] = useState(initialQuery);
   const [hits, setHits] = useState<PickerHit[] | null>(null);
+  // The row's own candidates, tagged by card: with the search field empty they list one row per card, as results do.
+  const [ownHits, setOwnHits] = useState<PickerHit[] | null>(null);
   const [close, setClose] = useState(false);
   // The row Enter picks; the arrow keys move it.
   const [active, setActive] = useState(0);
@@ -53,6 +55,7 @@ export default function PrintingPicker({
   useFocusTrap(trapRef, true);
 
   const title = titleOverride ?? (mode === 'printing' ? COPY.pickerHeader : COPY.pickerNameHeader);
+  const groupOwn = !!oneRowPerCard && subject.candidates.length > 0;
   const inputRef = useRef<HTMLInputElement>(null);
 
   const onSearch = async (value: string) => {
@@ -79,6 +82,7 @@ export default function PrintingPicker({
       inputRef.current?.select();
     }
     if (initialQuery) void onSearch(initialQuery);
+    if (groupOwn) void loadSearch().then(mod => setOwnHits(mod.withIdentity(subject.candidates)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -91,16 +95,19 @@ export default function PrintingPicker({
   const searching = hits !== null;
   const typed = query.trim();
   // The catalog loads on the first search: say so instead of flashing "No cards match".
-  const loading = typed !== '' && hits === null;
+  const loading = hits === null && (typed !== '' || (groupOwn && ownHits === null));
   // Suggestions answer the title that was read. Once the player types their own search, its results stand alone:
   // left above them, the suggestions pushed the card being searched for to the bottom of the list.
   const suggesting = !!suggestions?.length && (typed === '' || typed === initialQuery);
   const shown = suggesting ? suggestions : [];
-  const found: { option: Candidate | PickerHit; printings: number; others: PickerHit[] }[] = !searching
+  // What is listed: the search's hits, or with the field empty the row's own candidates. Emptying the field used
+  // to list every printing flat, as if the grouping had been lost.
+  const listed = searching ? hits : groupOwn ? ownHits ?? [] : null;
+  const found: { option: Candidate | PickerHit; printings: number; others: PickerHit[] }[] = !listed
     ? subject.candidates.map(option => ({ option, printings: 1, others: [] }))
     : oneRowPerCard
-      ? onePerCard(hits, subject.currentKey).map(r => ({ option: r.hit, printings: r.printings, others: r.others }))
-      : hits.map(option => ({ option, printings: 1, others: [] }));
+      ? onePerCard(listed, subject.currentKey).map(r => ({ option: r.hit, printings: r.printings, others: r.others }))
+      : listed.map(option => ({ option, printings: 1, others: [] }));
   // The search opens on the read title, which is also what the suggestions come from: list a card once.
   const suggestedKeys = new Set(shown.map(c => c.key));
   const suggestedCards = new Set(shown.map(c => c.identity));
@@ -126,7 +133,7 @@ export default function PrintingPicker({
     listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'nearest' });
   }, [active]);
 
-  const pick = (c: Candidate | PickerHit, pool: PickerHit[] = hits ?? []) => {
+  const pick = (c: Candidate | PickerHit, pool: PickerHit[] = listed ?? []) => {
     if ('identity' in c) {
       const siblings = pool.filter(h => h.identity === c.identity).map(priced);
       onPick(c.key, 'search', siblings);
@@ -257,7 +264,7 @@ export default function PrintingPicker({
                 </ul>
               ) : !suggesting && (
                 <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-                  {loading ? COPY.pickerSearching : searching ? COPY.pickerEmpty : COPY.pickerSearch}
+                  {loading ? (typed ? COPY.pickerSearching : '') : searching ? COPY.pickerEmpty : COPY.pickerSearch}
                 </p>
               )}
             </div>
