@@ -203,6 +203,23 @@ export function useScoreGrid({
     });
   }, [matches]);
 
+  /**
+   * Drop whatever was typed into a row so its cells show the saved result
+   * again. For a save made outside the grid (the pencil dialog): the effect
+   * above only retires a draft the saved row agrees with, so a half-typed
+   * row, a rejected pair, or a cleared cell would otherwise keep showing
+   * over the dialog's result until a reload.
+   */
+  const discardDraft = useCallback((matchId: string) => {
+    if (draftRef.current[matchId] !== undefined) {
+      const { [matchId]: _drop, ...rest } = draftRef.current;
+      draftRef.current = rest;
+      setDraft(rest);
+    }
+    // A rejected pair's error belongs to the typed value that is now gone.
+    setSaveState((s) => (s[matchId] === "error" ? { ...s, [matchId]: "idle" } : s));
+  }, []);
+
   const draftFor = useCallback(
     (match: ScoreGridMatch) =>
       draftRef.current[match.id] ?? {
@@ -424,6 +441,7 @@ export function useScoreGrid({
     focusCell,
     onBlurCell,
     onKeyDown,
+    discardDraft,
     isCursor,
     isRejected,
   };
