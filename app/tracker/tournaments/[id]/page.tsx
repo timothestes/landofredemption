@@ -1075,17 +1075,19 @@ export default function TournamentPage({
                 isOpen={isEditTournamentModalOpen && !nameFrozen}
                 onClose={() => setIsEditTournamentModalOpen(false)}
                 onSave={async () => {
+                  const name = newTournamentName.trim();
+                  if (!name) return;
                   try {
                     const { error } = await supabase
                       .from("tournaments")
-                      .update({ name: newTournamentName })
+                      .update({ name })
                       .eq("id", id);
 
                     if (error) throw error;
 
                     setTournament((prev) => ({
                       ...prev,
-                      name: newTournamentName,
+                      name,
                     }));
                     setIsEditTournamentModalOpen(false);
                     showToast(

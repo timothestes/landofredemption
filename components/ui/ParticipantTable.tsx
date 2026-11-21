@@ -131,8 +131,9 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
 
   async function handleAttachDeck(deck: DeckSearchResult) {
     if (!attachTarget) return;
-    const result = await attachDeckToParticipantAction(tournamentId, attachTarget.id, deck.id);
-    if (result.success) {
+    // null: the request itself failed (connection), which used to say nothing.
+    const result = await attachDeckToParticipantAction(tournamentId, attachTarget.id, deck.id).catch(() => null);
+    if (result?.success) {
       onDecklistsChange();
       if (result.publicCopyUpdated === false) {
         showToast(
@@ -140,15 +141,21 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
           "warning"
         );
       }
+    } else {
+      showToast(`Couldn't attach ${deck.name} to ${attachTarget.name}. Try again.`, "error");
     }
   }
 
   async function handleDetachDeck(participantId: string) {
-    const result = await detachDeckFromParticipantAction(participantId);
-    if (result.success) {
+    const result = await detachDeckFromParticipantAction(participantId).catch(() => null);
+    // not_found: no deck is attached any more (a second tap on Remove), which
+    // is what the host asked for. Re-read so the row shows it.
+    if (result?.success || result?.error === "not_found") {
       onDecklistsChange();
-    } else if (result.error === "public_copy_not_removed") {
+    } else if (result?.error === "public_copy_not_removed") {
       showToast("The public copy could not be taken down, so the deck was not removed. Try again.", "error");
+    } else {
+      showToast("Couldn't remove the deck. Try again.", "error");
     }
   }
 
@@ -489,9 +496,9 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
         cancelLabel="Cancel"
       />
 
-      {/* Detach on a player-submitted row deletes the immutable submission
-          record (spec §8) — unlike a host-attached deck, that needs a
-          confirmation step. */}
+      {/* Detach on a row with a submission record deletes that record
+          (spec §8), so it asks first. A host attach saves a record too
+          (source "host"); only a player's own submission is called theirs. */}
       <ConfirmationDialog
         open={detachSubmissionTarget !== null}
         onOpenChange={(open) => { if (!open) setDetachSubmissionTarget(null); }}
@@ -500,7 +507,12 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
         }}
         variant="destructive"
         title={detachSubmissionTarget ? `Remove ${detachSubmissionTarget.name}'s deck?` : ""}
-        description="This player submitted this decklist themselves. Removing it deletes their submitted record — this cannot be undone."
+        description={
+          detachSubmissionTarget &&
+          decklistMap.get(detachSubmissionTarget.id)?.submission?.source === "host"
+            ? "You attached this deck. Removing it deletes the copy of the list saved when you attached it. The deck itself is not changed."
+            : "This player submitted this decklist themselves. Removing it deletes their submitted record — this cannot be undone."
+        }
         confirmLabel="Remove deck"
         cancelLabel="Cancel"
       />
