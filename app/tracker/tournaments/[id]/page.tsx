@@ -375,42 +375,42 @@ export default function TournamentPage({
     setTogglingStatus(true);
 
     const now = new Date().toISOString();
-    if (latestRound && !latestRound?.is_completed) {
-      const client = await createClient();
-
-      const { data, error } = await client
-        .from("matches")
-        .select(
-          "id, player1_match_points, player2_match_points, differential, differential2,  player1_id:participants!matches_player1_id_fkey(name,id), player2_id:participants!matches_player2_id_fkey(name,id), player2_id, player1_score, player2_score, player1_forfeit, player2_forfeit"
-        )
-        .eq("tournament_id", tournament.id)
-        .eq("round", latestRound.round_number)
-        .order("id", { ascending: true });
-
-      if (error) throw error;
-
-      const { data: byeData, error: byeError } = await client
-        .from("byes")
-        .select(
-          "id, participant_id:participants(id, name), match_points, differential"
-        )
-        .eq("tournament_id", tournament.id)
-        .eq("round_number", latestRound.round_number)
-        .order("id", { ascending: true });
-
-      if (byeError) throw byeError;
-
-      // The round must actually finalize (every match scored, totals
-      // recomputed) before the tournament can end. handleEndRound already
-      // toasted the reason when it refuses; don't mark has_ended on top of an
-      // incomplete final round.
-      const ended = await handleEndRound(data, setMatchErrorIndex, byeData, latestRound.round_number);
-      if (!ended) {
-        setTogglingStatus(false);
-        return;
-      }
-    }
+    // The reads sit inside the try too, so a dropped connection ends in the
+    // error toast rather than leaving the button on "Ending…".
     try {
+      if (latestRound && !latestRound?.is_completed) {
+        const client = await createClient();
+
+        const { data, error } = await client
+          .from("matches")
+          .select(
+            "id, player1_match_points, player2_match_points, differential, differential2,  player1_id:participants!matches_player1_id_fkey(name,id), player2_id:participants!matches_player2_id_fkey(name,id), player2_id, player1_score, player2_score, player1_forfeit, player2_forfeit"
+          )
+          .eq("tournament_id", tournament.id)
+          .eq("round", latestRound.round_number)
+          .order("id", { ascending: true });
+
+        if (error) throw error;
+
+        const { data: byeData, error: byeError } = await client
+          .from("byes")
+          .select(
+            "id, participant_id:participants(id, name), match_points, differential"
+          )
+          .eq("tournament_id", tournament.id)
+          .eq("round_number", latestRound.round_number)
+          .order("id", { ascending: true });
+
+        if (byeError) throw byeError;
+
+        // The round must actually finalize (every match scored, totals
+        // recomputed) before the tournament can end. handleEndRound already
+        // toasted the reason when it refuses; don't mark has_ended on top of an
+        // incomplete final round.
+        const ended = await handleEndRound(data, setMatchErrorIndex, byeData, latestRound.round_number);
+        if (!ended) return;
+      }
+
       const { data, error } = await supabase
         .from("tournaments")
         .update({
@@ -582,6 +582,7 @@ export default function TournamentPage({
       return true;
     } catch (error) {
       console.error("Error ending round:", error);
+      showToast("The round could not be ended. Check your connection and try again.", "error");
       return false;
     }
   }, [tournament]);

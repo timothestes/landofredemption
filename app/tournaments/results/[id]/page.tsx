@@ -5,6 +5,7 @@ import TopNav from "@/components/top-nav";
 import SiteFooter from "@/components/site-footer";
 import { loadPublicResultsAction } from "../../actions";
 import ResultsTabs from "./ResultsTabs";
+import { placeLabel } from "./placeLabel";
 import { TournamentName } from "@/components/tournament/TournamentName";
 import { parseTournamentName } from "@/utils/tournament/displayName";
 
@@ -33,12 +34,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `${result.name} - Results`,
     description: `Final standings for ${result.name}${details ? ` — ${details}` : ""}.`,
   };
-}
-
-function ordinal(n: number): string {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
 function formatEndedAt(endedAt: string | null): string | null {
@@ -110,8 +105,8 @@ export default async function TournamentResultsPage({ params }: PageProps) {
               {result.standings.map((row, i) => (
                 <li key={i} className="py-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold tabular-nums text-foreground">
-                      {row.place !== null ? ordinal(row.place) : "—"}
+                    <span className={`text-sm tabular-nums ${row.place !== null ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                      {placeLabel(row)}
                     </span>
                     <span className="text-sm text-foreground truncate">{row.name ?? "—"}</span>
                   </div>
@@ -160,8 +155,8 @@ export default async function TournamentResultsPage({ params }: PageProps) {
                   {result.standings.map((row, i) => (
                     <tr key={i}>
                       <td className="px-4 py-3">
-                        <span className="font-semibold tabular-nums text-foreground">
-                          {row.place !== null ? ordinal(row.place) : "—"}
+                        <span className={`tabular-nums ${row.place !== null ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                          {placeLabel(row)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-foreground">{row.name ?? "—"}</td>
@@ -191,8 +186,12 @@ export default async function TournamentResultsPage({ params }: PageProps) {
               </table>
             </div>
 
+            <p className="mt-4 text-xs text-muted-foreground">
+              Ranked by match points, then head-to-head, then differential. Tied
+              players share a place.
+            </p>
             {!showDecklists && (
-              <p className="mt-4 text-xs text-muted-foreground">
+              <p className="mt-1.5 text-xs text-muted-foreground">
                 The host has not published decklists for this event.
               </p>
             )}

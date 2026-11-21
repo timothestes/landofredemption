@@ -54,6 +54,13 @@ export default function ExportTrackerButton({
       setWarnings(result.warnings);
       setSaveFn(() => result.save);
       setDialogOpen(true);
+    } catch (e) {
+      // A dropped connection throws from the template download.
+      console.error("Export failed:", e);
+      setError("The export could not be prepared. Check your connection and try again.");
+      setWarnings([]);
+      setSaveFn(null);
+      setDialogOpen(true);
     } finally {
       setBusy(false);
     }
