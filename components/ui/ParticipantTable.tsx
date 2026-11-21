@@ -23,11 +23,6 @@ import dynamic from "next/dynamic";
 // open — no loading placeholder needed.
 const SubmissionModal = dynamic(() => import("./SubmissionModal"), { ssr: false });
 
-// A row's edit / drop / delete icon. 36px in the desktop table; in the phone
-// card list (below md) it is a 44px tap target.
-const ROW_ICON_BUTTON =
-  "inline-flex items-center justify-center p-2 max-md:min-h-11 max-md:min-w-11 rounded-md text-muted-foreground touch-manipulation transition-colors";
-
 interface Participant {
   id: string;
   name: string;
@@ -194,10 +189,12 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
 
   function renderActionButtons(participant: Participant) {
     return (
-      <div className="flex items-center gap-1">
+      // The edit / drop / delete icons are 36px in the desktop table; in the
+      // phone card list (below md) each is a 44px tap target.
+      <div className="flex items-center gap-1 max-md:*:min-h-11 max-md:*:min-w-11">
         <button
           onClick={() => onEdit(participant)}
-          className={`${ROW_ICON_BUTTON} hover:text-primary hover:bg-primary/10`}
+          className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 touch-manipulation transition-colors"
           aria-label={`Edit ${participant.name}`}
         >
           <HiPencil className="w-5 h-5" />
@@ -206,7 +203,7 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
           participant.dropped_out ? (
             <button
               onClick={() => onDropIn(participant.id)}
-              className={`${ROW_ICON_BUTTON} hover:text-primary hover:bg-primary/10`}
+              className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 touch-manipulation transition-colors"
               aria-label={`Restore ${participant.name}`}
               title="Restore participant"
             >
@@ -215,7 +212,7 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
           ) : (
             <button
               onClick={() => setDropTarget(participant)}
-              className={`${ROW_ICON_BUTTON} hover:text-destructive hover:bg-destructive/10`}
+              className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 touch-manipulation transition-colors"
               aria-label={`Drop ${participant.name}`}
               title="Drop from tournament"
             >
@@ -229,7 +226,7 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
                 ? setRemoveBlockTarget(participant)
                 : setDeleteTarget(participant)
             }
-            className={`${ROW_ICON_BUTTON} hover:text-destructive hover:bg-destructive/10`}
+            className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 touch-manipulation transition-colors"
             aria-label={`Delete ${participant.name}`}
             title="Remove participant"
           >
