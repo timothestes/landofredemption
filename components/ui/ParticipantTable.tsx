@@ -134,6 +134,12 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
     const result = await attachDeckToParticipantAction(tournamentId, attachTarget.id, deck.id);
     if (result.success) {
       onDecklistsChange();
+      if (result.publicCopyUpdated === false) {
+        showToast(
+          "Deck attached, but it is not on the public page yet. Unpublish, then Publish again to rebuild the public decklists.",
+          "warning"
+        );
+      }
     }
   }
 

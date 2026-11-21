@@ -240,6 +240,8 @@ export default function SubmissionModal({
   const [draft, setDraft] = useState<DeckSnapshotCard[] | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  // On a published event a save also refreshes the public copy; true when the save held but that did not.
+  const [publicCopyStale, setPublicCopyStale] = useState(false);
   const [reload, setReload] = useState(0);
 
   const save = async () => {
@@ -249,6 +251,7 @@ export default function SubmissionModal({
     try {
       const res = await updateSubmissionAsHostAction(tournamentId, participantId, draft);
       if (res.success !== true) throw new Error(res.error ?? "save failed");
+      setPublicCopyStale(res.publicCopyUpdated === false);
       setDraft(null);
       setReload((n) => n + 1);
       onChanged?.();
@@ -300,6 +303,7 @@ export default function SubmissionModal({
       setEnlarged(null);
       setDraft(null);
       setSaveError(false);
+      setPublicCopyStale(false);
     }
   }, [open]);
 
@@ -352,6 +356,12 @@ export default function SubmissionModal({
           )}
           {!loading && submission && !editing && (
             <>
+              {publicCopyStale && (
+                <p className="text-sm text-destructive">
+                  Saved here, but the public copy of this list still shows the old cards. Unpublish, then Publish
+                  again to rebuild the public decklists.
+                </p>
+              )}
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                 <p className="text-xs text-muted-foreground">
                   {submission.source === "player" ? "Submitted" : "Attached"} by{" "}
