@@ -828,6 +828,16 @@ export function isCharacterCard(card: { type?: string; cardType?: string }): boo
 }
 
 /**
+ * True for a human character (ORDIR: not an angel, animal, demon or symbolic
+ * character). A captured human in a Land of Bondage is surrendered / rescued
+ * like a Lost Soul. Duplicated in spacetimedb/src/cardAbilities.ts; parity
+ * test enforces equality.
+ */
+export function isHumanCharacter(card: { cardName: string; type?: string; cardType?: string }): boolean {
+  return isCharacterCard(card) && !NON_HUMAN_CHARACTERS.has(card.cardName);
+}
+
+/**
  * True when a card's type contains "Hero" — the valid-target rule for the
  * resurrect_heroes ability. "Contains" rather than exact match so dual-
  * alignment / compound-type Heroes (e.g. "Hero/Evil Character") qualify.

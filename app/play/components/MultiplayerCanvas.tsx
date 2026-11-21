@@ -62,7 +62,7 @@ import { isHeroCard, hasReferenceBook } from '@/lib/cards/cardAbilities';
 import { ModalGameProvider, type ModalGameContextValue } from '@/app/shared/contexts/ModalGameContext';
 import { DeckSearchModal } from '@/app/shared/components/DeckSearchModal';
 import { DeckPeekModal } from '@/app/shared/components/DeckPeekModal';
-import { countRedeemedSouls, deckCardFilter, getEffectiveAbilities, isCharacterCard, isDanielCard, isLostSoulCard, simplifyLostSoulName, type CardAbility } from '@/lib/cards/cardAbilities';
+import { countRedeemedSouls, deckCardFilter, getEffectiveAbilities, isCharacterCard, isDanielCard, isHumanCharacter, isLostSoulCard, simplifyLostSoulName, type CardAbility } from '@/lib/cards/cardAbilities';
 import { DeckExchangeModal } from '@/app/shared/components/DeckExchangeModal';
 import { ZoneBrowseModal } from '@/app/shared/components/ZoneBrowseModal';
 import { useModalCardDrag } from '@/app/shared/hooks/useModalCardDrag';
@@ -268,11 +268,12 @@ export function isBattleBandActive(
   return status === 'playing' && (currentPhase === 'battle' || battleState !== '');
 }
 
-/** Mirrors battleMath.ts's private isLostSoulLike / the server's
- *  isLostSoulRow (battleStakesLobLostSouls): used client-side to count the
- *  stakes Lost Souls for the Rescue-attempt vs. Battle-challenge header. */
+/** Mirrors the server's isStakesSoulRow (battleStakesLobLostSouls): a Lost
+ *  Soul (same check as battleMath.ts's private isLostSoulLike) or a captured
+ *  human character. Used client-side for the stakes list behind the
+ *  Rescue-attempt vs. Battle-challenge header and the surrender picker. */
 function isBattleLostSoulRow(c: { cardType: string; cardName: string }): boolean {
-  return c.cardType === 'LS' || c.cardType === 'TOKEN_LS' || c.cardName.toLowerCase().includes('lost soul');
+  return c.cardType === 'LS' || c.cardType === 'TOKEN_LS' || c.cardName.toLowerCase().includes('lost soul') || isHumanCharacter(c);
 }
 
 /** Build a human-readable fragment for an opponent-action request, used in the

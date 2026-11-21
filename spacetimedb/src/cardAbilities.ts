@@ -14,6 +14,7 @@
 // -----------------------------------------------------------------------------
 
 import { DECK_SEARCH_ABILITIES } from './deckSearchAbilities';
+import { NON_HUMAN_CHARACTERS } from './nonHumanCharacters';
 
 // Zone ids as strings (matches the stringified zone column on CardInstance).
 // Kept local — no import from shared types.
@@ -681,6 +682,15 @@ export function isCharacterCard(card: { type?: string; cardType?: string }): boo
   const t = (card.type ?? card.cardType ?? '').toLowerCase();
   if (!t) return false;
   return t.includes('hero') || t.includes('evil character');
+}
+
+/**
+ * True for a human character (ORDIR: not an angel, animal, demon or symbolic
+ * character). A captured human in a Land of Bondage is surrendered / rescued
+ * like a Lost Soul. Duplicate of lib/cards/cardAbilities.ts.
+ */
+export function isHumanCharacter(card: { cardName: string; type?: string; cardType?: string }): boolean {
+  return isCharacterCard(card) && !NON_HUMAN_CHARACTERS.has(card.cardName);
 }
 
 /**
