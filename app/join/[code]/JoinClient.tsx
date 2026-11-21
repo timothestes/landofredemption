@@ -10,6 +10,7 @@ import SubmissionPdfButton from "@/components/tournament/SubmissionPdfButton";
 import {
   getJoinInfoAction,
   getMySubmissionAction,
+  joinAsGuestAction,
   joinTournamentAction,
   resubmitDeckAction,
   type JoinInfo,
@@ -91,6 +92,8 @@ const ERROR_MESSAGES: Partial<Record<FailedResult["error"], string>> = {
   invalid_name: "Enter a display name.",
   not_joined: "You're not registered for this event yet.",
   invalid_code: "This code isn't valid anymore.",
+  rate_limited: "Too many attempts from this connection — wait a minute and try again.",
+  guests_full: "This event has no guest spots left — sign in to join.",
   join_failed: "Something went wrong — try again.",
 };
 
@@ -191,6 +194,28 @@ export default function JoinClient({
     }
   }
 
+  async function handleGuestJoin(e: React.FormEvent) {
+    e.preventDefault();
+    if (submitting || info.success !== true) return;
+    setSubmitting(true);
+    try {
+      const r = await joinAsGuestAction(code, displayName);
+      if (r.success === true) {
+        // Shown from what was just sent, not re-read: a signed-out re-read is throttled by IP, and a room of
+        // players on one venue connection would see "too many attempts" right after joining.
+        setInfo({ ...info, joined: { displayName: displayName.trim(), guest: true, submission: null } });
+        setResult(null);
+        return;
+      }
+      setResult({ res: r });
+      if (r.error === "already_joined") await refresh();
+    } catch {
+      setResult({ res: { success: false, error: "join_failed" } });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function handleResubmit(deckId: string) {
     // The photo tab's button stays live once its deck is saved: one submit at a time.
     if (submitting) return;
@@ -249,16 +274,56 @@ export default function JoinClient({
     );
   }
 
-  // 3. Not signed in — show what they're joining, then send them to sign in.
-  if (userId === null) {
+  // 3. Not signed in and not yet in the event. A decklist is saved to an account, so an event that asks for one
+  //    sends them to sign in; any other event lets them join by name alone.
+  if (userId === null && info.joined === null) {
+    const signInHref = `/sign-in?redirectTo=${encodeURIComponent(`/join/${code}`)}`;
+    if (info.requiresDecklist) {
+      return (
+        <Shell>
+          <EventHeader info={info} />
+          <Button asChild className="w-full">
+            <Link href={signInHref}>Sign in to join</Link>
+          </Button>
+        </Shell>
+      );
+    }
     return (
       <Shell>
         <EventHeader info={info} />
-        <Button asChild className="w-full">
-          <Link href={`/sign-in?redirectTo=${encodeURIComponent(`/join/${code}`)}`}>
+        <form onSubmit={handleGuestJoin} className="space-y-4">
+          <label className="block text-sm font-medium text-foreground">
+            Display name
+            <input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              maxLength={40}
+              required
+              placeholder="Your name"
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+            />
+          </label>
+
+          {result && result.res.success === false && <ActionErrorNotice res={result.res} />}
+
+          <p className="text-xs text-muted-foreground">
+            When the event ends, your display name and final standing will be published with the
+            results unless the host withholds them.
+          </p>
+
+          <Button type="submit" disabled={displayName.trim().length === 0 || submitting} className="w-full">
+            {submitting ? "Joining…" : "Join as guest"}
+          </Button>
+        </form>
+        <p className="mt-2 text-center text-sm text-muted-foreground">
+          Have an account?{" "}
+          <Link
+            href={signInHref}
+            className="inline-flex min-h-11 items-center font-medium text-primary hover:underline"
+          >
             Sign in to join
           </Link>
-        </Button>
+        </p>
       </Shell>
     );
   }
@@ -289,7 +354,7 @@ export default function JoinClient({
                   </p>
                   {/* The sheet to hand in at deck check, made from the list on record. Keyed by the
                       submission, so a PDF of an older list is never offered after a change. */}
-                  {!changing && !editing && (
+                  {!changing && !editing && !joined.guest && (
                     <SubmissionPdfButton
                       key={joined.submission.submittedAt}
                       fileName={`${joined.displayName} ${joined.submission.deckName}`}
@@ -318,6 +383,14 @@ export default function JoinClient({
                   {joined.submission === null &&
                     " Talk to your host if you still need to hand in a decklist."}
                 </p>
+              ) : joined.guest ? (
+                // The host turned the decklist requirement on after this guest joined. A guest has no decks to
+                // pick from and cannot change a list, so the host attaches it.
+                joined.submission === null && (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    The host now asks for a decklist. Talk to your host to hand yours in.
+                  </p>
+                )
               ) : editing ? null : showChangeDeck || joined.submission === null ? (
                 <Button
                   type="button"
