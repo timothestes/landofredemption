@@ -127,6 +127,8 @@ export interface PublicResultsStandingRow {
   matchPoints: number | null;
   differential: number | null;
   publishedDeckId: string | null;
+  /** Left the event; dropped players have no place. */
+  dropped: boolean;
 }
 
 export async function loadPublicResultsAction(tournamentId: string): Promise<
@@ -157,7 +159,7 @@ export async function loadPublicResultsAction(tournamentId: string): Promise<
 
   const { data: participants } = await admin
     .from("participants")
-    .select("id, place, name, match_points, differential")
+    .select("id, place, name, match_points, differential, dropped_out")
     .eq("tournament_id", tournamentId);
 
   const decklistMap = new Map<string, string>(); // participant_id -> published_deck_id
@@ -185,6 +187,7 @@ export async function loadPublicResultsAction(tournamentId: string): Promise<
       matchPoints: p.match_points,
       differential: p.differential,
       publishedDeckId: decklistMap.get(p.id) ?? null,
+      dropped: p.dropped_out === true,
     }));
 
   return {
