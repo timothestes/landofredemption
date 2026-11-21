@@ -65,10 +65,30 @@ export interface GridContext {
   valueAt: (row: number, col: ScoreColumn) => number | null;
   /** True when the in-progress edit on the cursor differs from what's saved. */
   isDirty?: boolean;
+  /**
+   * False for a row that renders no score cells (a forfeited match shows its
+   * forfeit label instead). Focus can't land there, so navigation has to step
+   * over it — a cursor "moved" onto such a row leaves focus where it was, and
+   * the next digit overwrites the cell just filled. Absent = every row has cells.
+   */
+  isRowEditable?: (row: number) => boolean;
 }
 
-const clampRow = (row: number, rowCount: number) =>
-  Math.max(0, Math.min(row, rowCount - 1));
+/**
+ * The nearest row with score cells strictly beyond `from` in direction `step`,
+ * or null when there is none before the edge of the grid.
+ */
+function nextEditableRow(
+  from: number,
+  step: 1 | -1,
+  rowCount: number,
+  isRowEditable?: (row: number) => boolean,
+): number | null {
+  for (let row = from + step; row >= 0 && row < rowCount; row += step) {
+    if (!isRowEditable || isRowEditable(row)) return row;
+  }
+  return null;
+}
 
 /** The value in the cursor row's OTHER column. */
 const valueAtOtherColumn = (ctx: GridContext): number | null =>
@@ -79,17 +99,25 @@ const valueAtOtherColumn = (ctx: GridContext): number | null =>
  * already on the very last cell (caller decides whether that's a no-op or a
  * jump to the first unscored row).
  */
-export function stepRight(cell: CellRef, rowCount: number): CellRef | null {
+export function stepRight(
+  cell: CellRef,
+  rowCount: number,
+  isRowEditable?: (row: number) => boolean,
+): CellRef | null {
   if (cell.col === 0) return { row: cell.row, col: 1 };
-  if (cell.row + 1 < rowCount) return { row: cell.row + 1, col: 0 };
-  return null;
+  const row = nextEditableRow(cell.row, 1, rowCount, isRowEditable);
+  return row === null ? null : { row, col: 0 };
 }
 
 /** Step one cell to the left, wrapping P1 → previous row's P2. */
-export function stepLeft(cell: CellRef, rowCount: number): CellRef | null {
+export function stepLeft(
+  cell: CellRef,
+  rowCount: number,
+  isRowEditable?: (row: number) => boolean,
+): CellRef | null {
   if (cell.col === 1) return { row: cell.row, col: 0 };
-  if (cell.row > 0) return { row: cell.row - 1, col: 1 };
-  return null;
+  const row = nextEditableRow(cell.row, -1, rowCount, isRowEditable);
+  return row === null ? null : { row, col: 1 };
 }
 
 /**
@@ -174,8 +202,12 @@ export function handleGridKey(
   ctx: GridContext,
   mods: KeyModifiers = {},
 ): GridAction {
-  const { cursor, rowCount, maxScore, isRowComplete } = ctx;
+  const { cursor, rowCount, maxScore, isRowEditable } = ctx;
   if (rowCount === 0) return { kind: "passthrough" };
+
+  // A row without score cells never needs the cursor, whatever its scores say.
+  const isRowComplete = (row: number) =>
+    (isRowEditable ? !isRowEditable(row) : false) || ctx.isRowComplete(row);
 
   // Any Ctrl/Cmd/Alt combination belongs to the browser or the OS, never to the
   // grid. Bail before the digit branch so accelerators keep working untouched.
@@ -186,7 +218,7 @@ export function handleGridKey(
   if (/^[0-9]$/.test(key)) {
     const value = Number(key);
     if (value > maxScore) return { kind: "reject", at: cursor };
-    const forward = stepRight(cursor, rowCount);
+    const forward = stepRight(cursor, rowCount, isRowEditable);
     // Falling off the last cell parks on the first still-unscored row so the
     // host is never left staring at a dead cursor with blanks above them.
     const then =
@@ -207,25 +239,32 @@ export function handleGridKey(
     case "ArrowUp":
       return {
         kind: "move",
-        to: { row: clampRow(cursor.row - 1, rowCount), col: cursor.col },
+        to: {
+          row: nextEditableRow(cursor.row, -1, rowCount, isRowEditable) ?? cursor.row,
+          col: cursor.col,
+        },
       };
 
     case "ArrowDown":
       return {
         kind: "move",
-        to: { row: clampRow(cursor.row + 1, rowCount), col: cursor.col },
+        to: {
+          row: nextEditableRow(cursor.row, 1, rowCount, isRowEditable) ?? cursor.row,
+          col: cursor.col,
+        },
       };
 
     case "ArrowLeft":
-      return { kind: "move", to: stepLeft(cursor, rowCount) ?? cursor };
+      return { kind: "move", to: stepLeft(cursor, rowCount, isRowEditable) ?? cursor };
 
     case "ArrowRight":
-      return { kind: "move", to: stepRight(cursor, rowCount) ?? cursor };
+      return { kind: "move", to: stepRight(cursor, rowCount, isRowEditable) ?? cursor };
 
     case "Enter": {
+      const below = nextEditableRow(cursor.row, 1, rowCount, isRowEditable);
       const target =
-        cursor.row + 1 < rowCount
-          ? { row: cursor.row + 1, col: 0 as ScoreColumn }
+        below !== null
+          ? { row: below, col: 0 as ScoreColumn }
           : nextUnscored(0, rowCount, isRowComplete);
       // Every row scored and Enter pressed on the last one — hold position
       // rather than wrapping the host back to the top unnecessarily.
@@ -237,10 +276,16 @@ export function handleGridKey(
       return { kind: "clear", at: cursor };
 
     case "Home":
-      return { kind: "move", to: { row: 0, col: 0 } };
+      return {
+        kind: "move",
+        to: { row: nextEditableRow(-1, 1, rowCount, isRowEditable) ?? cursor.row, col: 0 },
+      };
 
     case "End":
-      return { kind: "move", to: { row: rowCount - 1, col: 1 } };
+      return {
+        kind: "move",
+        to: { row: nextEditableRow(rowCount, -1, rowCount, isRowEditable) ?? cursor.row, col: 1 },
+      };
 
     case "Escape":
       // First Escape abandons the in-progress edit; a second one (nothing left

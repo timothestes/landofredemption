@@ -364,6 +364,123 @@ describe("needsFlush", () => {
   });
 });
 
+describe("rows without score boxes (a forfeited match)", () => {
+  // Row 1 is forfeited: it renders no inputs, so focus can never land there.
+  const skip1 = (over: Partial<GridContext> = {}) =>
+    ctx({ isRowEditable: (r) => r !== 1, ...over });
+
+  it("a digit on the row above advances past it", () => {
+    expect(handleGridKey("1", skip1({ cursor: cell(0, 1) }))).toEqual({
+      kind: "write",
+      at: cell(0, 1),
+      value: 1,
+      then: cell(2, 0),
+    });
+  });
+
+  it("arrows and Enter step over it in both directions", () => {
+    expect(handleGridKey("ArrowDown", skip1({ cursor: cell(0, 1) }))).toEqual({
+      kind: "move",
+      to: cell(2, 1),
+    });
+    expect(handleGridKey("ArrowUp", skip1({ cursor: cell(2, 0) }))).toEqual({
+      kind: "move",
+      to: cell(0, 0),
+    });
+    expect(handleGridKey("ArrowRight", skip1({ cursor: cell(0, 1) }))).toEqual({
+      kind: "move",
+      to: cell(2, 0),
+    });
+    expect(handleGridKey("ArrowLeft", skip1({ cursor: cell(2, 0) }))).toEqual({
+      kind: "move",
+      to: cell(0, 1),
+    });
+    expect(handleGridKey("Enter", skip1({ cursor: cell(0, 0) }))).toEqual({
+      kind: "move",
+      to: cell(2, 0),
+    });
+  });
+
+  it("holds position when only such rows lie ahead", () => {
+    const lastTwoForfeited = (over: Partial<GridContext>) =>
+      ctx({ isRowEditable: (r) => r < 2, isRowComplete: () => true, ...over });
+    expect(handleGridKey("ArrowDown", lastTwoForfeited({ cursor: cell(1, 0) }))).toEqual({
+      kind: "move",
+      to: cell(1, 0),
+    });
+    expect(handleGridKey("ArrowRight", lastTwoForfeited({ cursor: cell(1, 1) }))).toEqual({
+      kind: "move",
+      to: cell(1, 1),
+    });
+    expect(handleGridKey("Enter", lastTwoForfeited({ cursor: cell(1, 1) }))).toEqual({
+      kind: "move",
+      to: cell(1, 1),
+    });
+  });
+
+  it("Home and End land on the first and last rows that have boxes", () => {
+    const endsForfeited = (over: Partial<GridContext>) =>
+      ctx({ isRowEditable: (r) => r === 1 || r === 2, ...over });
+    expect(handleGridKey("Home", endsForfeited({ cursor: cell(2, 1) }))).toEqual({
+      kind: "move",
+      to: cell(1, 0),
+    });
+    expect(handleGridKey("End", endsForfeited({ cursor: cell(1, 0) }))).toEqual({
+      kind: "move",
+      to: cell(2, 1),
+    });
+  });
+
+  it("never parks the cursor on one, even if it reads as unscored", () => {
+    const action = handleGridKey(
+      "2",
+      ctx({
+        cursor: cell(3, 1),
+        isRowEditable: (r) => r !== 1,
+        isRowComplete: (r) => r === 0 || r === 2,
+        valueAt: valuesFrom({ "3:0": 4 }),
+      }),
+    );
+    expect(action).toEqual({ kind: "write", at: cell(3, 1), value: 2, then: cell(3, 1) });
+  });
+
+  // The reported bug, end to end. Keys go to whichever input has focus, and
+  // focus can only move to a row that has inputs — so when the handler pointed
+  // at the forfeited table 2, focus stayed on table 1's second box and the next
+  // digits replaced the score just entered there (a saved 3-1 became 3-5).
+  it("typing 3 1 2 5 down the table scores tables 1 and 3, not table 1 twice", () => {
+    type Pair = { p1: number | null; p2: number | null };
+    const rows: Pair[] = [
+      { p1: null, p2: null },
+      { p1: 0, p2: 0 }, // forfeited: stored 0-0, no inputs
+      { p1: null, p2: null },
+    ];
+    const hasInputs = (row: number) => row !== 1;
+    const valueAt = (row: number, col: 0 | 1) =>
+      col === 0 ? rows[row].p1 : rows[row].p2;
+
+    let focus = cell(0, 0);
+    for (const key of ["3", "1", "2", "5"]) {
+      const action = handleGridKey(key, {
+        cursor: focus,
+        rowCount: rows.length,
+        maxScore: 5,
+        isRowComplete: (r) => valueAt(r, 0) !== null && valueAt(r, 1) !== null,
+        valueAt,
+        isRowEditable: hasInputs,
+      });
+      if (action.kind !== "write") throw new Error(`unexpected ${action.kind}`);
+      if (action.at.col === 0) rows[action.at.row].p1 = action.value;
+      else rows[action.at.row].p2 = action.value;
+      // Mirrors useScoreGrid.focusCell: no input, no focus move.
+      if (hasInputs(action.then.row)) focus = action.then;
+    }
+
+    expect(rows[0]).toEqual({ p1: 3, p2: 1 });
+    expect(rows[2]).toEqual({ p1: 2, p2: 5 });
+  });
+});
+
 describe("passthrough", () => {
   it("leaves Tab to the browser so native tab order still works", () => {
     expect(handleGridKey("Tab", ctx()).kind).toBe("passthrough");

@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "../../utils/supabase/client";
-import { saveMatchScore, validateScorePair } from "../../utils/tournament/saveMatchScore";
+import {
+  saveMatchScore,
+  validateScorePair,
+  SESSION_EXPIRED_MESSAGE,
+} from "../../utils/tournament/saveMatchScore";
+import { saveWithRetry } from "../../lib/tournament/saveRetry";
 import {
   handleGridKey,
   commitDecision,
@@ -54,6 +59,9 @@ export function useScoreGrid({
   const [draft, setDraft] = useState<Draft>({});
   const [saveState, setSaveState] = useState<Record<string, RowSaveState>>({});
   const [saveError, setSaveError] = useState<Record<string, string>>({});
+  // Rows whose last write to the database failed, as opposed to rows in
+  // "error" because the typed pair is illegal. Only these can be retried.
+  const [writeFailed, setWriteFailed] = useState<Record<string, boolean>>({});
   const [rejected, setRejected] = useState<string | null>(null);
   const inputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
 
@@ -109,12 +117,18 @@ export function useScoreGrid({
    * one) delays the focus move past the next keypress, that keypress lands on
    * the cell we just left and overwrites the score just entered. Every row is
    * already mounted, so the ref is always populated and this can be immediate.
+   *
+   * The one row with no ref is a forfeited match, which renders no cells. The
+   * key handler steps over those; if a target without an input arrives anyway,
+   * leave the cursor on the cell that still has focus rather than pointing it
+   * at a row the next keystroke can't reach.
    */
   const focusCell = useCallback((to: CellRef) => {
-    setCursor(to);
     const el = inputRefs.current.get(cellKey(to.row, to.col));
-    el?.focus();
-    el?.select();
+    if (!el) return;
+    setCursor(to);
+    el.focus();
+    el.select();
   }, []);
 
   const markSaved = useCallback((matchId: string) => {
@@ -140,6 +154,8 @@ export function useScoreGrid({
       const match = matches[row];
       if (!match) return;
 
+      setWriteFailed((f) => (f[match.id] ? { ...f, [match.id]: false } : f));
+
       const invalid = validateScorePair(next.p1, next.p2, maxScore);
       if (invalid) {
         setSaveState((s) => ({ ...s, [match.id]: "error" }));
@@ -153,14 +169,25 @@ export function useScoreGrid({
       setSaveState((s) => ({ ...s, [match.id]: "saving" }));
       setSaveError((e) => { const { [match.id]: _drop, ...rest } = e; return rest; });
 
-      const result = await saveMatchScore(createClient(), {
-        matchId: match.id,
-        player1Id: match.player1_id.id,
-        player2Id: match.player2_id.id,
-        player1Score: next.p1,
-        player2Score: next.p2,
-        maxScore,
-      });
+      // A dropped request is re-sent twice before the row is marked unsaved.
+      // Not when the session is gone (a retry can't fix that), and not once a
+      // newer write for this row has started.
+      const result = await saveWithRetry(
+        () =>
+          saveMatchScore(createClient(), {
+            matchId: match.id,
+            player1Id: match.player1_id.id,
+            player2Id: match.player2_id.id,
+            player1Score: next.p1,
+            player2Score: next.p2,
+            maxScore,
+          }),
+        {
+          shouldRetry: (error) =>
+            error !== SESSION_EXPIRED_MESSAGE &&
+            writeSeq.current.get(match.id) === seq,
+        },
+      );
 
       // A newer write for this row superseded us — discard this response.
       if (writeSeq.current.get(match.id) !== seq) return;
@@ -168,6 +195,7 @@ export function useScoreGrid({
       if (result.ok === false) {
         setSaveState((s) => ({ ...s, [match.id]: "error" }));
         setSaveError((e) => ({ ...e, [match.id]: result.error }));
+        setWriteFailed((f) => ({ ...f, [match.id]: true }));
         return;
       }
 
@@ -315,6 +343,7 @@ export function useScoreGrid({
       const seq = (writeSeq.current.get(match.id) ?? 0) + 1;
       writeSeq.current.set(match.id, seq);
       setSaveState((s) => ({ ...s, [match.id]: "saving" }));
+      setWriteFailed((f) => (f[match.id] ? { ...f, [match.id]: false } : f));
 
       const client = createClient();
       const { error } = await client
@@ -336,6 +365,7 @@ export function useScoreGrid({
           ...e,
           [match.id]: "Couldn't clear this result. Please try again.",
         }));
+        setWriteFailed((f) => ({ ...f, [match.id]: true }));
         return;
       }
 
@@ -343,6 +373,35 @@ export function useScoreGrid({
       onSaved?.(match.id);
     },
     [matches, draftFor, onSaved, markSaved],
+  );
+
+  /**
+   * True while a row shows digits (or a blank) that did not save: its last
+   * write failed and what was typed is still on screen. Goes false as soon
+   * as the typed value is dropped (Escape, or a save from the pencil dialog).
+   */
+  const isUnsaved = useCallback(
+    (matchId: string) =>
+      saveState[matchId] === "error" &&
+      writeFailed[matchId] === true &&
+      draft[matchId] !== undefined,
+    [saveState, writeFailed, draft],
+  );
+
+  /** Send a row's unsaved value again: the typed pair, or the clear. */
+  const retryRow = useCallback(
+    (row: number) => {
+      const match = matches[row];
+      if (!match) return;
+      const d = draftRef.current[match.id];
+      if (!d) return;
+      if (d.p1 !== null && d.p2 !== null) {
+        void commitRow(row, { p1: d.p1, p2: d.p2 });
+      } else {
+        void clearCell({ row, col: d.p1 === null ? 0 : 1 });
+      }
+    },
+    [matches, commitRow, clearCell],
   );
 
   const onKeyDown = useCallback(
@@ -359,6 +418,8 @@ export function useScoreGrid({
           isRowComplete,
           valueAt,
           isDirty: match ? draftRef.current[match.id] !== undefined : false,
+          // A forfeited row registers no inputs; navigation must skip it.
+          isRowEditable: (row) => inputRefs.current.has(cellKey(row, 0)),
         },
         { ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey },
       );
@@ -444,5 +505,7 @@ export function useScoreGrid({
     discardDraft,
     isCursor,
     isRejected,
+    isUnsaved,
+    retryRow,
   };
 }

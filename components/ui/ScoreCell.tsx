@@ -3,6 +3,7 @@
 import { forwardRef } from "react";
 import { Check, Loader2, TriangleAlert } from "lucide-react";
 import type { RowSaveState } from "./useScoreGrid";
+import { SESSION_EXPIRED_MESSAGE } from "../../utils/tournament/saveMatchScore";
 
 /**
  * One editable score cell in the desktop round table.
@@ -66,6 +67,39 @@ export const ScoreCell = forwardRef<
     />
   );
 });
+
+/**
+ * Line under a row's score cells once its save has failed for good (after the
+ * automatic re-sends). The 12px triangle alone was easy to miss while the typed
+ * digits stayed in the row looking saved, so this says it in words and offers
+ * the retry. An expired session can't be retried — that one says to reload.
+ */
+export function UnsavedNotice({
+  error,
+  onRetry,
+}: {
+  error?: string;
+  onRetry: () => void;
+}) {
+  return (
+    <p role="alert" title={error} className="mt-1 text-xs text-destructive">
+      {error === SESSION_EXPIRED_MESSAGE ? (
+        "Not saved · signed out, reload the page"
+      ) : (
+        <>
+          Not saved ·{" "}
+          <button
+            type="button"
+            onClick={onRetry}
+            className="text-foreground underline underline-offset-2 hover:text-primary"
+          >
+            Retry
+          </button>
+        </>
+      )}
+    </p>
+  );
+}
 
 /** Per-row save indicator, sized to never shift the row's layout. */
 export function SaveIndicator({
