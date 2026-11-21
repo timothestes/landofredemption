@@ -10,6 +10,8 @@ import {
   recheckAllSubmissionsAction,
   removeParticipantWithBlockAction,
 } from "../../app/tracker/tournaments/actions";
+import { createClient } from "../../utils/supabase/client";
+import { dropConfirmationText, DROP_BEFORE_PAIRING_TEXT } from "../../lib/tournament/dropConfirmation";
 import ConfirmationDialog from "./confirmation-dialog";
 import { LegalityDot } from "./LegalityDot";
 import ToastNotification from "./toast-notification";
@@ -187,6 +189,31 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
     }
   }
 
+  // What the Drop confirmation should say depends on whether the player is
+  // already paired for the current round, which this table is not told. Read
+  // it when Drop is pressed and open the dialog after, so the text never
+  // changes under the host. A failed read leaves the plain text.
+  const [dropText, setDropText] = useState(DROP_BEFORE_PAIRING_TEXT);
+  async function openDropDialog(participant: Participant) {
+    const client = createClient();
+    let text = DROP_BEFORE_PAIRING_TEXT;
+    const { data: tournament } = await client
+      .from("tournaments")
+      .select("current_round")
+      .eq("id", tournamentId)
+      .single();
+    if (tournament?.current_round) {
+      const { data: roundMatches } = await client
+        .from("matches")
+        .select("player1_id, player2_id, player1_score, player2_score")
+        .eq("tournament_id", tournamentId)
+        .eq("round", tournament.current_round);
+      text = dropConfirmationText(participant.id, tournament.current_round, roundMatches ?? []);
+    }
+    setDropText(text);
+    setDropTarget(participant);
+  }
+
   function renderActionButtons(participant: Participant) {
     return (
       <div className="flex items-center gap-1">
@@ -209,7 +236,7 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
             </button>
           ) : (
             <button
-              onClick={() => setDropTarget(participant)}
+              onClick={() => openDropDialog(participant)}
               className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 touch-manipulation transition-colors"
               aria-label={`Drop ${participant.name}`}
               title="Drop from tournament"
@@ -467,7 +494,7 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
         }}
         variant="warning"
         title={dropTarget ? `Drop ${dropTarget.name}?` : ""}
-        description="They will not appear in next round's pairings. You can restore them later from this list."
+        description={dropText}
         confirmLabel="Drop player"
         cancelLabel="Cancel"
       />
