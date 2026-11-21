@@ -109,12 +109,18 @@ export function useScoreGrid({
    * one) delays the focus move past the next keypress, that keypress lands on
    * the cell we just left and overwrites the score just entered. Every row is
    * already mounted, so the ref is always populated and this can be immediate.
+   *
+   * The one row with no ref is a forfeited match, which renders no cells. The
+   * key handler steps over those; if a target without an input arrives anyway,
+   * leave the cursor on the cell that still has focus rather than pointing it
+   * at a row the next keystroke can't reach.
    */
   const focusCell = useCallback((to: CellRef) => {
-    setCursor(to);
     const el = inputRefs.current.get(cellKey(to.row, to.col));
-    el?.focus();
-    el?.select();
+    if (!el) return;
+    setCursor(to);
+    el.focus();
+    el.select();
   }, []);
 
   const markSaved = useCallback((matchId: string) => {
@@ -359,6 +365,8 @@ export function useScoreGrid({
           isRowComplete,
           valueAt,
           isDirty: match ? draftRef.current[match.id] !== undefined : false,
+          // A forfeited row registers no inputs; navigation must skip it.
+          isRowEditable: (row) => inputRefs.current.has(cellKey(row, 0)),
         },
         { ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey },
       );
