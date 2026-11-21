@@ -5,6 +5,8 @@ import TopNav from "@/components/top-nav";
 import SiteFooter from "@/components/site-footer";
 import { loadPublicResultsAction } from "../../actions";
 import ResultsTabs from "./ResultsTabs";
+import { TournamentName } from "@/components/tournament/TournamentName";
+import { parseTournamentName } from "@/utils/tournament/displayName";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -77,10 +79,13 @@ export default async function TournamentResultsPage({ params }: PageProps) {
         </Link>
 
         <div className="mb-6">
-          <h1 className="font-cinzel text-2xl font-bold text-foreground">{result.name}</h1>
+          <h1 className="font-cinzel text-2xl font-bold text-foreground">
+            <TournamentName name={result.name} />
+          </h1>
+          {/* A generated name already gives the date and the category under the title. */}
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            {dateLabel && <span>{dateLabel}</span>}
-            {result.category && (
+            {dateLabel && !parseTournamentName(result.name).date && <span>{dateLabel}</span>}
+            {result.category && !result.name.includes(result.category) && (
               <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground">
                 {result.category}
               </span>

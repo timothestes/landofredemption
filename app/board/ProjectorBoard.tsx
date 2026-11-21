@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import { BsPinAngleFill } from "react-icons/bs";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
+import { parseTournamentName } from "@/utils/tournament/displayName";
 import { fetchActiveBoardData, type BoardTournament } from "./boardData";
 import { BoardPanel } from "./BoardPanel";
 import { useWakeLock } from "./useWakeLock";
@@ -134,7 +135,10 @@ export function ProjectorBoard() {
                     checked={!hidden.includes(t.id)}
                     onChange={() => toggleHidden(t.id)}
                   />
-                  <span className="truncate">{t.name}</span>
+                  {/* The same words as the panel it shows or hides; a date does not fit in this width. */}
+                  <span className="truncate" title={t.name}>
+                    {parseTournamentName(t.name).title}
+                  </span>
                 </label>
               ))
             )}

@@ -14,6 +14,7 @@ import JoinCodeDialog from "../../../components/ui/JoinCodeDialog";
 import { categoryDefaults, requireDecklistsDefault } from "../../../utils/tournament/categoryDefaults";
 import { normalizeTier } from "../../../utils/tournament/tiers";
 import { pageHostedEvents } from "../../../utils/tournament/hostedEvents";
+import { parseTournamentName, sharedEventParts } from "../../../utils/tournament/displayName";
 import { getFormatDef } from "@/lib/formats";
 
 const FORMAT_CHIP = "inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground";
@@ -260,10 +261,17 @@ function TournamentsPageInner() {
   };
 
   // showName=false is used inside an event group, where the event name is in the
-  // header and the category pill is the row's identity.
-  const renderRow = (tournament: any, showName: boolean) => {
+  // header and the category pill is the row's identity. eventDate is the date
+  // that header already shows, so a row only prints its own when it differs.
+  const renderRow = (tournament: any, showName: boolean, eventDate?: string | null) => {
     const type = tournament.category || deckFormatLabel(tournament.deck_format);
     const showNameText = showName || !type;
+    const parts = parseTournamentName(tournament.name);
+    const date = parts.date ?? formatCreatedAt(tournament.created_at);
+    const details = [
+      date === eventDate ? null : date,
+      showNameText ? parts.location : null,
+    ].filter(Boolean);
     return (
     <li
       key={tournament.id}
@@ -274,17 +282,20 @@ function TournamentsPageInner() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 min-w-0">
             {showNameText && (
-              <p className="font-medium text-foreground truncate">
-                {tournament.name}
+              <p className="font-medium text-foreground truncate" title={tournament.name}>
+                {parts.title}
               </p>
             )}
-            {type && (
+            {/* The pill is dropped when the name beside it already says the category. */}
+            {type && !(showNameText && tournament.name.includes(type)) && (
               <span className={`${FORMAT_CHIP} shrink-0 whitespace-nowrap`}>{type}</span>
             )}
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground truncate">
-            {formatCreatedAt(tournament.created_at)}
-          </p>
+          {details.length > 0 && (
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">
+              {details.join(" · ")}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
@@ -400,6 +411,12 @@ function TournamentsPageInner() {
                 );
               }
               const { listingId, tournaments: group } = block;
+              // The header names the event, not one of its categories: the
+              // date and place the categories share, with the tier beside the
+              // count. Names that do not parse fall back to the first one.
+              const event = sharedEventParts(group.map((t) => t.name));
+              const eventLabel = [event.date, event.location].filter(Boolean).join(" · ");
+              const eventTier = group.map((t) => t.tier).find(Boolean);
               return (
               <div
                 key={listingId}
@@ -408,9 +425,10 @@ function TournamentsPageInner() {
                 <div className="flex items-center justify-between gap-2 px-4 sm:px-6 py-3 bg-muted/40 border-b border-border">
                   <div className="min-w-0">
                     <p className="font-semibold text-foreground truncate">
-                      {group[0].name}
+                      {eventLabel || group[0].name}
                     </p>
                     <p className="text-xs text-muted-foreground">
+                      {eventLabel && eventTier ? `${eventTier} · ` : ""}
                       {group.length}{" "}
                       {group.length === 1 ? "category" : "categories"}
                     </p>
@@ -428,7 +446,7 @@ function TournamentsPageInner() {
                   </Button>
                 </div>
                 <ul className="divide-y divide-border">
-                  {group.map((t) => renderRow(t, false))}
+                  {group.map((t) => renderRow(t, false, event.date))}
                 </ul>
               </div>
               );

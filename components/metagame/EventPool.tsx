@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { TournamentBreakdown } from "@/lib/tournament/breakdown";
+import { parseTournamentName } from "@/utils/tournament/displayName";
 
 function formatDate(endedAt: string | null): string {
   if (!endedAt) return "Date not recorded";
@@ -41,6 +42,9 @@ export default function EventPool({ breakdown }: { breakdown: TournamentBreakdow
       <ul className="overflow-hidden rounded-xl bg-card">
         {events.map((event) => {
           const share = deckCount === 0 ? 0 : event.deckCount / deckCount;
+          // The row has its own date line, so the name gives up its date and
+          // its location moves down beside it.
+          const name = parseTournamentName(event.name);
           return (
             <li key={event.id}>
               <Link
@@ -53,11 +57,12 @@ export default function EventPool({ breakdown }: { breakdown: TournamentBreakdow
                   style={{ width: `${Math.max((event.deckCount / largest) * 100, 0.5)}%` }}
                 />
                 <span className="relative min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-foreground">
-                    {event.name}
+                  <span className="block truncate text-sm font-medium text-foreground" title={event.name}>
+                    {name.title}
                   </span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
+                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                     {formatDate(event.endedAt)}
+                    {name.location && ` · ${name.location}`}
                   </span>
                 </span>
                 <span className="relative shrink-0 text-right">

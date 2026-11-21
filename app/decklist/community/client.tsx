@@ -13,6 +13,7 @@ import { Card } from "../card-search/utils";
 import { getCardImageUrlOrNull as getCardImageUrl } from '../../shared/utils/cardImageUrl';
 import { normalizeFormat, getFormatDef } from "@/lib/formats";
 import { TrophyIcon, getPlacementLabel } from "@/components/trophy-icon";
+import { shortTournamentName } from "@/utils/tournament/displayName";
 import {
   parseCardCount, rangeFromDraft, draftFromRange, cardCountLabel, EMPTY_RANGE,
   CardCountRange, CardCountDraft, CardCountMode,
@@ -1029,8 +1030,8 @@ export function DeckCard({ deck, currentUserId, onUsernameClick }: { deck: Publi
               }`}>
                 {getPlacementLabel(deck.tournament.placement)}
               </span>
-              <span className="text-muted-foreground truncate">
-                {deck.tournament.tournament_name}
+              <span className="text-muted-foreground truncate" title={deck.tournament.tournament_name}>
+                {shortTournamentName(deck.tournament.tournament_name)}
                 {deck.tournament.participant_count > 0 && (
                   <> ({deck.tournament.participant_count} players)</>
                 )}

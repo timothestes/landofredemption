@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
+import { TournamentName } from "@/components/tournament/TournamentName";
 import DeckPicker from "./DeckPicker";
 import {
   getJoinInfoAction,
@@ -39,10 +40,11 @@ function EventHeader({ info }: { info: JoinedState }) {
   return (
     <div className="mb-6 text-center">
       <h1 className="font-cinzel text-2xl font-bold text-foreground sm:text-3xl">
-        {info.tournamentName}
+        <TournamentName name={info.tournamentName} />
       </h1>
       <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
-        {info.category && <span>{info.category}</span>}
+        {/* A generated name already says its category. */}
+        {info.category && !info.tournamentName.includes(info.category) && <span>{info.category}</span>}
         {info.hostName && <span>Hosted by {info.hostName}</span>}
       </div>
     </div>

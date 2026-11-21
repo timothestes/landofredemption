@@ -5,6 +5,7 @@ import TopNav from "@/components/top-nav";
 import SiteFooter from "@/components/site-footer";
 import { loadTournamentBreakdownAction } from "../../../actions";
 import ResultsTabs from "../ResultsTabs";
+import { TournamentName } from "@/components/tournament/TournamentName";
 import BreakdownClient from "./client";
 
 interface PageProps {
@@ -48,9 +49,11 @@ export default async function TournamentBreakdownPage({ params }: PageProps) {
         </Link>
 
         <div className="mb-6">
-          <h1 className="font-cinzel text-2xl font-bold text-foreground">{result.name}</h1>
+          <h1 className="font-cinzel text-2xl font-bold text-foreground">
+            <TournamentName name={result.name} />
+          </h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            {result.category && (
+            {result.category && !result.name.includes(result.category) && (
               <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground">
                 {result.category}
               </span>

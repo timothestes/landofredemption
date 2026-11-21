@@ -26,6 +26,7 @@ import { getFormatDef } from "@/lib/formats";
 import { TrophyIcon, getPlacementLabel } from "@/components/trophy-icon";
 import BrigadeBar from "@/components/decks/BrigadeBar";
 import type { DeckTournamentContext } from "../deckTournamentContext";
+import { parseTournamentName, shortTournamentName } from "@/utils/tournament/displayName";
 import type { EnrichedCard } from "./enrichDeckCards";
 import type { ArticleRefs } from "@/app/articles/lib/refTypes";
 import dynamic from "next/dynamic";
@@ -538,10 +539,10 @@ export default function PublicDeckClient({ deck, descriptionRefs, isOwner, isLog
                 href={`/tournaments/results/${tournament.tournament_id}`}
                 className="hover:text-foreground transition-colors truncate"
               >
-                {tournament.tournament_name}
+                {shortTournamentName(tournament.tournament_name, { year: false })}
               </Link>
             ) : (
-              <span className="truncate">{tournament.tournament_name}</span>
+              <span className="truncate">{shortTournamentName(tournament.tournament_name, { year: false })}</span>
             )}
             <BreadcrumbChevron />
             <span className="text-foreground truncate">{tournament.player_name || deckName}</span>
@@ -574,9 +575,12 @@ export default function PublicDeckClient({ deck, descriptionRefs, isOwner, isLog
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
             {(() => {
               // Separators trail their own item so a wrap on narrow screens
-              // never starts a line with a stray "·".
+              // never starts a line with a stray "·". The event's name gives
+              // its date and place to the line rather than repeating the date.
+              const event = parseTournamentName(tournament.tournament_name);
               const meta = [
-                formatEventDate(tournament.ended_at),
+                formatEventDate(tournament.ended_at) ?? event.date,
+                event.location,
                 tournament.deck_format,
                 tournament.participant_count > 0
                   ? `${tournament.participant_count} player${tournament.participant_count === 1 ? "" : "s"}`
@@ -589,11 +593,12 @@ export default function PublicDeckClient({ deck, descriptionRefs, isOwner, isLog
                       <Link
                         href={`/tournaments/results/${tournament.tournament_id}`}
                         className="font-medium underline underline-offset-2 hover:text-foreground transition-colors"
+                        title={tournament.tournament_name}
                       >
-                        {tournament.tournament_name}
+                        {event.title}
                       </Link>
                     ) : (
-                      <span className="font-medium">{tournament.tournament_name}</span>
+                      <span className="font-medium" title={tournament.tournament_name}>{event.title}</span>
                     )}
                     {meta.length > 0 && <span aria-hidden="true">·</span>}
                   </span>
