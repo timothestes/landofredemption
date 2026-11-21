@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "./button";
 import {
   Dialog,
@@ -14,7 +14,9 @@ import {
 interface TournamentStartModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (numberOfRounds: number, roundLength: number, maxScore: number, byePoints: number, byeDifferential: number, startingTableNumber: number, soundNotifications: boolean) => void;
+  // Resolves once the tournament is started and round 1 is paired (or that
+  // failed). The Start button stays disabled until then.
+  onConfirm: (numberOfRounds: number, roundLength: number, maxScore: number, byePoints: number, byeDifferential: number, startingTableNumber: number, soundNotifications: boolean) => void | Promise<void>;
   participantCount: number;
   suggestedRounds: number;
   // Persisted tournament settings to seed the form with (e.g. values prefilled
@@ -90,6 +92,22 @@ export default function TournamentStartModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
+  // A second tap while the first is still saving would pair round 1 twice.
+  // The ref closes the gap before the disabled state reaches the button.
+  const [isStarting, setIsStarting] = useState(false);
+  const startingRef = useRef(false);
+  const handleConfirm = async () => {
+    if (startingRef.current) return;
+    startingRef.current = true;
+    setIsStarting(true);
+    try {
+      await onConfirm(numberOfRounds, roundLength, maxScore, byePoints, byeDifferential, startingTableNumber, soundNotifications);
+    } finally {
+      startingRef.current = false;
+      setIsStarting(false);
+    }
+  };
+
   const handleIncrement = () => {
     setNumberOfRounds(prev => prev + 1);
   };
@@ -111,7 +129,7 @@ export default function TournamentStartModal({
   const inputClasses = "w-full bg-background border border-border text-foreground rounded-lg p-2.5 focus:outline-none focus:border-primary/60 transition-colors";
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !isStarting) onClose(); }}>
       <DialogContent size="lg" className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">Start Tournament</DialogTitle>
@@ -322,12 +340,13 @@ export default function TournamentStartModal({
 
         <DialogFooter className="justify-end">
           <Button
-            onClick={() => onConfirm(numberOfRounds, roundLength, maxScore, byePoints, byeDifferential, startingTableNumber, soundNotifications)}
+            onClick={handleConfirm}
             variant="success"
+            disabled={isStarting}
           >
-            Start Tournament
+            {isStarting ? "Starting…" : "Start Tournament"}
           </Button>
-          <Button variant="cancel" onClick={onClose}>
+          <Button variant="cancel" onClick={onClose} disabled={isStarting}>
             Cancel
           </Button>
         </DialogFooter>

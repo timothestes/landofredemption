@@ -589,9 +589,16 @@ export default function TournamentPage({
         .single();
       if (error) throw error;
       setTournament(data);
-      setShowStartModal(false);
       // Creating pairing for the first round if the user has started the tournament.
-      await createPairing(data.id, 1);
+      const paired = await createPairing(data.id, 1);
+      if (!paired) {
+        // The dialog stays open so Start Tournament can be pressed again:
+        // createPairing leaves a round that is already paired alone, so the
+        // retry cannot pair round 1 twice.
+        showToast("Round 1 could not be paired. Press Start Tournament to try again.", "error");
+        return;
+      }
+      setShowStartModal(false);
       setActiveTab(1);
       showToast("Tournament started successfully!", "success");
     } catch (error) {
