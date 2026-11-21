@@ -704,7 +704,16 @@ export default function TournamentRounds({
 
   const handleRepairClick = (match: any, isPlayer2 = false) => {
     if (repairMode) {
-      if (repairSourceMatch.isBye) {
+      // The selected player again means "never mind". It used to swap the
+      // player with themselves, which the same-table branch of
+      // handleSwapPlayers turned into flipping player 1 and player 2.
+      const isSelected =
+        !repairSourceMatch.isBye &&
+        repairSourceMatch.match.id === match.id &&
+        !!repairSourceMatch.isPlayer2 === isPlayer2;
+      if (isSelected) {
+        // Nothing to swap; fall through to leaving re-pair mode.
+      } else if (repairSourceMatch.isBye) {
         handleSwapPlayerWithBye(match, isPlayer2, repairSourceMatch.byeId);
       } else {
         handleSwapPlayers(repairSourceMatch.match, match, repairSourceMatch.isPlayer2, isPlayer2);
@@ -719,7 +728,9 @@ export default function TournamentRounds({
 
   const handleByeRepairClick = (bye: any) => {
     if (repairMode) {
-      if (repairSourceMatch.isBye) {
+      if (repairSourceMatch.isBye && repairSourceMatch.byeId === bye.id) {
+        // The selected bye again: cancel, as for a player.
+      } else if (repairSourceMatch.isBye) {
         handleSwapPlayersWithBye(repairSourceMatch.byeId, bye.id);
       } else {
         handleSwapPlayerWithBye(repairSourceMatch.match, repairSourceMatch.isPlayer2, bye.id);
@@ -730,6 +741,15 @@ export default function TournamentRounds({
       setRepairMode(true);
       setRepairSourceMatch({ isBye: true, byeId: bye.id });
     }
+  };
+
+  // supabase-js resolves with { error } instead of throwing, so a bare
+  // `await ...update()` fails without a word. A swap is several writes; this
+  // makes the first failed one throw, so the catch tells the host and re-reads
+  // the round (a swap that stopped halfway has already changed one table).
+  const mustSucceed = async (write: PromiseLike<{ error: unknown }>) => {
+    const { error } = await write;
+    if (error) throw error;
   };
 
   const handleSwapPlayers = async (sourceMatch: any, targetMatch: any, isSourcePlayer2: boolean, isTargetPlayer2: boolean) => {
@@ -745,42 +765,42 @@ export default function TournamentRounds({
         const targetDifferential = isTargetPlayer2 ? targetMatch.differential2 : targetMatch.differential;
         
         if (isSourcePlayer2) {
-          await client.from("matches").update({
+          await mustSucceed(client.from("matches").update({
             player2_id: targetPlayerId,
             player2_match_points: targetPlayerMatchPoints,
             differential2: targetDifferential,
             player1_score: null,
             player2_score: null,
-          }).eq("id", sourceMatch.id);
+          }).eq("id", sourceMatch.id));
         } else {
-          await client.from("matches").update({
+          await mustSucceed(client.from("matches").update({
             player1_id: targetPlayerId,
             player1_match_points: targetPlayerMatchPoints,
             differential: targetDifferential,
             player1_score: null,
             player2_score: null,
-          }).eq("id", sourceMatch.id);
+          }).eq("id", sourceMatch.id));
         }
         
         if (isTargetPlayer2) {
-          await client.from("matches").update({
+          await mustSucceed(client.from("matches").update({
             player2_id: sourcePlayerId,
             player2_match_points: sourcePlayerMatchPoints,
             differential2: sourceDifferential,
             player1_score: null,
             player2_score: null,
-          }).eq("id", targetMatch.id);
+          }).eq("id", targetMatch.id));
         } else {
-          await client.from("matches").update({
+          await mustSucceed(client.from("matches").update({
             player1_id: sourcePlayerId,
             player1_match_points: sourcePlayerMatchPoints,
             differential: sourceDifferential,
             player1_score: null,
             player2_score: null,
-          }).eq("id", targetMatch.id);
+          }).eq("id", targetMatch.id));
         }
       } else {
-        await client.from("matches").update({
+        await mustSucceed(client.from("matches").update({
           player1_id: sourceMatch.player2_id.id,
           player2_id: sourceMatch.player1_id.id,
           player1_match_points: sourceMatch.player2_match_points,
@@ -789,7 +809,7 @@ export default function TournamentRounds({
           differential2: sourceMatch.differential,
           player1_score: null,
           player2_score: null,
-        }).eq("id", sourceMatch.id);
+        }).eq("id", sourceMatch.id));
       }
 
       await reassignRoundTables(client, tournamentId, currentPage);
@@ -798,7 +818,8 @@ export default function TournamentRounds({
 
     } catch (error) {
       console.error("Error swapping players:", error);
-      showToast("Error swapping players. Please try again.", "error");
+      showToast("The swap did not finish. Check the pairings before trying again.", "error");
+      await fetchCurrentRoundData();
     } finally {
       setIsLoading(false);
     }
@@ -815,17 +836,17 @@ export default function TournamentRounds({
       }
 
       await Promise.all([
-        client.from("byes").update({
+        mustSucceed(client.from("byes").update({
           participant_id: targetBye.participant_id.id,
           match_points: targetBye.match_points,
           differential: targetBye.differential,
-        }).eq("id", sourceByeId),
+        }).eq("id", sourceByeId)),
 
-        client.from("byes").update({
+        mustSucceed(client.from("byes").update({
           participant_id: sourceBye.participant_id.id,
           match_points: sourceBye.match_points,
           differential: sourceBye.differential,
-        }).eq("id", targetByeId),
+        }).eq("id", targetByeId)),
       ]);
 
       // Recompute participant totals from history so the swapped byes are
@@ -840,7 +861,8 @@ export default function TournamentRounds({
       await fetchCurrentRoundData();
     } catch (error) {
       console.error("Error swapping players with bye:", error);
-      showToast("Error swapping players with bye. Please try again.", "error");
+      showToast("The swap did not finish. Check the pairings before trying again.", "error");
+      await fetchCurrentRoundData();
     } finally {
       setIsLoading(false);
     }
@@ -861,28 +883,28 @@ export default function TournamentRounds({
       // the source of truth. When the match is later scored, match-edit will
       // compute fresh snapshots from participants.match_points.
       if (isSourcePlayer2) {
-        await client.from("matches").update({
+        await mustSucceed(client.from("matches").update({
           player2_id: bye.participant_id.id,
           player1_score: null,
           player2_score: null,
-        }).eq("id", sourceMatch.id);
+        }).eq("id", sourceMatch.id));
       } else {
-        await client.from("matches").update({
+        await mustSucceed(client.from("matches").update({
           player1_id: bye.participant_id.id,
           player1_score: null,
           player2_score: null,
-        }).eq("id", sourceMatch.id);
+        }).eq("id", sourceMatch.id));
       }
 
       // Structural mutation 2: reassign the bye to the swapped-in player.
       // Per-bye match_points/differential store the bye CONTRIBUTION, not
       // cumulative — match the regenerate_current_round_pairings convention.
       // Always 3 and 0 (algorithm.md), the same values pairing writes.
-      await client.from("byes").update({
+      await mustSucceed(client.from("byes").update({
         participant_id: playerId,
         match_points: 3,
         differential: 0,
-      }).eq("id", targetByeId);
+      }).eq("id", targetByeId));
 
       // Now derive participant totals from history. This is what was missing
       // before — the old code did incremental math against stale per-match
@@ -899,7 +921,8 @@ export default function TournamentRounds({
       await fetchCurrentRoundData();
     } catch (error) {
       console.error("Error swapping player with bye:", error);
-      showToast("Error swapping player with bye. Please try again.", "error");
+      showToast("The swap did not finish. Check the pairings before trying again.", "error");
+      await fetchCurrentRoundData();
     } finally {
       setIsLoading(false);
     }
@@ -1346,7 +1369,10 @@ export default function TournamentRounds({
                         }
                       </p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Click any player or <button onClick={() => {setRepairMode(false); setRepairSourceMatch(null);}} className="text-primary hover:text-primary/80 underline">cancel</button>
+                        {/* On a phone only the arrows respond; names are the
+                            targets in the desktop table. */}
+                        <span className="md:hidden">Tap another player&apos;s arrow</span>
+                        <span className="hidden md:inline">Click any player</span> or <button onClick={() => {setRepairMode(false); setRepairSourceMatch(null);}} className="text-primary hover:text-primary/80 underline">cancel</button>
                       </p>
                     </div>
                   )}
