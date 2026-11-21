@@ -20,6 +20,7 @@ import { suggestNumberOfRounds } from "../../../../utils/tournamentUtils";
 import { createPairing } from "../../../../utils/tournament/pairingUtilsV2";
 import { buildStateFromSupabase } from "../../../../utils/tournament/stateAdapter";
 import { isNameFrozen } from "../../../../utils/tournament/naming";
+import { initialHostTab, tournamentReadOutcome } from "../../../../utils/tournament/hostPageLoad";
 import { parseTournamentName, shortTournamentName } from "../../../../utils/tournament/displayName";
 import { TournamentName } from "../../../../components/tournament/TournamentName";
 import { recomputeTotalsFromHistory } from "../../../../lib/tournament/results";
@@ -73,6 +74,7 @@ export default function TournamentPage({
   const [isEditTournamentModalOpen, setIsEditTournamentModalOpen] =
     useState<boolean>(false);
   const [activeTab, setActiveTab] = useState(0);
+  const initialTabChosenRef = useRef(false);
   const [isEditParticipantModalOpen, setIsEditParticipantModalOpen] =
     useState<boolean>(false);
   const [loading, setLoading] = useState(true);
@@ -113,6 +115,9 @@ export default function TournamentPage({
   const [publishing, setPublishing] = useState(false);
   const [togglingStatus, setTogglingStatus] = useState(false);
   const [tournamentNotFound, setTournamentNotFound] = useState(false);
+  // The last read of the tournament row failed without saying it is gone.
+  const [tournamentLoadFailed, setTournamentLoadFailed] = useState(false);
+  const [retryingLoad, setRetryingLoad] = useState(false);
   // Header overflow-menu controls the Re-pair dialog
   const [repairDialogOpen, setRepairDialogOpen] = useState(false);
   // Bumped after re-pair RPC succeeds so TournamentRounds re-fetches matches.
@@ -157,20 +162,21 @@ export default function TournamentPage({
     }
   }, [tournament?.name]);
 
-  const handleAddParticipant = async (name: string) => {
-    if (!name.trim()) return;
+  // Resolves whether the name was saved. The Add Participant dialog stays
+  // open across names and shows each result itself, so nothing here closes it.
+  const handleAddParticipant = async (name: string): Promise<boolean> => {
+    if (!name.trim()) return false;
     try {
       const { error } = await supabase
         .from("participants")
         .insert([{ name, tournament_id: id }]);
       if (error) throw error;
       fetchParticipants();
-      showToast("Participant added successfully!", "success");
+      return true;
     } catch (error) {
-      showToast("Error adding participant.", "error");
+      showToast(`Couldn't add ${name}.`, "error");
       console.error("Error adding participant:", error);
-    } finally {
-      setIsModalOpen(false);
+      return false;
     }
   };
 
@@ -181,21 +187,39 @@ export default function TournamentPage({
         .select("*")
         .eq("id", id)
         .single();
-      if (error) throw error;
-      if (!data) {
+      const outcome = tournamentReadOutcome(data, error);
+      if (outcome === "not_found") {
+        // Zero rows: deleted, or no longer this host's to read. Nothing on
+        // screen is true any more, so the "not found" card replaces it.
+        console.error("Error fetching tournament details:", error);
+        setTournament(null);
         setTournamentNotFound(true);
+        setTournamentLoadFailed(false);
         return;
+      }
+      if (outcome === "failed") throw error;
+      // Once, on the first load: a reload mid-event lands on Rounds, and after
+      // the end on Standings. Later reads leave the host's own tab alone.
+      if (!initialTabChosenRef.current) {
+        initialTabChosenRef.current = true;
+        setActiveTab(initialHostTab(data));
       }
       setTournament(data);
       setTournamentNotFound(false);
+      setTournamentLoadFailed(false);
     } catch (error) {
-      // Supabase returns a PGRST116 error code when .single() hits 0 rows.
-      // Treat any fetch failure on a fresh load (no tournament loaded yet)
-      // as a "not found" so the user gets a real error state instead of
-      // an indefinite "Loading…" breadcrumb.
+      // The read itself failed (connection, timeout). That says nothing about
+      // the tournament, so a tournament already on screen stays, with its tabs
+      // and any scores being typed, and the host is offered a retry.
       console.error("Error fetching tournament details:", error);
-      setTournamentNotFound(true);
+      setTournamentLoadFailed(true);
     }
+  };
+
+  const retryTournamentLoad = async () => {
+    setRetryingLoad(true);
+    await fetchTournamentDetails();
+    setRetryingLoad(false);
   };
 
   // useCallback so the check-in poller below can depend on a stable identity —
@@ -864,9 +888,27 @@ export default function TournamentPage({
               </Link>
             </div>
           )}
-          {!tournament && !tournamentNotFound && (
+          {tournamentLoadFailed && !tournament && (
+            <div className="my-12 rounded-lg border border-border bg-card p-8 text-center">
+              <h2 className="text-xl font-semibold text-foreground">
+                Couldn&apos;t load this tournament
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Check your connection and try again.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                disabled={retryingLoad}
+                onClick={retryTournamentLoad}
+              >
+                {retryingLoad ? "Retrying…" : "Retry"}
+              </Button>
+            </div>
+          )}
+          {!tournament && !tournamentNotFound && !tournamentLoadFailed && (
             <header
-              className="print:hidden sticky top-0 z-30 -mx-3 sm:-mx-5 mb-4 px-3 sm:px-5 py-3 backdrop-blur bg-background/80 border-b border-border"
+              className="print:hidden sticky top-16 z-30 -mx-3 sm:-mx-5 mb-4 px-3 sm:px-5 py-3 bg-background border-b border-border"
             >
               <div className="h-16 animate-pulse rounded-md bg-muted/30" />
             </header>
@@ -879,7 +921,10 @@ export default function TournamentPage({
                 isRoundActive={isRoundActive}
               />
               <header
-                className="print:hidden relative sticky top-0 z-30 -mx-3 sm:-mx-5 mb-4 px-3 sm:px-5 py-3 backdrop-blur bg-background/80 border-b border-border"
+                // top-16 clears the site nav, which is pinned above this at
+                // 64px. Opaque, so the page does not show through it once it
+                // is pinned over the content.
+                className="print:hidden relative sticky top-16 z-30 -mx-3 sm:-mx-5 mb-4 px-3 sm:px-5 py-3 bg-background border-b border-border"
               >
                 {/* Thin progress bar at the very top edge — ambient "how much
                     time is left" signal, only mounted while a round is live. */}
@@ -1009,6 +1054,27 @@ export default function TournamentPage({
                     )
                   );
                 })()}
+
+                {/* A refresh failed. Everything already loaded stays; this
+                    row rides in the pinned header so it is seen from anywhere
+                    on the page. */}
+                {tournamentLoadFailed && (
+                  <div
+                    role="alert"
+                    className="mt-2 flex items-center justify-between gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-sm text-foreground"
+                  >
+                    <span>Couldn&apos;t refresh. What&apos;s shown may be out of date.</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-shrink-0"
+                      disabled={retryingLoad}
+                      onClick={retryTournamentLoad}
+                    >
+                      {retryingLoad ? "Retrying…" : "Retry"}
+                    </Button>
+                  </div>
+                )}
               </header>
 
               {/* Backstop for the gate above: a frozen event has no rename
@@ -1017,17 +1083,19 @@ export default function TournamentPage({
                 isOpen={isEditTournamentModalOpen && !nameFrozen}
                 onClose={() => setIsEditTournamentModalOpen(false)}
                 onSave={async () => {
+                  const name = newTournamentName.trim();
+                  if (!name) return;
                   try {
                     const { error } = await supabase
                       .from("tournaments")
-                      .update({ name: newTournamentName })
+                      .update({ name })
                       .eq("id", id);
 
                     if (error) throw error;
 
                     setTournament((prev) => ({
                       ...prev,
-                      name: newTournamentName,
+                      name,
                     }));
                     setIsEditTournamentModalOpen(false);
                     showToast(
@@ -1042,12 +1110,6 @@ export default function TournamentPage({
                 tournamentName={newTournamentName}
                 setTournamentName={setNewTournamentName}
               />
-
-              {participants.length === 0 && (
-                <p className="text-sm text-muted-foreground mb-4">
-                  Add participants to get started
-                </p>
-              )}
 
               {/* Publish decklists section — kept inline below the header since
                   it's a substantial post-tournament panel, not a quick action. */}
@@ -1100,7 +1162,7 @@ export default function TournamentPage({
               )}
             </>
           )}
-          {!tournamentNotFound && <TournamentTabs
+          {!tournamentNotFound && !(tournamentLoadFailed && !tournament) && <TournamentTabs
             participants={participants}
             isModalOpen={isModalOpen}
             setIsModalOpen={setIsModalOpen}
@@ -1124,6 +1186,7 @@ export default function TournamentPage({
             tournamentLoaded={!!tournament}
             tournamentName={tournament?.name}
             tournamentFormat={tournament?.deck_format || null}
+            tournamentCategory={tournament?.category ?? null}
             onTournamentEnd={async () => {
               // End Round writes new match_points/differential to participants;
               // refresh both so Standings doesn't render stale zeros.

@@ -12,7 +12,8 @@ import {
 interface ParticipantFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (name: string) => void;
+  /** Saves one name. Resolves false when the save failed. */
+  onSubmit: (name: string) => Promise<boolean>;
   existingNames?: string[];
 }
 
@@ -25,15 +26,40 @@ const ParticipantFormModal: React.FC<ParticipantFormModalProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const [duplicateName, setDuplicateName] = useState<string | null>(null);
+  // What this sitting of the dialog has done so far. A roster is typed one
+  // name after another with the dialog left open, so the result of each save
+  // is shown here rather than in a toast the host has already typed past.
+  const [added, setAdded] = useState<string[]>([]);
+  const [failed, setFailed] = useState<string[]>([]);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus();
     }
+    // Cleared on open, not on close: a save still in flight when Done was
+    // pressed lands after the close.
+    if (isOpen) {
+      setAdded([]);
+      setFailed([]);
+    }
     if (!isOpen) {
       setDuplicateName(null);
     }
   }, [isOpen]);
+
+  // The field is cleared and focused again at once, so the next name can be
+  // typed while this one saves.
+  const add = async (name: string) => {
+    formRef.current?.reset();
+    setTimeout(() => inputRef.current?.focus(), 0);
+    const ok = await onSubmit(name);
+    if (ok) {
+      setAdded((prev) => [...prev, name]);
+      setFailed((prev) => prev.filter((n) => n !== name));
+    } else {
+      setFailed((prev) => (prev.includes(name) ? prev : [...prev, name]));
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -42,20 +68,20 @@ const ParticipantFormModal: React.FC<ParticipantFormModalProps> = ({
     if (!name) return;
 
     const normalized = name.toLowerCase();
-    const collision = existingNames.find(
+    const collision = [...existingNames, ...added].find(
       (existing) => existing.trim().toLowerCase() === normalized,
     );
     if (collision) {
       setDuplicateName(name);
       return;
     }
-    onSubmit(name);
+    add(name);
   };
 
   const confirmDuplicate = () => {
     if (duplicateName) {
-      onSubmit(duplicateName);
       setDuplicateName(null);
+      add(duplicateName);
     }
   };
 
@@ -106,13 +132,24 @@ const ParticipantFormModal: React.FC<ParticipantFormModalProps> = ({
                 placeholder="Max 35 characters"
                 className="w-full rounded-lg border border-border bg-card text-foreground px-3 py-2 text-sm focus:ring-2 focus:ring-ring focus:outline-none"
               />
+              {failed.length > 0 && (
+                <p role="alert" className="pt-1 text-sm text-destructive">
+                  Couldn&apos;t add {failed.join(", ")}. Type {failed.length === 1 ? "the name" : "them"} again.
+                </p>
+              )}
+              {added.length > 0 && (
+                <p aria-live="polite" className="pt-1 text-sm text-muted-foreground">
+                  Added {added[added.length - 1]}
+                  {added.length > 1 && ` · ${added.length} added`}
+                </p>
+              )}
             </DialogBody>
             <DialogFooter className="justify-end">
               <Button type="submit" variant="success">
                 Add
               </Button>
               <Button type="button" variant="cancel" onClick={onClose}>
-                Cancel
+                Done
               </Button>
             </DialogFooter>
           </form>

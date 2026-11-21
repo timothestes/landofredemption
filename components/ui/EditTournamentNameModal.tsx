@@ -40,7 +40,8 @@ export default function EditTournamentNameModal({
           />
         </DialogBody>
         <DialogFooter className="justify-end">
-          <Button variant="success" onClick={onSave}>
+          {/* A blank name would leave the page with an empty heading. */}
+          <Button variant="success" onClick={onSave} disabled={!tournamentName.trim()}>
             Save
           </Button>
           <Button variant="cancel" onClick={onClose}>
