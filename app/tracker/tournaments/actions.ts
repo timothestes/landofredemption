@@ -56,6 +56,21 @@ async function requireHost(tournamentId: string): Promise<{ userId: string } | n
   return t ? { userId: user.id } : null;
 }
 
+// The only pointer to a published copy is tournament_decklists.published_deck_id, and nothing in the database
+// removes a copy when that row goes (the foreign key only clears the pointer). So whatever deletes the row, or
+// the tournament above it, takes the copy down first with this. The copy's cards go with it (deck_cards
+// cascades). Limited to the system user's decks, so it can never delete a player's own deck. Callers must have
+// proven host authority: the admin client bypasses RLS.
+async function deletePublishedCopies(deckIds: string[]): Promise<boolean> {
+  const { error } = await getSupabaseAdmin()
+    .from("decks")
+    .delete()
+    .in("id", deckIds)
+    .eq("user_id", REDEMPTIONCCG_USER_ID);
+  if (error) console.error("Error deleting published deck copies:", error);
+  return !error;
+}
+
 // ─── Types ──────────────────────────────────────────────────────────
 
 export interface TournamentDecklistRow {
@@ -391,6 +406,22 @@ export async function attachDeckToParticipantAction(
 export async function detachDeckFromParticipantAction(participantId: string) {
   const supabase = await createClient();
 
+  // On a published event this deck has a public copy. It comes down before the link row does: once the row is
+  // gone nothing points at the copy, and neither this action nor Unpublish could find it again. Published link
+  // rows are publicly readable, so reading one proves nothing; requireHost does.
+  const { data: link } = await supabase
+    .from("tournament_decklists")
+    .select("tournament_id, published_deck_id")
+    .eq("participant_id", participantId)
+    .maybeSingle();
+  if (link?.published_deck_id) {
+    const host = await requireHost(link.tournament_id);
+    if (!host) return { success: false, error: "not_found" };
+    if (!(await deletePublishedCopies([link.published_deck_id]))) {
+      return { success: false, error: "public_copy_not_removed" };
+    }
+  }
+
   // Proof-of-delete: only when the user-scoped delete actually removed a row
   // (i.e. RLS let it through because the caller is the host) do we touch the
   // admin-only submissions table. Without this, any authenticated caller
@@ -414,6 +445,37 @@ export async function detachDeckFromParticipantAction(participantId: string) {
   const admin = getSupabaseAdmin();
   await admin.from("tournament_deck_submissions").delete().eq("participant_id", participantId);
 
+  return { success: true };
+}
+
+// ─── Delete tournament ──────────────────────────────────────────────
+
+/**
+ * Deletes a tournament the caller hosts. A published tournament's public deck copies are deleted first: the
+ * database removes the link rows with the tournament but leaves the copies, public and unreachable. If the
+ * copies cannot be removed the tournament is kept, so the host can try again.
+ */
+export async function deleteTournamentAction(
+  tournamentId: string
+): Promise<{ success: boolean; error?: string }> {
+  const host = await requireHost(tournamentId);
+  if (!host) return { success: false, error: "not_found" };
+
+  const supabase = await createClient();
+  const { data: links, error: linksError } = await supabase
+    .from("tournament_decklists")
+    .select("published_deck_id")
+    .eq("tournament_id", tournamentId)
+    .not("published_deck_id", "is", null);
+  if (linksError) return { success: false, error: linksError.message };
+
+  const copyIds = (links ?? []).map((l: any) => l.published_deck_id).filter(Boolean);
+  if (copyIds.length > 0 && !(await deletePublishedCopies(copyIds))) {
+    return { success: false, error: "public_copies_not_removed" };
+  }
+
+  const { error } = await supabase.from("tournaments").delete().eq("id", tournamentId);
+  if (error) return { success: false, error: error.message };
   return { success: true };
 }
 

@@ -141,6 +141,8 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
     const result = await detachDeckFromParticipantAction(participantId);
     if (result.success) {
       onDecklistsChange();
+    } else if (result.error === "public_copy_not_removed") {
+      showToast("The public copy could not be taken down, so the deck was not removed. Try again.", "error");
     }
   }
 

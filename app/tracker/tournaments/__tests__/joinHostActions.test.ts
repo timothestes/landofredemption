@@ -49,6 +49,7 @@ import {
   updateJoinSettingsAction,
   attachDeckToParticipantAction,
   detachDeckFromParticipantAction,
+  deleteTournamentAction,
   removeParticipantWithBlockAction,
   recheckAllSubmissionsAction,
   setResultsPublishedAction,
@@ -393,6 +394,144 @@ describe("detachDeckFromParticipantAction", () => {
     expect(r).toEqual({ success: true });
     expect(submissions.delete).toHaveBeenCalledTimes(1);
     expect(submissions.eq).toHaveBeenCalledWith("participant_id", "p1");
+  });
+
+  // A published event has a public copy of the deck. Once the link row is gone
+  // nothing points at that copy, so it has to come down first.
+  function publishedDeck(hostReadsTournament: boolean) {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "host1" } } });
+    const tournaments = makeNode();
+    tournaments._resp = { data: hostReadsTournament ? { id: "t1" } : null, error: null };
+    const tournamentDecklists = makeNode();
+    tournamentDecklists.maybeSingle.mockResolvedValue({
+      data: { tournament_id: "t1", published_deck_id: "pub-1" },
+      error: null,
+    });
+    tournamentDecklists._resp = { data: [{ tournament_id: "t1" }], error: null };
+    userClientImpl = makeClient({ tournaments, tournament_decklists: tournamentDecklists });
+    const decks = makeNode();
+    const submissions = makeNode();
+    adminImpl = makeClient({ decks, tournament_deck_submissions: submissions });
+    return { tournamentDecklists, decks, submissions };
+  }
+
+  it("published deck: the public copy is deleted, before the link row", async () => {
+    const { tournamentDecklists, decks, submissions } = publishedDeck(true);
+
+    const r = await detachDeckFromParticipantAction("p1");
+
+    expect(r).toEqual({ success: true });
+    expect(decks.delete).toHaveBeenCalledTimes(1);
+    expect(decks.in).toHaveBeenCalledWith("id", ["pub-1"]);
+    // System-owned copies only: never a player's own deck.
+    expect(decks.eq).toHaveBeenCalledWith("user_id", REDEMPTIONCCG_USER_ID);
+    expect(tournamentDecklists.delete).toHaveBeenCalledTimes(1);
+    expect(decks.delete.mock.invocationCallOrder[0]).toBeLessThan(
+      tournamentDecklists.delete.mock.invocationCallOrder[0]
+    );
+    expect(submissions.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it("published deck: when the public copy cannot be deleted, nothing else is removed", async () => {
+    const { tournamentDecklists, decks, submissions } = publishedDeck(true);
+    decks._resp = { data: null, error: { message: "boom" } };
+
+    const r = await detachDeckFromParticipantAction("p1");
+
+    expect(r).toEqual({ success: false, error: "public_copy_not_removed" });
+    expect(tournamentDecklists.delete).not.toHaveBeenCalled();
+    expect(submissions.delete).not.toHaveBeenCalled();
+  });
+
+  it("published deck: someone who can read the row but is not the host deletes nothing", async () => {
+    // Published link rows are publicly readable, so reading one proves nothing.
+    const { tournamentDecklists, decks, submissions } = publishedDeck(false);
+
+    const r = await detachDeckFromParticipantAction("p1");
+
+    expect(r).toEqual({ success: false, error: "not_found" });
+    expect(decks.delete).not.toHaveBeenCalled();
+    expect(tournamentDecklists.delete).not.toHaveBeenCalled();
+    expect(submissions.delete).not.toHaveBeenCalled();
+  });
+});
+
+// ─── deleteTournamentAction ─────────────────────────────────────────────
+
+describe("deleteTournamentAction", () => {
+  function setup(opts: { isHost?: boolean; copies?: (string | null)[] } = {}) {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "host1" } } });
+    const tournaments = makeNode();
+    tournaments.maybeSingle.mockResolvedValue({
+      data: opts.isHost === false ? null : { id: "t1" },
+      error: null,
+    });
+    const tournamentDecklists = makeNode();
+    tournamentDecklists._resp = {
+      data: (opts.copies ?? []).map((id) => ({ published_deck_id: id })),
+      error: null,
+    };
+    userClientImpl = makeClient({ tournaments, tournament_decklists: tournamentDecklists });
+    const decks = makeNode();
+    adminImpl = makeClient({ decks });
+    return { tournaments, tournamentDecklists, decks };
+  }
+
+  it("published tournament: its public deck copies are deleted, then the tournament", async () => {
+    const { tournaments, decks } = setup({ copies: ["pub-1", "pub-2"] });
+
+    const r = await deleteTournamentAction("t1");
+
+    expect(r).toEqual({ success: true });
+    expect(decks.delete).toHaveBeenCalledTimes(1);
+    expect(decks.in).toHaveBeenCalledWith("id", ["pub-1", "pub-2"]);
+    expect(decks.eq).toHaveBeenCalledWith("user_id", REDEMPTIONCCG_USER_ID);
+    expect(tournaments.delete).toHaveBeenCalledTimes(1);
+    expect(tournaments.eq).toHaveBeenCalledWith("id", "t1");
+    expect(decks.delete.mock.invocationCallOrder[0]).toBeLessThan(
+      tournaments.delete.mock.invocationCallOrder[0]
+    );
+  });
+
+  it("nothing published: deletes the tournament and no deck", async () => {
+    const { tournaments, decks } = setup({ copies: [] });
+
+    const r = await deleteTournamentAction("t1");
+
+    expect(r).toEqual({ success: true });
+    expect(decks.delete).not.toHaveBeenCalled();
+    expect(tournaments.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it("when the public copies cannot be deleted, the tournament is kept", async () => {
+    const { tournaments, decks } = setup({ copies: ["pub-1"] });
+    decks._resp = { data: null, error: { message: "boom" } };
+
+    const r = await deleteTournamentAction("t1");
+
+    expect(r).toEqual({ success: false, error: "public_copies_not_removed" });
+    expect(tournaments.delete).not.toHaveBeenCalled();
+  });
+
+  it("when the copies cannot be looked up, the tournament is kept", async () => {
+    const { tournaments, tournamentDecklists, decks } = setup();
+    tournamentDecklists._resp = { data: null, error: { message: "boom" } };
+
+    const r = await deleteTournamentAction("t1");
+
+    expect(r).toEqual({ success: false, error: "boom" });
+    expect(decks.delete).not.toHaveBeenCalled();
+    expect(tournaments.delete).not.toHaveBeenCalled();
+  });
+
+  it("not the host: nothing is deleted", async () => {
+    const { tournaments, decks } = setup({ isHost: false, copies: ["pub-1"] });
+
+    const r = await deleteTournamentAction("t1");
+
+    expect(r).toEqual({ success: false, error: "not_found" });
+    expect(decks.delete).not.toHaveBeenCalled();
+    expect(tournaments.delete).not.toHaveBeenCalled();
   });
 });
 
