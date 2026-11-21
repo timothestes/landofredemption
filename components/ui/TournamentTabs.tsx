@@ -303,7 +303,6 @@ export default function TournamentTabs({
           <div className="w-full max-w-[800px] mx-auto overflow-x-auto">
             <ParticipantTable
               tournamentStarted={tournamentStarted}
-              tournamentEnded={tournamentEnded}
               participants={participants}
               onEdit={onEdit}
               onDelete={onDelete}

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Table } from "flowbite-react";
 import { HiPencil, HiTrash } from "react-icons/hi";
-import { BookOpen, CircleMinus, CirclePlus, Crown, Link2Off, RefreshCw } from "lucide-react";
+import { BookOpen, CircleMinus, CirclePlus, Link2Off, RefreshCw } from "lucide-react";
 import AttachDeckDialog from "./AttachDeckDialog";
 import type { TournamentDecklistRow, DeckSearchResult } from "../../app/tracker/tournaments/actions";
 import {
@@ -40,7 +40,6 @@ interface ParticipantTableProps {
   onDelete: (id: string) => void;
   onDropOut: (id: string) => void;
   onDropIn: (id: string) => void;
-  tournamentEnded?: boolean;
   tournamentId: string;
   // Tournament's raw deck_format column — passed through to AttachDeckDialog
   // for its attach gate. null/'Other' means "attach anything."
@@ -62,7 +61,6 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
   onDelete,
   onDropOut,
   onDropIn,
-  tournamentEnded = false,
   tournamentId,
   tournamentFormat,
   decklists,
@@ -104,30 +102,14 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
   }, [decklists]);
 
   // Participants tab is a roster view — sort alphabetically so hosts can find
-  // players by name. Score-based ranking lives in the Standings tab.
+  // players by name. Score-based ranking and the winner's crown live in the
+  // Standings tab, the one place that applies head-to-head.
   const sortedParticipants = useMemo(() =>
     [...participants].sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
     ),
     [participants]
   );
-
-  // Winner crown still highlights the final-standings leader; compute it from
-  // raw match_points/differential regardless of the alphabetical display order.
-  const { winnerMatchPoints, winnerDifferential } = useMemo(() => {
-    const ranked = [...participants].sort((a, b) => {
-      const mpA = a.match_points !== null ? a.match_points : -Infinity;
-      const mpB = b.match_points !== null ? b.match_points : -Infinity;
-      if (mpA !== mpB) return mpB - mpA;
-      const diffA = a.differential !== null ? a.differential : -Infinity;
-      const diffB = b.differential !== null ? b.differential : -Infinity;
-      return diffB - diffA;
-    });
-    return {
-      winnerMatchPoints: ranked[0]?.match_points ?? 0,
-      winnerDifferential: ranked[0]?.differential ?? 0,
-    };
-  }, [participants]);
 
   async function handleAttachDeck(deck: DeckSearchResult) {
     if (!attachTarget) return;
@@ -319,22 +301,14 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
       {/* Mobile card list */}
       <ul className="md:hidden space-y-2">
         {sortedParticipants.map((participant) => {
-          const isWinner =
-            participant.match_points === winnerMatchPoints &&
-            participant.differential === winnerDifferential;
           return (
             <li
               key={participant.id}
-              className={`rounded-lg border border-border bg-card p-3 ${
-                isWinner && tournamentEnded ? "ring-1 ring-yellow-500/40 bg-yellow-500/5" : ""
-              }`}
+              className="rounded-lg border border-border bg-card p-3"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                    {isWinner && tournamentEnded && (
-                      <Crown className="w-4 h-4 text-orange-300 flex-shrink-0" />
-                    )}
                     <span className="font-medium text-foreground truncate">
                       {participant.name}
                     </span>
@@ -401,20 +375,10 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
           </Table.Head>
           <Table.Body>
             {sortedParticipants.map((participant) => {
-              const isWinner =
-                participant.match_points === winnerMatchPoints &&
-                participant.differential === winnerDifferential;
-
               return (
-                <Table.Row
-                  key={participant.id}
-                  className={`${isWinner && tournamentEnded ? "bg-yellow-500/5 dark:bg-yellow-500/10 border-yellow-500/20" : ""} `}
-                >
+                <Table.Row key={participant.id}>
                   <Table.Cell className="font-medium text-foreground py-3">
                     <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                      {isWinner && tournamentEnded && (
-                        <Crown className="w-4 h-4 text-orange-300 flex-shrink-0" />
-                      )}
                       <span className="truncate">{participant.name}</span>
                       {participant.user_id != null && usernames.get(participant.user_id) && (
                         <span
