@@ -336,9 +336,13 @@ export default function TournamentPage({
       decks.success === false && decks.error !== "No decklists to publish";
     if (results.success === false || deckFailure) {
       showToast("Ended, but publishing failed — use the Publish section.", "warning");
+    } else if (decks.failed) {
+      showToast(`Results published, but ${decks.failed} of the decklists could not be.`, "warning");
     } else {
       showToast("Tournament ended — results published.", "success");
     }
+    // The Publish section reads the tournament row; without a re-read it goes on saying "Results private".
+    await fetchTournamentDetails();
   };
 
   const performEndTournament = async (publish: boolean) => {

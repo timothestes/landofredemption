@@ -134,6 +134,12 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
     const result = await attachDeckToParticipantAction(tournamentId, attachTarget.id, deck.id);
     if (result.success) {
       onDecklistsChange();
+      if (result.publicCopyUpdated === false) {
+        showToast(
+          "Deck attached, but it is not on the public page yet. Unpublish, then Publish again to rebuild the public decklists.",
+          "warning"
+        );
+      }
     }
   }
 
@@ -141,6 +147,8 @@ const ParticipantTable: React.FC<ParticipantTableProps> = ({
     const result = await detachDeckFromParticipantAction(participantId);
     if (result.success) {
       onDecklistsChange();
+    } else if (result.error === "public_copy_not_removed") {
+      showToast("The public copy could not be taken down, so the deck was not removed. Try again.", "error");
     }
   }
 

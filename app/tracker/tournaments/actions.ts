@@ -56,6 +56,21 @@ async function requireHost(tournamentId: string): Promise<{ userId: string } | n
   return t ? { userId: user.id } : null;
 }
 
+// The only pointer to a published copy is tournament_decklists.published_deck_id, and nothing in the database
+// removes a copy when that row goes (the foreign key only clears the pointer). So whatever deletes the row, or
+// the tournament above it, takes the copy down first with this. The copy's cards go with it (deck_cards
+// cascades). Limited to the system user's decks, so it can never delete a player's own deck. Callers must have
+// proven host authority: the admin client bypasses RLS.
+async function deletePublishedCopies(deckIds: string[]): Promise<boolean> {
+  const { error } = await getSupabaseAdmin()
+    .from("decks")
+    .delete()
+    .in("id", deckIds)
+    .eq("user_id", REDEMPTIONCCG_USER_ID);
+  if (error) console.error("Error deleting published deck copies:", error);
+  return !error;
+}
+
 // ─── Types ──────────────────────────────────────────────────────────
 
 export interface TournamentDecklistRow {
@@ -313,7 +328,7 @@ export async function attachDeckToParticipantAction(
   // tournament_decklists attach above intact and simply skip the snapshot.
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("deck_format")
+    .select("deck_format, decklists_published")
     .eq("id", tournamentId)
     .maybeSingle();
   const format = normalizeTournamentFormat(tournament?.deck_format);
@@ -383,6 +398,13 @@ export async function attachDeckToParticipantAction(
     );
   }
 
+  // The event's decklists are already public: this deck gets its public copy now (or the copy it had is
+  // refreshed), instead of staying off the public page until an Unpublish and Publish.
+  if (tournament?.decklists_published) {
+    const synced = await publishDecklists(tournamentId, tournament.deck_format ?? "Other", participantId);
+    return { success: true, publicCopyUpdated: synced.success && synced.failed === 0 };
+  }
+
   return { success: true };
 }
 
@@ -390,6 +412,22 @@ export async function attachDeckToParticipantAction(
 
 export async function detachDeckFromParticipantAction(participantId: string) {
   const supabase = await createClient();
+
+  // On a published event this deck has a public copy. It comes down before the link row does: once the row is
+  // gone nothing points at the copy, and neither this action nor Unpublish could find it again. Published link
+  // rows are publicly readable, so reading one proves nothing; requireHost does.
+  const { data: link } = await supabase
+    .from("tournament_decklists")
+    .select("tournament_id, published_deck_id")
+    .eq("participant_id", participantId)
+    .maybeSingle();
+  if (link?.published_deck_id) {
+    const host = await requireHost(link.tournament_id);
+    if (!host) return { success: false, error: "not_found" };
+    if (!(await deletePublishedCopies([link.published_deck_id]))) {
+      return { success: false, error: "public_copy_not_removed" };
+    }
+  }
 
   // Proof-of-delete: only when the user-scoped delete actually removed a row
   // (i.e. RLS let it through because the caller is the host) do we touch the
@@ -414,6 +452,37 @@ export async function detachDeckFromParticipantAction(participantId: string) {
   const admin = getSupabaseAdmin();
   await admin.from("tournament_deck_submissions").delete().eq("participant_id", participantId);
 
+  return { success: true };
+}
+
+// ─── Delete tournament ──────────────────────────────────────────────
+
+/**
+ * Deletes a tournament the caller hosts. A published tournament's public deck copies are deleted first: the
+ * database removes the link rows with the tournament but leaves the copies, public and unreachable. If the
+ * copies cannot be removed the tournament is kept, so the host can try again.
+ */
+export async function deleteTournamentAction(
+  tournamentId: string
+): Promise<{ success: boolean; error?: string }> {
+  const host = await requireHost(tournamentId);
+  if (!host) return { success: false, error: "not_found" };
+
+  const supabase = await createClient();
+  const { data: links, error: linksError } = await supabase
+    .from("tournament_decklists")
+    .select("published_deck_id")
+    .eq("tournament_id", tournamentId)
+    .not("published_deck_id", "is", null);
+  if (linksError) return { success: false, error: linksError.message };
+
+  const copyIds = (links ?? []).map((l: any) => l.published_deck_id).filter(Boolean);
+  if (copyIds.length > 0 && !(await deletePublishedCopies(copyIds))) {
+    return { success: false, error: "public_copies_not_removed" };
+  }
+
+  const { error } = await supabase.from("tournaments").delete().eq("id", tournamentId);
+  if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
@@ -678,7 +747,14 @@ export async function updateSubmissionAsHostAction(
   tournamentId: string,
   participantId: string,
   cards: unknown
-): Promise<{ success: boolean; isLegal?: boolean | null; issues?: DeckCheckIssue[]; error?: string }> {
+): Promise<{
+  success: boolean;
+  isLegal?: boolean | null;
+  issues?: DeckCheckIssue[];
+  /** Only on an event whose decklists are published: whether the public copy now shows the saved list. */
+  publicCopyUpdated?: boolean;
+  error?: string;
+}> {
   const host = await requireHost(tournamentId);
   if (!host) return { success: false, error: "not_found" };
 
@@ -698,7 +774,7 @@ export async function updateSubmissionAsHostAction(
   const supabase = await createClient();
   const { data: tournament } = await supabase
     .from("tournaments")
-    .select("deck_format")
+    .select("deck_format, decklists_published")
     .eq("id", tournamentId)
     .maybeSingle();
   const format = normalizeTournamentFormat(tournament?.deck_format);
@@ -719,7 +795,13 @@ export async function updateSubmissionAsHostAction(
     .eq("id", sub.id);
   if (error) return { success: false, error: error.message };
 
-  return { success: true, isLegal: verdict ? verdict.isLegal : null, issues: verdict?.issues ?? [] };
+  const saved = { success: true, isLegal: verdict ? verdict.isLegal : null, issues: verdict?.issues ?? [] };
+  // The event's decklists are already public: the public copy takes the corrected list too.
+  if (tournament?.decklists_published) {
+    const synced = await publishDecklists(tournamentId, tournament.deck_format ?? "Other", participantId);
+    return { ...saved, publicCopyUpdated: synced.success && synced.failed === 0 };
+  }
+  return saved;
 }
 
 // ─── Remove participant (with optional rejoin block) ───────────────────
@@ -850,6 +932,23 @@ export async function publishTournamentDecklistsAction(
   tournamentId: string,
   deckFormat: string
 ) {
+  return publishDecklists(tournamentId, deckFormat);
+}
+
+/**
+ * Makes the public copies match the decks on record, player by player: a copy that exists is refreshed where
+ * it is (its address keeps working), a missing one is made. `published` and `failed` say how many attached
+ * decks ended with and without a current public copy.
+ *
+ * With `onlyParticipantId` it does this for one player on an event that is already published, after the host
+ * attached or corrected that player's deck. Placings were saved when the event was published, so they are
+ * read, not recomputed, and the tournament row is left alone.
+ */
+async function publishDecklists(
+  tournamentId: string,
+  deckFormat: string,
+  onlyParticipantId?: string
+): Promise<{ success: boolean; error?: string; published?: number; failed?: number }> {
   const supabase = await createClient();
   const admin = getSupabaseAdmin();
 
@@ -865,16 +964,18 @@ export async function publishTournamentDecklistsAction(
   }
 
   // Get all decklists with participant names
-  const { data: decklists, error: fetchError } = await supabase
+  let decklistQuery = supabase
     .from("tournament_decklists")
     .select(`
       id,
       deck_id,
       published_deck_id,
       participant_id,
-      participants!inner ( name )
+      participants!inner ( name, place )
     `)
     .eq("tournament_id", tournamentId);
+  if (onlyParticipantId) decklistQuery = decklistQuery.eq("participant_id", onlyParticipantId);
+  const { data: decklists, error: fetchError } = await decklistQuery;
 
   if (fetchError) {
     console.error("Error fetching decklists:", fetchError);
@@ -889,7 +990,9 @@ export async function publishTournamentDecklistsAction(
   // Uses the pure standings module so head-to-head tiebreakers are applied
   // (previous code only sorted by match_points then differential, which missed
   // the head-to-head step required by algorithm.md).
-  const placementMap = await persistFinalPlaces(tournamentId);
+  const placementMap = onlyParticipantId
+    ? new Map<string, number>()
+    : await persistFinalPlaces(tournamentId);
 
   // Submissions live in a default-deny table — admin client, so authority
   // must be proven first. The tournament read above already proved it (RLS
@@ -907,42 +1010,9 @@ export async function publishTournamentDecklistsAction(
     }
   }
 
-  // Check if copies already exist (previous publish that was unpublished)
-  const existingPublishedIds = (decklists as any[])
-    .map((dl: any) => dl.published_deck_id)
-    .filter(Boolean);
+  let published = 0;
+  let failed = 0;
 
-  if (existingPublishedIds.length > 0) {
-    const { data: existingCopies } = await admin
-      .from("decks")
-      .select("id")
-      .in("id", existingPublishedIds)
-      .eq("user_id", REDEMPTIONCCG_USER_ID);
-
-    if (existingCopies && existingCopies.length === existingPublishedIds.length) {
-      // All copies still exist — just make them public again
-      await admin
-        .from("decks")
-        .update({ visibility: "public" })
-        .in("id", existingPublishedIds)
-        .eq("user_id", REDEMPTIONCCG_USER_ID);
-
-      // Mark tournament as published
-      const { error: updateError } = await supabase
-        .from("tournaments")
-        .update({ decklists_published: true, deck_format: deckFormat })
-        .eq("id", tournamentId);
-
-      if (updateError) {
-        console.error("Error publishing tournament:", updateError);
-        return { success: false, error: updateError.message };
-      }
-
-      return { success: true };
-    }
-  }
-
-  // No existing copies — create them fresh
   for (const dl of decklists as any[]) {
     const participantName = dl.participants?.name || "Unknown";
     const submission = submissionMap.get(dl.participant_id);
@@ -1021,7 +1091,10 @@ export async function publishTournamentDecklistsAction(
         .eq("id", dl.deck_id)
         .single();
 
-      if (!origDeck) continue;
+      if (!origDeck) {
+        failed += 1;
+        continue;
+      }
 
       // Fetch original deck cards. Maybeboard rows are excluded from the
       // tournament submission — only main + reserve get published.
@@ -1055,54 +1128,105 @@ export async function publishTournamentDecklistsAction(
       console.warn(
         `publishTournamentDecklistsAction: participant ${dl.participant_id} has neither a submission nor a live deck; skipping.`
       );
+      failed += 1;
       continue;
     }
 
-    // Create copy owned by RedemptionCCG.app
-    const deckName = publishedDeckName(
-      participantName,
-      placementMap.get(dl.participant_id),
-      tournament.name
-    );
-    const { data: newDeck, error: createError } = await admin
-      .from("decks")
-      .insert({
-        user_id: REDEMPTIONCCG_USER_ID,
-        name: deckName,
-        description: deckMeta.description,
-        format: deckFormat !== "Other" ? deckFormat : deckMeta.format,
-        paragon: deckMeta.paragon,
-        preview_card_1: deckMeta.preview_card_1,
-        preview_card_2: deckMeta.preview_card_2,
-        card_count: deckMeta.card_count,
-        visibility: "public",
-        is_legal: deckMeta.is_legal,
-        deckcheck_issues: deckMeta.deckcheck_issues,
-      })
-      .select("id")
-      .single();
+    const copyFields = {
+      name: publishedDeckName(
+        participantName,
+        onlyParticipantId
+          ? dl.participants?.place ?? undefined
+          : placementMap.get(dl.participant_id),
+        tournament.name
+      ),
+      description: deckMeta.description,
+      format: deckFormat !== "Other" ? deckFormat : deckMeta.format,
+      paragon: deckMeta.paragon,
+      preview_card_1: deckMeta.preview_card_1,
+      preview_card_2: deckMeta.preview_card_2,
+      card_count: deckMeta.card_count,
+      visibility: "public",
+      is_legal: deckMeta.is_legal,
+      deckcheck_issues: deckMeta.deckcheck_issues,
+    };
 
-    if (createError || !newDeck) {
-      console.error("Error creating deck copy:", createError);
-      continue;
+    // A copy from an earlier publish is refreshed where it is, so its address keeps working. Only a copy that
+    // is really gone is made again: after a failed refresh the old copy stays the one the event points at,
+    // rather than a second public copy appearing beside it.
+    let copyId: string | null = null;
+    if (dl.published_deck_id) {
+      const { data: kept, error: refreshError } = await admin
+        .from("decks")
+        .update(copyFields)
+        .eq("id", dl.published_deck_id)
+        .eq("user_id", REDEMPTIONCCG_USER_ID)
+        .select("id")
+        .maybeSingle();
+      if (refreshError) {
+        console.error("Error refreshing deck copy:", refreshError);
+        failed += 1;
+        continue;
+      }
+      if (kept) {
+        copyId = kept.id;
+        const { error: clearError } = await admin.from("deck_cards").delete().eq("deck_id", copyId);
+        if (clearError) {
+          console.error("Error clearing deck copy cards:", clearError);
+          failed += 1;
+          continue;
+        }
+      }
     }
 
-    // Copy cards to the new deck
+    if (!copyId) {
+      // Create copy owned by RedemptionCCG.app
+      const { data: newDeck, error: createError } = await admin
+        .from("decks")
+        .insert({ user_id: REDEMPTIONCCG_USER_ID, ...copyFields })
+        .select("id")
+        .single();
+
+      if (createError || !newDeck) {
+        console.error("Error creating deck copy:", createError);
+        failed += 1;
+        continue;
+      }
+      copyId = newDeck.id;
+
+      // Store published copy ID separately — deck_id stays as the user's original.
+      // Before the cards, so a copy whose cards then fail is still one Unpublish can find. A copy the event
+      // cannot point at is taken straight back down: nothing could ever find it again.
+      const { error: linkError } = await admin
+        .from("tournament_decklists")
+        .update({ published_deck_id: copyId })
+        .eq("id", dl.id);
+      if (linkError) {
+        console.error("Error linking deck copy:", linkError);
+        await deletePublishedCopies([copyId]);
+        failed += 1;
+        continue;
+      }
+    }
+
+    // Copy cards to the copy
     if (cardsToInsert.length > 0) {
       const cardRows = cardsToInsert.map((c) => ({
-        deck_id: newDeck.id,
+        deck_id: copyId,
         ...c,
       }));
 
-      await admin.from("deck_cards").insert(cardRows);
+      const { error: cardsError } = await admin.from("deck_cards").insert(cardRows);
+      if (cardsError) {
+        console.error("Error writing deck copy cards:", cardsError);
+        failed += 1;
+        continue;
+      }
     }
-
-    // Store published copy ID separately — deck_id stays as the user's original
-    await admin
-      .from("tournament_decklists")
-      .update({ published_deck_id: newDeck.id })
-      .eq("id", dl.id);
+    published += 1;
   }
+
+  if (onlyParticipantId) return { success: true, published, failed };
 
   // Mark tournament as published with format
   const { error: updateError } = await supabase
@@ -1118,7 +1242,7 @@ export async function publishTournamentDecklistsAction(
     return { success: false, error: updateError.message };
   }
 
-  return { success: true };
+  return { success: true, published, failed };
 }
 
 // ─── Unpublish decklists ────────────────────────────────────────────

@@ -16,6 +16,7 @@ import { normalizeTier } from "../../../utils/tournament/tiers";
 import { pageHostedEvents } from "../../../utils/tournament/hostedEvents";
 import { parseTournamentName, sharedEventParts } from "../../../utils/tournament/displayName";
 import { getFormatDef } from "@/lib/formats";
+import { deleteTournamentAction } from "./actions";
 
 const FORMAT_CHIP = "inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground";
 
@@ -228,7 +229,7 @@ function TournamentsPageInner() {
   };
 
   const deleteTournament = async (id) => {
-    const { error } = await supabase.from("tournaments").delete().eq("id", id);
+    const { error } = await deleteTournamentAction(id);
     if (error) console.error("Error deleting tournament:", error);
     else {
       fetchTournaments();

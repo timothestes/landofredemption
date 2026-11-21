@@ -49,6 +49,7 @@ import {
   updateJoinSettingsAction,
   attachDeckToParticipantAction,
   detachDeckFromParticipantAction,
+  deleteTournamentAction,
   removeParticipantWithBlockAction,
   recheckAllSubmissionsAction,
   setResultsPublishedAction,
@@ -394,6 +395,144 @@ describe("detachDeckFromParticipantAction", () => {
     expect(submissions.delete).toHaveBeenCalledTimes(1);
     expect(submissions.eq).toHaveBeenCalledWith("participant_id", "p1");
   });
+
+  // A published event has a public copy of the deck. Once the link row is gone
+  // nothing points at that copy, so it has to come down first.
+  function publishedDeck(hostReadsTournament: boolean) {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "host1" } } });
+    const tournaments = makeNode();
+    tournaments._resp = { data: hostReadsTournament ? { id: "t1" } : null, error: null };
+    const tournamentDecklists = makeNode();
+    tournamentDecklists.maybeSingle.mockResolvedValue({
+      data: { tournament_id: "t1", published_deck_id: "pub-1" },
+      error: null,
+    });
+    tournamentDecklists._resp = { data: [{ tournament_id: "t1" }], error: null };
+    userClientImpl = makeClient({ tournaments, tournament_decklists: tournamentDecklists });
+    const decks = makeNode();
+    const submissions = makeNode();
+    adminImpl = makeClient({ decks, tournament_deck_submissions: submissions });
+    return { tournamentDecklists, decks, submissions };
+  }
+
+  it("published deck: the public copy is deleted, before the link row", async () => {
+    const { tournamentDecklists, decks, submissions } = publishedDeck(true);
+
+    const r = await detachDeckFromParticipantAction("p1");
+
+    expect(r).toEqual({ success: true });
+    expect(decks.delete).toHaveBeenCalledTimes(1);
+    expect(decks.in).toHaveBeenCalledWith("id", ["pub-1"]);
+    // System-owned copies only: never a player's own deck.
+    expect(decks.eq).toHaveBeenCalledWith("user_id", REDEMPTIONCCG_USER_ID);
+    expect(tournamentDecklists.delete).toHaveBeenCalledTimes(1);
+    expect(decks.delete.mock.invocationCallOrder[0]).toBeLessThan(
+      tournamentDecklists.delete.mock.invocationCallOrder[0]
+    );
+    expect(submissions.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it("published deck: when the public copy cannot be deleted, nothing else is removed", async () => {
+    const { tournamentDecklists, decks, submissions } = publishedDeck(true);
+    decks._resp = { data: null, error: { message: "boom" } };
+
+    const r = await detachDeckFromParticipantAction("p1");
+
+    expect(r).toEqual({ success: false, error: "public_copy_not_removed" });
+    expect(tournamentDecklists.delete).not.toHaveBeenCalled();
+    expect(submissions.delete).not.toHaveBeenCalled();
+  });
+
+  it("published deck: someone who can read the row but is not the host deletes nothing", async () => {
+    // Published link rows are publicly readable, so reading one proves nothing.
+    const { tournamentDecklists, decks, submissions } = publishedDeck(false);
+
+    const r = await detachDeckFromParticipantAction("p1");
+
+    expect(r).toEqual({ success: false, error: "not_found" });
+    expect(decks.delete).not.toHaveBeenCalled();
+    expect(tournamentDecklists.delete).not.toHaveBeenCalled();
+    expect(submissions.delete).not.toHaveBeenCalled();
+  });
+});
+
+// ─── deleteTournamentAction ─────────────────────────────────────────────
+
+describe("deleteTournamentAction", () => {
+  function setup(opts: { isHost?: boolean; copies?: (string | null)[] } = {}) {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "host1" } } });
+    const tournaments = makeNode();
+    tournaments.maybeSingle.mockResolvedValue({
+      data: opts.isHost === false ? null : { id: "t1" },
+      error: null,
+    });
+    const tournamentDecklists = makeNode();
+    tournamentDecklists._resp = {
+      data: (opts.copies ?? []).map((id) => ({ published_deck_id: id })),
+      error: null,
+    };
+    userClientImpl = makeClient({ tournaments, tournament_decklists: tournamentDecklists });
+    const decks = makeNode();
+    adminImpl = makeClient({ decks });
+    return { tournaments, tournamentDecklists, decks };
+  }
+
+  it("published tournament: its public deck copies are deleted, then the tournament", async () => {
+    const { tournaments, decks } = setup({ copies: ["pub-1", "pub-2"] });
+
+    const r = await deleteTournamentAction("t1");
+
+    expect(r).toEqual({ success: true });
+    expect(decks.delete).toHaveBeenCalledTimes(1);
+    expect(decks.in).toHaveBeenCalledWith("id", ["pub-1", "pub-2"]);
+    expect(decks.eq).toHaveBeenCalledWith("user_id", REDEMPTIONCCG_USER_ID);
+    expect(tournaments.delete).toHaveBeenCalledTimes(1);
+    expect(tournaments.eq).toHaveBeenCalledWith("id", "t1");
+    expect(decks.delete.mock.invocationCallOrder[0]).toBeLessThan(
+      tournaments.delete.mock.invocationCallOrder[0]
+    );
+  });
+
+  it("nothing published: deletes the tournament and no deck", async () => {
+    const { tournaments, decks } = setup({ copies: [] });
+
+    const r = await deleteTournamentAction("t1");
+
+    expect(r).toEqual({ success: true });
+    expect(decks.delete).not.toHaveBeenCalled();
+    expect(tournaments.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it("when the public copies cannot be deleted, the tournament is kept", async () => {
+    const { tournaments, decks } = setup({ copies: ["pub-1"] });
+    decks._resp = { data: null, error: { message: "boom" } };
+
+    const r = await deleteTournamentAction("t1");
+
+    expect(r).toEqual({ success: false, error: "public_copies_not_removed" });
+    expect(tournaments.delete).not.toHaveBeenCalled();
+  });
+
+  it("when the copies cannot be looked up, the tournament is kept", async () => {
+    const { tournaments, tournamentDecklists, decks } = setup();
+    tournamentDecklists._resp = { data: null, error: { message: "boom" } };
+
+    const r = await deleteTournamentAction("t1");
+
+    expect(r).toEqual({ success: false, error: "boom" });
+    expect(decks.delete).not.toHaveBeenCalled();
+    expect(tournaments.delete).not.toHaveBeenCalled();
+  });
+
+  it("not the host: nothing is deleted", async () => {
+    const { tournaments, decks } = setup({ isHost: false, copies: ["pub-1"] });
+
+    const r = await deleteTournamentAction("t1");
+
+    expect(r).toEqual({ success: false, error: "not_found" });
+    expect(decks.delete).not.toHaveBeenCalled();
+    expect(tournaments.delete).not.toHaveBeenCalled();
+  });
 });
 
 // ─── removeParticipantWithBlockAction ───────────────────────────────────
@@ -720,7 +859,7 @@ describe("publishTournamentDecklistsAction — snapshot-first", () => {
 
     const r = await publishTournamentDecklistsAction("t1", "Limited");
 
-    expect(r).toEqual({ success: true });
+    expect(r).toEqual({ success: true, published: 1, failed: 0 });
 
     // The live deck may be consulted for ONE thing — the cover art the player
     // hand-picked, which lives on the deck row and not in the snapshot. Cards
@@ -814,8 +953,263 @@ describe("publishTournamentDecklistsAction — snapshot-first", () => {
 
     const r = await publishTournamentDecklistsAction("t1", "Limited");
 
-    expect(r).toEqual({ success: true });
+    // Not an error, but not reported as published either.
+    expect(r).toEqual({ success: true, published: 0, failed: 1 });
     expect(decks.insert).not.toHaveBeenCalled();
+  });
+});
+
+// Publishing works player by player: a copy that exists is refreshed where it
+// is (same address), a missing one is made, and what failed is counted.
+describe("publishTournamentDecklistsAction — per player", () => {
+  const SNAPSHOT = {
+    deckName: "Submitted Deck",
+    deckFormat: "Limited",
+    cards: [{ name: "Snapshot Card", set: "TPC", imgFile: "snap.jpg", quantity: 3, zone: "main" }],
+  };
+
+  function setup(rows: { id: string; participant_id: string; published_deck_id: string | null; name: string }[]) {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "host1" } } });
+
+    const tournaments = makeNode();
+    tournaments.single.mockResolvedValue({ data: { name: "Spring Open" }, error: null });
+    tournaments.maybeSingle.mockResolvedValue({ data: { id: "t1" }, error: null }); // requireHost
+
+    const tournamentDecklists = makeNode();
+    tournamentDecklists._resp = {
+      data: rows.map((r) => ({
+        id: r.id,
+        deck_id: null,
+        published_deck_id: r.published_deck_id,
+        participant_id: r.participant_id,
+        participants: { name: r.name, place: null },
+      })),
+      error: null,
+    };
+    const participants = makeNode();
+    userClientImpl = makeClient({ tournaments, tournament_decklists: tournamentDecklists, participants });
+
+    mockBuildStateFromSupabase.mockResolvedValue({ fake: "state" });
+    mockComputeFinalStandings.mockReturnValue(rows.map((r, i) => ({ participantId: r.participant_id, place: i + 1 })));
+
+    const submissions = makeNode();
+    submissions._resp = {
+      data: rows.map((r) => ({
+        participant_id: r.participant_id,
+        is_legal: true,
+        deckcheck_issues: null,
+        deck_snapshot: SNAPSHOT,
+      })),
+      error: null,
+    };
+    const decks = makeNode();
+    const deckCards = makeNode();
+    adminImpl = makeClient({
+      tournament_deck_submissions: submissions,
+      decks,
+      deck_cards: deckCards,
+      tournament_decklists: tournamentDecklists,
+    });
+    return { tournaments, tournamentDecklists, decks, deckCards };
+  }
+
+  it("a copy that already exists gets the current list, at the same address", async () => {
+    const { tournamentDecklists, decks, deckCards } = setup([
+      { id: "dl1", participant_id: "p1", published_deck_id: "pub-1", name: "Timmy" },
+    ]);
+    decks.maybeSingle.mockResolvedValue({ data: { id: "pub-1" }, error: null });
+
+    const r = await publishTournamentDecklistsAction("t1", "Limited");
+
+    expect(r).toEqual({ success: true, published: 1, failed: 0 });
+    expect(decks.insert).not.toHaveBeenCalled();
+    expect(decks.update).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Timmy - 1st Place - Spring Open", card_count: 3, visibility: "public" })
+    );
+    expect(decks.eq).toHaveBeenCalledWith("id", "pub-1");
+    expect(decks.eq).toHaveBeenCalledWith("user_id", REDEMPTIONCCG_USER_ID);
+    // Old cards out, current cards in.
+    expect(deckCards.delete).toHaveBeenCalledTimes(1);
+    expect(deckCards.eq).toHaveBeenCalledWith("deck_id", "pub-1");
+    expect(deckCards.insert).toHaveBeenCalledWith([
+      { deck_id: "pub-1", card_name: "Snapshot Card", card_set: "TPC", card_img_file: "snap.jpg", quantity: 3, zone: "main" },
+    ]);
+    expect(tournamentDecklists.update).not.toHaveBeenCalled();
+  });
+
+  it("a deck attached after publishing gets its own copy; the others keep theirs", async () => {
+    const { tournamentDecklists, decks } = setup([
+      { id: "dl1", participant_id: "p1", published_deck_id: "pub-1", name: "Timmy" },
+      { id: "dl2", participant_id: "p2", published_deck_id: null, name: "Sally" },
+    ]);
+    decks.maybeSingle.mockResolvedValue({ data: { id: "pub-1" }, error: null });
+    decks.single.mockResolvedValue({ data: { id: "new-2" }, error: null });
+
+    const r = await publishTournamentDecklistsAction("t1", "Limited");
+
+    expect(r).toEqual({ success: true, published: 2, failed: 0 });
+    expect(decks.insert).toHaveBeenCalledTimes(1);
+    expect(decks.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: REDEMPTIONCCG_USER_ID, name: "Sally - 2nd Place - Spring Open" })
+    );
+    expect(tournamentDecklists.update).toHaveBeenCalledTimes(1);
+    expect(tournamentDecklists.update).toHaveBeenCalledWith({ published_deck_id: "new-2" });
+  });
+
+  it("a copy that cannot be made is counted as failed, not as published", async () => {
+    const { decks } = setup([{ id: "dl1", participant_id: "p1", published_deck_id: null, name: "Timmy" }]);
+    decks.single.mockResolvedValue({ data: null, error: { message: "boom" } });
+
+    const r = await publishTournamentDecklistsAction("t1", "Limited");
+
+    expect(r).toEqual({ success: true, published: 0, failed: 1 });
+  });
+
+  it("cards that cannot be written are counted as failed", async () => {
+    const { decks, deckCards } = setup([{ id: "dl1", participant_id: "p1", published_deck_id: null, name: "Timmy" }]);
+    decks.single.mockResolvedValue({ data: { id: "new-1" }, error: null });
+    deckCards._resp = { data: null, error: { message: "boom" } };
+
+    const r = await publishTournamentDecklistsAction("t1", "Limited");
+
+    expect(r).toEqual({ success: true, published: 0, failed: 1 });
+  });
+
+  it("a new copy the event cannot be pointed at is taken back down", async () => {
+    const { tournamentDecklists, decks } = setup([
+      { id: "dl1", participant_id: "p1", published_deck_id: null, name: "Timmy" },
+    ]);
+    decks.single.mockResolvedValue({ data: { id: "new-1" }, error: null });
+    // The link-row read succeeds; the write that stores the pointer does not.
+    tournamentDecklists.update.mockImplementation(() => ({
+      eq: async () => ({ data: null, error: { message: "boom" } }),
+    }));
+
+    const r = await publishTournamentDecklistsAction("t1", "Limited");
+
+    expect(r).toEqual({ success: true, published: 0, failed: 1 });
+    expect(decks.delete).toHaveBeenCalledTimes(1);
+    expect(decks.in).toHaveBeenCalledWith("id", ["new-1"]);
+  });
+
+  it("a copy that cannot be refreshed is not replaced by a second public copy", async () => {
+    const { tournamentDecklists, decks } = setup([
+      { id: "dl1", participant_id: "p1", published_deck_id: "pub-1", name: "Timmy" },
+    ]);
+    decks.maybeSingle.mockResolvedValue({ data: null, error: { message: "boom" } });
+
+    const r = await publishTournamentDecklistsAction("t1", "Limited");
+
+    expect(r).toEqual({ success: true, published: 0, failed: 1 });
+    expect(decks.insert).not.toHaveBeenCalled();
+    expect(tournamentDecklists.update).not.toHaveBeenCalled();
+  });
+});
+
+// On a published event the public page shows copies, so a host change to one
+// player's deck has to reach that player's copy.
+describe("public copy follows host changes on a published event", () => {
+  const CARDS = [{ name: "Card A", set: "TPC", imgFile: "a", quantity: 50, zone: "main" }];
+  const SNAPSHOT = { deckName: "D1", deckFormat: "Limited", cards: CARDS };
+
+  function setup(link: { published_deck_id: string | null; name: string; place: number }) {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "host1" } } });
+    mockCleanSnapshotCards.mockImplementation((c: any) => c);
+    mockCheckSnapshotCards.mockResolvedValue({ isLegal: true, issues: [], hasUnresolvedCards: false });
+    mockBuildDeckSubmission.mockResolvedValue({ success: true, snapshot: SNAPSHOT, isLegal: true, issues: [] });
+
+    const tournaments = makeNode();
+    // requireHost, the format lookup and the name lookup all read this row.
+    tournaments._resp = {
+      data: { id: "t1", name: "Spring Open", deck_format: "Limited", decklists_published: true },
+      error: null,
+    };
+    const tournamentDecklists = makeNode();
+    tournamentDecklists.single.mockResolvedValue({ data: null, error: null }); // attach: no row yet
+    tournamentDecklists._resp = {
+      data: [
+        {
+          id: "dl1",
+          deck_id: null,
+          published_deck_id: link.published_deck_id,
+          participant_id: "p1",
+          participants: { name: link.name, place: link.place },
+        },
+      ],
+      error: null,
+    };
+    userClientImpl = makeClient({ tournaments, tournament_decklists: tournamentDecklists });
+
+    const participants = makeNode();
+    participants._resp = { data: { id: "p1" }, error: null };
+    const submissions = makeNode();
+    submissions.maybeSingle.mockResolvedValue({ data: { id: "s1", deck_snapshot: SNAPSHOT }, error: null });
+    submissions._resp = {
+      data: [{ participant_id: "p1", is_legal: true, deckcheck_issues: null, deck_snapshot: SNAPSHOT }],
+      error: null,
+    };
+    const decks = makeNode();
+    const deckCards = makeNode();
+    const adminDecklists = makeNode();
+    adminImpl = makeClient({
+      participants,
+      tournament_deck_submissions: submissions,
+      decks,
+      deck_cards: deckCards,
+      tournament_decklists: adminDecklists,
+    });
+    return { tournaments, tournamentDecklists, decks, deckCards, adminDecklists };
+  }
+
+  it("host corrects a list: that player's public copy gets the corrected cards", async () => {
+    const { tournaments, tournamentDecklists, decks, deckCards } = setup({
+      published_deck_id: "pub-1",
+      name: "Timmy",
+      place: 2,
+    });
+    decks.maybeSingle.mockResolvedValue({ data: { id: "pub-1" }, error: null });
+
+    const r = await updateSubmissionAsHostAction("t1", "p1", CARDS);
+
+    expect(r).toEqual({ success: true, isLegal: true, issues: [], publicCopyUpdated: true });
+    // Only this player's copy, named from the place already saved: standings are not recomputed.
+    expect(tournamentDecklists.eq).toHaveBeenCalledWith("participant_id", "p1");
+    expect(mockBuildStateFromSupabase).not.toHaveBeenCalled();
+    expect(decks.update).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Timmy - 2nd Place - Spring Open", card_count: 50 })
+    );
+    expect(decks.insert).not.toHaveBeenCalled();
+    expect(deckCards.insert).toHaveBeenCalledWith([
+      { deck_id: "pub-1", card_name: "Card A", card_set: "TPC", card_img_file: "a", quantity: 50, zone: "main" },
+    ]);
+    expect(tournaments.update).not.toHaveBeenCalled();
+  });
+
+  it("host corrects a list but the copy cannot be refreshed: saved, and says the public copy is stale", async () => {
+    const { decks } = setup({ published_deck_id: "pub-1", name: "Timmy", place: 2 });
+    decks.maybeSingle.mockResolvedValue({ data: null, error: { message: "boom" } });
+
+    const r = await updateSubmissionAsHostAction("t1", "p1", CARDS);
+
+    expect(r).toEqual({ success: true, isLegal: true, issues: [], publicCopyUpdated: false });
+  });
+
+  it("host attaches a deck: it gets a public copy straight away", async () => {
+    const { decks, adminDecklists } = setup({ published_deck_id: null, name: "Sally", place: 3 });
+    decks.single.mockResolvedValue({ data: { id: "new-1" }, error: null });
+
+    const r = await attachDeckToParticipantAction("t1", "p1", "deck-1");
+
+    expect(r).toEqual({ success: true, publicCopyUpdated: true });
+    expect(decks.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: REDEMPTIONCCG_USER_ID,
+        name: "Sally - 3rd Place - Spring Open",
+        visibility: "public",
+      })
+    );
+    expect(adminDecklists.update).toHaveBeenCalledWith({ published_deck_id: "new-1" });
+    expect(mockBuildStateFromSupabase).not.toHaveBeenCalled();
   });
 });
 

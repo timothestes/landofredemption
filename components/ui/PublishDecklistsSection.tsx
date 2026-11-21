@@ -37,6 +37,8 @@ export default function PublishDecklistsSection({
   onPublishChange,
 }: PublishDecklistsSectionProps) {
   const [busy, setBusy] = useState(false);
+  // What went wrong with the last Publish or Unpublish; stays in the panel until the next try.
+  const [problem, setProblem] = useState<string | null>(null);
 
   // Don't show if tournament hasn't ended
   if (!tournamentEnded) return null;
@@ -45,24 +47,47 @@ export default function PublishDecklistsSection({
 
   async function handlePublish() {
     setBusy(true);
-    await setResultsPublishedAction(tournamentId, true);
-    if (decklistCount > 0) {
+    setProblem(null);
+    try {
+      const results = await setResultsPublishedAction(tournamentId, true);
       // Format comes from Tournament Settings — the same source the
       // end-of-tournament auto-publish uses.
-      await publishTournamentDecklistsAction(tournamentId, currentFormat || "Other");
+      const decks =
+        decklistCount > 0
+          ? await publishTournamentDecklistsAction(tournamentId, currentFormat || "Other")
+          : null;
+      if (results.success === false) {
+        setProblem("Could not publish. Try again.");
+      } else if (decks?.success === false) {
+        setProblem("The decklists could not be published. Try again.");
+      } else if (decks?.failed) {
+        setProblem(
+          `${decks.failed} of ${decklistCount} decklists could not be published. Unpublish, then Publish to try again.`
+        );
+      }
+    } catch {
+      setProblem("Could not publish. Check your connection and try again.");
+    } finally {
+      setBusy(false);
+      onPublishChange();
     }
-    setBusy(false);
-    onPublishChange();
   }
 
   async function handleUnpublish() {
     setBusy(true);
-    await setResultsPublishedAction(tournamentId, false);
-    if (isPublished) {
-      await unpublishTournamentDecklistsAction(tournamentId);
+    setProblem(null);
+    try {
+      const results = await setResultsPublishedAction(tournamentId, false);
+      const decks = isPublished ? await unpublishTournamentDecklistsAction(tournamentId) : null;
+      if (results.success === false || decks?.success === false) {
+        setProblem("Could not unpublish. Try again.");
+      }
+    } catch {
+      setProblem("Could not unpublish. Check your connection and try again.");
+    } finally {
+      setBusy(false);
+      onPublishChange();
     }
-    setBusy(false);
-    onPublishChange();
   }
 
   const decklistPhrase =
@@ -84,6 +109,11 @@ export default function PublishDecklistsSection({
           >
             View public results page
           </Link>
+          {problem && (
+            <p aria-live="polite" className="text-xs text-destructive">
+              {problem}
+            </p>
+          )}
         </div>
         <Button
           variant="outline"
@@ -107,6 +137,11 @@ export default function PublishDecklistsSection({
         <p className="text-xs text-muted-foreground">
           Publish final standings{decklistPhrase} to a public results page
         </p>
+        {problem && (
+          <p aria-live="polite" className="text-xs text-destructive">
+            {problem}
+          </p>
+        )}
       </div>
       <Button
         variant="success"
