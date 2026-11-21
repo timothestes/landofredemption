@@ -899,7 +899,7 @@ export default function TournamentPage({
           )}
           {!tournament && !tournamentNotFound && !tournamentLoadFailed && (
             <header
-              className="print:hidden sticky top-0 z-30 -mx-3 sm:-mx-5 mb-4 px-3 sm:px-5 py-3 backdrop-blur bg-background/80 border-b border-border"
+              className="print:hidden sticky top-16 z-30 -mx-3 sm:-mx-5 mb-4 px-3 sm:px-5 py-3 bg-background border-b border-border"
             >
               <div className="h-16 animate-pulse rounded-md bg-muted/30" />
             </header>
@@ -912,7 +912,10 @@ export default function TournamentPage({
                 isRoundActive={isRoundActive}
               />
               <header
-                className="print:hidden relative sticky top-0 z-30 -mx-3 sm:-mx-5 mb-4 px-3 sm:px-5 py-3 backdrop-blur bg-background/80 border-b border-border"
+                // top-16 clears the site nav, which is pinned above this at
+                // 64px. Opaque, so the page does not show through it once it
+                // is pinned over the content.
+                className="print:hidden relative sticky top-16 z-30 -mx-3 sm:-mx-5 mb-4 px-3 sm:px-5 py-3 bg-background border-b border-border"
               >
                 {/* Thin progress bar at the very top edge — ambient "how much
                     time is left" signal, only mounted while a round is live. */}
