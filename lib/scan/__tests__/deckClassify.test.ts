@@ -100,6 +100,35 @@ describe('classifyDeckRead: same name, one Rotation-legal card', () => {
   });
 });
 
+// Tim's 2026-11-20 photo: Legion of Angels (GoC) came back as the I starter card. Both are legal, and the starter
+// card won only because it has no ability and none was read, which is true of every card in a deck photo.
+describe('classifyDeckRead: same name, several Rotation-legal cards', () => {
+  const nameOf = (key: string | null) => CARDS.find(x => cardKey(x) === key)!.name;
+  const namesOf = (c: { identityCandidates?: string[] }) =>
+    (c.identityCandidates ?? []).flatMap(k => getScanIndex().identities.get(k)!.cards.map(x => x.name));
+  it('asks which Legion of Angels, with the card that has an ability first', () => {
+    for (const r of [
+      read({ title: 'Legion of Angels' }),
+      read({ title: 'Legion of Angels', type: 'Hero', brigade: 'Silver', strength: '12', toughness: '12', reference: 'Matthew 26:53' }),
+    ]) {
+      const c = classify(r);
+      expect(c.kind).toBe('which');
+      expect(nameOf(c.key)).toBe('Legion of Angels (GoC)');
+      expect(namesOf(c)).toEqual(expect.arrayContaining(['Legion of Angels', 'Legion of Angels (GoC)']));
+      // The picker lists the row's candidates: both cards are in them.
+      expect(c.candidates!.map(x => x.name)).toEqual(expect.arrayContaining(['Legion of Angels', 'Legion of Angels (GoC)']));
+    }
+  });
+  it('a card with one legal identity is not asked about', () => {
+    const c = classify(read({ title: "Crowd's Choice" }));
+    expect(c.kind).toBe('matched');
+    expect(c.identityCandidates).toBeUndefined();
+  });
+  it('a Lost Soul matched by its verse is not asked about', () => {
+    expect(classify(read({ title: 'Lost Soul', type: 'Lost Soul', reference: 'Ezekiel 34:12' })).kind).toBe('matched');
+  });
+});
+
 describe('legalNear', () => {
   it("offers Crowd's Choice for a misread the matcher's own radius rejects", () => {
     expect(legalNear('Cremus Choice')[0].stem).toBe('crowds choice');

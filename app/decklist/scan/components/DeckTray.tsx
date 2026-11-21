@@ -69,6 +69,19 @@ const keyName = (key: string | null): string | null => {
   return a > 0 ? key.slice(0, a) : null;
 };
 
+/**
+ * A printing's name as a search for its card: without the set and print run in trailing brackets, which the name
+ * search does not index (`Lost Soul "Shepherds" [I Samuel 25:7 - L]` searches as `Lost Soul "Shepherds"`).
+ */
+export const searchName = (name: string): string => {
+  let out = name.trim();
+  for (;;) {
+    const next = out.replace(/\s*(\([^()]*\)|\[[^\[\]]*\])\s*$/, '').trim();
+    if (!next || next === out) return out;
+    out = next;
+  }
+};
+
 /** The photos, each with its group sections and rows, then the totals line, the picker and the Undo toast. */
 export default function DeckTray({
   state, dispatch, thumbs, editable, online, signInHref, canRetry, onRetry, onRemovePhoto, onChooseAnother, jumps, hideTotals,
@@ -164,9 +177,15 @@ export default function DeckTray({
     : picker.for === 'add'
       ? 'search'
       : picker.mode === 'printing' && (pickedEntry?.candidates.length ?? 0) === 0 ? 'search' : picker.mode;
-  const pickerTitle = picker?.for === 'row' && picker.mode === 'printing'
-    ? keyName(pickedRow?.key ?? null)
-    : picker?.for === 'row' ? pickedEntry?.title ?? keyName(pickedRow?.key ?? null) : '';
+  // What the search field opens on. A row that has its card opens on that card's name, not on what the photo
+  // read: a Lost Soul reads as "Lost Soul" whichever one it is, and a row changed by hand no longer is its read.
+  const pickerTitle = picker?.for !== 'row'
+    ? ''
+    : picker.mode === 'printing'
+      ? keyName(pickedRow?.key ?? null)
+      : pickedRow?.kind === 'matched' && pickedRow.key
+        ? searchName(keyName(pickedRow.key) ?? '')
+        : pickedEntry?.title ?? keyName(pickedRow?.key ?? null);
 
   const openPicker = (p: Picker) => {
     setPicker(p);

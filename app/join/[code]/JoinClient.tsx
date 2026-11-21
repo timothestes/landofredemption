@@ -87,9 +87,12 @@ function ActionErrorNotice({ res, deckId }: { res: FailedResult; deckId?: string
   if (res.error === "deck_illegal") {
     const rank = (t: string) => (t === "error" ? 0 : t === "warning" ? 1 : 2);
     const issues = (res.issues ?? []).slice().sort((a, b) => rank(a.type) - rank(b.type));
+    const errorCount = issues.filter((i) => i.type === "error").length || issues.length;
     return (
-      <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
-        <p className="font-medium text-foreground">This deck isn&apos;t legal for this event</p>
+      <div className="rounded-md border border-border border-l-2 border-l-amber-500 bg-muted/40 p-3 text-sm">
+        <p className="font-medium text-foreground">
+          {errorCount === 1 ? "1 thing" : `${errorCount} things`} to fix before this deck passes
+        </p>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
           {issues.map((issue, i) => (
             <li key={i}>{issue.message}</li>

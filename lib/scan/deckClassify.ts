@@ -1,7 +1,7 @@
 import { osa, type MatchResult } from './match';
 import type { Box, DeckGroup, DeckOutput, DeckRead } from './deckSchema';
 import type { ScanDetection } from './schema';
-import { getScanIndex } from './stemIndex';
+import { getScanIndex, type ScanIdentity } from './stemIndex';
 import { cardKey, isAB, normalizeTitle } from './vocab';
 
 export type DeckRowKind = 'matched' | 'which' | 'read_as' | 'not_found' | 'unread' | 'lost_soul';
@@ -11,6 +11,8 @@ export interface DeckClass {
   /** The deck printing's cardKey for matched, read_as and which (the provisional choice); else null. */
   key: string | null;
   identityCandidates?: string[];
+  /** Set when the row's candidates are not the matcher's own: every printing of the cards a `which` row asks about. */
+  candidates?: MatchResult['candidates'];
   /** For a not_found row: the nearest Limited-legal card names, for the tray's one-tap suggestions. */
   near?: { stem: string; d: number }[];
 }
@@ -63,19 +65,21 @@ export function legalNear(title: string): { stem: string; d: number }[] {
 const WEAK_WIN = 1;
 
 /**
- * When the matcher picked a card that is not Rotation-legal over a same-name card on weak evidence, and exactly
- * one card of that name is legal, that card's identity; else null. A reference, stats or brigade that agrees
- * (a point or more) keeps the matcher's choice. The type does not, however sure the read: on the eval photos a
- * confident "Site" sat on Herod's Temple (GoC), a Fortress, three times.
+ * The Rotation-legal cards that share the matcher's pick's name, when that pick rests on weak evidence; else null.
+ * A reference, stats or brigade that agrees (a point or more) keeps the matcher's choice. The type does not,
+ * however sure the read: on the eval photos a confident "Site" sat on Herod's Temple (GoC), a Fortress, three
+ * times. Nor does an empty ability: no deck read has one, so it favours the card without an ability every time.
  */
-function soleLegalNamesake(m: MatchResult): string | null {
+function legalNamesakes(m: MatchResult): ScanIdentity[] | null {
   const { identities, byStem } = getScanIndex();
   const chosen = identities.get(m.identityKey!);
-  if (!chosen || chosen.cards.some(rotation)) return null;
+  // A Lost Soul is told apart by its verse, not its name.
+  if (!chosen || chosen.lostSoul) return null;
   if (m.scores.matchScore - m.scores.runnerUpScore >= WEAK_WIN) return null;
-  const legal = (byStem.get(chosen.normalizedStem) ?? []).filter(id => id.cards.some(rotation));
-  return legal.length === 1 ? legal[0].key : null;
+  return (byStem.get(chosen.normalizedStem) ?? []).filter(id => id.cards.some(rotation));
 }
+
+const hasAbility = (id: ScanIdentity) => id.cards.some(c => c.specialAbility.trim() !== '');
 
 /** The spec's From reads to rows table: a deck read plus its matcher result becomes a row kind and printing. */
 export function classifyDeckRead(read: DeckRead, m: MatchResult): DeckClass {
@@ -94,8 +98,23 @@ export function classifyDeckRead(read: DeckRead, m: MatchResult): DeckClass {
     const near = legalNear(read.title ?? '');
     return { kind: 'not_found', key: null, ...(near.length > 0 && { near }) };
   }
-  const legal = soleLegalNamesake(m);
-  const key = legal ? deckPrinting(legal) : deckPrinting(m.identityKey, m.chosen?.key);
+  const legal = legalNamesakes(m);
+  if (legal && legal.length > 1) {
+    // Several legal cards of this name and nothing in the photo to choose by: ask. The one with an ability is the
+    // provisional pick, since a deck seldom plays the plain card when a newer one shares its name.
+    const among = [...legal].sort((a, b) => Number(hasAbility(b)) - Number(hasAbility(a)));
+    return {
+      kind: 'which',
+      key: deckPrinting(among[0].key),
+      identityCandidates: among.map(id => id.key),
+      candidates: among.flatMap(id => id.cards.map(c => ({
+        key: cardKey(c), name: c.name, set: c.set, officialSet: c.officialSet, imgFile: c.imgFile, legality: c.legality, price: null,
+      }))),
+    };
+  }
+  const chosenLegal = getScanIndex().identities.get(m.identityKey)!.cards.some(rotation);
+  // The matcher's pick is not legal and exactly one card of its name is: that one.
+  const key = legal?.length === 1 && !chosenLegal ? deckPrinting(legal[0].key) : deckPrinting(m.identityKey, m.chosen?.key);
   return { kind: m.nameReason === 'fuzzy' && read.confidence === 'low' ? 'read_as' : 'matched', key };
 }
 

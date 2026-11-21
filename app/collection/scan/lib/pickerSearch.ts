@@ -1,7 +1,8 @@
 // Loaded only through import() from the picker: it pulls the whole card catalog.
 import { searchCardNames } from '@/lib/cards/search';
 import { CARDS, findCard, type CardData } from '@/lib/cards/lookup';
-import { cardIdentityKey } from '@/lib/cards/cardIdentity';
+import { cardIdentityKey, cardNameStem } from '@/lib/cards/cardIdentity';
+import { cardNameKey } from '@/lib/cards/nameKey';
 import type { Candidate } from '@/lib/scan/match';
 
 /** A search result printing, tagged with its card identity so a pick can carry its siblings. */
@@ -19,6 +20,38 @@ function printingsOf(identity: string): CardData[] {
     }
   }
   return byIdentity.get(identity) ?? [];
+}
+
+/**
+ * The name index lists one row for every card that shares a name, type, brigade and alignment, so two different
+ * cards share a row: Legion of Angels from the I deck and from Gospel of Christ. A row's printing stands for all
+ * of them here, so the card that was not chosen to represent the row can still be found.
+ */
+const rowKey = (c: CardData) =>
+  [cardNameKey(cardNameStem(c.name, c.type)), c.type, c.brigade, c.alignment].map(s => (s ?? '').toLowerCase()).join('|');
+
+let byRow: Map<string, string[]> | null = null;
+function identitiesSharingRow(card: CardData): string[] {
+  if (!byRow) {
+    byRow = new Map();
+    for (const c of CARDS) {
+      const k = rowKey(c);
+      const id = cardIdentityKey(c);
+      const list = byRow.get(k);
+      if (!list) byRow.set(k, [id]);
+      else if (!list.includes(id)) list.push(id);
+    }
+  }
+  const own = cardIdentityKey(card);
+  return [own, ...(byRow.get(rowKey(card)) ?? []).filter(id => id !== own)];
+}
+
+/** Candidates tagged with their card, so a list of printings can be shown as one row per card. */
+export function withIdentity(candidates: Candidate[]): PickerHit[] {
+  return candidates.map(c => {
+    const card = findCard(c.name, c.set, c.imgFile);
+    return { ...c, identity: card ? cardIdentityKey(card) : `unmatched|${c.key}` };
+  });
 }
 
 /**
@@ -139,12 +172,13 @@ export function searchPrintings(query: string, opts: { lostSoulsFirst?: boolean 
         ? found
         : CARDS.find(c => c.set === hit.set && c.imgFile === hit.imgFile) ?? found;
     if (!card) continue;
-    const identity = cardIdentityKey(card);
-    for (const c of printingsOf(identity)) {
-      const key = `${c.name}|${c.set}|${c.imgFile}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(toHit(c, identity));
+    for (const identity of identitiesSharingRow(card)) {
+      for (const c of printingsOf(identity)) {
+        const key = `${c.name}|${c.set}|${c.imgFile}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(toHit(c, identity));
+      }
     }
   }
   return { hits: out, close };

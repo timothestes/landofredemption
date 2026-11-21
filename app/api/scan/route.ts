@@ -242,7 +242,7 @@ export async function POST(req: Request) {
           // A Not found row offers the nearest Limited-legal names; otherwise the matcher's own near misses.
           ...(c.near ?? m.near ? { near: c.near ?? m.near } : {}),
           scores: m.scores,
-          candidates: m.candidates,
+          candidates: c.candidates ?? m.candidates,
         };
       });
       await finish({
