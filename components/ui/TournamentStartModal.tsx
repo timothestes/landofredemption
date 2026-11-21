@@ -33,6 +33,11 @@ interface TournamentStartModalProps {
   // the Participants toolbar; null/omitted hides the line (tournament doesn't
   // require decklists).
   decklistSummary?: { submitted: number; total: number } | null;
+  // Names the host typed that a player then joined by QR under: probably one
+  // person listed twice, and an entry left in is paired in round 1. An entry
+  // with a deck attached is listed without the remove button.
+  typedDoubles?: { id: string; name: string; hasDeck: boolean }[];
+  onRemoveTypedDouble?: (id: string) => void;
 }
 
 export default function TournamentStartModal({
@@ -47,6 +52,8 @@ export default function TournamentStartModal({
   defaultStartingTableNumber,
   defaultSoundNotifications,
   decklistSummary,
+  typedDoubles = [],
+  onRemoveTypedDouble,
 }: TournamentStartModalProps) {
   const initialRounds = savedRounds ?? suggestedRounds;
   const initialRoundLength = defaultRoundLength ?? 45;
@@ -143,6 +150,38 @@ export default function TournamentStartModal({
               </span>{" "}
               participants have decklists
             </p>
+          )}
+          {typedDoubles.length > 0 && (
+            <div className="rounded-lg border border-border border-l-2 border-l-amber-500 bg-muted/40 p-3 text-sm">
+              <p className="font-medium text-foreground">
+                {typedDoubles.length === 1
+                  ? "1 player may be listed twice"
+                  : `${typedDoubles.length} players may be listed twice`}
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                You typed {typedDoubles.length === 1 ? "this name" : "these names"}, and a player with the
+                same name also joined by QR. If both stay in, both are paired in round 1.
+              </p>
+              <ul className="mt-1">
+                {typedDoubles.map((d) => (
+                  <li key={d.id} className="flex min-h-11 items-center justify-between gap-3">
+                    <span className="min-w-0 truncate text-foreground">{d.name}</span>
+                    {d.hasDeck ? (
+                      <span className="flex-shrink-0 text-xs text-muted-foreground">Deck attached</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onRemoveTypedDouble?.(d.id)}
+                        disabled={isStarting}
+                        className="min-h-11 flex-shrink-0 font-medium text-foreground underline underline-offset-4 focus:outline-none disabled:opacity-50"
+                      >
+                        Remove typed entry
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           {/* Number of Rounds */}
           <div className="flex flex-col items-center jayden-gradient-bg rounded-lg border border-border p-5">
