@@ -81,6 +81,23 @@ function LegalityBadge({ isLegal }: { isLegal: boolean | null }) {
   return null;
 }
 
+/** The deck picked from the list, with the way back to the list. */
+function ChosenDeck({ name, onChange }: { name: string; onChange: () => void }) {
+  return (
+    <div className="mt-1 flex items-stretch justify-between rounded-md border border-border bg-card text-sm">
+      <span className="min-w-0 self-center truncate px-3 py-2 font-medium text-foreground">{name}</span>
+      {/* As tall as the row, and a thumb high: a small word alone is easy to miss on a phone. */}
+      <button
+        type="button"
+        onClick={onChange}
+        className="min-h-11 flex-shrink-0 px-3 text-xs text-muted-foreground hover:text-foreground focus:outline-none"
+      >
+        Change
+      </button>
+    </div>
+  );
+}
+
 const ERROR_MESSAGES: Partial<Record<FailedResult["error"], string>> = {
   blocked: "The host has blocked you from this event.",
   already_joined: "You're already registered for this event — refreshing…",
@@ -396,7 +413,10 @@ export default function JoinClient({
                   type="button"
                   variant="outline"
                   className="mt-3 w-full"
-                  onClick={() => setShowChangeDeck((v) => !v)}
+                  onClick={() => {
+                    setSelectedDeck(null);
+                    setShowChangeDeck((v) => !v);
+                  }}
                 >
                   {showChangeDeck ? "Cancel" : "Change decklist"}
                 </Button>
@@ -418,7 +438,11 @@ export default function JoinClient({
                     type="button"
                     variant="outline"
                     className="flex-1"
-                    onClick={() => setShowChangeDeck(true)}
+                    onClick={() => {
+                      // The deck this player joined with is still held from the join form: start with none picked.
+                      setSelectedDeck(null);
+                      setShowChangeDeck(true);
+                    }}
                   >
                     Use a different deck
                   </Button>
@@ -441,14 +465,40 @@ export default function JoinClient({
                 <ActionErrorNotice res={result.res} deckId={result.deckId} />
               </div>
             )}
-            <DeckPicker
-              tournamentFormat={info.deckFormat}
-              userId={userId}
-              code={code}
-              eventName={info.tournamentName}
-              photoSubmitLabel="Submit this deck"
-              onSelect={(id) => handleResubmit(id)}
-            />
+            {selectedDeck ? (
+              // As on the join form: a tap picks, and replacing the list on record takes a press of its own,
+              // which shows that it is being checked.
+              <>
+                <div className="mt-2">
+                  <ChosenDeck name={selectedDeck.name} onChange={() => setSelectedDeck(null)} />
+                </div>
+                <Button
+                  type="button"
+                  className="mt-3 w-full"
+                  disabled={submitting}
+                  onClick={() => void handleResubmit(selectedDeck.id)}
+                >
+                  <span className="min-w-0 truncate">
+                    {submitting ? "Submitting…" : `Submit ${selectedDeck.name}`}
+                  </span>
+                </Button>
+              </>
+            ) : (
+              <DeckPicker
+                tournamentFormat={info.deckFormat}
+                userId={userId}
+                code={code}
+                eventName={info.tournamentName}
+                photoSubmitLabel="Submit this deck"
+                // The photo tab's button is the submit: the deck is checked and saved, then handed in. The picker
+                // steps aside for the chosen deck, so the progress and any failure show here, not above a long tray.
+                onPhotoDeck={(id, name) => {
+                  setSelectedDeck({ id, name });
+                  void handleResubmit(id);
+                }}
+                onSelect={(id, name) => setSelectedDeck({ id, name })}
+              />
+            )}
           </>
         )}
 
@@ -524,16 +574,7 @@ export default function JoinClient({
           <div>
             <p className="text-sm font-medium text-foreground">Decklist</p>
             {selectedDeck ? (
-              <div className="mt-1 flex items-center justify-between rounded-md border border-border bg-card px-3 py-2 text-sm">
-                <span className="truncate font-medium text-foreground">{selectedDeck.name}</span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedDeck(null)}
-                  className="ml-2 flex-shrink-0 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Change
-                </button>
-              </div>
+              <ChosenDeck name={selectedDeck.name} onChange={() => setSelectedDeck(null)} />
             ) : (
               <DeckPicker
                 tournamentFormat={info.deckFormat}
