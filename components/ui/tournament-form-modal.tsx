@@ -4,7 +4,12 @@ import {
   STANDARD_CATEGORIES,
   otherCategories,
 } from "../../utils/tournament/categoryDefaults";
-import { buildTournamentName, isNameFrozen } from "../../utils/tournament/naming";
+import {
+  buildTournamentName,
+  fromDateInputValue,
+  isNameFrozen,
+  toDateInputValue,
+} from "../../utils/tournament/naming";
 import { TOURNAMENT_TIERS } from "../../utils/tournament/tiers";
 import { US_STATES, normalizeState } from "../../utils/tournament/usStates";
 import {
@@ -29,7 +34,9 @@ interface TournamentFormModalProps {
       city: string | null;
       state: string | null;
     }[]
-  ) => void;
+  ) => void | Promise<void>;
+  // Why the last create failed. Shown above the buttons; the dialog stays open.
+  error?: string | null;
   // Location the source listing advertised, pre-filled when hosting from one.
   listingCity?: string;
   listingState?: string | null;
@@ -39,6 +46,12 @@ interface TournamentFormModalProps {
   categoryOptions?: string[];
   // Tier the source listing advertised, pre-selected when hosting from one.
   defaultTier?: string | null;
+  // The day of the event as "2026-11-28": the listing's start date, or the day
+  // the event's other categories carry. Today when omitted.
+  defaultDate?: string | null;
+  // Open with no category ticked. For adding a category to an existing event,
+  // where a pre-ticked first category would be created a second time.
+  startEmpty?: boolean;
 }
 
 // Drop a trailing "- 2P" / "2P" player-count suffix; it reads as clutter.
@@ -48,10 +61,13 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
   isOpen,
   onClose,
   onSubmit,
+  error,
   listingCity,
   listingState,
   categoryOptions,
   defaultTier,
+  defaultDate,
+  startEmpty,
 }) => {
   const firstCheckboxRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
@@ -61,12 +77,18 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
   // creates — one event is one tier in one place even when it runs several
   // categories. "" means unspecified.
   const [tier, setTier] = useState<string>("");
+  // The day of the event, as the date field holds it. It goes into the
+  // generated name, so a host setting up the night before can say so.
+  const [eventDate, setEventDate] = useState<string>("");
   const [city, setCity] = useState<string>("");
   const [state, setState] = useState<string>("");
   // Once the host edits the name, we stop auto-building it from the category.
   const [nameTouched, setNameTouched] = useState(false);
   // The standard categories beyond a listing's own formats start tucked away.
   const [showOthers, setShowOthers] = useState(false);
+  // True while the create request is running, so a second tap on Add cannot
+  // create the tournament twice.
+  const [submitting, setSubmitting] = useState(false);
 
   const hasListingOptions = !!categoryOptions && categoryOptions.length > 0;
   const options = Array.from(
@@ -84,28 +106,36 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
     if (!isOpen) return;
     // Pre-check the first type so the modal opens ready to add one tournament,
     // matching the previous single-select default. The host can check more.
-    const initial = options[0] ? [options[0]] : [];
+    // Not when adding to an existing event, which may already have that type.
+    const initial = options[0] && !startEmpty ? [options[0]] : [];
     const initialTier = defaultTier ?? "";
+    const initialDate = toDateInputValue(
+      fromDateInputValue(defaultDate) ?? new Date()
+    );
     const initialCity = listingCity ?? "";
     const initialState = normalizeState(listingState) ?? "";
     setSelected(initial);
     setTier(initialTier);
+    setEventDate(initialDate);
     setCity(initialCity);
     setState(initialState);
     setNameTouched(false);
     setShowOthers(false);
     setName(
-      buildTournamentName(cleanCategory(initial[0] ?? ""), {
-        tier: initialTier || null,
-        city: initialCity || null,
-        state: initialState || null,
-      })
+      initial[0]
+        ? buildTournamentName(cleanCategory(initial[0]), {
+            date: fromDateInputValue(initialDate) ?? undefined,
+            tier: initialTier || null,
+            city: initialCity || null,
+            state: initialState || null,
+          })
+        : ""
     );
     requestAnimationFrame(() => {
       firstCheckboxRef.current?.focus();
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, defaultTier, listingCity, listingState]);
+  }, [isOpen, defaultTier, defaultDate, listingCity, listingState, startEmpty]);
 
   // Creating multiple tournaments at once: each gets an auto-built name, so the
   // single editable name field is replaced by a preview list.
@@ -118,9 +148,11 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
   // editable field, so what the host sees while typing is what gets created.
   const generatedName = (
     category: string,
-    over?: { tier?: string; city?: string; state?: string }
+    over?: { tier?: string; date?: string; city?: string; state?: string }
   ) =>
     buildTournamentName(cleanCategory(category), {
+      // A cleared date field falls back to today, as before there was a field.
+      date: fromDateInputValue(over?.date ?? eventDate) ?? undefined,
       tier: (over?.tier ?? tier) || null,
       city: (over?.city ?? city) || null,
       state: (over?.state ?? state) || null,
@@ -130,7 +162,7 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
   // taken the name over or isn't on exactly one category.
   const resyncName = (
     next: string[],
-    over?: { tier?: string; city?: string; state?: string }
+    over?: { tier?: string; date?: string; city?: string; state?: string }
   ) => {
     if (nameTouched) return;
     if (next.length === 1) setName(generatedName(next[0], over));
@@ -150,6 +182,11 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
     resyncName(selected, { tier: value });
   };
 
+  const handleDateChange = (value: string) => {
+    setEventDate(value);
+    resyncName(selected, { date: value });
+  };
+
   const handleCityChange = (value: string) => {
     setCity(value);
     resyncName(selected, { city: value });
@@ -160,28 +197,38 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
     resyncName(selected, { state: value });
   };
 
+  const submit = async (items: Parameters<typeof onSubmit>[0]) => {
+    setSubmitting(true);
+    try {
+      await onSubmit(items);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (submitting) return;
     const shared = {
       tier: tier || null,
       city: city.trim() || null,
       state: state || null,
     };
     if (isMulti) {
-      onSubmit(
+      submit(
         selected.map((c) => ({ name: generatedName(c), category: c, ...shared }))
       );
       return;
     }
     if (frozen) {
-      onSubmit([
+      submit([
         { name: generatedName(selected[0]), category: selected[0], ...shared },
       ]);
       return;
     }
     const trimmed = name.trim();
     if (!trimmed) return;
-    onSubmit([{ name: trimmed, category: selected[0] ?? null, ...shared }]);
+    submit([{ name: trimmed, category: selected[0] ?? null, ...shared }]);
   };
 
   const fieldClasses =
@@ -202,27 +249,47 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-col">
           <DialogBody className="space-y-3">
             <div>
-              <label
-                htmlFor="tier"
-                className="block text-xs font-medium text-muted-foreground mb-1"
-              >
-                Tier
-              </label>
-              <select
-                id="tier"
-                value={tier}
-                onChange={(e) => handleTierChange(e.target.value)}
-                className={fieldClasses}
-              >
-                <option value="">Not specified</option>
-                {TOURNAMENT_TIERS.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label
+                    htmlFor="tier"
+                    className="block text-xs font-medium text-muted-foreground mb-1"
+                  >
+                    Tier
+                  </label>
+                  <select
+                    id="tier"
+                    value={tier}
+                    onChange={(e) => handleTierChange(e.target.value)}
+                    className={fieldClasses}
+                  >
+                    <option value="">Not specified</option>
+                    {TOURNAMENT_TIERS.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="min-w-0">
+                  <label
+                    htmlFor="event-date"
+                    className="block text-xs font-medium text-muted-foreground mb-1"
+                  >
+                    Event date
+                  </label>
+                  <input
+                    id="event-date"
+                    type="date"
+                    required
+                    value={eventDate}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    className={fieldClasses}
+                  />
+                </div>
+              </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Appears in the event name. Applies to every category you check.
+                Both appear in the event name and apply to every category you check.
               </p>
             </div>
             <div className="grid grid-cols-[1fr_10rem] gap-2">
@@ -276,7 +343,9 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
               >
                 Categories
               </span>
-              <div className="rounded-lg border border-border bg-card divide-y divide-border max-h-72 overflow-y-auto">
+              {/* No height limit of its own: the dialog body scrolls, and a
+                  second scroller inside it hid the last category. */}
+              <div className="rounded-lg border border-border bg-card divide-y divide-border overflow-hidden">
                 {[...options, ...(showOthers ? extraOptions : [])].map((opt, i) => (
                   <label
                     key={opt}
@@ -366,9 +435,18 @@ const TournamentFormModal: React.FC<TournamentFormModalProps> = ({
               </div>
             )}
           </DialogBody>
+          {error && (
+            <p role="alert" className="shrink-0 px-6 pb-3 text-sm text-destructive">
+              {error}
+            </p>
+          )}
           <DialogFooter className="justify-end">
-            <Button type="submit" variant="success" disabled={!canSubmit}>
-              {isMulti ? `Add ${selected.length} tournaments` : "Add"}
+            <Button type="submit" variant="success" disabled={!canSubmit || submitting}>
+              {submitting
+                ? "Adding…"
+                : isMulti
+                  ? `Add ${selected.length} tournaments`
+                  : "Add"}
             </Button>
             <Button type="button" variant="cancel" onClick={onClose}>
               Cancel

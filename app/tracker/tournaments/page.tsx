@@ -7,18 +7,31 @@ import { createClient } from "../../../utils/supabase/client";
 import { getUserSafe } from "../../../utils/supabase/getUserSafe";
 import ToastNotification from "../../../components/ui/toast-notification";
 import { Button } from "../../../components/ui/button";
-import { HiPencil, HiTrash, HiPlus, HiOutlineDesktopComputer, HiOutlineLogin } from "react-icons/hi";
+import { HiTrash, HiPlus, HiOutlineDesktopComputer, HiOutlineLogin } from "react-icons/hi";
 import { useRouter, useSearchParams } from "next/navigation";
 import TournamentFormModal from "../../../components/ui/tournament-form-modal";
 import JoinCodeDialog from "../../../components/ui/JoinCodeDialog";
+import ConfirmationDialog from "../../../components/ui/confirmation-dialog";
 import { categoryDefaults, requireDecklistsDefault } from "../../../utils/tournament/categoryDefaults";
+import { nameDateToInputValue } from "../../../utils/tournament/naming";
 import { normalizeTier } from "../../../utils/tournament/tiers";
-import { pageHostedEvents } from "../../../utils/tournament/hostedEvents";
-import { parseTournamentName, sharedEventParts } from "../../../utils/tournament/displayName";
+import { hostedStatus, pageHostedEvents, type HostedStatus } from "../../../utils/tournament/hostedEvents";
+import { parseTournamentName, sharedEventParts, shortTournamentName } from "../../../utils/tournament/displayName";
 import { getFormatDef } from "@/lib/formats";
 import { deleteTournamentAction } from "./actions";
 
 const FORMAT_CHIP = "inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground";
+
+// The host page's status pill colours: amber before the start, foreground
+// while running, muted once ended. Green marks the one finished state.
+const STATUS_TONE: Record<HostedStatus["kind"], string> = {
+  not_started: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  in_progress: "bg-foreground/10 text-foreground",
+  ended: "bg-muted text-muted-foreground",
+  published: "bg-primary/10 text-primary",
+};
+
+const CREATE_FAILED = "Couldn't create the tournament. Try again.";
 
 const supabase = createClient();
 
@@ -26,7 +39,16 @@ function TournamentsPageInner() {
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sessionError, setSessionError] = useState(false);
+  // The list request itself failed. Kept apart from an empty list so a dropped
+  // connection never reads as "No tournaments found".
+  const [loadError, setLoadError] = useState(false);
+  // A failed create is shown inside the create dialog, which covers the page's
+  // toasts; a failed delete is shown as a toast.
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState(false);
   const [showDeleteToast, setShowDeleteToast] = useState(false);
+  // The tournament the trash icon was tapped on, held until the host confirms.
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddTournamentModalOpen, setisAddTournamentModalOpen] =
     useState(false);
@@ -38,6 +60,11 @@ function TournamentsPageInner() {
   const [listingFormats, setListingFormats] = useState<string[]>([]);
   const [listingTier, setListingTier] = useState<string | null>(null);
   const [listingState, setListingState] = useState<string | null>(null);
+  // The event's day ("2026-11-28") the create form starts on, when known.
+  const [listingDate, setListingDate] = useState<string | null>(null);
+  // The create form was opened from "Host another category", so it starts
+  // with nothing ticked rather than a category the event may already have.
+  const [addingCategory, setAddingCategory] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -66,6 +93,7 @@ function TournamentsPageInner() {
       setFromListingId(listingId);
       setListingFormats(formats ? formats.split("|").filter(Boolean) : []);
       setListingTier(normalizeTier(type));
+      setListingDate(searchParams.get("date"));
       setisAddTournamentModalOpen(true);
     }
   }, [searchParams]);
@@ -99,6 +127,7 @@ function TournamentsPageInner() {
     }[]
   ) => {
     if (items.length === 0) return;
+    setCreateError(null);
     try {
       const {
         data: { user },
@@ -107,6 +136,7 @@ function TournamentsPageInner() {
 
       if (userError) {
         console.error("Error fetching user:", userError);
+        setCreateError(CREATE_FAILED);
         return;
       }
       // A silently-gone session returns no error but a null user; surface it the
@@ -141,7 +171,11 @@ function TournamentsPageInner() {
         .select("id");
       if (error) {
         console.error("Error adding tournament:", error);
+        setCreateError(CREATE_FAILED);
       } else {
+        // A single new tournament is opened straight away; several stay on
+        // the list, where they sit together at the top.
+        const onlyId = data?.length === 1 ? data[0].id : null;
         // If created from a listing, point the listing back at the first new
         // tournament so the public page can show it's been picked up.
         if (fromListingId && data?.[0]?.id) {
@@ -154,17 +188,27 @@ function TournamentsPageInner() {
           setListingFormats([]);
           setListingTier(null);
           setListingState(null);
+          setListingDate(null);
+          setAddingCategory(false);
           // Clean up URL params
-          router.replace("/tracker/tournaments", { scroll: false });
-        } else if (searchParams.get("page")) {
+          if (!onlyId) router.replace("/tracker/tournaments", { scroll: false });
+        } else if (!onlyId && searchParams.get("page")) {
           // The new tournament is the newest, so it lands on page 1.
           router.push("/tracker/tournaments");
+        }
+        if (onlyId) {
+          // A listing link is replaced rather than left in history, so Back
+          // cannot land on it and reopen this dialog.
+          const href = `/tracker/tournaments/${onlyId}`;
+          if (searchParams.get("from_listing")) router.replace(href);
+          else router.push(href);
         }
         fetchTournaments();
         setisAddTournamentModalOpen(false);
       }
     } catch (error) {
       console.error("Unexpected error:", error);
+      setCreateError(CREATE_FAILED);
     }
   };
 
@@ -173,15 +217,17 @@ function TournamentsPageInner() {
   // Tier and location are inherited from the siblings so the new category's
   // generated name matches the rest of the event. Not every sibling
   // necessarily has them set, so scan the whole group rather than just the
-  // most recent one. Note: the generated date is today's, not the original
-  // event date — a category added after the fact carries the date it was
-  // created.
+  // most recent one. The date field starts on the day the siblings share, so
+  // a category added after the fact is not dated the day it was added; when
+  // they disagree it starts on today and the host picks.
   const openHostAnotherCategory = (listingId: string, group: any[]) => {
     setFromListingId(listingId);
     setListingCity(group.map((t) => t.city).find(Boolean) ?? "");
     setListingState(group.map((t) => t.state).find(Boolean) ?? null);
     setListingTier(group.map((t) => t.tier).find(Boolean) ?? null);
+    setListingDate(nameDateToInputValue(sharedEventParts(group.map((t) => t.name)).date));
     setListingFormats([]);
+    setAddingCategory(true);
     setisAddTournamentModalOpen(true);
   };
 
@@ -210,6 +256,7 @@ function TournamentsPageInner() {
     } else {
       setTournaments(tournaments);
     }
+    setLoadError(!!error);
     setLoading(false);
   };
 
@@ -236,6 +283,7 @@ function TournamentsPageInner() {
       setShowDeleteToast(true);
       setTimeout(() => setShowDeleteToast(false), 2000); // 2 seconds
     }
+    return !error;
   };
 
   // Tournaments linked to the same listing are one real-world event with
@@ -268,11 +316,20 @@ function TournamentsPageInner() {
     const type = tournament.category || deckFormatLabel(tournament.deck_format);
     const showNameText = showName || !type;
     const parts = parseTournamentName(tournament.name);
+    const status = hostedStatus(tournament);
     const date = parts.date ?? formatCreatedAt(tournament.created_at);
     const details = [
       date === eventDate ? null : date,
       showNameText ? parts.location : null,
     ].filter(Boolean);
+    // Drawn in two places, one shown at a time. On a phone it sits at the
+    // right end of the row's last line, so it takes room from the date and
+    // place rather than from the name; from sm up it sits beside the trash.
+    const statusChip = (visibility: string) => (
+      <span className={`${visibility} shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${STATUS_TONE[status.kind]}`}>
+        {status.label}
+      </span>
+    );
     return (
     <li
       key={tournament.id}
@@ -280,7 +337,14 @@ function TournamentsPageInner() {
       onClick={() => router.push(`/tracker/tournaments/${tournament.id}`)}
     >
       <div className="flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4">
-        <div className="flex-1 min-w-0">
+        {/* A real link, so the row can be opened from the keyboard now that
+            the pencil button is gone. */}
+        <Link
+          href={`/tracker/tournaments/${tournament.id}`}
+          prefetch={false}
+          onClick={(e) => e.stopPropagation()}
+          className="flex-1 min-w-0"
+        >
           <div className="flex items-center gap-2 min-w-0">
             {showNameText && (
               <p className="font-medium text-foreground truncate" title={tournament.name}>
@@ -291,28 +355,23 @@ function TournamentsPageInner() {
             {type && !(showNameText && tournament.name.includes(type)) && (
               <span className={`${FORMAT_CHIP} shrink-0 whitespace-nowrap`}>{type}</span>
             )}
+            {details.length === 0 && statusChip("ml-auto inline-flex sm:hidden")}
           </div>
           {details.length > 0 && (
-            <p className="text-xs sm:text-sm text-muted-foreground truncate">
-              {details.join(" · ")}
-            </p>
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                {details.join(" · ")}
+              </p>
+              {statusChip("ml-auto inline-flex sm:hidden")}
+            </div>
           )}
-        </div>
+        </Link>
         <div className="flex items-center gap-1 flex-shrink-0">
+          {statusChip("hidden sm:inline-flex")}
           <button
             onClick={(e) => {
               e.stopPropagation();
-              router.push(`/tracker/tournaments/${tournament.id}`);
-            }}
-            className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors touch-manipulation"
-            aria-label="Edit"
-          >
-            <HiPencil className="w-5 h-5" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              deleteTournament(tournament.id);
+              setDeleteTarget(tournament);
             }}
             className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors touch-manipulation"
             aria-label="Delete"
@@ -362,20 +421,26 @@ function TournamentsPageInner() {
             isOpen={isAddTournamentModalOpen}
             onClose={() => {
               setisAddTournamentModalOpen(false);
+              setCreateError(null);
               if (fromListingId) {
                 setFromListingId(null);
                 setListingCity("");
                 setListingFormats([]);
                 setListingTier(null);
                 setListingState(null);
+                setListingDate(null);
+                setAddingCategory(false);
                 router.replace("/tracker/tournaments", { scroll: false });
               }
             }}
             onSubmit={handleAddTournament}
+            error={createError}
             listingCity={listingCity}
             categoryOptions={listingFormats.length > 0 ? listingFormats : undefined}
             listingState={listingState}
             defaultTier={listingTier}
+            defaultDate={listingDate}
+            startEmpty={addingCategory}
           />
           <JoinCodeDialog
             isOpen={isJoinDialogOpen}
@@ -393,6 +458,22 @@ function TournamentsPageInner() {
               lost. Reload to sign back in.
             </p>
             <Button onClick={() => window.location.reload()}>Reload</Button>
+          </div>
+        ) : loadError ? (
+          <div className="rounded-lg border border-border bg-card px-4 py-6 text-center space-y-3">
+            <p className="font-medium text-foreground">Couldn&apos;t load your tournaments</p>
+            <p className="text-sm text-muted-foreground">
+              The request didn&apos;t go through. None of your data is lost.
+              Check your connection and try again.
+            </p>
+            <Button
+              onClick={() => {
+                setLoading(true);
+                fetchTournaments();
+              }}
+            >
+              Try again
+            </Button>
           </div>
         ) : tournaments.length === 0 ? (
           <p className="text-muted-foreground">No tournaments found.</p>
@@ -479,7 +560,31 @@ function TournamentsPageInner() {
           message="Tournament deleted successfully!"
           show={showDeleteToast}
           onClose={() => setShowDeleteToast(false)}
+        />
+        <ToastNotification
+          message="Couldn't delete the tournament. Try again."
+          show={deleteError}
+          onClose={() => setDeleteError(false)}
           type="error"
+        />
+        <ConfirmationDialog
+          open={deleteTarget !== null}
+          onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+          onConfirm={() => {
+            if (!deleteTarget) return;
+            // A delete that was refused comes back false; one that never
+            // reached the server throws. Either way the host is told.
+            deleteTournament(deleteTarget.id)
+              .catch(() => false)
+              .then((deleted) => {
+                if (!deleted) setDeleteError(true);
+              });
+          }}
+          variant="destructive"
+          title={deleteTarget ? `Delete ${shortTournamentName(deleteTarget.name)}?` : ""}
+          description="This permanently removes its players, pairings, results and decklists. This cannot be undone."
+          confirmLabel="Delete tournament"
+          cancelLabel="Cancel"
         />
       </div>
     </div>

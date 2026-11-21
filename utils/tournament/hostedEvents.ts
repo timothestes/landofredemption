@@ -12,6 +12,33 @@ export type HostedBlock<T> =
   // A run of back-to-back standalone tournaments, drawn as one list.
   | { kind: "singles"; tournaments: T[] };
 
+export type HostedStatus = {
+  kind: "not_started" | "in_progress" | "ended" | "published";
+  label: string;
+};
+
+// Where a tournament stands, for the chip on its row. The round wording is the
+// host page's own status pill. "Published" follows results_published: an event
+// whose decklists alone are public (the older two-button publish could leave
+// one that way) reads as not published, as it does on the host page.
+export function hostedStatus(t: {
+  has_started?: boolean | null;
+  has_ended?: boolean | null;
+  current_round?: number | null;
+  n_rounds?: number | null;
+  results_published?: boolean | null;
+}): HostedStatus {
+  if (t.has_ended) {
+    return t.results_published
+      ? { kind: "published", label: "Published" }
+      : { kind: "ended", label: "Ended, not published" };
+  }
+  if (t.has_started) {
+    return { kind: "in_progress", label: `Round ${t.current_round || 1} of ${t.n_rounds || "?"}` };
+  }
+  return { kind: "not_started", label: "Not started" };
+}
+
 // `tournaments` must arrive newest first. An event takes the position of its
 // newest category, so adding a category to an old event brings it back up.
 export function pageHostedEvents<T extends HostedTournament>(

@@ -1,6 +1,12 @@
 import { FormatId, normalizeTournamentFormat } from "../../lib/formats";
 import { categoryDefaults, requireDecklistsDefault } from "./categoryDefaults";
-import { buildTournamentName, formatLocation, isNameFrozen } from "./naming";
+import {
+  buildTournamentName,
+  formatLocation,
+  isNameFrozen,
+  nameDateToInputValue,
+  toDateInputValue,
+} from "./naming";
 
 // An event's "type" is a few orthogonal things: its sanctioning tier (Regional,
 // State, …), its category/format (Type 2, Paragon, …), and where it's held.
@@ -28,6 +34,8 @@ export interface EventTypeNext {
   category: string;
   city: string | null;
   state: string | null;
+  /** The day the host picked for the event. Omitted keeps the date already in the name. */
+  date?: Date;
   /** Read only when category is "Unofficial" — the one case with no category to derive a format from. */
   unofficialFormat?: FormatId | "Other";
 }
@@ -56,23 +64,34 @@ const NAME_DATE_RE = /^(.+?, \d{4}) /;
 
 export function renameForEventType(
   currentName: string,
-  next: { tier: string | null; category: string; city: string | null; state: string | null },
+  next: { tier: string | null; category: string; city: string | null; state: string | null; date?: Date },
   createdAt: string
 ): string {
   const subject = [next.tier, next.category].filter(Boolean).join(" ");
   const location = formatLocation(next.city, next.state);
   const m = currentName.match(NAME_DATE_RE);
-  if (m) {
+  if (m && !next.date) {
     return `${m[1]} ${subject} Tournament${location ? ` — ${location}` : ""}`;
   }
-  // Free-form name (an Unofficial event being promoted to an official
-  // category) — nothing to salvage, so build the whole thing.
+  // The host picked a day, or the name is free-form (an Unofficial event being
+  // promoted to an official category) and there is nothing to salvage — build
+  // the whole thing.
   return buildTournamentName(next.category, {
-    date: new Date(createdAt),
+    date: next.date ?? new Date(createdAt),
     city: next.city,
     state: next.state,
     tier: next.tier,
   });
+}
+
+/**
+ * What the Event date field in Settings starts on: the day written in the
+ * name, or for a free-form name the local day it was created — the same day
+ * renameForEventType falls back to.
+ */
+export function eventDateInputValue(name: string, createdAt: string): string {
+  const m = name.match(NAME_DATE_RE);
+  return (m && nameDateToInputValue(m[1])) ?? toDateInputValue(new Date(createdAt));
 }
 
 export function planEventTypeChange(
