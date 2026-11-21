@@ -136,6 +136,13 @@ export default function TournamentStartModal({
         </DialogHeader>
 
         <DialogBody className="space-y-6">
+          {/* The roster locks at Start (Add Participant and QR join both
+              close). Say so while the host can still act on it. */}
+          <p className="text-sm text-center text-balance text-muted-foreground">
+            After you start, participants can&apos;t be added.{" "}
+            <span className="font-medium text-foreground">{participantCount}</span>{" "}
+            {participantCount === 1 ? "is" : "are"} in.
+          </p>
           {decklistSummary && (
             <p className="text-sm text-center text-muted-foreground">
               <span className="font-medium text-foreground">
