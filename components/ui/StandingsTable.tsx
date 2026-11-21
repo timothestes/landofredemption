@@ -459,7 +459,6 @@ export default function StandingsTable({
                     <span className="text-sm font-semibold text-muted-foreground tabular-nums">
                       #{row.place}
                     </span>
-                    {why && <InfoHint text={why} />}
                     {isWinner && (
                       <Crown
                         className="w-4 h-4 text-orange-300 flex-shrink-0"
@@ -470,6 +469,11 @@ export default function StandingsTable({
                       {row.participant.name}
                     </span>
                   </div>
+                  {/* Printed, not a hover hint: a phone never shows a hover,
+                      and this is the only answer to "why am I placed here?". */}
+                  {why && (
+                    <p className="mt-1 text-xs text-muted-foreground">{why}</p>
+                  )}
                   <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground tabular-nums">
                     <span>
                       <span className="text-muted-foreground/70">W-L-T</span>{" "}
@@ -482,14 +486,12 @@ export default function StandingsTable({
                       <span className="text-foreground font-medium">
                         {row.mp}
                       </span>
-                      <InfoHint text={MP_HINT} />
                     </span>
                     <span className="inline-flex items-center gap-1">
                       <span className="text-muted-foreground/70">Diff</span>{" "}
                       <span className="text-foreground font-medium">
                         {row.diff}
                       </span>
-                      <InfoHint text={DIFF_HINT} />
                     </span>
                     <span title="Number of byes awarded in completed rounds (each counts as a win).">
                       <span className="text-muted-foreground/70">Byes</span>{" "}
