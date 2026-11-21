@@ -29,6 +29,8 @@ export async function GET(request: Request) {
   if (authError) {
     const signInUrl = new URL("/sign-in", origin);
     signInUrl.searchParams.set("error", "Authentication failed. Please try again.");
+    // Signing in by hand from here should still end where the link was headed.
+    if (redirectTo) signInUrl.searchParams.set("redirectTo", safeRedirectPath(redirectTo));
     return NextResponse.redirect(signInUrl.toString());
   }
 
