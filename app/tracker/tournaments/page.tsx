@@ -7,14 +7,14 @@ import { createClient } from "../../../utils/supabase/client";
 import { getUserSafe } from "../../../utils/supabase/getUserSafe";
 import ToastNotification from "../../../components/ui/toast-notification";
 import { Button } from "../../../components/ui/button";
-import { HiPencil, HiTrash, HiPlus, HiOutlineDesktopComputer, HiOutlineLogin } from "react-icons/hi";
+import { HiTrash, HiPlus, HiOutlineDesktopComputer, HiOutlineLogin } from "react-icons/hi";
 import { useRouter, useSearchParams } from "next/navigation";
 import TournamentFormModal from "../../../components/ui/tournament-form-modal";
 import JoinCodeDialog from "../../../components/ui/JoinCodeDialog";
 import ConfirmationDialog from "../../../components/ui/confirmation-dialog";
 import { categoryDefaults, requireDecklistsDefault } from "../../../utils/tournament/categoryDefaults";
 import { normalizeTier } from "../../../utils/tournament/tiers";
-import { pageHostedEvents } from "../../../utils/tournament/hostedEvents";
+import { hostedStatus, pageHostedEvents, type HostedStatus } from "../../../utils/tournament/hostedEvents";
 import { parseTournamentName, sharedEventParts, shortTournamentName } from "../../../utils/tournament/displayName";
 import { nameDateToInputValue } from "../../../utils/tournament/naming";
 import { getFormatDef } from "@/lib/formats";
@@ -22,6 +22,15 @@ import { getFormatDef } from "@/lib/formats";
 const CREATE_FAILED = "Couldn't create the tournament. Try again.";
 
 const FORMAT_CHIP ="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tracking-wide text-muted-foreground";
+
+// The host page's status pill colours: amber before the start, foreground
+// while running, muted once ended. Green marks the one finished state.
+const STATUS_TONE: Record<HostedStatus["kind"], string> = {
+  not_started: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  in_progress: "bg-foreground/10 text-foreground",
+  ended: "bg-muted text-muted-foreground",
+  published: "bg-primary/10 text-primary",
+};
 
 const supabase = createClient();
 
@@ -160,6 +169,9 @@ function TournamentsPageInner() {
         console.error("Error adding tournament:", error);
         setCreateError(CREATE_FAILED);
       } else {
+        // A single new tournament is opened straight away; several stay on
+        // the list, where they sit together at the top.
+        const onlyId = data?.length === 1 ? data[0].id : null;
         // If created from a listing, point the listing back at the first new
         // tournament so the public page can show it's been picked up.
         if (fromListingId && data?.[0]?.id) {
@@ -174,10 +186,17 @@ function TournamentsPageInner() {
           setListingState(null);
           setListingDate(null);
           // Clean up URL params
-          router.replace("/tracker/tournaments", { scroll: false });
-        } else if (searchParams.get("page")) {
+          if (!onlyId) router.replace("/tracker/tournaments", { scroll: false });
+        } else if (!onlyId && searchParams.get("page")) {
           // The new tournament is the newest, so it lands on page 1.
           router.push("/tracker/tournaments");
+        }
+        if (onlyId) {
+          // A listing link is replaced rather than left in history, so Back
+          // cannot land on it and reopen this dialog.
+          const href = `/tracker/tournaments/${onlyId}`;
+          if (searchParams.get("from_listing")) router.replace(href);
+          else router.push(href);
         }
         fetchTournaments();
         setisAddTournamentModalOpen(false);
@@ -292,11 +311,20 @@ function TournamentsPageInner() {
     const type = tournament.category || deckFormatLabel(tournament.deck_format);
     const showNameText = showName || !type;
     const parts = parseTournamentName(tournament.name);
+    const status = hostedStatus(tournament);
     const date = parts.date ?? formatCreatedAt(tournament.created_at);
     const details = [
       date === eventDate ? null : date,
       showNameText ? parts.location : null,
     ].filter(Boolean);
+    // Drawn in two places, one shown at a time. On a phone it sits at the
+    // right end of the row's last line, so it takes room from the date and
+    // place rather than from the name; from sm up it sits beside the trash.
+    const statusChip = (visibility: string) => (
+      <span className={`${visibility} shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${STATUS_TONE[status.kind]}`}>
+        {status.label}
+      </span>
+    );
     return (
     <li
       key={tournament.id}
@@ -304,7 +332,14 @@ function TournamentsPageInner() {
       onClick={() => router.push(`/tracker/tournaments/${tournament.id}`)}
     >
       <div className="flex items-center gap-2 px-4 sm:px-6 py-3 sm:py-4">
-        <div className="flex-1 min-w-0">
+        {/* A real link, so the row can be opened from the keyboard now that
+            the pencil button is gone. */}
+        <Link
+          href={`/tracker/tournaments/${tournament.id}`}
+          prefetch={false}
+          onClick={(e) => e.stopPropagation()}
+          className="flex-1 min-w-0"
+        >
           <div className="flex items-center gap-2 min-w-0">
             {showNameText && (
               <p className="font-medium text-foreground truncate" title={tournament.name}>
@@ -315,24 +350,19 @@ function TournamentsPageInner() {
             {type && !(showNameText && tournament.name.includes(type)) && (
               <span className={`${FORMAT_CHIP} shrink-0 whitespace-nowrap`}>{type}</span>
             )}
+            {details.length === 0 && statusChip("ml-auto inline-flex sm:hidden")}
           </div>
           {details.length > 0 && (
-            <p className="text-xs sm:text-sm text-muted-foreground truncate">
-              {details.join(" · ")}
-            </p>
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                {details.join(" · ")}
+              </p>
+              {statusChip("ml-auto inline-flex sm:hidden")}
+            </div>
           )}
-        </div>
+        </Link>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/tracker/tournaments/${tournament.id}`);
-            }}
-            className="p-2 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors touch-manipulation"
-            aria-label="Edit"
-          >
-            <HiPencil className="w-5 h-5" />
-          </button>
+          {statusChip("hidden sm:inline-flex")}
           <button
             onClick={(e) => {
               e.stopPropagation();

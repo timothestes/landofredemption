@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pageHostedEvents } from "../hostedEvents";
+import { hostedStatus, pageHostedEvents } from "../hostedEvents";
 
 const single = (id: string) => ({ id, listing_id: null });
 const cat = (id: string, listing: string) => ({ id, listing_id: listing });
@@ -51,5 +51,35 @@ describe("pageHostedEvents", () => {
     expect(pageHostedEvents(list, NaN).page).toBe(1);
     expect(pageHostedEvents(list, -3).page).toBe(1);
     expect(pageHostedEvents(list, 99).page).toBe(2);
+  });
+});
+
+describe("hostedStatus", () => {
+  it("says Not started for a new tournament, whose flags may be null", () => {
+    expect(hostedStatus({})).toEqual({ kind: "not_started", label: "Not started" });
+    expect(hostedStatus({ has_started: false, has_ended: false, current_round: null, n_rounds: null }))
+      .toEqual({ kind: "not_started", label: "Not started" });
+  });
+
+  it("names the round while the event is running", () => {
+    expect(hostedStatus({ has_started: true, has_ended: false, current_round: 2, n_rounds: 4 }))
+      .toEqual({ kind: "in_progress", label: "Round 2 of 4" });
+  });
+
+  it("matches the host page when the round numbers are missing", () => {
+    expect(hostedStatus({ has_started: true, current_round: null, n_rounds: null }).label).toBe("Round 1 of ?");
+  });
+
+  it("keeps an ended event that is not published apart from a published one", () => {
+    expect(hostedStatus({ has_started: true, has_ended: true, current_round: 4, n_rounds: 4, results_published: false }))
+      .toEqual({ kind: "ended", label: "Ended, not published" });
+    expect(hostedStatus({ has_started: true, has_ended: true, current_round: 4, n_rounds: 4, results_published: true }))
+      .toEqual({ kind: "published", label: "Published" });
+  });
+
+  it("does not call an event published on its decklists alone", () => {
+    // The host page reads a half-published event as unpublished too.
+    const row = { has_ended: true, results_published: false, decklists_published: true };
+    expect(hostedStatus(row).kind).toBe("ended");
   });
 });
