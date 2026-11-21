@@ -107,16 +107,18 @@ function PeekCardContextPopup({
   );
 }
 
-function PeekActionButton({ icon, label, onClick, style }: {
+function PeekActionButton({ icon, label, onClick, style, disabled }: {
   icon?: React.ReactNode;
   label: string;
   onClick: () => void;
   style?: React.CSSProperties;
+  disabled?: boolean;
 }) {
   const isTouch = useInputMode() === 'touch';
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -131,11 +133,13 @@ function PeekActionButton({ icon, label, onClick, style }: {
         color: 'var(--gf-text-bright)',
         fontSize: 12,
         fontFamily: 'var(--font-cinzel), Georgia, serif',
-        cursor: 'pointer',
+        cursor: disabled ? 'default' : 'pointer',
+        opacity: disabled ? 0.45 : 1,
         transition: 'background 0.15s, border-color 0.15s',
         ...style,
       }}
       onMouseEnter={(e) => {
+        if (disabled) return;
         e.currentTarget.style.background = '#3d2e1a';
         e.currentTarget.style.borderColor = 'var(--gf-accent)';
       }}
@@ -170,9 +174,14 @@ interface DeckPeekModalProps {
   isPrivateLook?: boolean;
   /** Zone to look up peeked cards in. Defaults to 'deck'. */
   sourceZone?: ZoneId;
+  /** "You may underdeck this card to take a card" (Virgin Birth). Adds a Take
+   *  button, and fires onTaken once when any looked-at card reaches the hand
+   *  by any route (button, menu, drag). The window then closes: the rest stay
+   *  where they are, on top of the deck. */
+  takeToHand?: { sourceName: string; onTaken: () => void };
 }
 
-export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMultiDrag, didDragRef, isDragActive, isPrivateLook, sourceZone = 'deck' }: DeckPeekModalProps) {
+export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMultiDrag, didDragRef, isDragActive, isPrivateLook, sourceZone = 'deck', takeToHand }: DeckPeekModalProps) {
   const { dragHandleProps, modalStyle } = useDraggableModal();
   const { zones, actions } = useModalGame();
   const { moveCard, moveCardsBatch, moveCardToTopOfDeck, moveCardToBottomOfDeck, shuffleDeck, shuffleCardIntoDeck } = actions;
@@ -255,6 +264,17 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
 
   const remainingIds = peekedCards.map(c => c.instanceId);
   const hasRemaining = remainingIds.length > 0;
+
+  // A looked-at card in the hand means it was taken. Watching the zones, not
+  // the gestures, covers the Take button, the card menu and a drag alike.
+  const takenFiredRef = useRef(false);
+  const tookCard = !!takeToHand && peekedIds.some(id => (zones.hand ?? []).some(c => c.instanceId === id));
+  useEffect(() => {
+    if (!tookCard || !takeToHand || takenFiredRef.current) return;
+    takenFiredRef.current = true;
+    takeToHand.onTaken();
+    onClose?.();
+  }, [tookCard]);
 
   // The box sits centred, so when it shrinks (a card moved out drops a row) it
   // re-centres and slides every card under the pointer. Hold its slot at the
@@ -569,7 +589,9 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
                 <span style={{ color: 'var(--gf-accent)' }}>Only you can see this {'\u00b7'} </span>
               )}
               <span style={{ color: 'var(--gf-text)', opacity: 0.7 }}>
-                {isPrivateLook
+                {takeToHand
+                  ? (isTouch ? 'Tap a card, then Take to hand' : 'Drag a card to your hand · or click one, then Take to hand')
+                  : isPrivateLook
                   ? (isTouch ? 'Tap to select \u00b7 Long-press for actions' : 'Drag to a zone \u00b7 Click to select')
                   : onClose
                     ? (isTouch ? 'Tap to select \u00b7 Long-press a card for actions' : 'Drag to a zone \u00b7 Click to select \u00b7 Lasso to multi-select')
@@ -741,6 +763,22 @@ export function DeckPeekModal({ cardIds, title, onClose, onStartDrag, onStartMul
         }}>
           {hasRemaining && onClose && sourceZone === 'deck' ? (
             <>
+              {takeToHand && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontFamily: UI_FONT, color: 'var(--gf-text)', fontSize: 12, marginBottom: 8 }}>
+                    Taking a card sends {takeToHand.sourceName} to the bottom of your deck.
+                  </div>
+                  <PeekActionButton
+                    label="Take to hand"
+                    disabled={selectedIds.size === 0}
+                    onClick={() => {
+                      for (const id of peekedCards.map(c => c.instanceId).filter(id => selectedIds.has(id))) moveCard(id, 'hand');
+                      setSelectedIds(new Set());
+                    }}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              )}
               {/* A quiet label: in tracked uppercase Cinzel it was the loudest
                   text in the window, louder than the title. */}
               <div style={{
