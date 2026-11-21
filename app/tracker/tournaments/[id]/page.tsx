@@ -161,20 +161,21 @@ export default function TournamentPage({
     }
   }, [tournament?.name]);
 
-  const handleAddParticipant = async (name: string) => {
-    if (!name.trim()) return;
+  // Resolves whether the name was saved. The Add Participant dialog stays
+  // open across names and shows each result itself, so nothing here closes it.
+  const handleAddParticipant = async (name: string): Promise<boolean> => {
+    if (!name.trim()) return false;
     try {
       const { error } = await supabase
         .from("participants")
         .insert([{ name, tournament_id: id }]);
       if (error) throw error;
       fetchParticipants();
-      showToast("Participant added successfully!", "success");
+      return true;
     } catch (error) {
-      showToast("Error adding participant.", "error");
+      showToast(`Couldn't add ${name}.`, "error");
       console.error("Error adding participant:", error);
-    } finally {
-      setIsModalOpen(false);
+      return false;
     }
   };
 

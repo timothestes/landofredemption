@@ -24,7 +24,8 @@ interface TournamentTabsProps {
   participants: any[];
   isModalOpen: boolean;
   setIsModalOpen: (value: boolean) => void;
-  onAddParticipant: (name: string) => void;
+  /** Resolves false when the participant could not be saved. */
+  onAddParticipant: (name: string) => Promise<boolean>;
   onEdit: (participant: any) => void;
   onDelete: (id: string) => void;
   onDropOut: (id: string) => void;
@@ -274,13 +275,9 @@ export default function TournamentTabs({
                   addParticipantButtonRef.current?.focus();
                 }, 0);
               }}
-              onSubmit={(name) => {
-                onAddParticipant(name);
-                setIsModalOpen(false);
-                setTimeout(() => {
-                  addParticipantButtonRef.current?.focus();
-                }, 0);
-              }}
+              // The dialog stays open after each name: a roster is typed
+              // one after another. Done or Escape closes it.
+              onSubmit={onAddParticipant}
             />
           </div>
         </div>
