@@ -13,7 +13,7 @@ import {
   type DeckSnapshotCard,
 } from "@/lib/tournament/deckSubmission";
 import { normalizeTournamentFormat, type FormatId } from "@/lib/formats";
-import { rateLimitForUnauthIp, extractClientIp } from "@/lib/api/rateLimit";
+import { rateLimitForJoinIp, extractClientIp } from "@/lib/api/rateLimit";
 import type { DeckCheckIssue } from "@/utils/deckcheck";
 
 const NAME_MAX = 40;
@@ -87,7 +87,9 @@ export async function getJoinInfoAction(rawCode: string): Promise<JoinInfo> {
 
   // Auth-aware first: signed-in users skip the IP throttle (the limiter
   // guards the ANONYMOUS enumeration surface; 30 players behind one venue
-  // NAT must not exhaust it at QR-reveal time).
+  // NAT must not exhaust it at QR-reveal time). Signed-out players and
+  // guests share that venue NAT too, so their allowance is the join page's
+  // own, sized for a room, not the one the PDF and API routes draw on.
   const supabase = await createClient();
   const {
     data: { user },
@@ -97,10 +99,10 @@ export async function getJoinInfoAction(rawCode: string): Promise<JoinInfo> {
     try {
       const h = await headers();
       const ip = extractClientIp(new Request("http://x", { headers: h }));
-      const rl = await rateLimitForUnauthIp(ip);
+      const rl = await rateLimitForJoinIp("lookup", ip);
       if (rl.success === false) return { success: false, error: "rate_limited" };
     } catch {
-      // Fail open: rateLimitForUnauthIp throws when KV_REST_API_* is unset
+      // Fail open: rateLimitForJoinIp throws when KV_REST_API_* is unset
       // (fresh dev env, e2e CI). A missing limiter must not 500 the page.
     }
   }
@@ -264,10 +266,11 @@ export async function joinAsGuestAction(rawCode: string, displayName: string): P
   if (!code) return { success: false, error: "invalid_code" };
 
   // An anonymous write, so it is throttled by IP. A bucket apart from the page-load one in getJoinInfoAction:
-  // a room of players behind one venue connection each spend one load and one join.
+  // a room of players behind one venue connection each spend one load and one join. The allowance is sized
+  // for that room; the 250-guest cap in tournament_guest_join is what bounds the writes to one event.
   try {
     const ip = extractClientIp(new Request("http://x", { headers: await headers() }));
-    const rl = await rateLimitForUnauthIp(`guest-join:${ip}`);
+    const rl = await rateLimitForJoinIp("guest-join", ip);
     if (rl.success === false) return { success: false, error: "rate_limited" };
   } catch {
     // Fail open when the limiter is not configured, as getJoinInfoAction does.

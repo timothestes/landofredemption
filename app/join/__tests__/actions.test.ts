@@ -21,9 +21,11 @@ vi.mock("@/utils/supabase/server", () => ({
 }));
 
 const mockRateLimitForUnauthIp = vi.fn();
+const mockRateLimitForJoinIp = vi.fn();
 vi.mock("@/lib/api/rateLimit", () => ({
   extractClientIp: vi.fn(() => "1.2.3.4"),
   rateLimitForUnauthIp: (ip: string) => mockRateLimitForUnauthIp(ip),
+  rateLimitForJoinIp: (bucket: string, ip: string) => mockRateLimitForJoinIp(bucket, ip),
 }));
 
 let mockAdminImpl: any = null;
@@ -89,6 +91,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockGetUser.mockResolvedValue({ data: { user: null } });
   mockRateLimitForUnauthIp.mockResolvedValue({ success: true, limit: 30, remaining: 29, reset: 0 });
+  mockRateLimitForJoinIp.mockResolvedValue({ success: true, limit: 300, remaining: 299, reset: 0 });
   mockAdminImpl = null;
   cookieJar.clear();
 });
@@ -97,17 +100,17 @@ describe("getJoinInfoAction", () => {
   it("invalid code short-circuits before any client/limiter call", async () => {
     const r = await getJoinInfoAction("not-a-code");
     expect(r).toEqual({ success: false, error: "invalid_code" });
-    expect(mockRateLimitForUnauthIp).not.toHaveBeenCalled();
+    expect(mockRateLimitForJoinIp).not.toHaveBeenCalled();
   });
 
   it("rate-limited (anonymous only)", async () => {
-    mockRateLimitForUnauthIp.mockResolvedValue({ success: false, limit: 30, remaining: 0, reset: 0 });
+    mockRateLimitForJoinIp.mockResolvedValue({ success: false, limit: 300, remaining: 0, reset: 0 });
     const r = await getJoinInfoAction(VALID_CODE);
     expect(r).toEqual({ success: false, error: "rate_limited" });
   });
 
-  it("signed-in user skips the IP limiter entirely", async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: "u1" } } });
+  it("a signed-out lookup spends the join allowance, not the one the PDF routes share", async () => {
+    // The shared allowance is spent (a room pressing Deck check PDF): the join page must still load.
     mockRateLimitForUnauthIp.mockResolvedValue({ success: false, limit: 30, remaining: 0, reset: 0 });
     mockAdminImpl = makeAdmin({
       tournaments: baseTournament(),
@@ -115,12 +118,26 @@ describe("getJoinInfoAction", () => {
       participants: null,
     });
     const r = await getJoinInfoAction(VALID_CODE);
+    expect(r.success).toBe(true);
+    expect(mockRateLimitForJoinIp).toHaveBeenCalledWith("lookup", "1.2.3.4");
     expect(mockRateLimitForUnauthIp).not.toHaveBeenCalled();
+  });
+
+  it("signed-in user skips the IP limiter entirely", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "u1" } } });
+    mockRateLimitForJoinIp.mockResolvedValue({ success: false, limit: 300, remaining: 0, reset: 0 });
+    mockAdminImpl = makeAdmin({
+      tournaments: baseTournament(),
+      profiles: { username: "hosty" },
+      participants: null,
+    });
+    const r = await getJoinInfoAction(VALID_CODE);
+    expect(mockRateLimitForJoinIp).not.toHaveBeenCalled();
     expect(r.success).toBe(true);
   });
 
   it("limiter throwing fails open (info still succeeds)", async () => {
-    mockRateLimitForUnauthIp.mockImplementation(async () => {
+    mockRateLimitForJoinIp.mockImplementation(async () => {
       throw new Error("KV_REST_API_URL/TOKEN not set");
     });
     mockAdminImpl = makeAdmin({
@@ -256,10 +273,17 @@ describe("joinAsGuestAction", () => {
   it("throttled by IP in a bucket of its own, apart from page loads", async () => {
     const admin = makeAdmin({ tournaments: baseTournament() });
     mockAdminImpl = admin;
-    mockRateLimitForUnauthIp.mockResolvedValue({ success: false, limit: 30, remaining: 0, reset: 0 });
+    mockRateLimitForJoinIp.mockResolvedValue({ success: false, limit: 300, remaining: 0, reset: 0 });
     expect(await joinAsGuestAction(VALID_CODE, "Guesty")).toEqual({ success: false, error: "rate_limited" });
-    expect(mockRateLimitForUnauthIp).toHaveBeenCalledWith("guest-join:1.2.3.4");
+    expect(mockRateLimitForJoinIp).toHaveBeenCalledWith("guest-join", "1.2.3.4");
     expect(admin.rpc).not.toHaveBeenCalled();
+  });
+
+  it("a guest join spends the join allowance, not the one the PDF routes share", async () => {
+    mockRateLimitForUnauthIp.mockResolvedValue({ success: false, limit: 30, remaining: 0, reset: 0 });
+    mockAdminImpl = makeAdmin({ tournaments: baseTournament() });
+    expect(await joinAsGuestAction(VALID_CODE, "Guesty")).toEqual({ success: true });
+    expect(mockRateLimitForUnauthIp).not.toHaveBeenCalled();
   });
 
   it("a refused join sets no cookie, and the database's reasons are passed on", async () => {
