@@ -1,6 +1,7 @@
 "use server";
 
-import { headers } from "next/headers";
+import { createHash, randomUUID } from "node:crypto";
+import { cookies, headers } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { getSupabaseAdmin } from "@/lib/pricing/supabase-admin";
 import { normalizeJoinCode } from "@/lib/tournament/joinCodes";
@@ -17,6 +18,19 @@ import type { DeckCheckIssue } from "@/utils/deckcheck";
 
 const NAME_MAX = 40;
 
+function cleanDisplayName(raw: string | null): string {
+  return (raw ?? "").replace(/[\p{Cc}]/gu, "").trim().slice(0, NAME_MAX);
+}
+
+// A guest has no account, so their browser is their identity: a random token in this cookie. The participants
+// table stores only its hash, so nothing read from a participant row can be replayed as the cookie.
+const GUEST_COOKIE = "lor_guest";
+const GUEST_COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
+
+function guestKeyOf(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
 export type JoinInfo =
   | {
       success: true;
@@ -28,6 +42,8 @@ export type JoinInfo =
       hostName: string | null;
       joined: null | {
         displayName: string;
+        /** Joined by name alone, without an account: this row cannot carry a decklist of the player's own. */
+        guest: boolean;
         submission: null | { deckName: string; submittedAt: string; isLegal: boolean | null };
       };
     }
@@ -49,6 +65,8 @@ export type JoinResult =
         | "deck_not_accessible"
         | "deck_illegal"
         | "invalid_name"
+        | "rate_limited"
+        | "guests_full"
         | "join_failed";
       issues?: DeckCheckIssue[];
     };
@@ -100,30 +118,48 @@ export async function getJoinInfoAction(rawCode: string): Promise<JoinInfo> {
   // Auth-aware extras (user client for identity only; reads stay admin-side).
   type JoinedInfo = Extract<JoinInfo, { success: true }>["joined"];
   let joined: JoinedInfo = null;
+  let p: { id: string; name: string | null } | null = null;
+  let guest = false;
   if (user) {
-    const { data: p } = await admin
+    const { data } = await admin
       .from("participants")
       .select("id, name")
       .eq("tournament_id", t.id)
       .eq("user_id", user.id)
       .maybeSingle();
-    if (p) {
-      const { data: sub } = await admin
-        .from("tournament_deck_submissions")
-        .select("deck_snapshot, submitted_at, is_legal")
-        .eq("participant_id", p.id)
+    p = data;
+  }
+  // No account row: this browser may have joined as a guest (and its owner may have signed in since).
+  if (!p) {
+    const token = (await cookies()).get(GUEST_COOKIE)?.value;
+    if (token) {
+      const { data } = await admin
+        .from("participants")
+        .select("id, name")
+        .eq("tournament_id", t.id)
+        .eq("guest_key", guestKeyOf(token))
         .maybeSingle();
-      joined = {
-        displayName: p.name ?? "",
-        submission: sub
-          ? {
-              deckName: (sub.deck_snapshot as any)?.deckName ?? "Deck",
-              submittedAt: sub.submitted_at,
-              isLegal: sub.is_legal,
-            }
-          : null,
-      };
+      p = data;
+      guest = p !== null;
     }
+  }
+  if (p) {
+    const { data: sub } = await admin
+      .from("tournament_deck_submissions")
+      .select("deck_snapshot, submitted_at, is_legal")
+      .eq("participant_id", p.id)
+      .maybeSingle();
+    joined = {
+      displayName: p.name ?? "",
+      guest,
+      submission: sub
+        ? {
+            deckName: (sub.deck_snapshot as any)?.deckName ?? "Deck",
+            submittedAt: sub.submitted_at,
+            isLegal: sub.is_legal,
+          }
+        : null,
+    };
   }
 
   return {
@@ -159,7 +195,7 @@ async function submitToTournament(
 
   let name: string | null = null;
   if (!resubmit) {
-    name = (displayName ?? "").replace(/[\p{Cc}]/gu, "").trim().slice(0, NAME_MAX);
+    name = cleanDisplayName(displayName);
     if (!name) return { success: false, error: "invalid_name" };
   }
 
@@ -217,6 +253,62 @@ export async function joinTournamentAction(
 
 export async function resubmitDeckAction(rawCode: string, deckId: string): Promise<JoinResult> {
   return submitToTournament(rawCode, deckId, null, true);
+}
+
+/**
+ * Joins by name alone, with no account, for an event that asks for no decklist. The browser is remembered by a
+ * cookie, so the same phone cannot join twice and sees its registration when it comes back.
+ */
+export async function joinAsGuestAction(rawCode: string, displayName: string): Promise<JoinResult> {
+  const code = normalizeJoinCode(rawCode);
+  if (!code) return { success: false, error: "invalid_code" };
+
+  // An anonymous write, so it is throttled by IP. A bucket apart from the page-load one in getJoinInfoAction:
+  // a room of players behind one venue connection each spend one load and one join.
+  try {
+    const ip = extractClientIp(new Request("http://x", { headers: await headers() }));
+    const rl = await rateLimitForUnauthIp(`guest-join:${ip}`);
+    if (rl.success === false) return { success: false, error: "rate_limited" };
+  } catch {
+    // Fail open when the limiter is not configured, as getJoinInfoAction does.
+  }
+
+  const t = await findTournamentByCode(code);
+  if (!t) return { success: false, error: "invalid_code" };
+  if (t.has_started === true) return { success: false, error: "started" };
+  if (t.require_decklists === true) return { success: false, error: "decklist_required" };
+
+  const name = cleanDisplayName(displayName);
+  if (!name) return { success: false, error: "invalid_name" };
+
+  const jar = await cookies();
+  const token = jar.get(GUEST_COOKIE)?.value || randomUUID();
+  const { data, error } = await getSupabaseAdmin().rpc("tournament_guest_join", {
+    p_code: code,
+    p_guest_key: guestKeyOf(token),
+    p_display_name: name,
+  });
+  if (error) return { success: false, error: "join_failed" };
+  const out = data as { ok: boolean; error?: string };
+  if (out.ok !== true) {
+    const SQL_ERRORS: Record<string, Extract<JoinResult, { success: false }>["error"]> = {
+      not_found: "invalid_code",
+      started: "started",
+      decklist_required: "decklist_required",
+      already_joined: "already_joined",
+      guests_full: "guests_full",
+    };
+    return { success: false, error: SQL_ERRORS[out.error ?? ""] ?? "join_failed" };
+  }
+
+  jar.set(GUEST_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/join",
+    maxAge: GUEST_COOKIE_MAX_AGE,
+  });
+  return { success: true };
 }
 
 /** The signed-in player's participant row and submission for the event with this code, read admin-side. */

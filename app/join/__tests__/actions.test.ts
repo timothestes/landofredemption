@@ -3,8 +3,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // vi.mock specifiers MUST match the implementation's "@/"-aliased imports
 // exactly (plus "next/headers") or the mocks silently don't apply.
 
+const cookieJar = new Map<string, string>();
+const mockCookieSet = vi.fn((name: string, value: string, _options?: any) => {
+  cookieJar.set(name, value);
+});
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => new Headers()),
+  cookies: vi.fn(async () => ({
+    get: (name: string) => (cookieJar.has(name) ? { name, value: cookieJar.get(name) } : undefined),
+    set: mockCookieSet,
+  })),
 }));
 
 const mockGetUser = vi.fn();
@@ -32,9 +40,11 @@ vi.mock("@/lib/tournament/deckSubmission", () => ({
   checkSnapshotCards: (...args: any[]) => mockCheckSnapshotCards(...args),
 }));
 
+import { createHash } from "node:crypto";
 import {
   getJoinInfoAction,
   getMySubmissionAction,
+  joinAsGuestAction,
   joinTournamentAction,
   resubmitDeckAction,
   updateMySubmissionAction,
@@ -80,6 +90,7 @@ beforeEach(() => {
   mockGetUser.mockResolvedValue({ data: { user: null } });
   mockRateLimitForUnauthIp.mockResolvedValue({ success: true, limit: 30, remaining: 29, reset: 0 });
   mockAdminImpl = null;
+  cookieJar.clear();
 });
 
 describe("getJoinInfoAction", () => {
@@ -150,9 +161,121 @@ describe("getJoinInfoAction", () => {
       expect(r.requiresDecklist).toBe(true);
       expect(r.joined).toEqual({
         displayName: "Timmy",
+        guest: false,
         submission: { deckName: "My Deck", submittedAt: "2026-07-27T00:00:00Z", isLegal: true },
       });
     }
+  });
+
+  it("signed out with the guest cookie: found by the cookie's hash, never the cookie itself", async () => {
+    cookieJar.set("lor_guest", "token-1");
+    const eqCalls: Array<[string, string, any]> = [];
+    const admin = makeAdmin({
+      tournaments: baseTournament(),
+      profiles: { username: "hosty" },
+      participants: { id: "p1", name: "Guesty" },
+    });
+    const from = admin.from;
+    admin.from = (table: string) => {
+      const node = from(table);
+      const eq = node.eq;
+      node.eq = (col: string, val: any) => {
+        eqCalls.push([table, col, val]);
+        return eq(col, val);
+      };
+      return node;
+    };
+    mockAdminImpl = admin;
+    const r = await getJoinInfoAction(VALID_CODE);
+    expect(r.success === true && r.joined).toEqual({ displayName: "Guesty", guest: true, submission: null });
+    const key = createHash("sha256").update("token-1").digest("hex");
+    expect(eqCalls).toContainEqual(["participants", "guest_key", key]);
+    expect(eqCalls.some(([, , val]) => val === "token-1")).toBe(false);
+  });
+
+  it("signed out with no guest cookie: not joined, whatever rows the event holds", async () => {
+    mockAdminImpl = makeAdmin({
+      tournaments: baseTournament(),
+      profiles: { username: "hosty" },
+      participants: { id: "p1", name: "Somebody else" },
+    });
+    const r = await getJoinInfoAction(VALID_CODE);
+    expect(r.success === true && r.joined).toBeNull();
+  });
+});
+
+describe("joinAsGuestAction", () => {
+  const sha = (s: string) => createHash("sha256").update(s).digest("hex");
+
+  it("joins by name: stores the hash of a new token and hands the token to the browser", async () => {
+    const admin = makeAdmin({ tournaments: baseTournament() });
+    mockAdminImpl = admin;
+    expect(await joinAsGuestAction(VALID_CODE, "  Guesty  ")).toEqual({ success: true });
+    const [rpcName, rpcArgs] = admin.rpc.mock.calls[0];
+    expect(rpcName).toBe("tournament_guest_join");
+    expect(rpcArgs.p_code).toBe(VALID_CODE);
+    expect(rpcArgs.p_display_name).toBe("Guesty");
+    expect(mockCookieSet).toHaveBeenCalledTimes(1);
+    const [cookieName, token, options] = mockCookieSet.mock.calls[0];
+    expect(cookieName).toBe("lor_guest");
+    expect(rpcArgs.p_guest_key).toBe(sha(token));
+    expect(options).toMatchObject({ httpOnly: true, sameSite: "lax", path: "/join" });
+  });
+
+  it("a browser that already has a token keeps it, so its second join is seen as the same guest", async () => {
+    cookieJar.set("lor_guest", "token-1");
+    const admin = makeAdmin({ tournaments: baseTournament() });
+    mockAdminImpl = admin;
+    await joinAsGuestAction(VALID_CODE, "Guesty");
+    expect(admin.rpc.mock.calls[0][1].p_guest_key).toBe(sha("token-1"));
+    expect(mockCookieSet.mock.calls[0][1]).toBe("token-1");
+  });
+
+  it("an event that asks for a decklist takes no guests", async () => {
+    const admin = makeAdmin({ tournaments: baseTournament({ require_decklists: true }) });
+    mockAdminImpl = admin;
+    expect(await joinAsGuestAction(VALID_CODE, "Guesty")).toEqual({ success: false, error: "decklist_required" });
+    expect(admin.rpc).not.toHaveBeenCalled();
+  });
+
+  it("started, unknown code and blank name are refused before anything is written", async () => {
+    const started = makeAdmin({ tournaments: baseTournament({ has_started: true }) });
+    mockAdminImpl = started;
+    expect(await joinAsGuestAction(VALID_CODE, "Guesty")).toEqual({ success: false, error: "started" });
+    expect(started.rpc).not.toHaveBeenCalled();
+
+    mockAdminImpl = makeAdmin({ tournaments: null });
+    expect(await joinAsGuestAction(VALID_CODE, "Guesty")).toEqual({ success: false, error: "invalid_code" });
+
+    const open = makeAdmin({ tournaments: baseTournament() });
+    mockAdminImpl = open;
+    expect(await joinAsGuestAction(VALID_CODE, "   ")).toEqual({ success: false, error: "invalid_name" });
+    expect(open.rpc).not.toHaveBeenCalled();
+  });
+
+  it("throttled by IP in a bucket of its own, apart from page loads", async () => {
+    const admin = makeAdmin({ tournaments: baseTournament() });
+    mockAdminImpl = admin;
+    mockRateLimitForUnauthIp.mockResolvedValue({ success: false, limit: 30, remaining: 0, reset: 0 });
+    expect(await joinAsGuestAction(VALID_CODE, "Guesty")).toEqual({ success: false, error: "rate_limited" });
+    expect(mockRateLimitForUnauthIp).toHaveBeenCalledWith("guest-join:1.2.3.4");
+    expect(admin.rpc).not.toHaveBeenCalled();
+  });
+
+  it("a refused join sets no cookie, and the database's reasons are passed on", async () => {
+    for (const [sqlError, error] of [
+      ["already_joined", "already_joined"],
+      ["guests_full", "guests_full"],
+      ["started", "started"],
+      ["not_found", "invalid_code"],
+      ["something_new", "join_failed"],
+    ]) {
+      mockAdminImpl = makeAdmin({ tournaments: baseTournament() }, { data: { ok: false, error: sqlError }, error: null });
+      expect(await joinAsGuestAction(VALID_CODE, "Guesty")).toEqual({ success: false, error });
+    }
+    mockAdminImpl = makeAdmin({ tournaments: baseTournament() }, { data: null, error: { message: "connection reset" } });
+    expect(await joinAsGuestAction(VALID_CODE, "Guesty")).toEqual({ success: false, error: "join_failed" });
+    expect(mockCookieSet).not.toHaveBeenCalled();
   });
 });
 
