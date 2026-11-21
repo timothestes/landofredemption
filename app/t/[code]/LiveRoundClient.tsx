@@ -78,11 +78,14 @@ export default function LiveRoundClient({
   code,
   initialView,
   pendingName,
+  registeredName,
 }: {
   code: string;
   /** Null when the event exists but hasn't started; the page 404s otherwise. */
   initialView: PublicRoundView | null;
   pendingName: string | null;
+  /** The name a signed-in player joined this event under, if they did. */
+  registeredName: string | null;
 }) {
   const [view, setView] = useState<PublicRoundView | null>(initialView);
   // Server clock minus this phone's clock. Every countdown adds it back so a
@@ -94,7 +97,9 @@ export default function LiveRoundClient({
   const [refreshFailed, setRefreshFailed] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [tab, setTab] = useState<Tab>("pairings");
-  const [query, setQuery] = useState("");
+  // A player who joined with an account starts on the name they registered, so
+  // they are not asked to type it again. A name typed here before still wins.
+  const [query, setQuery] = useState(registeredName ?? "");
   const seqRef = useRef(0);
   const inflightRef = useRef(false);
 
