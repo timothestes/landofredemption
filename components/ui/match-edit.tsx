@@ -119,7 +119,21 @@ export default function MatchEditModal({
     setOpen(next);
   };
 
+  // Saving is up to three requests; without a pending state the button looked
+  // idle on a slow connection and invited a second tap.
+  const [saving, setSaving] = useState(false);
   const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    try {
+      await saveResult(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveResult = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -319,8 +333,11 @@ export default function MatchEditModal({
           <h2 className="text-xl font-bold mb-6 text-foreground">
             {mode === "repair" ? "Edit result" : "Edit Match"}
           </h2>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            <div className="block space-y-5">
+          {/* min-h-0 + a scrolling field block: on a short screen (phone
+              landscape) the fields scroll and the buttons stay in view,
+              instead of being clipped below the dialog's edge. */}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6 min-h-0">
+            <div className="block space-y-5 min-h-0 overflow-y-auto">
               {error && (
                 <p className="text-destructive text-sm" role="alert">
                   {error}
@@ -362,9 +379,9 @@ export default function MatchEditModal({
                 </div>
               )}
             </div>
-            <div className="flex justify-end gap-3 mt-2">
-              <Button type="submit" variant="success">
-                {mode === "repair" ? "Save" : "Update"}
+            <div className="flex justify-end gap-3 mt-2 shrink-0">
+              <Button type="submit" variant="success" disabled={saving}>
+                {saving ? "Saving…" : mode === "repair" ? "Save" : "Update"}
               </Button>
               <Button type="button" variant="cancel" onClick={() => setOpen(false)}>
                 Cancel

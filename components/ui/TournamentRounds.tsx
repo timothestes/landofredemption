@@ -1688,6 +1688,17 @@ export default function TournamentRounds({
                               <span className="text-xs uppercase tracking-wide text-muted-foreground whitespace-nowrap">
                                 {tableLabel}
                               </span>
+                              {/* The result as entered (player 1 first, as the
+                                  names are stacked), so a host can check cards
+                                  against the slips without opening each dialog.
+                                  mr-auto keeps it beside the table label. */}
+                              {perRound && (
+                                <span className="mr-auto min-w-0 truncate text-sm font-semibold text-foreground tabular-nums">
+                                  {forfeitLabel(match) ?? (
+                                    <>{match.player1_score} &ndash; {match.player2_score}</>
+                                  )}
+                                </span>
+                              )}
                               <div className="flex items-center gap-1 flex-shrink-0">
                                 {/* See desktop note: hide the disabled edit
                                     pencil on completed rounds where the repair
