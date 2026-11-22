@@ -1,5 +1,6 @@
 import { createClient } from "../../../utils/supabase/server";
 import { safeRedirectPath } from "../../../utils/auth/safeRedirectPath";
+import { callbackDestination } from "../../../utils/auth/signUpRedirect";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -16,11 +17,13 @@ export async function GET(request: Request) {
   const supabase = await createClient();
 
   let authError: string | null = null;
+  let userMetadata: Record<string, unknown> | undefined;
 
   if (token_hash && type) {
     // PKCE-style token_hash flow (used by custom email templates)
-    const { error } = await supabase.auth.verifyOtp({ token_hash, type: type as any });
+    const { data, error } = await supabase.auth.verifyOtp({ token_hash, type: type as any });
     if (error) authError = error.message;
+    userMetadata = data?.user?.user_metadata;
   } else if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) authError = error.message;
@@ -34,10 +37,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(signInUrl.toString());
   }
 
-  if (redirectTo) {
-    return NextResponse.redirect(`${origin}${safeRedirectPath(redirectTo)}`);
-  }
-
-  // URL to redirect to after sign up process completes
-  return NextResponse.redirect(`${origin}/`);
+  // The link's redirect_to, or for a sign-up confirmation the page stored at sign-up
+  // (a tournament join link, say), or home.
+  return NextResponse.redirect(`${origin}${callbackDestination(redirectTo, type, userMetadata)}`);
 }

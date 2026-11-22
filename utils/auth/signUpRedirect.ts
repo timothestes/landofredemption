@@ -22,3 +22,33 @@ export function signUpFormPath(
   const base = `/sign-up?${type}=${encodeURIComponent(message)}`;
   return path ? `${base}&redirectTo=${encodeURIComponent(path)}` : base;
 }
+
+// The confirmation email's link comes from a template in the Supabase dashboard
+// (`/auth/callback?token_hash=…&type=…`) that leaves out the `redirect_to` set
+// above. So the destination is also stored on the new account, and the callback
+// reads it back from the user the link confirms. This works whichever browser the
+// email app opens the link in.
+const SIGN_UP_REDIRECT_KEY = "signup_redirect_to";
+
+/** User metadata for `signUp` that remembers where the new user was headed. */
+export function signUpRedirectData(redirectTo: unknown): Record<string, string> {
+  const path = safeRedirectPath(redirectTo, "");
+  return path ? { [SIGN_UP_REDIRECT_KEY]: path } : {};
+}
+
+/**
+ * Where the auth callback sends someone once their link checks out: the link's
+ * own `redirect_to` if it has one, else (for a sign-up confirmation) the page
+ * stored at sign-up, else home.
+ */
+export function callbackDestination(
+  redirectParam: string | null | undefined,
+  type: string | null,
+  userMetadata: Record<string, unknown> | undefined,
+): string {
+  if (redirectParam) return safeRedirectPath(redirectParam);
+  if (type === "signup" || type === "email") {
+    return safeRedirectPath(userMetadata?.[SIGN_UP_REDIRECT_KEY]);
+  }
+  return "/";
+}
