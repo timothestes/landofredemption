@@ -3,7 +3,22 @@
  */
 
 /**
- * Opens printable HTML in a new tab and lets the user print it reliably.
+ * Opens an empty tab to print into, or tells the user it was blocked and
+ * returns null. Call it from the click handler before anything is awaited:
+ * browsers only let a page open a tab straight after a click (Safari only
+ * during the click itself), so a tab opened after loading data can be blocked
+ * as a pop-up.
+ */
+export const openBlankPrintWindow = (): Window | null => {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert('Please allow popups for this site to print');
+  }
+  return printWindow;
+};
+
+/**
+ * Shows printable HTML in a tab from `openBlankPrintWindow`.
  *
  * We deliberately avoid `window.open('') + document.write()`: Chromium treats that
  * popup as the initial about:blank document and can discard the written DOM a moment
@@ -11,16 +26,19 @@
  * when Print is pressed (blank printout). Loading the HTML through a Blob URL yields a
  * real, committed document, so both the on-screen page and the printout render.
  */
-const openPrintWindow = (html: string): void => {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert('Please allow popups for this site to print');
-    return;
-  }
-  const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+const loadPrintWindow = (printWindow: Window, html: string): void => {
+  // The charset matters: without it the browser reads the page as Windows-1252
+  // and the long dash in a generated tournament name prints as "â€”".
+  const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
   printWindow.location.href = url;
   // Release the blob once the document has had time to load.
   setTimeout(() => URL.revokeObjectURL(url), 60000);
+};
+
+/** Opens printable HTML in a new tab and lets the user print it reliably. */
+const openPrintWindow = (html: string): void => {
+  const printWindow = openBlankPrintWindow();
+  if (printWindow) loadPrintWindow(printWindow, html);
 };
 
 /** Escape user-provided text (player names) so it can't break the print layout or inject markup. */
@@ -48,12 +66,14 @@ export interface FinalStandingRow {
  * stored per-player totals alone; `printFinalStandingsFor` in StandingsTable
  * is the single place that works it out.
  *
+ * @param printWindow - Tab from `openBlankPrintWindow`, opened before the rows were loaded
  * @param rows - Ranked standings rows for the active players
  * @param tournamentName - Name of the tournament
  * @param droppedOut - Players who dropped; listed after the standings with no place
- * @returns void - Opens a new window with printable content
+ * @returns void - Shows the printable content in `printWindow`
  */
 export const printFinalStandings = (
+  printWindow: Window,
   rows: FinalStandingRow[],
   tournamentName?: string | null,
   droppedOut: { name: string; match_points: number | null; differential: number | null }[] = [],
@@ -138,7 +158,7 @@ export const printFinalStandings = (
     </html>
   `;
 
-  openPrintWindow(printContent);
+  loadPrintWindow(printWindow, printContent);
 };
 
 /**

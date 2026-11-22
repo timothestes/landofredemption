@@ -137,6 +137,8 @@ export default function QRJoinDialog({
     typeof window !== "undefined" && tournament.code
       ? `${window.location.origin}/join/${tournament.code}`
       : "";
+  // The site's address as a player would type it, for the code-entry page.
+  const joinSite = typeof window !== "undefined" ? window.location.host : "";
 
   async function handleEnable() {
     setSaving(true);
@@ -246,6 +248,14 @@ export default function QRJoinDialog({
                 </div>
                 <p className="text-3xl font-mono font-bold tracking-widest text-foreground">
                   {tournament.code}
+                </p>
+                {/* For a player who can't scan: where the code above gets typed. */}
+                <p className="text-center text-sm text-muted-foreground">
+                  Or go to{" "}
+                  <span className="break-all font-medium text-foreground">
+                    {joinSite}/join
+                  </span>{" "}
+                  and enter this code.
                 </p>
                 <div className="w-full">
                   <label className="block text-xs font-medium text-muted-foreground mb-1">

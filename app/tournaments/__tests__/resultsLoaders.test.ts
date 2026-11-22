@@ -20,36 +20,41 @@ function fakeAdmin(opts: {
   participants?: any[];
   decklists?: any[];
   calls?: { participants: number; decklists: number };
+  /** Collects the column list of every select, keyed by table. */
+  selects?: Record<string, string>;
 }) {
   const calls = opts.calls ?? { participants: 0, decklists: 0 };
   return {
     from: (table: string) => ({
-      select: () => ({
-        eq: (col: string) => {
-          if (table === "tournaments" && col === "id") {
-            return {
-              maybeSingle: async () => ({ data: opts.tournament ?? null, error: null }),
-            };
-          }
-          if (table === "tournaments") {
-            // results_published index filter
-            return Promise.resolve({ data: opts.tournamentsIndex ?? [], error: null });
-          }
-          if (table === "participants") {
+      select: (columns?: string) => {
+        if (opts.selects) opts.selects[table] = columns ?? "";
+        return {
+          eq: (col: string) => {
+            if (table === "tournaments" && col === "id") {
+              return {
+                maybeSingle: async () => ({ data: opts.tournament ?? null, error: null }),
+              };
+            }
+            if (table === "tournaments") {
+              // results_published index filter
+              return Promise.resolve({ data: opts.tournamentsIndex ?? [], error: null });
+            }
+            if (table === "participants") {
+              calls.participants++;
+              return Promise.resolve({ data: opts.participants ?? [], error: null });
+            }
+            if (table === "tournament_decklists") {
+              calls.decklists++;
+              return Promise.resolve({ data: opts.decklists ?? [], error: null });
+            }
+            return Promise.resolve({ data: [], error: null });
+          },
+          in: () => {
             calls.participants++;
             return Promise.resolve({ data: opts.participants ?? [], error: null });
-          }
-          if (table === "tournament_decklists") {
-            calls.decklists++;
-            return Promise.resolve({ data: opts.decklists ?? [], error: null });
-          }
-          return Promise.resolve({ data: [], error: null });
-        },
-        in: () => {
-          calls.participants++;
-          return Promise.resolve({ data: opts.participants ?? [], error: null });
-        },
-      }),
+          },
+        };
+      },
     }),
   } as any;
 }
@@ -111,6 +116,39 @@ describe("loadPublicResultsAction", () => {
     expect(r.success).toBe(true);
     if (r.success === true) {
       expect(r.standings.map((s) => s.name)).toEqual(["Alice", "Bob", "Sam", "Zeke"]);
+    }
+  });
+
+  it("marks players who dropped, so the page can say so instead of showing a bare dash", async () => {
+    const selects: Record<string, string> = {};
+    vi.mocked(getSupabaseAdmin).mockReturnValue(
+      fakeAdmin({
+        tournament: {
+          id: "t1",
+          name: "Spring Open",
+          category: "State",
+          deck_format: "Limited",
+          ended_at: "2026-01-01",
+          results_published: true,
+          decklists_published: false,
+        },
+        participants: [
+          { id: "p1", place: 1, name: "Alice", match_points: 12, differential: 10, dropped_out: false },
+          { id: "p2", place: null, name: "Zeke", match_points: 3, differential: -4, dropped_out: true },
+        ],
+        selects,
+      })
+    );
+
+    const r = await loadPublicResultsAction("t1");
+
+    expect(selects.participants).toContain("dropped_out");
+    expect(r.success).toBe(true);
+    if (r.success === true) {
+      expect(r.standings.map((s) => [s.name, s.dropped])).toEqual([
+        ["Alice", false],
+        ["Zeke", true],
+      ]);
     }
   });
 

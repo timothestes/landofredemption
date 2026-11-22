@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { normalizeJoinCode } from "@/lib/tournament/joinCodeShared";
@@ -9,6 +9,7 @@ export default function JoinLandingPage() {
   const router = useRouter();
   const [value, setValue] = useState("");
   const [error, setError] = useState(false);
+  const [pending, startTransition] = useTransition();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -17,7 +18,8 @@ export default function JoinLandingPage() {
       setError(true);
       return;
     }
-    router.push(`/join/${code}`);
+    // The event page can take a moment on venue wifi: keep the button busy until it shows.
+    startTransition(() => router.push(`/join/${code}`));
   }
 
   return (
@@ -51,8 +53,8 @@ export default function JoinLandingPage() {
               That doesn&apos;t look like a valid code. Double-check and try again.
             </p>
           )}
-          <Button type="submit" className="mt-4 w-full">
-            Continue
+          <Button type="submit" disabled={pending} className="mt-4 w-full">
+            {pending ? "Looking up…" : "Continue"}
           </Button>
         </form>
       </div>
