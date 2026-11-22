@@ -856,6 +856,11 @@ describe('hasUsableAbilityInZone', () => {
     expect(hasUsableAbilityInZone({ cardName: 'Virgin Birth', zone: 'reserve' })).toBe(false);
   });
 
+  it('Virgin Birth underdecks itself when a looked-at card is taken', () => {
+    const look = getEffectiveAbilities({ cardName: 'Virgin Birth' }).find(a => a.type === 'look_at_own_deck');
+    expect(look).toMatchObject({ position: 'top', count: 6, underdeckOnTake: true });
+  });
+
   it('sees inherited abilities from an imitated soul (Imitate → Lawless in LoR)', () => {
     expect(hasUsableAbilityInZone({
       cardName: 'Lost Soul "Imitate" [III John 1:11]',

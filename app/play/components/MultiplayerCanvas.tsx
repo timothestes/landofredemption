@@ -1676,7 +1676,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
   // player opened the search from the deck menu.
   const [deckSearchAbility, setDeckSearchAbility] = useState<Extract<CardAbility, { type: 'search_deck' }> | null>(null);
   const [peekState, setPeekState] = useState<{ position: 'top' | 'bottom' | 'random'; count: number; cardIds: string[]; source?: { cardName: string } } | null>(null);
-  const [lookState, setLookState] = useState<{ count: number; position: 'top' | 'bottom' | 'random' } | null>(null);
+  const [lookState, setLookState] = useState<{ count: number; position: 'top' | 'bottom' | 'random'; underdeckSource?: { id: string; name: string } } | null>(null);
   // `ability` is set when a card's exchange_with_deck / exchange_with_reserve
   // ability opened it (Benjamin, the Young) — the window then starts filtered
   // to valid picks.
@@ -2262,6 +2262,9 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         setLookState({
           position: ability.position,
           count: ability.count,
+          underdeckSource: ability.underdeckOnTake && source
+            ? { id: sourceInstanceId, name: source.cardName }
+            : undefined,
         });
         if (source) {
           gameState.logLookAtTop(ability.count, source.cardName, ability.position);
@@ -11225,6 +11228,17 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             didDragRef={modalDidDragRef}
             isDragActive={modalDrag.isDragging}
             isPrivateLook
+            takeToHand={lookState.underdeckSource ? {
+              sourceName: lookState.underdeckSource.name,
+              onTaken: () => {
+                const { id } = lookState.underdeckSource!;
+                // Only if it's still where the ability fires from (hand or in play).
+                const src = findMyCardById(id);
+                if (!src || !['hand', 'territory', 'land-of-bondage', 'land-of-redemption', 'battle'].includes(src.zone)) return;
+                // Through the modal actions so the move lands on the undo stack.
+                modalGameValue.actions.moveCardToBottomOfDeck(id);
+              },
+            } : undefined}
           />
         )}
 
