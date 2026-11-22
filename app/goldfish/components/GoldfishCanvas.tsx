@@ -255,7 +255,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
   // before calling. setPeekState is a stable useState setter — intentionally
   // omitted from the deps to avoid a TDZ access (it's declared further down).
   const openOwnDeckPeek = useCallback(
-    (position: 'top' | 'bottom' | 'random', requestedCount: number, source: GameCard | undefined) => {
+    (position: 'top' | 'bottom' | 'random', requestedCount: number, source: GameCard | undefined, underdeckOnTake?: boolean) => {
       const deck = state.zones.deck;
       if (deck.length === 0) { showGameToast('Deck is empty'); return; }
       const n = Math.min(requestedCount, deck.length);
@@ -279,7 +279,11 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
       // (Star) abilities fired from hand — flash the source card so the implicit
       // "reveal from hand" cost is visible (parity with multiplayer behavior).
       if (source && source.zone === 'hand') revealCardInHand(source.instanceId);
-      setPeekState({ cardIds: ids, title });
+      setPeekState({
+        cardIds: ids,
+        title,
+        underdeckSource: underdeckOnTake && source ? { id: source.instanceId, name: source.cardName } : undefined,
+      });
     },
     [state.zones, revealCardInHand],
   );
@@ -313,7 +317,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
       }
       const ability = source ? getEffectiveAbilities(source)[abilityIndex] : undefined;
       if (ability?.type === 'reveal_own_deck' || ability?.type === 'look_at_own_deck') {
-        openOwnDeckPeek(ability.position, ability.count, source);
+        openOwnDeckPeek(ability.position, ability.count, source, ability.type === 'look_at_own_deck' && ability.underdeckOnTake);
         return;
       }
       if (ability?.type === 'search_deck') {
@@ -513,7 +517,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
   const [deckMenu, setDeckMenu] = useState<{ x: number; y: number } | null>(null);
   const [soulDeckMenu, setSoulDeckMenu] = useState<{ x: number; y: number } | null>(null);
   const [browseSoulDeck, setBrowseSoulDeck] = useState(false);
-  const [peekState, setPeekState] = useState<{ cardIds: string[]; title: string; sourceZone?: ZoneId } | null>(null);
+  const [peekState, setPeekState] = useState<{ cardIds: string[]; title: string; sourceZone?: ZoneId; underdeckSource?: { id: string; name: string } } | null>(null);
   const [lookState, setLookState] = useState<{ cardIds: string[]; title: string; sourceZone?: ZoneId } | null>(null);
   const [deckDropPopup, setDeckDropPopup] = useState<{ cardInstanceId: string; x: number; y: number } | null>(null);
   const [soulDeckDropPopup, setSoulDeckDropPopup] = useState<{ cardInstanceId: string; batchIds?: string[]; x: number; y: number } | null>(null);
@@ -3320,6 +3324,18 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
             didDragRef={modalDidDragRef}
             isDragActive={modalDrag.isDragging}
             sourceZone={peekState.sourceZone}
+            takeToHand={peekState.underdeckSource ? {
+              sourceName: peekState.underdeckSource.name,
+              onTaken: () => {
+                const { id, name } = peekState.underdeckSource!;
+                // Only if it's still where the ability fires from (hand or in play).
+                const stillThere = (['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] as ZoneId[])
+                  .some(z => state.zones[z]?.some(c => c.instanceId === id));
+                if (!stillThere) return;
+                moveCardToBottomOfDeck(id);
+                showGameToast(`${name} went to the bottom of your deck`);
+              },
+            } : undefined}
           />
         )}
 
