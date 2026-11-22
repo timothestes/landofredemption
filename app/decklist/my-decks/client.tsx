@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { Pin, PinOff } from "lucide-react";
 import {
   loadUserDecksAction,
   deleteDeckAction,
@@ -19,6 +20,7 @@ import {
   setDecksVisibilityAction,
   loadGlobalTagsAction,
   updateDeckPreviewCardsAction,
+  setDeckPinnedAction,
   DeckData,
   DeckCardData,
   DeckVisibility,
@@ -32,6 +34,7 @@ import FolderModal from "./FolderModal";
 import UsernameModal from "./UsernameModal";
 import QuickLookModal from "./QuickLookModal";
 import { buildSortInfo, compareDeckCards } from "./cardTypeSort";
+import { MAX_PINNED_DECKS, PIN_LIMIT_MESSAGE, pinnedFirst } from "./pinning";
 import type { SortableCard } from "@/lib/cards/defaultSort";
 import { getCardImageUrlOrNull } from "@/app/shared/utils/cardImageUrl";
 import GeneratePDFModal from "../card-search/components/GeneratePDFModal";
@@ -337,6 +340,38 @@ export default function MyDecksClient() {
     }
   }
 
+  // One request per deck at a time, so a double tap can't race its own revert.
+  const pinInFlightRef = useRef(new Set<string>());
+
+  async function handleTogglePin(deckId: string) {
+    const deck = decks.find((d) => d.id === deckId);
+    if (!deck || pinInFlightRef.current.has(deckId)) return;
+    const pinned = !deck.is_pinned;
+    if (pinned && decks.filter((d) => d.is_pinned).length >= MAX_PINNED_DECKS) {
+      showToast(PIN_LIMIT_MESSAGE);
+      return;
+    }
+    pinInFlightRef.current.add(deckId);
+    setDecks((prev) => prev.map((d) => (d.id === deckId ? { ...d, is_pinned: pinned } : d)));
+    let error: string | undefined;
+    try {
+      const result = await setDeckPinnedAction(deckId, pinned);
+      if (!result.success) error = result.error;
+    } catch {
+      // Network drop, or a deploy retired this action id while the tab stayed open.
+      error = "";
+    } finally {
+      pinInFlightRef.current.delete(deckId);
+    }
+    if (error !== undefined) {
+      setDecks((prev) => prev.map((d) => (d.id === deckId ? { ...d, is_pinned: !pinned } : d)));
+      showToast(error || (pinned ? "Failed to pin deck" : "Failed to unpin deck"));
+    } else {
+      // The card jumps groups, often out of view on a phone: say what happened.
+      showToast(pinned ? `Pinned "${deck.name}"` : `Unpinned "${deck.name}"`, "success");
+    }
+  }
+
   async function handleMoveDeck(deckId: string, folderId: string | null) {
     setDecks((prev) => prev.map((d) => (d.id === deckId ? { ...d, folder_id: folderId } : d)));
     const result = await moveDeckToFolderAction(deckId, folderId);
@@ -593,9 +628,10 @@ export default function MyDecksClient() {
     router.push(`/decklist/card-search?deckId=${deckId}`);
   }
 
-  // Filter decks based on selected folder
+  // Filter decks based on selected folder. My Decks also shows pinned decks
+  // filed in folders, so a pin is one tap from the landing view.
   const folderDecks = selectedFolder === null
-    ? decks.filter(d => !d.folder_id)
+    ? decks.filter(d => !d.folder_id || d.is_pinned)
     : decks.filter(d => d.folder_id === selectedFolder);
 
   // Apply search filter (search all folders or just current)
@@ -619,8 +655,8 @@ export default function MyDecksClient() {
     type => decks.some(d => formatDeckType(d.format) === type)
   );
 
-  // Sort decks
-  const sortedDecks = [...typeFilteredDecks].sort((a, b) => {
+  // Sort decks (pinned first; the chosen sort orders each group)
+  const sortedDecks = [...typeFilteredDecks].sort(pinnedFirst((a, b) => {
     switch (sortBy) {
       case "name":
         return a.name.localeCompare(b.name);
@@ -630,7 +666,14 @@ export default function MyDecksClient() {
       default:
         return new Date(b.updated_at!).getTime() - new Date(a.updated_at!).getTime();
     }
-  });
+  }));
+  const pinnedCount = sortedDecks.filter((d) => d.is_pinned).length;
+  // Folder a deck lives in, when it isn't the folder being viewed (a pinned
+  // deck on My Decks, or a search across all folders).
+  const elsewhereFolderName = (deck: DeckData) =>
+    (deck.folder_id ?? null) !== selectedFolder
+      ? deck.folder_id ? folders.find((f) => f.id === deck.folder_id)?.name ?? "a folder" : "My Decks"
+      : undefined;
 
   // Get selected folder name
   const selectedFolderName = selectedFolder 
@@ -1240,49 +1283,73 @@ export default function MyDecksClient() {
                 Create A Deck
               </button>
             </div>
-          ) : viewMode === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-              {sortedDecks.map((deck) => (
-                <DeckCard
-                  key={deck.id}
-                  deck={deck}
-                  folders={folders}
-                  selectionMode={selectionMode}
-                  selected={selectedIds.includes(deck.id!)}
-                  onToggleSelect={(shiftKey) => toggleSelect(deck.id!, shiftKey)}
-                  onEdit={handleEditDeck}
-                  onDelete={(id, name) => setDeckToDelete({ id, name })}
-                  onDuplicate={handleDuplicateDeck}
-                  onMove={handleMoveDeck}
-                  onGeneratePDF={handleGeneratePDF}
-                  onGenerateImage={handleGenerateImage}
-                  onDownload={handleDownload}
-                  onShare={(id) => setShareDeckId(id)}
-                  onEditCover={(id) => setCoverPickerDeckId(id)}
-                  onQuickLook={(id) => setQuickLookDeckId(id)}
-                />
-              ))}
-            </div>
           ) : (
-            <div className="space-y-2">
-              {sortedDecks.map((deck) => (
-                <DeckListItem
-                  key={deck.id}
-                  deck={deck}
-                  folders={folders}
-                  selectionMode={selectionMode}
-                  selected={selectedIds.includes(deck.id!)}
-                  onToggleSelect={(shiftKey) => toggleSelect(deck.id!, shiftKey)}
-                  onEdit={handleEditDeck}
-                  onDelete={(id, name) => setDeckToDelete({ id, name })}
-                  onDuplicate={handleDuplicateDeck}
-                  onMove={handleMoveDeck}
-                  onGeneratePDF={handleGeneratePDF}
-                  onGenerateImage={handleGenerateImage}
-                  onDownload={handleDownload}
-                  onShare={(id) => setShareDeckId(id)}
-                  onQuickLook={(id) => setQuickLookDeckId(id)}
-                />
+            <div className="space-y-6">
+              {(pinnedCount > 0
+                ? [
+                    { label: "Pinned", decks: sortedDecks.slice(0, pinnedCount) },
+                    { label: "Other decks", decks: sortedDecks.slice(pinnedCount) },
+                  ].filter((g) => g.decks.length > 0)
+                : [{ label: null, decks: sortedDecks }]
+              ).map((group) => (
+                // Unlabelled list shares the "Other decks" key so the first pin doesn't remount every card.
+                <section key={group.label ?? "Other decks"}>
+                  {group.label && (
+                    <h2 className="mb-2 text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                      {group.label}
+                    </h2>
+                  )}
+                  {viewMode === "grid" ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+                      {group.decks.map((deck) => (
+                        <DeckCard
+                          key={deck.id}
+                          deck={deck}
+                          folders={folders}
+                          elsewhereFolderName={elsewhereFolderName(deck)}
+                          selectionMode={selectionMode}
+                          selected={selectedIds.includes(deck.id!)}
+                          onToggleSelect={(shiftKey) => toggleSelect(deck.id!, shiftKey)}
+                          onEdit={handleEditDeck}
+                          onDelete={(id, name) => setDeckToDelete({ id, name })}
+                          onDuplicate={handleDuplicateDeck}
+                          onMove={handleMoveDeck}
+                          onGeneratePDF={handleGeneratePDF}
+                          onGenerateImage={handleGenerateImage}
+                          onDownload={handleDownload}
+                          onShare={(id) => setShareDeckId(id)}
+                          onEditCover={(id) => setCoverPickerDeckId(id)}
+                          onQuickLook={(id) => setQuickLookDeckId(id)}
+                          onTogglePin={handleTogglePin}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {group.decks.map((deck) => (
+                        <DeckListItem
+                          key={deck.id}
+                          deck={deck}
+                          folders={folders}
+                          elsewhereFolderName={elsewhereFolderName(deck)}
+                          selectionMode={selectionMode}
+                          selected={selectedIds.includes(deck.id!)}
+                          onToggleSelect={(shiftKey) => toggleSelect(deck.id!, shiftKey)}
+                          onEdit={handleEditDeck}
+                          onDelete={(id, name) => setDeckToDelete({ id, name })}
+                          onDuplicate={handleDuplicateDeck}
+                          onMove={handleMoveDeck}
+                          onGeneratePDF={handleGeneratePDF}
+                          onGenerateImage={handleGenerateImage}
+                          onDownload={handleDownload}
+                          onShare={(id) => setShareDeckId(id)}
+                          onQuickLook={(id) => setQuickLookDeckId(id)}
+                          onTogglePin={handleTogglePin}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
               ))}
             </div>
           )}
@@ -1584,6 +1651,7 @@ function FolderItem({
 function DeckCard({
   deck,
   folders,
+  elsewhereFolderName,
   selectionMode,
   selected,
   onToggleSelect,
@@ -1597,9 +1665,11 @@ function DeckCard({
   onShare,
   onEditCover,
   onQuickLook,
+  onTogglePin,
 }: {
   deck: DeckData;
   folders: FolderData[];
+  elsewhereFolderName?: string;
   selectionMode: boolean;
   selected: boolean;
   onToggleSelect: (shiftKey: boolean) => void;
@@ -1613,6 +1683,7 @@ function DeckCard({
   onShare: (deckId: string) => void;
   onEditCover: (deckId: string) => void;
   onQuickLook: (deckId: string) => void;
+  onTogglePin: (deckId: string) => void;
 }) {
   const updatedRelative = formatRelativeTime(deck.updated_at!);
   const updatedAbsolute = formatDateTime(deck.updated_at!);
@@ -1695,6 +1766,7 @@ function DeckCard({
       <div className="p-4 flex-1 flex flex-col">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
+            {deck.is_pinned && <PinnedMark />}
             <h3 className="font-semibold text-lg truncate">{deck.name}</h3>
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${visibilityBadge(deckVisibility(deck)).classes}`}>
               {visibilityBadge(deckVisibility(deck)).label}
@@ -1704,6 +1776,8 @@ function DeckCard({
             <DropdownMenu
               folders={folders}
               currentFolderId={deck.folder_id}
+              pinned={!!deck.is_pinned}
+              onTogglePin={() => onTogglePin(deck.id!)}
               onQuickLook={() => onQuickLook(deck.id!)}
               onEdit={() => onEdit(deck.id!)}
               onDelete={() => onDelete(deck.id!, deck.name)}
@@ -1751,8 +1825,9 @@ function DeckCard({
         )}
 
         <div className="mt-auto pt-3 border-t border-border">
-          <p className="text-xs text-muted-foreground" title={updatedAbsolute}>
+          <p className="text-xs text-muted-foreground truncate" title={updatedAbsolute}>
             Updated {updatedRelative}
+            {elsewhereFolderName && <> · in {elsewhereFolderName}</>}
           </p>
         </div>
       </div>
@@ -1774,6 +1849,7 @@ function DeckCard({
 function DeckListItem({
   deck,
   folders,
+  elsewhereFolderName,
   selectionMode,
   selected,
   onToggleSelect,
@@ -1786,9 +1862,11 @@ function DeckListItem({
   onDownload,
   onShare,
   onQuickLook,
+  onTogglePin,
 }: {
   deck: DeckData;
   folders: FolderData[];
+  elsewhereFolderName?: string;
   selectionMode: boolean;
   selected: boolean;
   onToggleSelect: (shiftKey: boolean) => void;
@@ -1801,6 +1879,7 @@ function DeckListItem({
   onDownload: (deckId: string) => void;
   onShare: (deckId: string) => void;
   onQuickLook: (deckId: string) => void;
+  onTogglePin: (deckId: string) => void;
 }) {
   const updatedRelative = formatRelativeTime(deck.updated_at!);
   const updatedAbsolute = formatDateTime(deck.updated_at!);
@@ -1835,6 +1914,7 @@ function DeckListItem({
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 md:gap-3">
+            {deck.is_pinned && <PinnedMark />}
             <span className={FORMAT_CHIP}>
               {formatDeckType(deck.format)}
             </span>
@@ -1844,7 +1924,8 @@ function DeckListItem({
             </span>
           </div>
           <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground md:hidden">
-            <span>{deck.card_count || 0} cards</span>
+            {elsewhereFolderName && <span className="truncate">in {elsewhereFolderName}</span>}
+            <span className="flex-shrink-0">{deck.card_count || 0} cards</span>
             {deck.total_price != null && deck.total_price > 0 && (
               <span className="text-green-600 dark:text-green-400">${deck.total_price.toFixed(2)}</span>
             )}
@@ -1880,6 +1961,7 @@ function DeckListItem({
             </span>
           )}
           <span className="text-xs" title={updatedAbsolute}>Updated {updatedRelative}</span>
+          {elsewhereFolderName && <span className="text-xs max-w-[10rem] truncate">in {elsewhereFolderName}</span>}
         </div>
 
         {!selectionMode && (
@@ -1893,6 +1975,8 @@ function DeckListItem({
             <DropdownMenu
               folders={folders}
               currentFolderId={deck.folder_id}
+              pinned={!!deck.is_pinned}
+              onTogglePin={() => onTogglePin(deck.id!)}
               onQuickLook={() => onQuickLook(deck.id!)}
               onEdit={() => onEdit(deck.id!)}
               onDelete={() => onDelete(deck.id!, deck.name)}
@@ -1910,10 +1994,22 @@ function DeckListItem({
   );
 }
 
+// Marks a pinned deck next to its name; pin and unpin live in the ⋮ menu.
+function PinnedMark() {
+  return (
+    <span className="flex-shrink-0 text-muted-foreground" title="Pinned">
+      <Pin className="w-4 h-4" aria-hidden />
+      <span className="sr-only">Pinned</span>
+    </span>
+  );
+}
+
 // Dropdown Menu Component
 function DropdownMenu({
   folders,
   currentFolderId,
+  pinned,
+  onTogglePin,
   onQuickLook,
   onEdit,
   onDelete,
@@ -1926,6 +2022,8 @@ function DropdownMenu({
 }: {
   folders: FolderData[];
   currentFolderId?: string | null;
+  pinned: boolean;
+  onTogglePin: () => void;
   onQuickLook: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -1946,7 +2044,7 @@ function DropdownMenu({
     if (!isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      const menuHeight = 400; // conservative estimate for full menu
+      const menuHeight = 440; // conservative estimate for full menu
       const openUp = spaceBelow < menuHeight && rect.top > spaceBelow;
 
       setMenuStyle({
@@ -1955,6 +2053,8 @@ function DropdownMenu({
         ...(openUp
           ? { bottom: window.innerHeight - rect.top + 4 }
           : { top: rect.bottom + 4 }),
+        // Neither side may fit the whole menu on a short phone: scroll inside it.
+        maxHeight: (openUp ? rect.top : spaceBelow) - 12,
         zIndex: 50,
       });
     }
@@ -1968,13 +2068,14 @@ function DropdownMenu({
       if (!buttonRef.current) return;
       const rect = buttonRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      const openUp = spaceBelow < 400 && rect.top > spaceBelow;
+      const openUp = spaceBelow < 440 && rect.top > spaceBelow;
       setMenuStyle({
         position: "fixed" as const,
         right: window.innerWidth - rect.right,
         ...(openUp
           ? { bottom: window.innerHeight - rect.top + 4 }
           : { top: rect.bottom + 4 }),
+        maxHeight: (openUp ? rect.top : spaceBelow) - 12,
         zIndex: 50,
       });
     }
@@ -2036,6 +2137,20 @@ function DropdownMenu({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
               Edit
+            </button>
+            <button
+              onClick={() => {
+                onTogglePin();
+                setIsOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-muted flex items-center gap-2"
+            >
+              {pinned ? (
+                <PinOff className="w-4 h-4 text-muted-foreground" aria-hidden />
+              ) : (
+                <Pin className="w-4 h-4 text-muted-foreground" aria-hidden />
+              )}
+              {pinned ? "Unpin" : "Pin to top"}
             </button>
             <button
               onClick={() => {
