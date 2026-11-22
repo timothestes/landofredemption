@@ -99,6 +99,7 @@ export interface DeckSearchResult {
   card_count: number;
   preview_card_1: string | null;
   preview_card_2: string | null;
+  paragon: string | null;
   is_public: boolean;
   username?: string | null;
 }
@@ -204,7 +205,7 @@ export async function searchDecksForTournamentAction(query: string) {
   // Search admin's own decks
   const { data: ownDecks } = await supabase
     .from("decks")
-    .select("id, name, format, card_count, preview_card_1, preview_card_2, is_public, user_id")
+    .select("id, name, format, card_count, preview_card_1, preview_card_2, paragon, is_public, user_id")
     .eq("user_id", user.id)
     .ilike("name", `%${term}%`)
     .order("updated_at", { ascending: false })
@@ -213,7 +214,7 @@ export async function searchDecksForTournamentAction(query: string) {
   // Search public decks (excluding own; unlisted decks aren't discoverable here)
   const { data: publicDecks } = await supabase
     .from("decks")
-    .select("id, name, format, card_count, preview_card_1, preview_card_2, is_public, user_id")
+    .select("id, name, format, card_count, preview_card_1, preview_card_2, paragon, is_public, user_id")
     .eq("visibility", "public")
     .neq("user_id", user.id)
     .ilike("name", `%${term}%`)
@@ -241,6 +242,7 @@ export async function searchDecksForTournamentAction(query: string) {
       card_count: d.card_count || 0,
       preview_card_1: d.preview_card_1,
       preview_card_2: d.preview_card_2,
+      paragon: d.paragon ?? null,
       is_public: d.is_public,
       username: "You" as string | null,
     })),
@@ -251,6 +253,7 @@ export async function searchDecksForTournamentAction(query: string) {
       card_count: d.card_count || 0,
       preview_card_1: d.preview_card_1,
       preview_card_2: d.preview_card_2,
+      paragon: d.paragon ?? null,
       is_public: d.is_public,
       username: usernameMap.get(d.user_id) || null,
     })),
