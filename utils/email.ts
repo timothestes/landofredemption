@@ -66,7 +66,7 @@ export function wrapEmailInTemplate(bodyHtml: string): string {
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : process.env.NEXT_PUBLIC_SITE_URL || "https://landofredemption.com";
 
-  const logoUrl = `${baseUrl}/darkmode_redemptionccgapp.png`;
+  const logoUrl = `${baseUrl}/brand/lor-wordmark-email.png`;
 
   return `<!DOCTYPE html>
 <html>
@@ -82,7 +82,7 @@ export function wrapEmailInTemplate(bodyHtml: string): string {
             <!-- Logo header -->
             <tr>
               <td align="center" style="padding:32px 30px 24px 30px;border-bottom:1px solid #2a2a2e;">
-                <img src="${logoUrl}" alt="Redemption CCG App" width="200" style="display:block;max-width:200px;height:auto;" />
+                <img src="${logoUrl}" alt="Land of Redemption" width="200" style="display:block;max-width:200px;height:auto;" />
               </td>
             </tr>
             <!-- Body content -->
