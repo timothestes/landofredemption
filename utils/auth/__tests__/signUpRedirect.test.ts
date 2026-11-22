@@ -68,8 +68,10 @@ describe("signUpFormPath", () => {
 });
 
 // The confirmation email's link is built by a template in the Supabase dashboard
-// (`/auth/callback?token_hash=…&type=…`), which leaves out `redirect_to`. The
-// destination rides on the new account instead and comes back when the link is used.
+// (`/auth/callback?token_hash=…&type=signup&redirect_to=/decklist/community`), which
+// leaves out our `redirect_to` and adds its own fixed one. The destination rides on
+// the new account instead and comes back when the link is used.
+const TEMPLATE_REDIRECT = "/decklist/community";
 describe("signUpRedirectData + callbackDestination", () => {
   const confirmed = (redirectTo: unknown, type = "signup") =>
     callbackDestination(null, type, signUpRedirectData(redirectTo));
@@ -99,10 +101,28 @@ describe("signUpRedirectData + callbackDestination", () => {
     }
   });
 
-  it("prefers the link's own redirect_to when it has one", () => {
+  it("sends a sign-up from a join link to that link, not the template's fixed redirect_to", () => {
+    const meta = signUpRedirectData("/join/T7K2QF");
+    expect(callbackDestination(TEMPLATE_REDIRECT, "signup", meta)).toBe("/join/T7K2QF");
+    expect(callbackDestination(TEMPLATE_REDIRECT, "email", meta)).toBe("/join/T7K2QF");
+  });
+
+  it("sends a plain sign-up where the template's link says", () => {
+    expect(callbackDestination(TEMPLATE_REDIRECT, "signup", signUpRedirectData(undefined))).toBe(
+      TEMPLATE_REDIRECT,
+    );
+    expect(callbackDestination(TEMPLATE_REDIRECT, "signup", undefined)).toBe(TEMPLATE_REDIRECT);
+  });
+
+  it("falls back to the link's redirect_to when the stored destination is not a path on this site", () => {
     expect(
-      callbackDestination("/tournaments/1", "signup", signUpRedirectData("/join/T7K2QF")),
-    ).toBe("/tournaments/1");
+      callbackDestination(TEMPLATE_REDIRECT, "signup", { signup_redirect_to: "https://evil.test" }),
+    ).toBe(TEMPLATE_REDIRECT);
+  });
+
+  it("follows the link's redirect_to, not a stored one, for links that are not a sign-up confirmation", () => {
+    const meta = signUpRedirectData("/join/T7K2QF");
+    expect(callbackDestination("/reset-password", "recovery", meta)).toBe("/reset-password");
   });
 
   it("ignores the stored destination for links that are not a sign-up confirmation", () => {
