@@ -17,7 +17,7 @@ export default async function GoldfishEntryPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0d0905] px-4">
       <div
-        className="w-full max-w-lg rounded-lg border p-8"
+        className="w-full max-w-lg rounded-lg border p-5 sm:p-8"
         style={{
           background: '#1e1610',
           borderColor: 'var(--gf-border)',
@@ -55,7 +55,8 @@ export default async function GoldfishEntryPage() {
                   >
                     <DeckCovers deck={deck} />
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium" style={{ color: 'var(--gf-text-bright)' }}>
+                      {/* Beside the covers a phone has room for a word or two: wrap the name rather than cut it. */}
+                      <div className="line-clamp-2 font-medium leading-snug" style={{ color: 'var(--gf-text-bright)' }}>
                         {deck.name}
                       </div>
                       <div className="truncate text-xs" style={{ color: 'var(--gf-text-dim)' }}>
