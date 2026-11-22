@@ -2,8 +2,9 @@
 
 import { useState, type ReactNode } from "react";
 import { FormatBadge } from "./FormatBadge";
+import { DeckCovers, hasDeckCover, type DeckCoverFields } from "./DeckCovers";
 
-export interface MyDeckListItem {
+export interface MyDeckListItem extends DeckCoverFields {
   id?: string;
   name: string;
   format?: string | null;
@@ -44,6 +45,8 @@ export function MyDeckList<T extends MyDeckListItem>({
   const filteredDecks = decks.filter((d) =>
     d.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  // Covers only when the source has them (the Forge's decks have none): a column of blanks says nothing.
+  const showCovers = decks.some(hasDeckCover);
 
   return (
     <>
@@ -94,17 +97,20 @@ export function MyDeckList<T extends MyDeckListItem>({
                   type="button"
                   onClick={() => onPick(deck)}
                   disabled={!!busyDeckId}
-                  className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border last:border-b-0 disabled:opacity-50"
+                  className={`w-full text-left px-4 ${showCovers ? "py-2" : "py-3"} hover:bg-muted transition-colors border-b border-border last:border-b-0 disabled:opacity-50`}
                 >
                   <div className="flex items-center justify-between gap-3">
+                    {showCovers && <DeckCovers deck={deck} />}
                     <div className="flex-1 min-w-0">
+                      {/* Beside the covers, the badge moves down a line so the name keeps the width. */}
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-foreground truncate">
                           {deck.name}
                         </span>
-                        <FormatBadge format={deck.format} full />
+                        {!showCovers && <FormatBadge format={deck.format} full />}
                       </div>
-                      <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
+                      <div className={`flex items-center gap-3 text-xs text-muted-foreground ${showCovers ? "mt-1" : "mt-0.5"}`}>
+                        {showCovers && <FormatBadge format={deck.format} full />}
                         <span>{deck.card_count || 0} cards</span>
                         {deck.updated_at && (
                           <span>

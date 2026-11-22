@@ -7,9 +7,10 @@ import { searchDecksForTournamentAction, type DeckSearchResult } from "@/app/tra
 import { STORAGE_KEY } from "@/app/decklist/scan/lib/deckTrayReducer";
 import { FORMATS, normalizeFormat, type FormatId } from "@/lib/formats";
 import { FormatBadge } from "@/components/ui/FormatBadge";
+import { DeckCovers, type DeckCoverFields } from "@/components/ui/DeckCovers";
 import PhotoDeckSource from "./PhotoDeckSource";
 
-interface MyDeck {
+interface MyDeck extends DeckCoverFields {
   id: string;
   name: string;
   format: string | null;
@@ -46,13 +47,11 @@ function isCompatible(deckFormat: string | null | undefined, tf: FormatId | "Oth
 }
 
 function DeckRow({
-  name,
-  format,
+  deck,
   subtitle,
   onClick,
 }: {
-  name: string;
-  format: string | null | undefined;
+  deck: DeckCoverFields & { name: string };
   subtitle?: string;
   onClick: () => void;
 }) {
@@ -60,11 +59,16 @@ function DeckRow({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm hover:bg-muted"
+      className="flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
     >
-      <FormatBadge format={format} className="min-w-[2.5rem] flex-shrink-0" />
-      <span className="min-w-0 flex-1 truncate text-foreground">{name}</span>
-      {subtitle && <span className="flex-shrink-0 text-xs text-muted-foreground">{subtitle}</span>}
+      <DeckCovers deck={deck} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-foreground">{deck.name}</span>
+        <span className="mt-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+          <FormatBadge format={deck.format} className="min-w-[2.5rem] flex-shrink-0" />
+          {subtitle && <span className="truncate">{subtitle}</span>}
+        </span>
+      </span>
     </button>
   );
 }
@@ -220,7 +224,7 @@ export default function DeckPicker({
 
   // Paste a link
   const [linkInput, setLinkInput] = useState("");
-  const [linkPreview, setLinkPreview] = useState<{ id: string; name: string; format: string | null } | null>(null);
+  const [linkPreview, setLinkPreview] = useState<MyDeck | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [linkLoading, setLinkLoading] = useState(false);
 
@@ -236,7 +240,14 @@ export default function DeckPicker({
     try {
       const res = await loadPublicDeckAction(match[1]);
       if (res.success === true && res.deck) {
-        setLinkPreview({ id: res.deck.id, name: res.deck.name, format: res.deck.format ?? null });
+        setLinkPreview({
+          id: res.deck.id,
+          name: res.deck.name,
+          format: res.deck.format ?? null,
+          paragon: res.deck.paragon,
+          preview_card_1: res.deck.preview_card_1,
+          preview_card_2: res.deck.preview_card_2,
+        });
       } else {
         setLinkError(res.error ?? "Couldn't load that deck.");
       }
@@ -324,7 +335,7 @@ export default function DeckPicker({
             )}
             <div className="mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto">
               {compatibleMine.map((d) => (
-                <DeckRow key={d.id} name={d.name} format={d.format} onClick={() => onSelect(d.id, d.name)} />
+                <DeckRow key={d.id} deck={d} onClick={() => onSelect(d.id, d.name)} />
               ))}
               {incompatibleMine.length > 0 && (
                 <>
@@ -333,7 +344,7 @@ export default function DeckPicker({
                   </div>
                   {incompatibleMine.map((d) => (
                     <div key={d.id}>
-                      <DeckRow name={d.name} format={d.format} onClick={() => onSelect(d.id, d.name)} />
+                      <DeckRow deck={d} onClick={() => onSelect(d.id, d.name)} />
                       <p className="pl-3 pb-1 text-xs text-amber-600 dark:text-amber-400">
                         Different format — will be validated as {otherFormatLabel}
                       </p>
@@ -371,8 +382,7 @@ export default function DeckPicker({
               {communityResults.map((d) => (
                 <DeckRow
                   key={d.id}
-                  name={d.name}
-                  format={d.format}
+                  deck={d}
                   subtitle={d.username && d.username !== "You" ? `by ${d.username}` : undefined}
                   onClick={() => onSelect(d.id, d.name)}
                 />
@@ -407,8 +417,7 @@ export default function DeckPicker({
             {linkPreview && (
               <div className="mt-3">
                 <DeckRow
-                  name={linkPreview.name}
-                  format={linkPreview.format}
+                  deck={linkPreview}
                   onClick={() => onSelect(linkPreview.id, linkPreview.name)}
                 />
               </div>

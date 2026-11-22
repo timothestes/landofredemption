@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, X, BookOpen } from "lucide-react";
-import { getCardImageUrl } from "../../app/shared/utils/cardImageUrl";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +13,7 @@ import {
 import { searchDecksForTournamentAction, type DeckSearchResult } from "../../app/tracker/tournaments/actions";
 import { FORMATS, normalizeFormat, normalizeTournamentFormat } from "../../lib/formats";
 import { FormatBadge } from "./FormatBadge";
+import { DeckCovers } from "./DeckCovers";
 
 interface AttachDeckDialogProps {
   open: boolean;
@@ -201,18 +201,7 @@ export default function AttachDeckDialog({
                           : "hover:bg-muted"
                     }`}
                   >
-                    {/* Preview thumbnail */}
-                    <div className="w-10 h-14 rounded bg-muted flex-shrink-0 overflow-hidden flex items-center justify-center">
-                      {deck.preview_card_1 ? (
-                        <img
-                          src={getCardImageUrl(deck.preview_card_1)}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <BookOpen className="w-4 h-4 text-muted-foreground/40" />
-                      )}
-                    </div>
+                    <DeckCovers deck={deck} />
 
                     {/* Deck info */}
                     <div className="flex-1 min-w-0">

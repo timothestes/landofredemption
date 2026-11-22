@@ -15,6 +15,7 @@ import { forceMainOnly } from "./scan/lib/forceMainOnly";
 import type { DeckOutcome, SaveRow } from "./scan/lib/handoff";
 import { loadDeckTournamentContext, type DeckTournamentContext } from "./deckTournamentContext";
 import { mergeDeckCardRows } from "./mergeDeckCards";
+import { defaultCovers } from "./defaultCovers";
 
 // Three-state deck visibility. Mirrors the `visibility` column on `decks`.
 //   private  -> owner only
@@ -110,7 +111,12 @@ export async function saveDeckAction(params: SaveDeckParams) {
       };
     }
 
-    const { deckId, name, description, format, paragon, folderId, cards, previewCard1, previewCard2 } = params;
+    const { deckId, name, description, format, paragon, folderId, cards } = params;
+    // A save that picks no covers (Duplicate, a deck read from a photo) gets the ones the builder would pick.
+    const [previewCard1, previewCard2] =
+      params.previewCard1 || params.previewCard2
+        ? [params.previewCard1 ?? null, params.previewCard2 ?? null]
+        : defaultCovers(cards);
 
     if (folderId && !(await ownsFolder(supabase, folderId, user.id))) {
       return { success: false, error: "Folder not found" };
@@ -585,6 +591,9 @@ export async function duplicateDeckAction(deckId: string, newName?: string) {
     const saveResult = await saveDeckAction({
       name: newName || `${originalDeck.name} (Copy)`,
       format: originalDeck.format,
+      paragon: originalDeck.paragon,
+      previewCard1: originalDeck.preview_card_1 ?? null,
+      previewCard2: originalDeck.preview_card_2 ?? null,
       // A public deck in someone else's folder: the copy is yours, the folder isn't.
       folderId: originalDeck.user_id === user.id ? originalDeck.folder_id : null,
       cards: originalDeck.cards,
