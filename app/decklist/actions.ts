@@ -15,6 +15,7 @@ import { forceMainOnly } from "./scan/lib/forceMainOnly";
 import type { DeckOutcome, SaveRow } from "./scan/lib/handoff";
 import { loadDeckTournamentContext, type DeckTournamentContext } from "./deckTournamentContext";
 import { mergeDeckCardRows } from "./mergeDeckCards";
+import { MAX_PINNED_DECKS, PIN_LIMIT_MESSAGE } from "./my-decks/pinning";
 
 // Three-state deck visibility. Mirrors the `visibility` column on `decks`.
 //   private  -> owner only
@@ -36,6 +37,8 @@ export interface DeckData {
   card_count?: number;
   preview_card_1?: string | null;
   preview_card_2?: string | null;
+  /** Shown at the top of the owner's My Decks; at most MAX_PINNED_DECKS. */
+  is_pinned?: boolean;
   created_at?: string;
   updated_at?: string;
   tags?: GlobalTag[];
@@ -2050,6 +2053,53 @@ export async function updateDeckPreviewCardsAction(
     return { success: true };
   } catch (error) {
     console.error("Error in updateDeckPreviewCardsAction:", error);
+    return { success: false, error: "An unexpected error occurred" };
+  }
+}
+
+/**
+ * Pin a deck to the top of My Decks, or unpin it. Pinning refuses a fourth
+ * deck; unpinning always succeeds. Not an edit: the updated_at trigger
+ * ignores is_pinned (migration 131).
+ */
+export async function setDeckPinnedAction(deckId: string, pinned: boolean) {
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return { success: false, error: "Not authenticated" };
+
+    if (pinned) {
+      const { data: pinnedRows, error: countError } = await supabase
+        .from("decks")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("is_pinned", true);
+      if (countError) {
+        console.error("Error counting pinned decks:", countError);
+        return { success: false, error: "Failed to pin deck" };
+      }
+      const others = (pinnedRows || []).filter((d: { id: string }) => d.id !== deckId);
+      if (others.length >= MAX_PINNED_DECKS) {
+        return { success: false, error: PIN_LIMIT_MESSAGE };
+      }
+    }
+
+    const { data: updated, error } = await supabase
+      .from("decks")
+      .update({ is_pinned: pinned })
+      .eq("id", deckId)
+      .eq("user_id", user.id)
+      .select("id");
+
+    if (error) {
+      console.error("Error setting deck pin:", error);
+      return { success: false, error: pinned ? "Failed to pin deck" : "Failed to unpin deck" };
+    }
+    if (!updated || updated.length === 0) return { success: false, error: "Deck not found" };
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error in setDeckPinnedAction:", error);
     return { success: false, error: "An unexpected error occurred" };
   }
 }
