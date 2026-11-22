@@ -61,38 +61,42 @@ export default async function Index(props: {
   return (
     <div className="flex min-h-screen flex-col bg-background [.jayden_&]:bg-transparent">
       <TopNav />
-      {/* Masthead. The one place the archived splash art appears, sharp and at
-          full contrast. The band is the plate's own navy in BOTH themes: the art
-          is a near-black render made for a dark header, and fading or multiplying
-          it onto a light page only ever made a grey smear (see #447). A fixed dark
-          nameplate over a light page is the classic editorial move, and it means
-          one asset, no theme swap, no hydration flash. Art is hidden below `lg`,
-          where the text needs the full width.
-          Jayden is the exception: its whole look is the tinted plate behind the
-          page (components/ui/background.tsx), so there the band and the page go
-          transparent and the art is dropped (the plate already carries it). */}
-      <section className="relative overflow-hidden border-b border-white/10 bg-[hsl(228,22%,12%)] text-[hsl(210,20%,96%)] [.jayden_&]:bg-transparent">
-        <img
-          src="/brand/hero-splash.webp"
-          alt=""
+      {/* Masthead. The archived splash art, re-inked per theme: a pen drawing on
+          the light page, only the face lit in dark, stained-glass light in Jayden.
+          The band is the theme's own background, and each art file is baked onto
+          that colour (scripts/hero-art/build.sh), so it needs no blend mode. The
+          file comes from the --hero-art variable in globals.css, so only the
+          active theme's file downloads. The source plate is a crushed near-black
+          render (grey 17-41/255): never filter it at runtime, rebuild the files.
+          From `md`: the figure fills the right of the band, faded in from the left.
+          Below `md`: a head-and-shoulders crop of the same file sits beside a
+          narrower wordmark and fades out before the subtitle. */}
+      <section className="relative overflow-hidden border-b border-border bg-background">
+        <div
           aria-hidden
-          width={900}
-          height={650}
-          className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-[min(56%,46rem)] object-cover object-[50%_18%] [mask-image:linear-gradient(to_right,transparent_0%,black_45%)] lg:block [.jayden_&]:hidden"
+          className="pointer-events-none absolute right-0 top-0 h-[150px] w-[188px] bg-[image:var(--hero-art)] bg-[length:484px_auto] bg-[position:-121px_-16px] bg-no-repeat [mask-composite:intersect] [mask-image:linear-gradient(to_right,transparent,black_38%),linear-gradient(to_bottom,black_50%,transparent)] md:bottom-0 md:h-full md:w-[42%] md:bg-cover md:bg-[position:50%_30%] md:[mask-image:linear-gradient(to_right,transparent_12%,black_45%)] lg:w-[min(60%,52rem)]"
         />
         <div className="relative mx-auto w-full max-w-5xl px-4 py-10 sm:py-14 lg:py-20">
           <h1 className="sr-only">
             Land of Redemption – Redemption CCG Strategy, Deck Building, and Tournaments
           </h1>
           <img
+            src="/brand/lor-wordmark-dark.webp"
+            alt=""
+            aria-hidden
+            width={450}
+            height={122}
+            className="h-auto w-full max-w-[56%] sm:max-w-md dark:hidden"
+          />
+          <img
             src="/brand/lor-wordmark.webp"
             alt=""
             aria-hidden
             width={450}
             height={122}
-            className="h-auto w-full max-w-sm sm:max-w-md"
+            className="hidden h-auto w-full max-w-[56%] sm:max-w-md dark:block"
           />
-          <p className="mt-5 max-w-lg text-[hsl(215,16%,72%)] sm:text-lg">
+          <p className="mt-10 max-w-lg text-muted-foreground sm:mt-5 sm:text-lg">
             Strategy, deck building, and tournaments for Redemption — the collectible card
             game based on the Bible.
           </p>
@@ -106,7 +110,7 @@ export default async function Index(props: {
             </Link>
             <Link
               href="/tournaments"
-              className="inline-flex min-h-11 items-center text-sm font-medium text-[hsl(215,16%,80%)] transition-colors hover:text-white"
+              className="inline-flex min-h-11 items-center text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               Upcoming tournaments →
             </Link>

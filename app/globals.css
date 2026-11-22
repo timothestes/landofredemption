@@ -20,6 +20,10 @@
        panels lift off the page without a border. */
     --background: 220 27% 98%;
     --foreground: 222 36% 11%;
+    /* Home masthead art, one file per theme (built by scripts/hero-art/build.sh,
+       each already sitting on its theme's --background). As a CSS variable only
+       the active theme's file downloads, and it can't flash the wrong theme. */
+    --hero-art: url("/brand/hero-art-light.webp");
     --card: 220 40% 99.5%;
     --card-foreground: 222 36% 11%;
     --popover: 220 40% 99.5%;
@@ -54,6 +58,7 @@
   .dark {
     --background: 221 39% 11%;
     --foreground: 210 10% 95%;
+    --hero-art: url("/brand/hero-art-dark.webp");
     --card: 215 15% 9%;
     --card-foreground: 210 10% 95%;
     --popover: 215 15% 9%;
@@ -97,6 +102,7 @@
     color-scheme: dark;
     --background: 270 20% 4%;
     --foreground: 190 30% 93%;
+    --hero-art: url("/brand/hero-art-jayden.webp");
     --card: 270 25% 8%;
     --card-foreground: 190 30% 93%;
     --popover: 270 25% 8%;
