@@ -3,7 +3,7 @@
 import { encodedRedirect } from "../utils/utils";
 import { createClient } from "../utils/supabase/server";
 import { safeRedirectPath } from "../utils/auth/safeRedirectPath";
-import { signUpCallbackUrl, signUpFormPath } from "../utils/auth/signUpRedirect";
+import { signUpCallbackUrl, signUpFormPath, signUpRedirectData } from "../utils/auth/signUpRedirect";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { extractClientIp } from "../lib/api/rateLimit";
@@ -44,6 +44,7 @@ export const signUpAction = async (formData: FormData) => {
     password,
     options: {
       emailRedirectTo: signUpCallbackUrl(origin, redirectTo),
+      data: signUpRedirectData(redirectTo),
     },
   });
 
