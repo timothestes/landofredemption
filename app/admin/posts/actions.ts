@@ -362,6 +362,9 @@ export interface EmbeddableDeck {
   visibility: "private" | "unlisted" | "public";
   card_count: number;
   updated_at: string;
+  paragon: string | null;
+  preview_card_1: string | null;
+  preview_card_2: string | null;
 }
 
 /** The poster's own decks, newest first, for the deck picker. */
@@ -370,7 +373,7 @@ export async function listMyDecksForEmbedAction(): Promise<ActionResult<{ decks:
     const ctx = await requirePoster();
     const { data, error } = await ctx.supabase
       .from("decks")
-      .select("id, name, format, visibility, card_count, updated_at")
+      .select("id, name, format, visibility, card_count, updated_at, paragon, preview_card_1, preview_card_2")
       .eq("user_id", ctx.user.id)
       .order("updated_at", { ascending: false })
       .limit(200);

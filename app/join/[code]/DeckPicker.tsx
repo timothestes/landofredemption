@@ -33,7 +33,8 @@ interface DeckPickerProps {
   onPhotoDeck?: (deckId: string, deckName: string) => void;
   /** Told when the photo tab is showing with photos in its tray, so a host with its own submit can step aside for the tab's. */
   onPhotoTab?: (showing: boolean) => void;
-  onSelect: (deckId: string, deckName: string) => void;
+  /** `cover` is the picked row's, so the chosen deck can keep showing it. */
+  onSelect: (deckId: string, deckName: string, cover?: DeckCoverFields) => void;
 }
 
 // Compatibility is a sorting hint, not a gate — checkDeck (server-side, on
@@ -335,7 +336,7 @@ export default function DeckPicker({
             )}
             <div className="mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto">
               {compatibleMine.map((d) => (
-                <DeckRow key={d.id} deck={d} onClick={() => onSelect(d.id, d.name)} />
+                <DeckRow key={d.id} deck={d} onClick={() => onSelect(d.id, d.name, d)} />
               ))}
               {incompatibleMine.length > 0 && (
                 <>
@@ -344,7 +345,7 @@ export default function DeckPicker({
                   </div>
                   {incompatibleMine.map((d) => (
                     <div key={d.id}>
-                      <DeckRow deck={d} onClick={() => onSelect(d.id, d.name)} />
+                      <DeckRow deck={d} onClick={() => onSelect(d.id, d.name, d)} />
                       <p className="pl-3 pb-1 text-xs text-amber-600 dark:text-amber-400">
                         Different format — will be validated as {otherFormatLabel}
                       </p>
@@ -384,7 +385,7 @@ export default function DeckPicker({
                   key={d.id}
                   deck={d}
                   subtitle={d.username && d.username !== "You" ? `by ${d.username}` : undefined}
-                  onClick={() => onSelect(d.id, d.name)}
+                  onClick={() => onSelect(d.id, d.name, d)}
                 />
               ))}
             </div>
@@ -418,7 +419,7 @@ export default function DeckPicker({
               <div className="mt-3">
                 <DeckRow
                   deck={linkPreview}
-                  onClick={() => onSelect(linkPreview.id, linkPreview.name)}
+                  onClick={() => onSelect(linkPreview.id, linkPreview.name, linkPreview)}
                 />
               </div>
             )}

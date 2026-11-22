@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ConfirmationDialog from "@/components/ui/confirmation-dialog";
 import { Button } from "@/components/ui/button";
+import { DeckCovers } from "@/components/ui/DeckCovers";
 import { deckIdFromUrl } from "@/app/articles/lib/markdown";
 import { setDeckVisibilityAction } from "@/app/decklist/actions";
 import { listMyDecksForEmbedAction, type EmbeddableDeck } from "../actions";
@@ -155,7 +156,8 @@ export default function DeckPicker({
                       onClick={() => choose(d)}
                       className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-left hover:bg-muted/60"
                     >
-                      <span className="min-w-0">
+                      <DeckCovers deck={d} />
+                      <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium text-foreground">{d.name}</span>
                         <span className="block truncate text-xs text-muted-foreground">
                           {[d.format, `${d.card_count} cards`].filter(Boolean).join(" · ")}

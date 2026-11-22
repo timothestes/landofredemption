@@ -8,6 +8,7 @@ import { TournamentName } from "@/components/tournament/TournamentName";
 import { normalizeJoinCode } from "@/lib/tournament/joinCodeShared";
 import DeckPicker from "./DeckPicker";
 import SubmissionPdfButton from "@/components/tournament/SubmissionPdfButton";
+import { DeckCovers, hasDeckCover, type DeckCoverFields } from "@/components/ui/DeckCovers";
 import {
   getJoinInfoAction,
   getMySubmissionAction,
@@ -83,10 +84,16 @@ function LegalityBadge({ isLegal }: { isLegal: boolean | null }) {
 }
 
 /** The deck picked from the list, with the way back to the list. */
-function ChosenDeck({ name, onChange }: { name: string; onChange: () => void }) {
+function ChosenDeck({ name, cover, onChange }: { name: string; cover?: DeckCoverFields; onChange: () => void }) {
   return (
     <div className="mt-1 flex items-stretch justify-between rounded-md border border-border bg-card text-sm">
-      <span className="min-w-0 self-center truncate px-3 py-2 font-medium text-foreground">{name}</span>
+      {/* The covers the player picked it by, so they can see it is the right deck. A deck read from a photo has none. */}
+      {cover && hasDeckCover(cover) && (
+        <span className="self-center py-1.5 pl-2">
+          <DeckCovers deck={cover} />
+        </span>
+      )}
+      <span className="min-w-0 flex-1 self-center truncate px-3 py-2 font-medium text-foreground">{name}</span>
       {/* As tall as the row, and a thumb high: a small word alone is easy to miss on a phone. */}
       <button
         type="button"
@@ -175,7 +182,7 @@ export default function JoinClient({
 }) {
   const [info, setInfo] = useState<JoinInfo>(initialInfo);
   const [displayName, setDisplayName] = useState(defaultName);
-  const [selectedDeck, setSelectedDeck] = useState<{ id: string; name: string } | null>(null);
+  const [selectedDeck, setSelectedDeck] = useState<{ id: string; name: string; cover?: DeckCoverFields } | null>(null);
   const [showChangeDeck, setShowChangeDeck] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [photoTab, setPhotoTab] = useState(false);
@@ -495,7 +502,7 @@ export default function JoinClient({
               // which shows that it is being checked.
               <>
                 <div className="mt-2">
-                  <ChosenDeck name={selectedDeck.name} onChange={() => setSelectedDeck(null)} />
+                  <ChosenDeck name={selectedDeck.name} cover={selectedDeck.cover} onChange={() => setSelectedDeck(null)} />
                 </div>
                 <Button
                   type="button"
@@ -521,7 +528,7 @@ export default function JoinClient({
                   setSelectedDeck({ id, name });
                   void handleResubmit(id);
                 }}
-                onSelect={(id, name) => setSelectedDeck({ id, name })}
+                onSelect={(id, name, cover) => setSelectedDeck({ id, name, cover })}
               />
             )}
           </>
@@ -598,7 +605,7 @@ export default function JoinClient({
           <div>
             <p className="text-sm font-medium text-foreground">Decklist</p>
             {selectedDeck ? (
-              <ChosenDeck name={selectedDeck.name} onChange={() => setSelectedDeck(null)} />
+              <ChosenDeck name={selectedDeck.name} cover={selectedDeck.cover} onChange={() => setSelectedDeck(null)} />
             ) : (
               <DeckPicker
                 tournamentFormat={info.deckFormat}
@@ -613,7 +620,7 @@ export default function JoinClient({
                   setSelectedDeck({ id, name });
                   void join(id);
                 }}
-                onSelect={(id, name) => setSelectedDeck({ id, name })}
+                onSelect={(id, name, cover) => setSelectedDeck({ id, name, cover })}
               />
             )}
           </div>
