@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "./dialog";
 import { Input } from "./input";
+import { typedNameMatches } from "../../utils/tournament/confirmName";
 
 interface EndTournamentDialogProps {
   open: boolean;
@@ -33,9 +34,10 @@ interface EndTournamentDialogProps {
  * a typed gate would be overkill, and bending its API just for End
  * Tournament would muddy the contract for everyone else.
  *
- * Match semantics: case-insensitive comparison with both sides trimmed.
- * Paste is allowed. The mismatch error stays hidden until the user has
- * typed at least one character.
+ * Match semantics: case-insensitive comparison with both sides trimmed, and
+ * any dash counts as a hyphen (generated names contain a long dash that a
+ * phone keyboard cannot type). Paste is allowed. The mismatch error stays
+ * hidden until the user has typed at least one character.
  */
 export function EndTournamentDialog({
   open,
@@ -48,8 +50,7 @@ export function EndTournamentDialog({
   // Publishing is opt-out, not opt-in — checked by default so ending a
   // tournament publishes results + decklists unless the host unchecks it.
   const [publish, setPublish] = useState(true);
-  const matches =
-    typed.trim().toLowerCase() === tournamentName.trim().toLowerCase();
+  const matches = typedNameMatches(typed, tournamentName);
   // Only nag once the user has actually typed something — don't yell at
   // an empty input.
   const showMismatchError = typed.length > 0 && !matches;
@@ -77,8 +78,8 @@ export function EndTournamentDialog({
             </span>
           </DialogTitle>
           <DialogDescription>
-            This permanently locks all results, freezes standings, and ends
-            the tournament for all players. You cannot undo this.
+            This ends the tournament for all players. You cannot undo this.
+            Results can still be corrected afterwards with Edit a past result.
           </DialogDescription>
         </DialogHeader>
         <DialogBody className="space-y-2">

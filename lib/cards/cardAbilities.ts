@@ -40,7 +40,10 @@ export type CardAbility = AbilityBase & (
   // before anything moves.
   | { type: 'all_players_keep_one_shuffle_draw'; skipDraw?: boolean }
   | { type: 'reveal_own_deck'; position: 'top' | 'bottom' | 'random'; count: number }
-  | { type: 'look_at_own_deck'; position: 'top' | 'bottom' | 'random'; count: number }
+  // underdeckOnTake: "you may underdeck this card to take a card" (Virgin Birth).
+  // Moving any looked-at card to hand sends the source card to the bottom of
+  // its owner's deck. Client-side, like the look itself.
+  | { type: 'look_at_own_deck'; position: 'top' | 'bottom' | 'random'; count: number; underdeckOnTake?: boolean }
   // Player-chosen-count variant of look_at_own_deck (e.g. Angel of the Harvest's
   // "look at top X, limit 7"). The menu opens a count prompt seeded with
   // defaultCount and capped at maxCount; like look_at_own_deck it's modal-driven
@@ -273,7 +276,7 @@ const BASE_CARD_ABILITIES: Record<string, CardAbility[]> = {
   'The Coming Prince':                                   [{ type: 'look_at_own_deck', position: 'top', count: 1, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }, { type: 'underdeck_top_of_deck', count: 1, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
   'Abed-nego (Azariah) (PoC)':                           [{ type: 'underdeck_top_of_deck', count: 1 }],
   'Sign of Jonah':                                       [{ type: 'look_at_own_deck', position: 'top', count: 3, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
-  'Virgin Birth':                                        [{ type: 'look_at_own_deck', position: 'top', count: 6, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
+  'Virgin Birth':                                        [{ type: 'look_at_own_deck', position: 'top', count: 6, underdeckOnTake: true, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
   'Eve, Mother of All (Roots)':                          [{ type: 'look_at_own_deck', position: 'top', count: 7 }],
   'The Thankful Leper (GoC)':                            [{ type: 'look_at_own_deck', position: 'top', count: 10, sourceZones: ['hand', 'territory', 'land-of-bondage', 'land-of-redemption'] }],
   'David (Roots)':                                       [{ type: 'look_at_own_deck', position: 'top', count: 7 }],

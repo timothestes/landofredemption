@@ -25,13 +25,18 @@ export default async function Signup(props: {
       </div>
     );
   }
+  // Where to go once the account exists (a tournament join link, say).
+  const redirectTo = safeRedirectPath(searchParams.redirectTo, "");
 
   return (
     <div className="w-full">
       <h1 className="font-cinzel text-2xl font-bold tracking-tight sm:text-3xl mb-3 text-foreground">Sign up</h1>
       <p className="text-sm text-muted-foreground mb-6">
         Already have an account?{" "}
-        <Link className="text-primary hover:text-primary/80 font-medium underline" href="/sign-in">
+        <Link
+          className="text-primary hover:text-primary/80 font-medium underline"
+          href={redirectTo ? `/sign-in?redirectTo=${encodeURIComponent(redirectTo)}` : "/sign-in"}
+        >
           Sign in
         </Link>{" "}
         or{" "}
@@ -40,7 +45,7 @@ export default async function Signup(props: {
         </Link>
       </p>
 
-      <OAuthSignInButtons redirectTo={safeRedirectPath(searchParams.redirectTo, "") || undefined} />
+      <OAuthSignInButtons redirectTo={redirectTo || undefined} />
 
       <div className="relative my-6">
         <div className="absolute inset-0 flex items-center">
@@ -52,6 +57,7 @@ export default async function Signup(props: {
       </div>
 
       <form className="flex flex-col w-full">
+        {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
         <div className="space-y-6 mb-8">
           <div className="space-y-3">
             <Label htmlFor="email" className="text-foreground font-medium text-base">Email</Label>

@@ -3,6 +3,7 @@
 import { encodedRedirect } from "../utils/utils";
 import { createClient } from "../utils/supabase/server";
 import { safeRedirectPath } from "../utils/auth/safeRedirectPath";
+import { signUpCallbackUrl, signUpFormPath } from "../utils/auth/signUpRedirect";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { extractClientIp } from "../lib/api/rateLimit";
@@ -24,24 +25,25 @@ export const signUpAction = async (formData: FormData) => {
   const password = formData.get("password")?.toString();
   const supabase = await createClient();
   const origin = (await headers()).get("origin");
+  // The page the visitor was headed to (a tournament join link, say). It rides
+  // along on every way out of this action so a new account doesn't lose it.
+  const redirectTo = formData.get("redirectTo")?.toString();
 
   if (!email || !password) {
-    return encodedRedirect(
-      "error",
-      "/sign-up",
-      "Email and password are required",
+    return redirect(
+      signUpFormPath("error", "Email and password are required", redirectTo),
     );
   }
 
   if (!(await passedBotCheck(formData))) {
-    return encodedRedirect("error", "/sign-up", BOT_CHECK_FAILED);
+    return redirect(signUpFormPath("error", BOT_CHECK_FAILED, redirectTo));
   }
 
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${origin}/auth/callback`,
+      emailRedirectTo: signUpCallbackUrl(origin, redirectTo),
     },
   });
 
@@ -53,17 +55,19 @@ export const signUpAction = async (formData: FormData) => {
       error.message === "Error sending confirmation email"
         ? "We couldn't send a confirmation email to that address. Check it for typos and try again."
         : error.message;
-    return encodedRedirect("error", "/sign-up", message);
+    return redirect(signUpFormPath("error", message, redirectTo));
   } else {
     // Supabase deliberately returns no error when the email already belongs to a
     // confirmed account, and sends no verification email — so a bare "check your
     // email" here strands people who already have an account (they wait on a mail
     // that never arrives). Cover both cases without confirming whether the account
     // exists, which is what the obfuscation is protecting against.
-    return encodedRedirect(
-      "success",
-      "/sign-up",
-      "Thanks for signing up! If this email is new, check your inbox for a verification link. If you already have an account, no email was sent — sign in instead, or reset your password if you've forgotten it.",
+    return redirect(
+      signUpFormPath(
+        "success",
+        "Thanks for signing up! If this email is new, check your inbox for a verification link. If you already have an account, no email was sent — sign in instead, or reset your password if you've forgotten it.",
+        redirectTo,
+      ),
     );
   }
 };

@@ -631,8 +631,9 @@ export default function JoinClient({
         )}
 
         <p className="text-xs text-muted-foreground">
-          Your decklist will be visible to the host. When the event ends, your display name, final
-          standing, and decklist will be published with the results unless the host withholds them.
+          {info.requiresDecklist
+            ? "Your decklist will be visible to the host. When the event ends, your display name, final standing, and decklist will be published with the results unless the host withholds them."
+            : "When the event ends, your display name and final standing will be published with the results unless the host withholds them."}
         </p>
 
         {/* Once the photo tab has photos its own button is the join; a second, dead Join under it would only

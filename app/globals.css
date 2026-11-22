@@ -330,6 +330,18 @@ button:focus-visible,
   .deck-header-row .new-deck-label-long { display: inline; }
 }
 
+/* iOS Safari zooms the page, and leaves it zoomed, when the focused field's
+   text is under 16px. Most fields on the site are 14px (`text-sm`), so on touch
+   devices every field that takes typing is held at 16px. A media query rather
+   than html[data-input-mode], so fields don't change size after hydration.
+   Not !important on purpose: fields a class makes larger are skipped, and
+   inline sizes and the play-screen touch rules further down still win. */
+@media (pointer: coarse) {
+  :is(input, select, textarea):not([type='button'], [type='submit'], [type='reset'], [type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='color'], [type='image']):not(.text-lg, .text-xl, .text-2xl, .text-3xl, .text-4xl) {
+    font-size: 16px;
+  }
+}
+
 /* Touch devices (no real :hover) can't trigger Tailwind's group-hover
    variants, so the −/+/⋯ buttons would stay invisible. Reveal them
    when the container is wide enough to host them. */

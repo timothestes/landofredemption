@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import TopNav from "@/components/top-nav";
-import { getPendingEvent, getPublicRoundView } from "./actions";
+import { getMyParticipantName, getPendingEvent, getPublicRoundView } from "./actions";
 import LiveRoundClient from "./LiveRoundClient";
 
 // Pairings change every few minutes; never serve a cached round.
@@ -34,14 +34,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function LiveRoundPage({ params }: PageProps) {
   const { code } = await params;
-  const { view, pending } = await load(code);
+  const [{ view, pending }, registeredName] = await Promise.all([
+    load(code),
+    getMyParticipantName(code),
+  ]);
 
   if (!view && !pending) notFound();
 
   return (
     <div className="flex min-h-screen flex-col">
       <TopNav />
-      <LiveRoundClient code={code} initialView={view} pendingName={pending?.name ?? null} />
+      <LiveRoundClient
+        code={code}
+        initialView={view}
+        pendingName={pending?.name ?? null}
+        registeredName={registeredName}
+      />
     </div>
   );
 }
