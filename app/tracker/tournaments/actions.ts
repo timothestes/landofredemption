@@ -1061,17 +1061,23 @@ async function publishDecklists(
           .select("preview_card_1, preview_card_2")
           .eq("id", dl.deck_id)
           .maybeSingle();
-        chosen1 = orig?.preview_card_1 ?? null;
-        chosen2 = orig?.preview_card_2 ?? null;
+        // A cover the submitted list doesn't hold (added to the deck after it was submitted) is dropped.
+        const inSnapshot = (file: string | null | undefined) =>
+          file && snapshot.cards.some((c) => c.zone === "main" && c.quantity > 0 && c.imgFile === file) ? file : null;
+        chosen1 = inSnapshot(orig?.preview_card_1);
+        chosen2 = inSnapshot(orig?.preview_card_2);
       }
+      // An empty slot takes a derived cover the other slot isn't showing.
+      const cover1 = chosen1 ?? [derived1, derived2].find((f) => f && f !== chosen2) ?? null;
+      const cover2 = chosen2 ?? [derived2, derived1].find((f) => f && f !== cover1) ?? null;
       deckMeta = {
         description: null,
         format: snapshot.deckFormat || null,
         paragon: null,
         // Never null: a published copy with no cover renders as a blank tile on
         // the community decks page, which is the bug this replaced.
-        preview_card_1: chosen1 ?? derived1,
-        preview_card_2: chosen2 ?? derived2,
+        preview_card_1: cover1,
+        preview_card_2: cover2,
         // Main deck only — matches how `decks.card_count` is written everywhere
         // else (see saveDeckAction); counting reserve here inflated the count
         // on every published copy.

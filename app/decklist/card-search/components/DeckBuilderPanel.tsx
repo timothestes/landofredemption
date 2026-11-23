@@ -20,7 +20,7 @@ import {
 } from "@dnd-kit/core";
 import { Deck, DeckCard, DeckZone } from "../types/deck";
 import { useShowPrices } from "../../../../hooks/useShowPrices";
-import { SyncStatus } from "../hooks/useDeckState";
+import { SyncStatus, deckCovers } from "../hooks/useDeckState";
 import DeckCardList from "./DeckCardList";
 import FullDeckView from "./FullDeckView";
 import DragGhost from "./DragGhost";
@@ -3114,7 +3114,8 @@ export default function DeckBuilderPanel({
               </p>
               <div className="flex gap-3 mb-3 justify-center">
                 {([1, 2] as const).map((slot) => {
-                  const imgFile = slot === 1 ? deck.previewCard1 : deck.previewCard2;
+                  // What a save stores: a cover whose card was cut shows its replacement.
+                  const imgFile = deckCovers(deck)[slot - 1];
                   const imgUrl = imgFile ? getImageUrl(imgFile) : null;
                   return (
                     <div key={slot} className="flex flex-col items-center gap-1.5 w-36">
