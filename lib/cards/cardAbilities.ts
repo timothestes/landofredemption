@@ -121,16 +121,20 @@ export type CardAbility = AbilityBase & (
   // opens Exchange with Deck the same way. `target` is the printed wording
   // (menu label + the window's filter line). Client-side, no reducer: the
   // windows' own actions move the cards, and the deck shuffles as usual.
-  | { type: 'search_deck'; target: string; match: DeckCardMatch[] }
+  // `equip` is the printed verb when the card equips what it finds ("equip a
+  // gold weapon from deck", "take or equip a black weapon from Reserve"). The
+  // menu item reads that way, and the window offers Equip to <this card> when
+  // this card is a warrior in play with no weapon yet.
+  | { type: 'search_deck'; target: string; match: DeckCardMatch[]; equip?: 'equip' | 'take or equip' }
   | { type: 'exchange_with_deck'; target: string; match: DeckCardMatch[] }
   // The same for the Reserve ("take a clay card from Reserve", "exchange this
   // card with a Curse from Reserve"): the Reserve browse window, or Exchange
   // with Reserve, narrowed the same way. "From deck or Reserve" gets both.
-  | { type: 'search_reserve'; target: string; match: DeckCardMatch[] }
+  | { type: 'search_reserve'; target: string; match: DeckCardMatch[]; equip?: 'equip' | 'take or equip' }
   | { type: 'exchange_with_reserve'; target: string; match: DeckCardMatch[] }
   // And the discard pile ("search deck or discard pile for a good Dominant"):
   // the Discard browse window, narrowed the same way.
-  | { type: 'search_discard'; target: string; match: DeckCardMatch[] }
+  | { type: 'search_discard'; target: string; match: DeckCardMatch[]; equip?: 'equip' | 'take or equip' }
   | { type: 'custom'; reducerName: string; label: string }
 );
 
@@ -1121,6 +1125,8 @@ export function hasUsableAbilityInZone(card: {
   );
 }
 
+const equipVerb = (v: 'equip' | 'take or equip') => (v === 'equip' ? 'Equip' : 'Take or equip');
+
 export function abilityLabel(a: CardAbility): string {
   switch (a.type) {
     case 'spawn_token': {
@@ -1232,15 +1238,15 @@ export function abilityLabel(a: CardAbility): string {
     case 'take_enhancement_from_reserve':
       return a.testament === 'OT' ? 'Take an O.T. Enhancement from Reserve…' : 'Take an Enhancement from Reserve…';
     case 'search_deck':
-      return `Search deck for ${a.target}…`;
+      return a.equip ? `${equipVerb(a.equip)} ${a.target} from deck…` : `Search deck for ${a.target}…`;
     case 'exchange_with_deck':
       return `Exchange this card with ${a.target} from deck…`;
     case 'search_reserve':
-      return `Search Reserve for ${a.target}…`;
+      return a.equip ? `${equipVerb(a.equip)} ${a.target} from Reserve…` : `Search Reserve for ${a.target}…`;
     case 'exchange_with_reserve':
       return `Exchange this card with ${a.target} from Reserve…`;
     case 'search_discard':
-      return `Search discard pile for ${a.target}…`;
+      return a.equip ? `${equipVerb(a.equip)} ${a.target} from discard pile…` : `Search discard pile for ${a.target}…`;
     case 'custom':
       return a.label;
   }

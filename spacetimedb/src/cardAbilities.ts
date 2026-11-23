@@ -121,11 +121,11 @@ export type CardAbility = AbilityBase & (
   | { type: 'take_enhancement_from_reserve'; testament?: 'OT' }
   // Filtered deck search / exchange (entries generated into
   // deckSearchAbilities.ts). Client-side, no reducer — see lib/cards/cardAbilities.ts.
-  | { type: 'search_deck'; target: string; match: DeckCardMatch[] }
+  | { type: 'search_deck'; target: string; match: DeckCardMatch[]; equip?: 'equip' | 'take or equip' }
   | { type: 'exchange_with_deck'; target: string; match: DeckCardMatch[] }
-  | { type: 'search_reserve'; target: string; match: DeckCardMatch[] }
+  | { type: 'search_reserve'; target: string; match: DeckCardMatch[]; equip?: 'equip' | 'take or equip' }
   | { type: 'exchange_with_reserve'; target: string; match: DeckCardMatch[] }
-  | { type: 'search_discard'; target: string; match: DeckCardMatch[] }
+  | { type: 'search_discard'; target: string; match: DeckCardMatch[]; equip?: 'equip' | 'take or equip' }
   | { type: 'custom'; reducerName: string; label: string }
 );
 

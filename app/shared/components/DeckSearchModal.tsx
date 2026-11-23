@@ -13,7 +13,7 @@ import { useCardPreview } from '@/app/goldfish/state/CardPreviewContext';
 import { getCardImageUrl, CARD_IMAGE_ASPECT_RATIO } from '@/app/shared/utils/cardImageUrl';
 import { useDraggableModal } from '@/app/shared/hooks/useDraggableModal';
 import { DraggableTitleBar } from './DraggableTitleBar';
-import { DeckFilterBar, type DeckCardFilter } from './DeckFilterBar';
+import { DeckFilterBar, DeckEquipBar, type DeckCardFilter, type DeckEquip } from './DeckFilterBar';
 import { isOnScrollbar } from '@/app/shared/utils/scrollbarHit';
 
 const MOVE_ZONES: { id: ZoneId; label: string }[] = [
@@ -33,6 +33,9 @@ interface DeckSearchModalProps {
   // "Search deck for a Genesis 12-24 Hero"): the grid starts narrowed to the
   // cards that qualify, with a DeckFilterBar to drop it.
   filter?: DeckCardFilter;
+  // Set when that ability equips what it finds ("equip a gold weapon from
+  // deck"): adds the Equip to <card> button.
+  equip?: DeckEquip;
 }
 
 function CardContextPopup({
@@ -145,7 +148,7 @@ function rectsOverlap(
   return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 }
 
-export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDragRef, isDragActive, filter }: DeckSearchModalProps) {
+export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDragRef, isDragActive, filter, equip }: DeckSearchModalProps) {
   const { dragHandleProps, modalStyle } = useDraggableModal();
   const { zones, actions } = useModalGame();
   const { moveCard, moveCardsBatch, moveCardToTopOfDeck, moveCardToBottomOfDeck, shuffleDeck, logDeckSearchNoShuffle } = actions;
@@ -754,6 +757,13 @@ export function DeckSearchModal({ onClose, onStartDrag, onStartMultiDrag, didDra
             total={deckCards.length}
             filterOn={filterOn}
             onToggle={() => setFilterOn(v => !v)}
+          />
+        )}
+        {equip && (
+          <DeckEquipBar
+            equip={equip}
+            selected={deckCards.filter(c => selectedIds.has(c.instanceId))}
+            onDone={handleClose}
           />
         )}
 

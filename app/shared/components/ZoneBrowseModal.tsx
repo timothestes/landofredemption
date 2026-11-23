@@ -12,7 +12,7 @@ import { useCardPreview } from '@/app/goldfish/state/CardPreviewContext';
 import { getCardImageUrl, CARD_IMAGE_ASPECT_RATIO } from '@/app/shared/utils/cardImageUrl';
 import { useDraggableModal } from '@/app/shared/hooks/useDraggableModal';
 import { DraggableTitleBar } from './DraggableTitleBar';
-import { DeckFilterBar, type DeckCardFilter } from './DeckFilterBar';
+import { DeckFilterBar, DeckEquipBar, type DeckCardFilter, type DeckEquip } from './DeckFilterBar';
 import { compareCardsDefault } from '@/lib/cards/defaultSort';
 import { hasUsableAbilityInZone } from '@/lib/cards/cardAbilities';
 import { isOnScrollbar } from '@/app/shared/utils/scrollbarHit';
@@ -179,9 +179,12 @@ interface ZoneBrowseModalProps {
    *  search_discard, e.g. "take a clay card from Reserve"): the grid starts
    *  narrowed to the cards that qualify, with a DeckFilterBar to drop it. */
   filter?: DeckCardFilter;
+  /** Set when that ability equips what it finds ("equip an evil weapon from
+   *  Reserve"): adds the Equip to <card> button. */
+  equip?: DeckEquip;
 }
 
-export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag, didDragRef, isDragActive, readOnly, onRequestCardMenu, alwaysUseCardMenu, isCardFaceHidden, onReadCard, filter }: ZoneBrowseModalProps) {
+export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag, didDragRef, isDragActive, readOnly, onRequestCardMenu, alwaysUseCardMenu, isCardFaceHidden, onReadCard, filter, equip }: ZoneBrowseModalProps) {
   const { dragHandleProps, modalStyle } = useDraggableModal();
   // Touch has no clicks, lassos or right-clicks — say what actually works.
   const isTouchInput = useInputMode() === 'touch';
@@ -666,6 +669,13 @@ export function ZoneBrowseModal({ zoneId, onClose, onStartDrag, onStartMultiDrag
             total={cards.length}
             filterOn={filterOn}
             onToggle={() => setFilterOn(v => !v)}
+          />
+        )}
+        {equip && (
+          <DeckEquipBar
+            equip={equip}
+            selected={cards.filter(c => selectedIds.has(c.instanceId))}
+            onDone={onClose}
           />
         )}
 
