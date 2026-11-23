@@ -561,6 +561,46 @@ describe('EXECUTE_CARD_ABILITY — discard_bottom_of_deck (The Gates of Hell)', 
   });
 });
 
+describe('EXECUTE_CARD_ABILITY — discard_top_of_deck (Jephthah)', () => {
+  it('discards the top card of deck, face up', () => {
+    const source = makeCard({ instanceId: 'jep', cardName: 'Jephthah (J)', zone: 'territory' });
+    const top = makeCard({ instanceId: 'd1', cardName: 'Top Card', zone: 'deck', isFlipped: true });
+    const next = makeCard({ instanceId: 'd2', cardName: 'Next Card', zone: 'deck', isFlipped: true });
+    const state = makeState([source, top, next]);
+
+    const result = gameReducer(state, act('jep', 0));
+
+    expect(result.zones.deck.map(c => c.instanceId)).toEqual(['d2']);
+    expect(result.zones.discard.map(c => c.instanceId)).toEqual(['d1']);
+    expect(result.zones.discard[0].isFlipped).toBe(false);
+    expect(result.zones.discard[0].zone).toBe('discard');
+  });
+
+  it('discards a Lost Soul on top like any other card', () => {
+    const source = makeCard({ instanceId: 'jep', cardName: 'Jephthah (Pa)', zone: 'territory' });
+    const soul = makeCard({ instanceId: 'ls1', cardName: 'Lost Soul Romans 3:23', type: 'Lost Soul', zone: 'deck', isFlipped: true });
+    const state = makeState([source, soul]);
+
+    const result = gameReducer(state, act('jep', 0));
+
+    expect(result.zones.discard.map(c => c.instanceId)).toEqual(['ls1']);
+    expect(result.zones['land-of-bondage']).toHaveLength(0);
+  });
+
+  it('is a no-op (same state reference) when the deck is empty', () => {
+    const source = makeCard({ instanceId: 'jep', cardName: 'Jephthah, the Gileadite [RR2]', zone: 'territory' });
+    const state = makeState([source]);
+
+    expect(gameReducer(state, act('jep', 0))).toBe(state);
+  });
+
+  it('all three Jephthah versions with the ability are registered', () => {
+    for (const name of ['Jephthah (J)', 'Jephthah (Pa)', 'Jephthah, the Gileadite [RR2]']) {
+      expect(getEffectiveAbilities({ cardName: name })).toEqual([{ type: 'discard_top_of_deck' }]);
+    }
+  });
+});
+
 describe('EXECUTE_CARD_ABILITY — discard_self_and_draw (Four-Drachma Coin)', () => {
   const coin = (overrides: Partial<GameCard> = {}) => makeCard({
     instanceId: 'coin', cardName: 'Four-Drachma Coin (GoC)', type: 'Artifact', zone: 'territory', posX: 300, posY: 200,

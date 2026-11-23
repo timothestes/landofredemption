@@ -525,6 +525,28 @@ function discardBottomOfDeckInState(
   return { ...state, zones, history };
 }
 
+// Jephthah: discard the top card of deck. A plain move to the discard pile —
+// Lost Souls are discarded too, like the deck menu's Discard.
+function discardTopOfDeckInState(
+  state: GameState,
+  history: GameState[],
+): GameState {
+  if (state.zones.deck.length === 0) return state;
+
+  const zones = cloneZones(state.zones);
+  const card = zones.deck[0];
+  zones.deck = zones.deck.slice(1);
+  zones.discard = [...zones.discard, {
+    ...card,
+    zone: 'discard',
+    isFlipped: false,
+    posX: undefined,
+    posY: undefined,
+  }];
+
+  return { ...state, zones, history };
+}
+
 function playAllLostSoulsInState(
   state: GameState,
   source: GameCard,
@@ -1664,6 +1686,8 @@ function reduceGame(state: GameState, action: GameAction): GameState {
           return state;
         case 'discard_bottom_of_deck':
           return discardBottomOfDeckInState(state, source, history);
+        case 'discard_top_of_deck':
+          return discardTopOfDeckInState(state, history);
         case 'underdeck_top_of_deck':
           return underdeckTopOfDeckInState(state, source, ability, history);
         case 'discard_characters_from_reserve':

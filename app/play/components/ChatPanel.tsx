@@ -670,6 +670,29 @@ export function formatActionType(actionType: string, payload?: string, playerNam
       );
     } catch { /* fall through */ }
   }
+  if (actionType === 'DISCARD_TOP_OF_DECK' && payload) {
+    try {
+      const data = JSON.parse(payload);
+      const sourceName: string = data.sourceCardName ?? '';
+      const sourceImg: string = data.sourceCardImgFile ?? '';
+      const card: { name: string; img: string } | undefined = data.card;
+      return (
+        <>
+          discarded top card of deck
+          {card?.name ? (
+            <>
+              : <HoverableCard name={card.name} img={card.img} />
+            </>
+          ) : null}
+          {sourceName ? (
+            <>
+              {' '}via <HoverableCard name={sourceName} img={sourceImg} />
+            </>
+          ) : null}
+        </>
+      );
+    } catch { /* fall through */ }
+  }
   if (actionType === 'UNDERDECK_TOP_OF_DECK' && payload) {
     try {
       const data = JSON.parse(payload);

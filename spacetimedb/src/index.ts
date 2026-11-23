@@ -5887,6 +5887,59 @@ function discardBottomOfDeckImpl(
 }
 
 // ---------------------------------------------------------------------------
+// Helper: discardTopOfDeckImpl
+// Jephthah: discards the top card of the acting player's deck. "Top" is the
+// lowest zoneIndex (same convention as reserveTopOfDeckImpl). A plain move to
+// the discard pile — Lost Souls included, matching the deck menu's Discard.
+// Empty deck is a harmless no-op.
+// ---------------------------------------------------------------------------
+function discardTopOfDeckImpl(
+  ctx: any,
+  source: any,
+  player: any,
+  gameId: bigint,
+) {
+  const game = ctx.db.Game.id.find(gameId);
+  if (!game) throw new SenderError('Game not found');
+
+  const playerCards = [...ctx.db.CardInstance.card_instance_game_id.filter(gameId)].filter(
+    (c: any) => c.ownerId === player.id
+  );
+  const deckCards = playerCards
+    .filter((c: any) => c.zone === 'deck')
+    .sort((a: any, b: any) => (a.zoneIndex < b.zoneIndex ? -1 : a.zoneIndex > b.zoneIndex ? 1 : 0));
+  if (deckCards.length === 0) return;
+
+  const card = deckCards[0];
+
+  let nextIdx = 0n;
+  for (const c of playerCards) {
+    if (c.zone === 'discard' && c.zoneIndex >= nextIdx) {
+      nextIdx = c.zoneIndex + 1n;
+    }
+  }
+
+  ctx.db.CardInstance.id.update({
+    ...card,
+    zone: 'discard',
+    zoneIndex: nextIdx,
+    posX: '',
+    posY: '',
+    isFlipped: false,
+  });
+
+  logAction(
+    ctx, gameId, player.id, 'DISCARD_TOP_OF_DECK',
+    JSON.stringify({
+      sourceCardName: source.cardName,
+      sourceCardImgFile: source.cardImgFile,
+      card: { name: card.cardName, img: card.cardImgFile },
+    }),
+    game.turnNumber, game.currentPhase,
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Helper: playAllLostSoulsImpl
 // For each player in the game, moves every Lost Soul from their soul-deck
 // (if non-empty — Paragon mode) or main deck into that same player's
@@ -6237,6 +6290,8 @@ export const execute_card_ability = spacetimedb.reducer(
         throw new SenderError('draw_bottom_of_deck_choose is dispatched via execute_card_ability_with_count');
       case 'discard_bottom_of_deck':
         return discardBottomOfDeckImpl(ctx, source, player, gameId);
+      case 'discard_top_of_deck':
+        return discardTopOfDeckImpl(ctx, source, player, gameId);
       case 'underdeck_top_of_deck':
         return underdeckTopOfDeckImpl(ctx, source, ability, player, gameId);
       case 'discard_characters_from_reserve':
