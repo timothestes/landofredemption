@@ -33,6 +33,7 @@ import { FormatId, FORMAT_IDS, FORMATS, normalizeFormat } from "@/lib/formats";
 import { validateDeck } from "../utils/deckValidation";
 import GeneratePDFModal from "./GeneratePDFModal";
 import AodCountCard from "./AodCountCard";
+import HeroOpeningHandCard from "./HeroOpeningHandCard";
 import GenerateDeckImageModal from "./GenerateDeckImageModal";
 import ClearDeckModal from "./ClearDeckModal";
 import LoadDeckModal from "./LoadDeckModal";
@@ -3590,6 +3591,7 @@ export default function DeckBuilderPanel({
                   });
                 })()}
                 <AodCountCard deck={deck} deckType={FORMATS[deckType].family} />
+                <HeroOpeningHandCard deck={deck} className="bg-muted border-border text-foreground" />
               </div>
             </div>
 
