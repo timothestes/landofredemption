@@ -1689,6 +1689,9 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
   // Dreamer) — narrows the window to the cards it can take. Null when the
   // player opened the search from the deck menu.
   const [deckSearchAbility, setDeckSearchAbility] = useState<Extract<CardAbility, { type: 'search_deck' }> | null>(null);
+  // The card whose equip ability opened Search Deck or your Reserve / Discard
+  // ("equip a gold weapon from deck") — see equipOffer.
+  const [equipSourceId, setEquipSourceId] = useState<string | null>(null);
   const [peekState, setPeekState] = useState<{ position: 'top' | 'bottom' | 'random'; count: number; cardIds: string[]; source?: { cardName: string } } | null>(null);
   const [lookState, setLookState] = useState<{ count: number; position: 'top' | 'bottom' | 'random'; underdeckSource?: { id: string; name: string } } | null>(null);
   // `ability` is set when a card's exchange_with_deck / exchange_with_reserve
@@ -2013,6 +2016,25 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     return true;
   }, [isMyFirstTurn, hasOpponent, findMyCardById]);
 
+  // Equip to <card> for a window an equip ability opened — offered only while
+  // that card can carry a weapon: your warrior, in territory or battle, with
+  // nothing equipped. attach_card moves the weapon out of its pile itself.
+  const equipOffer = (ability: { equip?: string } | null) => {
+    if (!ability?.equip || !equipSourceId) return undefined;
+    const host = findMyCardById(equipSourceId);
+    if (!host || (host.zone !== 'territory' && host.zone !== 'battle')) return undefined;
+    if (!gameCardIsWarrior(cardInstanceToGameCard(host, [], 'player1', forgeResolver))) return undefined;
+    if ((myCards[host.zone] ?? []).some((c) => c.equippedToInstanceId === host.id)) return undefined;
+    return {
+      hostName: host.cardName,
+      onEquip: (weaponId: string) => {
+        const execute = () => gameState.attachCard(BigInt(weaponId), host.id);
+        if (checkReserveProtection(findMyCardById(weaponId)?.zone, host.zone, execute)) return;
+        execute();
+      },
+    };
+  };
+
   // ---- Multiplayer GameActions adapter ----
   // Wraps moveCard/moveCardsBatch with Turn 1 reserve protection and undo tracking.
   const multiplayerActions: GameActions = useMemo(() => ({
@@ -2290,6 +2312,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
         // opened narrowed to the cards this ability can take.
         gameState.logSearchDeck();
         setDeckSearchAbility(ability);
+        setEquipSourceId(ability.equip ? sourceInstanceId : null);
         setShowDeckSearch(true);
         return;
       }
@@ -2329,6 +2352,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
       if (ability?.type === 'search_reserve' || ability?.type === 'search_discard') {
         // Your own Reserve / Discard browse, opened narrowed to the cards this ability can take.
         setPileSearchAbility(ability);
+        setEquipSourceId(ability.equip ? sourceInstanceId : null);
         setBrowseMyZone(ability.type === 'search_discard' ? 'discard' : 'reserve');
         return;
       }
@@ -11206,6 +11230,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             zoneId={browseMyZone as ZoneId}
             onClose={() => setBrowseMyZone(null)}
             filter={pileSearchAbility && browseMyZone === pileSearchZone ? deckCardFilter(pileSearchAbility) : undefined}
+            equip={browseMyZone === pileSearchZone ? equipOffer(pileSearchAbility) : undefined}
             onStartDrag={modalStartDrag}
             onStartMultiDrag={modalStartMultiDrag}
             didDragRef={modalDidDragRef}
@@ -11229,6 +11254,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             didDragRef={modalDidDragRef}
             isDragActive={modalDrag.isDragging}
             filter={deckSearchAbility ? deckCardFilter(deckSearchAbility) : undefined}
+            equip={equipOffer(deckSearchAbility)}
           />
         )}
 

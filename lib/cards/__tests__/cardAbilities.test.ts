@@ -607,6 +607,31 @@ describe('generated search / exchange registry', () => {
     expect(CARD_ABILITIES['The Watchman (Promo)'].map(a => a.type)).not.toContain('search_discard');
   });
 
+  it('equip clauses carry the printed verb and read that way in the menu', () => {
+    // "If blocked by an O.T. character, you may equip a gold weapon from deck."
+    const ehud = CARD_ABILITIES['Ehud, the Benjaminite [RR2]'][0];
+    expect(ehud).toMatchObject({ type: 'search_deck', target: 'a gold weapon', equip: 'equip' });
+    expect(abilityLabel(ehud)).toBe('Equip a gold weapon from deck…');
+    // "If blocking, you may equip an evil weapon from Reserve to draw 2."
+    const captain = CARD_ABILITIES['Captain of the Chariots (LoC)'][0];
+    expect(captain).toMatchObject({ type: 'search_reserve', target: 'an evil weapon', equip: 'equip' });
+    expect(abilityLabel(captain)).toBe('Equip an evil weapon from Reserve…');
+    // "You may take or equip a black weapon from Reserve."
+    const bearer = CARD_ABILITIES['Philistine Armor Bearer (LoC)'].find(a => a.type === 'search_reserve')!;
+    expect(bearer).toMatchObject({ target: 'a black weapon', equip: 'take or equip' });
+    expect(abilityLabel(bearer)).toBe('Take or equip a black weapon from Reserve…');
+    // "You may take an O.T. purple weapon from deck (or equip it to this card)."
+    expect(CARD_ABILITIES['Abishai, Chief of Thirty'][0]).toMatchObject({ type: 'search_deck', equip: 'take or equip' });
+    // "You may equip an evil weapon from Reserve or take a pale green
+    // Enhancement from Reserve": only the weapon is equipped.
+    expect(CARD_ABILITIES['The Rabshakeh (LoC)']).toEqual([
+      expect.objectContaining({ type: 'search_reserve', target: 'an evil weapon', equip: 'equip' }),
+      expect.not.objectContaining({ equip: expect.anything() }),
+    ]);
+    // A plain take never is.
+    expect(CARD_ABILITIES['Baptism of Jesus (GoC)'][0]).not.toHaveProperty('equip');
+  });
+
   it('Reserve clauses get the Reserve window; "deck or Reserve" gets both, deck first', () => {
     const types = (card: string) => CARD_ABILITIES[card].map(a => a.type);
     // "You may take a clay card from Reserve."

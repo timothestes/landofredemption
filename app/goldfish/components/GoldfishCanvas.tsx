@@ -268,6 +268,17 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
   // while that window shows the pile it opened.
   const [pileSearchAbility, setPileSearchAbility] = useState<Extract<CardAbility, { type: 'search_reserve' | 'search_discard' }> | null>(null);
   const pileSearchZone: ZoneId = pileSearchAbility?.type === 'search_discard' ? 'discard' : 'reserve';
+  // The card whose equip ability opened one of those windows ("equip a gold
+  // weapon from deck"). The window offers Equip to <that card> only while it
+  // can carry a weapon: a warrior in territory with nothing equipped.
+  const [equipSourceId, setEquipSourceId] = useState<string | null>(null);
+  const equipOffer = (ability: { equip?: string } | null) => {
+    if (!ability?.equip || !equipSourceId) return undefined;
+    const host = state.zones.territory.find(c => c.instanceId === equipSourceId);
+    if (!host || !gameCardIsWarrior(host)) return undefined;
+    if (state.zones.territory.some(c => c.equippedTo === host.instanceId)) return undefined;
+    return { hostName: host.cardName, onEquip: (weaponId: string) => attachCard(weaponId, host.instanceId) };
+  };
 
   // Opens the "look at / reveal top N" peek modal for an own-deck inspection
   // ability. Shared by the fixed-count path (look_at_own_deck / reveal_own_deck)
@@ -347,6 +358,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
         // (Star) searches fired from hand flash the card, as multiplayer does.
         if (source && source.zone === 'hand') revealCardInHand(cardId);
         setDeckSearchAbility(ability);
+        setEquipSourceId(ability.equip ? cardId : null);
         setShowDeckSearch(true);
         return;
       }
@@ -354,6 +366,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
         // setBrowseZone is declared further down — read only when this runs.
         if (source && source.zone === 'hand') revealCardInHand(cardId);
         setPileSearchAbility(ability);
+        setEquipSourceId(ability.equip ? cardId : null);
         setBrowseZone(ability.type === 'search_discard' ? 'discard' : 'reserve');
         return;
       }
@@ -3331,6 +3344,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
             zoneId={browseZone}
             onClose={() => setBrowseZone(null)}
             filter={pileSearchAbility && browseZone === pileSearchZone ? deckCardFilter(pileSearchAbility) : undefined}
+            equip={browseZone === pileSearchZone ? equipOffer(pileSearchAbility) : undefined}
             onStartDrag={modalStartDrag}
             onStartMultiDrag={modalStartMultiDrag}
             didDragRef={modalDidDragRef}
@@ -3355,6 +3369,7 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
             didDragRef={modalDidDragRef}
             isDragActive={modalDrag.isDragging}
             filter={deckSearchAbility ? deckCardFilter(deckSearchAbility) : undefined}
+            equip={equipOffer(deckSearchAbility)}
           />
         )}
 
