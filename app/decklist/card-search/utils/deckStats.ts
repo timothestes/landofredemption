@@ -47,6 +47,8 @@ export function countBy<T extends CountableCard>(
 }
 
 const OPENING_HAND_SIZE = 8;
+/** Going second: the opening hand plus the first draw of 3. */
+export const GOING_SECOND_HAND_SIZE = 11;
 
 export interface HeroOpeningHandOdds {
   /** Copies in the main deck whose type includes Hero (dual-type cards count). */
@@ -65,10 +67,14 @@ export interface HeroOpeningHandOdds {
  * covers Hopper too: it goes to an opponent's territory and is replaced like
  * any other Lost Soul, even though it does not count toward the deck's Lost
  * Soul requirement. Lost Soul abilities that draw or search are not modelled.
+ *
+ * `handSize` is how many cards have been drawn: 8 for the opening hand, 11
+ * once the player going second has taken their first draw of 3.
  */
 export function heroOpeningHandOdds<T extends CountableCard>(
   cards: T[],
   typeOf: (card: T) => string | null | undefined,
+  handSize: number = OPENING_HAND_SIZE,
 ): HeroOpeningHandOdds {
   let heroes = 0;
   let handCards = 0;
@@ -82,7 +88,7 @@ export function heroOpeningHandOdds<T extends CountableCard>(
 
   // P(no Hero) = C(handCards - heroes, n) / C(handCards, n), as a running product.
   let noHero = 1;
-  for (let i = 0; i < Math.min(OPENING_HAND_SIZE, handCards); i++) {
+  for (let i = 0; i < Math.min(handSize, handCards); i++) {
     noHero *= Math.max(handCards - heroes - i, 0) / (handCards - i);
   }
   return { heroes, handCards, chance: handCards === 0 ? 0 : 1 - noHero };

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { statCards, countBy, sumQuantity, heroOpeningHandOdds } from '../deckStats';
+import { statCards, countBy, sumQuantity, heroOpeningHandOdds, GOING_SECOND_HAND_SIZE } from '../deckStats';
 
 interface Row {
   name: string;
@@ -77,6 +77,18 @@ describe('heroOpeningHandOdds', () => {
     expect(result.handCards).toBe(43);
     // 1 - C(33,8)/C(43,8)
     expect(result.chance).toBeCloseTo(1 - 13884156 / 145008513, 10);
+  });
+
+  it('uses 11 cards for the player going second', () => {
+    const cards = [
+      row('Heroes', 'main', { quantity: 10 }),
+      row('Other', 'main', { type: 'Evil Character', quantity: 33 }),
+      row('Souls', 'main', { type: 'Lost Soul', quantity: 7 }),
+    ];
+    const second = heroOpeningHandOdds(cards, (c) => c.type, GOING_SECOND_HAND_SIZE);
+    // 1 - C(33,11)/C(43,11)
+    expect(second.chance).toBeCloseTo(1 - 193536720 / 5752004349, 10);
+    expect(second.chance).toBeGreaterThan(odds(cards).chance);
   });
 
   it('is unchanged by how many Lost Souls the deck runs, Hopper included', () => {
