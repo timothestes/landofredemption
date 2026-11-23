@@ -71,6 +71,23 @@ describe('diffDeals', () => {
     expect(diffDeals(prev, cards, 'discard').dealt).toEqual(['1', '4']);
     expect(diffDeals(prev, cards).dealt).toEqual(['2']);
   });
+
+  it('with toZone "reserve", flags deck → reserve and not cards reserved from elsewhere', () => {
+    const prev = new Map([
+      ['1', 'deck'],
+      ['2', 'hand'],
+      ['3', 'deck'],
+      ['4', 'reserve'],
+    ]);
+    const cards = [
+      { id: '1', zone: 'reserve' },
+      { id: '2', zone: 'reserve' }, // reserved from hand
+      { id: '3', zone: 'discard' }, // a mill
+      { id: '4', zone: 'reserve' }, // was already there
+      { id: '9', zone: 'reserve' }, // never seen before (game-start insert)
+    ];
+    expect(diffDeals(prev, cards, 'reserve').dealt).toEqual(['1']);
+  });
 });
 
 describe('scheduleDeals', () => {

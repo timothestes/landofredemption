@@ -50,7 +50,7 @@ function prefersReducedMotion(): boolean {
  *
  * `route` retargets the hook at another deck → pile movement. The mill
  * animation passes `{ toZone: 'discard', staggerMs: MILL_STAGGER_MS }` and no
- * openingKey.
+ * openingKey; reserving from the deck passes `toZone: 'reserve'` the same way.
  */
 export function useDealAnimation(
   cards: DealCardSnapshot[],

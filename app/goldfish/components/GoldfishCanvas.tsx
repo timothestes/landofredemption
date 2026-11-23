@@ -84,6 +84,21 @@ interface GoldfishCanvasProps {
 }
 
 const MILL_ROUTE = { toZone: 'discard', staggerMs: MILL_STAGGER_MS };
+const RESERVE_ROUTE = { toZone: 'reserve', staggerMs: MILL_STAGGER_MS };
+
+/** The reserve row: cards in the canonical default order and the x step between them. */
+function layoutReserve(cards: GameCard[], zoneWidth: number, cardWidth: number) {
+  const pad = 8;
+  const availW = zoneWidth - pad * 2;
+  const sorted = [...cards].sort((a, b) => compareCardsDefault(
+    { name: a.cardName, type: a.type, brigade: a.brigade, alignment: a.alignment, strength: a.strength, reference: a.reference },
+    { name: b.cardName, type: b.type, brigade: b.brigade, alignment: b.alignment, strength: b.strength, reference: b.reference },
+  ));
+  const overlap = sorted.length <= 1
+    ? 0
+    : Math.min(cardWidth * 0.3, (availW - cardWidth) / (sorted.length - 1));
+  return { sorted, pad, overlap };
+}
 
 /** Stable per-card offset that gives the discard pile its untidy stack. */
 function discardJitter(instanceId: string): { x: number; y: number; rotation: number } {
@@ -188,6 +203,12 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
     dealingIds: millingIds,
     completeDeal: completeMill,
   } = useDealAnimation(cardZoneSnapshot, true, null, MILL_ROUTE);
+  // Reserving from the deck — the same flight again, deck → reserve.
+  const {
+    deals: activeReserves,
+    dealingIds: reservingIds,
+    completeDeal: completeReserve,
+  } = useDealAnimation(cardZoneSnapshot, true, null, RESERVE_ROUTE);
 
   // Drive 1s re-renders while any visible card has an active per-card reveal —
   // hand (30s flash) or reserve top (10s from Herod's Temple). Needed for the
@@ -2315,19 +2336,13 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
             // Reserve: overlap cards horizontally, in the canonical default order
             if (zoneId === 'reserve') {
               const zone = zoneLayout[zoneId];
-              const pad = 8;
-              const availW = zone.width - pad * 2;
-              const sorted = [...cards].sort((a, b) => compareCardsDefault(
-                { name: a.cardName, type: a.type, brigade: a.brigade, alignment: a.alignment, strength: a.strength, reference: a.reference },
-                { name: b.cardName, type: b.type, brigade: b.brigade, alignment: b.alignment, strength: b.strength, reference: b.reference },
-              ));
-              const overlap = sorted.length <= 1
-                ? 0
-                : Math.min(sidebarCardWidth * 0.3, (availW - sidebarCardWidth) / (sorted.length - 1));
+              const { sorted, pad, overlap } = layoutReserve(cards, zone.width, sidebarCardWidth);
               const nowForReveal = Date.now();
               return (
                 <Group key={zoneId}>
                   {sorted.map((card, i) => {
+                    // A card reserved from the deck takes its slot when its sprite lands.
+                    if (reservingIds.has(card.instanceId)) return null;
                     // Spread the card to a fresh ref while a reveal is active
                     // so the memoized GameCardNode re-renders each tick — the
                     // countdown ring reads Date.now() at render time.
@@ -2859,6 +2874,35 @@ export default function GoldfishCanvas({ containerWidth, containerHeight, scale,
               });
             }
             return <DealLayer sprites={sprites} onLanded={completeMill} />;
+          })()}
+
+          {/* Reserve sprites — deck pile → the card's slot in the reserve row, flipping face up */}
+          {(() => {
+            const deckZone = zoneLayout['deck'];
+            const reserveZone = zoneLayout['reserve'];
+            if (!deckZone || !reserveZone || activeReserves.length === 0) return null;
+            const pileWidth = Math.min(sidebarCardWidth, deckZone.width - 4);
+            const originScale = sidebarCardWidth > 0 ? pileWidth / sidebarCardWidth : 1;
+            // Same slots the reserve row render gives each card.
+            const { sorted, pad, overlap } = layoutReserve(state.zones.reserve, reserveZone.width, sidebarCardWidth);
+            const sprites: DealSpriteSpec[] = [];
+            for (const deal of activeReserves) {
+              const idx = sorted.findIndex(c => c.instanceId === deal.instanceId);
+              if (idx === -1) continue;
+              sprites.push({
+                deal,
+                origin: {
+                  x: deckZone.x + deckZone.width / 2 - (sidebarCardWidth * originScale) / 2,
+                  y: deckZone.y + deckZone.height / 2 - (sidebarCardHeight * originScale) / 2,
+                },
+                originScale,
+                target: { x: reserveZone.x + pad + idx * overlap, y: reserveZone.y + 24, rotation: 0 },
+                cardWidth: sidebarCardWidth,
+                cardHeight: sidebarCardHeight,
+                image: getImage(sorted[idx].cardImgFile),
+              });
+            }
+            return <DealLayer sprites={sprites} onLanded={completeReserve} />;
           })()}
         </Layer>
 

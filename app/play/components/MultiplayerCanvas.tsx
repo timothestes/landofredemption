@@ -132,6 +132,7 @@ import {
 
 /** Sidebar zones that display as a pile with a count badge (not individual cards). */
 const MILL_ROUTE = { toZone: 'discard', staggerMs: MILL_STAGGER_MS };
+const RESERVE_ROUTE = { toZone: 'reserve', staggerMs: MILL_STAGGER_MS };
 const SIDEBAR_PILE_ZONES =['deck', 'discard', 'reserve', 'banish', 'land-of-redemption'] as const;
 
 // Compact touch: the icon-rail sidebar is too narrow for the full pile names —
@@ -1107,9 +1108,22 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
     dealingIds: oppMillingIds,
     completeDeal: completeOppMill,
   } = useDealAnimation(oppCardZoneSnapshot, true, null, MILL_ROUTE);
-  // Where each side's deck and discard pile cards are drawn (top-left + size),
-  // written by the sidebar pile render below and read by the mill sprites
-  // rendered after it in the same pass.
+  // ---- Reserving from the deck — the same flight again, deck → reserve ----
+  // (deck menu Reserve top/bottom/random, abilities.) Everyone sees the card
+  // travel; only a viewer allowed to see that reserve sees it flip face up.
+  const {
+    deals: activeReserves,
+    dealingIds: reservingIds,
+    completeDeal: completeReserve,
+  } = useDealAnimation(myCardZoneSnapshot, true, null, RESERVE_ROUTE);
+  const {
+    deals: oppActiveReserves,
+    dealingIds: oppReservingIds,
+    completeDeal: completeOppReserve,
+  } = useDealAnimation(oppCardZoneSnapshot, true, null, RESERVE_ROUTE);
+  // Where each side's deck, discard and reserve pile cards are drawn (top-left
+  // + size), written by the sidebar pile render below and read by the mill and
+  // reserve sprites rendered after it in the same pass.
   const millPileBoxRef = useRef<Record<string, { x: number; y: number; w: number; h: number }>>({});
 
   // Gate detection until the subscription has applied AND we know who the
@@ -8949,9 +8963,10 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             const zone = myZones[zoneKey];
             if (!zone) return null;
             const zoneCards = myCards[zoneKey] ?? [];
-            // A milled card joins the pile when its sprite lands, not before.
-            const cards = zoneKey === 'discard' && millingIds.size > 0
-              ? zoneCards.filter(c => !millingIds.has(String(c.id)))
+            // A milled or reserved card joins the pile when its sprite lands, not before.
+            const flyingIds = zoneKey === 'discard' ? millingIds : zoneKey === 'reserve' ? reservingIds : null;
+            const cards = flyingIds && flyingIds.size > 0
+              ? zoneCards.filter(c => !flyingIds.has(String(c.id)))
               : zoneCards;
             const count = cards.length;
             // The LoR badge shows redeemed-soul VALUE, not card count — Liners
@@ -8986,7 +9001,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             const artH = deckStack ? deckStack.height : cellCardH;
             const cx = zone.x + zone.width / 2 - artW / 2 + (deckStack ? deckStack.top.x : 0);
             const cy = zone.y + headerH + Math.max(0, (zone.height - headerH - artH) / 2) + (deckStack ? deckStack.top.y : 0);
-            if (zoneKey === 'deck' || zoneKey === 'discard') {
+            if (zoneKey === 'deck' || zoneKey === 'discard' || zoneKey === 'reserve') {
               millPileBoxRef.current[`my-${zoneKey}`] = { x: cx, y: cy, w: cellCardW, h: cellCardH };
             }
 
@@ -9317,9 +9332,10 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             const zone = opponentZones[zoneKey];
             if (!zone) return null;
             const zoneCards = opponentCards[zoneKey] ?? [];
-            // A milled card joins the pile when its sprite lands, not before.
-            const cards = zoneKey === 'discard' && oppMillingIds.size > 0
-              ? zoneCards.filter(c => !oppMillingIds.has(String(c.id)))
+            // A milled or reserved card joins the pile when its sprite lands, not before.
+            const flyingIds = zoneKey === 'discard' ? oppMillingIds : zoneKey === 'reserve' ? oppReservingIds : null;
+            const cards = flyingIds && flyingIds.size > 0
+              ? zoneCards.filter(c => !flyingIds.has(String(c.id)))
               : zoneCards;
             const count = cards.length;
             // The LoR badge shows redeemed-soul VALUE, not card count — Liners
@@ -9354,7 +9370,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             const artH = deckStack ? deckStack.height : cellCardH;
             const cx = zone.x + zone.width / 2 - artW / 2 + (deckStack ? deckStack.top.x : 0);
             const cy = zone.y + headerH + Math.max(0, (zone.height - headerH - artH) / 2) + (deckStack ? deckStack.top.y : 0);
-            if (zoneKey === 'deck' || zoneKey === 'discard') {
+            if (zoneKey === 'deck' || zoneKey === 'discard' || zoneKey === 'reserve') {
               millPileBoxRef.current[`opp-${zoneKey}`] = { x: cx, y: cy, w: cellCardW, h: cellCardH };
             }
 
@@ -9956,24 +9972,28 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
             );
           })()}
 
-          {/* Mill sprites — deck pile → discard pile, flipping face up. Drawn
-              after the piles and hands so the flight is never covered. The
-              opponent's piles are drawn turned 180°, so their sprites are too
-              (a rotated card's origin is its far corner). */}
+          {/* Mill and reserve sprites — deck pile → discard or reserve pile.
+              Drawn after the piles and hands so the flight is never covered.
+              The opponent's piles are drawn turned 180°, so their sprites are
+              too (a rotated card's origin is its far corner). A milled card
+              flips face up for everyone; a reserved card only for a viewer who
+              may see that reserve — otherwise it stays a card back. */}
           {(() => {
             const boxes = millPileBoxRef.current;
             const build = (
               side: 'my' | 'opp',
               mills: typeof activeMills,
-              discards: typeof myCards[string] | undefined,
+              toZone: 'discard' | 'reserve',
+              showFace: boolean,
             ): DealSpriteSpec[] => {
               const deck = boxes[`${side}-deck`];
-              const pile = boxes[`${side}-discard`];
+              const pile = boxes[`${side}-${toZone}`];
               if (!deck || !pile || mills.length === 0) return [];
               const turned = side === 'opp';
+              const pileCards = (side === 'my' ? myCards : opponentCards)[toZone];
               const sprites: DealSpriteSpec[] = [];
               for (const deal of mills) {
-                const card = discards?.find(c => String(c.id) === deal.instanceId);
+                const card = pileCards?.find(c => String(c.id) === deal.instanceId);
                 if (!card) continue;
                 sprites.push({
                   deal,
@@ -9986,15 +10006,21 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
                     : { x: pile.x, y: pile.y, rotation: 0 },
                   cardWidth: pile.w,
                   cardHeight: pile.h,
-                  image: getCardImage(card),
+                  // The reserve pile shows its cards face up whatever isFlipped
+                  // says (a deck row rests flipped), so the sprite does too.
+                  image: !showFace
+                    ? undefined
+                    : getCardImage(toZone === 'reserve' && card.isFlipped ? { ...card, isFlipped: false } : card),
                 });
               }
               return sprites;
             };
             return (
               <>
-                <DealLayer sprites={build('my', activeMills, myCards['discard'])} onLanded={completeMill} />
-                <DealLayer sprites={build('opp', oppActiveMills, opponentCards['discard'])} onLanded={completeOppMill} />
+                <DealLayer sprites={build('my', activeMills, 'discard', true)} onLanded={completeMill} />
+                <DealLayer sprites={build('opp', oppActiveMills, 'discard', true)} onLanded={completeOppMill} />
+                <DealLayer sprites={build('my', activeReserves, 'reserve', canViewMyReserve)} onLanded={completeReserve} />
+                <DealLayer sprites={build('opp', oppActiveReserves, 'reserve', canViewOppReserve)} onLanded={completeOppReserve} />
               </>
             );
           })()}
