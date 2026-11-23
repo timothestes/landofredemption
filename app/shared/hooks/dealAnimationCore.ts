@@ -31,7 +31,7 @@ export interface DealDiffResult {
  * deal — cards returning from territory/reserve/search-inserts don't animate.
  * A null prevZones means "first snapshot" (page load / reconnect): never deal.
  * `toZone` picks the destination watched: 'hand' for draws, 'discard' for
- * cards milled from the deck.
+ * cards milled from the deck, 'reserve' for cards reserved from it.
  */
 export function diffDeals(
   prevZones: Map<string, string> | null,
