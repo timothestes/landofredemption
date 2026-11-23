@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 // Lives outside spacetimedb/src (the module's tsconfig `include`) so its vitest
 // import is never pulled into `spacetime publish`; root vitest still runs it via
 // the **/__tests__/** glob.
-import { isLeavingPlayField } from '../src/playField';
+import { isLeavingPlayField, equipLinksToClear } from '../src/playField';
 
 // A card "leaves the play field" only when it moves from an on-field zone
 // (territory, land-of-bondage, battle) to an OFF-field zone (deck, hand,
@@ -41,5 +41,42 @@ describe('isLeavingPlayField', () => {
   it('is false for a no-op move within the same on-field zone', () => {
     expect(isLeavingPlayField('territory', 'territory')).toBe(false);
     expect(isLeavingPlayField('battle', 'battle')).toBe(false);
+  });
+});
+
+// A card sent to the deck (top, bottom, shuffle, exchange) has left play, so
+// its equip links must go. The bug: a hero shuffled into the deck left its
+// weapon in Territory still pointing at it — invisible, because the client only
+// draws a weapon beside its host — and the weapon reappeared when the hero was
+// searched back out.
+describe('equipLinksToClear', () => {
+  const card = (id: bigint, equippedToInstanceId = 0n) => ({ id, equippedToInstanceId });
+  const ids = (cards: { id: bigint }[]) => cards.map((c) => c.id);
+
+  it('unlinks a weapon whose hero leaves play', () => {
+    const hero = card(1n);
+    const weapon = card(2n, 1n);
+    expect(ids(equipLinksToClear([hero, weapon], new Set([1n])))).toEqual([2n]);
+  });
+
+  it("clears a leaving weapon's own link", () => {
+    const hero = card(1n);
+    const weapon = card(2n, 1n);
+    expect(ids(equipLinksToClear([hero, weapon], new Set([2n])))).toEqual([2n]);
+  });
+
+  it('clears the link when hero and weapon leave together', () => {
+    const hero = card(1n);
+    const weapon = card(2n, 1n);
+    expect(ids(equipLinksToClear([hero, weapon], new Set([1n, 2n])))).toEqual([2n]);
+  });
+
+  it('leaves other attached pairs and unattached cards alone', () => {
+    const hero = card(1n);
+    const weapon = card(2n, 1n);
+    const otherHero = card(3n);
+    const otherWeapon = card(4n, 3n);
+    expect(ids(equipLinksToClear([hero, weapon, otherHero, otherWeapon], new Set([1n])))).toEqual([2n]);
+    expect(equipLinksToClear([otherHero, otherWeapon], new Set([1n]))).toEqual([]);
   });
 });

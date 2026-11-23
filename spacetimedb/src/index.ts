@@ -4,7 +4,7 @@ import { DisconnectTimeout, setDisconnectTimeoutReducer, ChooseFirstTimeout, set
 import { t, SenderError } from 'spacetimedb/server';
 import { ScheduleAt, Timestamp } from 'spacetimedb';
 import { makeSeed, seededShuffle, seededDiceRoll, xorshift64, generateGameCode } from './utils';
-import { isLeavingPlayField } from './playField';
+import { isLeavingPlayField, isOnFieldZone, equipLinksToClear } from './playField';
 import { makeFreeSpotAllocator, bandRowSlots, BAND_ROW_Y } from './battlePlacement';
 import { resolveDestinationOwnerId, resolveHomeOwnerId, resolveTrueHomeOwnerId, type OwnerRouting } from './cardOwnership';
 import { planResetRoute } from './boardReset';
@@ -296,6 +296,21 @@ function clearCountersIfLeavingPlay(ctx: any, cardId: bigint, fromZone: string, 
   if (fromZone !== 'territory' && fromZone !== 'land-of-bondage' && fromZone !== 'battle') return;
   for (const counter of [...ctx.db.CardCounter.card_counter_card_instance_id.filter(cardId)]) {
     ctx.db.CardCounter.id.delete(counter.id);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helper: unlinkCardsLeavingPlay
+// For reducers that send cards straight to a deck (top, bottom, shuffle,
+// exchange): clears each leaving card's own equip link and unlinks anything
+// attached to it, in place — the same unlink move_card's cascade does. Call it
+// AFTER the movers' own row updates so a stale `...card` spread can't write a
+// link back. See equipLinksToClear.
+// ---------------------------------------------------------------------------
+function unlinkCardsLeavingPlay(ctx: any, gameId: bigint, leavingIds: Iterable<bigint>) {
+  const gameCards = [...ctx.db.CardInstance.card_instance_game_id.filter(gameId)];
+  for (const c of equipLinksToClear(gameCards, new Set(leavingIds))) {
+    ctx.db.CardInstance.id.update({ ...c, equippedToInstanceId: 0n });
   }
 }
 
@@ -4141,6 +4156,9 @@ export const move_card = spacetimedb.reducer(
       ctx.db.CardInstance.id.delete(cardInstanceId);
       if (fromZone === 'hand') compactHandIndices(ctx, gameId, card.ownerId, gameCards, cardInstanceId);
       if (fromZone === 'land-of-bondage') compactLobIndices(ctx, gameId, card.ownerId, gameCards, cardInstanceId);
+      // After the compaction (it writes rows from the stale `gameCards` read):
+      // a weapon on a deleted token hero would otherwise stay hidden for good.
+      unlinkCardsLeavingPlay(ctx, gameId, [cardInstanceId]);
       logAction(
         ctx, gameId, player.id, 'MOVE_CARD',
         JSON.stringify({
@@ -4479,6 +4497,8 @@ function deleteTokenWithCounters(ctx: any, card: any): void {
     ctx.db.CardCounter.id.delete(counter.id);
   }
   ctx.db.CardInstance.id.delete(card.id);
+  // A weapon on a deleted token hero would otherwise stay hidden for good.
+  unlinkCardsLeavingPlay(ctx, card.gameId, [card.id]);
 }
 
 // ---------------------------------------------------------------------------
@@ -4786,9 +4806,13 @@ export const move_cards_batch = spacetimedb.reducer(
         cardFinalZone !== card.zone || resolvedCardOwnerId !== card.ownerId;
       // An accessory travelling with its host in the same batch keeps its link —
       // otherwise a warrior-with-weapon group move across ownership boundaries
-      // would strip the weapon off mid-flight.
+      // would strip the weapon off mid-flight. Only while it stays on the
+      // field, though: a hero and weapon dragged onto the deck or discard
+      // together have left play, so they come apart like any other card that
+      // leaves play.
       const hostInBatch =
-        card.equippedToInstanceId !== 0n && batchIdSet.has(card.equippedToInstanceId);
+        card.equippedToInstanceId !== 0n && batchIdSet.has(card.equippedToInstanceId) &&
+        isOnFieldZone(cardFinalZone);
 
       // Auto-fan: if dropping into territory without an explicit position,
       // stagger the card in a small grid so multi-card modal moves don't stack
@@ -5495,6 +5519,8 @@ function drawAndTopdeckSelfImpl(
   if (fromZone === 'land-of-bondage') {
     compactLobIndices(ctx, gameId, source.ownerId, gameCards, source.id);
   }
+  // After the compaction: it writes rows from the stale `gameCards` read.
+  unlinkCardsLeavingPlay(ctx, gameId, [source.id]);
 
   // Draw 1 from top of own main deck into hand, respecting HAND_LIMIT.
   const handCards = gameCards.filter((c: any) => c.ownerId === player.id && c.zone === 'hand');
@@ -7092,6 +7118,7 @@ export const shuffle_card_into_deck = spacetimedb.reducer(
       revealStartedAt: undefined,
       ...leavePlayFieldOverrides(card, fromZone, 'deck'),
     });
+    unlinkCardsLeavingPlay(ctx, gameId, [card.id]);
 
     // Now shuffle the deck owner's entire deck (same logic as shuffle_deck)
     const game = ctx.db.Game.id.find(gameId);
@@ -8281,6 +8308,7 @@ export const exchange_cards = spacetimedb.reducer(
         ...leavePlayFieldOverrides(card, fromZone, 'deck'),
       });
     }
+    unlinkCardsLeavingPlay(ctx, gameId, ids.map((s) => BigInt(s)));
 
     // Shuffle every deck that received a card (acting player's deck always,
     // plus any opponent decks when taken cards are exchanged back).
@@ -8435,6 +8463,7 @@ export const exchange_from_deck = spacetimedb.reducer(
         compactLobIndices(ctx, gameId, fromOwner);
       }
     }
+    unlinkCardsLeavingPlay(ctx, gameId, exchangeIds.map((s) => BigInt(s)));
 
     // Step 3: Shuffle every deck that received a card — player's deck (it lost
     // replacements) plus any opponent decks (they received taken cards back).
@@ -8518,6 +8547,7 @@ export const move_card_to_top_of_deck = spacetimedb.reducer(
       revealStartedAt: undefined,
       ...leavePlayFieldOverrides(updatedCard, fromZone, 'deck'),
     });
+    unlinkCardsLeavingPlay(ctx, gameId, [cardInstanceId]);
 
     // Compact hand indices if card left hand
     if (fromZone === 'hand') {
@@ -8594,6 +8624,7 @@ export const move_card_to_bottom_of_deck = spacetimedb.reducer(
       revealStartedAt: undefined,
       ...leavePlayFieldOverrides(card, fromZone, 'deck'),
     });
+    unlinkCardsLeavingPlay(ctx, gameId, [cardInstanceId]);
 
     // Compact hand indices if card left hand
     if (fromZone === 'hand') {
