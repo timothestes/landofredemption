@@ -10396,7 +10396,6 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
           // reducer throws SenderError for those.
           onExecuteAbility={(instanceId, abilityIndex) =>
             multiplayerActions.executeCardAbility(String(instanceId), abilityIndex)}
-          centerX={playCenterScreenX}
           centerY={playCenterScreenY}
         />
       )}
