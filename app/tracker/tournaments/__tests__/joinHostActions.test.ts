@@ -912,6 +912,66 @@ describe("publishTournamentDecklistsAction — snapshot-first", () => {
     expect(tournamentDecklists.update).toHaveBeenCalledWith({ published_deck_id: "new-deck-1" });
   });
 
+  it("drops a hand-picked cover the submitted list doesn't hold", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: { id: "host1" } } });
+
+    const tournaments = makeNode();
+    tournaments.single.mockResolvedValue({ data: { name: "Spring Open" }, error: null });
+    tournaments.maybeSingle.mockResolvedValue({ data: { id: "t1" }, error: null });
+
+    const tournamentDecklists = makeNode();
+    tournamentDecklists._resp = {
+      data: [{ id: "dl1", deck_id: "live-deck-1", published_deck_id: null, participant_id: "p1", participants: { name: "Timmy" } }],
+      error: null,
+    };
+    userClientImpl = makeClient({ tournaments, tournament_decklists: tournamentDecklists, participants: makeNode() });
+
+    mockBuildStateFromSupabase.mockResolvedValue({ fake: "state" });
+    mockComputeFinalStandings.mockReturnValue([{ participantId: "p1", place: 1 }]);
+
+    const submissions = makeNode();
+    submissions._resp = {
+      data: [
+        {
+          participant_id: "p1",
+          is_legal: true,
+          deckcheck_issues: null,
+          deck_snapshot: {
+            deckName: "Timmy's Submitted Deck",
+            deckFormat: "Limited",
+            cards: [
+              { name: "Snapshot Card", set: "TPC", imgFile: "snap.jpg", quantity: 1, zone: "main" },
+              { name: "Snapshot Card Two", set: "TPC", imgFile: "snap2.jpg", quantity: 1, zone: "main" },
+            ],
+          },
+        },
+      ],
+      error: null,
+    };
+
+    // The live deck's covers: one card added after the deck was submitted, one the list still has.
+    const decks = makeNode();
+    decks.maybeSingle.mockResolvedValue({
+      data: { preview_card_1: "added-later.jpg", preview_card_2: "snap2.jpg" },
+      error: null,
+    });
+    decks.single.mockResolvedValue({ data: { id: "new-deck-1" }, error: null });
+
+    adminImpl = makeClient({
+      tournament_deck_submissions: submissions,
+      decks,
+      deck_cards: makeNode(),
+      tournament_decklists: tournamentDecklists,
+    });
+
+    const r = await publishTournamentDecklistsAction("t1", "Limited");
+
+    expect(r).toEqual({ success: true, published: 1, failed: 0 });
+    const published = decks.insert.mock.calls[0][0];
+    expect(published.preview_card_1).toBe("snap.jpg");
+    expect(published.preview_card_2).toBe("snap2.jpg");
+  });
+
   it("no submission and no live deck (deck_id null) skips the participant without erroring", async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: "host1" } } });
 

@@ -32,6 +32,13 @@ describe("defaultCovers", () => {
     ]);
   });
 
+  it("keeps a chosen cover still in the main deck and swaps one that was cut", () => {
+    expect(defaultCovers([row(other), row(ec), row(hero)], [other.imgFile, other2.imgFile])).toEqual([
+      other.imgFile,
+      ec.imgFile,
+    ]);
+  });
+
   it("gives no covers for an empty deck", () => {
     expect(defaultCovers([])).toEqual([null, null]);
   });

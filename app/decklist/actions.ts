@@ -115,11 +115,9 @@ export async function saveDeckAction(params: SaveDeckParams) {
     }
 
     const { deckId, name, description, format, paragon, folderId, cards } = params;
-    // A save that picks no covers (Duplicate, a deck read from a photo) gets the ones the builder would pick.
-    const [previewCard1, previewCard2] =
-      params.previewCard1 || params.previewCard2
-        ? [params.previewCard1 ?? null, params.previewCard2 ?? null]
-        : defaultCovers(cards);
+    // A cover whose card left the main deck is swapped for the builder's pick, and so is a missing one
+    // (Duplicate, a deck read from a photo).
+    const [previewCard1, previewCard2] = defaultCovers(cards, [params.previewCard1, params.previewCard2]);
 
     if (folderId && !(await ownsFolder(supabase, folderId, user.id))) {
       return { success: false, error: "Folder not found" };

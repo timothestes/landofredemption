@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, sanitizeImgFile } from "../utils";
 import { Deck, DeckCard, DeckStats, DeckZone, DeckVisibility } from "../types/deck";
 import { saveDeckAction, loadDeckByIdAction, DeckCardData } from "../../actions";
-import { CARD_BY_FULL_KEY } from "../data/cardIndex";
+import { ALL_CARDS, CARD_BY_FULL_KEY } from "../data/cardIndex";
 import { buildReplacedHalf, type ReplaceAlignment } from "../utils/replaceHalf";
 import { applyZoneMoves, type ZoneMove } from "../utils/zoneMoves";
 import type { DeckBuilderPersistence } from "../builderConfig";
+import { pickCovers } from "../../pickCovers";
 import { deckHasContent, openDraftTab, writeDraft, writeDraftSnapshot, type DraftTab } from "../utils/deckDrafts";
 
 // Public default persistence: the `decks` table. Module-level so it's a stable
@@ -34,6 +35,21 @@ export function snapshotDeck(d: Deck): string {
     previewCard2: d.previewCard2 ?? null,
     cards: sortedCards,
   });
+}
+
+/** The two covers a save of this deck stores, and that the Details tab shows (see pickCovers). */
+export function deckCovers(d: Deck): [string | null, string | null] {
+  return pickCovers(
+    [d.previewCard1, d.previewCard2],
+    d.cards.map((dc) => ({
+      imgFile: dc.card.imgFile,
+      name: dc.card.name,
+      type: dc.card.type,
+      zone: dc.zone,
+      quantity: dc.quantity,
+    })),
+    (file) => ALL_CARDS.find((c) => c.imgFile === file)?.name,
+  );
 }
 
 /**
@@ -308,19 +324,8 @@ export function useDeckState(
             zone: deckCard.zone,
           }));
 
-        // Use user-selected preview cards if set, otherwise auto-compute.
-        // Maybeboard cards are explicitly excluded so a "considering" card never becomes a cover.
-        let previewCard1 = targetDeck.previewCard1 ?? null;
-        let previewCard2 = targetDeck.previewCard2 ?? null;
-        if (!previewCard1 || !previewCard2) {
-          const mainCards = targetDeck.cards.filter(dc => dc.zone === 'main' && dc.quantity > 0);
-          const heroTypes = ['Hero', 'HC', 'Hero Character'];
-          const evilTypes = ['Evil Character', 'EC'];
-          const firstHero = mainCards.find(dc => heroTypes.includes(dc.card.type));
-          const firstEvil = mainCards.find(dc => evilTypes.includes(dc.card.type));
-          previewCard1 = previewCard1 ?? firstHero?.card.imgFile ?? mainCards[0]?.card.imgFile ?? null;
-          previewCard2 = previewCard2 ?? firstEvil?.card.imgFile ?? (mainCards.length > 1 ? mainCards[1]?.card.imgFile : null) ?? null;
-        }
+        // The chosen covers while their cards are still in the main deck; auto picks for the rest.
+        const [previewCard1, previewCard2] = deckCovers(targetDeck);
 
         const result = await persistenceRef.current.save({
           deckId: targetDeck.id,
