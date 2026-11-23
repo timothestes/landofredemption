@@ -9,14 +9,16 @@
 // click-through DOM overlay never intercepts board clicks. Same technique as
 // BattleResolutionUI.tsx.
 //
-// Placement is the play UI's house idiom for a floating panel, shared with
-// PauseConsentToast, SpectatorHandRequestBanner and GameOverOverlay: dead centre
-// of the container, `top/left: 50%` with `translate(-50%, -50%)`. GameToolbar
-// centres itself the same way and is a sibling of the canvas in that container,
-// so the panel and the toolbar share one vertical axis — the thing the eye
-// actually checks. (AwaitingSoulUI takes a computed `centerX` instead, but it is
-// aligning to the battle band, not to the screen.) Both territories are empty
-// during the pre-game, so the centre of the board is free.
+// Placement: horizontally, the play UI's house idiom for a floating panel —
+// `left: 50%` with `translateX(-50%)`, shared with PauseConsentToast,
+// SpectatorHandRequestBanner and GameOverOverlay. GameToolbar centres itself
+// the same way and is a sibling of the canvas in that container, so the panel
+// and the toolbar share one vertical axis — the thing the eye actually checks.
+// Vertically, the container's midpoint sat visibly below the line between the
+// two territories, so MultiplayerCanvas passes that line's screen y instead
+// (`centerY`). It is camera-derived, so it is clamped to keep the panel on
+// screen when a phone is zoomed in. Both territories are empty during the
+// pre-game, so the centre of the board is free.
 
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -142,12 +144,15 @@ interface PregameRailProps {
   onResolveStar: (starId: bigint) => void;
   onFinishSouls: () => void;
   onExecuteAbility: (instanceId: bigint, abilityIndex: number) => void;
+  /** Container-relative px of the line between the two territories. */
+  centerY: number;
 }
 
 export default function PregameRail({
   step, isMyWindow, opponentName, handStars, queue, activatableSouls,
   hasSubmitted, selection,
   onSubmitStars, onResolveStar, onFinishSouls, onExecuteAbility,
+  centerY,
 }: PregameRailProps) {
   // The opponent's revealed stars are named but not on any board the viewer can
   // hover — they go straight from the opponent's hand to this list. The shared
@@ -231,7 +236,9 @@ export default function PregameRail({
   // Konva hit-tests on its own canvas, so this never blocks board interaction.
   const wrapper = (children: React.ReactNode) => (
     <div data-pregame-rail style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: RAIL_Z }}>
-      <div style={{ position: 'absolute', left: '50%', top: '50%',
+      {/* The clamp only bites when a phone is zoomed in. */}
+      <div style={{ position: 'absolute', left: '50%',
+                    top: `clamp(30%, ${centerY}px, 70%)`,
                     transform: 'translate(-50%, -50%)', ...PANEL }}>
         {children}
       </div>

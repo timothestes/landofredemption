@@ -818,6 +818,15 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
   // the viewport/container midline, both of which sit visibly right of the
   // board (sidebar piles + chat column all live on the right).
   const playCenterScreenX = virtualToScreen(mpLayout.playAreaWidth / 2, 0, scale, offsetX, offsetY).x;
+  // Vertical counterpart: midway between the bottom of the opponent's
+  // territory and the top of mine — the divider line, or the middle of the
+  // shared Land of Bondage band in Paragon.
+  const oppTerritoryZone = mpLayout.zones.opponentTerritory;
+  const playCenterScreenY = virtualToScreen(
+    0,
+    (oppTerritoryZone.y + oppTerritoryZone.height + mpLayout.zones.playerTerritory.y) / 2,
+    scale, offsetX, offsetY,
+  ).y;
   // Band rect used for battle DROPS. While the band is still closed (a
   // divider-proxy drop that opens the battle) the current layout has no
   // battle rect yet, so normalize against the rect the band WILL have once
@@ -10413,6 +10422,7 @@ export default function MultiplayerCanvas({ gameId, onLoadDeck, undoStack, onSea
           // reducer throws SenderError for those.
           onExecuteAbility={(instanceId, abilityIndex) =>
             multiplayerActions.executeCardAbility(String(instanceId), abilityIndex)}
+          centerY={playCenterScreenY}
         />
       )}
 
