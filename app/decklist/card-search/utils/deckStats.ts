@@ -45,3 +45,45 @@ export function countBy<T extends CountableCard>(
   }
   return counts;
 }
+
+const OPENING_HAND_SIZE = 8;
+
+export interface HeroOpeningHandOdds {
+  /** Copies in the main deck whose type includes Hero (dual-type cards count). */
+  heroes: number;
+  /** Main-deck copies that can sit in an opening hand: everything but Lost Souls. */
+  handCards: number;
+  /** Chance, 0 to 1, that the opening hand holds at least one Hero. */
+  chance: number;
+}
+
+/**
+ * Exact chance of at least one Hero in the opening hand.
+ *
+ * A Lost Soul drawn into the opening hand is put in play and replaced, so the
+ * hand is always 8 cards drawn from the main deck's non-Lost-Soul cards. That
+ * covers Hopper too: it goes to an opponent's territory and is replaced like
+ * any other Lost Soul, even though it does not count toward the deck's Lost
+ * Soul requirement. Lost Soul abilities that draw or search are not modelled.
+ */
+export function heroOpeningHandOdds<T extends CountableCard>(
+  cards: T[],
+  typeOf: (card: T) => string | null | undefined,
+): HeroOpeningHandOdds {
+  let heroes = 0;
+  let handCards = 0;
+  for (const card of cards) {
+    if (card.zone !== "main") continue;
+    const type = (typeOf(card) || "").toLowerCase();
+    if (type.includes("lost soul")) continue;
+    handCards += card.quantity;
+    if (type.split("/").some((part) => part.trim() === "hero")) heroes += card.quantity;
+  }
+
+  // P(no Hero) = C(handCards - heroes, n) / C(handCards, n), as a running product.
+  let noHero = 1;
+  for (let i = 0; i < Math.min(OPENING_HAND_SIZE, handCards); i++) {
+    noHero *= Math.max(handCards - heroes - i, 0) / (handCards - i);
+  }
+  return { heroes, handCards, chance: handCards === 0 ? 0 : 1 - noHero };
+}

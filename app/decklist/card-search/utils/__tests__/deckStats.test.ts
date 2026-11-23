@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { statCards, countBy, sumQuantity } from '../deckStats';
+import { statCards, countBy, sumQuantity, heroOpeningHandOdds } from '../deckStats';
 
 interface Row {
   name: string;
@@ -61,5 +61,60 @@ describe('countBy', () => {
 
   it('returns an empty record when every card is on the maybeboard', () => {
     expect(countBy([row('A', 'maybeboard')], (c) => c.type)).toEqual({});
+  });
+});
+
+describe('heroOpeningHandOdds', () => {
+  const odds = (cards: Row[]) => heroOpeningHandOdds(cards, (c) => c.type);
+
+  it('matches the exact figure for 10 Heroes among 43 non-Lost-Soul cards', () => {
+    const result = odds([
+      row('Heroes', 'main', { quantity: 10 }),
+      row('Other', 'main', { type: 'Evil Character', quantity: 33 }),
+      row('Souls', 'main', { type: 'Lost Soul', quantity: 7 }),
+    ]);
+    expect(result.heroes).toBe(10);
+    expect(result.handCards).toBe(43);
+    // 1 - C(33,8)/C(43,8)
+    expect(result.chance).toBeCloseTo(1 - 13884156 / 145008513, 10);
+  });
+
+  it('is unchanged by how many Lost Souls the deck runs, Hopper included', () => {
+    const base = [
+      row('Heroes', 'main', { quantity: 8 }),
+      row('Other', 'main', { type: 'GE', quantity: 30 }),
+    ];
+    const withSouls = [
+      ...base,
+      row('Lost Soul "Hopper" [Matthew 18:12] [2025 - Seasonal]', 'main', { type: 'Lost Soul' }),
+      row('Souls', 'main', { type: 'Lost Soul', quantity: 7 }),
+    ];
+    expect(odds(withSouls)).toEqual(odds(base));
+  });
+
+  it('counts dual-type Heroes and ignores reserve and maybeboard', () => {
+    const result = odds([
+      row('Saul/Paul', 'main', { type: 'Hero/Evil Character' }),
+      row('Dual GE', 'main', { type: 'GE/Hero' }),
+      row('Evil', 'main', { type: 'Evil Character', quantity: 20 }),
+      row('Reserve Hero', 'reserve', { quantity: 5 }),
+      row('Maybe Hero', 'maybeboard', { quantity: 5 }),
+    ]);
+    expect(result.heroes).toBe(2);
+    expect(result.handCards).toBe(22);
+  });
+
+  it('is 0 with no Heroes and 1 when every hand must hold one', () => {
+    expect(odds([row('Evil', 'main', { type: 'Evil Character', quantity: 40 })]).chance).toBe(0);
+    // 7 non-Heroes cannot fill an 8-card hand.
+    expect(odds([
+      row('Heroes', 'main', { quantity: 3 }),
+      row('Evil', 'main', { type: 'Evil Character', quantity: 7 }),
+    ]).chance).toBe(1);
+  });
+
+  it('handles a deck smaller than a hand, and an empty deck', () => {
+    expect(odds([row('Hero', 'main'), row('Evil', 'main', { type: 'Evil Character', quantity: 3 })]).chance).toBe(1);
+    expect(odds([])).toEqual({ heroes: 0, handCards: 0, chance: 0 });
   });
 });
