@@ -46,6 +46,19 @@ function cloneZones(zones: GameState['zones']): GameState['zones'] {
   return cloned;
 }
 
+/** A card put on top or bottom of the deck has left play: drop its own equip
+ *  link and unlink anything attached to it, which stays where it is. Without
+ *  this a weapon in territory keeps pointing at a warrior in the deck — hidden,
+ *  then back on the warrior when it comes out. Mutates the cloned zones. */
+function unlinkLeavingCard(zones: GameState['zones'], card: GameCard): void {
+  card.equippedTo = undefined;
+  for (const key of Object.keys(zones) as ZoneId[]) {
+    for (const c of zones[key]) {
+      if (c.equippedTo === card.instanceId) c.equippedTo = undefined;
+    }
+  }
+}
+
 /**
  * Compute a run of staggered positions that cascade down-right from a base
  * point, skipping any slot that overlaps an already-occupied position. Each
@@ -1126,6 +1139,7 @@ function reduceGame(state: GameState, action: GameAction): GameState {
         result.card.notes = '';
         result.card.outlineColor = undefined;
       }
+      unlinkLeavingCard(zones, result.card);
       zones.deck.unshift(result.card);
       return { ...state, zones, history };
     }
@@ -1143,6 +1157,7 @@ function reduceGame(state: GameState, action: GameAction): GameState {
         result.card.notes = '';
         result.card.outlineColor = undefined;
       }
+      unlinkLeavingCard(zones, result.card);
       zones.deck.push(result.card);
       return { ...state, zones, history };
     }

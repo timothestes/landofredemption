@@ -18,3 +18,21 @@ export function isOnFieldZone(zone: string): boolean {
 export function isLeavingPlayField(fromZone: string, toZone: string): boolean {
   return isOnFieldZone(fromZone) && !isOnFieldZone(toZone);
 }
+
+// The cards whose equip link must be cleared when `leavingIds` leave play. A
+// card off the field can't carry or wear an accessory, so both directions go:
+// each leaving card's own link, and the link of every card attached to a
+// leaving card (that accessory stays where it is, just unlinked). Without this
+// a weapon left in Territory keeps pointing at a hero in the deck — the client
+// only draws a weapon beside its host, so it vanishes, then reappears when the
+// hero is searched back out.
+export function equipLinksToClear<T extends { id: bigint; equippedToInstanceId: bigint }>(
+  cards: readonly T[],
+  leavingIds: ReadonlySet<bigint>,
+): T[] {
+  return cards.filter(
+    (c) =>
+      c.equippedToInstanceId !== 0n &&
+      (leavingIds.has(c.id) || leavingIds.has(c.equippedToInstanceId)),
+  );
+}

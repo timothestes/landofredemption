@@ -111,6 +111,25 @@ describe('auto-detach', () => {
     expect(outWeapon?.equippedTo).toBeUndefined();
   });
 
+  // The bug: the weapon stayed linked to a hero in the deck, so it was hidden
+  // and came back with the hero when the hero was searched out.
+  for (const type of ['MOVE_TO_TOP_OF_DECK', 'MOVE_TO_BOTTOM_OF_DECK'] as const) {
+    it(`${type}: unlinks the weapon left in territory when its warrior goes to the deck`, () => {
+      const weapon = makeCard({ instanceId: 'w1', equippedTo: 'h1' });
+      const warrior = makeCard({ instanceId: 'h1' });
+      const next = gameReducer(makeState([weapon, warrior]), act(type, { cardInstanceId: 'h1' }));
+      expect(next.zones.deck.find(c => c.instanceId === 'h1')).toBeTruthy();
+      expect(next.zones.territory.find(c => c.instanceId === 'w1')?.equippedTo).toBeUndefined();
+    });
+
+    it(`${type}: clears the weapon's own link when it goes to the deck`, () => {
+      const weapon = makeCard({ instanceId: 'w1', equippedTo: 'h1' });
+      const warrior = makeCard({ instanceId: 'h1' });
+      const next = gameReducer(makeState([weapon, warrior]), act(type, { cardInstanceId: 'w1' }));
+      expect(next.zones.deck.find(c => c.instanceId === 'w1')?.equippedTo).toBeUndefined();
+    });
+  }
+
   it('leaves equippedTo intact when a warrior is repositioned within territory', () => {
     const weapon = makeCard({ instanceId: 'w1', equippedTo: 'h1' });
     const warrior = makeCard({ instanceId: 'h1', posX: 100, posY: 100 });
