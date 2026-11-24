@@ -576,15 +576,17 @@ describe('EXECUTE_CARD_ABILITY — discard_top_of_deck (Jephthah)', () => {
     expect(result.zones.discard[0].zone).toBe('discard');
   });
 
-  it('discards a Lost Soul on top like any other card', () => {
+  it('plays a Lost Soul on top into the Land of Bondage instead of discarding it', () => {
     const source = makeCard({ instanceId: 'jep', cardName: 'Jephthah (Pa)', zone: 'territory' });
     const soul = makeCard({ instanceId: 'ls1', cardName: 'Lost Soul Romans 3:23', type: 'Lost Soul', zone: 'deck', isFlipped: true });
     const state = makeState([source, soul]);
 
     const result = gameReducer(state, act('jep', 0));
 
-    expect(result.zones.discard.map(c => c.instanceId)).toEqual(['ls1']);
-    expect(result.zones['land-of-bondage']).toHaveLength(0);
+    expect(result.zones.discard).toHaveLength(0);
+    expect(result.zones['land-of-bondage'].map(c => c.instanceId)).toEqual(['ls1']);
+    expect(result.zones['land-of-bondage'][0].zone).toBe('land-of-bondage');
+    expect(result.zones['land-of-bondage'][0].isFlipped).toBe(false);
   });
 
   it('is a no-op (same state reference) when the deck is empty', () => {
@@ -598,6 +600,49 @@ describe('EXECUTE_CARD_ABILITY — discard_top_of_deck (Jephthah)', () => {
     for (const name of ['Jephthah (J)', 'Jephthah (Pa)', 'Jephthah, the Gileadite [RR2]']) {
       expect(getEffectiveAbilities({ cardName: name })).toEqual([{ type: 'discard_top_of_deck' }]);
     }
+  });
+});
+
+describe('a Lost Soul discarded from the deck goes to the Land of Bondage', () => {
+  const soul = (id: string) => makeCard({ instanceId: id, cardName: 'Lost Soul Romans 3:23', type: 'Lost Soul', zone: 'deck', isFlipped: true });
+  const plain = (id: string) => makeCard({ instanceId: id, cardName: `Card ${id}`, zone: 'deck', isFlipped: true });
+
+  it('MOVE_CARD deck → discard (the deck menu Discard)', () => {
+    const state = makeState([soul('ls1'), plain('d1')]);
+    const result = gameReducer(state, { type: 'MOVE_CARD', payload: { cardInstanceId: 'ls1', toZone: 'discard' } } as any);
+
+    expect(result.zones.discard).toHaveLength(0);
+    expect(result.zones['land-of-bondage'].map(c => c.instanceId)).toEqual(['ls1']);
+    expect(result.zones['land-of-bondage'][0].zone).toBe('land-of-bondage');
+    expect(result.zones['land-of-bondage'][0].isFlipped).toBe(false);
+  });
+
+  it('MOVE_CARD still discards a non-Lost-Soul from the deck', () => {
+    const state = makeState([soul('ls1'), plain('d1')]);
+    const result = gameReducer(state, { type: 'MOVE_CARD', payload: { cardInstanceId: 'd1', toZone: 'discard' } } as any);
+
+    expect(result.zones.discard.map(c => c.instanceId)).toEqual(['d1']);
+    expect(result.zones['land-of-bondage']).toHaveLength(0);
+  });
+
+  it('MOVE_CARDS_BATCH deck → discard splits Lost Souls from the rest', () => {
+    const state = makeState([soul('ls1'), plain('d1'), soul('ls2')]);
+    const result = gameReducer(state, {
+      type: 'MOVE_CARDS_BATCH',
+      payload: { cardInstanceIds: ['ls1', 'd1', 'ls2'], toZone: 'discard' },
+    } as any);
+
+    expect(result.zones.discard.map(c => c.instanceId)).toEqual(['d1']);
+    expect(result.zones['land-of-bondage'].map(c => c.instanceId)).toEqual(['ls1', 'ls2']);
+    expect(result.zones.deck).toHaveLength(0);
+  });
+
+  it('a Lost Soul from somewhere else (hand) still discards where it is sent', () => {
+    const handSoul = makeCard({ instanceId: 'ls9', cardName: 'Lost Soul Romans 3:23', type: 'Lost Soul', zone: 'hand' });
+    const state = makeState([handSoul]);
+    const result = gameReducer(state, { type: 'MOVE_CARD', payload: { cardInstanceId: 'ls9', toZone: 'discard' } } as any);
+
+    expect(result.zones.discard.map(c => c.instanceId)).toEqual(['ls9']);
   });
 });
 

@@ -525,8 +525,8 @@ function discardBottomOfDeckInState(
   return { ...state, zones, history };
 }
 
-// Jephthah: discard the top card of deck. A plain move to the discard pile —
-// Lost Souls are discarded too, like the deck menu's Discard.
+// Jephthah: discard the top card of deck — except a Lost Soul, which goes to
+// the Land of Bondage like any Lost Soul discarded from the deck.
 function discardTopOfDeckInState(
   state: GameState,
   history: GameState[],
@@ -536,9 +536,10 @@ function discardTopOfDeckInState(
   const zones = cloneZones(state.zones);
   const card = zones.deck[0];
   zones.deck = zones.deck.slice(1);
-  zones.discard = [...zones.discard, {
+  const destZone: ZoneId = isLostSoul(card) ? 'land-of-bondage' : 'discard';
+  zones[destZone] = [...zones[destZone], {
     ...card,
-    zone: 'discard',
+    zone: destZone,
     isFlipped: false,
     posX: undefined,
     posY: undefined,
@@ -965,11 +966,19 @@ function reduceGame(state: GameState, action: GameAction): GameState {
 
   switch (action.type) {
     case 'MOVE_CARD': {
-      const { cardInstanceId, toZone, toIndex, posX, posY } = action.payload;
-      if (!cardInstanceId || !toZone) return state;
+      const { cardInstanceId, toZone: requestedZone, toIndex: requestedIndex, posX, posY } = action.payload;
+      if (!cardInstanceId || !requestedZone) return state;
 
       const result = findAndRemoveCard(zones, cardInstanceId);
       if (!result) return state;
+
+      // A Lost Soul discarded from the deck goes to the Land of Bondage, as in
+      // multiplayer (move_card / move_cards_batch).
+      const lostSoulFromDeck =
+        result.fromZone === 'deck' && requestedZone === 'discard' &&
+        !result.card.isToken && isLostSoul(result.card);
+      const toZone: ZoneId = lostSoulFromDeck ? 'land-of-bondage' : requestedZone;
+      const toIndex = lostSoulFromDeck ? undefined : requestedIndex;
 
       // Tokens dropped into reserve/banish/discard/hand/deck are removed entirely
       const TOKEN_REMOVE_ZONES: ZoneId[] = ['reserve', 'banish', 'discard', 'hand', 'deck'];
@@ -1352,7 +1361,14 @@ function reduceGame(state: GameState, action: GameAction): GameState {
       for (const instanceId of cardInstanceIds) {
         const result = findAndRemoveCard(zones, instanceId);
         if (!result) continue;
-        const finalZone = finalZoneById.get(instanceId) ?? toZone;
+        const requestedFinalZone = finalZoneById.get(instanceId) ?? toZone;
+        // A Lost Soul discarded from the deck goes to the Land of Bondage, as
+        // in multiplayer (move_card / move_cards_batch).
+        const finalZone: ZoneId =
+          result.fromZone === 'deck' && requestedFinalZone === 'discard' &&
+          !result.card.isToken && isLostSoul(result.card)
+            ? 'land-of-bondage'
+            : requestedFinalZone;
         // Tokens group-dragged into a non-play zone are removed entirely —
         // mirror of the single MOVE_CARD rule. findAndRemoveCard already pulled
         // it out of its source zone, so skipping the re-add deletes it.
