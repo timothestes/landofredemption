@@ -70,9 +70,9 @@ export type CardAbility = AbilityBase & (
   | { type: 'draw_bottom_of_deck_choose' }
   | { type: 'discard_bottom_of_deck' }
   // Jephthah: "discard the top card of your deck" as the cost of his ability.
-  // A plain deck → discard move — no Lost Soul rerouting, same as the deck
-  // menu's Discard. The card's other effect (discarding 2 Evil Characters) is
-  // done by hand.
+  // A deck → discard move; a Lost Soul goes to the Land of Bondage instead, like
+  // every Lost Soul discarded from a deck. The card's other effect (discarding
+  // 2 Evil Characters) is done by hand.
   | { type: 'discard_top_of_deck' }
   | { type: 'underdeck_top_of_deck'; count: number }
   | { type: 'discard_characters_from_reserve'; target: 'self' | 'opponent' }

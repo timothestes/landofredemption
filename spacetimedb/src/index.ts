@@ -5890,8 +5890,9 @@ function discardBottomOfDeckImpl(
 // Helper: discardTopOfDeckImpl
 // Jephthah: discards the top card of the acting player's deck. "Top" is the
 // lowest zoneIndex (same convention as reserveTopOfDeckImpl). A plain move to
-// the discard pile — Lost Souls included, matching the deck menu's Discard.
-// Empty deck is a harmless no-op.
+// the discard pile — except a Lost Soul, which goes to the owner's Land of
+// Bondage like every Lost Soul discarded from a deck (move_card and
+// move_cards_batch do the same). Empty deck is a harmless no-op.
 // ---------------------------------------------------------------------------
 function discardTopOfDeckImpl(
   ctx: any,
@@ -5911,17 +5912,21 @@ function discardTopOfDeckImpl(
   if (deckCards.length === 0) return;
 
   const card = deckCards[0];
+  const isLostSoul = card.cardType === 'LS'
+    || card.cardType === 'Lost Soul'
+    || card.cardName.toLowerCase().includes('lost soul');
+  const destZone = isLostSoul ? 'land-of-bondage' : 'discard';
 
   let nextIdx = 0n;
   for (const c of playerCards) {
-    if (c.zone === 'discard' && c.zoneIndex >= nextIdx) {
+    if (c.zone === destZone && c.zoneIndex >= nextIdx) {
       nextIdx = c.zoneIndex + 1n;
     }
   }
 
   ctx.db.CardInstance.id.update({
     ...card,
-    zone: 'discard',
+    zone: destZone,
     zoneIndex: nextIdx,
     posX: '',
     posY: '',
@@ -5934,6 +5939,7 @@ function discardTopOfDeckImpl(
       sourceCardName: source.cardName,
       sourceCardImgFile: source.cardImgFile,
       card: { name: card.cardName, img: card.cardImgFile },
+      toLandOfBondage: isLostSoul,
     }),
     game.turnNumber, game.currentPhase,
   );

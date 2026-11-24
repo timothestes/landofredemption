@@ -676,9 +676,10 @@ export function formatActionType(actionType: string, payload?: string, playerNam
       const sourceName: string = data.sourceCardName ?? '';
       const sourceImg: string = data.sourceCardImgFile ?? '';
       const card: { name: string; img: string } | undefined = data.card;
+      const toLob = Boolean(data.toLandOfBondage);
       return (
         <>
-          discarded top card of deck
+          {toLob ? 'played top card of deck (Lost Soul)' : 'discarded top card of deck'}
           {card?.name ? (
             <>
               : <HoverableCard name={card.name} img={card.img} />
