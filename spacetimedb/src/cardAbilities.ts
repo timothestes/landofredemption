@@ -74,6 +74,11 @@ export type CardAbility = AbilityBase & (
   | { type: 'draw_bottom_of_deck'; count: number }
   | { type: 'draw_bottom_of_deck_choose' }
   | { type: 'discard_bottom_of_deck' }
+  // Jephthah: "discard the top card of your deck" as the cost of his ability.
+  // A plain deck → discard move — no Lost Soul rerouting, same as the deck
+  // menu's Discard. The card's other effect (discarding 2 Evil Characters) is
+  // done by hand.
+  | { type: 'discard_top_of_deck' }
   | { type: 'underdeck_top_of_deck'; count: number }
   | { type: 'discard_characters_from_reserve'; target: 'self' | 'opponent' }
   | { type: 'set_card_outline'; color: 'good' | 'evil'; label: string }
@@ -281,6 +286,11 @@ const BASE_CARD_ABILITIES: Record<string, CardAbility[]> = {
   'The Gates of Hell':                                   [{ type: 'discard_bottom_of_deck' }],
   'The Gates of Hell (GoC)':                             [{ type: 'discard_bottom_of_deck' }],
   'The Gates of Hell [2024 - 2nd Place]':                [{ type: 'discard_bottom_of_deck' }],
+  // "Discard the top card of deck to discard up to 2 Evil Characters" — the
+  // menu item pays the deck cost; the Evil Characters are discarded by hand.
+  'Jephthah (J)':                                        [{ type: 'discard_top_of_deck' }],
+  'Jephthah (Pa)':                                       [{ type: 'discard_top_of_deck' }],
+  'Jephthah, the Gileadite [RR2]':                       [{ type: 'discard_top_of_deck' }],
   'Three Woes (RoJ AB)':                                 [{ type: 'set_card_outline', color: 'good', label: 'Choose Good' }, { type: 'set_card_outline', color: 'evil', label: 'Choose Evil' }],
   'Three Woes (RoJ)':                                    [{ type: 'set_card_outline', color: 'good', label: 'Choose Good' }, { type: 'set_card_outline', color: 'evil', label: 'Choose Evil' }],
   'Three Woes [Fundraiser]':                             [{ type: 'set_card_outline', color: 'good', label: 'Choose Good' }, { type: 'set_card_outline', color: 'evil', label: 'Choose Evil' }],
