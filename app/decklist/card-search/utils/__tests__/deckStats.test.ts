@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { statCards, countBy, sumQuantity, heroOpeningHandOdds, GOING_SECOND_HAND_SIZE } from '../deckStats';
+import { statCards, countBy, sumQuantity, openingHandOdds, GOING_SECOND_HAND_SIZE } from '../deckStats';
 
 interface Row {
   name: string;
@@ -64,8 +64,9 @@ describe('countBy', () => {
   });
 });
 
-describe('heroOpeningHandOdds', () => {
-  const odds = (cards: Row[]) => heroOpeningHandOdds(cards, (c) => c.type);
+describe('openingHandOdds', () => {
+  const isHero = (c: Row) => c.type.toLowerCase().split('/').some((part) => part.trim() === 'hero');
+  const odds = (cards: Row[], handSize?: number) => openingHandOdds(cards, (c) => c.type, isHero, handSize);
 
   it('matches the exact figure for 10 Heroes among 43 non-Lost-Soul cards', () => {
     const result = odds([
@@ -73,7 +74,7 @@ describe('heroOpeningHandOdds', () => {
       row('Other', 'main', { type: 'Evil Character', quantity: 33 }),
       row('Souls', 'main', { type: 'Lost Soul', quantity: 7 }),
     ]);
-    expect(result.heroes).toBe(10);
+    expect(result.matching).toBe(10);
     expect(result.handCards).toBe(43);
     // 1 - C(33,8)/C(43,8)
     expect(result.chance).toBeCloseTo(1 - 13884156 / 145008513, 10);
@@ -85,7 +86,7 @@ describe('heroOpeningHandOdds', () => {
       row('Other', 'main', { type: 'Evil Character', quantity: 33 }),
       row('Souls', 'main', { type: 'Lost Soul', quantity: 7 }),
     ];
-    const second = heroOpeningHandOdds(cards, (c) => c.type, GOING_SECOND_HAND_SIZE);
+    const second = odds(cards, GOING_SECOND_HAND_SIZE);
     // 1 - C(33,11)/C(43,11)
     expect(second.chance).toBeCloseTo(1 - 193536720 / 5752004349, 10);
     expect(second.chance).toBeGreaterThan(odds(cards).chance);
@@ -112,7 +113,7 @@ describe('heroOpeningHandOdds', () => {
       row('Reserve Hero', 'reserve', { quantity: 5 }),
       row('Maybe Hero', 'maybeboard', { quantity: 5 }),
     ]);
-    expect(result.heroes).toBe(2);
+    expect(result.matching).toBe(2);
     expect(result.handCards).toBe(22);
   });
 
@@ -127,6 +128,6 @@ describe('heroOpeningHandOdds', () => {
 
   it('handles a deck smaller than a hand, and an empty deck', () => {
     expect(odds([row('Hero', 'main'), row('Evil', 'main', { type: 'Evil Character', quantity: 3 })]).chance).toBe(1);
-    expect(odds([])).toEqual({ heroes: 0, handCards: 0, chance: 0 });
+    expect(odds([])).toEqual({ matching: 0, handCards: 0, chance: 0 });
   });
 });
