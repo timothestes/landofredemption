@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { CARDS } from '@/lib/cards/lookup';
+import { matchesDeckCard, type DeckCardMatch } from '@/lib/cards/cardAbilities';
 import type { Card } from '../../utils';
 import { OPENING_HAND_CATEGORIES, isInCategory, openingHandCategory } from '../openingHandCategories';
 
@@ -40,6 +41,30 @@ describe('opening hand categories', () => {
 
   it('counts a dual Hero/Evil Character under both', () => {
     expect(idsFor('Abijah, the Conqueror / Abijam, the Half-Hearted (LoC)')).toEqual(['hero', 'evil-character']);
+  });
+
+  // The categories are self-contained so the public deck page's bundle stays
+  // free of the card catalog; this keeps them agreeing with the game's matcher.
+  it('agrees with matchesDeckCard on every card in the catalog', () => {
+    const reference: Record<string, DeckCardMatch[]> = {
+      hero: [{ types: ['Hero'] }],
+      'evil-character': [{ types: ['Evil Character'] }],
+      'good-weapon': [{ alignments: ['good'], cardClass: 'Weapon' }],
+      'evil-weapon': [{ alignments: ['evil'], cardClass: 'Weapon' }],
+      'good-enhancement': [{ types: ['Enhancement'], alignments: ['good'] }],
+      'evil-enhancement': [{ types: ['Enhancement'], alignments: ['evil'] }],
+      artifact: [{ types: ['Artifact'] }],
+      dominant: [{ types: ['Dominant'] }],
+    };
+    const disagreements: string[] = [];
+    for (const c of CARDS) {
+      for (const cat of OPENING_HAND_CATEGORIES) {
+        if (isInCategory(c as unknown as Card, cat) !== matchesDeckCard(c, reference[cat.id])) {
+          disagreements.push(`${cat.id}: ${c.name}`);
+        }
+      }
+    }
+    expect(disagreements.slice(0, 10)).toEqual([]);
   });
 
   it('falls back to Hero for an unknown id', () => {
