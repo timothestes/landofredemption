@@ -16,7 +16,7 @@ import { useCollectionState } from "../../collection/hooks/useCollectionState";
 import type { BuyDeckCard } from "../card-search/components/BuyDeckModal";
 import { aggregateOwnedByName } from "../card-search/utils/collectionCheck";
 import { statCards, countBy, sumQuantity } from "../card-search/utils/deckStats";
-import HeroOpeningHandCard from "../card-search/components/HeroOpeningHandCard";
+import OpeningHandOddsCard from "../card-search/components/OpeningHandOddsCard";
 import { Deck as DeckType } from "../card-search/types/deck";
 import { generateDeckText } from "../card-search/utils/deckImportExport";
 import CardTile from "@/components/ui/CardTile";
@@ -1383,7 +1383,7 @@ export default function PublicDeckClient({ deck, descriptionRefs, isOwner, isLog
                   deck={deckForModal}
                   deckType={getFormatDef(deck.format).family}
                 />
-                <HeroOpeningHandCard deck={deckForModal} className="bg-card border-border text-foreground" />
+                <OpeningHandOddsCard deck={deckForModal} className="bg-card border-border text-foreground" />
               </div>
             </div>
 

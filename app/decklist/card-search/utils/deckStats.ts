@@ -50,17 +50,18 @@ const OPENING_HAND_SIZE = 8;
 /** Going second: the opening hand plus the first draw of 3. */
 export const GOING_SECOND_HAND_SIZE = 11;
 
-export interface HeroOpeningHandOdds {
-  /** Copies in the main deck whose type includes Hero (dual-type cards count). */
-  heroes: number;
+export interface OpeningHandOdds {
+  /** Main-deck copies of the sought card (a Hero, a good weapon, …). */
+  matching: number;
   /** Main-deck copies that can sit in an opening hand: everything but Lost Souls. */
   handCards: number;
-  /** Chance, 0 to 1, that the opening hand holds at least one Hero. */
+  /** Chance, 0 to 1, that the opening hand holds at least one matching card. */
   chance: number;
 }
 
 /**
- * Exact chance of at least one Hero in the opening hand.
+ * Exact chance of at least one matching card (a Hero, a good weapon, …) in the
+ * opening hand.
  *
  * A Lost Soul drawn into the opening hand is put in play and replaced, so the
  * hand is always 8 cards drawn from the main deck's non-Lost-Soul cards. That
@@ -71,25 +72,26 @@ export interface HeroOpeningHandOdds {
  * `handSize` is how many cards have been drawn: 8 for the opening hand, 11
  * once the player going second has taken their first draw of 3.
  */
-export function heroOpeningHandOdds<T extends CountableCard>(
+export function openingHandOdds<T extends CountableCard>(
   cards: T[],
   typeOf: (card: T) => string | null | undefined,
+  isTarget: (card: T) => boolean,
   handSize: number = OPENING_HAND_SIZE,
-): HeroOpeningHandOdds {
-  let heroes = 0;
+): OpeningHandOdds {
+  let matching = 0;
   let handCards = 0;
   for (const card of cards) {
     if (card.zone !== "main") continue;
     const type = (typeOf(card) || "").toLowerCase();
     if (type.includes("lost soul")) continue;
     handCards += card.quantity;
-    if (type.split("/").some((part) => part.trim() === "hero")) heroes += card.quantity;
+    if (isTarget(card)) matching += card.quantity;
   }
 
-  // P(no Hero) = C(handCards - heroes, n) / C(handCards, n), as a running product.
-  let noHero = 1;
+  // P(none) = C(handCards - matching, n) / C(handCards, n), as a running product.
+  let none = 1;
   for (let i = 0; i < Math.min(handSize, handCards); i++) {
-    noHero *= Math.max(handCards - heroes - i, 0) / (handCards - i);
+    none *= Math.max(handCards - matching - i, 0) / (handCards - i);
   }
-  return { heroes, handCards, chance: handCards === 0 ? 0 : 1 - noHero };
+  return { matching, handCards, chance: handCards === 0 ? 0 : 1 - none };
 }
