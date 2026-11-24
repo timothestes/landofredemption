@@ -1,7 +1,7 @@
 #!/bin/zsh
 # Builds the home-page masthead art, one file per theme:
 #   public/brand/hero-art-light.webp   dark pen drawing on the light page colour
-#   public/brand/hero-art-dark.webp    night: only the face catches the light
+#   public/brand/hero-art-dark.webp    night: a soft light falls on the face
 #   public/brand/hero-art-jayden.webp  stained glass: the theme's red→pink→violet→blue spectrum as light
 # All three share one crop, so switching themes re-inks the same picture in the same place.
 # Each file is opaque and already sits on its theme's --background (the masthead band is
@@ -41,15 +41,15 @@ magick $W/c.miff -depth 8 -morphology Erode Disk:2 -colorspace sRGB -type TrueCo
   -fill black -fuzz 0 +opaque "#ff0000" -fill white -opaque "#ff0000" -colorspace gray \
   -morphology Dilate Disk:2 -blur 0x1.2 -negate $W/fig.png
 
-# Light maps. ldir: key light from the upper right. spot: a tight light on the face.
+# Light maps. ldir: key light from the upper right. spot: a wide, soft light centred on the face.
 magick -size 1200x701 xc: -fx "pp=(j*0.9-(i-600)*0.42)/701; tt=max(0,min(1,(pp+0.1)/1.1)); 1-tt*tt*(3-2*tt)" $W/ldir.miff
-magick -size 1200x701 xc: -fx "dd=min(1,hypot((i-600)/560,(j-210)/430)); 1-dd*dd*(3-2*dd)" $W/spot.miff
+magick -size 1200x701 xc: -fx "dd=min(1,hypot((i-600)/640,(j-210)/480)); 1-dd*dd*(3-2*dd)" $W/spot.miff
 # Jayden's spectrum at 135deg: red top-left -> pink -> violet -> blue bottom-right.
 magick -size 1200x701 xc: -sparse-color Barycentric "0,0 #ff2a2a  700,0 #ff2a9a  1200,350 #8a2be2  1200,701 #2a4dff" $W/spectrum.miff
 
-# Gradient maps. night: black -> slate -> cool silver. ink: light-theme tokens
-# (foreground -> muted-foreground -> border -> background).
-magick -size 1x110 gradient:"#000000-#2a3346" -size 1x100 gradient:"#2a3346-#7d8aa3" -size 1x46 gradient:"#7d8aa3-#c9d2e0" -append $W/clut-night.png
+# Gradient maps. night: black -> slate -> a muted silver (a brighter top made the face glow).
+# ink: light-theme tokens (foreground -> muted-foreground -> border -> background).
+magick -size 1x110 gradient:"#000000-#2a3346" -size 1x100 gradient:"#2a3346-#7d8aa3" -size 1x46 gradient:"#7d8aa3-#a3adbf" -append $W/clut-night.png
 magick -size 1x128 gradient:"#121826-#606876" -size 1x90 gradient:"#606876-#dcdfe5" -size 1x38 gradient:"#dcdfe5-$BG_LIGHT" -append $W/clut-ink.png
 
 # Light: dark ink on the page's own paper colour. The ink pass keeps fine grain in the cape's
@@ -57,9 +57,10 @@ magick -size 1x128 gradient:"#121826-#606876" -size 1x90 gradient:"#606876-#dcdf
 magick $W/ink.miff -blur 0x0.5 -colorspace sRGB -type TrueColor $W/clut-ink.png -clut \
   -quality 62 -define webp:method=6 $OUT/hero-art-light.webp
 
-# Dark: only the face is lit; sky black; the body sinks into the band. Screened onto the page colour.
-magick $W/c.miff \( $W/spot.miff +level 4%,100% \) -compose multiply -composite $W/fig.png -compose multiply -composite \
-  -level 2%,80% -colorspace sRGB -type TrueColor $W/clut-night.png -clut \
+# Dark: the face catches the most light, the body stays readable in the dim, the sky is black.
+# No level stretch: clipping the face to white made it glare against the band. Screened onto the page colour.
+magick $W/c.miff \( $W/spot.miff +level 18%,100% \) -compose multiply -composite $W/fig.png -compose multiply -composite \
+  -colorspace sRGB -type TrueColor $W/clut-night.png -clut \
   \( -size 1200x701 xc:$BG_DARK \) -compose screen -composite $Q $OUT/hero-art-dark.webp
 
 # Jayden: the upper-right key light passes through the spectrum; white only at the top of the range.
