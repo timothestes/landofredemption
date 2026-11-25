@@ -353,7 +353,10 @@ function expandGroups(alts) {
 // A list of piles ("deck", "deck or discard pile", "hand, deck, Reserve or
 // territory"); a clause counts only when the list includes the deck — the
 // window shows the deck, the other piles stay manual.
-const PILE = String.raw`(?:(?:your|the|own)\s+)?(?:deck|draw pile|discard pile|Reserve|hand|territory)`;
+// "A Reserve" is either player's: the item opens your own (an opponent's
+// Reserve is theirs to show, through its own menu). "A deck" stays out — it
+// means an opponent's deck.
+const PILE = String.raw`(?:(?:(?:your|the|own)\s+)?(?:deck|draw pile|discard pile|Reserve|hand|territory)|a Reserve)`;
 const PILES = String.raw`${PILE}(?:(?:,\s*(?:or\s+)?|\s+or\s+)${PILE})*`;
 const CLAUSES = [
   { kind: 'search_deck', re: new RegExp(String.raw`\bsearch (${PILES}) for ([^.:;]+)`, 'gi'), target: 2, piles: 1 },
@@ -460,6 +463,9 @@ const EXTRA = {
   'The Watchman (Promo)': ['exchange_with_deck', 'exchange_with_reserve'].map((kind) => ({ kind, label: 'a Major or Minor prophet', match: [{ traits: ['major prophet'], types: ['character'] }, { traits: ['minor prophet'], types: ['character'] }] })),
   // "…from deck or Reserve" — both windows.
   'False Peace (PoC)': ['search_deck', 'search_reserve'].map((kind) => ({ kind, label: 'an O.T. card (except a Dominant)', match: [{ testament: 'OT', types: NOT_DOMINANT }] })),
+  // "…take an O.T. Site or an evil O.T. Fortress from a Reserve or an Assyrian
+  // warrior from deck": the scan reads the Reserve half; this is the deck half.
+  'King Sennacherib (LoC)': [{ kind: 'search_deck', label: 'an Assyrian warrior', match: [{ cardClass: 'Warrior', traits: ['assyrian'], types: ['character'] }] }],
   'The Thief (GoC)': [{ kind: 'exchange_with_deck', label: 'a thief or generic demon', match: [{ traits: ['thief'], types: ['character'] }, { traits: ['demon', 'generic'], types: ['Evil Character'] }, { traits: ['generic'], types: ['Evil Character'], brigades: ['Orange'], singleBrigade: true }] }],
   // Lost Souls whose wording the scan doesn't read. "Exchange a card from
   // hand with X from deck": the window takes X; the hand card goes back by hand.
