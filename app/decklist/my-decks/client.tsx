@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -297,14 +298,60 @@ export default function MyDecksClient() {
     });
   }
 
+  // The copy a duplicate just made; its card is outlined until the timer clears it.
+  const [copiedDeckId, setCopiedDeckId] = useState<string | null>(null);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Scrolls to the copy's card and outlines it. False when this view doesn't show it.
+  function revealCopy(deckId: string) {
+    const card = document.querySelector(`[data-deck-id="${deckId}"]`);
+    if (!card) return false;
+    card.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    setCopiedDeckId(deckId);
+    copiedTimerRef.current = setTimeout(() => setCopiedDeckId(null), 3000);
+    return true;
+  }
+
   async function handleDuplicateDeck(deckId: string) {
+    // The copy takes a few seconds; the menu has closed, so say it's under way.
+    showToast("Duplicating…", "success");
     const result = await duplicateDeckAction(deckId);
-    if (result.success) {
-      await refreshDecks();
-      showToast("Deck duplicated", "success");
-    } else {
+    if (!result.success) {
       showToast(result.error || "Failed to duplicate deck");
+      return;
     }
+    const loaded = await loadUserDecksAction();
+    const copy = loaded.success ? loaded.decks.find((d) => d.id === result.deckId) : undefined;
+    if (!copy) {
+      showToast("Deck duplicated", "success");
+      return;
+    }
+    // Render the list with the copy in it now, so its card can be scrolled to.
+    flushSync(() => setDecks(loaded.decks));
+    if (revealCopy(copy.id!)) {
+      showToast(`Created "${copy.name}"`, "success");
+      return;
+    }
+    // The copy isn't in this view: it is never pinned and is filed with the
+    // original, so copying a pin that lives in a folder puts it in that folder.
+    const folderId = copy.folder_id ?? null;
+    const where = folderId
+      ? `"${folders.find((f) => f.id === folderId)?.name ?? "a folder"}"`
+      : "My Decks";
+    showToast(`Copied to ${where}`, "success", {
+      label: "Show",
+      onClick: () => {
+        flushSync(() => {
+          setSelectedFolder(folderId);
+          setSearchQuery("");
+          setSelectedTagIds([]);
+          setDeckTypeFilter("all");
+        });
+        revealCopy(copy.id!);
+        setToast(null);
+      },
+    });
   }
 
   async function handleCreateFolder(name: string) {
@@ -1307,6 +1354,7 @@ export default function MyDecksClient() {
                           deck={deck}
                           folders={folders}
                           elsewhereFolderName={elsewhereFolderName(deck)}
+                          justCopied={deck.id === copiedDeckId}
                           selectionMode={selectionMode}
                           selected={selectedIds.includes(deck.id!)}
                           onToggleSelect={(shiftKey) => toggleSelect(deck.id!, shiftKey)}
@@ -1332,6 +1380,7 @@ export default function MyDecksClient() {
                           deck={deck}
                           folders={folders}
                           elsewhereFolderName={elsewhereFolderName(deck)}
+                          justCopied={deck.id === copiedDeckId}
                           selectionMode={selectionMode}
                           selected={selectedIds.includes(deck.id!)}
                           onToggleSelect={(shiftKey) => toggleSelect(deck.id!, shiftKey)}
@@ -1513,7 +1562,8 @@ export default function MyDecksClient() {
         <div
           className={cn(
             "fixed bottom-4 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 z-[60]",
-            "max-w-[calc(100vw-2rem)] md:max-w-sm bg-card border border-border text-foreground shadow-lg rounded-lg px-4 py-3 flex items-center gap-3",
+            // w-max: centred with left-1/2, the box would otherwise shrink to half the screen.
+            "w-max max-w-[calc(100vw-2rem)] md:max-w-sm bg-card border border-border text-foreground shadow-lg rounded-lg px-4 py-3 flex items-center gap-3",
             toast.type === "error" && "border-l-2 border-l-red-500",
           )}
         >
@@ -1652,6 +1702,7 @@ function DeckCard({
   deck,
   folders,
   elsewhereFolderName,
+  justCopied,
   selectionMode,
   selected,
   onToggleSelect,
@@ -1670,6 +1721,7 @@ function DeckCard({
   deck: DeckData;
   folders: FolderData[];
   elsewhereFolderName?: string;
+  justCopied: boolean;
   selectionMode: boolean;
   selected: boolean;
   onToggleSelect: (shiftKey: boolean) => void;
@@ -1692,6 +1744,7 @@ function DeckCard({
 
   return (
     <div
+      data-deck-id={deck.id}
       draggable={!selectionMode}
       onDragStart={(e) => {
         if (selectionMode) { e.preventDefault(); return; }
@@ -1702,7 +1755,7 @@ function DeckCard({
       className={cn(
         "group relative bg-gradient-to-br from-card to-muted/40 rounded-lg border hover:shadow-lg transition-shadow flex flex-col jayden-gradient-bg",
         selectionMode && "cursor-pointer select-none",
-        selected ? "border-primary ring-2 ring-primary" : "border-border",
+        selected || justCopied ? "border-primary ring-2 ring-primary" : "border-border",
       )}
     >
       {/* Selection checkbox (selection mode) */}
@@ -1850,6 +1903,7 @@ function DeckListItem({
   deck,
   folders,
   elsewhereFolderName,
+  justCopied,
   selectionMode,
   selected,
   onToggleSelect,
@@ -1867,6 +1921,7 @@ function DeckListItem({
   deck: DeckData;
   folders: FolderData[];
   elsewhereFolderName?: string;
+  justCopied: boolean;
   selectionMode: boolean;
   selected: boolean;
   onToggleSelect: (shiftKey: boolean) => void;
@@ -1886,6 +1941,7 @@ function DeckListItem({
 
   return (
     <div
+      data-deck-id={deck.id}
       draggable={!selectionMode}
       onDragStart={(e) => {
         if (selectionMode) { e.preventDefault(); return; }
@@ -1896,7 +1952,7 @@ function DeckListItem({
       className={cn(
         "bg-card rounded-lg border transition-colors",
         selectionMode ? "cursor-pointer select-none" : "hover:bg-muted",
-        selected ? "border-primary ring-2 ring-primary" : "border-border",
+        selected || justCopied ? "border-primary ring-2 ring-primary" : "border-border",
       )}
     >
       <div className="flex items-center gap-2 md:gap-4 p-3 md:p-4">
