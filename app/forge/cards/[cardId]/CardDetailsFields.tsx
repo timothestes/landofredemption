@@ -100,6 +100,7 @@ export default function CardDetailsFields({
   const types = snapshot.cardType ?? [];
   const goodEvil = snapshot.alignment === "Good_Evil";
   const identifiersId = useId();
+  const artistId = useId();
 
   // The summary previews what's set, so a card stays readable at a glance with the block
   // closed.
@@ -280,6 +281,16 @@ export default function CardDetailsFields({
           value={snapshot.identifiers ?? []}
           onChange={(identifiers) => update({ identifiers })}
           placeholder="Comma-separated, e.g. Genesis, Patriarch"
+          className="min-h-11 w-full rounded-md border bg-background px-3 py-2 text-base placeholder:text-sm sm:min-h-0 sm:text-sm" />
+      </div>
+
+      {/* Artist. A plain input, not QuoteInput: the deck builder's Artist search compares
+          apostrophes as typed, so "O'Brien" has to stay straight. */}
+      <div>
+        <label htmlFor={artistId} className="mb-1 block text-sm font-medium">Artist</label>
+        <input id={artistId} value={snapshot.artistCredit ?? ""}
+          onChange={(e) => update({ artistCredit: e.target.value || undefined })}
+          placeholder="Illustrator name, printed on the card"
           className="min-h-11 w-full rounded-md border bg-background px-3 py-2 text-base placeholder:text-sm sm:min-h-0 sm:text-sm" />
       </div>
       </div>
