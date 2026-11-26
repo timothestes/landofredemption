@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId } from "react";
 import {
   CARD_TYPES, ALIGNMENTS, CLASSES, ICONS, RARITIES, MULTI_BRIGADES, ICON_SIDES,
   toggleMultiBrigade, brigadeLabels, brigadeSides, toggleCardType, iconSide, defaultIconSide,
@@ -66,8 +66,8 @@ function toggle<T>(arr: T[] | undefined, v: T): T[] {
 // One picker option, built like the deckbuilder's filter tiles: the art does the
 // fast visual work and the label keeps it unambiguous. The label always shows —
 // brigade color on its own isn't a safe signal — and `title` carries the value as
-// it's stored. The art is lazy so the ~35 images don't fetch while the block is
-// still collapsed.
+// it's stored. The art is lazy, so the ~35 images don't fetch ahead of being
+// seen.
 function Tile({ src, label, title, ariaLabel, selected, onClick }: {
   src: string; label: string; title: string; ariaLabel?: string;
   selected: boolean; onClick: () => void;
@@ -99,13 +99,10 @@ export default function CardDetailsFields({
 }: { snapshot: DesignCard; update: (patch: Partial<DesignCard>) => void }) {
   const types = snapshot.cardType ?? [];
   const goodEvil = snapshot.alignment === "Good_Evil";
-  // Open on a card with no type yet, where the type is the next thing to say. Seeded once at
-  // mount: choosing the type must not close the block under someone who is still filling it in.
-  const [startOpen] = useState(types.length === 0);
   const identifiersId = useId();
 
-  // Collapsed once there is a type (the block is tall); the summary previews what's set
-  // so the card stays readable at a glance without opening it.
+  // The summary previews what's set, so a card stays readable at a glance with the block
+  // closed.
   const preview = [
     ...types.map(typeLabel),
     ...brigadeLabels(snapshot.brigades ?? []).map(brigadeLabel),
@@ -117,7 +114,7 @@ export default function CardDetailsFields({
     .join(" · ");
 
   return (
-    <details className="rounded-lg border bg-card" open={startOpen}>
+    <details className="rounded-lg border bg-card" open>
       <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium">
         Card details
         <span className="ml-2 font-normal text-muted-foreground">
