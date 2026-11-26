@@ -81,19 +81,12 @@ describe("CardDetailsFields brigade picker", () => {
   });
 });
 
-// `open` is seeded once at mount, so nothing here can close it under someone mid-edit; that
-// half needs a DOM and was checked in a mounted harness.
 describe("CardDetailsFields starting state", () => {
   const details = (html: string) => html.match(/<details[^>]*>/)![0];
 
-  it("starts open on a card with no type yet", () => {
+  it("starts open, with or without a type", () => {
     expect(details(render({}))).toMatch(/\bopen\b/);
-    expect(details(render({ name: "Named only", rawText: "Some text." }))).toMatch(/\bopen\b/);
-    expect(details(render({ cardType: [] }))).toMatch(/\bopen\b/);
-  });
-
-  it("starts collapsed once the card has a type", () => {
-    expect(details(render({ cardType: ["Hero"] }))).not.toMatch(/\bopen\b/);
+    expect(details(render({ cardType: ["Hero"] }))).toMatch(/\bopen\b/);
   });
 });
 
@@ -171,7 +164,7 @@ describe("CardDetailsFields icon tiles", () => {
     expect(render({ ...dual, alignment: "Neutral" })).not.toContain("class icon side");
   });
 
-  it("never leaves selection to color alone, and defers the art until opened", () => {
+  it("never leaves selection to color alone, and lazy-loads the art", () => {
     const html = render({ brigades: ["Blue"] });
     // 12 types + 16 brigades + 2 Multi + 2 classes + 3 icons.
     expect(html.match(/aria-pressed=/g)!.length).toBe(35);
