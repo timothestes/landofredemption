@@ -47,6 +47,12 @@ describe("diffCards", () => {
     expect(d).toHaveLength(1);
     expect(d[0]).toMatchObject({ field: "rarity", label: "Rarity", kind: "changed", before: "Rare", after: "Common" });
   });
+
+  it("detects a changed artist, so an artist-only edit can be reviewed", () => {
+    const d = diffCards({ artistCredit: "Doug Gray" }, { artistCredit: "Gustave Doré" });
+    expect(d).toHaveLength(1);
+    expect(d[0]).toMatchObject({ field: "artistCredit", label: "Artist", kind: "changed", before: "Doug Gray", after: "Gustave Doré" });
+  });
 });
 
 describe("summarizeDiff", () => {

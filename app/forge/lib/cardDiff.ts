@@ -25,12 +25,12 @@ export const FIELD_LABELS: Record<string, string> = {
 
 // The real editing surface (StudioEditor name + rawText, CardDetailsFields for the
 // rest). Drives the Current vs Proposed diff. `rawText` is the primary body; the
-// old no-editor fields (specialAbility/legality/artistCredit/cardFrame) are
+// old no-editor fields (specialAbility/legality/cardFrame) are
 // intentionally excluded so a body edit no longer reads "No field changes".
 export const DIFF_FIELDS: (keyof DesignCard)[] = [
   "name", "rawText", "cardType", "alignment", "brigades", "strength", "toughness",
   "class", "icons", "warriorSide", "weaponSide", "territorySide", "identifiers", "reference",
-  "scripture", "rarity",
+  "scripture", "rarity", "artistCredit",
 ];
 
 // Fields a comment may anchor a suggestion to. Must mirror the SQL allowlist
@@ -47,7 +47,7 @@ export const SUGGESTABLE_FIELDS: (keyof DesignCard)[] = [
 // actually does to open proposals, server-side — so drift here can misword the
 // dialog but can never change behavior.
 // Deliberately NOT `diffCards(a, b).length === 0`: DIFF_FIELDS omits
-// specialAbility/legality/artistCredit/cardFrame, so a diff-based
+// specialAbility/legality/cardFrame, so a diff-based
 // compare would call two genuinely different snapshots equal.
 // A body/verse change (or any value with a newline) is unreadable as a single inline
 // strikethrough — stack the before/after as pre-wrapped blocks instead. Shared so the

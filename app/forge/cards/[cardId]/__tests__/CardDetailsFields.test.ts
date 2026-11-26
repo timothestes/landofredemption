@@ -90,6 +90,22 @@ describe("CardDetailsFields starting state", () => {
   });
 });
 
+describe("CardDetailsFields artist", () => {
+  const input = (html: string) => {
+    const id = html.match(/<label for="([^"]+)"[^>]*>Artist<\/label>/)?.[1];
+    if (!id) throw new Error("no Artist label");
+    return html.match(new RegExp(`<input[^>]*\\bid="${id}"[^>]*>`))![0];
+  };
+
+  it("shows the saved credit in a labelled box", () => {
+    expect(input(render({ artistCredit: "Doug Gray" }))).toContain('value="Doug Gray"');
+  });
+
+  it("offers the box on a card with no credit yet", () => {
+    expect(input(render({}))).toContain('value=""');
+  });
+});
+
 describe("CardDetailsFields icon tiles", () => {
   it("shows each card type's own art, spacing the run-together names", () => {
     const html = render({ cardType: ["EvilCharacter"], alignment: "Evil" });
