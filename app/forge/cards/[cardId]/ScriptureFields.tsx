@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import QuoteTextarea from "./QuoteTextarea";
 import { Button } from "@/components/ui/button";
 import type { DesignCard } from "@/app/forge/lib/designCard";
@@ -41,8 +41,17 @@ export default function ScriptureFields({
   // Esc / the toggle close the panel from inside it; hand focus back to the toggle so the builder keeps their place.
   function closeToToggle() {
     close();
-    toggleRef.current?.focus();
+    toggleRef.current?.focus({ preventScroll: true });
   }
+
+  // The panel is tall, so closing it can leave the page far below these fields. Bring them back
+  // into view, in the same frame, and only as far as needed.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const wasOpen = useRef(false);
+  useLayoutEffect(() => {
+    if (wasOpen.current && !open) rootRef.current?.scrollIntoView({ block: "nearest" });
+    wasOpen.current = open;
+  }, [open]);
 
   function edit(patch: Partial<DesignCard>) {
     setStatus(null);
@@ -50,7 +59,7 @@ export default function ScriptureFields({
   }
 
   return (
-    <div className="space-y-4">
+    <div ref={rootRef} className="scroll-mt-[calc(var(--forge-chrome)+4rem)] space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
         {/* Reference — scripture citation printed on the card */}
         <label className="block min-w-0 flex-1">
@@ -60,26 +69,30 @@ export default function ScriptureFields({
             onChange={(e) => edit({ reference: e.target.value || undefined })}
             placeholder="e.g. Revelation 19:15"
             className="min-h-11 w-full rounded-md border bg-background px-3 py-2 text-base sm:min-h-0 sm:text-sm" />
-          <span className="mt-1 block text-xs text-muted-foreground">The scripture reference printed on the card.</span>
-          {reference !== "" &&
-            (testament ? (
-              <span className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+          {/* One line of fixed height whatever it says, so typing a reference moves nothing below. */}
+          <span className="mt-1 flex min-h-6 flex-wrap items-center gap-1.5 text-xs">
+            {reference === "" ? (
+              <span className="text-muted-foreground">The scripture reference printed on the card.</span>
+            ) : testament ? (
+              <>
                 <span className="rounded border px-1.5 py-0.5 font-medium text-muted-foreground">{formatTestament(testament)}</span>
                 {isGospel && (
                   <span className="rounded border px-1.5 py-0.5 font-medium text-muted-foreground">Gospel</span>
                 )}
-              </span>
+              </>
             ) : (
-              <span className="mt-1.5 block text-xs text-amber-700 dark:text-amber-300">
+              <span className="text-amber-700 dark:text-amber-300">
                 Couldn&rsquo;t determine testament from this reference.
               </span>
-            ))}
+            )}
+          </span>
         </label>
-        {/* From sm, mt-6 lines the button up with the input under the label. On a phone it takes its
-            own row, so a label that grows with the reference can't squeeze the field. */}
-        <Button ref={toggleRef} type="button" variant="outline" size="sm" className="h-11 shrink-0 sm:mt-6 sm:h-9" aria-expanded={open}
+        {/* From sm, mt-6 lines the button up with the input under the label, and its width is fixed:
+            the label follows the reference, and the field must not resize as it is typed. On a
+            phone it takes its own row. */}
+        <Button ref={toggleRef} type="button" variant="outline" size="sm" className="h-11 shrink-0 sm:mt-6 sm:h-9 sm:w-64" aria-expanded={open}
           onClick={() => (open ? closeToToggle() : setOpen(true))}>
-          {buttonLabel}
+          <span className="truncate">{buttonLabel}</span>
         </Button>
       </div>
 

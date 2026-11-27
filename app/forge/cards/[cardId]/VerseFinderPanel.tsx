@@ -5,7 +5,7 @@
 // call is an explicit action; typing only re-runs `classify`. All excerpt / ellipsis / handle
 // math comes from verseExcerpt.ts — this file only renders it and routes input to it.
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent,type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from "react";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -66,6 +66,12 @@ const DRAG_SLOP = 6;
 const DRAG_EDGE = 28;
 const DRAG_SCROLL = 14;
 
+/** Scrolls the page only as far as it takes to show `el`. Focus never scrolls it in this panel. */
+function reveal(el: HTMLElement | null) {
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el?.scrollIntoView({ block: "nearest", behavior: still ? "auto" : "smooth" });
+}
+
 export default function VerseFinderPanel({
   snapshot,
   initialQuery,
@@ -110,6 +116,10 @@ export default function VerseFinderPanel({
   const mountLookup = useRef(false);
   /** Set by an action whose landing should focus the results list (back from a hit, chip / sort / exact). */
   const focusList = useRef(false);
+  /** How far the results list was scrolled when a hit was opened, and the value to put back. */
+  const hitScroll = useRef(0);
+  const restoreScroll = useRef<number | null>(null);
+  const revealed = useRef(false);
   const onPreviewRef = useRef(onPreview);
   useEffect(() => {
     onPreviewRef.current = onPreview;
@@ -233,6 +243,7 @@ export default function VerseFinderPanel({
 
   function openHit(hit: Hit) {
     const [book, ch, verse] = hit.id.split(".");
+    hitScroll.current = listRef.current?.scrollTop ?? 0;
     loadChapter(`${book}.${ch}`, Number(verse), true);
   }
 
@@ -294,6 +305,7 @@ export default function VerseFinderPanel({
     setFromHit(false);
     setStatus(null);
     focusList.current = true;
+    restoreScroll.current = hitScroll.current;
     // The same response is shown again: one more view.
     if (results?.fumsToken) window.fums?.("trackView", results.fumsToken);
   }
@@ -327,10 +339,15 @@ export default function VerseFinderPanel({
       s.async = true;
       document.head.appendChild(s);
     }
+    // Not autoFocus: that scrolls the page to centre the box.
+    inputRef.current?.focus({ preventScroll: true });
     const c = classify(initialQuery);
     if (c.kind === "ref") {
       mountLookup.current = true;
       run(`ref=${encodeURIComponent(initialQuery.trim())}`, { kind: "chapter", ref: c.ref });
+    } else {
+      // Nothing is on its way, so show the box now. A lookup waits and moves the page once.
+      reveal(rootRef.current);
     }
     // A card-name prefill is only a suggestion: select it so typing replaces it. No fetch.
     if (prefill) inputRef.current?.select();
@@ -402,24 +419,36 @@ export default function VerseFinderPanel({
   // a successful trim, and disabled-while-loading buttons all drop focus to <body>; pull it back.
   // Only from <body>: focus the builder moved elsewhere on purpose is left alone.
   const listRef = useRef<HTMLDivElement>(null);
+  // Back from a hit: the list returns where it was left, before it is painted.
+  useLayoutEffect(() => {
+    if (chapter || restoreScroll.current === null || !listRef.current) return;
+    listRef.current.scrollTop = restoreScroll.current;
+    restoreScroll.current = null;
+  }, [chapter]);
   useEffect(() => {
     if (focusList.current && !chapter) {
       focusList.current = false;
-      listRef.current?.focus();
+      listRef.current?.focus({ preventScroll: true });
     }
   }, [chapter, results]);
+  // The first thing to land brings the panel into view. After that the page is the builder's.
+  useEffect(() => {
+    if (revealed.current || !(chapter || results || status)) return;
+    revealed.current = true;
+    reveal(rootRef.current);
+  }, [chapter, results, status]);
   useEffect(() => {
     if (loading) return;
     // The automatic mount lookup landed while focus is still in the input: go straight to the start
     // handle so a keyboard builder doesn't Tab through Look up / prev / next first.
     if (mountLookup.current && chapter) {
       mountLookup.current = false;
-      if (document.activeElement === inputRef.current) startHandleRef.current?.focus();
+      if (document.activeElement === inputRef.current) startHandleRef.current?.focus({ preventScroll: true });
     }
     const root = rootRef.current;
     const active = document.activeElement;
     if (!root || root.contains(active) || (active && active !== document.body)) return;
-    (startHandleRef.current ?? inputRef.current)?.focus();
+    (startHandleRef.current ?? inputRef.current)?.focus({ preventScroll: true });
   }, [chapter, handles, loading]);
 
   const hasResults = !!results?.verses.length;
@@ -438,7 +467,8 @@ export default function VerseFinderPanel({
       ref={rootRef}
       tabIndex={-1}
       onKeyDown={onRootKeyDown}
-      className="flex flex-col gap-3 rounded-md border bg-card p-3 outline-none"
+      // The margins keep a reveal clear of the sticky header, and of the walk bar on a phone.
+      className="flex scroll-mb-4 scroll-mt-[calc(var(--forge-chrome)+4rem)] flex-col gap-3 rounded-md border bg-card p-3 outline-none max-sm:scroll-mb-16"
     >
       <InputRow
         inputRef={inputRef}
@@ -448,7 +478,7 @@ export default function VerseFinderPanel({
         status={status}
         loading={loading}
         onSubmit={submit}
-        onArrowDown={() => !chapter && hasResults && listRef.current?.focus()}
+        onArrowDown={() => !chapter && hasResults && listRef.current?.focus({ preventScroll: true })}
         chapter={chapter}
         onPrev={() => chapter?.prev && loadChapter(chapter.prev, undefined, fromHit)}
         onNext={() => chapter?.next && loadChapter(chapter.next, undefined, fromHit)}
@@ -552,7 +582,6 @@ function InputRow(props: {
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
         <input
-          autoFocus
           ref={props.inputRef}
           value={props.query}
           onChange={(e) => props.setQuery(e.target.value)}
@@ -562,15 +591,18 @@ function InputRow(props: {
               props.onSubmit();
             } else if (e.key === "ArrowDown") {
               props.onArrowDown();
+              // Focus moved to the list: the same key press must not also scroll.
+              if (document.activeElement !== e.currentTarget) e.preventDefault();
             }
           }}
           placeholder="Genesis 6:2, or words you remember"
           aria-label="Verse reference or keywords"
           className="min-h-11 min-w-0 flex-1 basis-full rounded-md border bg-background px-3 py-2 text-base sm:min-h-0 sm:basis-0 sm:text-sm"
         />
-        <Button type="button" variant="secondary" size="sm" className="h-11 flex-1 sm:h-9 sm:flex-none" onClick={props.onSubmit} disabled={loading}>
-          {loading && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-          Look up
+        <Button type="button" variant="secondary" size="sm" className="relative h-11 flex-1 sm:h-9 sm:flex-none" onClick={props.onSubmit} disabled={loading}>
+          {/* Over the words, not beside them: a wider button would squeeze the box on every fetch. */}
+          {loading && <Loader2 className="absolute h-4 w-4 animate-spin" />}
+          <span className={loading ? "opacity-0" : undefined}>Look up</span>
         </Button>
         <Button
           type="button"
@@ -595,12 +627,10 @@ function InputRow(props: {
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
-      {props.hint && <p className="text-xs text-muted-foreground">{props.hint}</p>}
-      {props.status && (
-        <p role="status" className="text-xs text-muted-foreground">
-          {props.status}
-        </p>
-      )}
+      {/* One line that is always there, so a caption coming or going moves nothing below. */}
+      <div className="min-h-4 text-xs text-muted-foreground">
+        {props.status ? <p role="status">{props.status}</p> : props.hint && <p>{props.hint}</p>}
+      </div>
     </div>
   );
 }
@@ -649,7 +679,8 @@ function ChapterView({
   const { verses } = chapter;
   const containerRef = useRef<HTMLDivElement>(null);
   const handleRefs = { start: startHandleRef, end: useRef<HTMLButtonElement>(null) };
-  const refocus = useRef<Which | null>(null);
+  /** `follow`: a key moved it, so this box scrolls along. */
+  const refocus = useRef<{ which: Which; follow?: boolean } | null>(null);
 
   // Word axis for rendering and click routing (offset of each verse's first word).
   const rows = useMemo(() => {
@@ -668,8 +699,8 @@ function ChapterView({
   const s = abs(handles.start);
   const e = abs(handles.end);
 
-  // Scroll the selection into view once per loaded chapter.
-  useEffect(() => {
+  // Scroll the selection into view once per loaded chapter, before it is painted.
+  useLayoutEffect(() => {
     // Center the first selected word by scrolling this box only (never the page).
     const box = containerRef.current;
     const word = box?.querySelector<HTMLElement>('[data-first="true"]');
@@ -678,9 +709,18 @@ function ChapterView({
   }, [chapter]);
 
   // A moved handle can be re-parented by reconciliation and drop focus; put it back.
+  // Focus alone must not scroll: it would drag the reader back to a handle left out of sight.
   useEffect(() => {
-    if (refocus.current) handleRefs[refocus.current].current?.focus();
+    const next = refocus.current;
     refocus.current = null;
+    const box = containerRef.current;
+    const el = next && handleRefs[next.which].current;
+    if (!next || !box || !el) return;
+    el.focus({ preventScroll: true });
+    if (!next.follow) return;
+    if (el.offsetTop < box.scrollTop) box.scrollTop = el.offsetTop;
+    else if (el.offsetTop + el.offsetHeight > box.scrollTop + box.clientHeight)
+      box.scrollTop = el.offsetTop + el.offsetHeight - box.clientHeight;
   });
 
   function onWord(n: number, k: number, i: number) {
@@ -690,7 +730,7 @@ function ChapterView({
     const next =
       which === "start" ? { ...handles, start: { verse: n, word: k } } : { ...handles, end: { verse: n, word: k + 1 } };
     const focused = (["start", "end"] as const).find((w) => handleRefs[w].current === document.activeElement);
-    if (focused) refocus.current = focused;
+    if (focused) refocus.current = { which: focused };
     onChange(clampHandles(verses, next));
   }
 
@@ -717,7 +757,7 @@ function ChapterView({
       const i = nearestWord(rects, ev.clientX + grabX, ev.clientY + grabY);
       if (i === last) return;
       last = i;
-      refocus.current = which;
+      refocus.current = { which };
       onChange(placeHandle(verses, handles, which, i));
     };
     const onEnd = (ev: PointerEvent) => {
@@ -746,7 +786,7 @@ function ChapterView({
     else if (ev.key === "End") next = snapHandle(verses, handles, which, "end");
     if (!next) return;
     ev.preventDefault();
-    refocus.current = which;
+    refocus.current = { which, follow: true };
     onChange(next);
   }
 
@@ -842,7 +882,8 @@ function Readout({ lines, over, onTrim }: { lines: string[]; over: number; onTri
           </div>
         ))}
       </div>
-      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground sm:flex-nowrap">
+      {/* As tall as the button, whether or not it is there, so crossing the fit moves nothing. */}
+      <div className="flex min-h-11 flex-wrap items-center gap-3 text-xs text-muted-foreground sm:min-h-9 sm:flex-nowrap">
         <span className="whitespace-nowrap tabular-nums">
           {lines.length} {lines.length === 1 ? "line" : "lines"}
         </span>
