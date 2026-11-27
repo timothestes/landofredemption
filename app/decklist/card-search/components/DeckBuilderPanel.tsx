@@ -27,6 +27,7 @@ import DragGhost from "./DragGhost";
 import { Switch } from "@headlessui/react";
 import { Card, normalizeBrigadeField } from "../utils";
 import { filterDeckCards } from "../utils/deckFilter";
+import { groupDeckCardsBySet } from "../utils/setGroups";
 import { DOCS } from "@/lib/resources";
 import { compareCardsByType, compareCardsDefault, compareTypeGroups } from "@/lib/cards/defaultSort";
 import { FormatId, FORMAT_IDS, FORMATS, normalizeFormat } from "@/lib/formats";
@@ -652,11 +653,11 @@ export default function DeckBuilderPanel({
   const sheetTouchRef = useRef<{ startY: number; currentY: number } | null>(null);
   const [sheetTranslateY, setSheetTranslateY] = useState(0);
 
-  const [groupBy, setGroupBy] = useState<'type' | 'alignment'>('type');
+  const [groupBy, setGroupBy] = useState<'type' | 'alignment' | 'set'>('type');
 
   // Expanded (FullDeckView) view options
   const [expandedViewMode, setExpandedViewMode] = useState<'normal' | 'stacked'>('stacked');
-  const [expandedGroupBy, setExpandedGroupBy] = useState<'none' | 'alignment' | 'type'>('type');
+  const [expandedGroupBy, setExpandedGroupBy] = useState<'none' | 'alignment' | 'type' | 'set'>('type');
   // The preference lives in the parent (shared with the search grid); this panel
   // only renders the toggle and can force previews off regardless (mobile).
   const disableHoverPreview = forceDisableHoverPreview || !hoverPreviewEnabled;
@@ -1021,6 +1022,9 @@ export default function DeckBuilderPanel({
 
   // Group cards based on current groupBy setting
   const groupCards = (cards: typeof deck.cards) => {
+    if (groupBy === 'set') {
+      return groupDeckCardsBySet(cards).map(({ set, cards, count }) => ({ type: set, cards, count }));
+    }
     return groupBy === 'alignment' 
       ? groupCardsByAlignment(cards) 
       : groupCardsByType(cards);
@@ -2466,6 +2470,17 @@ export default function DeckBuilderPanel({
                       <span>Alignment</span>
                       {groupBy === 'alignment' && <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
                     </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setGroupBy('set'); }}
+                      className={`w-full px-3 py-2 text-left text-sm rounded transition-colors flex items-center justify-between ${
+                        groupBy === 'set'
+                          ? 'bg-primary/15 text-primary font-medium'
+                          : 'text-foreground hover:bg-muted'
+                      }`}
+                    >
+                      <span>Set</span>
+                      {groupBy === 'set' && <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+                    </button>
                   </div>
                 </div>
                 <div className="border-t border-border my-2"></div>
@@ -2604,6 +2619,17 @@ export default function DeckBuilderPanel({
                     >
                       <span>Alignment</span>
                       {groupBy === 'alignment' && <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setGroupBy('set'); }}
+                      className={`w-full px-3 py-2 text-left text-sm rounded transition-colors flex items-center justify-between ${
+                        groupBy === 'set'
+                          ? 'bg-primary/15 text-primary font-medium'
+                          : 'text-foreground hover:bg-muted'
+                      }`}
+                    >
+                      <span>Set</span>
+                      {groupBy === 'set' && <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>}
                     </button>
                   </div>
                 </div>
@@ -2768,6 +2794,16 @@ export default function DeckBuilderPanel({
                   }`}
                 >
                   Align
+                </button>
+                <button
+                  onClick={() => setExpandedGroupBy('set')}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                    expandedGroupBy === 'set'
+                      ? 'bg-card text-card-foreground shadow-sm'
+                      : 'text-muted-foreground'
+                  }`}
+                >
+                  Set
                 </button>
                 <button
                   onClick={() => setExpandedGroupBy('none')}
@@ -4030,6 +4066,16 @@ export default function DeckBuilderPanel({
                 }`}
               >
                 Align
+              </button>
+              <button
+                onClick={() => setExpandedGroupBy('set')}
+                className={`px-2 py-1 text-[11px] font-medium rounded-md transition-colors ${
+                  expandedGroupBy === 'set'
+                    ? 'bg-card text-card-foreground shadow-sm'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                Set
               </button>
               <button
                 onClick={() => setExpandedGroupBy('none')}
