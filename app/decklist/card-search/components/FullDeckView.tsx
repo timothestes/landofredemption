@@ -11,6 +11,7 @@ import { HexColorPicker } from "react-colorful";
 import { useIsAdmin } from "../../../../hooks/useIsAdmin";
 import { useCardPrices } from "../hooks/useCardPrices";
 import { compareCardsByType, compareTypeGroups } from "@/lib/cards/defaultSort";
+import { groupDeckCardsBySet, sortDeckCardsBySet } from "../utils/setGroups";
 
 function getTagContrastColor(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -24,7 +25,7 @@ interface FullDeckViewProps {
   onViewCard?: (card: Card, fromReserve?: boolean) => void;
   isAuthenticated?: boolean;
   viewMode: 'normal' | 'stacked';
-  groupBy: 'none' | 'alignment' | 'type';
+  groupBy: 'none' | 'alignment' | 'type' | 'set';
   showPreview?: boolean;
   tagsBarContainer?: HTMLElement | null;
 }
@@ -151,8 +152,10 @@ export default function FullDeckView({ deck, onViewCard, isAuthenticated = false
   const reserveCards = deck.cards.filter((dc) => dc.zone === 'reserve');
   const maybeboardCards = deck.cards.filter((dc) => dc.zone === 'maybeboard');
 
-  // Classic deck order (type → alignment → brigade → name)
+  // Classic deck order (type → alignment → brigade → name); by set when the
+  // view is grouped by set, so Reserve and Considering can be pulled the same way.
   const sortCards = (cards: typeof deck.cards) => {
+    if (groupBy === 'set') return sortDeckCardsBySet(cards);
     return [...cards].sort((a, b) => compareCardsByType(a.card, b.card));
   };
 
@@ -160,6 +163,10 @@ export default function FullDeckView({ deck, onViewCard, isAuthenticated = false
   const groupCards = (cards: typeof deck.cards) => {
     if (groupBy === 'none') {
       return { 'All Cards': sortCards(cards) };
+    }
+
+    if (groupBy === 'set') {
+      return Object.fromEntries(groupDeckCardsBySet(cards).map((g) => [g.set, g.cards]));
     }
 
     const grouped: Record<string, typeof deck.cards> = {};
@@ -315,6 +322,13 @@ export default function FullDeckView({ deck, onViewCard, isAuthenticated = false
 
     return columns;
   };
+
+  // Stacked cards hang below their group's own box (8rem in a desktop column,
+  // 6rem in a phone row). By set there's a heading or a wrapped row underneath,
+  // so pay that back or the cards cover it.
+  const padForStack = groupBy === 'set' && viewMode === 'stacked';
+  const stackedColumnPad = padForStack ? 'pb-32' : '';
+  const stackedRowPad = padForStack ? 'pb-24' : '';
 
   // Calculate stats
   const mainDeckCount = mainDeckCards.reduce((sum, dc) => sum + dc.quantity, 0);
@@ -588,8 +602,8 @@ export default function FullDeckView({ deck, onViewCard, isAuthenticated = false
         <div className="flex-1 min-w-0">
           {/* Main Deck */}
           <div>
-            {groupBy === 'type' || groupBy === 'alignment' ? (
-              // Type/Alignment grouping layout with side-by-side headers
+            {groupBy !== 'none' ? (
+              // Type/Alignment/Set grouping layout with side-by-side columns
               <div>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-3">
@@ -609,10 +623,16 @@ export default function FullDeckView({ deck, onViewCard, isAuthenticated = false
                       return (
                         <React.Fragment key={groupName}>
                           {/* Mobile: horizontal card layout per group */}
-                          <div className="md:hidden">
+                          <div className={`md:hidden ${stackedRowPad}`}>
                             {groupBy === 'alignment' && (
                               <div className="mb-1.5 flex items-center gap-2">
                                 <h3 className={`text-sm font-semibold ${getAlignmentColor(groupName)}`}>{groupName}</h3>
+                                <span className="text-xs text-muted-foreground">({cards.reduce((sum, dc) => sum + dc.quantity, 0)})</span>
+                              </div>
+                            )}
+                            {groupBy === 'set' && (
+                              <div className="mb-1.5 flex items-center gap-2">
+                                <h3 className="text-sm font-semibold text-foreground">{groupName}</h3>
                                 <span className="text-xs text-muted-foreground">({cards.reduce((sum, dc) => sum + dc.quantity, 0)})</span>
                               </div>
                             )}
@@ -629,12 +649,22 @@ export default function FullDeckView({ deck, onViewCard, isAuthenticated = false
 
                           {/* Desktop: vertical column layout per group */}
                           {columns.map((column, colIndex) => (
-                            <div key={`${groupName}-${colIndex}`} className="hidden md:flex flex-col">
+                            <div key={`${groupName}-${colIndex}`} className={`hidden md:flex flex-col ${stackedColumnPad}`}>
                               {groupBy === 'alignment' && colIndex === 0 && (
                                 <div className="mb-2 flex items-center gap-2">
                                   <h3 className={`text-lg font-semibold ${getAlignmentColor(groupName)}`}>{groupName}</h3>
                                   <span className="text-xs text-muted-foreground">({cards.reduce((sum, dc) => sum + dc.quantity, 0)})</span>
                                 </div>
+                              )}
+                              {/* Set names run long: held to the card's width, with a fixed
+                                  height so every column's cards start on the same line. */}
+                              {groupBy === 'set' && (
+                                <h3 className={`mb-2 h-12 w-28 flex flex-col justify-end text-xs font-semibold leading-4 text-foreground ${colIndex > 0 ? 'invisible' : ''}`}>
+                                  <span className="line-clamp-3">
+                                    {groupName}{' '}
+                                    <span className="font-normal text-muted-foreground">({cards.reduce((sum, dc) => sum + dc.quantity, 0)})</span>
+                                  </span>
+                                </h3>
                               )}
                               <div className="flex flex-col gap-2 items-center">
                                 {column.cards.flatMap((deckCard) =>
@@ -655,7 +685,7 @@ export default function FullDeckView({ deck, onViewCard, isAuthenticated = false
                     {reserveCount > 0 && (
                       <>
                         {/* Mobile reserve */}
-                        <div className="md:hidden">
+                        <div className={`md:hidden ${stackedRowPad}`}>
                           <div className="mb-1.5 flex items-center gap-2">
                             <h3 className="text-sm font-semibold text-purple-400">Reserve</h3>
                             <span className="text-xs text-muted-foreground">({reserveCount})</span>
@@ -671,7 +701,7 @@ export default function FullDeckView({ deck, onViewCard, isAuthenticated = false
                           </div>
                         </div>
                         {/* Desktop reserve */}
-                        <div className="hidden md:flex flex-col ml-4">
+                        <div className={`hidden md:flex flex-col ml-4 ${stackedColumnPad}`}>
                           <div className="mb-2 flex items-center gap-2">
                             <h3 className="text-lg font-semibold text-purple-400">Reserve</h3>
                             <span className="text-xs text-muted-foreground">({reserveCount})</span>
@@ -693,7 +723,7 @@ export default function FullDeckView({ deck, onViewCard, isAuthenticated = false
                     {maybeboardCount > 0 && (
                       <>
                         {/* Mobile */}
-                        <div className="md:hidden opacity-80">
+                        <div className={`md:hidden opacity-80 ${stackedRowPad}`}>
                           <div className="mb-1.5 flex items-center gap-2">
                             <h3 className="text-sm font-semibold italic text-muted-foreground">Considering</h3>
                             <span className="text-xs text-muted-foreground">({maybeboardCount})</span>
@@ -715,7 +745,7 @@ export default function FullDeckView({ deck, onViewCard, isAuthenticated = false
                           </div>
                         </div>
                         {/* Desktop */}
-                        <div className="hidden md:flex flex-col ml-4 opacity-80">
+                        <div className={`hidden md:flex flex-col ml-4 opacity-80 ${stackedColumnPad}`}>
                           <div className="mb-2 flex items-center gap-2">
                             <h3 className="text-lg font-semibold italic text-muted-foreground">Considering</h3>
                             <span className="text-xs text-muted-foreground">({maybeboardCount})</span>
