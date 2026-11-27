@@ -73,7 +73,7 @@ export default function VerseSearch(props: {
 
   function more_() {
     props.onMore();
-    listRef.current?.focus();
+    listRef.current?.focus({ preventScroll: true });
   }
 
   return (
