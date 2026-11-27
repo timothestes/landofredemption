@@ -575,8 +575,10 @@ function SpectatorInner({ code, isConnected, displayName }: SpectatorInnerProps)
           // status === 'playing' / 'finished', or pregame ceremony phase.
           // Render the full board so spectators see zones and hands; the
           // ceremony overlay floats on top during rolling/choosing/revealing.
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          // The art moves onto the board column so it is centred on the board,
+          // not the window; the row's plain table color sits behind the panel.
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', background: 'var(--gf-bg-dark)' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundImage: gameBackground, backgroundSize: 'cover', backgroundPosition: 'center' }}>
               <div style={{ flexShrink: 0, height: 48 }}>
                 <TurnIndicator
                   readOnly

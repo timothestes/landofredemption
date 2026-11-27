@@ -4,9 +4,9 @@ import { useRef, useMemo, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { GameProvider } from '../state/GameContext';
-import { CardPreviewProvider } from '../state/CardPreviewContext';
+import { CardPreviewProvider, useCardPreview } from '../state/CardPreviewContext';
 import { LoadingScreen } from '../components/LoadingScreen';
-import { CardLoupePanel } from '../components/CardLoupePanel';
+import { CardLoupePanel, LOUPE_PANEL_WIDTH } from '../components/CardLoupePanel';
 import { useImagePreloader } from '../hooks/useImagePreloader';
 import type { DeckDataForGoldfish } from '../types';
 import { getCardImageUrl } from '../../shared/utils/cardImageUrl';
@@ -46,6 +46,7 @@ function GoldfishGameArea({ deck, onLoadDeck }: { deck: DeckDataForGoldfish; onL
   // The player's own uploaded image when they have one on; otherwise Forge
   // decks play against the forge background and everything else the cave.
   const backgroundImage = useGameBackground(deck.isForge);
+  const { isLoupeVisible } = useCardPreview();
 
   // Warm the canvas chunk while the loading screen is up — GoldfishCanvas is
   // dynamically imported, and without this it only starts downloading after
@@ -72,6 +73,20 @@ function GoldfishGameArea({ deck, onLoadDeck }: { deck: DeckDataForGoldfish; onL
     return <LoadingScreen progress={progress} isForge={deck.isForge} />;
   }
 
+  // The table art and its vignette cover the board only. While the loupe is
+  // open they stop at its edge; collapsed, its 36px strip is see-through and
+  // they run to the window edge. The edge moves on the loupe's own 0.2s width
+  // transition, so the art glides to the new centre with the board.
+  const tableBox: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: isLoupeVisible ? LOUPE_PANEL_WIDTH : 0,
+    transition: 'right 0.2s ease',
+    pointerEvents: 'none',
+  };
+
   return (
     <div
       className="gf-area-enter"
@@ -86,26 +101,23 @@ function GoldfishGameArea({ deck, onLoadDeck }: { deck: DeckDataForGoldfish; onL
         flexDirection: 'row',
       }}
     >
-      {/* Cave (or Forge) background image — shared across game area and loupe */}
+      {/* Cave (or Forge, or the player's own) background image. Stops at the
+          open loupe so the art is centred on the board, not the window. */}
       <div
         className="cave-bg"
         style={{
-          position: 'absolute',
-          inset: 0,
+          ...tableBox,
           backgroundImage,
           backgroundSize: 'cover',
           backgroundPosition: 'center 70%',
           backgroundRepeat: 'no-repeat',
-          pointerEvents: 'none',
         }}
       />
 
       {/* Torch glow + vignette overlays */}
       <div
         style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
+          ...tableBox,
           background: `
             radial-gradient(ellipse 60% 50% at 50% 30%, rgba(180,120,40,0.06) 0%, transparent 70%),
             radial-gradient(ellipse 90% 85% at 50% 50%, transparent 60%, rgba(0,0,0,0.75) 100%)

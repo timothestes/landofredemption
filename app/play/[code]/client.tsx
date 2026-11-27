@@ -427,6 +427,12 @@ function GameInner({ code, isConnected }: GameInnerProps) {
   // Board backdrop — the player's own uploaded image when they have one on,
   // else the default art (Forge playtest games get a distinct background).
   const gameBackground = useGameBackground(isForge);
+  // Painted on the board column, not the whole window, so the art is centred
+  // on the board whether the right panel is open or collapsed. The column
+  // narrows on the panel's own width transition, so the art glides with it.
+  // The window behind the panel gets the plain table color instead.
+  const boardBackground = { backgroundImage: gameBackground, backgroundSize: 'cover', backgroundPosition: 'center' } as const;
+  const tableColor = 'var(--gf-bg-dark)';
 
   // ---- Touch shell ----
   const shellInputMode = useInputMode();
@@ -1840,8 +1846,8 @@ function GameInner({ code, isConnected }: GameInnerProps) {
   // can see their dealt hand while deciding who goes first.
   if (isCeremonyPhase) {
     return (
-      <div style={{ display: 'flex', width: '100vw', height: '100dvh', backgroundImage: gameBackground, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', width: '100vw', height: '100dvh', background: tableColor }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', ...boardBackground }}>
           <div style={{ flexShrink: 0, height: 48 }}>
             <TurnIndicator
               hideRematch={!!gameParams?.bracket}
@@ -1901,8 +1907,8 @@ function GameInner({ code, isConnected }: GameInnerProps) {
   // toolbar) so there's no flash of the lobby screen.
   if (isAwaitingGameStart) {
     return (
-      <div style={{ display: 'flex', width: '100vw', height: '100dvh', backgroundImage: gameBackground, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', width: '100vw', height: '100dvh', background: tableColor }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', ...boardBackground }}>
           <div style={{ flexShrink: 0, height: 48 }}>
             <TurnIndicator
               hideRematch={!!gameParams?.bracket}
@@ -1995,8 +2001,8 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     // Show the overlay over the frozen canvas — always render canvas if gameId is known
     if (gameId !== null) {
       return (
-        <div style={{ display: 'flex', width: '100vw', height: '100dvh', backgroundImage: gameBackground, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', width: '100vw', height: '100dvh', background: tableColor }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', ...boardBackground }}>
             <div style={{ flexShrink: 0, height: 48 }}>
               <TurnIndicator
                 hideRematch={!!gameParams?.bracket}
@@ -2190,8 +2196,8 @@ function GameInner({ code, isConnected }: GameInnerProps) {
     }
     // Fallback — canvas not ready
     return (
-      <div style={{ display: 'flex', width: '100vw', height: '100dvh', backgroundImage: gameBackground, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', width: '100vw', height: '100dvh', background: tableColor }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', ...boardBackground }}>
           <div style={{ flexShrink: 0, height: 48 }}>
             <TurnIndicator
               hideRematch={!!gameParams?.bracket}
@@ -2250,13 +2256,13 @@ function GameInner({ code, isConnected }: GameInnerProps) {
   return (
     <div style={{
       display: 'flex', width: '100vw', height: '100dvh',
-      backgroundImage: gameBackground, backgroundSize: 'cover', backgroundPosition: 'center',
-      // Keep the board clear of the landscape notch on a phone.
-      paddingLeft: 'env(safe-area-inset-left)',
+      background: tableColor,
+      // Keep the board clear of the landscape notch on a phone. The left inset
+      // sits on the board column so the board's art still fills the notch strip.
       paddingRight: 'env(safe-area-inset-right)',
     }}>
       {/* Turn bar + Canvas + Toolbar */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingLeft: 'env(safe-area-inset-left)', ...boardBackground }}>
         {/* On compact touch the turn bar overlays the board instead of
             consuming a fixed 48px row (the compact layout profile's top
             gutter keeps board content clear of it). Scale is derived from
